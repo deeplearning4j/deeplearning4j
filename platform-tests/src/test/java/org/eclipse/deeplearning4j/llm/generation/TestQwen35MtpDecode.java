@@ -967,6 +967,47 @@ public class TestQwen35MtpDecode {
             assertEquals(tok18, emitted[18],
                     "ledger self-check: pending at pos 35 must be e[18]");
 
+            // ── PREFILL STABILITY PROBE (3x, EARLY): run the identical prefill
+            // three times IMMEDIATELY after the first prefill (before any
+            // pipeline session or decode work has executed on this graph). If
+            // these are identical but the R2 comparison still shows divergence,
+            // the difference is between graph-state-dependent executions — the
+            // pipeline session's own GDN state writes leak into later prefills
+            // through in-graph variables, while zero-state raw prefills converge.
+            {
+                Map<String, INDArray> probe2Inputs = new HashMap<>();
+                for (Map.Entry<String, INDArray> e : prefillInputs.entrySet()) {
+                    probe2Inputs.put(e.getKey(), e.getValue().dup());
+                }
+                Map<String, INDArray> probe2Out = model.output(
+                        probe2Inputs, prefillOutputNames.toArray(new String[0]));
+                ownAll(probe2Out, owned);
+                Map<String, INDArray> probe3Inputs = new HashMap<>();
+                for (Map.Entry<String, INDArray> e : prefillInputs.entrySet()) {
+                    probe3Inputs.put(e.getKey(), e.getValue().dup());
+                }
+                Map<String, INDArray> probe3Out = model.output(
+                        probe3Inputs, prefillOutputNames.toArray(new String[0]));
+                ownAll(probe3Out, owned);
+
+                StringBuilder probe = new StringBuilder();
+                for (int gi = 0; gi < kvNames.keyNames.size(); gi++) {
+                    int layer = extractLayerIndex(kvNames.keyNames.get(gi));
+                    INDArray k1 = prefillOutputs.get("k_rope_" + layer);
+                    INDArray k2 = probe2Out.get("k_rope_" + layer);
+                    INDArray k3 = probe3Out.get("k_rope_" + layer);
+                    boolean d12 = !k1.equals(k2);
+                    boolean d23 = !k2.equals(k3);
+                    boolean d13 = !k1.equals(k3);
+                    if (d12 || d23 || d13) {
+                        probe.append(String.format(" L%d:#1!=#2=%s #2!=#3=%s #1!=#3=%s;",
+                                layer, d12, d23, d13));
+                    }
+                }
+                log.info("[SEAM-EARLY-PREFILL-STABILITY] 3x zero-state prefill (before any session):{}{}",
+                        probe.length() == 0 ? " ALL IDENTICAL" : "", probe);
+            }
+
             // ── R2: compare the LIVE production session's leg-1-final state
             // (positions 0..34 committed, pending e[18]) against the replay's
             // S_B35 anchor — the reviewer's CASE-A discriminator, live-vs-replay.

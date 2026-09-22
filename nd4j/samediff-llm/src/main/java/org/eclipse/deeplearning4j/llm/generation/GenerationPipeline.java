@@ -2440,6 +2440,60 @@ public class GenerationPipeline implements AutoCloseable {
         // the second generate, timing-dependent). One commit per generate is negligible cost.
         Nd4j.getExecutioner().commit();
 
+        // ── Session-owned state rebinding (cross-session aliasing fix) ──
+        // MOVED EARLIER (was after ext-index resolution, too late): this must run
+        // BEFORE the warmup decode and any subsequent native execution of this
+        // session. The executor's externalInputs cache persists across executions
+        // AND across sessions sharing the loaded graph; a warmup decode executed
+        // without the rebind can consume a PREVIOUS session's in-flight GDN/conv
+        // state, whose residue then shapes this session's own prefill-committed
+        // KV (observed as the pos-9 onset, head-1-only, full-attention-layer key
+        // divergence and downstream free-run token flips).
+        {
+            Map<String, INDArray> earlyStateBindings = new LinkedHashMap<>();
+            for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+                INDArray ownedBuf = recurrentStateBuffers.get(pair.inputName);
+                if (ownedBuf != null && decoder.hasVariable(pair.inputName)) {
+                    earlyStateBindings.put(pair.inputName, ownedBuf);
+                }
+            }
+            if (!earlyStateBindings.isEmpty()) {
+                try {
+                    DynamicShapePlanExecutor earlyExecutor =
+                            decoder.getOrCreateSession().getDynamicShapePlanExecutor();
+                    if (earlyExecutor != null
+                            && earlyExecutor.getCurrentPlan() != null
+                            && earlyExecutor.getExternalInputsSnapshot() != null
+                            && earlyExecutor.getExternalInputsSnapshot().length > 0) {
+                        // A fresh session inheriting a shared executor must also drop the
+                        // PRIOR session's zero-copy output cache: its entries wrap output
+                        // arrays computed from the PRIOR session's input buffers, and the
+                        // staleness guard only detects closed buffers — not buffers still
+                        // alive inside another pipeline's retained state. Without this,
+                        // session 2+'s prefill can be served prior-session KV output
+                        // arrays (observed as the deterministic cross-session divergence
+                        // on full-attention layers, head 1, pos >= 9). The fresh session
+                        // path below rebuilds the cache from this session's own arrays.
+                        earlyExecutor.clearOutputCaches();
+                        earlyExecutor.overrideExternalInputs(earlyStateBindings);
+                        log.info("[GGUF-KV] Session-owned state rebind (early): {} recurrent "
+                                + "state slots bound before warmup decode; prior output caches cleared",
+                                earlyStateBindings.size());
+                    }
+                } catch (IllegalStateException rebindFailure) {
+                    // Fresh-graph path: no plan/inputs resolved yet is expected here —
+                    // the rebind after ext-index resolution covers that case. Only a
+                    // missing-name failure against a live plan is a hard error.
+                    if (rebindFailure.getMessage() != null
+                            && rebindFailure.getMessage().contains("no external input named")) {
+                        throw rebindFailure;
+                    }
+                    log.info("[GGUF-KV] Early state rebind deferred (plan not initialized yet): {}",
+                            rebindFailure.getMessage());
+                }
+            }
+        }
+
         // ══════════════════════════════════════════════════════════════════════
         // STEP 3: Warmup decode step -- compile DSP plan for decode shapes
         //
@@ -2861,6 +2915,47 @@ public class GenerationPipeline implements AutoCloseable {
         int[] gdnStateOutputIndices = gdnOutList.stream().mapToInt(Integer::intValue).toArray();
         int[] convStateExtIndices = convExtList.stream().mapToInt(Integer::intValue).toArray();
         int[] convStateOutputIndices = convOutList.stream().mapToInt(Integer::intValue).toArray();
+
+        // ── Session-owned state rebinding (cross-session aliasing fix) ──
+        // The executor's externalInputs cache persists across executions AND across
+        // sessions sharing this loaded graph. Without an explicit rebind, a newly
+        // prepared session can be served a PREVIOUS session's GDN/conv state array
+        // (in-flight or stale) as its state input — observed as one-shot cross-
+        // session token divergence on hybrid GDN models (first execution after
+        // another session differs; repeated identical executions converge).
+        // Rebind every state input slot to THIS session's own retained buffer so
+        // the plan can only ever read buffers owned by state.recurrentStateBuffers.
+        {
+            Map<String, INDArray> stateBindings = new LinkedHashMap<>();
+            for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+                INDArray ownedBuf = recurrentStateBuffers.get(pair.inputName);
+                if (ownedBuf != null && decoder.hasVariable(pair.inputName)) {
+                    stateBindings.put(pair.inputName, ownedBuf);
+                }
+            }
+            if (!stateBindings.isEmpty() && executor != null
+                    && executor.getCurrentPlan() != null) {
+                try {
+                    executor.overrideExternalInputs(stateBindings);
+                    log.info("[GGUF-KV] Session-owned state rebind: {} recurrent state slots "
+                            + "bound to this session's buffers", stateBindings.size());
+                } catch (IllegalStateException rebindFailure) {
+                    // Rebinding requires a prepared plan; if the plan was not yet
+                    // initialized at this point the slots will resolve from the
+                    // decodeInputMap below anyway (fresh-session path). Fail only
+                    // when a plan exists but rejects the rebind.
+                    if (executor.getCurrentPlan() != null
+                            && executor.getExternalInputsSnapshot() != null
+                            && executor.getExternalInputsSnapshot().length > 0
+                            && rebindFailure.getMessage() != null
+                            && rebindFailure.getMessage().contains("no external input named")) {
+                        throw rebindFailure;
+                    }
+                    log.info("[GGUF-KV] State rebind deferred (plan not yet initialized): {}",
+                            rebindFailure.getMessage());
+                }
+            }
+        }
 
         MtpPreparedState preparedMtp = null;
         if (useNativeMtp) {
