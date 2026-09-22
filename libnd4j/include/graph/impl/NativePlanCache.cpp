@@ -151,11 +151,6 @@ void NativePlanCache::clear() {
 
   DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: deleting=%zu leasedRemaining=%zu entriesRemaining=%zu",
            toDelete.size(), leasedRemaining, entriesRemaining);
-  // Task-24 teardown bracketing: unconditional fprintf (not level-gated DSP_DIAG)
-  // so a production run always records which cache-clear phase aborted.
-  fprintf(stderr, "[DSP-CLEAR] begin deleting=%zu leasedRemaining=%zu entriesRemaining=%zu this=%p\n",
-          toDelete.size(), leasedRemaining, entriesRemaining, (void*)this);
-  fflush(stderr);
 
   // Teardown is deliberately two-phase. Cached shape plans can share the same
   // external weight DataBuffers and each frozen plan pins those device pointers.
@@ -170,43 +165,23 @@ void NativePlanCache::clear() {
   // pool. Only after all release paths have run is it safe to destroy the plans.
   for (auto* plan : toDelete) {
     if (plan != nullptr) {
-      fprintf(stderr, "[DSP-CLEAR-PLAN] releaseGpuIntermediates plan=%p\n", (void*)plan);
-      fflush(stderr);
+      DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: releaseGpuIntermediates plan=%p", (void*)plan);
       plan->releaseGpuIntermediates();
     }
   }
-  fprintf(stderr, "[DSP-CLEAR] releaseGpuIntermediates done for %zu plans\n", toDelete.size());
-  fflush(stderr);
-  // Heap probe between phases: if glibc later aborts inside a plan dtor, this
-  // malloc/free pair proves the allocator metadata was still consistent at the
-  // release/delete boundary (i.e. the corruption is inside a specific dtor phase
-  // or a later path, not the batch release itself).
-  {
-    void* probe = malloc(64);
-    fprintf(stderr, "[DSP-CLEAR] HEAP-PROBE post-release ptr=%p\n", probe);
-    fflush(stderr);
-    free(probe);
-    fprintf(stderr, "[DSP-CLEAR] HEAP-PROBE free OK\n");
-    fflush(stderr);
-  }
+  DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: releaseGpuIntermediates done for %zu plans",
+           toDelete.size());
   for (auto* plan : toDelete) {
     // Double-destruction guard: skip plans whose destructor already ran.
     if (plan != nullptr && !plan->isDestructed()) {
-      fprintf(stderr, "[DSP-CLEAR-PLAN] delete plan=%p\n", (void*)plan);
-      fflush(stderr);
+      DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: delete plan=%p", (void*)plan);
       delete plan;
-      void* postProbe = malloc(64);
-      free(postProbe);
-      fprintf(stderr, "[DSP-CLEAR] HEAP-PROBE post-delete plan=%p OK\n", (void*)plan);
-      fflush(stderr);
+      DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: delete done plan=%p", (void*)plan);
     } else if (plan != nullptr) {
       DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: SKIPPED already-destructed plan=%p", (void*)plan);
-      fprintf(stderr, "[DSP-CLEAR-PLAN] SKIPPED already-destructed plan=%p\n", (void*)plan);
-      fflush(stderr);
     }
   }
-  fprintf(stderr, "[DSP-CLEAR] done plans=%zu\n", toDelete.size());
-  fflush(stderr);
+  DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: done plans=%zu", toDelete.size());
 }
 
 // ---------------------------------------------------------------------------

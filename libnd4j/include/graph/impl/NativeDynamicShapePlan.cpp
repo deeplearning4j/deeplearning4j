@@ -462,31 +462,27 @@ void NativeDynamicShapePlan::flushDeferredSlotDeletes() {
       owningDeletes.push_back(arr);
     }
   }
-  // Teardown bracketing (unconditional): the 2026-09-22 '(out)' abort fires at
-  // plan dtor's delete[] outputSlots_ AFTER this flush, meaning an earlier free
-  // inside one of these loops corrupted a neighboring heap chunk. Bracket each
-  // deletion group so a future abort pins the group (glibc reports at the
-  // detecting free, so the last COMPLETED bracket identifies the corruptor).
-  {
-    fprintf(stderr, "[DSP-FLUSH] BEGIN plan=%p nonOwning=%zu owning=%zu retained=%zu\n",
-            (void*)this, nonOwningDeletes.size(), owningDeletes.size(), retained);
-    fflush(stderr);
-    for (NDArray* arr : nonOwningDeletes) {
-      fprintf(stderr, "[DSP-FLUSH] DEL-NONOWNING arr=%p\n", (void*)arr);
-      fflush(stderr);
-      delete arr;
-    }
-    fprintf(stderr, "[DSP-FLUSH] DEL-NONOWNING DONE\n");
-    fflush(stderr);
-    for (NDArray* arr : owningDeletes) {
-      fprintf(stderr, "[DSP-FLUSH] DEL-OWNING arr=%p db=%p\n", (void*)arr,
-              (void*)arr->dataBuffer());
-      fflush(stderr);
-      delete arr;
-    }
-    fprintf(stderr, "[DSP-FLUSH] DEL-OWNING DONE\n");
-    fflush(stderr);
+  // Teardown bracketing (permanent DSP_DIAG MEMORY events): the 2026-09-22
+  // '(out)' abort fires at plan dtor's delete[] outputSlots_ AFTER this flush,
+  // meaning an earlier free inside one of these loops corrupted a neighboring
+  // heap chunk. Each deletion group brackets itself so a future abort's ring
+  // names the group (glibc reports at the detecting free, so the last COMPLETED
+  // bracket identifies the corruptor). At DSP_DIAG level=full these stream to
+  // the surefire dumpstream in real time; at detailed they land in the ring
+  // and the failure summary.
+  DSP_DIAG(MEMORY, "FLUSH: BEGIN plan=%p nonOwning=%zu owning=%zu retained=%zu",
+           this, nonOwningDeletes.size(), owningDeletes.size(), retained);
+  for (NDArray* arr : nonOwningDeletes) {
+    DSP_DIAG(MEMORY, "FLUSH: DEL-NONOWNING arr=%p", (void*)arr);
+    delete arr;
   }
+  DSP_DIAG(MEMORY, "FLUSH: DEL-NONOWNING DONE");
+  for (NDArray* arr : owningDeletes) {
+    DSP_DIAG(MEMORY, "FLUSH: DEL-OWNING arr=%p db=%p", (void*)arr,
+             (void*)arr->dataBuffer());
+    delete arr;
+  }
+  DSP_DIAG(MEMORY, "FLUSH: DEL-OWNING DONE");
   const size_t deleted = nonOwningDeletes.size() + owningDeletes.size();
   DSP_DIAG(MEMORY,
            "DEFERRED_DELETE_FLUSH: plan=%p queued=%zu unique=%zu deleted=%zu retained=%zu reentrant=%zu",
@@ -1634,16 +1630,14 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // already-torn-down plan (glibc "double free or corruption (out)" source).
   if (destructed_) {
     DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: CANARY double-destruction on plan=%p", (void*)this);
-    fprintf(stderr, "[DSP-CANARY] ~NativeDynamicShapePlan double-destruction plan=%p\n", (void*)this);
-    fflush(stderr);
   }
   destructed_ = true;
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: START plan=%p numSlots=%d totalOutputSlots=%d planOwned=%zu",
            this, numSlots_, totalOutputSlots_, planOwnedArrays_.size());
-  // Task-24 phase bracketing: unconditional fprintf between teardown phases so
-  // the last marker before a glibc abort names the failing release table.
+  // Permanent dtor phase brackets as DSP_DIAG MEMORY events (level-gated like
+  // all diagnostics; full level streams them to the run's captured stdout).
 #define DSP_DTOR_PHASE(label) \
-  do { fprintf(stderr, "[DSP-DTOR] %s plan=%p\n", label, (void*)this); fflush(stderr); } while (0)
+  do { DSP_DIAG(MEMORY, "DTOR: %s plan=%p", label, (void*)this); } while (0)
   DSP_DTOR_PHASE("START");
   // BUF_FP_RING: final fingerprint dump for this plan (covers execs since the
   // last releaseGpuIntermediates dump). Same completion-boundary reasoning as
@@ -1745,7 +1739,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
       outputSlots_[i] = nullptr;
     }
     DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: about to delete[] outputSlots_ array (%p)", (void*)outputSlots_);
-    DSP_DTOR_PHASE("PHASE-OUTSLOTS-ARRAY-DELETE");
+  DSP_DIAG(MEMORY, "DTOR: PHASE-OUTSLOTS-ARRAY-DELETE plan=%p", (void*)this);
     delete[] outputSlots_;
     outputSlots_ = nullptr;
     DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: delete[] outputSlots_ done");
@@ -8102,24 +8096,20 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     deferredSlotDeletes_.erase(std::remove_if(deferredSlotDeletes_.begin(), deferredSlotDeletes_.end(),
         [&](NDArray* arr) { return warmupRetiringArrays.count(arr) != 0; }), deferredSlotDeletes_.end());
     for (auto* arr : warmupRetiringArrays) planOwnedArrays_.erase(arr);
-    // Teardown bracketing: same rationale as [DSP-FLUSH] above — pin the exact
-    // deleting sub-phase inside the release window.
-    fprintf(stderr, "[DSP-WARMUP-RETIRE] BEGIN plan=%p borrowers=%zu owners=%zu\n",
-            (void*)this, warmupBorrowers.size(), warmupOwners.size());
-    fflush(stderr);
+    // Teardown bracketing: permanent DSP_DIAG events — same rationale as FLUSH
+    // above — pin the exact deleting sub-phase inside the release window.
+    DSP_DIAG(MEMORY, "WARMUP_RETIRE: BEGIN plan=%p borrowers=%zu owners=%zu",
+             this, warmupBorrowers.size(), warmupOwners.size());
     for (auto* arr : warmupBorrowers) {
-      fprintf(stderr, "[DSP-WARMUP-RETIRE] DEL-BORROWER arr=%p\n", (void*)arr);
-      fflush(stderr);
+      DSP_DIAG(MEMORY, "WARMUP_RETIRE: DEL-BORROWER arr=%p", (void*)arr);
       deleted.insert(arr);
       delete arr;
       ++freedCount;
     }
-    fprintf(stderr, "[DSP-WARMUP-RETIRE] DEL-BORROWERS DONE\n");
-    fflush(stderr);
+    DSP_DIAG(MEMORY, "WARMUP_RETIRE: DEL-BORROWERS DONE");
     for (auto* arr : warmupOwners) {
-      fprintf(stderr, "[DSP-WARMUP-RETIRE] DEL-OWNER arr=%p db=%p\n", (void*)arr,
-              (void*)arr->dataBuffer());
-      fflush(stderr);
+      DSP_DIAG(MEMORY, "WARMUP_RETIRE: DEL-OWNER arr=%p db=%p", (void*)arr,
+               (void*)arr->dataBuffer());
       deleted.insert(arr);
       auto* db = arr->dataBuffer();
       if (db != nullptr && db->isValid() && !db->isClosed()) db->deleteBuffers();
@@ -8127,8 +8117,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       delete arr;
       ++freedCount;
     }
-    fprintf(stderr, "[DSP-WARMUP-RETIRE] DEL-OWNERS DONE\n");
-    fflush(stderr);
+    DSP_DIAG(MEMORY, "WARMUP_RETIRE: DEL-OWNERS DONE");
     colorMap_.clearWarmupTracking();
 
     if (slotOwnership_) {
