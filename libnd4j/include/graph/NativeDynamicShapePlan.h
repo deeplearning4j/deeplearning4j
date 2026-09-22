@@ -3226,6 +3226,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Execution state (reused across calls)
   NDArray** outputSlots_;              // THE slot arrays — current output values for all slots
+  // REDZONE GUARD state: raw allocation holding outputSlots_ with a 64-byte
+  // front/back redzone, its payload byte count, and the last exec whose redzone
+  // check passed. See verifyOutputSlotsRedzone() in NativeDynamicShapePlan.cpp.
+  uint8_t* outputSlotsRedzoneRaw_ = nullptr;
+  size_t outputSlotsRedzoneBytes_ = 0;
+  int outputSlotsRedzoneLastOkExec_ = -1;
   // slotIsViewProducer_ removed — use slots_[i].slotPhase.isViewProducer instead.
   Context** contextPool_;              // Pre-allocated Context pool
   bool viewProducerDetectionDone_;

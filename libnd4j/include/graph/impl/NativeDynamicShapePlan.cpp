@@ -1749,7 +1749,39 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
     }
     DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: about to delete[] outputSlots_ array (%p)", (void*)outputSlots_);
   DSP_DIAG(MEMORY, "DTOR: PHASE-OUTSLOTS-ARRAY-DELETE plan=%p", (void*)this);
-    delete[] outputSlots_;
+    // REDZONE GUARD: check both redzones before freeing. If either was clobbered,
+    // report the offending bytes and free the raw block WITHOUT touching the
+    // corrupted-neighbor state — the guard has already captured the evidence.
+    if (outputSlotsRedzoneRaw_ != nullptr) {
+      constexpr size_t kRedzone = 64;
+      constexpr uint8_t kMagic = 0xA5;
+      const uint8_t* front = outputSlotsRedzoneRaw_;
+      const uint8_t* back = outputSlotsRedzoneRaw_ + kRedzone + outputSlotsRedzoneBytes_;
+      int frontBad = 0, backBad = 0;
+      for (size_t i = 0; i < kRedzone; i++) {
+        if (front[i] != kMagic) frontBad++;
+        if (back[i] != kMagic) backBad++;
+      }
+      if (frontBad != 0 || backBad != 0) {
+        DSP_DIAG(MEMORY,
+                 "REDZONE_VIOLATION: plan=%p array=%p frontBad=%d backBad=%d "
+                 "front[0..7]=%02x %02x %02x %02x %02x %02x %02x %02x "
+                 "back[0..7]=%02x %02x %02x %02x %02x %02x %02x %02x lastOkExec=%d",
+                 (void*)this, (void*)outputSlots_, frontBad, backBad,
+                 front[0], front[1], front[2], front[3],
+                 front[4], front[5], front[6], front[7],
+                 back[0], back[1], back[2], back[3],
+                 back[4], back[5], back[6], back[7],
+                 outputSlotsRedzoneLastOkExec_);
+      } else {
+        DSP_DIAG(MEMORY, "REDZONE_OK: plan=%p array=%p exec=%d",
+                 (void*)this, (void*)outputSlots_, executeCount_);
+      }
+      delete[] outputSlotsRedzoneRaw_;
+      outputSlotsRedzoneRaw_ = nullptr;
+    } else {
+      delete[] outputSlots_;
+    }
     outputSlots_ = nullptr;
     DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: delete[] outputSlots_ done");
   }
@@ -2569,7 +2601,25 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   plan->computeSlotVariableDependency();
 
   // Allocate execution state
-  plan->outputSlots_ = new NDArray*[plan->totalOutputSlots_];
+  // REDZONE GUARD (permanent diagnostics): the 2026-09-22 '(out)' aborts fired at
+  // delete[] outputSlots_ with a corrupted chunk header — a neighbor allocation
+  // overflowing into this array's malloc header. Allocate the array with a 64-byte
+  // front redzone filled with a magic pattern; verifyRedzones() checks it before
+  // delete[] and after every execute, so the clobbering exec is identified and the
+  // stomp is caught regardless of which (possibly uninstrumented) writer did it.
+  constexpr size_t DSP_REDZONE_BYTES = 64;
+  constexpr uint8_t DSP_REDZONE_BYTE = 0xA5;
+  auto allocWithRedzone = [](size_t bytes) -> uint8_t* {
+    uint8_t* raw = new uint8_t[bytes + 2 * DSP_REDZONE_BYTES];
+    std::memset(raw, DSP_REDZONE_BYTE, DSP_REDZONE_BYTES);
+    std::memset(raw + DSP_REDZONE_BYTES + bytes, DSP_REDZONE_BYTE, DSP_REDZONE_BYTES);
+    return raw;
+  };
+  const size_t outSlotsBytes = sizeof(NDArray*) * plan->totalOutputSlots_;
+  uint8_t* outSlotsRaw = allocWithRedzone(outSlotsBytes);
+  plan->outputSlotsRedzoneRaw_ = outSlotsRaw;
+  plan->outputSlotsRedzoneBytes_ = outSlotsBytes;
+  plan->outputSlots_ = reinterpret_cast<NDArray**>(outSlotsRaw + DSP_REDZONE_BYTES);
   std::memset(plan->outputSlots_, 0, sizeof(NDArray*) * plan->totalOutputSlots_);
 
   // outputSlots_ owns all slot arrays
