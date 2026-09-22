@@ -3896,50 +3896,15 @@ public class GenerationPipeline implements AutoCloseable {
                     + "While a session is open, decode through the session's generate()/continueGeneration().");
         }
 
-        // ── Prefix cache lookup ──────────────────────────────────────────────────────────────────
-        if (prefixBlockPool != null) {
-            // A prefix-cache hit builds a fresh suffix-prefill (or GDN-fallback full prefill) with its
-            // own executor freeze. Any retained one-shot fixed-buffer state from a PRIOR generate still
-            // holds that prior prompt's frozen CUDA-graph plan/buffers; leaving it live lets the prior
-            // captured decode alias this generate and replay the prior prompt's tokens (observed:
-            // promptB-with-cache reproduced promptA's continuation). Drop it here so the hit path
-            // starts from a clean executor — mirrors the session path (see startSession).
-            if (cachedFixedBufferState != null) {
-                cachedFixedBufferState.close();
-                cachedFixedBufferState = null;
-            }
-            // Discover recurrent state pairs for the GDN guard in attemptPrefixCacheHit
-            List<ModelIOConfig.RecurrentStatePair> recurrentStates =
-                    ModelIOConfig.findRecurrentStatePairs(decoder, ioConfig);
-            // Rough maxKvLen estimate for buffer allocation (will be refined in the suffix path)
-            long roughMaxKvLen = promptTokenIds.length + maxNewTokens;
-            int kvCap = config.getMaxKvCacheLength();
-            if (kvCap > 0 && roughMaxKvLen > kvCap) roughMaxKvLen = kvCap;
-            PrefixHitContext hit = attemptPrefixCacheHit(promptTokenIds, kvInputNames, roughMaxKvLen, recurrentStates);
-            if (hit != null) {
-                InGraphKvState state = prefillSuffixOnlyAndFreeze(promptTokenIds, maxNewTokens,
-                        kvInputNames, startTime, hit);
-                if (state.terminalResult != null) return state.terminalResult;
-                try {
-                    return runInGraphNativeDecode(state, maxNewTokens, false, startTime);
-                } finally {
-                    state.close();
-                }
-            }
-        }
-
-        // FORWARD-FIX: on the fixed-buffer path, reuse the cached frozen state across generates so the
-        // captured decode plan replays (no per-generate re-warm). The reuse path keeps the plan, refills
-        // the retained (stable-address) buffers in place, and skips the re-freeze. Fresh path otherwise.
-        //
-        // SHAPE-SIGNATURE GUARD (was unconditional teardown): reuse is only sound when the retained
-        // plan matches the incoming request. Both requests here are FIXED-BUFFER, so the plan's
-        // prefill dimension is always maxPrefill — the signature reduces to equal maxKvLen (the KV
-        // capacity the plan was frozen against). On a match we reuse in place; the native plan
-        // cache's LRU + real-bytes budget (passivate/evict unpinned plans) plus error-path
-        // reclamation handle any residual accumulation the original teardown guarded against.
-        // On any mismatch we tear down exactly as before so the fresh prefill builds a plan for
-        // the new signature.
+        // SHAPE-SIGNATURE GUARD (hoisted ABOVE the prefix-cache block): reuse is only sound when the
+        // retained plan matches the incoming request. Both requests here are FIXED-BUFFER, so the
+        // plan's prefill dimension is always maxPrefill — the signature reduces to equal maxKvLen.
+        // This must run BEFORE attemptPrefixCacheHit: on GDN models a partial-boundary prefix hit
+        // falls back to a full prefill internally and previously CLOSED the built state without
+        // retaining it, so cachedFixedBufferState stayed null forever and every generate was a cold
+        // ~15.7GB prefill (the slot-410 capacity wall). When signatures match we reuse in place;
+        // the native plan cache's LRU + real-bytes budget plus error-path reclamation handle any
+        // residual accumulation the old unconditional teardown guarded against.
         boolean fixedBuffers = config.getMaxPrefillLength() > 0;
         InGraphKvState reuse = null;
         if (fixedBuffers && cachedFixedBufferState != null) {
@@ -3980,6 +3945,45 @@ public class GenerationPipeline implements AutoCloseable {
                 SameDiffMemoryUtils.trimAllDevicePools();
             }
         }
+
+        // ── Prefix cache lookup ──────────────────────────────────────────────────────────────────
+        if (prefixBlockPool != null && reuse == null) {
+            // A prefix-cache hit builds a fresh suffix-prefill (or GDN-fallback full prefill) with its
+            // own executor freeze. Skipped entirely when the shape signature matched above — the
+            // retained state IS the better reuse (same plan, zero re-warm).
+            // Discover recurrent state pairs for the GDN guard in attemptPrefixCacheHit
+            List<ModelIOConfig.RecurrentStatePair> recurrentStates =
+                    ModelIOConfig.findRecurrentStatePairs(decoder, ioConfig);
+            // Rough maxKvLen estimate for buffer allocation (will be refined in the suffix path)
+            long roughMaxKvLen = promptTokenIds.length + maxNewTokens;
+            int kvCap = config.getMaxKvCacheLength();
+            if (kvCap > 0 && roughMaxKvLen > kvCap) roughMaxKvLen = kvCap;
+            PrefixHitContext hit = attemptPrefixCacheHit(promptTokenIds, kvInputNames, roughMaxKvLen, recurrentStates);
+            if (hit != null) {
+                InGraphKvState state = prefillSuffixOnlyAndFreeze(promptTokenIds, maxNewTokens,
+                        kvInputNames, startTime, hit);
+                if (state.terminalResult != null) return state.terminalResult;
+                if (fixedBuffers) {
+                    // RETAIN (was close): on GDN models this branch builds a full prefill via the
+                    // fallback; retaining it lets the next same-signature generate reuse the frozen
+                    // plan instead of paying a cold prefill every chunk.
+                    cachedFixedBufferState = state;
+                    GenerationResult result = runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+                    SameDiffMemoryUtils.trimAllDevicePools();
+                    return result;
+                }
+                try {
+                    return runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+                } finally {
+                    state.close();
+                }
+            }
+        }
+
+        // FORWARD-FIX: on the fixed-buffer path, reuse the cached frozen state across generates so the
+        // captured decode plan replays (no per-generate re-warm). The reuse path keeps the plan, refills
+        // the retained (stable-address) buffers in place, and skips the re-freeze. Fresh path otherwise.
+        // (The signature guard above already extracted `reuse`; nothing to tear down here.)
         InGraphKvState state = prefillWarmupAndFreeze(
                 promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse, true);
         if (state.terminalResult != null) {
