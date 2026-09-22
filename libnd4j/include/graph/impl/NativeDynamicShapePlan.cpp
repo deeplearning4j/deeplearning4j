@@ -4415,6 +4415,29 @@ Status NativeDynamicShapePlan::execute(
 
   activeExecCtx_ = nullptr;
   flushDeferredSlotDeletes();
+
+  // REDZONE GUARD: verify outputSlots_ redzones after every execution. The first
+  // exec whose check fails brackets the corrupting write to the exec that just
+  // ran; lastOkExec pins the last clean boundary. Permanent diagnostics.
+  if (outputSlotsRedzoneRaw_ != nullptr) {
+    constexpr size_t kRedzone = 64;
+    constexpr uint8_t kMagic = 0xA5;
+    const uint8_t* front = outputSlotsRedzoneRaw_;
+    const uint8_t* back = outputSlotsRedzoneRaw_ + kRedzone + outputSlotsRedzoneBytes_;
+    bool ok = true;
+    for (size_t i = 0; i < kRedzone && ok; i++) {
+      if (front[i] != kMagic || back[i] != kMagic) ok = false;
+    }
+    if (!ok) {
+      DSP_DIAG(MEMORY,
+               "REDZONE_VIOLATION_MIDRUN: plan=%p exec=%d lastOkExec=%d — "
+               "outputSlots_ redzone clobbered during THIS execution",
+               (void*)this, executeCount_, outputSlotsRedzoneLastOkExec_);
+    } else {
+      outputSlotsRedzoneLastOkExec_ = executeCount_;
+    }
+  }
+
   platformEndGuard.dismiss();  // Normal exit — call manually, don't double-call from destructor
   platformEndExecution(executionStatePtr, stream, planLifecycle_.isInFrozenOrReplayState(), executeCount_);
   executionStatePtr = nullptr;
