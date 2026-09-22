@@ -177,18 +177,18 @@
       "knowledgeBaseId" : "execution-knowledge",
       "graphPath" : "data/crawls/execution-knowledge/graph.kgraph",
       "codeProjectionVersion" : "4",
-      "codeProjectedAt" : "2026-09-22T00:43:34.033966260Z",
-      "codeIndexGeneration" : "2026-09-22T00:43:23.814691240Z",
-      "codeProjectionEntities" : "2899",
-      "codeProjectionRelations" : "8169",
-      "codeProjectionCodeEntities" : "2162",
+      "codeProjectedAt" : "2026-09-22T01:26:05.256471012Z",
+      "codeIndexGeneration" : "2026-09-22T01:26:01.767558759Z",
+      "codeProjectionEntities" : "2924",
+      "codeProjectionRelations" : "8184",
+      "codeProjectionCodeEntities" : "2163",
       "codeProjectionFolderProjectId" : "execution",
       "codeProjectionFactSheetId" : "",
       "codeProjectionIncludes" : "",
       "codeProjectionExcludes" : ""
     },
     "createdAt" : "2026-09-22T00:43:24.111079920Z",
-    "updatedAt" : "2026-09-22T00:43:34.035257557Z"
+    "updatedAt" : "2026-09-22T01:26:05.256797076Z"
   }, {
     "id" : "sdx-aot",
     "codeProjectId" : "sdx-aot",
@@ -344,5 +344,5 @@
   "workflows" : [ ],
   "metadata" : { },
   "createdAt" : "2026-08-21T20:06:29.083137933Z",
-  "updatedAt" : "2026-09-22T00:43:34.035616885Z"
+  "updatedAt" : "2026-09-22T01:26:05.259493254Z"
 }
