@@ -337,6 +337,25 @@ public class DynamicShapePlan implements Closeable {
         if (deviceMemoryBudgets == null || deviceMemoryBudgets.isEmpty()
                 || slots == null || slots.length == 0) return;
 
+        // RESIDENT-DEVICE GUARD: the device that already holds the model (largest
+        // allocated counter) is the weight-residency anchor. Its REMAINING budget is
+        // small by definition (the model is on it), so remaining-budget math must
+        // never prune it from the split and never redirect weight consumers away
+        // from it. Excluding it inverted the split on the fpna capture host: after
+        // load, dev0's remaining allowance was 653MB vs dev1's 7.8GB, so the 10%
+        // rule dropped the 24GB card and placed ALL slots on the 8GB card, whose cap
+        // then rejected every weight migration. New ops may still land on other
+        // devices via their budgets; the resident device is always viable.
+        int residentDevice = -1;
+        long residentAllocated = -1;
+        for (int d = 0; d < Nd4j.getAffinityManager().getNumberOfDevices(); d++) {
+            long allocated = Nd4j.getEnvironment().getDeviceCounter(d);
+            if (allocated > residentAllocated) {
+                residentAllocated = allocated;
+                residentDevice = d;
+            }
+        }
+
         List<Map.Entry<Integer, Long>> sorted = new ArrayList<>();
         double totalMem = 0.0;
         for (Map.Entry<Integer, Long> entry : deviceMemoryBudgets.entrySet()) {
