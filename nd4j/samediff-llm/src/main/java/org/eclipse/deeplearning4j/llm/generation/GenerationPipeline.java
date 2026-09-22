@@ -3908,25 +3908,28 @@ public class GenerationPipeline implements AutoCloseable {
         boolean fixedBuffers = config.getMaxPrefillLength() > 0;
         InGraphKvState reuse = null;
         if (fixedBuffers && cachedFixedBufferState != null) {
-            long kvCapNow = config.getMaxKvCacheLength();
-            long maxKvLenNow = kvCapNow > 0
-                    ? Math.min(promptTokenIds.length + (long) maxNewTokens, kvCapNow)
-                    : promptTokenIds.length + (long) maxNewTokens;
-            boolean signatureMatches =
-                    cachedFixedBufferState.prefillSeqLen == config.getMaxPrefillLength()
-                            && cachedFixedBufferState.maxKvLen == maxKvLenNow;
+            // Expected envelope via the SHARED resolver (same contract as startSession's reuse
+            // at ~4840): when maxKvCacheLength is configured the physical plan shape is the FULL
+            // configured envelope regardless of this call's maxNewTokens. The earlier inline
+            // min(prompt+maxNewTokens, cap) computed a smaller number than any retained state
+            // could ever carry (r35: expected ~4700 vs actual 8192) and reuse never fired.
+            long expectedMaxKvLen = resolveFixedBufferMaxKvLen(config, maxNewTokens);
+            InGraphKvState candidate = cachedFixedBufferState;
+            cachedFixedBufferState = null;
+            boolean signatureMatches = !candidate.closed
+                    && candidate.prefillSeqLen == config.getMaxPrefillLength()
+                    && candidate.maxKvLen == expectedMaxKvLen;
             if (signatureMatches) {
                 // Retained state transfers into this generate: same plan, same buffers,
                 // STEP 1 re-prefills in place. Do NOT close it — prefillWarmupAndFreeze
                 // treats a non-null reuseState as keep-plan/re-bind.
-                reuse = cachedFixedBufferState;
-                cachedFixedBufferState = null;
+                reuse = candidate;
                 log.info("[Lifecycle] Fixed-buffer shape signature matches (prefillLen={}, maxKvLen={}) — reusing frozen prefill plan in place",
                         reuse.prefillSeqLen, reuse.maxKvLen);
             } else {
-                InGraphKvState stale = cachedFixedBufferState;
-                cachedFixedBufferState = null;
-                stale.close();
+                // Mismatch (or already-closed candidate): close and tear down so the
+                // fresh prefill below builds a replacement for the new signature.
+                candidate.close();
                 // Best-effort teardown: resetSession and the plan-cache clear reclaim the
                 // previous generation's plan. A failure here (session buffers already
                 // released, degraded stream) must not abort this generate — the fresh
@@ -3966,9 +3969,16 @@ public class GenerationPipeline implements AutoCloseable {
                 if (fixedBuffers) {
                     // RETAIN (was close): on GDN models this branch builds a full prefill via the
                     // fallback; retaining it lets the next same-signature generate reuse the frozen
-                    // plan instead of paying a cold prefill every chunk.
+                    // plan instead of paying a cold prefill every chunk. Retain only AFTER decode
+                    // succeeds — a failed decode must not poison the cache.
+                    GenerationResult result;
+                    try {
+                        result = runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+                    } catch (RuntimeException decodeFailure) {
+                        state.close();
+                        throw decodeFailure;
+                    }
                     cachedFixedBufferState = state;
-                    GenerationResult result = runInGraphNativeDecode(state, maxNewTokens, false, startTime);
                     SameDiffMemoryUtils.trimAllDevicePools();
                     return result;
                 }
@@ -3984,8 +3994,19 @@ public class GenerationPipeline implements AutoCloseable {
         // captured decode plan replays (no per-generate re-warm). The reuse path keeps the plan, refills
         // the retained (stable-address) buffers in place, and skips the re-freeze. Fresh path otherwise.
         // (The signature guard above already extracted `reuse`; nothing to tear down here.)
-        InGraphKvState state = prefillWarmupAndFreeze(
-                promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse, true);
+        InGraphKvState state;
+        try {
+            state = prefillWarmupAndFreeze(
+                    promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse, true);
+        } catch (RuntimeException prefillFailure) {
+            // Prefill/warmup/freeze threw: the retained state (if any) may be half-rebound and the
+            // session is in an unknown phase. Drop it — the next generate rebuilds cold rather than
+            // reusing a possibly-poisoned plan. r35 evidence: the reused-session path surfaced
+            // KERNEL_FAILURE on constrained decode after a prior failure.
+            if (reuse != null) reuse.close();
+            cachedFixedBufferState = null;
+            throw prefillFailure;
+        }
         if (state.terminalResult != null) {
             // Terminal (early-EOS / no plan handle): the reused state is spent — close it and drop the
             // cache so the next generate rebuilds from scratch. (state is a fresh terminal, != reuse.)
@@ -4001,9 +4022,18 @@ public class GenerationPipeline implements AutoCloseable {
                 storePrefillInPrefixCache(promptTokenIds, state.actualPrefillLen,
                         state.staticKvBuffers, kvInputNames, state.recurrentStateBuffers, recurrentStates);
             }
+            GenerationResult result;
+            try {
+                result = runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+            } catch (RuntimeException decodeFailure) {
+                // Do NOT retain a state whose decode just failed: the plan/session may be mid-failure
+                // (passivated plan, torn external views). Close it so the next generate rebuilds cold.
+                state.close();
+                cachedFixedBufferState = null;
+                throw decodeFailure;
+            }
             // Retain for the next generate; do NOT close here — the buffers/plan are reused in place.
             cachedFixedBufferState = state;
-            GenerationResult result = runInGraphNativeDecode(state, maxNewTokens, false, startTime);
             // Return reserved-but-unused pool blocks so the device counters do not ratchet to
             // the peak transient high-water mark across calls. Live state (frozen plans, KV
             // and retained buffers) is still strongly referenced and is untouched; only free
