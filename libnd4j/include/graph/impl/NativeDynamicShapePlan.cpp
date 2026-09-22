@@ -1727,6 +1727,15 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing outputSlots_ (%d slots, %zu plan-owned)",
            totalOutputSlots_, planOwnedArrays_.size());
   DSP_DTOR_PHASE("PHASE-OUTSLOTS-BEGIN");
+  // Corruption tripwire (permanent DSP_DIAG): if glibc later aborts AT this plan's
+  // PHASE-OUTSLOTS-ARRAY-DELETE with 'corruption (out)', the size field AFTER this
+  // array was already smashed BEFORE the dtor ran — the corruptor is whatever was
+  // allocated adjacent to it (another plan's allocations included). Emit the array
+  // bounds while the pointer is still valid so cross-plan adjacency can be computed
+  // by address arithmetic from two plans' DTOR_OUTSLOTS_BOUNDS rows.
+  DSP_DIAG(MEMORY, "DTOR_OUTSLOTS_BOUNDS: plan=%p array=%p bytes=%zu ptrs=%d",
+           (void*)this, (void*)outputSlots_,
+           (size_t)totalOutputSlots_ * sizeof(NDArray*), (int)totalOutputSlots_);
   int skippedExternal = 0;
   if (outputSlots_) {
     for (int i = 0; i < totalOutputSlots_; i++) {
@@ -1782,14 +1791,6 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   }
 
   DSP_DTOR_PHASE("PHASE-OWNED-CLASSIFY");
-  // Corruption tripwire (permanent DSP_DIAG): if glibc later aborts at this
-  // plan's PHASE-OUTSLOTS-ARRAY-DELETE with 'corruption (out)', the size field
-  // AFTER this array was already smashed BEFORE the dtor ran. Emit the array
-  // bounds so the adjacent-allocation culprit can be identified by address
-  // arithmetic between two plans' arrays.
-  DSP_DIAG(MEMORY, "DTOR_OUTSLOTS_BOUNDS: plan=%p array=%p bytes=%zu ptrs=%d",
-           (void*)this, (void*)outputSlots_,
-           (size_t)totalOutputSlots_ * sizeof(NDArray*), (int)totalOutputSlots_);
   for (NDArray* arr : viewArrays) delete arr;
   for (NDArray* arr : owningArrays) delete arr;
   DSP_DTOR_PHASE("PHASE-OWNED-DELETE-DONE");
