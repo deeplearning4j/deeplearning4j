@@ -430,14 +430,18 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
     size_t total = 0;
     for (auto& entry : lru_) {
       if (entry.second->isPassivated()) continue;  // holds zero GPU memory
-      // A leased plan can be mutating its slot/handle vectors on another
-      // execution thread. It cannot be evicted anyway, so charge a conservative
-      // configured workspace estimate without dereferencing mutable plan state.
+      // Pinned plans are charged by their REAL retained bytes, not a flat
+      // estimate. The r30 evidence: one pinned 5120-token plan physically held
+      // ~15.7GB while the budget check booked it at ~320MB, so the 25% budget
+      // never triggered and concurrent-plan co-residency starved every later
+      // admission. estimatedOwnedBytes() reads owned-array sizes; a concurrent
+      // execution may grow them between read and use, which is acceptable for
+      // an advisory budget — undercounting by 50x is not.
+      size_t planBytes = entry.second->estimatedOwnedBytes();
       if (pinCounts_.count(entry.second) != 0) {
-        total += pinnedPlanEstimate;
+        total += planBytes > 0 ? planBytes : pinnedPlanEstimate;
         continue;
       }
-      size_t planBytes = entry.second->estimatedOwnedBytes();
       total += (planBytes > 0) ? planBytes : kBytesPerPlanEstimate;
     }
     return total;
