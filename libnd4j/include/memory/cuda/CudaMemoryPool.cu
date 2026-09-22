@@ -43,6 +43,12 @@
 namespace sd {
 namespace memory {
 
+// Minimum free memory a device must retain after a failover allocation. See the
+// failover-floor check in allocateFailover() — below this floor a device cannot
+// service cuBLAS workspace/module/driver allocations and the consumer cascades
+// into 'cuBLAS handle creation failed [3]'.
+static constexpr size_t kFailoverFloorMinBytes = 512ULL * 1024 * 1024;
+
 namespace {
 struct AllocationReadiness {
   size_t bytes;
@@ -1209,7 +1215,21 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
       continue;
     }
     if (freeMem > size * 1.1) {  // 10% margin
-      candidates.push_back({d, freeMem, isPeer});
+      // Failover floor: a failover allocation must never strand the target device.
+      // CUDA leaves ~600-800MB unreserveable per device for cuBLAS workspaces, module
+      // loads and driver scratch; draining past that produced 'cuBLAS handle creation
+      // failed [3]' cascades (fpna capture 2026-09-22, dev1 driven to 10MB free).
+      // Reserve the larger of 5% of device memory or 512MB before admitting ANY
+      // failover allocation on this device.
+      size_t floorBytes = totalMem / 20;              // 5% of the device
+      if (floorBytes < kFailoverFloorMinBytes) floorBytes = kFailoverFloorMinBytes;
+      if (freeMem - size >= floorBytes) {
+        candidates.push_back({d, freeMem, isPeer});
+      } else {
+        DSP_DIAG(MEMORY,
+                 "ALLOCATE_FAILOVER_CANDIDATE_SKIP: device=%d reason=failover-floor freeMB=%zu totalMB=%zu requestedBytes=%zu floorMB=%zu peer=%d",
+                 d, freeMem / (1024*1024), totalMem / (1024*1024), size, floorBytes / (1024*1024), (int)isPeer);
+      }
     } else {
       DSP_DIAG(MEMORY,
                "ALLOCATE_FAILOVER_CANDIDATE_SKIP: device=%d reason=insufficient-free freeMB=%zu totalMB=%zu requestedBytes=%zu peer=%d",

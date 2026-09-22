@@ -5683,9 +5683,15 @@ Status NativeDynamicShapePlan::executeSlot(
           } else if (si < 0) {
             // Overflow output (shape function returned more than graph wires) —
             // cache as untracked so it can be reused across steps.
+            // NULL GUARD: push_back(nullptr) here poisons deferredSlotDeletes_;
+            // flushDeferredSlotDeletes skips nulls on retire but the plan dtor's
+            // deferredSlotDeletes_ gather would double-count entries across
+            // passes. Null entries are skipped at flush; skip at enqueue too.
             int cacheIdx = stepIdx * MAX_OUTPUTS_PER_SLOT + i;
             if (cacheIdx < untrackedOutputCacheSize_) {
-              deferredSlotDeletes_.push_back(untrackedOutputCache_[cacheIdx]);  // Defer: inline delete during slot execution causes heap corruption
+              if (untrackedOutputCache_[cacheIdx] != nullptr) {
+                deferredSlotDeletes_.push_back(untrackedOutputCache_[cacheIdx]);  // Defer: inline delete during slot execution causes heap corruption
+              }
               untrackedOutputCache_[cacheIdx] = outputs[i];
             }
           }
