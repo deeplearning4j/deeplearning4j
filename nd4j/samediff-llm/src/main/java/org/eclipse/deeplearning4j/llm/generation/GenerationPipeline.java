@@ -4064,6 +4064,85 @@ public class GenerationPipeline implements AutoCloseable {
         int remainingTokens = isContinuation ? maxNewTokens : (maxNewTokens - 2);
         long traceLastReserved = -1;
 
+        // ── Stage-1 handoff record: actual values this call will encode into the native op ──
+        // Bounded diagnostic at the common static-KV handoff; both the one-shot
+        // (generateSimpleWithInGraphKvCache) and session (decodeInSession) arms execute this
+        // method, so ONE record here describes the executed handoff for both.
+        {
+            DecodePolicy recPolicy = resolveDecodePolicy(state.sampling, config);
+            int recConfiguredK = config != null ? config.getMaxSpeculativeTokens() : 0;
+            int recAdaptive = adaptiveSpecK < 0 ? recConfiguredK : adaptiveSpecK;
+            int recResolved = state.forcedSpecDepth != null ? state.forcedSpecDepth : recAdaptive;
+            int recEffective = Math.min(recConfiguredK, recResolved);
+            int recFrozenWindow = state.decodeInputIds != null ? (int) state.decodeInputIds.size(1) : 1;
+            int recActiveWindow = recPolicy.kind == DecodePolicyKind.SPECULATIVE ? 1 : recPolicy.windowMax;
+            // Bounded mask visibility probe: count unmasked columns per window row of row 0
+            // (and row 1 when W>1) of the prepared causal mask. Exposes over/under-masking
+            // at a continuation boundary without dumping tensors.
+            String maskVisibility = "null";
+            if (state.decodeCausalMask != null && state.decodeCausalMask.rank() == 4) {
+                long cols = state.decodeCausalMask.size(3);
+                long rows = Math.min(2, state.decodeCausalMask.size(2));
+                StringBuilder sb = new StringBuilder();
+                for (long r = 0; r < rows; r++) {
+                    int visible = 0;
+                    for (long c = 0; c < cols; c++) {
+                        if (state.decodeCausalMask.getDouble(0, 0, r, c) > -1e9f) visible++;
+                    }
+                    if (r > 0) sb.append('/');
+                    sb.append(visible).append('/').append(cols);
+                }
+                maskVisibility = sb.toString();
+            }
+            log.info("[MTP-HANDOFF] caller={} continuation={} budget={} remaining={} genOffset={} soFar={} "
+                            + "lastTok={} cachePos={} prefillLen={} maxKvLen={} "
+                            + "strategy={} configuredK={} adaptiveK={} forcedK={} effectiveK={} speculator={} "
+                            + "windowW={} activeWindow={} "
+                            + "maskShape={} maskVisible(row/cols)={} posOffsetShape={} cachePosShape={} actualLenShape={} actualLenExtIdx={} actualLenVal={} "
+                            + "mtpPlan={} repair={} prefixMode={} gdnOuts={} convOuts={} "
+                            + "planHandle@{} ctxHandle@{} planInputs={} planOutputs={} manifestInputs={} manifestOutputs={} planPhase={} "
+                            + "minNewTokens={} temp={} doSample={} repPenalty={} freqPenalty={} presencePenalty={} topK={} topP={} "
+                            + "stopIds={} seed={}",
+                    isContinuation ? "SESSION" : "ONE-SHOT",
+                    isContinuation, maxNewTokens, remainingTokens,
+                    state.generatedSoFar != null ? state.generatedSoFar.size() : -1,
+                    state.generatedSoFar != null ? state.generatedSoFar.size() : -1,
+                    state.lastGeneratedToken, state.cachePosition,
+                    state.actualPrefillLen, state.maxKvLen,
+                    recPolicy.kind, recConfiguredK, adaptiveSpecK, state.forcedSpecDepth,
+                    recEffective,
+                    state.mtpPlanHandle != null && !state.mtpPlanHandle.isNull()
+                            ? (config != null && config.getMaxSpeculativeTokens() > 0 ? "MTP" : "NGRAM") : "NONE",
+                    recFrozenWindow, recActiveWindow,
+                    state.decodeCausalMask != null ? Arrays.toString(state.decodeCausalMask.shape()) : "null",
+                    maskVisibility,
+                    state.decodePositionOffset != null ? Arrays.toString(state.decodePositionOffset.shape()) : "null",
+                    state.decodeCachePosition != null ? Arrays.toString(state.decodeCachePosition.shape()) : "null",
+                    state.decodeActualSequenceLength != null
+                            ? Arrays.toString(state.decodeActualSequenceLength.shape()) : "null",
+                    state.actualSeqLenExtIdx,
+                    state.decodeActualSequenceLength != null ? state.decodeActualSequenceLength.getLong(0) : -1L,
+                    state.mtpPlanHandle != null && !state.mtpPlanHandle.isNull(),
+                    state.mtpRepairBinding != null,
+                    state.prefixSelectMode,
+                    state.gdnStateOutputIndices != null ? state.gdnStateOutputIndices.length : 0,
+                    state.convStateOutputIndices != null ? state.convStateOutputIndices.length : 0,
+                    state.planHandle != null ? state.planHandle.address() : 0L,
+                    state.contextHandle != null ? state.contextHandle.address() : 0L,
+                    state.nativeTargetInputKeys != null ? state.nativeTargetInputKeys.length : -1,
+                    state.nativeTargetOutputNames != null ? state.nativeTargetOutputNames.size() : -1,
+                    state.executor != null && state.executor.getCurrentPlan() != null
+                            ? state.executor.getCurrentPlan().getExternalInputKeys().length : -1,
+                    state.executor != null && state.executor.getCurrentPlan() != null
+                            ? state.executor.getCurrentPlan().getRequestedOutputs().size() : -1,
+                    state.executor != null ? state.executor.getPlanPhase() : "null",
+                    state.sampling.getMinNewTokens(), state.sampling.getTemperature(),
+                    state.sampling.isDoSample(), state.sampling.getRepetitionPenalty(),
+                    state.sampling.getFrequencyPenalty(), state.sampling.getPresencePenalty(),
+                    state.sampling.getTopK(), state.sampling.getTopP(),
+                    state.stopTokenIds, state.sampling.getSeed());
+        }
+
         // ── Prepare the current decode-step inputs: feed the last generated token at cachePosition ──
         state.decodeInputIds.assign(0);
         state.decodeInputIds.putScalar(new long[]{0, 0}, state.lastGeneratedToken);

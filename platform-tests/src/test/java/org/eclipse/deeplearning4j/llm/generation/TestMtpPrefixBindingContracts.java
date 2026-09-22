@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -510,6 +511,106 @@ public class TestMtpPrefixBindingContracts {
                     "the extra output must be part of the native manifest even though no Java loop consumes it");
             assertTrue(target.executor.findOutputIndex("extra") >= 0,
                     "findOutputIndex must resolve the extra output from the plan");
+        }
+    }
+
+    /**
+     * STEP 1 builder contract (split-call seam investigation): the exact mask the
+     * continuation reconstruction hands the native op at P=36, W=2, K=1.
+     *
+     * <p>The runInGraphNativeDecode continuation rebuild calls
+     * {@code buildInGraphWindowMask(chainParents(1, 2), cachePosition - 1, 1, 2, maxKvLen, dtype)}
+     * — at P=36 that is cachePos=35, wActive=1, wMax=2. Per the builder's own
+     * semantics (each slot attends to committed past 0..cp-1, its in-window
+     * ancestors, and ITSELF):
+     * <ul>
+     *   <li>row 0 (live slot 0): columns 0..35 visible (35 past + self at 35),
+     *       column 36 onward masked.</li>
+     *   <li>row 1 (inactive slot 1): past 0..34 visible, column 35 masked (not
+     *       its ancestor), column 36 visible (its self), 37+ masked.</li>
+     * </ul>
+     * Both rows expose exactly 36 visible columns. This asserts the actual
+     * entries at the boundary columns 34/35/36/37 and the full row patterns —
+     * not just the count — so a 36/37 handoff observation cannot be confused
+     * with this builder's output.</p>
+     */
+    @Test
+    void testContinuationWindowMaskAtP36() {
+        final int p = 36;
+        final int wMax = 2;
+        final int maxKvLen = 256;
+        int[] parent = DecoderInputBuilder.chainParents(1, wMax);
+        // wActive=1: slot 0 is the chain root; slot 1 is INACTIVE and therefore
+        // has no in-window parent (-1), per chainParents' documented convention.
+        assertEquals(-1, parent[0], "slot 0 is the chain root");
+        assertEquals(-1, parent[1], "inactive slot 1 must have no in-window parent");
+
+        INDArray mask = DecoderInputBuilder.buildInGraphWindowMask(
+                parent, p - 1L, 1, wMax, maxKvLen, DataType.FLOAT);
+        try {
+            assertArrayEquals(new long[]{1, 1, wMax, maxKvLen}, mask.shape(),
+                    "window mask shape must be [1,1,wMax,maxKvLen]");
+
+            // Row 0: committed past 0..34 + self at 35. Column 36 onward masked.
+            for (int c = 0; c <= 35; c++) {
+                assertEquals(0.0f, mask.getFloat(0, 0, 0, c), 0f,
+                        "row 0 column " + c + " must be visible (committed past/self)");
+            }
+            for (int c = 36; c < maxKvLen; c++) {
+                assertTrue(mask.getFloat(0, 0, 0, c) <= -1e9f,
+                        "row 0 column " + c + " must be masked");
+            }
+
+            // Row 1 (inactive slot): past 0..34 + SELF at 36 (cp+1); column 35 masked.
+            for (int c = 0; c <= 34; c++) {
+                assertEquals(0.0f, mask.getFloat(0, 0, 1, c), 0f,
+                        "row 1 column " + c + " must be visible (committed past)");
+            }
+            assertTrue(mask.getFloat(0, 0, 1, 35) <= -1e9f,
+                    "row 1 column 35 (the live slot's write column) must be MASKED for the inactive slot");
+            assertEquals(0.0f, mask.getFloat(0, 0, 1, 36), 0f,
+                    "row 1 column 36 must be visible (the inactive slot's SELF column)");
+            for (int c = 37; c < maxKvLen; c++) {
+                assertTrue(mask.getFloat(0, 0, 1, c) <= -1e9f,
+                        "row 1 column " + c + " must be masked");
+            }
+
+            // Exact boundary entries, per the task contract.
+            assertEquals(0.0f, mask.getFloat(0, 0, 0, 34), 0f, "row0 col34 visible");
+            assertEquals(0.0f, mask.getFloat(0, 0, 0, 35), 0f, "row0 col35 visible (self)");
+            assertTrue(mask.getFloat(0, 0, 0, 36) <= -1e9f, "row0 col36 masked");
+            assertTrue(mask.getFloat(0, 0, 0, 37) <= -1e9f, "row0 col37 masked");
+            assertEquals(0.0f, mask.getFloat(0, 0, 1, 34), 0f, "row1 col34 visible");
+            assertTrue(mask.getFloat(0, 0, 1, 35) <= -1e9f, "row1 col35 masked");
+            assertEquals(0.0f, mask.getFloat(0, 0, 1, 36), 0f, "row1 col36 visible (self)");
+            assertTrue(mask.getFloat(0, 0, 1, 37) <= -1e9f, "row1 col37 masked");
+
+            // Both-row visible counts are 36 each.
+            int row0Visible = 0, row1Visible = 0;
+            for (int c = 0; c < maxKvLen; c++) {
+                if (mask.getFloat(0, 0, 0, c) > -1e9f) row0Visible++;
+                if (mask.getFloat(0, 0, 1, c) > -1e9f) row1Visible++;
+            }
+            assertEquals(36, row0Visible, "row 0 must expose exactly 36 columns");
+            assertEquals(36, row1Visible, "row 1 must expose exactly 36 columns");
+        } finally {
+            mask.close();
+        }
+
+        // Contrast: the single-position builder at the same boundary exposes one
+        // row of exactly P visible columns (0..35).
+        INDArray scalarMask = DecoderInputBuilder.buildInGraphDecodeMask(
+                p - 1L, maxKvLen, DataType.FLOAT);
+        try {
+            int visible = 0;
+            for (int c = 0; c < maxKvLen; c++) {
+                if (scalarMask.getFloat(0, 0, 0, c) > -1e9f) visible++;
+            }
+            assertEquals(36, visible, "single-position decode mask must expose exactly 36 columns");
+            assertEquals(0.0f, scalarMask.getFloat(0, 0, 0, 35), 0f, "scalar col35 visible");
+            assertTrue(scalarMask.getFloat(0, 0, 0, 36) <= -1e9f, "scalar col36 masked");
+        } finally {
+            scalarMask.close();
         }
     }
 

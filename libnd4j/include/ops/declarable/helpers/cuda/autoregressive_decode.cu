@@ -2000,6 +2000,130 @@ void autoregressiveDecode(
     LongType mtpChainTok[33] = {};
     int mtpChainSampled = 0;
 
+    // ── Split-boundary discriminator (SEAM_WATCH): bounded global-token-window
+    // observation. Gated on the EXISTING DspDiagnostics KV_CACHE mask (the same
+    // -Dnd4j.dsp.diagnostics=KV_CACHE channel every other probe in this file
+    // uses) - no new configuration surface. The watched window is a named
+    // constant pair for THIS investigation: the first divergence is at global
+    // output index 20, and the window 18..21 includes the transaction that
+    // produces or crosses it. globalBegin = config->sampleConfig.generatedTokenOffset
+    // (the Java handoff's completed count) + this call's tokensGenerated.
+    constexpr int SEAM_WATCH_LO = 18;
+    constexpr int SEAM_WATCH_HI = 21;
+    bool seamWatchEnabled = DSP_DIAG_ENABLED(KV_CACHE);
+    const int seamGlobalOffset = config != nullptr ? config->sampleConfig.generatedTokenOffset : 0;
+    auto seamWatchActive = [&](int globalBegin, int emitCount) {
+        if (!seamWatchEnabled) return false;
+        const int globalEnd = globalBegin + emitCount;
+        return globalEnd > SEAM_WATCH_LO && globalBegin <= SEAM_WATCH_HI;
+    };
+    // Pinned observation slots: predictor-pre-exec (A), target-ext-ready (B),
+    // decision (C), finalized (D) - one slot per watched step invocation, small
+    // fixed counts. Owners retained through the loop; drained at the existing
+    // acceptance/final sync boundaries only.
+    struct SeamWatchSlot {
+        bool armed = false;
+        int globalBegin = -1;
+        LongType basePosition = -1;
+        LongType currentPositionBase = -1;
+        int step = -1;
+        // Observation A: predictor boundary.
+        LongType predTok = -1;
+        LongType predRow = -1;
+        LongType predRope = -1;
+        LongType predCache = -1;
+        // Predictor mask columns around the pending row (dtype-decoded floats).
+        float predMaskCols[6] = {};
+        LongType predMaskCol0 = -1;
+        int predMaskCount = 0;
+        // Observation B: target ext after preparation.
+        LongType targetInputIds[8] = {};
+        int targetInputCount = 0;
+        LongType deviceAsl = -1;
+        int activeWindow = -1;
+        int windowMax = -1;
+        float targetMaskCols[8] = {};
+        LongType targetMaskCol0 = -1;
+        int targetMaskCount = 0;
+        int proposedCount = 0;
+        int maxPropose = 0;
+        int remainingOutput = 0;
+        int outputDraftCapacity = 0;
+        int effectiveK = 0;
+        // Observation C: decision.
+        LongType draftIds[8] = {};
+        LongType argmaxRows[8] = {};
+        float logitsRow0Top[4] = {};
+        int acceptedDrafts = -1;
+        int provisionalConsumed = -1;
+        int finalizedConsumed = -1;
+        int storedCount = -1;
+        const char* recoveryPath = "none";
+        // Observation D: finalized.
+        LongType emittedTokens[8] = {};
+        int emittedCount = 0;
+        LongType nextPosition = -1;
+        LongType pendingTok = -1;
+        float postMaskCols[8] = {};
+        LongType postMaskCol0 = -1;
+        bool terminalNormalizeRan = false;
+        const char* exitPath = "spec";
+    };
+    // Watched steps cannot exceed the window span + a small margin (a step
+    // crossing the window arms once). 8 slots is ample for a 4-token window.
+    constexpr int SEAM_WATCH_SLOTS = 8;
+    SeamWatchSlot seamSlots[SEAM_WATCH_SLOTS];
+    int seamSlotCount = 0;
+    // Pinned host buffers for the async device reads queued by armed slots:
+    // mask neighborhood (both rows x 4 cols), input ids (8), ASL (1), logits
+    // row 0 top-4. All reads ride the existing acceptance sync; no new syncs.
+    static_assert(SEAM_WATCH_SLOTS > 0, "seam watch slots must be positive");
+    float* seamPinnedTargetMask = nullptr;
+    LongType* seamPinnedInputIds = nullptr;
+    LongType* seamPinnedAsl = nullptr;
+    float* seamPinnedLogits = nullptr;
+    float* seamPinnedPredMask = nullptr;
+    LongType* seamPinnedPredTok = nullptr;
+    LongType* seamPinnedPredRope = nullptr;
+    LongType* seamPinnedPredCache = nullptr;
+    // Loop-scope arming + drain state for Observation A (set in the step loop,
+    // consumed by executeMtpCuda, drained at the acceptance sync).
+    bool seamPredArmed = false;
+    LongType seamPredMaskCol0 = -1;
+    int seamPredMaskCount = 0;
+    if (seamWatchEnabled) {
+        cudaError_t pinErr = cudaSuccess;
+        pinErr = cudaHostAlloc(&seamPinnedTargetMask,
+            SEAM_WATCH_SLOTS * 8 * sizeof(float), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedInputIds,
+                SEAM_WATCH_SLOTS * 8 * sizeof(LongType), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedAsl,
+                SEAM_WATCH_SLOTS * sizeof(LongType), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedLogits,
+                SEAM_WATCH_SLOTS * 4 * sizeof(float), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedPredMask,
+                SEAM_WATCH_SLOTS * 6 * sizeof(float), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedPredTok,
+                SEAM_WATCH_SLOTS * sizeof(LongType), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedPredRope,
+                SEAM_WATCH_SLOTS * sizeof(LongType), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedPredCache,
+                SEAM_WATCH_SLOTS * sizeof(LongType), cudaHostAllocDefault);
+        if (pinErr != cudaSuccess) {
+            // Allocation failure: disable (observability failure, loudly noted).
+            DSP_DIAG(KV_CACHE,
+                     "SEAM_WATCH disabled: pinned alloc failed %s", cudaGetErrorString(pinErr));
+            seamWatchEnabled = false;
+        }
+    }
+
     // KV self-row write-visibility probe (loop scope so the speculative accept
     // block drains it): slot-0 arm records the position; the accept block re-reads
     // the same K row after executeSteadyState and compares.
@@ -2307,6 +2431,39 @@ void autoregressiveDecode(
                             config->mtpInputIds->specialBuffer(),
                             sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
             if (draftSlot + 1 > mtpChainSampled) mtpChainSampled = draftSlot + 1;
+        }
+
+        // SEAM_WATCH Observation A: queue predictor-boundary reads when armed.
+        // draftSlot 0 arms; later slots overwrite the same pinned buffers (the
+        // loop drains after the last proposal of the step, before reuse).
+        // NOTE: these buffers belong to the decode-loop scope; the loop knows
+        // seamWatchEnabled and drains at the acceptance sync. Queue only when
+        // the loop armed us for this step.
+        if (seamWatchEnabled && draftSlot == 0 && seamPinnedPredTok != nullptr
+                && seamPredArmed) {
+            cudaMemcpyAsync(seamPinnedPredTok, config->mtpInputIds->specialBuffer(),
+                            sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+            if (config->mtpPositionOffset != nullptr)
+                cudaMemcpyAsync(seamPinnedPredRope, config->mtpPositionOffset->specialBuffer(),
+                                sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+            if (config->mtpCachePosition != nullptr)
+                cudaMemcpyAsync(seamPinnedPredCache, config->mtpCachePosition->specialBuffer(),
+                                sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+            if (config->mtpCausalMask != nullptr && config->mtpCausalMask->rankOf() == 4) {
+                // Sample 6 columns around predictorRow: [r-3, r-2, r-1, r, r+1, r+2]
+                // (clamped), row 0 of the predictor mask.
+                const LongType cols = config->mtpCausalMask->sizeAt(3);
+                const LongType c0 = std::max<LongType>(0, predictorRow - 3);
+                const int n = static_cast<int>(std::min<LongType>(6, cols - c0));
+                seamPredMaskCol0 = c0;
+                seamPredMaskCount = n;
+                for (int c = 0; c < n; c++) {
+                    cudaMemcpyAsync(seamPinnedPredMask + c,
+                                    static_cast<const char*>(config->mtpCausalMask->specialBuffer())
+                                        + static_cast<size_t>(c0 + c) * config->mtpCausalMask->sizeOfT(),
+                                    config->mtpCausalMask->sizeOfT(), cudaMemcpyDeviceToHost, *stream);
+                }
+            }
         }
 
         // Capacity gate (packet C1 / review round 4, finding E): the converted
@@ -3085,15 +3242,6 @@ void autoregressiveDecode(
     std::vector<NDArray*> selectScratchSrc;
     std::vector<NDArray*> selectScratchDst;
 
-    // PACKET 09 discriminator: pinned S0/S1/D1 probe storage for the SELECT copy.
-    // Values are D2H-queued on the decode stream in transaction order and only
-    // decoded after the existing completion boundary; slots are per-layer so an
-    // async later sample cannot overwrite an earlier one.
-    constexpr int SELECT_PROBE_SLOTS = 8;
-    uint64_t* pinnedSelectProbeSrc = nullptr;
-    uint64_t* pinnedSelectProbeDst = nullptr;
-    int selectProbeSlot = 0;
-
     for (int step = 0; step < maxNewTokens; step++) {
         // A rollback snapshot belongs to one commit transaction, not one restore.
         kvRowSnapshotBase = -1;
@@ -3110,6 +3258,21 @@ void autoregressiveDecode(
         if (tokensGenerated >= maxNewTokens) break;
         const int tokensBeforeStep = tokensGenerated;
         auto stepStart = std::chrono::high_resolution_clock::now();
+
+        // SEAM_WATCH: arm Observation A for this step when its global output
+        // window intersects the watched range. globalBegin for this step is
+        // the invocation-entry offset + this call's tokensGenerated.
+        const int seamGlobalBegin = seamGlobalOffset + tokensGenerated;
+        const int seamEmitEstimate = std::min(maxNewTokens - tokensGenerated, 8);
+        const bool seamStepWatched = seamWatchActive(seamGlobalBegin, seamEmitEstimate);
+        seamPredArmed = seamStepWatched;
+        SeamWatchSlot* seamSlot = nullptr;
+        if (seamStepWatched && seamSlotCount < SEAM_WATCH_SLOTS) {
+            seamSlot = &seamSlots[seamSlotCount];
+            seamSlot->globalBegin = seamGlobalBegin;
+            seamSlot->step = step;
+            seamSlotCount++;
+        }
 
         // -- Step 1: Update plan external inputs for this decode step --
         // decodeEmbedding IS prefillEmbeddings (same NDArray, same device address).
@@ -3400,18 +3563,53 @@ void autoregressiveDecode(
             capturePreVerificationKvRows(currentPosition, 1 + proposedCount);
         }
         if (useScalarTarget) prepareScalarTarget();
-        // SCALAR-PLAN RETIREMENT (gates 8-10 evidence chain): the captured
-        // scalar plan is poisoned by ANY interleaved plan execution on the
-        // shared session. Gate 10 proved the predictor maintenance forward
-        // ALONE suffices (K=0 gen: step-0 scalar call clean after capture,
-        // one maintenance forward, step-1 scalar call all-NaN with all ext
-        // inputs finite and retry deterministically NaN). The window plan
-        // tolerates interleaving (gate-10 gen 1: 57 clean steps interleaved
-        // with predictor calls; gate-8: 57 bypass reruns clean). Routing the
-        // non-spec step through the window plan at activeWindow=1 - the same
-        // teacher-forced-proven geometry as the rerun bypass - preserves
-        // token parity while eliminating the poisoned capture. activeWindow
-        // is already 1 here (no proposals), so no refill changes are needed.
+        // SEAM_WATCH Observation B (TARGET_EXT_READY): queue the post-preparation
+        // ext-input reads immediately before the REAL target execution, after all
+        // preparation (mask refill, ASL update, prepareScalarTarget) is complete.
+        if (seamSlot != nullptr && seamPinnedTargetMask != nullptr) {
+            NDArray* tMask = causalMask;
+            NDArray* tIds = inputIds;
+            NDArray* tAsl = (config->actualSequenceLengthExtIdx >= 0
+                             && config->actualSequenceLengthExtIdx < numExtInputs)
+                            ? extInputs[config->actualSequenceLengthExtIdx] : nullptr;
+            seamSlot->activeWindow = config->activeWindow;
+            seamSlot->windowMax = static_cast<int>(config->windowMax);
+            seamSlot->currentPositionBase = currentPosition;
+            seamSlot->proposedCount = proposedCount;
+            seamSlot->maxPropose = maxPropose;
+            seamSlot->remainingOutput = remainingOutput;
+            seamSlot->outputDraftCapacity = outputDraftCapacity;
+            seamSlot->effectiveK = specK;
+            if (tIds != nullptr && tIds->dataType() == DataType::INT64) {
+                const int n = static_cast<int>(std::min<LongType>(8, tIds->lengthOf()));
+                seamSlot->targetInputCount = n;
+                cudaMemcpyAsync(seamPinnedInputIds, tIds->specialBuffer(),
+                                static_cast<size_t>(n) * sizeof(LongType),
+                                cudaMemcpyDeviceToHost, *stream);
+            }
+            if (tAsl != nullptr) {
+                cudaMemcpyAsync(seamPinnedAsl, tAsl->specialBuffer(),
+                                sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+            }
+            if (tMask != nullptr && tMask->rankOf() == 4) {
+                const LongType cols = tMask->sizeAt(3);
+                // Columns currentPosition-1 .. currentPosition+6 clamped, both rows.
+                const LongType c0 = std::max<LongType>(0, currentPosition - 1);
+                const int n = static_cast<int>(std::min<LongType>(4, cols - c0));
+                seamSlot->targetMaskCol0 = c0;
+                seamSlot->targetMaskCount = n;
+                const size_t tsize = tMask->sizeOfT();
+                for (int r = 0; r < 2 && r < tMask->sizeAt(2); r++) {
+                    for (int c = 0; c < n; c++) {
+                        cudaMemcpyAsync(
+                            seamPinnedTargetMask + r * 4 + c,
+                            static_cast<const char*>(tMask->specialBuffer())
+                                + (static_cast<size_t>(r) * cols + c0 + c) * tsize,
+                            tsize, cudaMemcpyDeviceToHost, *stream);
+                    }
+                }
+            }
+        }
         if (proposedCount > 0) p0.targetVerificationForwards++;
         const auto targetPhaseBefore = plan->getPlanPhase();
         Status planStatus = plan->executeSteadyState(
@@ -3742,6 +3940,39 @@ void autoregressiveDecode(
             REQUIRE_TRUE(acceptanceSync == cudaSuccess, 0,
                          "autoregressive_decode: acceptance readback failed: %s",
                          cudaGetErrorString(acceptanceSync));
+            // SEAM_WATCH Observation C: fill the decision fields now - the
+            // acceptance sync completed all queued pinned reads (A + B) too.
+            if (seamSlot != nullptr) {
+                seamSlot->armed = true;
+                const int nd = std::min(proposedCount, 8);
+                for (int i = 0; i < nd; i++) seamSlot->draftIds[i] = draftIds[i];
+                const int na = std::min(numRows, 8);
+                for (int i = 0; i < na && i < 8; i++) seamSlot->argmaxRows[i] = argmaxDst[i];
+                for (int i = 0; i < 4; i++) seamSlot->logitsRow0Top[i] = specLogitsSample[i];
+                seamSlot->targetInputCount = seamSlot->targetInputCount > 0
+                    ? seamSlot->targetInputCount : 0;
+                if (seamPinnedInputIds != nullptr) {
+                    for (int i = 0; i < seamSlot->targetInputCount && i < 8; i++) {
+                        seamSlot->targetInputIds[i] = seamPinnedInputIds[i];
+                    }
+                }
+                if (seamPinnedAsl != nullptr) seamSlot->deviceAsl = seamPinnedAsl[0];
+                if (seamPinnedTargetMask != nullptr) {
+                    for (int i = 0; i < 8; i++) seamSlot->targetMaskCols[i] = seamPinnedTargetMask[i];
+                }
+                if (seamPinnedPredTok != nullptr) seamSlot->predTok = seamPinnedPredTok[0];
+                if (seamPinnedPredRope != nullptr) seamSlot->predRope = seamPinnedPredRope[0];
+                if (seamPinnedPredCache != nullptr) seamSlot->predCache = seamPinnedPredCache[0];
+                if (seamPinnedPredMask != nullptr) {
+                    seamSlot->predMaskCol0 = seamPredMaskCol0;
+                    seamSlot->predMaskCount = seamPredMaskCount;
+                    for (int i = 0; i < seamPredMaskCount && i < 6; i++) {
+                        seamSlot->predMaskCols[i] = seamPinnedPredMask[i];
+                    }
+                }
+                // acceptedDrafts filled by the accept rule just below; provisional
+                // consumedCount likewise. The final fill happens at Observation D.
+            }
             if (captureMtpInputs) {
                 tensorDiagnostics.drainTensorSnapshots(reinterpret_cast<void*>(*stream));
             }
@@ -4204,7 +4435,71 @@ void autoregressiveDecode(
                 if (selectEligible) {
                     // ONE selected-state commit. No restore, no rerun, no recovery
                     // forward: ordinary partial acceptance costs ONE verification.
+                    //
+                    // COMMIT INVARIANT: an internally empty or incomplete copy list
+                    // must never count as a SELECT commit. Eligibility above
+                    // admitted exactly GDN+conv layers, so the recorded lists must
+                    // match that count exactly before any byte is written.
+                    const size_t expectedLayers =
+                        static_cast<size_t>(config->mtpPrefixGdnLayerCount)
+                        + static_cast<size_t>(config->mtpPrefixConvLayerCount);
+                    REQUIRE_TRUE(
+                        expectedLayers > 0
+                            && selectPrefixSrc.size() == expectedLayers
+                            && selectStateDst.size() == expectedLayers, 0,
+                        "autoregressive_decode: SELECT admission produced an incomplete "
+                        "copy list (expected %zu layers, got %zu sources / %zu destinations); "
+                        "refusing to commit or fall back silently",
+                        expectedLayers, selectPrefixSrc.size(), selectStateDst.size());
+                    // Cross-layer overlap: no destination may alias ANY checkpoint
+                    // source (not only its own) or any other destination. Per-layer
+                    // checks already cover own-source and same-kind pairs; add the
+                    // remaining cross pairs here, before the first write.
+                    for (size_t a = 0; a < selectStateDst.size(); a++) {
+                        for (size_t b = a + 1; b < selectStateDst.size(); b++) {
+                            const char* aB = static_cast<const char*>(selectStateDst[a]->specialBuffer());
+                            const size_t aBytes = static_cast<size_t>(selectStateDst[a]->lengthOf())
+                                * static_cast<size_t>(selectStateDst[a]->sizeOfT());
+                            const char* bB = static_cast<const char*>(selectStateDst[b]->specialBuffer());
+                            const size_t bBytes = static_cast<size_t>(selectStateDst[b]->lengthOf())
+                                * static_cast<size_t>(selectStateDst[b]->sizeOfT());
+                            if (aB < bB + bBytes && bB < aB + aBytes) {
+                                REQUIRE_TRUE(false, 0,
+                                    "autoregressive_decode: SELECT destinations overlap "
+                                    "(layer %zu vs %zu); refusing to commit",
+                                    a, b);
+                            }
+                            for (size_t k = 0; k < selectPrefixSrc.size(); k++) {
+                                const char* kB = static_cast<const char*>(selectPrefixSrc[k]->specialBuffer());
+                                const size_t kBytes = static_cast<size_t>(selectPrefixSrc[k]->lengthOf())
+                                    * static_cast<size_t>(selectPrefixSrc[k]->sizeOfT());
+                                if ((aB < kB + kBytes && kB < aB + aBytes)
+                                        || (bB < kB + kBytes && kB < bB + bBytes)) {
+                                    REQUIRE_TRUE(false, 0,
+                                        "autoregressive_decode: SELECT destination %zu or %zu "
+                                        "overlaps checkpoint source %zu; refusing to commit",
+                                        a, b, k);
+                                }
+                            }
+                        }
+                    }
+                    // Expected selected-state byte total from the admitted
+                    // destinations, with checked accumulation.
+                    std::uint64_t expectedSelectBytes = 0;
+                    for (NDArray* dst : selectStateDst) {
+                        const std::uint64_t bytes =
+                            static_cast<std::uint64_t>(dst->lengthOf())
+                            * static_cast<std::uint64_t>(dst->sizeOfT());
+                        if (bytes != 0 && expectedSelectBytes > (std::uint64_t)-1 - bytes) {
+                            REQUIRE_TRUE(false, 0,
+                                "autoregressive_decode: SELECT state byte total overflows");
+                        }
+                        expectedSelectBytes += bytes;
+                    }
+                    REQUIRE_TRUE(expectedSelectBytes > 0, 0,
+                        "autoregressive_decode: SELECT state byte total is zero");
                     const LongType selectedRow = static_cast<LongType>(consumedCount) - 1;
+                    std::uint64_t copiedBytes = 0;
                     for (size_t li = 0; li < selectStateDst.size(); li++) {
                         NDArray* src = selectPrefixSrc[li];
                         NDArray* dst = selectStateDst[li];
@@ -4214,86 +4509,36 @@ void autoregressiveDecode(
                         // and both are dense C-order, so row stride == state length).
                         const size_t slotElems = static_cast<size_t>(dst->lengthOf());
                         const size_t rowBytes = slotElems * static_cast<size_t>(dst->sizeOfT());
-                        // S0 PROBE (pre-preparation): capture the selected-row source
-                        // bytes and BOTH rows of the checkpoint (tiny fixture: W=5,
-                        // state is 1-4 floats), plus full identity metadata, BEFORE
-                        // any preparation can change the picture. Sample storage is
-                        // dedicated pinned memory retained through the final sync;
-                        // values are only read at the completion boundary.
-                        uint64_t* selProbeRow = nullptr;
-                        uint64_t* selProbeRows = nullptr;
-                        NDArray* srcDbOwner = nullptr;
-                        NDArray* dstDbOwner = nullptr;
-                        void* srcPrepDevice = src->specialBuffer();
-                        void* dstPrepDevice = dst->specialBuffer();
-                        const void* srcBaseBeforePrep = static_cast<const char*>(src->specialBuffer())
-                            + static_cast<size_t>(selectedRow) * slotElems * src->sizeOfT();
-                        if (DSP_DIAG_ENABLED(KV_CACHE) && rowBytes <= 16) {
-                            if (pinnedSelectProbeSrc == nullptr) {
-                                cudaError_t pinErr = cudaMallocHost(&pinnedSelectProbeSrc,
-                                    SELECT_PROBE_SLOTS * 2 * sizeof(uint64_t));
-                                if (pinErr != cudaSuccess) pinnedSelectProbeSrc = nullptr;
-                            }
-                            if (pinnedSelectProbeDst == nullptr) {
-                                cudaError_t pinErr = cudaMallocHost(&pinnedSelectProbeDst,
-                                    SELECT_PROBE_SLOTS * 2 * sizeof(uint64_t));
-                                if (pinErr != cudaSuccess) pinnedSelectProbeDst = nullptr;
-                            }
-                            if (pinnedSelectProbeSrc != nullptr && pinnedSelectProbeDst != nullptr) {
-                                selProbeRow = pinnedSelectProbeSrc + 2 * selectProbeSlot;
-                                selProbeRows = pinnedSelectProbeSrc
-                                    + 2 * (SELECT_PROBE_SLOTS + selectProbeSlot);
-                                // Selected-row bytes.
-                                cudaMemcpyAsync(selProbeRow, srcBaseBeforePrep, rowBytes,
-                                    cudaMemcpyDeviceToHost, *stream);
-                                // Row 0 and row 1 of the checkpoint (the discriminator
-                                // case: distinguishes wrong-row from bad-tensor).
-                                const size_t probeRows = std::min<size_t>(2, src->sizeAt(0));
-                                cudaMemcpyAsync(selProbeRows, src->specialBuffer(),
-                                    probeRows * rowBytes, cudaMemcpyDeviceToHost, *stream);
-                                srcDbOwner = src;
-                                dstDbOwner = dst;
-                            }
-                        }
                         // BOTH sides participate in access bookkeeping: the checkpoint
                         // read and the state write are ordered on the same stream.
                         NDArray::prepareSpecialUse({dst}, {src});
-                        // S1 PROBE: the EXACT addresses the copy will use, acquired
-                        // AFTER preparation - the pre-computed srcBase is not assumed
-                        // to remain valid across preparation.
-                        const void* srcBasePostPrep = static_cast<const char*>(src->specialBuffer())
+                        // The copy addresses are acquired AFTER preparation: the
+                        // pre-computed source base is not assumed to remain valid.
+                        const void* srcBase = static_cast<const char*>(src->specialBuffer())
                             + static_cast<size_t>(selectedRow) * slotElems * src->sizeOfT();
-                        void* dstPostPrep = dst->specialBuffer();
-                        auto selErr = cudaMemcpyAsync(dst->specialBuffer(), srcBasePostPrep, rowBytes,
+                        void* dstAddr = dst->specialBuffer();
+                        auto selErr = cudaMemcpyAsync(dstAddr, srcBase, rowBytes,
                             cudaMemcpyDeviceToDevice, *stream);
-                        p0.checkpointSelectBytes += static_cast<std::uint64_t>(rowBytes);
+                        // Counted only for successfully submitted copies.
                         REQUIRE_TRUE(selErr == cudaSuccess, 0,
-                            "autoregressive_decode: prefix checkpoint select copy failed: %s",
+                            "autoregressive_decode: prefix checkpoint select copy failed "
+                            "(layer %zu of %zu, %zu bytes already submitted): %s",
+                            li, selectStateDst.size(), copiedBytes,
                             cudaGetErrorString(selErr));
-                        // D1 PROBE: read the exact destination address immediately
-                        // after the D2D copy, on the same ordered stream, into the
-                        // destination probe slot for this layer.
-                        uint64_t* dstProbe = nullptr;
-                        if (DSP_DIAG_ENABLED(KV_CACHE) && rowBytes <= 16
-                                && pinnedSelectProbeDst != nullptr) {
-                            dstProbe = pinnedSelectProbeDst + 2 * selectProbeSlot;
-                            cudaMemcpyAsync(dstProbe, dstPostPrep, rowBytes,
-                                cudaMemcpyDeviceToHost, *stream);
-                            selectProbeSlot = (selectProbeSlot + 1) % SELECT_PROBE_SLOTS;
-                        }
+                        copiedBytes += static_cast<std::uint64_t>(rowBytes);
                         DSP_DIAG(KV_CACHE,
-                                 "SELECT_COPY layer=%zu srcBaseBeforePrep=%p srcBasePostPrep=%p "
-                                 "dstBeforePrep=%p dstPostPrep=%p rowBytes=%zu row=%lld "
-                                 "srcDb=%p dstDb=%p changed=%d",
-                                 li, const_cast<void*>(srcBaseBeforePrep),
-                                 const_cast<void*>(srcBasePostPrep),
-                                 srcPrepDevice, dstPostPrep, rowBytes,
-                                 static_cast<long long>(selectedRow),
-                                 (void*)srcDbOwner, (void*)dstDbOwner,
-                                 (srcPrepDevice != dstPostPrep
-                                  || srcBaseBeforePrep != srcBasePostPrep) ? 1 : 0);
+                                 "SELECT_COPY layer=%zu src=%p dst=%p rowBytes=%zu row=%lld",
+                                 li, const_cast<void*>(srcBase), dstAddr, rowBytes,
+                                 static_cast<long long>(selectedRow));
                         NDArray::registerSpecialUse({dst}, {src});
                     }
+                    // The transaction is selected only after EVERY admitted layer's
+                    // copy has been submitted.
+                    REQUIRE_TRUE(copiedBytes == expectedSelectBytes, 0,
+                        "autoregressive_decode: SELECT copied %llu of %llu expected bytes",
+                        static_cast<unsigned long long>(copiedBytes),
+                        static_cast<unsigned long long>(expectedSelectBytes));
+                    p0.checkpointSelectBytes += copiedBytes;
                     // Advance actual_sequence_length to the consumed prefix: the
                     // state now reflects exactly those inputs.
                     NDArray* aslArr = extInputs[config->actualSequenceLengthExtIdx];
@@ -5039,6 +5284,80 @@ void autoregressiveDecode(
             }
             NDArray::registerSpecialUse({generatedTokenIds}, {specArgmaxDevice});
 
+            // SEAM_WATCH Observation D: finalized commit. All decision fields are
+            // already in the slot (Observation C); fill the finalized fields and
+            // emit the complete record. Host-only data - no new sync needed.
+            if (seamSlot != nullptr) {
+                seamSlot->acceptedDrafts = acceptedDrafts;
+                seamSlot->provisionalConsumed = 1 + acceptedDrafts;
+                seamSlot->finalizedConsumed = consumedCount;
+                seamSlot->storedCount = storedCount;
+                seamSlot->basePosition = basePosition;
+                const int ne = std::min(n, 8);
+                seamSlot->emittedCount = ne;
+                for (int i = 0; i < ne; i++) seamSlot->emittedTokens[i] = argmaxDst[i];
+                seamSlot->nextPosition = basePosition + consumedCount;
+                seamSlot->pendingTok = argmaxDst[consumedCount - 1];
+                DSP_DIAG(KV_CACHE,
+                         "SEAM_WATCH_A step=%d globalBegin=%d basePos=%lld "
+                         "predTok=%lld predRope=%lld predCache=%lld "
+                         "predMask[col0=%lld n=%d]=[%g,%g,%g,%g,%g,%g]",
+                         step, seamSlot->globalBegin, (long long)basePosition,
+                         (long long)seamSlot->predTok, (long long)seamSlot->predRope,
+                         (long long)seamSlot->predCache,
+                         (long long)seamSlot->predMaskCol0, seamSlot->predMaskCount,
+                         seamSlot->predMaskCols[0], seamSlot->predMaskCols[1],
+                         seamSlot->predMaskCols[2], seamSlot->predMaskCols[3],
+                         seamSlot->predMaskCols[4], seamSlot->predMaskCols[5]);
+                DSP_DIAG(KV_CACHE,
+                         "SEAM_WATCH_B step=%d globalBegin=%d curPos=%lld W=%d activeWin=%d "
+                         "remainingOutput=%d draftCap=%d maxPropose=%d proposed=%d specK=%d "
+                         "deviceAsl=%lld inputIds=[%lld,%lld,%lld] "
+                         "mask[col0=%lld n=%d] r0=[%g,%g,%g,%g] r1=[%g,%g,%g,%g]",
+                         step, seamSlot->globalBegin,
+                         (long long)seamSlot->currentPositionBase,
+                         seamSlot->windowMax, seamSlot->activeWindow,
+                         seamSlot->remainingOutput, seamSlot->outputDraftCapacity,
+                         seamSlot->maxPropose, seamSlot->proposedCount, seamSlot->effectiveK,
+                         (long long)seamSlot->deviceAsl,
+                         (long long)seamSlot->targetInputIds[0],
+                         (long long)seamSlot->targetInputIds[1],
+                         (long long)seamSlot->targetInputIds[2],
+                         (long long)seamSlot->targetMaskCol0, seamSlot->targetMaskCount,
+                         seamSlot->targetMaskCols[0], seamSlot->targetMaskCols[1],
+                         seamSlot->targetMaskCols[2], seamSlot->targetMaskCols[3],
+                         seamSlot->targetMaskCols[4], seamSlot->targetMaskCols[5],
+                         seamSlot->targetMaskCols[6], seamSlot->targetMaskCols[7]);
+                DSP_DIAG(KV_CACHE,
+                         "SEAM_WATCH_C step=%d globalBegin=%d drafts=[%lld,%lld] "
+                         "argmax=[%lld,%lld,%lld] logitsRow0=[%g,%g,%g,%g] "
+                         "accepted=%d provisional=%d",
+                         step, seamSlot->globalBegin,
+                         (long long)seamSlot->draftIds[0], (long long)seamSlot->draftIds[1],
+                         (long long)seamSlot->argmaxRows[0], (long long)seamSlot->argmaxRows[1],
+                         (long long)seamSlot->argmaxRows[2],
+                         seamSlot->logitsRow0Top[0], seamSlot->logitsRow0Top[1],
+                         seamSlot->logitsRow0Top[2], seamSlot->logitsRow0Top[3],
+                         seamSlot->acceptedDrafts, seamSlot->provisionalConsumed);
+                DSP_DIAG(KV_CACHE,
+                         "SEAM_WATCH_D step=%d globalBegin=%d globalEnd=%d "
+                         "emitted=[%lld,%lld,%lld,%lld] stored=%d finalizedConsumed=%d "
+                         "nextPos=%lld pendingTok=%lld path=%s",
+                         step, seamSlot->globalBegin,
+                         seamSlot->globalBegin + seamSlot->emittedCount,
+                         (long long)seamSlot->emittedTokens[0],
+                         (long long)seamSlot->emittedTokens[1],
+                         (long long)seamSlot->emittedTokens[2],
+                         (long long)seamSlot->emittedTokens[3],
+                         seamSlot->storedCount, seamSlot->finalizedConsumed,
+                         (long long)seamSlot->nextPosition,
+                         (long long)seamSlot->pendingTok,
+                         consumedCount > 1 ? "multirow-rerun"
+                             : acceptedDrafts > 0 ? "rerun"
+                             : proposedCount > 0 ? "scalar-rerun"
+                             : "scalar-no-proposal");
+            }
+
             // Gated diagnostic event: the first speculative steps carry the whole
             // correctness story (which drafts were proposed, what the target's
             // per-row argmaxes were, where acceptance stopped). All values are
@@ -5136,6 +5455,10 @@ void autoregressiveDecode(
             // Row zero now exposes exactly the committed prefix; publish it to
             // every window row without changing the nonterminal verifier mask.
             if ((shouldStop || tokensGenerated == maxNewTokens) && useWindowSubstrate) {
+                if (seamSlot != nullptr) {
+                    seamSlot->terminalNormalizeRan = true;
+                    seamSlot->exitPath = (shouldStop ? "terminal-stop" : "terminal-budget");
+                }
                 NDArray* mask = config->windowGridMask;
                 LongType rowLen = mask->sizeAt(-1);
                 NDArray::prepareSpecialUse({mask}, {});
@@ -5858,38 +6181,6 @@ void autoregressiveDecode(
              static_cast<int>(plan->getPlanPhase()),
              config->allowMultiRowCommit ? 1 : 0, specK,
              config->windowMax);
-
-    // PACKET 09 discriminator: after the final completion boundary, decode the
-    // queued S0/S1/D1 probe samples. The final stream sync above guarantees every
-    // async D2H sample has landed; no new synchronization is added.
-    if (pinnedSelectProbeSrc != nullptr && pinnedSelectProbeDst != nullptr
-            && p0.checkpointSelectBytes > 0) {
-        const int layers = std::min(selectProbeSlot, SELECT_PROBE_SLOTS);
-        for (int probe = 0; probe < layers; probe++) {
-            const uint64_t* srcRow = pinnedSelectProbeSrc + 2 * probe;
-            const uint64_t* srcRows = pinnedSelectProbeSrc
-                + 2 * (SELECT_PROBE_SLOTS + probe);
-            const uint64_t* dstAfter = pinnedSelectProbeDst + 2 * probe;
-            DSP_DIAG(KV_CACHE,
-                     "SELECT_PROBE slot=%d srcRow=[%016llx,%016llx] "
-                     "srcRows01=[%016llx,%016llx] dstAfter=[%016llx,%016llx]",
-                     probe,
-                     static_cast<unsigned long long>(srcRow[0]),
-                     static_cast<unsigned long long>(srcRow[1]),
-                     static_cast<unsigned long long>(srcRows[0]),
-                     static_cast<unsigned long long>(srcRows[1]),
-                     static_cast<unsigned long long>(dstAfter[0]),
-                     static_cast<unsigned long long>(dstAfter[1]));
-        }
-    }
-    if (pinnedSelectProbeSrc != nullptr) {
-        cudaFreeHost(pinnedSelectProbeSrc);
-        pinnedSelectProbeSrc = nullptr;
-    }
-    if (pinnedSelectProbeDst != nullptr) {
-        cudaFreeHost(pinnedSelectProbeDst);
-        pinnedSelectProbeDst = nullptr;
-    }
 }
 
 }  // namespace helpers
