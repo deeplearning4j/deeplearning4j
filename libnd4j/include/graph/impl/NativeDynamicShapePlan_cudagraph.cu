@@ -1561,12 +1561,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         captureSnapshot, sizeof(captureSnapshot),
         " [capture snapshot: plan=%p segment=[%d-%d] slot=%d op=%s "
         "workspace=%zu/%zu planOwned=%zuMB ownedArrays=%zu segments=%zu "
-        "deviceFree=%zuMB poolUsed=%zuMB poolReserved=%zuMB]",
+        "deviceFree=%zuMB deviceTotal=%zuMB poolUsed=%zuMB poolReserved=%zuMB]",
         static_cast<void*>(this), seg.def.startSlot, seg.def.endSlot,
         lastCaptureSlot, failedOp, captureWorkspaceUsed, captureWorkspaceBytes,
         currentPlanOwnedBytes / (1024 * 1024), planOwnedArrays_.size(),
         segments_.size(), captureDeviceFree / (1024 * 1024),
-        capturePoolUsed / (1024 * 1024), capturePoolReserved / (1024 * 1024));
+        captureDeviceTotal / (1024 * 1024), capturePoolUsed / (1024 * 1024),
+        capturePoolReserved / (1024 * 1024));
     std::string enrichedCaptureError(e.what());
     enrichedCaptureError.append(captureSnapshot);
     for (auto& [extIdx, origPtr] : savedExternalInputs) {
