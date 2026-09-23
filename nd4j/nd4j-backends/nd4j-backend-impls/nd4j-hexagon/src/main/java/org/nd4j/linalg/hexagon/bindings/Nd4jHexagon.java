@@ -3738,7 +3738,7 @@ public native int getPlanPhase(@Cast("sd::Pointer") Pointer planHandle);
  * The result is a thread-local key/value payload consumed by the Java
  * DspLifecycleSnapshot value type. Returns "valid=false" for an invalid handle.
  */
-public native @Cast("char*") String getPlanLifecycleSnapshot(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("const char*") BytePointer getPlanLifecycleSnapshot(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Get the execution count for a segment (number of times executed).
@@ -3931,7 +3931,7 @@ public native int getPlanNumExternalInputs(@Cast("sd::Pointer") Pointer planHand
  * @param index       External input index in [0, getPlanNumExternalInputs())
  * @return Input name (valid for the plan's lifetime), or nullptr if invalid
  */
-public native @Cast("char*") String getPlanExternalInputName(@Cast("sd::Pointer") Pointer planHandle, int index);
+public native @Cast("const char*") BytePointer getPlanExternalInputName(@Cast("sd::Pointer") Pointer planHandle, int index);
 
 /**
  * Get the plan's current GraphExecutionMode (the mode in force after
@@ -4184,7 +4184,7 @@ public native int getPlanNumHostOnlyOps(@Cast("sd::Pointer") Pointer planHandle)
  * @param planHandle  Handle from compileDynamicShapePlan()
  * @return Pipe-delimited string of op names (thread-local static storage)
  */
-public native @Cast("char*") String getPlanHostOnlyOpNames(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("const char*") BytePointer getPlanHostOnlyOpNames(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Print the full CUDA graph contents and capture audit to stderr.
@@ -4200,7 +4200,7 @@ public native void printPlanCapturedGraphDebug(@Cast("sd::Pointer") Pointer plan
  * @param planHandle  Handle from compileDynamicShapePlan()
  * @return Thread-local static buffer with stats string
  */
-public native @Cast("char*") String getPlanCaptureStats(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("const char*") BytePointer getPlanCaptureStats(@Cast("sd::Pointer") Pointer planHandle);
 
 // =============================================================================
 // Per-Segment Replay State
@@ -4220,13 +4220,13 @@ public native int getPlanSegmentReplayCount(@Cast("sd::Pointer") Pointer planHan
 /**
  * Get backend name for a specific segment ("CUDA", "CPU", or "").
  */
-public native @Cast("char*") String getPlanSegmentBackendName(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
+public native @Cast("const char*") BytePointer getPlanSegmentBackendName(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
 
 /**
  * Get statistics JSON for a specific segment.
  * Returns: {"numOperations":N,"replayCount":N,"backendName":"..."}
  */
-public native @Cast("char*") String getPlanSegmentStatisticsJson(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
+public native @Cast("const char*") BytePointer getPlanSegmentStatisticsJson(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
 
 /**
  * Get total execution count for a specific segment.
@@ -4280,7 +4280,7 @@ public native int getPlanSlotState(@Cast("sd::Pointer") Pointer planHandle, int 
  * Get the op name for a specific slot. Returns "" if invalid.
  * Caller must NOT free the returned string (static lifetime).
  */
-public native @Cast("char*") String getPlanSlotOpName(@Cast("sd::Pointer") Pointer planHandle, int slotIdx);
+public native @Cast("const char*") BytePointer getPlanSlotOpName(@Cast("sd::Pointer") Pointer planHandle, int slotIdx);
 
 /**
  * Get per-slot flags as a bitmask:
@@ -4381,7 +4381,7 @@ public native int getPlanExecuteCount(@Cast("sd::Pointer") Pointer planHandle);
  * Get tracked external input pointer addresses for a segment as JSON.
  * Returns: [{"inputIdx":0,"capturedAddr":"0x...","currentAddr":"0x...","match":true}, ...]
  */
-public native @Cast("char*") String getPlanSegmentTrackedPointers(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
+public native @Cast("const char*") BytePointer getPlanSegmentTrackedPointers(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
 
 /**
  * Get number of capture buffers for a segment.
@@ -4391,7 +4391,7 @@ public native int getPlanSegmentNumCaptureBuffers(@Cast("sd::Pointer") Pointer p
 /**
  * Get capture buffer descriptors as JSON for a segment.
  */
-public native @Cast("char*") String getPlanSegmentCaptureBuffersJson(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
+public native @Cast("const char*") BytePointer getPlanSegmentCaptureBuffersJson(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
 
 /**
  * Get number of pinned host pointers held by segment's replay handle.
@@ -4425,12 +4425,12 @@ public native void clearReplayCache();
 /**
  * Get replay cache directory path.
  */
-public native @Cast("char*") String getReplayCacheDir();
+public native @Cast("const char*") BytePointer getReplayCacheDir();
 
 /**
  * Get per-device replay cache statistics as JSON.
  */
-public native @Cast("char*") String getReplayCacheDeviceStatsJson();
+public native @Cast("const char*") BytePointer getReplayCacheDeviceStatsJson();
 
 /**
  * Get replay cache entry count for a specific device.
@@ -4460,7 +4460,7 @@ public native int loadReplayCacheForDevice(@Cast("sd::Pointer") Pointer planHand
 /**
  * Get all cached device keys as JSON.
  */
-public native @Cast("char*") String getReplayCachedDevicesJson();
+public native @Cast("const char*") BytePointer getReplayCachedDevicesJson();
 
 // =============================================================================
 // Backend Plan Management
@@ -4469,17 +4469,17 @@ public native @Cast("char*") String getReplayCachedDevicesJson();
 /**
  * Get available backends as JSON array.
  */
-public native @Cast("char*") String getPlanAvailableBackends(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("const char*") BytePointer getPlanAvailableBackends(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Get which backend compiled a specific segment.
  */
-public native @Cast("char*") String getPlanSegmentCompiledBackend(@Cast("sd::Pointer") Pointer planHandle, int segIdx);
+public native @Cast("const char*") BytePointer getPlanSegmentCompiledBackend(@Cast("sd::Pointer") Pointer planHandle, int segIdx);
 
 /**
  * Get compilation audit JSON for a segment.
  */
-public native @Cast("char*") String getPlanSegmentCompilationAudit(@Cast("sd::Pointer") Pointer planHandle, int segIdx);
+public native @Cast("const char*") BytePointer getPlanSegmentCompilationAudit(@Cast("sd::Pointer") Pointer planHandle, int segIdx);
 
 /**
  * Invalidate compiled cache for a specific segment.
@@ -4495,7 +4495,7 @@ public native void invalidatePlanBackendCaches(@Cast("sd::Pointer") Pointer plan
 /**
  * Get aggregated cache stats JSON for all backends.
  */
-public native @Cast("char*") String getPlanBackendCacheStats(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("const char*") BytePointer getPlanBackendCacheStats(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Override backend selection for a segment.
@@ -4551,7 +4551,7 @@ public native @Cast("bool") boolean debugDumpPlanCudaGraph(@Cast("sd::Pointer") 
  * @param planHandle  Handle from compileDynamicShapePlan()
  * @return JSON string, or empty string if no graph data
  */
-public native @Cast("char*") String getPlanCudaGraphChromeTraceJson(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("const char*") BytePointer getPlanCudaGraphChromeTraceJson(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Clear the CUDA graph execution timeline history.
@@ -4671,12 +4671,12 @@ public native void dspDiagRecordJavaEvent(int category, int slotId, int segmentI
 /**
  * Get human-readable plan execution report.
  */
-public native @Cast("char*") String dspDiagGetPlanReport();
+public native @Cast("const char*") BytePointer dspDiagGetPlanReport();
 
 /**
  * Get JSON-formatted diagnostic report.
  */
-public native @Cast("char*") String dspDiagGetJsonReport();
+public native @Cast("const char*") BytePointer dspDiagGetJsonReport();
 
 /** Persist the current diagnostic ring to the configured native JSON path. */
 public native void dspDiagFlushJson();
@@ -4744,7 +4744,7 @@ public native @Cast("bool") boolean getDspFreezeRecompile();
 /**
  * Get segments summary as JSON.
  */
-public native @Cast("char*") String getPlanSegmentsSummaryJson(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("const char*") BytePointer getPlanSegmentsSummaryJson(@Cast("sd::Pointer") Pointer planHandle);
 
 // =============================================================================
 // Staging Buffer Introspection
@@ -5054,7 +5054,7 @@ public native void drainPlanFingerprintRing(@Cast("sd::Pointer") Pointer planHan
  * buffers. Call after drainPlanFingerprintRing(). Returns "null" if not
  * enabled or not drained.
  */
-public native @Cast("char*") String getPlanFingerprintJson(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("const char*") BytePointer getPlanFingerprintJson(@Cast("sd::Pointer") Pointer planHandle);
 
 // #endif // NATIVEOPSDSP_H
 
@@ -14554,14 +14554,14 @@ public static final int SHAPE_DESC_INVALID_EMPTY = 5;     // rank > 32 or shape 
 // #endif
 
 // Existing build info functions
-public native @Cast("char*") String buildInfo();
+public native @Cast("const char*") BytePointer buildInfo();
 // Single-line canonical form of buildInfo() for cache fingerprinting.
 // buildInfo() is a multi-line human-readable report; line-oriented consumers
 // (key=value sidecar files like the DSP plan cache .meta) truncate multi-line
 // values on read, so fingerprints MUST use this form. Canonicalization:
 // every '\n'/'\r' becomes a single space, leading/trailing whitespace trimmed
 // (byte-identical to the Java-side fallback in DspPlanDiskCache).
-public native @Cast("char*") String buildInfoFingerprint();
+public native @Cast("const char*") BytePointer buildInfoFingerprint();
 public native @Cast("bool") boolean isFuncTrace();
 
 // Type information functions
