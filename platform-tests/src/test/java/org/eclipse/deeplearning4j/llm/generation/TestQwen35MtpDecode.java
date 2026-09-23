@@ -180,13 +180,22 @@ public class TestQwen35MtpDecode {
     public void testPreparedPredictorMatchesCapturedReference() throws Exception {
         PreparedReference reference = new PreparedReference(System.getProperty("mtp.reference.gguf"),
                 System.getProperty("qwen.mtp.snapshotPrefix"));
-        GenerationPipelineConfig config = GenerationPipelineConfig.builder()
+        var configBuilder = GenerationPipelineConfig.builder()
                 .decoder(model).tokenizer(tokenizer)
                 .samplingConfig(SamplingConfig.speculative().toBuilder().minNewTokens(24).build())
                 .maxNewTokens(24).maxSpeculativeTokens(SPEC_K)
                 .maxPrefillLength(64).maxKvCacheLength(192)
                 .kvCacheStrategy(KvCacheStrategy.STATIC)
-                .graphOptimizerEnabled(false).dspEnabled(true).build();
+                .graphOptimizerEnabled(false).dspEnabled(true);
+        // Bisect gate (diagnostic): verifyKernels runs each compiled Triton
+        // sub-kernel AND the equivalent native CUDA op, compares outputs, and
+        // reports the first mismatching sub-kernel range — the supported way to
+        // localize a Triton-vs-native compute divergence. Default: unset.
+        if (Boolean.getBoolean("mtp.bisect.verifyKernels")) {
+            configBuilder.benchmarkConfig(BenchmarkConfig.optimal().tritonVerifyKernels(true));
+            log.info("MTP_BISECT: benchmarkConfig=OPTIMAL+verifyKernels");
+        }
+        GenerationPipelineConfig config = configBuilder.build();
         try (GenerationPipeline pipeline = GenerationPipeline.create(config);
              GenerationSession session = pipeline.startSession(PROMPT)) {
             InGraphKvState state = session.retainedStateForInspection();
@@ -705,8 +714,13 @@ public class TestQwen35MtpDecode {
      *       through pos 35 → S_REF36.</li>
      *   <li>R1b: [271] asl=1 at pos=36 from S_REF36 — row0 must equal B's row1
      *       winner 8160 (sequence-partition equivalence).</li>
-     *   <li>R2: from S_C36 (captured), [271] asl=1 at pos=36 — compare row0
-     *       logits/hidden against R1b; compare captured KV/GDN vs S_REF36.</li>
+     *   <li>R2 (review-corrected): the ONE production session's TERMINAL
+     *       generate(19) state snapshot — qualified first for a matched
+     *       19-token consumed history and a KV storage contract equal to the
+     *       decoder placeholders (else UNMATCHED_REPLAY_INPUTS) — is compared
+     *       against the replay's S_B35 over KV + recurrent state ONLY. The
+     *       layer-11/pos-9 onset observation is retained for investigation
+     *       regardless of qualification.</li>
      *   <li>R3: from fresh copies of S_REF36, [271,X] asl=2 for two different
      *       future drafts X plus [271] asl=1 — row0 must be identical across
      *       all three (target causality: future draft must not alter row 0).</li>
@@ -780,23 +794,27 @@ public class TestQwen35MtpDecode {
             final int prefillLength = promptTokenIds.length;
             assertEquals(promptLen, prefillLength,
                     "token ledger requires prompt length 17");
-            // Ledger print: target position | consumed token | output token | pending.
+            // Corrected ledger (review round 4): the prefill consumes prompt
+            // positions 0..16 ONLY. The scalar replay consumes e[i] at position
+            // 17+i for i=0..17 (18 forwards: e[0]@17 ... e[17]@34); e[18] stays
+            // unconsumed and pending at position 35.
             StringBuilder ledger = new StringBuilder();
-            ledger.append("pos17 consumes e[0]=271 -> e[1]=248068 pending");
-            for (int i = 1; i <= 17; i++) {
-                ledger.append(String.format(" | pos%d consumes e[%d]=%d -> e[%d]=%d pending",
-                        promptLen + i - 1 + 1 - 1, i, emitted[i], i + 1, emitted[i + 1]));
+            for (int i = 0; i <= 17; i++) {
+                ledger.append(String.format(" | pos%d<-e[%d]=%d -> pending e[%d]=%d",
+                        promptLen + i, i, emitted[i], i + 1, emitted[i + 1]));
             }
-            log.info("[SEAM-REPLAY] LEDGER: prefill 0..16 -> e[0]=271 pending; {}", ledger);
-            log.info("[SEAM-REPLAY] LEDGER: pos35 consumes e[18]={} -> e[19]={} pending; "
-                            + "pos36 consumes e[19]={} -> e[20]={} (B's producer of e[20])",
-                    tok18, tok19, tok19, tok20);
+            log.info("[SEAM-REPLAY] LEDGER: prefill consumes 0..16; scalar replay:{}", ledger);
+            log.info("[SEAM-REPLAY] LEDGER: e[18]={} pending at pos35 (UNCONSUMED); "
+                            + "pos35 consumes e[18] -> pending e[19]; pos36 consumes e[19]={} -> e[20]={}",
+                    tok18, tok19, tok20);
 
             // ── Arm C capture: production-matched seam state via generate(19).
             // The pipeline ends exactly at the seam: positions 0..34 consumed
-            // (e[0..17] plus prompt), pending = e[18]=159034. This session IS
-            // the native-state anchor; its retained buffers are the real B-side
-            // state immediately before the basePos=35 window.
+            // (e[0..17] plus prompt), pending = e[18]=159034. This is a TERMINAL
+            // generate(19) snapshot (review round 4, finding 4): it is NOT
+            // asserted to equal B's in-flight pre-position-35 state, and this
+            // closed session's buffers are anchor prints only — never reused as
+            // another session's state.
             int cAtSeamGdnSum;
             int cAtSeamKvSum;
             try (GenerationPipeline pipeline = GenerationPipeline.create(baseSeamConfig(promptLen + 19));
@@ -806,15 +824,17 @@ public class TestQwen35MtpDecode {
                 assertEquals(promptLen + 2, r.getTokenIds().length,
                         "capture leg must emit 19 tokens (e[0..18])");
                 InGraphKvState s = session.retainedStateForInspection();
-                // Record-and-continue (milestone ed1393cd): a fresh free-running
-                // capture may itself diverge (623 at index 18). Record the
-                // divergence and continue so downstream tables always print.
+                // Full-prefix terminal-token check (review round 4): the terminal
+                // pending token is e[18]=159034. Prior prose referred to a "623 at
+                // index 18" divergence — a token-vs-position conflation that the
+                // R2 full-prefix comparison below now measures correctly.
                 if (s.lastGeneratedToken != tok18) {
-                    log.info("[SEAM-CAPTURE-REPRO] capture DIVERGED: pending={} "
-                            + "but recorded e[18]={} (cross-session nondeterminism reproduced)",
+                    log.info("[SEAM-CAPTURE-REPRO] capture pending {} differs from recorded "
+                                    + "e[18]={} (terminal token difference; full-prefix check in R2 "
+                                    + "is the authoritative history measure)",
                             s.lastGeneratedToken, tok18);
                 } else {
-                    log.info("[SEAM-CAPTURE-REPRO] capture matched recorded history (pending={})", tok18);
+                    log.info("[SEAM-CAPTURE-REPRO] capture terminal pending matches e[18]={}", tok18);
                 }
                 cAtSeamGdnSum = (int) checksumBuffers(s.recurrentStateBuffers);
                 cAtSeamKvSum = (int) checksumBuffers(s.staticKvBuffers);
@@ -824,10 +844,11 @@ public class TestQwen35MtpDecode {
                         s.cachePosition, s.lastGeneratedToken, cAtSeamGdnSum, cAtSeamKvSum);
             }
 
-            // ── Teacher-forced replay anchor: consume B's RECORDED e[1..17] at
-            // positions 18..34 (prefill consumed e[0] at position 17). This is the
-            // reviewer-mandated correction: the argmax free-run picked 314 instead
-            // of following production's emission history.
+            // ── Teacher-forced replay anchor (review-corrected history): the raw
+            // prefill consumes prompt positions 0..16 ONLY. The scalar chain
+            // below then consumes B's RECORDED e[0] at position 17 through
+            // e[17] at position 34 (18 one-row forwards); e[18] stays pending
+            // at position 35.
             // Prefill: full prompt, empty KV, zero states.
             Map<String, INDArray> prefillInputs = new HashMap<>();
             putOwned(prefillInputs, io.getInputIdsName(),
@@ -863,49 +884,49 @@ public class TestQwen35MtpDecode {
                 stateOutputNames.add(pair.outputName);
             }
             prefillOutputNames.addAll(stateOutputNames);
+            // Probe name sets (review round 4, finding 3): the stability probe
+            // compares these components via independent snapshots.
+            java.util.LinkedHashSet<String> prefillKvProbeNames = new java.util.LinkedHashSet<>();
+            for (String keyName : kvNames.keyNames) {
+                int layer = extractLayerIndex(keyName);
+                prefillKvProbeNames.add("k_rope_" + layer);
+                prefillKvProbeNames.add("v_heads_" + layer);
+            }
+            java.util.LinkedHashSet<String> stateNameSet = new java.util.LinkedHashSet<>(stateOutputNames);
             Map<String, INDArray> prefillOutputs = model.output(
                     prefillInputs, prefillOutputNames.toArray(new String[0]));
             ownAll(prefillOutputs, owned);
 
-            // ── PREFILL STABILITY PROBE (3x): run the identical prefill a second
-            // AND third time, each from freshly-duplicated inputs (zero GDN state
-            // restored). Pairwise comparison of the GDN-affected attention-layer
-            // key rows decides the mechanism:
-            //   #1 != #2 but #2 == #3  -> first-execution/plan-creation effect
-            //   #1 != #2, #2 != #3     -> state accumulates per execution
-            //   all equal              -> prefill stable (contradicts R2; revisit)
+            // ── PREFILL STABILITY PROBE (3x, EARLY): moved before the scalar
+            // replay (review round 4). The prefill runs from freshly-duplicated
+            // zero-state inputs three times with INDEPENDENT result snapshots —
+            // prior runs compared executor-owned output references, which ownAll
+            // retains but does not snapshot. Probe boundary: after the capture
+            // pipeline has closed, before this test's own decode work. It is a
+            // same-graph zero-state control, NOT a before-any-session control.
             {
-                Map<String, INDArray> run2Inputs = new HashMap<>();
-                for (Map.Entry<String, INDArray> e : prefillInputs.entrySet()) {
-                    run2Inputs.put(e.getKey(), e.getValue().dup());
-                }
                 Map<String, INDArray> run2Out = model.output(
-                        run2Inputs, prefillOutputNames.toArray(new String[0]));
-                ownAll(run2Out, owned);
-                Map<String, INDArray> run3Inputs = new HashMap<>();
-                for (Map.Entry<String, INDArray> e : prefillInputs.entrySet()) {
-                    run3Inputs.put(e.getKey(), e.getValue().dup());
-                }
+                        duplicateArrays(prefillInputs, owned),
+                        prefillOutputNames.toArray(new String[0]));
+                Map<String, INDArray> run2Kv = snapshotOutputs(run2Out, prefillKvProbeNames, owned);
+                Map<String, INDArray> run2States = snapshotOutputs(run2Out, stateNameSet, owned);
                 Map<String, INDArray> run3Out = model.output(
-                        run3Inputs, prefillOutputNames.toArray(new String[0]));
+                        duplicateArrays(prefillInputs, owned),
+                        prefillOutputNames.toArray(new String[0]));
+                Map<String, INDArray> run3Kv = snapshotOutputs(run3Out, prefillKvProbeNames, owned);
+                Map<String, INDArray> run3States = snapshotOutputs(run3Out, stateNameSet, owned);
+                Map<String, INDArray> run1Kv = snapshotOutputs(prefillOutputs, prefillKvProbeNames, owned);
+                Map<String, INDArray> run1States = snapshotOutputs(prefillOutputs, stateNameSet, owned);
+                // run2Out/run3Out retain executor-owned references; snapshots are
+                // already independent. Retain them for closeOwned bookkeeping.
+                ownAll(run2Out, owned);
                 ownAll(run3Out, owned);
 
-                StringBuilder probe = new StringBuilder();
-                for (int gi = 0; gi < kvNames.keyNames.size(); gi++) {
-                    int layer = extractLayerIndex(kvNames.keyNames.get(gi));
-                    INDArray k1 = prefillOutputs.get("k_rope_" + layer);
-                    INDArray k2 = run2Out.get("k_rope_" + layer);
-                    INDArray k3 = run3Out.get("k_rope_" + layer);
-                    boolean d12 = !k1.equals(k2);
-                    boolean d23 = !k2.equals(k3);
-                    boolean d13 = !k1.equals(k3);
-                    if (d12 || d23 || d13) {
-                        probe.append(String.format(" L%d:#1!=#2=%s #2!=#3=%s #1!=#3=%s;",
-                                layer, d12, d23, d13));
-                    }
-                }
-                log.info("[SEAM-PREFILL-STABILITY] raw prefill 3x (true=array differs):{}{}",
-                        probe.length() == 0 ? " ALL IDENTICAL" : "", probe);
+                String kvProbe = firstDiffProbe(run1Kv, run2Kv, run3Kv);
+                String stateProbe = firstDiffProbe(run1States, run2States, run3States);
+                log.info("[SEAM-EARLY-PREFILL-STABILITY] 3x zero-state prefill AFTER capture "
+                                + "session, BEFORE scalar replay: kv{} states{}",
+                        kvProbe, stateProbe);
             }
 
             Map<String, INDArray> replayKv = new LinkedHashMap<>();
@@ -929,90 +950,87 @@ public class TestQwen35MtpDecode {
                 replayStates.put(pair.inputName, own(owned, prefillOutputs.get(pair.outputName).dup()));
             }
 
-            // Teacher-forced single-row chain: consume e[1] at pos 18 ... e[17] at
-            // pos 34 (18 one-row asl=1 forwards). Calculated logits are logged for
-            // diagnostics but NOT used to choose the next input.
-            for (int i = 1; i <= 17; i++) {
-                int pos = promptLen + i - 1;   // e[1]@18 ... e[17]@34
-                Map<String, INDArray> stepInputs = newStableDecodeInputs(
-                        io, window, maxKvLength, maskType, replayKv, replayStates, owned);
-                setDecodeStep(stepInputs, io, emitted[i], 0, pos, 1, window, maxKvLength, maskType, owned);
-                List<String> stepOutputs = new ArrayList<>();
-                stepOutputs.add(io.getLogitsOutputName());
-                for (String keyName : kvNames.keyNames) {
-                    int layer = extractLayerIndex(keyName);
-                    stepOutputs.add("k_rope_" + layer);
-                    stepOutputs.add("v_heads_" + layer);
-                }
-                stepOutputs.addAll(stateOutputNames);
-                Map<String, INDArray> out = model.output(stepInputs, stepOutputs.toArray(new String[0]));
-                ownAll(out, owned);
-                int freeRunToken = argMaxToken(out.get(io.getLogitsOutputName()), 0);
-                if (freeRunToken != emitted[i + 1]) {
-                    log.info("[SEAM-REPLAY] TEACHER-FORCE pos={} argmax={} but production emitted e[{}]={}",
-                            pos, freeRunToken, i + 1, emitted[i + 1]);
-                }
-                commitKvRows(replayKv, kvNames, out, pos, 1);
-                for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
-                    replayStates.get(pair.inputName).assign(out.get(pair.outputName));
-                }
-            }
-            // Scalar same-history reconstruction anchor: pending = e[18]=159034.
-            // NOTE: this is the same-history scalar reconstruction anchor; whether
-            // it exactly equals the native B session state at the same consumed
-            // history is NOT yet established (the anchor print above records the
-            // production capture's sums for comparison, not proof).
-            log.info("[SEAM-REPLAY] S_B35 (scalar same-history reconstruction): "
-                    + "pendingToken={} (production e[18]={})", emitted[18], tok18);
-            assertEquals(tok18, emitted[18],
-                    "ledger self-check: pending at pos 35 must be e[18]");
-
-            // ── PREFILL STABILITY PROBE (3x, EARLY): run the identical prefill
-            // three times IMMEDIATELY after the first prefill (before any
-            // pipeline session or decode work has executed on this graph). If
-            // these are identical but the R2 comparison still shows divergence,
-            // the difference is between graph-state-dependent executions — the
-            // pipeline session's own GDN state writes leak into later prefills
-            // through in-graph variables, while zero-state raw prefills converge.
+            // Teacher-forced single-row chain (review-corrected): consume
+            // e[i] at position 17+i for i=0..17 — 18 one-row asl=1 forwards:
+            // e[0]@17 (the token production's warmup consumed) through
+            // e[17]@34. e[18] stays UNCONSUMED and pending at position 35.
+            // Calculated logits are logged for diagnostics but NOT used to
+            // choose the next input. The ledger is asserted directly.
             {
-                Map<String, INDArray> probe2Inputs = new HashMap<>();
-                for (Map.Entry<String, INDArray> e : prefillInputs.entrySet()) {
-                    probe2Inputs.put(e.getKey(), e.getValue().dup());
-                }
-                Map<String, INDArray> probe2Out = model.output(
-                        probe2Inputs, prefillOutputNames.toArray(new String[0]));
-                ownAll(probe2Out, owned);
-                Map<String, INDArray> probe3Inputs = new HashMap<>();
-                for (Map.Entry<String, INDArray> e : prefillInputs.entrySet()) {
-                    probe3Inputs.put(e.getKey(), e.getValue().dup());
-                }
-                Map<String, INDArray> probe3Out = model.output(
-                        probe3Inputs, prefillOutputNames.toArray(new String[0]));
-                ownAll(probe3Out, owned);
-
-                StringBuilder probe = new StringBuilder();
-                for (int gi = 0; gi < kvNames.keyNames.size(); gi++) {
-                    int layer = extractLayerIndex(kvNames.keyNames.get(gi));
-                    INDArray k1 = prefillOutputs.get("k_rope_" + layer);
-                    INDArray k2 = probe2Out.get("k_rope_" + layer);
-                    INDArray k3 = probe3Out.get("k_rope_" + layer);
-                    boolean d12 = !k1.equals(k2);
-                    boolean d23 = !k2.equals(k3);
-                    boolean d13 = !k1.equals(k3);
-                    if (d12 || d23 || d13) {
-                        probe.append(String.format(" L%d:#1!=#2=%s #2!=#3=%s #1!=#3=%s;",
-                                layer, d12, d23, d13));
+                java.util.TreeMap<Integer, String> consumedLedger = new java.util.TreeMap<>();
+                for (int i = 0; i <= 17; i++) {
+                    int pos = promptLen + i;   // e[0]@17 ... e[17]@34
+                    Map<String, INDArray> stepInputs = newStableDecodeInputs(
+                            io, window, maxKvLength, maskType, replayKv, replayStates, owned);
+                    setDecodeStep(stepInputs, io, emitted[i], 0, pos, 1, window, maxKvLength, maskType, owned);
+                    List<String> stepOutputs = new ArrayList<>();
+                    stepOutputs.add(io.getLogitsOutputName());
+                    for (String keyName : kvNames.keyNames) {
+                        int layer = extractLayerIndex(keyName);
+                        stepOutputs.add("k_rope_" + layer);
+                        stepOutputs.add("v_heads_" + layer);
                     }
+                    stepOutputs.addAll(stateOutputNames);
+                    Map<String, INDArray> out = model.output(stepInputs, stepOutputs.toArray(new String[0]));
+                    ownAll(out, owned);
+                    int freeRunToken = argMaxToken(out.get(io.getLogitsOutputName()), 0);
+                    if (freeRunToken != emitted[i + 1]) {
+                        log.info("[SEAM-REPLAY] TEACHER-FORCE pos={} argmax={} but production emitted e[{}]={}",
+                                pos, freeRunToken, i + 1, emitted[i + 1]);
+                    }
+                    commitKvRows(replayKv, kvNames, out, pos, 1);
+                    for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+                        replayStates.get(pair.inputName).assign(out.get(pair.outputName));
+                    }
+                    consumedLedger.put(pos, "e[" + i + "]=" + emitted[i]);
                 }
-                log.info("[SEAM-EARLY-PREFILL-STABILITY] 3x zero-state prefill (before any session):{}{}",
-                        probe.length() == 0 ? " ALL IDENTICAL" : "", probe);
+                // Ledger assertion (review round 4): assert the ACTUAL consumed
+                // positions, not a token-index equality as proof of correctness.
+                assertEquals(18, consumedLedger.size(),
+                        "replay must consume exactly 18 tokens (e[0..17])");
+                for (int i = 0; i <= 17; i++) {
+                    assertTrue(consumedLedger.containsKey(promptLen + i),
+                            "consumed-position ledger missing position " + (promptLen + i));
+                }
+                assertTrue(consumedLedger.lastEntry().getKey() == promptLen + 17,
+                        "last consumed position must be 34 (promptLen+17), got "
+                                + consumedLedger.lastEntry().getKey());
+                log.info("[SEAM-REPLAY] CONSUMED-LEDGER: {} entries, positions {}..{}; "
+                                + "e[18]={} pending at pos {} (UNCONSUMED)",
+                        consumedLedger.size(), consumedLedger.firstEntry().getKey(),
+                        consumedLedger.lastEntry().getKey(), tok18, pos35);
             }
+            // Scalar same-history reconstruction anchor: 18 consumed forwards
+            // (e[0]@17 ... e[17]@34), pending = e[18]=159034 UNCONSUMED at pos 35.
+            // NOTE (review round 4): whether this scalar reconstruction equals the
+            // native production session state at the same consumed history is
+            // decided by the qualified R2 comparison below — the anchor sums are
+            // recorded for reference, not proof.
+            log.info("[SEAM-REPLAY] S_B35 (scalar same-history reconstruction): consumed "
+                            + "e[0..17] at positions 17..34; pendingToken={} (production e[18]={}, "
+                            + "UNCONSUMED)", emitted[18], tok18);
 
-            // ── R2: compare the LIVE production session's leg-1-final state
-            // (positions 0..34 committed, pending e[18]) against the replay's
-            // S_B35 anchor — the reviewer's CASE-A discriminator, live-vs-replay.
-            // The live state comes from a fresh production session; its buffers
-            // are element-compared against the replay's committed regions.
+            // ── R2 (review round 4, corrected): compare a LIVE generate(19)
+            // session's TERMINAL state snapshot against the replay's S_B35.
+            // Correction 1 (indexing): the live leg emits e[0..18]; the prior
+            // check compared emitted index 18 (= pending e[18]=159034) against
+            // tok19=271 — that was an indexing error, NOT a divergence. The
+            // corrected check is a FULL-PREFIX comparison of all 19 emitted
+            // tokens against the recorded history.
+            // Correction 2 (qualification): a matched-prefix state comparison
+            // additionally requires matching KV storage contracts (dtypes from
+            // the decoder placeholders, the production source of truth) and
+            // independent state storage on both sides. If any input contract
+            // does not match, report UNMATCHED_REPLAY_INPUTS and do NOT label
+            // the tensor difference as proven native state corruption.
+            // Correction 3 (snapshots): ownAll retains references only, so BOTH
+            // sides are dup'd into independent test-owned storage before any
+            // later model.output call can mutate executor-owned arrays.
+            // Terminal-snapshot caveat: a generate(19) terminal snapshot is NOT
+            // automatically B's in-flight pre-position-35 snapshot; the retain
+            // session that produced the comparison state is the SAME session
+            // whose generate produced the emitted history (no cross-session
+            // state assumption).
             {
                 try (GenerationPipeline pipelineLive = GenerationPipeline.create(
                                 baseSeamConfig(promptLen + 19));
@@ -1021,66 +1039,69 @@ public class TestQwen35MtpDecode {
                     sessionLive.setSpeculativeDepth(1);
                     GenerationResult rLive = sessionLive.generate(promptLen + 2);
                     assertEquals(promptLen + 2, rLive.getTokenIds().length,
-                            "R2 live leg must emit e[0..18]");
-                    // Record-and-continue: fresh free-running sessions have been
-                    // observed to emit divergent tokens (623 at index 18,
-                    // milestone ed1393cd). Record the divergence, still compare
-                    // the retained state so the per-position table prints.
-                    if (rLive.getTokenIds()[promptLen + 1] != tok19) {
-                        log.info("[SEAM-R2-REPRO] live leg DIVERGED within itself: "
-                                        + "index {} emitted {} but recorded history has {} "
-                                        + "(cross-session free-running nondeterminism reproduced)",
-                                promptLen + 1, rLive.getTokenIds()[promptLen + 1], tok19);
+                            "R2 live leg must emit exactly 19 tokens e[0..18]");
+                    int[] liveEmitted = rLive.getTokenIds();
+                    boolean fullPrefixMatch = Arrays.equals(
+                            Arrays.copyOf(liveEmitted, 19), Arrays.copyOf(emitted, 19));
+                    if (fullPrefixMatch) {
+                        log.info("[SEAM-R2-REPRO] live leg FULL-PREFIX MATCH: 19/19 tokens "
+                                        + "equal production recorded history; pending token {} "
+                                        + "at pos {} (unconsumed)",
+                                liveEmitted[18], promptLen + 18);
                     } else {
-                        log.info("[SEAM-R2-REPRO] live leg matched recorded history through index {}",
-                                promptLen + 1);
-                    }
-                    InGraphKvState sLive = sessionLive.retainedStateForInspection();
-                    Map<String, INDArray> liveKv = sLive.staticKvBuffers != null
-                            ? sLive.staticKvBuffers : sLive.quantizedKvBuffers;
-                    // Per-position diff table: for each committed position p in
-                    // [prefillLength, 35), report the FIRST tensor differing at
-                    // that position. The first position whose KV row differs
-                    // localizes the live-vs-scalar divergence to one step.
-                    java.util.TreeMap<Long, String> firstDiffByPos = new java.util.TreeMap<>();
-                    java.util.TreeMap<Long, Double> maxDiffByPos = new java.util.TreeMap<>();
-                    for (Map.Entry<String, INDArray> kvEntry : replayKv.entrySet()) {
-                        INDArray replayArr = kvEntry.getValue();
-                        INDArray liveArr = liveKv.get(kvEntry.getKey());
-                        if (liveArr == null) continue;
-                        long cols = Math.min(35, replayArr.size(1));
-                        for (long c = 0; c < cols; c++) {
-                            if (firstDiffByPos.containsKey(c)) continue;
-                            for (long r0 = 0; r0 < replayArr.size(0); r0++) {
-                                for (long h = 0; h < replayArr.size(2); h++) {
-                                    for (long d = 0; d < replayArr.size(3); d++) {
-                                        if (replayArr.getDouble(r0, c, h, d)
-                                                != liveArr.getDouble(r0, c, h, d)) {
-                                            firstDiffByPos.put(c, kvEntry.getKey());
-                                            maxDiffByPos.put(c, Math.abs(
-                                                    replayArr.getDouble(r0, c, h, d)
-                                                    - liveArr.getDouble(r0, c, h, d)));
-                                            break;
-                                        }
-                                    }
-                                    if (firstDiffByPos.containsKey(c)) break;
-                                }
-                                if (firstDiffByPos.containsKey(c)) break;
-                            }
+                        int firstIdx = -1;
+                        for (int i = 0; i < 19; i++) {
+                            if (liveEmitted[i] != emitted[i]) { firstIdx = i; break; }
                         }
+                        log.info("[SEAM-R2-REPRO] live leg FULL-PREFIX MISMATCH: first differing "
+                                        + "index {} emitted {} vs recorded {}",
+                                firstIdx,
+                                firstIdx >= 0 ? liveEmitted[firstIdx] : -1,
+                                firstIdx >= 0 ? emitted[firstIdx] : -1);
                     }
-                    for (Map.Entry<Long, String> e : firstDiffByPos.entrySet()) {
-                        log.info("[SEAM-R2-POS] pos={} firstDiffTensor={} maxAbs={}",
-                                e.getKey(), e.getValue(), maxDiffByPos.get(e.getKey()));
+                    assertEquals(tok18, liveEmitted[18],
+                            "R2 live leg pending token (emitted index 18) must equal e[18]=159034");
+
+                    InGraphKvState sLive = sessionLive.retainedStateForInspection();
+                    log.info("[SEAM-R2] live terminal snapshot: cachePos={} pending={} "
+                                    + "(terminal generate(19); in-flight B equivalence NOT asserted)",
+                            sLive.cachePosition, liveEmitted[18]);
+                    assertEquals((long) (promptLen + 18), sLive.cachePosition,
+                            "live cachePosition must be 35 after consuming e[0..17]");
+
+                    // Independent storage for BOTH compared sides (review round 4, finding 3).
+                    Map<String, INDArray> liveKvOwned = sLive.staticKvBuffers != null
+                            ? sLive.staticKvBuffers : sLive.quantizedKvBuffers;
+                    Map<String, INDArray> liveStatesOwned = sLive.recurrentStateBuffers;
+                    Map<String, INDArray> liveKv = duplicateArrays(liveKvOwned, owned);
+                    Map<String, INDArray> liveStates = duplicateArrays(liveStatesOwned, owned);
+
+                    // Qualification: KV storage dtype must equal the decoder
+                    // placeholder dtype (production derives storage dtypes from
+                    // placeholders; the replay derives them from output tensors —
+                    // verify equivalence against the placeholder contract).
+                    boolean replayKvStorageOk = storageMatchesPlaceholders(replayKv, model);
+                    boolean liveKvStorageOk = storageMatchesPlaceholders(liveKv, model);
+                    boolean inputsQualified = fullPrefixMatch && replayKvStorageOk && liveKvStorageOk;
+                    log.info("[SEAM-R2-QUALIFY] fullPrefixMatch={} replayKvStorageOk={} "
+                                    + "liveKvStorageOk={} => {}",
+                            fullPrefixMatch, replayKvStorageOk, liveKvStorageOk,
+                            inputsQualified ? "MATCHED_INPUTS" : "UNMATCHED_REPLAY_INPUTS");
+                    if (!inputsQualified) {
+                        log.info("[SEAM-R2] elementwise comparison NOT QUALIFIED: "
+                                        + "UNMATCHED_REPLAY_INPUTS (history or storage-contract "
+                                        + "mismatch). The layer-11/pos-9 onset observation is "
+                                        + "retained for investigation; it is NOT classified as "
+                                        + "proven native state corruption by this test.");
                     }
-                    if (firstDiffByPos.isEmpty()) {
-                        log.info("[SEAM-R2-POS] no per-position KV differences in [0,35)");
-                    }
+
                     int firstDiffCount = 0;
                     double firstDiffMax = 0.0;
                     String firstDiffTensor = null;
                     long firstDiffIdx = -1;
                     double firstDiffExpected = 0.0, firstDiffActual = 0.0;
+                    java.util.TreeMap<Long, String> firstDiffByPos = new java.util.TreeMap<>();
+                    java.util.TreeMap<Long, Double> maxDiffByPos = new java.util.TreeMap<>();
                     for (Map.Entry<String, INDArray> kvEntry : replayKv.entrySet()) {
                         INDArray replayArr = kvEntry.getValue();
                         INDArray liveArr = liveKv.get(kvEntry.getKey());
@@ -1106,6 +1127,8 @@ public class TestQwen35MtpDecode {
                                                 firstDiffActual = lv;
                                             }
                                             firstDiffMax = Math.max(firstDiffMax, Math.abs(rv - lv));
+                                            firstDiffByPos.putIfAbsent(c, kvEntry.getKey());
+                                            maxDiffByPos.merge(c, Math.abs(rv - lv), Math::max);
                                         }
                                     }
                                 }
@@ -1113,12 +1136,19 @@ public class TestQwen35MtpDecode {
                         }
                     }
                     log.info("[SEAM-R2] live-vs-replay committed[0,35) KV: firstDiffTensor={} "
-                                    + "firstDiffPos={} expected={} actual={} maxAbsDiff={} diffCount(capped)={}",
+                                    + "firstDiffPos={} expected={} actual={} maxAbsDiff={} diffCount(capped)={} "
+                                    + "qualified={}",
                             firstDiffTensor, firstDiffIdx, firstDiffExpected, firstDiffActual,
-                            firstDiffMax, firstDiffCount);
-                    // All-layer divergence map: for EVERY KV tensor, report the
-                    // first differing position and whether head 0 or head 1 is
-                    // implicated at that onset. Locates whether layer 11 is unique.
+                            firstDiffMax, firstDiffCount, inputsQualified);
+                    for (Map.Entry<Long, String> e : firstDiffByPos.entrySet()) {
+                        log.info("[SEAM-R2-POS] pos={} firstDiffTensor={} maxAbs={}",
+                                e.getKey(), e.getValue(), maxDiffByPos.get(e.getKey()));
+                    }
+                    if (firstDiffByPos.isEmpty()) {
+                        log.info("[SEAM-R2-POS] no per-position KV differences in [0,35)");
+                    }
+                    // All-layer onset map, retained for investigation regardless
+                    // of qualification status (review round 4, finding 4).
                     log.info("[SEAM-R2-LAYERS] onset map (layer.tensor -> firstDiffPos, onsetHead):");
                     for (Map.Entry<String, INDArray> kvEntry : replayKv.entrySet()) {
                         INDArray replayArr = kvEntry.getValue();
@@ -1150,10 +1180,7 @@ public class TestQwen35MtpDecode {
                         }
                     }
 
-                    // Layer-11 key row-9 anatomy: per-head max diff and per-head
-                    // first-diff dim across [r0,h,d] at position 9 — distinguishes
-                    // a RoPE-localized defect (specific heads / dim pairs) from
-                    // uniform noise (whole row).
+                    // Layer-11 key row-9 anatomy retained for investigation.
                     {
                         INDArray replayKey = replayKv.get("past_key_values.11.key");
                         INDArray liveKey = liveKv.get("past_key_values.11.key");
@@ -1187,29 +1214,16 @@ public class TestQwen35MtpDecode {
                             log.info("[SEAM-R2-ROW9] layer11 key pos9 per-head anatomy (diffDims/total):{} "
                                             + "totalDiffDims={}",
                                     headLine, diffDimsTotal);
-                            // Also compare rows 8 and 10 at layer 11 to bound the
-                            // affected region: is 9 the exclusive onset?
-                            for (long probePos : new long[]{8, 10}) {
-                                int probeDiffs = 0;
-                                for (long h = 0; h < heads; h++) {
-                                    for (long d = 0; d < dims; d++) {
-                                        if (replayKey.getDouble(0, probePos, h, d)
-                                                != liveKey.getDouble(0, probePos, h, d)) {
-                                            probeDiffs++;
-                                        }
-                                    }
-                                }
-                                log.info("[SEAM-R2-ROW9] layer11 key pos{} diffDims={}", probePos, probeDiffs);
-                            }
                         }
                     }
+                    // Recurrent-state comparison on independent snapshots.
                     int stateDiffCount = 0;
                     double stateDiffMax = 0.0;
                     String stateDiffTensor = null;
                     double stateDiffExpected = 0.0, stateDiffActual = 0.0;
                     for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
                         INDArray replayArr = replayStates.get(pair.inputName);
-                        INDArray liveArr = sLive.recurrentStateBuffers.get(pair.inputName);
+                        INDArray liveArr = liveStates.get(pair.inputName);
                         if (replayArr == null || liveArr == null
                                 || replayArr.length() != liveArr.length()) {
                             log.info("[SEAM-R2] recurrent shape/missing {} replay={} live={}",
@@ -1233,16 +1247,16 @@ public class TestQwen35MtpDecode {
                         }
                     }
                     log.info("[SEAM-R2] live-vs-replay recurrent state: firstDiffTensor={} "
-                                    + "expected={} actual={} maxAbsDiff={} diffCount(capped)={}",
+                                    + "expected={} actual={} maxAbsDiff={} diffCount(capped)={} "
+                                    + "qualified={}",
                             stateDiffTensor, stateDiffExpected, stateDiffActual,
-                            stateDiffMax, stateDiffCount);
-                    // Report-only: these numbers decide whether the live state
-                    // (S_C35) equals the composed scalar reconstruction (S_REF35).
-                    // A nonzero difference here localizes the publication boundary
-                    // BEFORE the seam, i.e. the live leg-1 commit differs from the
-                    // scalar reconstruction. Zero does not yet prove exact equality
-                    // of everything (scales, masks) — but it is the decisive
-                    // first-difference report the task requires.
+                            stateDiffMax, stateDiffCount, inputsQualified);
+                    // Scope statement (review round 4): these comparisons cover the
+                    // committed KV region [0,35) and the recurrent state buffers
+                    // only — the components actually inspected. They do NOT claim
+                    // complete state equality (scales, masks, predictor buffers
+                    // are not compared here). UNMATCHED inputs downgrades any
+                    // tensor difference to unqualified, not proof of corruption.
                 }
             }
 
@@ -1251,6 +1265,11 @@ public class TestQwen35MtpDecode {
             // the anchor state and compare logits element-wise. Zero => graph is
             // deterministic and state divergence enters via accumulation across
             // differing sessions; nonzero => a kernel is nondeterministic.
+            // Review round 4, finding 3: BOTH runs' logits are snapshotted into
+            // independent arrays BEFORE the KV written-row comparison (which runs
+            // additional getDouble reads only — no model.output in between — but
+            // the snapshotted logits guarantee the compared values cannot be
+            // mutated by any later staging).
             List<String> replayOutputNames = new ArrayList<>();
             replayOutputNames.add(io.getLogitsOutputName());
             replayOutputNames.add("target_hidden_states");
@@ -1268,7 +1287,8 @@ public class TestQwen35MtpDecode {
                 setDecodeStep(r4aInputs, io, tok18, 0, pos35, 1, window, maxKvLength, maskType, owned);
                 Map<String, INDArray> r4aOut = model.output(
                         r4aInputs, replayOutputNames.toArray(new String[0]));
-                ownAll(r4aOut, owned);
+                INDArray r4aLogitsSnapshot = own(owned,
+                        r4aOut.get(io.getLogitsOutputName()).dup());
 
                 Map<String, INDArray> r4bKv = duplicateArrays(replayKv, owned);
                 Map<String, INDArray> r4bStates = duplicateArrays(replayStates, owned);
@@ -1277,12 +1297,17 @@ public class TestQwen35MtpDecode {
                 setDecodeStep(r4bInputs, io, tok18, 0, pos35, 1, window, maxKvLength, maskType, owned);
                 Map<String, INDArray> r4bOut = model.output(
                         r4bInputs, replayOutputNames.toArray(new String[0]));
+                INDArray r4bLogitsSnapshot = own(owned,
+                        r4bOut.get(io.getLogitsOutputName()).dup());
+                ownAll(r4aOut, owned);
                 ownAll(r4bOut, owned);
 
+                // Compare the two INDEPENDENT snapshots.
                 double[] r4diff = difference(
-                        queryRow(r4aOut.get(io.getLogitsOutputName()), 0),
-                        queryRow(r4bOut.get(io.getLogitsOutputName()), 0));
-                log.info("[SEAM-R4] same-state same-step determinism: max={} l1={}", r4diff[0], r4diff[1]);
+                        queryRow(r4aLogitsSnapshot, 0),
+                        queryRow(r4bLogitsSnapshot, 0));
+                log.info("[SEAM-R4] same-state same-step determinism (independent snapshots): "
+                                + "max={} l1={}", r4diff[0], r4diff[1]);
                 double kvSelfDiffMax = 0;
                 int kvSelfCount = 0;
                 for (Map.Entry<String, INDArray> kvEntry : replayKv.entrySet()) {
@@ -1310,6 +1335,7 @@ public class TestQwen35MtpDecode {
             }
 
             // ── R0: two-row window from the replay anchor: [159034, 271], asl=2, pos=35.
+            // Review round 4, finding 3: logits snapshotted before comparison.
             Map<String, INDArray> r0Kv = duplicateArrays(replayKv, owned);
             Map<String, INDArray> r0States = duplicateArrays(replayStates, owned);
             Map<String, INDArray> r0Inputs = newStableDecodeInputs(
@@ -1317,16 +1343,18 @@ public class TestQwen35MtpDecode {
             setDecodeStep(r0Inputs, io, tok18, tok19, pos35, 2, window, maxKvLength, maskType, owned);
             Map<String, INDArray> r0Outputs = model.output(
                     r0Inputs, replayOutputNames.toArray(new String[0]));
+            INDArray r0LogitsSnapshot = own(owned,
+                    r0Outputs.get(io.getLogitsOutputName()).dup());
             ownAll(r0Outputs, owned);
-            int r0Row0 = argMaxToken(r0Outputs.get(io.getLogitsOutputName()), 0);
-            int r0Row1 = argMaxToken(r0Outputs.get(io.getLogitsOutputName()), 1);
+            int r0Row0 = argMaxToken(r0LogitsSnapshot, 0);
+            int r0Row1 = argMaxToken(r0LogitsSnapshot, 1);
             log.info("[SEAM-REPLAY] R0 winners: row0={} row1={} (production B: 271 then 8160)",
                     r0Row0, r0Row1);
             assertEquals(tok19, r0Row0, "R0 row0 must reproduce B's row-0 winner 271");
             assertEquals(tok20, r0Row1, "R0 row1 must reproduce B's row-1 winner 8160");
 
             // ── R1a: one-row forward from the replay anchor: [159034], asl=1, pos=35.
-            // Row 0 predicts e[19]=271.
+            // Row 0 predicts e[19]=271. Logits snapshotted (independent observation).
             Map<String, INDArray> r1Kv = duplicateArrays(replayKv, owned);
             Map<String, INDArray> r1States = duplicateArrays(replayStates, owned);
             Map<String, INDArray> r1Inputs = newStableDecodeInputs(
@@ -1334,10 +1362,13 @@ public class TestQwen35MtpDecode {
             setDecodeStep(r1Inputs, io, tok18, 0, pos35, 1, window, maxKvLength, maskType, owned);
             Map<String, INDArray> r1aOutputs = model.output(
                     r1Inputs, replayOutputNames.toArray(new String[0]));
+            INDArray r1aLogitsSnapshot = own(owned,
+                    r1aOutputs.get(io.getLogitsOutputName()).dup());
             ownAll(r1aOutputs, owned);
-            int r1aRow0 = argMaxToken(r1aOutputs.get(io.getLogitsOutputName()), 0);
+            int r1aRow0 = argMaxToken(r1aLogitsSnapshot, 0);
             assertEquals(tok19, r1aRow0, "R1a row0 must reproduce 271");
-            // Commit through pos 35 → S_REF36.
+            // Commit through pos 35 → S_REF36 (outputs read directly for commit,
+            // then state copies are dup'd into independent storage).
             commitKvRows(r1Kv, kvNames, r1aOutputs, pos35, 1);
             for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
                 r1States.get(pair.inputName).assign(r1aOutputs.get(pair.outputName));
@@ -1360,12 +1391,13 @@ public class TestQwen35MtpDecode {
             INDArray r1bLogits = own(owned, r1bOutputs.get(io.getLogitsOutputName()).dup());
             INDArray r1bHidden = own(owned, r1bOutputs.get("target_hidden_states").dup());
 
-            // Composition check: R0 row1 vs R1b row0.
+            // Composition check: R0 row1 vs R1b row0 — both from INDEPENDENT
+            // snapshots (r0LogitsSnapshot above; r1bLogits dup'd at capture).
             double[] row1Diff = difference(
-                    queryRow(r0Outputs.get(io.getLogitsOutputName()), 1),
+                    queryRow(r0LogitsSnapshot, 1),
                     queryRow(r1bLogits, 0));
-            log.info("[SEAM-REPLAY] COMPOSITION R0-row1 vs R1b-row0: max={} l1={}",
-                    row1Diff[0], row1Diff[1]);
+            log.info("[SEAM-REPLAY] COMPOSITION R0-row1 vs R1b-row0 (independent snapshots): "
+                            + "max={} l1={}", row1Diff[0], row1Diff[1]);
 
             // ── R3: future-draft causality from fresh copies of S_REF36.
             // Row 0 at pos 36 consuming [271, X] must be identical for any X.
@@ -2410,6 +2442,58 @@ public class TestQwen35MtpDecode {
             result.put(entry.getKey(), own(owned, entry.getValue().dup()));
         }
         return result;
+    }
+
+    /**
+     * Review round 4, finding 4: verify every KV cache array's dtype matches the
+     * decoder PLACEHOLDER dtype — the production storage contract — rather than
+     * an output tensor's dtype. Production derives KV storage dtypes from the
+     * placeholders; a replay that derives them from outputs must be verified
+     * equivalent before its elementwise comparison is qualified.
+     */
+    private static boolean storageMatchesPlaceholders(Map<String, INDArray> kv, SameDiff sd) {
+        for (Map.Entry<String, INDArray> e : kv.entrySet()) {
+            String placeholder = e.getKey();
+            INDArray arr = e.getValue();
+            if (arr == null || !sd.hasVariable(placeholder)) return false;
+            DataType placeholderDtype = sd.getVariable(placeholder).dataType();
+            if (arr.dataType() != placeholderDtype) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Compare three named-array maps pairwise with FULL elementwise equality on
+     * the components actually inspected, returning a compact report string.
+     * Used by the 3x prefill-stability probe so each comparison observes two
+     * independent snapshots (review round 4, finding 3).
+     */
+    private static String firstDiffProbe(Map<String, INDArray> run1, Map<String, INDArray> run2,
+            Map<String, INDArray> run3) {
+        if (run1.isEmpty()) return " (no tensors)";
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, INDArray> e : run1.entrySet()) {
+            INDArray a = e.getValue();
+            INDArray b = run2.get(e.getKey());
+            INDArray c = run3.get(e.getKey());
+            if (a == null || b == null || c == null
+                    || a.length() != b.length() || a.length() != c.length()) {
+                sb.append(' ').append(e.getKey()).append(":missing/shape");
+                continue;
+            }
+            boolean d12 = false, d23 = false, d13 = false;
+            for (long i = 0; i < a.length(); i++) {
+                double x = a.getDouble(i), y = b.getDouble(i), z = c.getDouble(i);
+                d12 |= x != y;
+                d23 |= y != z;
+                d13 |= x != z;
+            }
+            if (d12 || d23 || d13) {
+                sb.append(String.format(" %s:#1!=#2=%s #2!=#3=%s #1!=#3=%s",
+                        e.getKey(), d12, d23, d13));
+            }
+        }
+        return sb.length() == 0 ? " ALL IDENTICAL" : sb.toString();
     }
 
     private static void restoreArrays(Map<String, INDArray> destination, Map<String, INDArray> source) {

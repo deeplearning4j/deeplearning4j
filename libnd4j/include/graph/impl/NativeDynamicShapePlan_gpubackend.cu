@@ -66,6 +66,7 @@
 #endif
 
 #include <cublas_v2.h>  // N6: cublasSetStream_v2 / cublasSetWorkspace for hoisted gap setup
+#include <cuda.h>       // driver API: cuGraphKernelNodeGetParams / cuFuncGetModule (NODE_AUDIT)
 
 #include <algorithm>
 #include <chrono>
@@ -633,6 +634,211 @@ static bool instantiateAndStoreMergedCapture(
              diagPrefix, mergedGroupId, stats.numHostCallbacks);
   }
 
+  // ── NODE_AUDIT (diagnostic, level=full): full kernel-node manifest ──────
+  // At capture admission, dump every kernel node recorded in this merged
+  // graph: node index, func pointer, grid/block/sharedMem. Compared against
+  // the live LAUNCH CONFIG lines (one per Triton sub-kernel) this names any
+  // node whose func/config matches NO live launch — e.g. a duplicate launch
+  // with a different specialization, or a live-vs-captured resolution split.
+  // SND-VERIFY: runtime cudaGraphKernelNodeGetParams returns error 98
+  // (invalid device function) on stream-captured DRIVER-launched kernels
+  // (CUfunction from cuModuleGetFunction). Fall back to the driver API
+  // cuGraphKernelNodeGetParams per node — that reads func + launch geometry
+  // for every captured kernel regardless of API flavor.
+  //
+  // EDGE AUDIT: a stream-captured graph is a total order ONLY if every
+  // consecutive pair is linked. Nodes recorded on DIFFERENT streams (DSP
+  // stream vs gap stream) form parallel branches; at replay the graph may
+  // execute them CONCURRENTLY where the live run serialized them — a
+  // deterministic capture-vs-replay divergence surface. 45 nodes need >= 44
+  // edges to be a chain; fewer edges = a fork exists.
+  if (DspDiagnostics::getInstance().getLevel() >= DSP_LEVEL_FULL) {
+    // ── EDGE AUDIT: count + per-edge dependency dump ──────────────────
+    // A stream-captured graph is a total order ONLY if every consecutive
+    // pair is linked (45 nodes => >=44 edges). Nodes recorded on DIFFERENT
+    // streams (DSP stream vs gap stream) form parallel branches; at replay
+    // the graph may execute them CONCURRENTLY where the live run
+    // serialized them — a deterministic capture-vs-replay divergence.
+    size_t numEdges = 0;
+    size_t numNodesLocal = 0;
+    cudaGraphGetNodes(nativeHandle->getGraph(), nullptr, &numNodesLocal);
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
+    cudaGraphGetEdges(nativeHandle->getGraph(), nullptr, nullptr, nullptr, &numEdges);
+    std::vector<cudaGraphNode_t> edgeFrom(numEdges), edgeTo(numEdges);
+    if (numEdges > 0)
+      cudaGraphGetEdges(nativeHandle->getGraph(), edgeFrom.data(), edgeTo.data(),
+                        nullptr, &numEdges);
+#else
+    cudaGraphGetEdges(nativeHandle->getGraph(), nullptr, nullptr, &numEdges);
+    std::vector<cudaGraphNode_t> edgeFrom(numEdges), edgeTo(numEdges);
+    if (numEdges > 0)
+      cudaGraphGetEdges(nativeHandle->getGraph(), edgeFrom.data(), edgeTo.data(), &numEdges);
+#endif
+    DSP_DIAG(EXECUTE, "EDGE_AUDIT: group=%d nodes=%zu edges=%zu (chain requires >=%zu)",
+             mergedGroupId, numNodesLocal, numEdges,
+             numNodesLocal > 0 ? numNodesLocal - 1 : 0);
+    const auto nodeInfos = nativeHandle->getDetailedNodeInfo();
+    {
+      std::unordered_map<void*, size_t> handleToIdx;
+      for (const auto& ni : nodeInfos) handleToIdx[(void*)ni.nodeHandle] = ni.nodeIndex;
+      std::vector<int> fanIn(nodeInfos.size(), 0), fanOut(nodeInfos.size(), 0);
+      for (size_t e = 0; e < edgeFrom.size(); e++) {
+        auto fi = handleToIdx.find((void*)edgeFrom[e]);
+        auto ti = handleToIdx.find((void*)edgeTo[e]);
+        size_t fromIdx = fi != handleToIdx.end() ? fi->second : SIZE_MAX;
+        size_t toIdx = ti != handleToIdx.end() ? ti->second : SIZE_MAX;
+        if (fromIdx != SIZE_MAX && toIdx != SIZE_MAX) {
+          if (fromIdx < fanOut.size()) fanOut[fromIdx]++;
+          if (toIdx < fanIn.size()) fanIn[toIdx]++;
+        }
+        DSP_DIAG(EXECUTE, "EDGE_AUDIT: group=%d edge[%zu] node[%zu] -> node[%zu]",
+                 mergedGroupId, e, fromIdx, toIdx);
+      }
+      for (const auto& ni : nodeInfos) {
+        if (ni.nodeIndex < fanIn.size() && (fanIn[ni.nodeIndex] > 1 || fanOut[ni.nodeIndex] > 1)) {
+          DSP_DIAG(EXECUTE,
+                   "EDGE_AUDIT: group=%d node[%zu] FORK/JOIN fanIn=%d fanOut=%d — "
+                   "parallel branch in replayed graph",
+                   mergedGroupId, ni.nodeIndex, fanIn[ni.nodeIndex],
+                   fanOut[ni.nodeIndex]);
+        }
+      }
+    }
+    // ── per-node KERNEL/MEMCPY manifest (driver-API fallback for kernels) ──
+    for (const auto& ni : nodeInfos) {
+      if (ni.type == cudaGraphNodeTypeKernel) {
+        if (ni.kernelFuncPtr != nullptr) {
+          DSP_DIAG(EXECUTE,
+                   "NODE_AUDIT: group=%d node[%zu] KERNEL func=%p grid=%ux%ux%u block=%ux%ux%u "
+                   "sharedMem=%u name='%s'",
+                   mergedGroupId, ni.nodeIndex, ni.kernelFuncPtr,
+                   ni.gridX, ni.gridY, ni.gridZ,
+                   ni.blockX, ni.blockY, ni.blockZ,
+                   ni.sharedMemBytes, ni.kernelName.c_str());
+        } else {
+          // Driver-API fallback: the graph handle is a runtime graph, but the
+          // underlying CUgraphNode is interchangeable (same object under the
+          // hood); cuGraphKernelNodeGetParams works where the runtime flavor
+          // cannot validate the CUfunction's context.
+          CUDA_KERNEL_NODE_PARAMS dkp; memset(&dkp, 0, sizeof(dkp));
+          cudaGraphNode_t nodeCopy = ni.nodeHandle;  // opaque pointer, value-copy
+          CUresult drvRes = cuGraphKernelNodeGetParams(
+              reinterpret_cast<CUgraphNode>(nodeCopy), &dkp);
+          if (drvRes == CUDA_SUCCESS) {
+            DSP_DIAG(EXECUTE,
+                     "NODE_AUDIT: group=%d node[%zu] KERNEL(driver) func=%p grid=%ux%ux%u "
+                     "block=%ux%ux%u sharedMem=%u paramCount=%u",
+                     mergedGroupId, ni.nodeIndex, (void*)dkp.func,
+                     dkp.gridDimX, dkp.gridDimY, dkp.gridDimZ,
+                     dkp.blockDimX, dkp.blockDimY, dkp.blockDimZ,
+                     dkp.sharedMemBytes, dkp.kernelParams != nullptr ? 1u : 0u);
+            // Bake check: dereference the captured param VALUES (kernelParams is
+            // an array of pointers to the baked argument values). For indirect-
+            // args Triton kernels: [0]=argTable device ptr, [1]=n_elements i32,
+            // [2]=global scratch (null), [3]=profile (null). A baked n_elements
+            // differing from the live launch's, or a stale argTable pointer,
+            // directly explains replay-vs-live divergence.
+            if (dkp.kernelParams != nullptr) {
+              for (unsigned p = 0; p < 4 && dkp.kernelParams[p] != nullptr; p++) {
+                // Heuristic per known Triton launch layout: arg0/arg2/arg3 are
+                // 8-byte pointers, arg1 is a 4-byte i32.
+                if (p == 1) {
+                  int32_t ival = 0;
+                  memcpy(&ival, dkp.kernelParams[p], sizeof(ival));
+                  DSP_DIAG(EXECUTE,
+                           "NODE_AUDIT: group=%d node[%zu] PARAM[%u] i32=%d",
+                           mergedGroupId, ni.nodeIndex, p, ival);
+                } else {
+                  void* pval = nullptr;
+                  memcpy(&pval, dkp.kernelParams[p], sizeof(pval));
+                  DSP_DIAG(EXECUTE,
+                           "NODE_AUDIT: group=%d node[%zu] PARAM[%u] ptr=%p",
+                           mergedGroupId, ni.nodeIndex, p, pval);
+                }
+              }
+            }
+          } else {
+            const char* drvErr = nullptr;
+            cuGetErrorString(drvRes, &drvErr);
+            DSP_DIAG(EXECUTE,
+                     "NODE_AUDIT: group=%d node[%zu] KERNEL UNREADABLE runtimeErr=98 driverErr=%d (%s)",
+                     mergedGroupId, ni.nodeIndex, static_cast<int>(drvRes),
+                     drvErr ? drvErr : "unknown");
+          }
+        }
+      } else if (ni.type == cudaGraphNodeTypeMemcpy) {
+        // H2D dst addresses map each arg-table node to its owning
+        // CompiledKernel; a dst matching NO sub-kernel's argTableDevice
+        // (or a duplicated dst) exposes the extra launch pair.
+        DSP_DIAG(EXECUTE,
+                 "NODE_AUDIT: group=%d node[%zu] MEMCPY %s %zu bytes src=%p dst=%p",
+                 mergedGroupId, ni.nodeIndex, ni.memcpyKind.c_str(),
+                 ni.memcpyBytes, ni.memcpySrcPtr, ni.memcpyDstPtr);
+      }
+    }
+  }
+
+  // ── Copyback-membership audit (capture-admission assertion) ─────────────
+  // A TritonGraphBackend alias-scratch copyback (cudaMemcpyAsync temp→orig)
+  // enqueued while the stream is capturing is only replay-correct if the
+  // owning merged graph actually recorded it. Immutable alias metadata
+  // (aliasBindingsCaptured) does NOT prove the copyback node exists in this
+  // graph. Correlate every sealed sub-kernel with captured alias bindings
+  // inside this group's slot range against the graph's per-slot capture
+  // audit: a kernel node for the sub-kernel range must have been recorded
+  // AFTER alias bindings were sealed (nodesBefore ≥ 21 ⇔ after the 21 Triton
+  // sub-kernels), proving the copyback enqueue is inside the recorded span.
+  // Diagnostic-only in this patch: reports COVERAGE_OK / UNPROVEN (does not
+  // fail capture) so the failing prepared-binding scenario can be
+  // characterized before any production behavior change.
+  {
+    const bool hasAudit = nativeHandle->hasCaptureAudit() &&
+                          nativeHandle->getCaptureAudit().size() >= 2;
+    if (hasAudit) {
+      const auto& audit = nativeHandle->getCaptureAudit();
+      bool anyAliasSubKernelInRange = false;
+      for (const auto& entry : audit) {
+        if (entry.slotIndex < startSlot || entry.slotIndex > endSlot) continue;
+        if (entry.nodesContributed > 0) { anyAliasSubKernelInRange = true; break; }
+      }
+      if (anyAliasSubKernelInRange && stats.numKernels >= 1) {
+        // Locate the LAST kernel-node-audit entry in range: it is the
+        // recording boundary for the final captured producer (and, when
+        // present, its copyback enqueue). Entries after it with zero
+        // contributed nodes are host-only slots.
+        size_t lastKernelNodesBefore = 0;
+        int lastKernelSlot = -1;
+        for (const auto& entry : audit) {
+          if (entry.slotIndex < startSlot || entry.slotIndex > endSlot) continue;
+          if (entry.nodesContributed > 0) {
+            lastKernelNodesBefore = entry.nodesBefore;
+            lastKernelSlot = entry.slotIndex;
+          }
+        }
+        DSP_DIAG(EXECUTE,
+                 "%s: ALIAS_COPYBACK_COVERAGE group=%d [%d-%d] "
+                 "lastKernelSlot=%d lastKernelNodesBefore=%zu kernels=%d "
+                 "memcpyD2D=%d memcpysTotal=%d — membership prologue recorded "
+                 "(sm-kernel copyback ⇒ kernel node; CE copyback ⇒ memcpy node)",
+                 diagPrefix, mergedGroupId, startSlot, endSlot,
+                 lastKernelSlot, lastKernelNodesBefore,
+                 stats.numKernels, stats.numMemcpyD2D,
+                 stats.numMemcpyH2D + stats.numMemcpyD2D + stats.numMemcpyD2H);
+      } else {
+        DSP_DIAG(EXECUTE,
+                 "%s: ALIAS_COPYBACK_COVERAGE group=%d [%d-%d] — no aliased "
+                 "sub-kernel in range (nothing to audit)",
+                 diagPrefix, mergedGroupId, startSlot, endSlot);
+      }
+    } else {
+      DSP_DIAG(EXECUTE,
+               "%s: ALIAS_COPYBACK_COVERAGE group=%d [%d-%d] — capture audit "
+               "absent (<2 entries) for this handle; membership UNPROVEN by "
+               "audit (fall back to node-stat arithmetic in analysis)",
+               diagPrefix, mergedGroupId, startSlot, endSlot);
+    }
+  }
+
   // ── Pre-instantiate: verify stream is NOT still capturing ────────────
   {
     cudaStreamCaptureStatus capStat = cudaStreamCaptureStatusNone;
@@ -706,10 +912,15 @@ static bool instantiateAndStoreMergedCapture(
   // Node autopsy: print every node's identity — for MEMCPY nodes the BAKED
   // src/dst addresses. A replay that SIGSEGVs inside cudaGraphLaunch means one
   // of these baked resources died; the src address names its allocator.
+  // SND-VERIFY: 16-node cap raised to 128 so merged LLM decode groups (45+
+  // nodes) get the same autopsy; the driver-API KERNEL branch below is the
+  // only path that reads CUfunction/launch geometry for stream-captured
+  // Triton nodes (runtime GetParams returns cudaErrorInvalidDeviceFunction
+  // on driver-launched kernels).
   if (DSP_DIAG_ENABLED(EXECUTE) && nativeHandle->getGraph() != nullptr) {
     size_t nNodes = 0;
     cudaGraphGetNodes(nativeHandle->getGraph(), nullptr, &nNodes);
-    if (nNodes > 0 && nNodes <= 16) {
+    if (nNodes > 0 && nNodes <= 128) {
       std::vector<cudaGraphNode_t> nodes(nNodes);
       cudaGraphGetNodes(nativeHandle->getGraph(), nodes.data(), &nNodes);
       for (size_t ni = 0; ni < nNodes; ni++) {
@@ -2423,6 +2634,124 @@ Status NativeDynamicShapePlan::compositeReplay(
         }
       }
       auto tML0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
+#if defined(SD_CUDA) && HAVE_TRITON
+      // ── ALIAS_PUB probe (BUF_FP_RING=1, diagnostic only) ────────────────
+      // Fingerprint every captured alias buffer (scratch + logical) BEFORE the
+      // merged graph launches. After the launch, the -B pairs are re-sampled
+      // post-replay (async on the same stream) below; the A (pre-launch) vs B
+      // (post-replay) split of scratch vs logical proves which side the stale
+      // bytes live on, per alias, by name (trk<i> / bfr<i>).
+      if (fpRingEnabled_) {
+        if (auto* tri = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend)) {
+          // (a) Aliased buffers (scratch + logical, 4 tracks per alias)
+          int track = BUF_FP_ALIAS_TRACK_BASE;
+          for (const auto& afp : tri->getCapturedAliasBuffers(seg)) {
+            if (track + 4 > BUF_FP_TRACE_TRACK) break;
+            const int bS = track++, bO = track++;
+            const int aS = track++, aO = track++;
+            auto snap = [&](int trk, void* p, size_t n) {
+              if (p == nullptr || n == 0) return;
+              recordBufFingerprintPublic(cudaStr, seg.exec.executionCount, trk, p, n);
+            };
+            snap(bS, afp.scratchBefore, afp.bytes);
+            snap(bO, afp.logicalBefore, afp.bytes);
+            pendingAliasProbes_.push_back({cudaStr, seg.exec.executionCount,
+                                           aS, aO, afp.bytes,
+                                           afp.scratchBefore, afp.logicalBefore});
+            if (fpLabels_[bS].tag[0] == '\0') {
+              snprintf(fpLabels_[bS].tag, sizeof(fpLabels_[bS].tag), "trk%d.s.b", afp.slotIdx);
+              snprintf(fpLabels_[bO].tag, sizeof(fpLabels_[bO].tag), "trk%d.o.b", afp.slotIdx);
+              snprintf(fpLabels_[aS].tag, sizeof(fpLabels_[aS].tag), "trk%d.s.a", afp.slotIdx);
+              snprintf(fpLabels_[aO].tag, sizeof(fpLabels_[aO].tag), "trk%d.o.a", afp.slotIdx);
+            }
+          }
+          // (b) KERNEL_PUB: sub-kernel output buffers, 2 tracks per slot
+          // (k<i>.b pre-launch = capture-execution values persisting; k<i>.a
+          // post-replay). Filtered to the compute-heavy kernel groups so the
+          // track budget [80,96) holds. First k<i> whose replay output differs
+          // from its capture-execution output names the diverging kernel.
+          // NOTE: pre-launch ("b") values only equal capture-execution output
+          // when the buffer wasn't consumed/overwritten by a later writer in
+          // the same graph run — interpret with the producer map in hand.
+          // Track budget note: alias(4) + k8(2)+k9(2) + tbl(4) = 12 used; the
+          // {37,37} group was dropped this run in favor of the device-table
+          // tracks (k37's change is downstream of k8 and adds no information).
+          constexpr int kFilterRanges[][2] = {{8, 9}};
+          for (const auto& range : kFilterRanges) {
+            for (const auto& kfp :
+                 tri->getSubKernelOutputBuffers(seg, outputSlots_, totalOutputSlots_,
+                                                range[0], range[1])) {
+              if (track + 2 > BUF_FP_TRACE_TRACK) break;
+              const int bK = track++, aK = track++;
+              if (kfp.logicalBefore != nullptr && kfp.bytes > 0)
+                recordBufFingerprintPublic(cudaStr, seg.exec.executionCount, bK,
+                                           kfp.logicalBefore, kfp.bytes);
+              pendingAliasProbes_.push_back({cudaStr, seg.exec.executionCount,
+                                             aK, aK, kfp.bytes,
+                                             kfp.logicalBefore, kfp.logicalBefore});
+              if (fpLabels_[bK].tag[0] == '\0') {
+                snprintf(fpLabels_[bK].tag, sizeof(fpLabels_[bK].tag), "k%d.%d.b",
+                         kfp.slotIdx, kfp.slotIdx);
+                snprintf(fpLabels_[aK].tag, sizeof(fpLabels_[aK].tag), "k%d.%d.a",
+                         kfp.slotIdx, kfp.slotIdx);
+              }
+            }
+          }
+          // (c) CONST_EXT_PUB: fingerprint the non-staged CONSTANT externals the
+          // captured kernels consume (weight/gamma rows in the arg tables). These
+          // buffers are never staged/refreshed, so any post-capture write to them
+          // changes replay output while every pointer row stays identical — the
+          // last untested input surface for the diverging [8-8] rms_norm.
+          constexpr int kConstExtFilter[] = {379};  // mtp.hnorm.weight (rms_norm gamma)
+          for (int extIdx : kConstExtFilter) {
+            if (extIdx >= numExt) continue;
+            NDArray* ext = externalArrays[extIdx];
+            if (ext == nullptr || ext->isEmpty()) continue;
+            auto* db = ext->dataBuffer();
+            if (db == nullptr || db->special() == nullptr) continue;
+            if (track + 2 > BUF_FP_TRACE_TRACK) break;
+            const int bC = track++, aC = track++;
+            size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
+            recordBufFingerprintPublic(cudaStr, seg.exec.executionCount, bC,
+                                       db->special(), bytes);
+            pendingAliasProbes_.push_back({cudaStr, seg.exec.executionCount,
+                                           aC, aC, bytes, db->special(), db->special()});
+            if (fpLabels_[bC].tag[0] == '\0') {
+              snprintf(fpLabels_[bC].tag, sizeof(fpLabels_[bC].tag), "e%d.b", extIdx);
+              snprintf(fpLabels_[aC].tag, sizeof(fpLabels_[aC].tag), "e%d.a", extIdx);
+            }
+          }
+          // (d) DEVICE_TABLE_PUB: fingerprint the [8-8] DEVICE arg table itself
+          // (the 24-byte region H2D node[0] writes — dst 0x840a28400 in the
+          // NODE_AUDIT manifest, per-kernel table of sub-kernel [8-8]).
+          // Pre-launch (b) = what refresh published; post-replay (a) = what the
+          // in-graph H2D node left after re-copying pinned rows. If (a) != (b)
+          // while pinned rows are unchanged, the in-graph H2D writes a
+          // DIFFERENT table than the kernel reads — the root cause, by address.
+          if (track + 4 <= BUF_FP_TRACE_TRACK) {
+            void* tblDev = tri->getSubKernelArgTableDevice(seg, 0 /* subK[0] = [8-8] */);
+            if (tblDev != nullptr) {
+              const size_t tblBytes = 24;  // 3 args x 8B for [8-8]
+              const int bT = track++, aT = track++;
+              const int bT2 = track++, aT2 = track++;  // reserved: second probe step
+              (void)bT2; (void)aT2;
+              recordBufFingerprintPublic(cudaStr, seg.exec.executionCount, bT,
+                                         tblDev, tblBytes);
+              pendingAliasProbes_.push_back({cudaStr, seg.exec.executionCount,
+                                             aT, aT, tblBytes, tblDev, tblDev});
+              if (fpLabels_[bT].tag[0] == '\0') {
+                snprintf(fpLabels_[bT].tag, sizeof(fpLabels_[bT].tag), "tbl8.b");
+                snprintf(fpLabels_[aT].tag, sizeof(fpLabels_[aT].tag), "tbl8.a");
+                DSP_DIAG(MEMORY,
+                         "TBL8_ADDR: cachedArgTableDevice=%p — compare against NODE_AUDIT "
+                         "node[0] H2D dst to prove H2D-write/kernel-read table identity",
+                         tblDev);
+              }
+            }
+          }
+        }
+      }
+#endif
       bool launchOk = sched.mergedReplayHandles[mgId]->replay(stream);
 #if HAVE_TRITON
       if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend))
@@ -2527,6 +2856,20 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
       if (mergedFixupStatus != Status::OK) return mergedFixupStatus;
       checkReplayCudaError("merged-fixup", rangeMin, rangeMax);
+#if defined(SD_CUDA) && HAVE_TRITON
+      // ── ALIAS_PUB probe: drain post-replay (B) fingerprints ─────────────
+      // Same stream as launch + fixup ⇒ ordered after the graph's last node.
+      // Diagnostic only; also drains here when the fixup path returns OK.
+      for (auto it = pendingAliasProbes_.begin(); it != pendingAliasProbes_.end();) {
+        if (it->stream == cudaStr && it->step == seg.exec.executionCount) {
+          recordBufFingerprintPublic(cudaStr, it->step, it->trackScratch, it->scratchPtr, it->bytes);
+          recordBufFingerprintPublic(cudaStr, it->step, it->trackLogical, it->logicalPtr, it->bytes);
+          it = pendingAliasProbes_.erase(it);
+        } else {
+          ++it;
+        }
+      }
+#endif
       continue;
     }
 
@@ -7697,6 +8040,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   (void)tritonGapSlotCount;
 
   bool captureWindowSatisfied = execCountInWindow || requiresOrderedGapCapture;
+
   shouldCaptureTritonGraph = allowTritonCudaGraphReplay &&
                              seg.exec.segPhase.needsCapture() &&
                              !hasReplayHandle &&

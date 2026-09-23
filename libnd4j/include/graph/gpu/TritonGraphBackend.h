@@ -149,6 +149,37 @@ class TritonGraphBackend : public GraphBackend {
   void recordArgumentSubmission(GraphSegment& seg, void* stream);
   void awaitArgumentSubmissionsForRetirement(GraphSegment& seg);
 
+  // ── ALIAS_PUB probe (diagnostic, BUF_FP_RING=1) ─────────────────────────
+  // Snapshot of every sealed alias binding on this segment: the scratch and
+  // logical device pointers plus byte length. Pointers are plan-lifetime
+  // stable (scratch pool-owned for the compiled kernel, logical buffer
+  // SEAL_PINned), so the merged-replay owner can fingerprint them before and
+  // after a replay without owning either allocation. Not part of execution.
+  struct AliasFingerprint {
+    int    slotIdx;
+    size_t bytes;
+    void*  scratchBefore;
+    void*  logicalBefore;
+  };
+  std::vector<AliasFingerprint> getCapturedAliasBuffers(const GraphSegment& seg) const;
+
+  // KERNEL_PUB probe (diagnostic, BUF_FP_RING=1): output-buffer addresses for
+  // every compiled sub-kernel of `seg` whose startSlot lies within
+  // [slotFilterStart, slotFilterEnd]. scratchBefore/logicalBefore carry the
+  // SAME device pointer (single-buffer snapshot). Diagnostic only.
+  std::vector<AliasFingerprint> getSubKernelOutputBuffers(const GraphSegment& seg,
+                                                          NDArray** outputSlots,
+                                                          int totalOutputSlots,
+                                                          int slotFilterStart,
+                                                          int slotFilterEnd) const;
+
+  // DEVICE_TABLE_PUB probe (diagnostic, BUF_FP_RING=1): the device arg-table
+  // address of the subKernelIdx-th compiled sub-kernel of `seg` — the region
+  // the graph's baked H2D node rewrites each replay and the kernel node
+  // dereferences. nullptr if the sub-kernel has no device table. Diagnostic only.
+  void* getSubKernelArgTableDevice(const GraphSegment& seg, size_t subKernelIdx) const;
+  friend class ::sd::graph::NativeDynamicShapePlan;
+
   // Get the set of slot indices NOT covered by any sub-kernel (ordered native ranges).
   // Value-dependent producers remain live. A compiled consumer may stay covered only
   // when its current tensor metadata exactly matches the concrete compiled argument.
@@ -462,6 +493,9 @@ class TritonGraphBackend : public GraphBackend {
   // This avoids repeating expensive compile attempts for known-bad shapes on a given device.
   std::unordered_set<SegmentCacheKey, SegmentCacheHash> failedCache_;
   mutable std::mutex cacheMtx_;
+  // ROW_AUDIT diagnostic (level=full): start slots already audited once, so the
+  // full row dump is emitted exactly once per compiled sub-kernel.
+  std::unordered_set<int> firstRowAuditSlots_;
 
   // Secondary index: (segment instance, slots, shapeKey, deviceId) → segInternalDtypeHash.
   // Populated whenever a CompiledSegment is inserted into cache_; used by lookup sites

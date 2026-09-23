@@ -3483,15 +3483,23 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Activated by env BUF_FP_RING=1 at plan-first-execute time.
   //
   // Layout: d_fpRing_[step * BUF_FP_MAX_TRACKED + trackIdx] = XOR fingerprint.
-  // step = executeCount_ when fingerprint was recorded (clamped to BUF_FP_MAX_STEPS-1).
-  // trackIdx: [0, BUF_FP_TRACE_TRACK) = staging/slot/gap tracks;
-  //           BUF_FP_TRACE_TRACK = configured trace-slot output;
-  //           requested output 0 is followed across the writer, DSP completion,
-  //           LC handoff, and each merged-capture validation replay.
-  // step + BUF_FP_POST_CAPTURE_STEP_OFFSET holds post-validation slot values.
+  // Track partition (diagnostic only — assignment order below is the contract):
+  //   [0, BUF_FP_MAX_STAGING)                       external inputs at segment entry ("e<i>")
+  //   [BUF_FP_MAX_STAGING, BUF_FP_TRACE_TRACK)      batched-GEMM outputs ("gemm[i].out")
+  //   [BUF_FP_STAGING_BASE, +BUF_FP_MAX_STAGING)    staging buffers after D2D ("stg<i>") —
+  //                                                 DISJOINT from e<*> so the segment-entry
+  //                                                 recorder cannot overwrite staging values
+  //                                                 (pre-2026-09-22 collision bug: stg used
+  //                                                 [0,MAX_STAGING) and was zeroed+overwritten
+  //                                                 by e<*> every step, hiding all staging data).
+  //   BUF_FP_TRACE_TRACK                            configured trace-slot output
+  //   BUF_FP_REQUESTED_OUTPUT_TRACK / END_DSP / END_LC: requested output across
+  //                                                 writer, DSP completion, LC handoff.
   static constexpr int BUF_FP_MAX_STEPS                = 64;
   static constexpr int BUF_FP_MAX_TRACKED              = 128;
   static constexpr int BUF_FP_MAX_STAGING              = 32;
+  static constexpr int BUF_FP_STAGING_BASE             = 48;  // stg<i> track base (>= MAX_STAGING + gemm headroom)
+  static constexpr int BUF_FP_ALIAS_TRACK_BASE         = 80;  // captured alias buffers: [bS,bO,aS,aO] per alias
   static constexpr int BUF_FP_TRACE_TRACK              = 96;
   static constexpr int BUF_FP_REQUESTED_OUTPUT_TRACK   = 97;
   static constexpr int BUF_FP_END_DSP_TRACK            = 98;
@@ -3515,6 +3523,24 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::atomic<int> fpInvocationCount_{0};     // unique diagnostic step even when executeCount_ resets/stalls
   BufFpLabel   fpLabels_[BUF_FP_MAX_TRACKED] = {};  // label for each trackIdx
   std::string  fpJsonBuffer_;                 // backing storage for getFingerprintJson()
+
+#ifdef SD_CUDA
+  // ALIAS_PUB probe (diagnostic, BUF_FP_RING=1): merged-replay launches queue
+  // pre-launch (A) fingerprints immediately and park the matching post-replay
+  // (B) records here until the fixup boundary, which is ordered after the
+  // graph's last node on the same stream. Entries are matched by
+  // (stream, step) so multi-group schedules never cross-contaminate.
+  struct PendingAliasProbe {
+    void*   stream;
+    int     step;
+    int     trackScratch;
+    int     trackLogical;
+    size_t  bytes;
+    void*   scratchPtr;
+    void*   logicalPtr;
+  };
+  std::vector<PendingAliasProbe> pendingAliasProbes_;
+#endif
 
 #ifdef SD_CUDA
   uint64_t*    d_fpRing_ = nullptr;  // device: [BUF_FP_MAX_STEPS * BUF_FP_MAX_TRACKED]
