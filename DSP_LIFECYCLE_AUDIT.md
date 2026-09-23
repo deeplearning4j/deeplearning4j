@@ -7,25 +7,53 @@ CAPTURE WALL ELIMINATED (proc-068): capability-stable placement sort
 never remaining-free budget) keeps assignments identical across generates.
 All three placement traces: device0=all ops. No capture-memory failure.
 
-REMAINING BLOCKER v2 (proc-070, stack traced):
-The doc-2 failure is NOT KV-write memory need. Exact sequence:
-  1. dev0 remaining budget collapsed (3479MB budget line) after doc1 resident plans.
-  2. Doc2 prefill warmup: 6MB intermediate allocation FAILED the dev0 counter ->
-     DeviceMemoryManager FAILOVER placed it on dev1 (log 17:25:11.440).
-  3. valBuf.assign() (GenerationPipeline:2329) -> DeviceAwareOpExecutioner saw the
-     input on dev1, migrated it BACK to dev0 -> MemoryCounter admission rejected
-     (dev0 counter at/over 85% limit; pool-reserved 21.3GB counted, mostly
-     parked-plan slot arrays that are pool-reclaimable but not released).
-CORRECTION to v2 record: the "double-compile" fix DID work (zero mode-change
-lines, restore adopted with mode=CUDA_GRAPHS). The remaining failure is the
-interaction of (a) the environment device-limit COUNTER accounting pool-reserved
-memory against the cap, and (b) silent per-buffer failover to dev1 for transient
-allocations. Fix direction: transient warmup intermediates must not fail over to
-a foreign device they will immediately migrate back from; either failover should
-prefer trimming the dev0 pool (pool-reserved is largely reclaimable parked-plan
-arrays), or the migrate-back must be avoided by keeping the allocation on dev0.
-Band-cap heuristic REMOVED (was dead code comparing cumulative counter vs
-per-device allowance, last device bypassed, zero at unknown shapes).
+REMAINING BLOCKER v3 (proc-074, DEFINITIVE):
+Trim-before-failover ran across ALL GPUs (proc-073 change). Result:
+  - Zero "pool released" lines: trim reclaimed NOTHING on any device.
+  - In-place re-check admitted 6MB five times (Java pool-aware accounting said fit),
+    but native DataBuffer::allocateSpecial refused every one (MemoryCounter counter
+    at/over 85% cap).
+CONCLUSION (evidence-backed): native MemoryCounter::_deviceCounters[0] counts LIVE
+DataBuffer allocations (countIn on allocateSpecial, countOut only on buffer close),
+NOT CUDA pool reservations. The decode plan's 1606 slot arrays from doc1 are LIVE
+(owned by the C++ NativePlanCache under the parked/independent lease). No pool trim
+can move this counter — the memory is genuinely allocated. Two full plans resident
+(weights + prefill working set + decode slot arrays + doc2 KV) exceed 19.5GB cap.
+
+THE ONLY LIFECYCLE-CONSISTENT PATH (option 2, on new footing):
+Release the decode plan's slot arrays at the DOCUMENT boundary (end of each doc's
+decode, before next doc's prefill). Different from proc-046/047 failure: mode is
+now stable (property-overrides-AUTO), plans born CUDA_GRAPHS, byte-identical
+serialization, restore adopts without recompile — the confounds that raced the
+release are gone. Decode arrays (~1.6-2GB) freed per doc; decode re-warms arrays
+on next doc (~4-6s in CUDA_GRAPHS). Requires a native-side release entry that
+frees plan-owned slot arrays WITHOUT destroying the plan handle/frozen state, plus
+Java lifecycle wiring to invoke it at the boundary. NEEDS: design review of
+NativePlanCache ownership before any code.
+
+DEVICE INDEX MAP (this JVM; CUDA runtime order, NOT nvidia-smi PCI order):
+dev0 = RTX 4090 24GB (resident/executing) | dev1 = RTX 3070 Ti 8GB (unused).
+Always verify via the "CUDA device N: [name]" backend log line.
+
+CONFIRMED WORKING (proc-070/072/074 evidence):
+- Capability-stable placement sort — placement identical across generates.
+- property-overrides-AUTO mode resolution — zero mode-change recompiles.
+- Restore adopts parked prefill: mode=CUDA_GRAPHS, independentLease=true, no NPE.
+- Trim-before-failover (all GPUs): correct in-place admission, no cross-device hop,
+  observability lines. KEEP — it is correct behavior even though it cannot fix
+  live-allocation pressure.
+- Park/restore machinery; prefill-only parking; placement trace.
+
+FALSIFIED / CORRECTED THIS SESSION (do not retry):
+- CAPACITY_SHIFT_CAPTURE: CUDA 700 (warmup outputs on secondary). Reverted.
+- Budget-descending placement sort: flips between generates (proc-064 trace).
+- estimateSlotOutputBytes() gates pre-warmup: inert (proc-053).
+- Band-cap heuristic: dead code (cumulative vs per-device) — REMOVED.
+- Native rebuild without -Dlibnd4j.triton=ON: wrong binary (tritonAvailable=false).
+- "Disk cache freezes assignments": FALSE — byte-identity gate rejects changed bytes.
+- POOL TRIM as capacity fix: CANNOT WORK — MemoryCounter counts live allocations;
+  trim only releases driver-reserved blocks with no live allocation behind them.
+
 
 CONFIRMED WORKING (proc-070 evidence):
 - Capability-stable placement sort — placement identical across generates.

@@ -888,27 +888,41 @@ public class DeviceMemoryManager {
     public DeviceDescriptor selectFailoverDevice(long bytes, int excludeDeviceIndex) {
         ensureDevicesRegistered();
 
-        // 1. TRIM the failing device's pool and re-check ITS capacity first. A stream-
-        // unaware trim here is intentional: the allocation failure is counter-driven,
-        // not stream-pending, and DeviceMemoryManager has no execution stream handle.
-        if (excludeDeviceIndex >= 0) {
-            long trimReclaimed = -1L;
+        // 1. TRIM ALL GPU pools before ranking. Stale reserved-but-reclaimable pool
+        // blocks distort EVERY device's pool-aware free memory, not just the failing
+        // device's. Trimming the failing device alone (fpna session v3, first cut)
+        // answered "can the failing device take it back in place?" but compared the
+        // cross-device candidates against un-trimmed accounting. Trim every GPU,
+        // then run the stay-in-place and cross-device checks against fresh numbers.
+        // Failures are logged and skipped per-device: an un-trimmable GPU falls back
+        // to whatever its pool accounting reports.
+        java.util.Map<Integer, Long> reclaimedByDevice = new java.util.LinkedHashMap<>();
+        for (DeviceDescriptor device : registeredDevices.values()) {
+            if (!device.getDeviceType().isGpu()) continue;
+            int idx = device.getDeviceIndex();
             try {
                 var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                long usedBefore = getNativePoolUsedMemory(excludeDeviceIndex);
-                nativeOps.trimMemoryPool(excludeDeviceIndex);
-                long usedAfter = getNativePoolUsedMemory(excludeDeviceIndex);
-                trimReclaimed = usedBefore - usedAfter;
+                long usedBefore = getNativePoolUsedMemory(idx);
+                nativeOps.trimMemoryPool(idx);
+                long usedAfter = getNativePoolUsedMemory(idx);
+                long reclaimed = usedBefore - usedAfter;
+                if (reclaimed != 0) {
+                    reclaimedByDevice.put(idx, reclaimed);
+                }
             } catch (Exception trimFailure) {
                 log.debug("Trim-before-failover: pool trim failed on device {}: {}",
-                        excludeDeviceIndex, trimFailure.getMessage());
+                        idx, trimFailure.getMessage());
             }
-            if (trimReclaimed > 0) {
-                log.info("Trim-before-failover: device {} pool released {} MB; re-testing allocation of {} bytes there",
-                        excludeDeviceIndex, trimReclaimed / (1024 * 1024), bytes);
-            }
-            // Re-check the failing device AFTER trim: if the counter now admits the
-            // allocation, staying put is always preferable to a cross-device hop.
+        }
+        for (Map.Entry<Integer, Long> e : reclaimedByDevice.entrySet()) {
+            log.info("Trim-before-failover: device {} pool released {} MB",
+                    e.getKey(), e.getValue() / (1024 * 1024));
+        }
+
+        // 2. STAY-IN-PLACE: re-check the failing device after trim. If its counter
+        // now admits the allocation, staying put beats any cross-device hop (a hop
+        // for a transient allocation forces a migrate back — proc-070/072 chain).
+        if (excludeDeviceIndex >= 0) {
             DeviceDescriptor stay = getRegisteredDevice(excludeDeviceIndex);
             if (stay != null && getPoolAwareFreeMemory(excludeDeviceIndex) >= bytes) {
                 log.info("Trim-before-failover: device {} can now fit {} bytes in place — no cross-device hop",
@@ -917,7 +931,8 @@ public class DeviceMemoryManager {
             }
         }
 
-        // 2. Cross-device search (original behavior).
+        // 3. Cross-device search over ALL registered GPUs against post-trim numbers
+        // (original behavior, now with fresh accounting).
         DeviceDescriptor best = null;
         long bestFree = -1;
         for (DeviceDescriptor device : registeredDevices.values()) {
