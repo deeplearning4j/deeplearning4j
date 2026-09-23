@@ -1,5 +1,43 @@
 # DSP Plan Lifecycle — Factual Timeline and Root Cause
 
+## SESSION VERDICT (2026-09-23, post proc-059) — read this first
+
+CONFIRMED FIX (in tree, code-correct, validated only to the point of "no regression"):
+- `DynamicShapePlanExecutor` restore branch now re-derives mode/JIT/cudaGraphs/timing/trace
+  + rebuilds constant protection on park-restore (kills the spurious "mode change
+  detected → recompiling" that was destroying every restored plan since proc-041).
+  NOT yet observed working end-to-end because doc1 decode dies first (below).
+
+FALSIFIED EXPERIMENTS (evidence-backed, do not retry):
+1. CAPACITY_SHIFT_CAPTURE (proc-055/057, REVERTED in proc-058): re-homing a capture
+   segment to the plan primary + slot-by-slot re-exec produces CUDA 700 illegal
+   memory access — warmup-era output arrays remain on the secondary device. A
+   correct re-home requires migrating existing allocations first = the parked
+   multi-GPU defect, not a local patch. proc-059 (reverted) returned to the clean
+   capture-check failure, proving the 700s were caused by the experiment.
+2. Proc-054 native build lacked -Dlibnd4j.triton=ON (tritonAvailable=false, proc-055
+   initially misattributed the 700 to it). Build contract: iterative native builds
+   MUST pass -Dlibnd4j.triton=ON (blasbuild preserves the Triton toolchain).
+3. Java capture-capacity gate in assignDevices() (in tree, harmless): provably never
+   fires — estimateSlotOutputBytes()=0 at placement time (shapes unknown pre-warmup).
+
+THE REMAINING WALL (proc-051 == 053 == 059, byte-identical):
+  CUDA graph capture memory check failed for seg[73-1872]:
+  requiredFree=818MB, gpuFree=194MB, workingSet=4092MB, gpuTotal=7851MB (dev1)
+Mechanism: the nested decode plan's assignDevices() byte-aware band split places a
+slot band on the 8GB card (viable: ~7.3GB budget > 10% rule). Warmup allocates the
+band; at capture (execCount>=2) free = budget - band - staging - weights-share =
+194MB < 20% margin (818MB). Placement models band fit, NOT capture-time free memory.
+Fix direction (NOT yet implemented): placement must reserve capture margin per
+device: budget - bandBytes - staging/weights - 0.2*bandBytes >= 0, else the device
+keeps no band. Pure Java change; no migration machinery needed.
+Known separate inefficiency (pre-existing, all runs): fresh compiles run twice —
+auto-compile calls compileNativePlan(AUTO), then execute()'s mode check recompiles
+with the property-forced CUDA_GRAPHS.
+
+## Original root-cause finding (unchanged, code-proven)
+
+
 Session: proc-044 .. proc-049, 2026-09-23. Machine: RTX 4090 (24GB, dev used) + RTX 3070 Ti.
 Model: Qwen3.5-2B runtime-quantized (`model-rq.sdz`, GGML Q4_K_M → RUNTIME_QUANTIZED_MATMUL + HALF).
 
