@@ -2753,7 +2753,13 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     private GraphExecutionMode resolveRequestedGraphExecutionMode(GraphExecutionMode requestedMode) {
-        if (requestedMode != null) {
+        // Explicit AUTO is property-overridable (proc-068): AUTO means "auto-select",
+        // so an explicit -Dnd4j.dsp.graphExecutionMode=CUDA_GRAPHS must take effect
+        // even when a caller (e.g. the eager BenchmarkConfig compile) passes AUTO.
+        // Without this, plans are born AUTO and execute()'s property-based check
+        // recompiles every plan (double compile), and parked-plan restores are
+        // rejected on parkedMode(CUDA_GRAPHS) vs requested(AUTO).
+        if (requestedMode != null && requestedMode != GraphExecutionMode.AUTO) {
             return requestedMode;
         }
 
