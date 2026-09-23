@@ -2467,7 +2467,43 @@ public class DynamicShapePlanExecutor implements Closeable {
                     observedLifecycleSnapshot = DspLifecycleSnapshot.unavailable();
                     observedLifecycleHandleAddress = 0L;
                     nativeExecutorFailed = false;
+
+                    // RESTORE CACHED SETTINGS — the teardown tail (freeNativePlanHandle)
+                    // reset these to defaults; the parked plan's native handle still
+                    // carries the mode it was compiled under (mode is part of the C++
+                    // cache key). Re-deriving them here matches the fresh-compile path
+                    // (lines ~2609-2629) so execute()'s mode-mismatch check does not
+                    // trigger a full recompile that destroys the restored frozen state
+                    // (proc-049: restore immediately followed by "mode change detected").
+                    // configuredHandleAddresses is cleared so applySettingsIfNewHandle()
+                    // re-applies per-handle settings on the next redispatch.
+                    GraphExecutionMode requestedRestoreMode = resolveRequestedGraphExecutionMode(null);
+                    boolean tritonAvailableRestore = requestedRestoreMode != GraphExecutionMode.TRITON
+                            || isTritonAvailable(nativeOps);
+                    GraphExecutionMode effectiveRestoreMode = resolveEffectiveGraphExecutionMode(
+                            requestedRestoreMode, tritonAvailableRestore, sd.isDspFallbackToAutoIfTritonUnavailable());
+                    cachedEffectiveGraphModeCode = effectiveRestoreMode.getNativeCode();
+                    configuredGraphExecutionMode = effectiveRestoreMode;
+                    configuredHandleAddresses.clear();
+                    mutableExternalInputsConfiguredHandleAddresses.clear();
+                    cachedJitModeInt = restoreJitModeInt();
+                    cachedCudaGraphsEnabled = !cudaGraphsFailed && !"false".equalsIgnoreCase(
+                            System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "true"));
+                    cachedExecTiming = executionTimingOverride != null
+                            ? executionTimingOverride
+                            : "true".equalsIgnoreCase(
+                                    System.getProperty(ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"));
+                    cachedTraceEnabled = traceEnabledOverride != null
+                            ? traceEnabledOverride
+                            : System.getProperty(ND4JSystemProperties.DSP_TRACE) != null;
+
+                    // Re-protect constant/variable DataBuffers the restored plan references
+                    // (same loop as the fresh-compile path). Without this, session cleanup
+                    // could close constants the restored plan still reads.
+                    rebuildProtectedConstantBuffers(plan);
+
                     if (retained.independentLease) {
+
                         // Convert the independent lease into executor ownership: the plan
                         // is the ACTIVE handle for this generate (swap path never evicts
                         // the active handle), and the next generate boundary re-parks it
@@ -2477,10 +2513,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                         configuredHandleAddresses.add(retained.handle.address());
                     }
                     log.info("Native executor: restored parked frozen plan 0x{} without recompilation "
-                                    + "({} bytes serialized identity, independentLease={})",
+                                    + "({} bytes serialized identity, independentLease={}, mode={})",
                             Long.toHexString(retained.handle.address()), retained.serialized.length,
-                            retained.independentLease);
-                    return requestedMode != null ? requestedMode : configuredGraphExecutionMode;
+                            retained.independentLease, configuredGraphExecutionMode);
+                    return configuredGraphExecutionMode;
                 }
                 if (retained != null) {
                     // Name the exact failed condition — restore misses must be diagnosable
@@ -2724,6 +2760,57 @@ public class DynamicShapePlanExecutor implements Closeable {
             return GraphExecutionMode.AUTO;
         }
         return resolvedMode;
+    }
+
+    /**
+     * Re-derive the JIT mode integer from the system property, exactly as the
+     * fresh-compile path does (proc-049: the restore branch previously left the
+     * teardown's default, letting per-plan settings drift across a park/restore).
+     */
+    private int restoreJitModeInt() {
+        String jitModeStr = System.getProperty(ND4JSystemProperties.DSP_JIT_MODE, "graph");
+        if ("graph".equalsIgnoreCase(jitModeStr)) {
+            return -1;  // leave default
+        } else if ("jit".equalsIgnoreCase(jitModeStr)) {
+            return 1;
+        } else if ("graph+jit".equalsIgnoreCase(jitModeStr)) {
+            return 2;
+        }
+        return 0;  // GRAPH_ONLY fallback
+    }
+
+    /**
+     * Rebuild the protected constant/variable DataBuffer set for a (re)adopted plan —
+     * identical to the fresh-compile protection loop. Restored plans must not rely on
+     * a protection set left over from the previous plan's teardown (it is nulled there).
+     */
+    private void rebuildProtectedConstantBuffers(DynamicShapePlan plan) {
+        if (plan == null) {
+            protectedConstantBuffers = null;
+            return;
+        }
+        String[] extKeys = plan.getExternalInputKeys();
+        if (extKeys == null || extKeys.length == 0) {
+            protectedConstantBuffers = new IdentityHashMap<>();
+            return;
+        }
+        java.util.IdentityHashMap<DataBuffer, Boolean> rebuilt = new java.util.IdentityHashMap<>();
+        int protectedCount = 0;
+        for (String extKey : extKeys) {
+            SDVariable var = sd.getVariable(extKey);
+            if (var != null && (var.getVariableType() == VariableType.CONSTANT
+                    || var.getVariableType() == VariableType.VARIABLE)) {
+                INDArray arr = var.getArr();
+                if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                    rebuilt.put(arr.data(), Boolean.TRUE);
+                    protectedCount++;
+                }
+            }
+        }
+        protectedConstantBuffers = rebuilt;
+        if (protectedCount > 0) {
+            log.info("Native executor: protecting {} constant/variable DataBuffers for restored plan", protectedCount);
+        }
     }
 
     private boolean isTritonAvailable(NativeOps nativeOps) {
