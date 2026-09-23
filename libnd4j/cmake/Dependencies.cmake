@@ -2215,7 +2215,7 @@ function(setup_triton)
     if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
         # triton-cpu pins a different LLVM commit than GPU triton
         set(TRITON_LLVM_COMMIT "20902f0b721ba6cf2fb134362d27144bd8584d53")
-        set(TRITON_LLVM_URL_HASH "SHA256=1736af3127e73eab0f2a2f489275c9509d5b60f80c050c42be3a1f85843993e2")
+        set(TRITON_LLVM_URL_HASH "SHA256=796bb6e334ab5d4d1bd3d7f4ef713f4d10e60d39f3ce470bb02449e3b015316d")
         set(TRITON_LLVM_PREFIX
             "${CMAKE_BINARY_DIR}/triton_cpu_llvm_${_TRITON_LLVM_RECIPE_REVISION}")
         set(_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP OFF)
