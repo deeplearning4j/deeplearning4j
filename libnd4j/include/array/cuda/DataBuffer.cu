@@ -1021,20 +1021,19 @@ void DataBuffer::allocateSpecial() {
         // captured graph silently reads garbage — the documented root cause of
         // the 49.6% accuracy mega-graph bug (commit 321884f564). Capture is a
         // contract for stable graphs only: when the capture cannot be made safe
-        // (insufficient bump space), abort it and let the segment fall back to
-        // slot-by-slot execution, which is always correct.
+        // (insufficient bump space), abort it. NOTE: DSP callers run with a
+        // no-fallback contract — the caller surfaces this error rather than
+        // silently degrading to slot-by-slot, so this message must NOT suggest
+        // fallback or tuning paths.
         DSP_DIAG(MEMORY, "CAPTURE_WORKSPACE_EXHAUSTED: need %zu, remaining %zu/%zu — "
-                 "failing capture (unsafe addresses would be baked into the graph); "
-                 "caller must fall back to slot-by-slot",
+                 "failing capture (unsafe addresses would be baked into the graph)",
                  aligned, tl_captureWorkspaceSize - tl_captureWorkspaceOffset,
                  tl_captureWorkspaceSize);
         const std::string exhaustionMessage = "CAPTURE_WORKSPACE_EXHAUSTED: capture workspace exhausted "
                         "during CUDA graph capture (need " +
                         std::to_string(aligned) + " bytes, " +
                         std::to_string(tl_captureWorkspaceSize - tl_captureWorkspaceOffset) +
-                        " remaining). Capture aborted to avoid baking unsafe addresses; "
-                        "re-run this segment slot-by-slot. Tune via "
-                        "Environment::dspCaptureWorkspaceMb if capture is required.";
+                        " remaining). Capture aborted to avoid baking unsafe addresses.";
         THROW_EXCEPTION(exhaustionMessage.c_str());
       }
 
