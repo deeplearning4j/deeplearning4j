@@ -35,7 +35,6 @@
 #include <helpers/TransferMetrics.h>
 #include <graph/DspDiagnostics.h>
 #include <chrono>
-#include <cstdio>
 
 #include "../DataBuffer.h"
 #include "helpers/DebugHelper.h"
@@ -1027,21 +1026,14 @@ void DataBuffer::allocateSpecial() {
         // silently degrading to slot-by-slot, so this message must NOT suggest
         // fallback or tuning paths.
         const size_t remainingWorkspace = tl_captureWorkspaceSize - tl_captureWorkspaceOffset;
-        DSP_DIAG(MEMORY, "CAPTURE_WORKSPACE_EXHAUSTED: need %zu, remaining %zu/%zu — "
+        DSP_DIAG(MEMORY,
+                 "CAPTURE_WORKSPACE_EXHAUSTED: device=%d buffer=%p dataBytes=%lld "
+                 "allocBytes=%zu used=%zu/%zu need=%zu remaining=%zu — "
                  "failing capture (unsafe addresses would be baked into the graph)",
-                 aligned, remainingWorkspace, tl_captureWorkspaceSize);
-        // DSP_DIAG is normally collected in the plan report, but an exception can
-        // unwind past that report. Emit the exact bump-allocation state only on
-        // exhaustion so the failed capture is diagnosable without changing its
-        // fail-closed behavior or suggesting an unsafe fallback.
-        std::fprintf(stdout,
-                     "[CAPTURE_WORKSPACE_FAILURE] device=%d buffer=%p dataBytes=%lld "
-                     "allocBytes=%zu used=%zu total=%zu remaining=%zu need=%zu\n",
-                     deviceId, static_cast<void*>(this),
-                     static_cast<long long>(getLenInBytes()), allocSize,
-                     tl_captureWorkspaceOffset, tl_captureWorkspaceSize,
-                     remainingWorkspace, aligned);
-        std::fflush(stdout);
+                 deviceId, static_cast<void*>(this),
+                 static_cast<long long>(getLenInBytes()), allocSize,
+                 tl_captureWorkspaceOffset, tl_captureWorkspaceSize,
+                 aligned, remainingWorkspace);
         const std::string exhaustionMessage = "CAPTURE_WORKSPACE_EXHAUSTED: capture workspace exhausted "
                         "during CUDA graph capture (need " +
                         std::to_string(aligned) + " bytes, " +

@@ -1051,12 +1051,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
   }
 
-  // Allocate capture workspace. The configured size is the baseline; large
-  // segments can need more temporary capture storage than the fixed default.
-  // Bound growth by the segment working set and then scale down to available
-  // GPU memory if necessary. Before allocating, trim the memory pool to reclaim
-  // cached-but-unused buffers.
-  // Dynamic — read config each time so tests can override via system property.
+  // Allocate capture workspace. Single-segment and unknown-size captures keep
+  // the configured default. A segmented plan retains one workspace per replay
+  // handle for graph lifetime, so use the segment-local output estimate for each
+  // known segment instead of reserving the full default repeatedly. Bound the
+  // estimate and then scale down to available GPU memory. Trim cached pool
+  // buffers before sizing. Read config dynamically for request/test overrides.
   size_t CONFIGURED_CAPTURE_WORKSPACE = static_cast<size_t>(sd::env_dspCaptureWorkspaceMb()) * 1024ULL * 1024ULL;
   DSP_DIAG_SEG(MEMORY, segIdx, "capture workspace check seg[%d-%d]: ptr=%p bytes=%zu",
                seg.def.startSlot, seg.def.endSlot, seg.exec.replayHandle->getWorkspacePtr(), seg.exec.replayHandle->getWorkspaceBytes());
@@ -1084,7 +1084,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       if (workingSetWorkspace > adaptiveCeiling) {
         workingSetWorkspace = adaptiveCeiling;
       }
-      if (workingSetWorkspace > workspaceSize) {
+      if (segments_.size() > 1) {
+        const size_t minimumSegmentWorkspace =
+            std::min(static_cast<size_t>(32) * 1024 * 1024, adaptiveCeiling);
+        workspaceSize = std::max(minimumSegmentWorkspace, workingSetWorkspace);
+        DSP_DIAG_SEG(MEMORY, segIdx,
+                     "segmented capture workspace target seg[%d-%d]: configured=%zuMB "
+                     "outputEstimate=%zuMB target=%zuMB ceiling=%zuMB",
+                     seg.def.startSlot, seg.def.endSlot,
+                     CONFIGURED_CAPTURE_WORKSPACE / (1024*1024),
+                     estimatedCaptureBytes / (1024*1024),
+                     workspaceSize / (1024*1024),
+                     adaptiveCeiling / (1024*1024));
+      } else if (workingSetWorkspace > workspaceSize) {
         DSP_DIAG_SEG(MEMORY, segIdx,
                      "capture workspace grown from segment working set: configured=%zuMB "
                      "workingSet=%zuMB requested=%zuMB ceiling=%zuMB",
@@ -1125,16 +1137,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                    gpuFree / (1024*1024), headroom / (1024*1024));
     }
 
-    // Print the sizing inputs at allocation time: failures raised from within
-    // an op may bypass the deferred DspDiagnostics report at plan teardown.
-    std::fprintf(stdout,
-                 "[CAPTURE_WORKSPACE_BUDGET] device=%d segment=[%d-%d] configured=%zu "
-                 "estimated=%zu free=%zu headroom=%zu allocated=%zu retry=%d retries=%d\n",
+    DSP_DIAG_SEG(MEMORY, segIdx,
+                 "capture workspace allocation: device=%d seg[%d-%d] configured=%zu "
+                 "estimated=%zu free=%zu headroom=%zu allocated=%zu retry=%d retries=%d",
                  deviceId, seg.def.startSlot, seg.def.endSlot,
                  CONFIGURED_CAPTURE_WORKSPACE, estimatedCaptureBytes, gpuFree,
                  headroom, workspaceSize, isOomRetry ? 1 : 0,
                  seg.exec.captureOomRetries);
-    std::fflush(stdout);
     if (!seg.exec.replayHandle->allocateWorkspace(workspaceSize, deviceId, nullptr, seg.def.startSlot)) {
       DSP_THROW_SEG(COMPILE, seg.def.startSlot,
                     "capture workspace allocation failed for seg[%d-%d]: gpuFree=%zuMB, "
