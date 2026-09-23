@@ -413,6 +413,54 @@ public class DynamicShapePlan implements Closeable {
         // of multi-GB weights to small-capacity devices (e.g. the tied lm-head embedding
         // copy to a 4 GiB secondary device).
         int anchorDevice = residentDevice >= 0 ? residentDevice : sorted.get(0).getKey();
+
+        // Capture-capacity gate (proc-051): before the band split, compute the
+        // total slot working set and verify the SEGMENT-CAPTURE admission
+        // contract can hold on a secondary device. Native capture (cudagraph.cu
+        // pre-capture check) requires 20% of the segment's slot bytes free on
+        // the capturing device AT CAPTURE TIME — a device whose entire budget
+        // is consumed by its own slot band cannot pass that check, and
+        // capture-time rejection (KERNEL_FAILURE) kills the whole nested
+        // generate. A device whose budget cannot cover (its share of slots'
+        // working set + the 20% capture margin) is dropped from the split; the
+        // resident anchor absorbs everything.
+        long workingSetBytes = 0L;
+        long knownBytes = 0L;
+        int knownSlots = 0;
+        for (DynamicShapeSlot slot : slots) {
+            long b = estimateSlotOutputBytes(slot);
+            if (b > 0) { knownSlots++; knownBytes += b; }
+            workingSetBytes += b;
+        }
+        if (knownSlots < slots.length && knownSlots > 0) {
+            long avg = knownBytes / knownSlots;
+            workingSetBytes += (long)(slots.length - knownSlots) * avg;
+        }
+        long captureMarginBytes = workingSetBytes / 5;  // matches native 20% margin
+        List<Map.Entry<Integer, Long>> captureViable = new ArrayList<>(sorted.size());
+        for (Map.Entry<Integer, Long> entry : sorted) {
+            if (entry.getKey() == residentDevice
+                    || entry.getValue() >= workingSetBytes + captureMarginBytes) {
+                captureViable.add(entry);
+            } else {
+                log.info("Device placement: excluding device {} from DSP split — budget {}MB "
+                                + "cannot hold its slot working set ({}MB) + capture margin ({}MB); "
+                                + "capture would reject at runtime (proc-051 contract)",
+                        entry.getKey(), entry.getValue() / (1024 * 1024),
+                        workingSetBytes / (1024 * 1024),
+                        captureMarginBytes / (1024 * 1024));
+            }
+        }
+        if (captureViable.isEmpty()) {
+            log.info("Device placement: no device passes the capture-capacity gate; "
+                    + "falling back to standard viability split");
+        } else if (captureViable.size() < sorted.size()) {
+            sorted = captureViable;
+            long viableTotal = 0;
+            for (Map.Entry<Integer, Long> entry : sorted) viableTotal += entry.getValue();
+            totalMem = viableTotal;
+        }
+
         boolean[] pinned = new boolean[slots.length];
         int pinnedCount = 0;
         long[] externalInputBytes = getExternalInputBytes();
