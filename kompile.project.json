@@ -39,8 +39,8 @@
       "knowledgeBaseId" : "deeplearning4j-knowledge",
       "graphPath" : "data/crawls/deeplearning4j-knowledge/graph.kgraph",
       "codeProjectionVersion" : "4",
-      "codeProjectedAt" : "2026-09-23T22:15:01.869280605Z",
-      "codeIndexGeneration" : "2026-09-23T22:07:55.729111626Z",
+      "codeProjectedAt" : "2026-09-23T22:21:41.418449756Z",
+      "codeIndexGeneration" : "2026-09-23T22:15:04.032858226Z",
       "codeProjectionEntities" : "259578",
       "codeProjectionRelations" : "992453",
       "codeProjectionCodeEntities" : "357513",
@@ -50,7 +50,7 @@
       "codeProjectionExcludes" : ""
     },
     "createdAt" : "2026-08-21T20:06:29.082576947Z",
-    "updatedAt" : "2026-09-23T22:15:01.869562747Z"
+    "updatedAt" : "2026-09-23T22:21:41.418741375Z"
   }, {
     "id" : "dl4j-mobile-tooling-final",
     "codeProjectId" : "dl4j-mobile-tooling-final",
@@ -310,5 +310,5 @@
   "workflows" : [ ],
   "metadata" : { },
   "createdAt" : "2026-08-21T20:06:29.083137933Z",
-  "updatedAt" : "2026-09-23T22:15:01.869985322Z"
+  "updatedAt" : "2026-09-23T22:21:41.419194217Z"
 }
