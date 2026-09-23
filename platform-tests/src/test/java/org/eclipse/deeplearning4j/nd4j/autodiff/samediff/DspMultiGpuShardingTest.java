@@ -197,17 +197,17 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
     }
 
     /**
-     * Run {@code sd} once with DSP enabled. Automatic multi-GPU placement is the default;
-     * {@code singleGpu} exercises the explicit opt-out used for a reference result.
-     * Returns a {@code dup()} of the output (avoids CUDA view-staleness on the caller side).
-     * Saves and restores both the DSP-enabled flag and the single-GPU system property.
+     * Run {@code sd} once. {@code useStandardPath} executes through the standard
+     * (non-DSP) path as the parity reference; otherwise DSP runs with automatic
+     * multi-GPU placement. Returns a {@code dup()} of the output (avoids CUDA
+     * view-staleness on the caller side). Saves and restores the DSP-enabled flag.
      */
-    private static INDArray runOnce(SameDiff sd, INDArray x, boolean singleGpu) {
+    private static INDArray runOnce(SameDiff sd, INDArray x, boolean useStandardPath) {
         boolean prevDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String prevSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-        InferenceSession.setDynamicShapePlanEnabled(true);
-        if (singleGpu) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, "true");
-        else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
+        // The single-GPU DSP mode (nd4j.dsp.singleGpu) was removed intentionally.
+        // The reference run now executes through the standard non-DSP path, which
+        // keeps the parity comparison meaningful without resurrecting that mode.
+        InferenceSession.setDynamicShapePlanEnabled(!useStandardPath);
         try {
             Map<String, INDArray> res = sd.output(Collections.singletonMap("x", x), "out");
             // output(), unlike outputDirect(), returns an independently owned copy.
@@ -218,8 +218,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             }
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDsp);
-            if (prevSingleGpu != null) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, prevSingleGpu);
-            else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         }
     }
 
@@ -295,7 +293,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
 
         INDArray x = Nd4j.rand(DataType.FLOAT, 8, 64);
 
-        // Single-GPU reference evaluated once — its output is stable.
+        // Standard-path reference evaluated once — its output is stable.
         SameDiff single = buildMlp(64, 128, 6, 16, 42L);
         INDArray ref = runOnce(single, x.dup(), true);
 
@@ -303,9 +301,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         SameDiff sharded = buildMlp(64, 128, 6, 16, 42L);
 
         boolean prevDsp   = InferenceSession.isDynamicShapePlanEnabled();
-        String prevSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         InferenceSession.setDynamicShapePlanEnabled(true);
-        System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         try {
             for (int i = 0; i < REPLAY_ITERATIONS; i++) {
                 Map<String, INDArray> res = sharded.output(Collections.singletonMap("x", x.dup()), "out");
@@ -325,8 +321,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             }
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDsp);
-            if (prevSingleGpu != null) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, prevSingleGpu);
-            else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         }
     }
 
@@ -342,10 +336,8 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         INDArray input = null;
         INDArray reference = null;
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             input = Nd4j.rand(DataType.FLOAT, 8, 64);
             single = buildViewMlp(64, 128, 6, 16, 42L);
@@ -373,8 +365,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 SameDiffMemoryUtils.safeClose(input);
             } finally {
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingleGpu == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingleGpu);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
@@ -405,7 +395,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two CUDA devices");
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         SameDiff graph = null;
         java.util.List<INDArray> owned = new java.util.ArrayList<>();
         boolean originalAllocationLogging = Nd4j.getEnvironment().isLogNativeNDArrayCreation();
@@ -414,7 +403,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 Nd4j.getEnvironment().setLogNativeNDArrayCreation(true);
             }
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             graph = SameDiff.create();
             graph.setGraphExecutionMode(GraphExecutionMode.TRITON);
@@ -516,8 +504,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             } finally {
                 Nd4j.getEnvironment().setLogNativeNDArrayCreation(originalAllocationLogging);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingleGpu == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingleGpu);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
@@ -615,28 +601,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
     }
 
     // -----------------------------------------------------------------------
-    // Test 5 — explicit single-GPU override is deterministic
-    // -----------------------------------------------------------------------
-
-    /**
-     * Behavior 5 (safety): the explicit single-GPU override remains deterministic.
-     */
-    @Test
-    public void testSingleGpuOverrideIsDeterministic() {
-        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() > 1,
-                "requires >1 CUDA device");
-
-        INDArray x = Nd4j.rand(DataType.FLOAT, 8, 64);
-        SameDiff a = buildMlp(64, 128, 6, 16, 999L);
-        SameDiff b = buildMlp(64, 128, 6, 16, 999L);
-
-        INDArray r1 = runOnce(a, x.dup(), true);
-        INDArray r2 = runOnce(b, x.dup(), true);
-
-        assertTrue(r1.equalsWithEps(r2, 1e-6), "single-GPU runs must be deterministic/identical");
-    }
-
-    // -----------------------------------------------------------------------
     // Test 6 — VIEW ops across the device boundary (aliasing lifetime)
     // -----------------------------------------------------------------------
 
@@ -673,7 +637,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
 
     /**
      * Behavior 6: a sharded model containing view-capable ops (transpose) at layer
-     * boundaries must match the single-GPU reference across {@value #REPLAY_ITERATIONS}
+     * boundaries must match the standard-path reference across {@value #REPLAY_ITERATIONS}
      * iterations — i.e. a view aliasing a cross-device migrated input must not dangle
      * after per-segment migration cleanup, in either slot-by-slot warmup or captured replay.
      */
@@ -690,9 +654,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         SameDiff sharded = buildViewMlp(64, 128, 6, 16, 7L);
 
         boolean prevDsp  = InferenceSession.isDynamicShapePlanEnabled();
-        String prevSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         InferenceSession.setDynamicShapePlanEnabled(true);
-        System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         try {
             for (int i = 0; i < REPLAY_ITERATIONS; i++) {
                 Map<String, INDArray> res = sharded.output(Collections.singletonMap("x", x.dup()), "out");
@@ -711,8 +673,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             }
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDsp);
-            if (prevSingleGpu != null) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, prevSingleGpu);
-            else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         }
     }
 
@@ -759,7 +719,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         final int warmupLast = 4;
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         long[] originalLimits = new long[deviceCount];
         long[] limits = new long[deviceCount];
         long[] plateau = new long[deviceCount];
@@ -774,7 +733,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         try {
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             for (int device = 0; device < deviceCount; device++) {
                 limits[device] = Nd4j.getEnvironment().getDeviceCounter(device) + allowance;
                 Nd4j.getEnvironment().setDeviceLimit(device, limits[device]);
@@ -856,8 +814,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                         Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
                     }
                     InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                    if (originalSingleGpu == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                    else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingleGpu);
                     Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
                 }
             }
@@ -883,14 +839,12 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         final long slack = 256L * 1024; // smaller than either single leaked migration buffer
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         List<INDArray> callerRoots = new ArrayList<>();
         INDArray[] gdnInputs = new INDArray[3];
         INDArray[] kvInputs = new INDArray[3];
         SameDiff sd = null;
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             sd = SameDiff.create();
             SDVariable gdn = sd.placeHolder("mutableGdn", DataType.FLOAT, -1, gdnWidth);
@@ -1067,8 +1021,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             } finally {
                 for (INDArray root : callerRoots) SameDiffMemoryUtils.safeClose(root);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingleGpu == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingleGpu);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
@@ -1083,12 +1035,10 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
         String property = "nd4j.dsp.planLeaseBudgetFraction";
         String originalBudget = System.getProperty(property);
-        String originalSingle = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         SameDiff graph = null;
         List<INDArray> callers = new ArrayList<>();
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             System.setProperty(property, "0.000001");
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             graph = SameDiff.create();
@@ -1120,8 +1070,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 for (INDArray caller : callers) SameDiffMemoryUtils.safeClose(caller);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
                 if (originalBudget == null) System.clearProperty(property); else System.setProperty(property, originalBudget);
-                if (originalSingle == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingle);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
@@ -1236,7 +1184,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingle = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         String budgetProperty = "nd4j.dsp.planLeaseBudgetFraction";
         String originalBudget = System.getProperty(budgetProperty);
         long[] originalLimits = {Nd4j.getEnvironment().getDeviceLimit(0),
@@ -1245,7 +1192,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         SameDiff sd = null;
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             System.setProperty(budgetProperty, "0.000001");
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             sd = SameDiff.create();
@@ -1346,8 +1292,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 for (int device = 0; device < 2; device++) Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
                 for (INDArray caller : callers) SameDiffMemoryUtils.safeClose(caller);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingle == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingle);
                 if (originalBudget == null) System.clearProperty(budgetProperty);
                 else System.setProperty(budgetProperty, originalBudget);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
@@ -1363,14 +1307,12 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         final int width = 262144;
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingle = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         long[] originalLimits = {Nd4j.getEnvironment().getDeviceLimit(0),
                 Nd4j.getEnvironment().getDeviceLimit(1)};
         List<INDArray> callers = new ArrayList<>();
         SameDiff sd = null;
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             sd = SameDiff.create();
             configureMutableReplicaGraph(sd, width);
@@ -1521,8 +1463,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 for (int device = 0; device < 2; device++) Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
                 for (INDArray caller : callers) SameDiffMemoryUtils.safeClose(caller);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingle == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingle);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
@@ -1534,14 +1474,12 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two real CUDA devices");
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingle = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         SameDiff sd = null;
         INDArray gdn = null;
         INDArray kv = null;
         var releaser = java.util.concurrent.Executors.newSingleThreadExecutor();
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             sd = SameDiff.create();
             configureOutputReadbackGraph(sd, 262144);
@@ -1613,8 +1551,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 SameDiffMemoryUtils.safeClose(gdn);
                 SameDiffMemoryUtils.safeClose(kv);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingle == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingle);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
