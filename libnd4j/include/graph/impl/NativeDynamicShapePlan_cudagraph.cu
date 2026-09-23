@@ -946,18 +946,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     size_t gpuFree = 0, gpuTotal = 0;
     cudaMemGetInfo(&gpuFree, &gpuTotal);
 
-    // CAPTURE DOES NOT DUPLICATE ARRAYS. Capture records kernel launches against
-    // the ALREADY-ALLOCATED slot pointers; the incremental device need is the graph
-    // structure (MBs), the separately-sized capture workspace, and small kernel-
-    // internal temporaries. The historical working-set-proportional margin (20% of
-    // the slot-byte SUM, proc-077: 7.6GB demanded for a 24GB card) was unsatisfiable
-    // for any plan whose slot sum exceeded device memory — which pool reuse makes
-    // normal. Require a bounded floor instead: fixed metadata headroom that covers
-    // graph structure + runtime temporaries. The capture workspace and cuBLAS
-    // workspace have their own sized allocations/adaptive fallbacks downstream.
-    size_t captureOverhead = 512ULL * 1024 * 1024;  // 512MB bounded metadata floor
-    size_t requiredFree = captureOverhead;
-      if (requiredFree > gpuFree) {
+    // Preserve the historical segment-relative headroom check. Capture workspace
+    // is allocated and validated separately below; a fixed 512MB free-memory floor
+    // incorrectly rejects small segments even when their segment estimate is small.
+    size_t requiredFree = estimatedCaptureBytes / 5;  // 20% segment-relative margin
+    if (requiredFree > gpuFree) {
       // REVERTED (2026-09-23): a CAPACITY_SHIFT_CAPTURE variant here re-homed the
       // segment to the plan primary and re-ran slot-by-slot. It produced CUDA 700
       // illegal memory access (proc-055/057): warmup-era output arrays remain on
