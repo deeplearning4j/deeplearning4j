@@ -1125,6 +1125,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                    gpuFree / (1024*1024), headroom / (1024*1024));
     }
 
+    // Print the sizing inputs at allocation time: failures raised from within
+    // an op may bypass the deferred DspDiagnostics report at plan teardown.
+    std::fprintf(stdout,
+                 "[CAPTURE_WORKSPACE_BUDGET] device=%d segment=[%d-%d] configured=%zu "
+                 "estimated=%zu free=%zu headroom=%zu allocated=%zu retry=%d retries=%d\n",
+                 deviceId, seg.def.startSlot, seg.def.endSlot,
+                 CONFIGURED_CAPTURE_WORKSPACE, estimatedCaptureBytes, gpuFree,
+                 headroom, workspaceSize, isOomRetry ? 1 : 0,
+                 seg.exec.captureOomRetries);
+    std::fflush(stdout);
     if (!seg.exec.replayHandle->allocateWorkspace(workspaceSize, deviceId, nullptr, seg.def.startSlot)) {
       DSP_THROW_SEG(COMPILE, seg.def.startSlot,
                     "capture workspace allocation failed for seg[%d-%d]: gpuFree=%zuMB, "
