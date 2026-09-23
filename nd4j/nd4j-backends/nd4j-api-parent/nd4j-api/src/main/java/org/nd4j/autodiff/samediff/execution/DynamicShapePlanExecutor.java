@@ -250,6 +250,20 @@ public class DynamicShapePlanExecutor implements Closeable {
     private final Set<NativeExecutionBinding> nativeExecutionBindings = new HashSet<>();
     private NativeBufferOwner completedExecutionOwner;
     private Pointer completedExecutionHandle;
+
+    /** Frozen plan parked across a prefill↔decode switch: serialized identity + still-pinned lease. */
+    private static final class RetainedFrozenPlan {
+        final byte[] serialized;
+        final Pointer handle;
+        RetainedFrozenPlan(byte[] serialized, Pointer handle) {
+            this.serialized = serialized;
+            this.handle = handle;
+        }
+    }
+
+    /** Bounded retention: the fixed-buffer pipeline alternates exactly two plans. */
+    private static final int RETAINED_FROZEN_PLAN_LIMIT = 2;
+    private final Map<DynamicShapePlan, RetainedFrozenPlan> retainedFrozenPlans = new LinkedHashMap<>();
     private DynamicShapePlan completedExecutionPlan;
     private INDArray[] completedExecutionInputs;
     private String[] completedExecutionKeys;
@@ -955,12 +969,73 @@ public class DynamicShapePlanExecutor implements Closeable {
         // This history bit drives the frozen multi-plan switch gate in redispatchForCurrentShapes()
         // (line ~1645: isShapeChange && (native frozen state || hadFrozenPlan)).
         boolean wasPreviouslyFrozen = hadFrozenPlan;
-        // Reset native executor state for new plan
-        freeNativePlanHandle("PLAN_CHANGED");
+
+        // FROZEN PLAN PARKING — the real implementation of the frozen multi-plan switch.
+        // The prefill↔decode alternation used to destroy the outgoing frozen plan here
+        // (freeNativePlanHandle unpinned its lease, so the C++ cache evicted the warm
+        // native plan) and the next generate paid a full slot-by-slot re-warm (~23s/doc,
+        // proc-011). Instead: if the outgoing plan is frozen with a live pinned lease,
+        // PARK its Java identity and keep the native lease pinned; the incoming plan
+        // compiles normally, and a later return to the parked plan restores identity
+        // without recompilation (see compileNativePlan) and resumes frozen via the
+        // C++ cache's O(1) warm-handle hit.
+        boolean outgoingFrozen;
+        try {
+            outgoingFrozen = isShapesFrozen();
+        } catch (Exception frozenProbeFailure) {
+            outgoingFrozen = hadFrozenPlan;
+        }
+        boolean parkedFrozenOutgoing = outgoingFrozen
+                && nativePlanHandle != null && !nativePlanHandle.isNull()
+                && cachedSerializedPlan != null && nativePlanSource != null
+                && pinnedPlanHandles.containsKey(nativePlanHandle.address());
+        if (parkedFrozenOutgoing) {
+            long parkedHandleAddress = nativePlanHandle.address();
+            int parkedSerializedBytes = cachedSerializedPlan.length;
+            retainedFrozenPlans.put(nativePlanSource,
+                    new RetainedFrozenPlan(cachedSerializedPlan, nativePlanHandle));
+            while (retainedFrozenPlans.size() > RETAINED_FROZEN_PLAN_LIMIT) {
+                DynamicShapePlan evictKey = retainedFrozenPlans.keySet().iterator().next();
+                releaseRetainedFrozenPlan(retainedFrozenPlans.remove(evictKey));
+            }
+            // Keep: nativePlanCacheHandle, pinnedPlanHandles (lease stays pinned),
+            // cachedOpContext + contextInputRefs (shared across plan swaps; only
+            // executeNative() may atomically replace the refs), configuredHandleAddresses,
+            // retainedExternalInputsByPlanHandle, registeredAsFrozen/global frozen count.
+            // Drop only the CURRENT identity + per-execution input caches so the next
+            // executeNative() compiles-or-restores for the incoming plan.
+            nativePlanHandle = null;
+            nativePlanSource = null;
+            cachedSerializedPlan = null;
+            cachedSortedOutputs = null;
+            cachedPhKeys = null;
+            observedLifecycleSnapshot = DspLifecycleSnapshot.unavailable();
+            observedLifecycleHandleAddress = 0L;
+            cachedInputArrays = null;
+            cachedInputOpaques = null;
+            inputIsPlaceholder = null;
+            placeholderIndices = null;
+            cachedVariableTypeIndices = null;
+            frozenControlInputIndices = null;
+            frozenDerivedExternalInputIndices = null;
+            frozenExtInputsWorkingCopy = null;
+            frozenExtBufferSnapshot = null;
+            frozenExtShapeSnapshot = null;
+            frozenOutputsInitialized = false;
+            frozenCallCount = 0;
+            log.info("initialize: PLAN_CHANGED — parked frozen plan with lease pinned "
+                            + "(handle=0x{}, serializedBytes={}, retained={})",
+                    Long.toHexString(parkedHandleAddress), parkedSerializedBytes,
+                    retainedFrozenPlans.size());
+        } else {
+            // Reset native executor state for new plan
+            freeNativePlanHandle("PLAN_CHANGED");
+        }
         // Decrement global frozen-executor count if this executor was registered.
         // A plan change destroys the old CUDA graphs (freeNativePlanHandle above),
         // so the baked TAD pointers from the old plan no longer exist.
-        if (registeredAsFrozen) {
+        // Parked plans keep their graphs alive — the executor stays registered.
+        if (registeredAsFrozen && !parkedFrozenOutgoing) {
             GLOBAL_FROZEN_EXECUTOR_COUNT.decrementAndGet();
             registeredAsFrozen = false;
         }
@@ -2297,6 +2372,24 @@ public class DynamicShapePlanExecutor implements Closeable {
         boolean planChanged = nativePlanSource != null && nativePlanSource != plan;
 
         if (cachedSerializedPlan == null || nativePlanSource != plan) {
+            // RESTORE PARKED FROZEN PLAN: the incoming plan was parked by initialize()
+            // with its native lease still pinned — restore identity and skip recompilation.
+            // The C++ cache returns the same warm handle (O(1)), the frozen phase and
+            // cast caches are intact, and redispatch resumes replay without warmup.
+            RetainedFrozenPlan retained = retainedFrozenPlans.remove(plan);
+            if (retained != null && retained.handle != null && !retained.handle.isNull()
+                    && pinnedPlanHandles.containsKey(retained.handle.address())) {
+                cachedSerializedPlan = retained.serialized;
+                nativePlanSource = plan;
+                nativePlanHandle = retained.handle;
+                observedLifecycleSnapshot = DspLifecycleSnapshot.unavailable();
+                observedLifecycleHandleAddress = 0L;
+                nativeExecutorFailed = false;
+                log.info("Native executor: restored parked frozen plan 0x{} without recompilation "
+                                + "({} bytes serialized identity)",
+                        Long.toHexString(retained.handle.address()), retained.serialized.length);
+                return requestedMode != null ? requestedMode : configuredGraphExecutionMode;
+            }
             if (planChanged && cudaGraphsFailed) {
                 log.info("Native executor: resetting cudaGraphsFailed on plan recompilation");
                 cudaGraphsFailed = false;
@@ -5787,6 +5880,30 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
     }
 
+    /** Unpin and forget one parked frozen plan (LRU eviction beyond the retention limit). */
+    private void releaseRetainedFrozenPlan(RetainedFrozenPlan retained) {
+        if (retained == null || retained.handle == null || retained.handle.isNull()) return;
+        Pointer cache = nativePlanCacheHandle;
+        if (cache == null || cache.isNull()
+                || !pinnedPlanHandles.containsKey(retained.handle.address())) return;
+        try {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            prepareMutableReplicaRelease(nativeOps, retained.handle);
+            nativeOps.unpinNativePlan(cache, retained.handle);
+        } catch (Exception unpinFailure) {
+            log.warn("retained frozen plan unpin failed for handle 0x{}: {}",
+                    Long.toHexString(retained.handle.address()), unpinFailure.getMessage());
+        } finally {
+            long address = retained.handle.address();
+            pinnedPlanHandles.remove(address);
+            pinnedPlanHandlesByIdentity.entrySet().removeIf(
+                    e -> e.getValue() != null && e.getValue().longValue() == address);
+            configuredHandleAddresses.remove(address);
+            mutableExternalInputsConfiguredHandleAddresses.remove(address);
+            retainedExternalInputsByPlanHandle.remove(address);
+        }
+    }
+
     /**
      * Release the native plan handle with a descriptive reason for diagnostics.
      * Handles are always destroyed here so replay state cannot survive across
@@ -5860,6 +5977,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                 throw unpinFailure;
             }
         }
+        // Parked frozen identities are tied to their leases; a full teardown releases
+        // both, so drop the map to avoid restoring against an unpinned handle.
+        retainedFrozenPlans.clear();
         pinnedPlanHandles.clear();
         pinnedPlanHandlesByIdentity.clear();
         pinnedLeaseLastUseNanos.clear();
