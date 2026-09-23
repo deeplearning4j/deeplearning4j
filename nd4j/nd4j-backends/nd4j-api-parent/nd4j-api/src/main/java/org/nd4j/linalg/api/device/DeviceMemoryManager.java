@@ -873,6 +873,14 @@ public class DeviceMemoryManager {
      * fallback is enabled and it can fit). Returns {@code null} when nothing can accommodate the
      * allocation, so the caller can surface a real OOM instead of looping forever.
      *
+     * <p>TRIM-BEFORE-FAILOVER (fpna session v3): before any cross-device failover, the
+     * failing device's memory pool is trimmed — reserved-but-reclaimable blocks are
+     * released to the driver and the environment allocation counter drops with them.
+     * With DSP parked plans resident, pool-reserved memory can dominate the counter
+     * while most of it is dead (proc-070: a 6MB transient failed over to dev1 and the
+     * immediate migrate back was rejected). A cross-device round-trip for a transient
+     * allocation must be the LAST resort, not the first.
+     *
      * @param bytes              allocation size in bytes
      * @param excludeDeviceIndex GPU index that just OOMed (excluded from the GPU search)
      * @return target device to retry on, or {@code null} if none can fit
@@ -880,6 +888,36 @@ public class DeviceMemoryManager {
     public DeviceDescriptor selectFailoverDevice(long bytes, int excludeDeviceIndex) {
         ensureDevicesRegistered();
 
+        // 1. TRIM the failing device's pool and re-check ITS capacity first. A stream-
+        // unaware trim here is intentional: the allocation failure is counter-driven,
+        // not stream-pending, and DeviceMemoryManager has no execution stream handle.
+        if (excludeDeviceIndex >= 0) {
+            long trimReclaimed = -1L;
+            try {
+                var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                long usedBefore = getNativePoolUsedMemory(excludeDeviceIndex);
+                nativeOps.trimMemoryPool(excludeDeviceIndex);
+                long usedAfter = getNativePoolUsedMemory(excludeDeviceIndex);
+                trimReclaimed = usedBefore - usedAfter;
+            } catch (Exception trimFailure) {
+                log.debug("Trim-before-failover: pool trim failed on device {}: {}",
+                        excludeDeviceIndex, trimFailure.getMessage());
+            }
+            if (trimReclaimed > 0) {
+                log.info("Trim-before-failover: device {} pool released {} MB; re-testing allocation of {} bytes there",
+                        excludeDeviceIndex, trimReclaimed / (1024 * 1024), bytes);
+            }
+            // Re-check the failing device AFTER trim: if the counter now admits the
+            // allocation, staying put is always preferable to a cross-device hop.
+            DeviceDescriptor stay = getRegisteredDevice(excludeDeviceIndex);
+            if (stay != null && getPoolAwareFreeMemory(excludeDeviceIndex) >= bytes) {
+                log.info("Trim-before-failover: device {} can now fit {} bytes in place — no cross-device hop",
+                        excludeDeviceIndex, bytes);
+                return stay;
+            }
+        }
+
+        // 2. Cross-device search (original behavior).
         DeviceDescriptor best = null;
         long bestFree = -1;
         for (DeviceDescriptor device : registeredDevices.values()) {
