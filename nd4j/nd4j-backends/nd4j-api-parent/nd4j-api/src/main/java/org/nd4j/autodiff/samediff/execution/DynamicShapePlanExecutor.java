@@ -2418,7 +2418,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                 cudaGraphsFailed = false;
             }
 
-            freeNativePlanHandle("PLAN_RECOMPILATION");
+            // Recompiling the OTHER plan must not evict parked frozen leases — that
+            // is what forced the 23s slot-by-slot re-warm on every generate (proc-015).
+            freeNativePlanHandle("PLAN_RECOMPILATION", true);
             configuredHandleAddresses.clear();
             mutableExternalInputsConfiguredHandleAddresses.clear();
 
@@ -5935,6 +5937,20 @@ public class DynamicShapePlanExecutor implements Closeable {
      * @param reason descriptive reason for plan destruction (e.g., "SESSION_RESET", "PLAN_RECOMPILATION")
      */
     private void freeNativePlanHandle(String reason) {
+        freeNativePlanHandle(reason, false);
+    }
+
+    /**
+     * Release the native plan handle.
+     *
+     * @param retainParkedLeases when true, leases backing entries in
+     *        {@link #retainedFrozenPlans} are NOT unpinned — parked frozen plans
+     *        must survive a recompilation of the OTHER plan so the next generate
+     *        can restore them without re-warm (proc-015: every PLAN_RECOMPILATION
+     *        unpinned all leases, evicting the parked plan and forcing the 23s
+     *        slot-by-slot warm each generate).
+     */
+    private void freeNativePlanHandle(String reason, boolean retainParkedLeases) {
         requireNoNativeBindings(reason);
         invalidateCompletedExecution();
         if (migrationCleanupPending) cleanupFailedMigrations();
@@ -5953,8 +5969,21 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Release leases against the exact cache they came from. Never create/rebind a cache
         // during teardown, and never discard failed leases: the caller must retain this
         // executor and retry before the cache or model buffers can be destroyed.
-        Map<Long, Pointer> handles = new LinkedHashMap<>(pinnedPlanHandles);
-        if (handles.isEmpty() && nativePlanHandle != null && !nativePlanHandle.isNull()) {
+        java.util.Set<Long> parkedAddresses = new java.util.HashSet<>();
+        if (retainParkedLeases) {
+            for (RetainedFrozenPlan retained : retainedFrozenPlans.values()) {
+                if (retained.handle != null && !retained.handle.isNull()) {
+                    parkedAddresses.add(retained.handle.address());
+                }
+            }
+        }
+        Map<Long, Pointer> handles = new LinkedHashMap<>();
+        for (Map.Entry<Long, Pointer> entry : pinnedPlanHandles.entrySet()) {
+            if (retainParkedLeases && parkedAddresses.contains(entry.getKey())) continue;
+            handles.put(entry.getKey(), entry.getValue());
+        }
+        if (handles.isEmpty() && nativePlanHandle != null && !nativePlanHandle.isNull()
+                && !(retainParkedLeases && parkedAddresses.contains(nativePlanHandle.address()))) {
             handles.put(nativePlanHandle.address(), nativePlanHandle);
         }
         if (!handles.isEmpty()) {
@@ -6000,14 +6029,25 @@ public class DynamicShapePlanExecutor implements Closeable {
                 throw unpinFailure;
             }
         }
-        // Parked frozen identities are tied to their leases; a full teardown releases
-        // both, so drop the map to avoid restoring against an unpinned handle.
-        retainedFrozenPlans.clear();
-        pinnedPlanHandles.clear();
-        pinnedPlanHandlesByIdentity.clear();
-        pinnedLeaseLastUseNanos.clear();
-        pinnedLeaseEstimatedBytes.clear();
-        retainedExternalInputsByPlanHandle.clear();
+        // Parked frozen identities are tied to their leases. When leases were retained
+        // (recompiling the OTHER plan), parked entries and their map bookkeeping must
+        // SURVIVE this call — only full teardown clears them, so a later generate can
+        // restore the parked plan against its still-pinned handle. proc-017: clearing
+        // here unconditionally wiped the parked entry on every recompile, silently
+        // reverting to disk-cache recompile + 23s warm per generate.
+        if (!retainParkedLeases) {
+            retainedFrozenPlans.clear();
+        }
+        for (Long parkedAddress : parkedAddresses) {
+            pinnedPlanHandles.remove(parkedAddress);
+            pinnedPlanHandlesByIdentity.entrySet().removeIf(
+                    e -> e.getValue() != null && e.getValue().longValue() == parkedAddress);
+            pinnedLeaseLastUseNanos.remove(parkedAddress);
+            pinnedLeaseEstimatedBytes.remove(parkedAddress);
+            retainedExternalInputsByPlanHandle.remove(parkedAddress);
+        }
+        pinnedLeaseLastUseNanos.keySet().retainAll(pinnedPlanHandlesByIdentity.keySet());
+        pinnedLeaseEstimatedBytes.keySet().retainAll(pinnedPlanHandlesByIdentity.keySet());
         nativePlanCacheHandle = null;
         nativePlanHandle = null;
         observedLifecycleSnapshot = DspLifecycleSnapshot.unavailable();
