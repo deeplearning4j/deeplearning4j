@@ -950,6 +950,23 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     // is allocated and validated separately below; a fixed 512MB free-memory floor
     // incorrectly rejects small segments even when their segment estimate is small.
     size_t requiredFree = estimatedCaptureBytes / 5;  // 20% segment-relative margin
+    size_t gpuFreeBeforeTrim = gpuFree;
+    size_t poolUsedBeforeTrim = 0, poolReservedBeforeTrim = 0;
+    size_t poolUsedAfterTrim = 0, poolReservedAfterTrim = 0;
+    if (requiredFree > gpuFree) {
+      auto& capturePool = memory::CudaMemoryPool::getInstance();
+      capturePool.getStats(currentDevice, poolUsedBeforeTrim, poolReservedBeforeTrim);
+      capturePool.trimPool(currentDevice);
+      cudaMemGetInfo(&gpuFree, &gpuTotal);
+      capturePool.getStats(currentDevice, poolUsedAfterTrim, poolReservedAfterTrim);
+      DSP_DIAG_SEG(MEMORY, segIdx,
+                   "pre-capture pool trim seg[%d-%d] device=%d: free=%zu->%zuMB, "
+                   "poolUsed=%zu->%zuMB, poolReserved=%zu->%zuMB",
+                   seg.def.startSlot, seg.def.endSlot, currentDevice,
+                   gpuFreeBeforeTrim / (1024 * 1024), gpuFree / (1024 * 1024),
+                   poolUsedBeforeTrim / (1024 * 1024), poolUsedAfterTrim / (1024 * 1024),
+                   poolReservedBeforeTrim / (1024 * 1024), poolReservedAfterTrim / (1024 * 1024));
+    }
     if (requiredFree > gpuFree) {
       // REVERTED (2026-09-23): a CAPACITY_SHIFT_CAPTURE variant here re-homed the
       // segment to the plan primary and re-ran slot-by-slot. It produced CUDA 700
@@ -958,19 +975,32 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       // pointers. A correct re-home must migrate existing allocations first —
       // that is the parked multi-GPU defect (resolve device/stream/ownership),
       // not a local patch. Keep the loud capture-memory failure as the contract.
-      DSP_DIAG_SEG(MEMORY, 0, "insufficient GPU memory for graph capture seg[%d-%d] (%d ops): "
-                    "estimated overhead %zuMB (20%% of %zuMB working set) > free %zuMB (total %zuMB) "
+      const size_t poolReusableAfterTrim = poolReservedAfterTrim > poolUsedAfterTrim
+          ? poolReservedAfterTrim - poolUsedAfterTrim
+          : 0;
+      DSP_DIAG_SEG(MEMORY, segIdx,
+                    "insufficient GPU memory for graph capture seg[%d-%d] (%d ops): "
+                    "estimated overhead %zuMB (20%% of %zuMB working set) > free %zuMB "
+                    "(preTrimFree=%zuMB, poolUsed=%zuMB, poolReserved=%zuMB, poolReusable=%zuMB, total %zuMB) "
                     "— returning KERNEL_FAILURE (memory-budget segmentation should prevent this)",
                     seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
                     requiredFree / (1024 * 1024),
                     estimatedCaptureBytes / (1024 * 1024),
                     gpuFree / (1024 * 1024),
+                    gpuFreeBeforeTrim / (1024 * 1024),
+                    poolUsedAfterTrim / (1024 * 1024),
+                    poolReservedAfterTrim / (1024 * 1024),
+                    poolReusableAfterTrim / (1024 * 1024),
                     gpuTotal / (1024 * 1024));
       return cudaGraphFailure(
           "CUDA graph capture memory check failed for seg[%d-%d]: "
-          "requiredFree=%zuMB, gpuFree=%zuMB, workingSet=%zuMB, gpuTotal=%zuMB",
+          "requiredFree=%zuMB, gpuFree=%zuMB (preTrimFree=%zuMB, poolUsed=%zuMB, "
+          "poolReserved=%zuMB, poolReusable=%zuMB), workingSet=%zuMB, gpuTotal=%zuMB",
           seg.def.startSlot, seg.def.endSlot, requiredFree / (1024 * 1024),
-          gpuFree / (1024 * 1024), estimatedCaptureBytes / (1024 * 1024),
+          gpuFree / (1024 * 1024), gpuFreeBeforeTrim / (1024 * 1024),
+          poolUsedAfterTrim / (1024 * 1024), poolReservedAfterTrim / (1024 * 1024),
+          poolReusableAfterTrim / (1024 * 1024),
+          estimatedCaptureBytes / (1024 * 1024),
           gpuTotal / (1024 * 1024));
     }
   }
