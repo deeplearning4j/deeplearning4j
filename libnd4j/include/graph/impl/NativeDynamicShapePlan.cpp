@@ -4290,19 +4290,17 @@ Status NativeDynamicShapePlan::execute(
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::PHASE_TRANSITION,
                          planLifecycle_.toLegacyCode(), static_cast<int>(PlanPhase::SHAPES_FROZEN));
     // legacy sync
-    resegmentForFreeze();
+    const bool resegmented = resegmentForFreeze(true);
     int newSegCount = static_cast<int>(segments_.size());
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::RESEGMENT, oldSegCount, newSegCount);
     planLifecycle_.freezeShapes();
     if (executeCount_ < 1) executeCount_ = 1;
 
-    // Freeze-time resegmentation creates new GraphSegment records, so their
-    // per-segment execution counters start at zero even though this execute()
-    // has already completed the warmup pass. Restore the lifecycle evidence that
-    // makes those records eligible for the eager compiler before the compilation
-    // seal; otherwise precompile skips every freshly rebuilt segment and a
-    // compiler-required mode reaches the seal with unresolved backends.
-    if (executeCount_ == 1) {
+    // A post-warmup rebuild creates fresh GraphSegment records whose execution
+    // counters start at zero, even though this execute() just warmed the plan
+    // for the current shapes. Restore that readiness before the eager compiler
+    // seal; otherwise newly split capture segments are skipped.
+    if (resegmented) {
       int restoredWarmupSegments = 0;
       for (auto& seg : segments_) {
         SegmentLifecycle::initSegmentPhase(seg.exec, seg.def.startSlot, seg.def.endSlot);
@@ -5433,7 +5431,7 @@ Status NativeDynamicShapePlan::phaseFreeze() {
   // Resegment: merge data-dependent ops into capturable segments now that
   // shapes are frozen. This collapses hundreds of fragments into a few large
   // segments, enabling monolithic graph capture/replay.
-  resegmentForFreeze();
+  resegmentForFreeze(true);
   disableFusedChainsAcrossSegmentBoundaries(
       slots_, numSlots_, segments_, "freeze-fusion");
 
@@ -9057,10 +9055,14 @@ SelectedBackend NativeDynamicShapePlan::resolveBackendForSegment(bool isBackendE
 // invalid (pointer addresses may have changed). This cleans up GPU resources
 // and rebuilds segments so fresh captures can occur with frozen shapes.
 
-void NativeDynamicShapePlan::resegmentForFreeze() {
-  if (!Environment::getInstance().dspFreezeMergeSegments()) return;
+bool NativeDynamicShapePlan::resegmentForFreeze(bool allowCaptureMemoryBudget) {
+  const ModeContract modeContract = ModeContract::forMode(graphExecutionMode_);
+  const bool useCaptureMemoryBudget = allowCaptureMemoryBudget &&
+      modeContract.usesGraphCapture && !modeContract.requiresCompilation;
+  const bool mergeSegments = Environment::getInstance().dspFreezeMergeSegments();
+  if (!mergeSegments && !useCaptureMemoryBudget) return false;
   int oldSegCount = static_cast<int>(segments_.size());
-  if (oldSegCount <= 1) return;
+  if (oldSegCount <= 1 && !useCaptureMemoryBudget) return false;
 
   // Cleanup every segment's platform-owned state before its identity is destroyed.
   // Composite-only/JIT segments may have no monolithic replayHandle but can still own
@@ -9071,10 +9073,13 @@ void NativeDynamicShapePlan::resegmentForFreeze() {
   segments_.clear();
   nativeRangeSegments_.clear();
 
-  buildSegments();
+  buildSegments(useCaptureMemoryBudget);
 
-  DSP_DIAG(SEGMENT, "RESEGMENT: %d -> %d segments (shapes frozen)",
-           oldSegCount, static_cast<int>(segments_.size()));
+  DSP_DIAG(SEGMENT,
+           "RESEGMENT: %d -> %d segments (shapes available; captureMemoryBudget=%d)",
+           oldSegCount, static_cast<int>(segments_.size()),
+           useCaptureMemoryBudget ? 1 : 0);
+  return true;
 }
 
 // ─── Graph segmentation for GPU graph capture ───────────────────────────────
@@ -9094,7 +9099,7 @@ void NativeDynamicShapePlan::refreshDynamicSegmentBoundaryAnalysis() {
   }
 }
 
-void NativeDynamicShapePlan::buildSegments() {
+void NativeDynamicShapePlan::buildSegments(bool captureMemoryBudgetReady) {
   if (numSlots_ == 0) {
     hasDynamicSegmentBoundaries_ = false;
     DSP_DIAG(SEGMENT, "buildSegments: skipped (numSlots=0)");
@@ -9174,13 +9179,17 @@ void NativeDynamicShapePlan::buildSegments() {
   // without JIT compilation (CUDA_GRAPHS). JIT modes handle islands internally.
   const ModeContract modeContract = ModeContract::forMode(graphExecutionMode_);
   const bool useMemoryBudget =
-      !planLifecycle_.isSlotBySlot() &&
+      (captureMemoryBudgetReady || !planLifecycle_.isSlotBySlot()) &&
       modeContract.usesGraphCapture &&
       !modeContract.requiresCompilation;
 
   const size_t captureBudget = useMemoryBudget
       ? platformEstimateCaptureBudget()
       : SIZE_MAX;
+  DSP_DIAG(SEGMENT,
+           "buildSegments: capture-memory-budget=%d warmupReady=%d budget=%zuMB",
+           useMemoryBudget ? 1 : 0, captureMemoryBudgetReady ? 1 : 0,
+           useMemoryBudget ? captureBudget / (1024 * 1024) : 0);
 
   // Helper: estimate the output buffer footprint of a single slot.
   // Uses the current outputSlots_ which are populated after warmup.

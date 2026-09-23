@@ -3606,9 +3606,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Internal methods
   // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline
-  void buildSegments();
+  void buildSegments(bool captureMemoryBudgetReady = false);
   void refreshDynamicSegmentBoundaryAnalysis();
-  void resegmentForFreeze();
+  bool resegmentForFreeze(bool allowCaptureMemoryBudget = false);
   SelectedBackend resolveBackendForSegment(bool isBackendEligible);
 
   // ── Slot execution (NativeDynamicShapePlan_slotexec.cpp) ──
