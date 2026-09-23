@@ -251,13 +251,19 @@ public class DynamicShapePlanExecutor implements Closeable {
     private NativeBufferOwner completedExecutionOwner;
     private Pointer completedExecutionHandle;
 
-    /** Frozen plan parked across a prefill↔decode switch: serialized identity + still-pinned lease. */
+    /** Frozen plan parked across a prefill↔decode switch: serialized identity + residency guarantee.
+     *  independentLease=true means the C++ cache holds a retainNativePlan lease taken at park
+     *  time — the handle is cache-resident no matter what executor-side release paths run
+     *  meanwhile (swap-path unpins, capacity ejection). proc-022 proved executor-level pins
+     *  do NOT survive a decode generate; the independent lease is what does. */
     private static final class RetainedFrozenPlan {
         final byte[] serialized;
         final Pointer handle;
-        RetainedFrozenPlan(byte[] serialized, Pointer handle) {
+        final boolean independentLease;
+        RetainedFrozenPlan(byte[] serialized, Pointer handle, boolean independentLease) {
             this.serialized = serialized;
             this.handle = handle;
+            this.independentLease = independentLease;
         }
     }
 
@@ -996,11 +1002,40 @@ public class DynamicShapePlanExecutor implements Closeable {
             long parkedHandleAddress = nativePlanHandle.address();
             int parkedSerializedBytes = cachedSerializedPlan.length;
             int parkedKey = java.util.Arrays.hashCode(cachedSerializedPlan);
+            // Take an INDEPENDENT cache lease for the parked plan. Executor-level pins are
+            // consumed by swap-path unpins and capacity ejection during the other plan's
+            // generate (proc-022: parked handle was unpinned mid-decode → restore miss →
+            // 23s re-warm). The independent lease guarantees cache residency across all of
+            // that; nothing executor-side releases it except restore adoption and teardown.
+            boolean independentLease = false;
+            try {
+                Pointer cache = nativePlanCacheHandle;
+                if (cache != null && !cache.isNull()) {
+                    NativeOps parkOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    independentLease = parkOps.retainNativePlan(cache, nativePlanHandle) != 0;
+                }
+            } catch (Exception retainFailure) {
+                log.warn("parked-plan retainNativePlan failed for 0x{}: {} — falling back to "
+                                + "executor-pin retention (may be unpinned by the other plan's generate)",
+                        Long.toHexString(parkedHandleAddress), retainFailure.getMessage());
+            }
             retainedFrozenPlans.put(parkedKey,
-                    new RetainedFrozenPlan(cachedSerializedPlan, nativePlanHandle));
+                    new RetainedFrozenPlan(cachedSerializedPlan, nativePlanHandle, independentLease));
             while (retainedFrozenPlans.size() > RETAINED_FROZEN_PLAN_LIMIT) {
                 Integer evictKey = retainedFrozenPlans.keySet().iterator().next();
                 releaseRetainedFrozenPlan(retainedFrozenPlans.remove(evictKey));
+            }
+            if (independentLease) {
+                // Residency is now the independent lease's job. Remove executor-level
+                // bookkeeping so swap-path unpins, capacity ejection, and the
+                // freeNativePlanHandle release loop cannot touch the parked handle.
+                pinnedPlanHandles.remove(parkedHandleAddress);
+                pinnedPlanHandlesByIdentity.entrySet().removeIf(
+                        e -> e.getValue() != null && e.getValue().longValue() == parkedHandleAddress);
+                pinnedLeaseLastUseNanos.keySet().retainAll(pinnedPlanHandlesByIdentity.keySet());
+                pinnedLeaseEstimatedBytes.keySet().retainAll(pinnedPlanHandlesByIdentity.keySet());
+                configuredHandleAddresses.remove(parkedHandleAddress);
+                mutableExternalInputsConfiguredHandleAddresses.remove(parkedHandleAddress);
             }
             // Keep: nativePlanCacheHandle, pinnedPlanHandles (lease stays pinned),
             // cachedOpContext + contextInputRefs (shared across plan swaps; only
@@ -2393,9 +2428,17 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (incomingSerialized != null) {
                 incomingKey = java.util.Arrays.hashCode(incomingSerialized);
                 RetainedFrozenPlan retained = retainedFrozenPlans.remove(incomingKey);
+                boolean pinOk = retained != null && retained.handle != null && !retained.handle.isNull()
+                        && pinnedPlanHandles.containsKey(retained.handle.address());
+                // independentLease entries are cache-resident by retainNativePlan lease —
+                // the executor pin bookkeeping was deliberately dropped at park time and
+                // must NOT be required here (proc-022: it never survives the other plan's
+                // generate; requiring it is what forced the disk-cache recompile).
+                boolean residencyOk = retained != null
+                        && (retained.independentLease || pinOk);
                 if (retained != null
                         && retained.handle != null && !retained.handle.isNull()
-                        && pinnedPlanHandles.containsKey(retained.handle.address())
+                        && residencyOk
                         && java.util.Arrays.equals(retained.serialized, incomingSerialized)) {
                     cachedSerializedPlan = retained.serialized;
                     nativePlanSource = plan;
@@ -2403,9 +2446,19 @@ public class DynamicShapePlanExecutor implements Closeable {
                     observedLifecycleSnapshot = DspLifecycleSnapshot.unavailable();
                     observedLifecycleHandleAddress = 0L;
                     nativeExecutorFailed = false;
+                    if (retained.independentLease) {
+                        // Convert the independent lease into executor ownership: the plan
+                        // is the ACTIVE handle for this generate (swap path never evicts
+                        // the active handle), and the next generate boundary re-parks it
+                        // with a fresh independent lease. Bookkeeping restored so the
+                        // dispatch lease-acquire and teardown unpin paths stay balanced.
+                        pinnedPlanHandles.put(retained.handle.address(), retained.handle);
+                        configuredHandleAddresses.add(retained.handle.address());
+                    }
                     log.info("Native executor: restored parked frozen plan 0x{} without recompilation "
-                                    + "({} bytes serialized identity)",
-                            Long.toHexString(retained.handle.address()), retained.serialized.length);
+                                    + "({} bytes serialized identity, independentLease={})",
+                            Long.toHexString(retained.handle.address()), retained.serialized.length,
+                            retained.independentLease);
                     return requestedMode != null ? requestedMode : configuredGraphExecutionMode;
                 }
                 if (retained != null) {
@@ -2414,9 +2467,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                     String why;
                     if (retained.handle == null || retained.handle.isNull()) {
                         why = "parked handle is null";
-                    } else if (!pinnedPlanHandles.containsKey(retained.handle.address())) {
+                    } else if (!retained.independentLease
+                            && !pinnedPlanHandles.containsKey(retained.handle.address())) {
                         why = "parked handle 0x" + Long.toHexString(retained.handle.address())
-                                + " no longer pinned (evicted or released)";
+                                + " no longer pinned and no independent lease (evicted or released)";
                     } else {
                         why = "serialized bytes differ (stored=" + retained.serialized.length
                                 + "B, incoming=" + incomingSerialized.length + "B)";
@@ -5921,16 +5975,23 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
     }
 
-    /** Unpin and forget one parked frozen plan (LRU eviction beyond the retention limit). */
+    /** Unpin and forget one parked frozen plan (LRU eviction beyond the retention limit).
+     *  Handles independent-lease entries: their residency lease must be unpinned even
+     *  though the executor pin bookkeeping was dropped at park time. */
     private void releaseRetainedFrozenPlan(RetainedFrozenPlan retained) {
         if (retained == null || retained.handle == null || retained.handle.isNull()) return;
         Pointer cache = nativePlanCacheHandle;
-        if (cache == null || cache.isNull()
-                || !pinnedPlanHandles.containsKey(retained.handle.address())) return;
+        boolean executorPinned = pinnedPlanHandles.containsKey(retained.handle.address());
+        if (!retained.independentLease && !executorPinned) return;
+        if (cache == null || cache.isNull()) return;
         try {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-            prepareMutableReplicaRelease(nativeOps, retained.handle);
+            if (executorPinned) prepareMutableReplicaRelease(nativeOps, retained.handle);
             nativeOps.unpinNativePlan(cache, retained.handle);
+            if (retained.independentLease && executorPinned) {
+                // executor lease + independent lease both held: release the second too.
+                nativeOps.unpinNativePlan(cache, retained.handle);
+            }
         } catch (Exception unpinFailure) {
             log.warn("retained frozen plan unpin failed for handle 0x{}: {}",
                     Long.toHexString(retained.handle.address()), unpinFailure.getMessage());
