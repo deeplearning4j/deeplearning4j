@@ -66,7 +66,6 @@
 #include <mutex>
 #include <new>
 #include <string>
-#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -1543,33 +1542,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     handle->endCapture(cudaStr);
     clearGraphStreamError(cudaStr);
     restoreCublasWorkspaceAfterCapture(stream);
-    size_t captureDeviceFree = 0, captureDeviceTotal = 0;
-    cudaMemGetInfo(&captureDeviceFree, &captureDeviceTotal);
-    size_t capturePoolUsed = 0, capturePoolReserved = 0;
-    memory::CudaMemoryPool::getInstance().getStats(
-        currentDevice, capturePoolUsed, capturePoolReserved);
-    const size_t captureWorkspaceUsed = captureGuard.workspaceUsed();
-    const size_t captureWorkspaceBytes = seg.exec.replayHandle != nullptr
-        ? seg.exec.replayHandle->getWorkspaceBytes()
-        : 0;
-    const size_t currentPlanOwnedBytes = estimatedOwnedBytes();
-    const char* failedOp = lastCaptureSlot >= 0 && lastCaptureSlot < numSlots_
-        ? slots_[lastCaptureSlot].ident.opName.c_str()
-        : "<out-of-range>";
-    char captureSnapshot[768];
-    std::snprintf(
-        captureSnapshot, sizeof(captureSnapshot),
-        " [capture snapshot: plan=%p segment=[%d-%d] slot=%d op=%s "
-        "workspace=%zu/%zu planOwned=%zuMB ownedArrays=%zu segments=%zu "
-        "deviceFree=%zuMB deviceTotal=%zuMB poolUsed=%zuMB poolReserved=%zuMB]",
-        static_cast<void*>(this), seg.def.startSlot, seg.def.endSlot,
-        lastCaptureSlot, failedOp, captureWorkspaceUsed, captureWorkspaceBytes,
-        currentPlanOwnedBytes / (1024 * 1024), planOwnedArrays_.size(),
-        segments_.size(), captureDeviceFree / (1024 * 1024),
-        captureDeviceTotal / (1024 * 1024), capturePoolUsed / (1024 * 1024),
-        capturePoolReserved / (1024 * 1024));
-    std::string enrichedCaptureError(e.what());
-    enrichedCaptureError.append(captureSnapshot);
     for (auto& [extIdx, origPtr] : savedExternalInputs) {
       externalArrays[extIdx] = origPtr;
     }
@@ -1581,7 +1553,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
     }
     platformCleanupSegmentForRebuild(seg);
-    throw std::runtime_error(enrichedCaptureError);
+    throw;
   } catch (...) {
     tl_graphExecutionActive = false;
     handle->endCapture(cudaStr);
@@ -1637,6 +1609,30 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
 
     // Guard destructor will free captured host ptrs (commit() not called yet).
+    size_t captureDeviceFree = 0, captureDeviceTotal = 0;
+    cudaMemGetInfo(&captureDeviceFree, &captureDeviceTotal);
+    size_t capturePoolUsed = 0, capturePoolReserved = 0;
+    memory::CudaMemoryPool::getInstance().getStats(
+        currentDevice, capturePoolUsed, capturePoolReserved);
+    const size_t captureWorkspaceUsed = captureGuard.workspaceUsed();
+    const size_t captureWorkspaceBytes = seg.exec.replayHandle != nullptr
+        ? seg.exec.replayHandle->getWorkspaceBytes()
+        : 0;
+    const size_t currentPlanOwnedBytes = estimatedOwnedBytes();
+    char captureSnapshot[768];
+    std::snprintf(
+        captureSnapshot, sizeof(captureSnapshot),
+        " [capture snapshot: plan=%p segment=[%d-%d] slot=%d kind=%d "
+        "workspace=%zu/%zu planOwned=%zuMB ownedArrays=%zu segments=%zu "
+        "deviceFree=%zuMB deviceTotal=%zuMB poolUsed=%zuMB poolReserved=%zuMB]",
+        static_cast<void*>(this), seg.def.startSlot, seg.def.endSlot,
+        lastCaptureSlot, static_cast<int>(captureFailure), captureWorkspaceUsed,
+        captureWorkspaceBytes, currentPlanOwnedBytes / (1024 * 1024),
+        planOwnedArrays_.size(), segments_.size(),
+        captureDeviceFree / (1024 * 1024), captureDeviceTotal / (1024 * 1024),
+        capturePoolUsed / (1024 * 1024), capturePoolReserved / (1024 * 1024));
+    std::string captureFailureDetail = originatingCaptureDetail;
+    captureFailureDetail.append(captureSnapshot);
 
     if (captureFailure == CaptureFailureKind::OOM &&
         seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
@@ -1668,10 +1664,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         lastCaptureSlot >= 0 && lastCaptureSlot < numSlots_
             ? slots_[lastCaptureSlot].ident.opName.c_str()
             : "<out-of-range>";
-    if (!originatingCaptureDetail.empty()) {
+    if (!captureFailureDetail.empty()) {
       cudaGraphFailure(
           "%s [CUDA graph capture kind=%s seg[%d-%d] slot=%d op=%s]",
-          originatingCaptureDetail.c_str(), failureKind,
+          captureFailureDetail.c_str(), failureKind,
           seg.def.startSlot, seg.def.endSlot, lastCaptureSlot, opName);
     } else {
       cudaGraphFailure(
