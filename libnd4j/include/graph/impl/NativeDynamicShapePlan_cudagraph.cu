@@ -647,6 +647,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                  static_cast<int>(seg.exec.compilationFailed));
   }
 
+  // Hoisted to a member-visible scope so CAPACITY_SHIFT_CAPTURE below can
+  // reuse the same segment shape-state reset used by warmup and failure paths.
   auto invalidateSegmentShapeState = [&](GraphSegment& segRef) {
     for (int stepIdx = segRef.def.startSlot; stepIdx <= segRef.def.endSlot; stepIdx++) {
       auto& slot = slots_[stepIdx];
@@ -952,6 +954,34 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     size_t captureOverhead = estimatedCaptureBytes / 5;  // 20% margin
     size_t requiredFree = captureOverhead;
       if (requiredFree > gpuFree) {
+      // CAPACITY_SHIFT_CAPTURE (proc-051/053): a segment placed on a secondary
+      // device can find its activation band already resident at capture time,
+      // leaving less than the 20% margin free. Placement-time byte estimates
+      // cannot predict this (slot sizes are unknown until warmup). Rather than
+      // failing the whole nested plan, re-home the segment to the plan's
+      // PRIMARY device — the same "compute moves to capacity" contract as
+      // CAPACITY_SHIFT_SEGMENT. Invalidate the segment's shape state so the
+      // slot-by-slot pass below re-allocates outputs on the primary (per-slot
+      // allocation follows targetDeviceId), then re-bind the execution TLS and
+      // execute slot-by-slot on the primary. The next invocation re-attempts
+      // capture against the primary's free memory; after re-homing, slots'
+      // outputs live on the primary so the baked graph pointers are valid.
+      int primaryDevice = ownedStreamDeviceId_;
+      if (primaryDevice >= 0 && currentDevice != primaryDevice) {
+        for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+          slots_[s].targetDeviceId = primaryDevice;
+        }
+        platformRestoreSegmentDevice();
+        platformBindSegmentDevice(seg);
+        invalidateSegmentShapeState(seg);
+        DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
+                     "CAPACITY_SHIFT_CAPTURE: seg[%d-%d] rebound device %d -> %d "
+                     "(requiredFree=%zuMB > gpuFree=%zuMB); re-executing slot-by-slot "
+                     "on primary so outputs re-home before capture retry",
+                     seg.def.startSlot, seg.def.endSlot, currentDevice, primaryDevice,
+                     requiredFree / (1024 * 1024), gpuFree / (1024 * 1024));
+        return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+      }
       DSP_DIAG_SEG(MEMORY, 0, "insufficient GPU memory for graph capture seg[%d-%d] (%d ops): "
                     "estimated overhead %zuMB (20%% of %zuMB working set) > free %zuMB (total %zuMB) "
                     "— returning KERNEL_FAILURE (memory-budget segmentation should prevent this)",
