@@ -815,6 +815,23 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
     auto warmupResult = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
     if (warmupResult == Status::OK) {
+      const size_t warmupAllocationBytes = tl_dspAllocBytes > 0
+          ? static_cast<size_t>(tl_dspAllocBytes) : 0;
+      const int warmupAllocationCount = tl_dspAllocCount > 0 ? tl_dspAllocCount : 0;
+      if (!seg.exec.warmupDataBufferAllocationObserved ||
+          warmupAllocationBytes > seg.exec.warmupDataBufferAllocationBytes ||
+          (warmupAllocationBytes == seg.exec.warmupDataBufferAllocationBytes &&
+           warmupAllocationCount > seg.exec.warmupDataBufferAllocationCount)) {
+        seg.exec.warmupDataBufferAllocationBytes = warmupAllocationBytes;
+        seg.exec.warmupDataBufferAllocationCount = warmupAllocationCount;
+      }
+      seg.exec.warmupDataBufferAllocationObserved = true;
+      DSP_DIAG_SEG(MEMORY, segIdx,
+                   "warmup capture-workspace sample seg[%d-%d]: grossDataBuffers=%zu bytes count=%d",
+                   seg.def.startSlot, seg.def.endSlot,
+                   seg.exec.warmupDataBufferAllocationBytes,
+                   seg.exec.warmupDataBufferAllocationCount);
+
       // This key represents a successfully materialized warmup shape. It cannot
       // become replay-visible until capture installs a ready replay handle.
       seg.exec.cachedShapeKey = segShapeKey;
@@ -1074,31 +1091,49 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     size_t gpuFree = 0, gpuTotal = 0;
     cudaMemGetInfo(&gpuFree, &gpuTotal);
     size_t headroom = 256ULL * 1024 * 1024;
+    const bool hasWarmupAllocationSample =
+        segments_.size() > 1 && seg.exec.warmupDataBufferAllocationObserved;
     size_t workspaceSize = CONFIGURED_CAPTURE_WORKSPACE;
-    if (estimatedCaptureBytes > 0 && CONFIGURED_CAPTURE_WORKSPACE > 0) {
+    if (CONFIGURED_CAPTURE_WORKSPACE > 0 &&
+        (estimatedCaptureBytes > 0 || hasWarmupAllocationSample)) {
       size_t adaptiveCeiling = CONFIGURED_CAPTURE_WORKSPACE;
       if (CONFIGURED_CAPTURE_WORKSPACE <= ((size_t)-1) / 4) {
         adaptiveCeiling = CONFIGURED_CAPTURE_WORKSPACE * 4;
       }
-      // Output bytes omit some operator scratch. The segmented CUDA_GRAPHS
-      // reproduction exceeded one quarter at a later attention allocation, so
-      // retain a one-third workspace allowance for segmented plans while leaving
-      // the historical single-segment growth ratio unchanged.
       const size_t workspaceEstimateDivisor = segments_.size() > 1 ? 3 : 4;
       size_t workingSetWorkspace = estimatedCaptureBytes / workspaceEstimateDivisor;
       if (workingSetWorkspace > adaptiveCeiling) {
         workingSetWorkspace = adaptiveCeiling;
       }
       if (segments_.size() > 1) {
+        size_t segmentWorkspaceTarget = workingSetWorkspace;
+        const char* targetBasis = "output-byte estimate";
+        if (hasWarmupAllocationSample) {
+          segmentWorkspaceTarget = seg.exec.warmupDataBufferAllocationBytes;
+          const size_t allocationCount = static_cast<size_t>(
+              std::max(0, seg.exec.warmupDataBufferAllocationCount));
+          const size_t maxSize = (size_t)-1;
+          const size_t alignmentBytes = allocationCount <= maxSize / 256
+              ? allocationCount * 256
+              : maxSize;
+          segmentWorkspaceTarget = segmentWorkspaceTarget <= maxSize - alignmentBytes
+              ? segmentWorkspaceTarget + alignmentBytes
+              : maxSize;
+          targetBasis = "warmup allocation traffic";
+        }
         const size_t minimumSegmentWorkspace =
             std::min(static_cast<size_t>(32) * 1024 * 1024, adaptiveCeiling);
-        workspaceSize = std::max(minimumSegmentWorkspace, workingSetWorkspace);
+        workspaceSize = std::max(minimumSegmentWorkspace,
+                                 std::min(segmentWorkspaceTarget, adaptiveCeiling));
         DSP_DIAG_SEG(MEMORY, segIdx,
-                     "segmented capture workspace target seg[%d-%d]: configured=%zuMB "
-                     "outputEstimate=%zuMB divisor=%zu target=%zuMB ceiling=%zuMB",
-                     seg.def.startSlot, seg.def.endSlot,
+                     "segmented capture workspace target seg[%d-%d]: basis=%s "
+                     "configured=%zuMB outputEstimate=%zuMB warmupGross=%zuMB count=%d "
+                     "target=%zuMB ceiling=%zuMB",
+                     seg.def.startSlot, seg.def.endSlot, targetBasis,
                      CONFIGURED_CAPTURE_WORKSPACE / (1024*1024),
-                     estimatedCaptureBytes / (1024*1024), workspaceEstimateDivisor,
+                     estimatedCaptureBytes / (1024*1024),
+                     seg.exec.warmupDataBufferAllocationBytes / (1024*1024),
+                     seg.exec.warmupDataBufferAllocationCount,
                      workspaceSize / (1024*1024),
                      adaptiveCeiling / (1024*1024));
       } else if (workingSetWorkspace > workspaceSize) {
