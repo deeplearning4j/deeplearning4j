@@ -66,6 +66,7 @@
 #include <mutex>
 #include <new>
 #include <string>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -968,6 +969,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                    poolReservedBeforeTrim / (1024 * 1024), poolReservedAfterTrim / (1024 * 1024));
     }
     if (requiredFree > gpuFree) {
+      const size_t currentPlanOwnedBytes = estimatedOwnedBytes();
+      const size_t currentPlanOwnedArrayCount = planOwnedArrays_.size();
+      const size_t currentPlanSegmentCount = segments_.size();
       // REVERTED (2026-09-23): a CAPACITY_SHIFT_CAPTURE variant here re-homed the
       // segment to the plan primary and re-ran slot-by-slot. It produced CUDA 700
       // illegal memory access (proc-055/057): warmup-era output arrays remain on
@@ -982,6 +986,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                     "insufficient GPU memory for graph capture seg[%d-%d] (%d ops): "
                     "estimated overhead %zuMB (20%% of %zuMB working set) > free %zuMB "
                     "(preTrimFree=%zuMB, poolUsed=%zuMB, poolReserved=%zuMB, poolReusable=%zuMB, total %zuMB) "
+                    "currentPlan=%p planOwned=%zuMB ownedArrays=%zu segments=%zu "
                     "— returning KERNEL_FAILURE (memory-budget segmentation should prevent this)",
                     seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
                     requiredFree / (1024 * 1024),
@@ -991,17 +996,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                     poolUsedAfterTrim / (1024 * 1024),
                     poolReservedAfterTrim / (1024 * 1024),
                     poolReusableAfterTrim / (1024 * 1024),
-                    gpuTotal / (1024 * 1024));
+                    gpuTotal / (1024 * 1024),
+                    static_cast<void*>(this), currentPlanOwnedBytes / (1024 * 1024),
+                    currentPlanOwnedArrayCount, currentPlanSegmentCount);
       return cudaGraphFailure(
           "CUDA graph capture memory check failed for seg[%d-%d]: "
           "requiredFree=%zuMB, gpuFree=%zuMB (preTrimFree=%zuMB, poolUsed=%zuMB, "
-          "poolReserved=%zuMB, poolReusable=%zuMB), workingSet=%zuMB, gpuTotal=%zuMB",
+          "poolReserved=%zuMB, poolReusable=%zuMB), workingSet=%zuMB, gpuTotal=%zuMB, "
+          "plan=%p planOwned=%zuMB ownedArrays=%zu segments=%zu",
           seg.def.startSlot, seg.def.endSlot, requiredFree / (1024 * 1024),
           gpuFree / (1024 * 1024), gpuFreeBeforeTrim / (1024 * 1024),
           poolUsedAfterTrim / (1024 * 1024), poolReservedAfterTrim / (1024 * 1024),
           poolReusableAfterTrim / (1024 * 1024),
           estimatedCaptureBytes / (1024 * 1024),
-          gpuTotal / (1024 * 1024));
+          gpuTotal / (1024 * 1024), static_cast<void*>(this),
+          currentPlanOwnedBytes / (1024 * 1024), currentPlanOwnedArrayCount,
+          currentPlanSegmentCount);
     }
   }
 
@@ -1533,6 +1543,32 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     handle->endCapture(cudaStr);
     clearGraphStreamError(cudaStr);
     restoreCublasWorkspaceAfterCapture(stream);
+    size_t captureDeviceFree = 0, captureDeviceTotal = 0;
+    cudaMemGetInfo(&captureDeviceFree, &captureDeviceTotal);
+    size_t capturePoolUsed = 0, capturePoolReserved = 0;
+    memory::CudaMemoryPool::getInstance().getStats(
+        currentDevice, capturePoolUsed, capturePoolReserved);
+    const size_t captureWorkspaceUsed = captureGuard.workspaceUsed();
+    const size_t captureWorkspaceBytes = seg.exec.replayHandle != nullptr
+        ? seg.exec.replayHandle->getWorkspaceBytes()
+        : 0;
+    const size_t currentPlanOwnedBytes = estimatedOwnedBytes();
+    const char* failedOp = lastCaptureSlot >= 0 && lastCaptureSlot < numSlots_
+        ? slots_[lastCaptureSlot].ident.opName.c_str()
+        : "<out-of-range>";
+    char captureSnapshot[768];
+    std::snprintf(
+        captureSnapshot, sizeof(captureSnapshot),
+        " [capture snapshot: plan=%p segment=[%d-%d] slot=%d op=%s "
+        "workspace=%zu/%zu planOwned=%zuMB ownedArrays=%zu segments=%zu "
+        "deviceFree=%zuMB poolUsed=%zuMB poolReserved=%zuMB]",
+        static_cast<void*>(this), seg.def.startSlot, seg.def.endSlot,
+        lastCaptureSlot, failedOp, captureWorkspaceUsed, captureWorkspaceBytes,
+        currentPlanOwnedBytes / (1024 * 1024), planOwnedArrays_.size(),
+        segments_.size(), captureDeviceFree / (1024 * 1024),
+        capturePoolUsed / (1024 * 1024), capturePoolReserved / (1024 * 1024));
+    std::string enrichedCaptureError(e.what());
+    enrichedCaptureError.append(captureSnapshot);
     for (auto& [extIdx, origPtr] : savedExternalInputs) {
       externalArrays[extIdx] = origPtr;
     }
@@ -1544,7 +1580,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
     }
     platformCleanupSegmentForRebuild(seg);
-    throw;  // rethrow — guard destructor frees host ptrs + restores remaining TLS
+    throw std::runtime_error(enrichedCaptureError);
   } catch (...) {
     tl_graphExecutionActive = false;
     handle->endCapture(cudaStr);
