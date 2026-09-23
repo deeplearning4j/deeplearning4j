@@ -813,24 +813,39 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                  executeCount_, sealedCount, buildingCount, shapeChanged ? 1 : 0);
       }
     }
-    auto warmupResult = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    Status warmupResult = Status::KERNEL_FAILURE;
+    {
+      struct WarmupAllocationTrackingGuard {
+        bool previous;
+        WarmupAllocationTrackingGuard() : previous(tl_dspWarmupAllocationTracking) {
+          tl_dspWarmupAllocationBytes = 0;
+          tl_dspWarmupAllocationCount = 0;
+          tl_dspWarmupAllocationTracking = true;
+        }
+        ~WarmupAllocationTrackingGuard() {
+          tl_dspWarmupAllocationTracking = previous;
+        }
+      } warmupAllocationTracking;
+      warmupResult = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    }
     if (warmupResult == Status::OK) {
-      const size_t warmupAllocationBytes = tl_dspAllocBytes > 0
-          ? static_cast<size_t>(tl_dspAllocBytes) : 0;
-      const int warmupAllocationCount = tl_dspAllocCount > 0 ? tl_dspAllocCount : 0;
-      if (!seg.exec.warmupDataBufferAllocationObserved ||
-          warmupAllocationBytes > seg.exec.warmupDataBufferAllocationBytes ||
-          (warmupAllocationBytes == seg.exec.warmupDataBufferAllocationBytes &&
-           warmupAllocationCount > seg.exec.warmupDataBufferAllocationCount)) {
-        seg.exec.warmupDataBufferAllocationBytes = warmupAllocationBytes;
-        seg.exec.warmupDataBufferAllocationCount = warmupAllocationCount;
+      const size_t warmupAllocationBytes = tl_dspWarmupAllocationBytes > 0
+          ? static_cast<size_t>(tl_dspWarmupAllocationBytes) : 0;
+      const int warmupAllocationCount =
+          tl_dspWarmupAllocationCount > 0 ? tl_dspWarmupAllocationCount : 0;
+      if (!seg.exec.warmupWorkspaceAllocationObserved ||
+          warmupAllocationBytes > seg.exec.warmupWorkspaceAllocationBytes ||
+          (warmupAllocationBytes == seg.exec.warmupWorkspaceAllocationBytes &&
+           warmupAllocationCount > seg.exec.warmupWorkspaceAllocationCount)) {
+        seg.exec.warmupWorkspaceAllocationBytes = warmupAllocationBytes;
+        seg.exec.warmupWorkspaceAllocationCount = warmupAllocationCount;
       }
-      seg.exec.warmupDataBufferAllocationObserved = true;
+      seg.exec.warmupWorkspaceAllocationObserved = true;
       DSP_DIAG_SEG(MEMORY, segIdx,
-                   "warmup capture-workspace sample seg[%d-%d]: grossDataBuffers=%zu bytes count=%d",
+                   "warmup capture-workspace sample seg[%d-%d]: grossPoolRequests=%zu bytes count=%d",
                    seg.def.startSlot, seg.def.endSlot,
-                   seg.exec.warmupDataBufferAllocationBytes,
-                   seg.exec.warmupDataBufferAllocationCount);
+                   seg.exec.warmupWorkspaceAllocationBytes,
+                   seg.exec.warmupWorkspaceAllocationCount);
 
       // This key represents a successfully materialized warmup shape. It cannot
       // become replay-visible until capture installs a ready replay handle.
@@ -1092,7 +1107,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     cudaMemGetInfo(&gpuFree, &gpuTotal);
     size_t headroom = 256ULL * 1024 * 1024;
     const bool hasWarmupAllocationSample =
-        segments_.size() > 1 && seg.exec.warmupDataBufferAllocationObserved;
+        segments_.size() > 1 && seg.exec.warmupWorkspaceAllocationObserved;
     size_t workspaceSize = CONFIGURED_CAPTURE_WORKSPACE;
     if (CONFIGURED_CAPTURE_WORKSPACE > 0 &&
         (estimatedCaptureBytes > 0 || hasWarmupAllocationSample)) {
@@ -1109,9 +1124,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         size_t segmentWorkspaceTarget = workingSetWorkspace;
         const char* targetBasis = "output-byte estimate";
         if (hasWarmupAllocationSample) {
-          segmentWorkspaceTarget = seg.exec.warmupDataBufferAllocationBytes;
+          segmentWorkspaceTarget = seg.exec.warmupWorkspaceAllocationBytes;
           const size_t allocationCount = static_cast<size_t>(
-              std::max(0, seg.exec.warmupDataBufferAllocationCount));
+              std::max(0, seg.exec.warmupWorkspaceAllocationCount));
           const size_t maxSize = (size_t)-1;
           const size_t alignmentBytes = allocationCount <= maxSize / 256
               ? allocationCount * 256
@@ -1132,8 +1147,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                      seg.def.startSlot, seg.def.endSlot, targetBasis,
                      CONFIGURED_CAPTURE_WORKSPACE / (1024*1024),
                      estimatedCaptureBytes / (1024*1024),
-                     seg.exec.warmupDataBufferAllocationBytes / (1024*1024),
-                     seg.exec.warmupDataBufferAllocationCount,
+                     seg.exec.warmupWorkspaceAllocationBytes / (1024*1024),
+                     seg.exec.warmupWorkspaceAllocationCount,
                      workspaceSize / (1024*1024),
                      adaptiveCeiling / (1024*1024));
       } else if (workingSetWorkspace > workspaceSize) {
@@ -1682,6 +1697,18 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // The guard destructor will run at function scope exit and restore all
   // capture TLS. We save the offset now while it is still valid.
   size_t captureWorkspaceUsed = captureGuard.workspaceUsed();
+  const size_t trackedWorkspaceBytes =
+      tl_captureWorkspaceDataBufferBytes + tl_captureWorkspacePointerBytes +
+      tl_captureWorkspacePoolBytes + tl_captureWorkspaceExtraArgsBytes;
+  const size_t untrackedWorkspaceBytes = captureWorkspaceUsed > trackedWorkspaceBytes
+      ? captureWorkspaceUsed - trackedWorkspaceBytes : 0;
+  DSP_DIAG_SEG(MEMORY, segIdx,
+               "capture workspace consumers seg[%d-%d]: total=%zu dataBuffer=%zu "
+               "pointerManager=%zu cudaMemoryPool=%zu extraArgs=%zu untracked=%zu",
+               seg.def.startSlot, seg.def.endSlot, captureWorkspaceUsed,
+               tl_captureWorkspaceDataBufferBytes, tl_captureWorkspacePointerBytes,
+               tl_captureWorkspacePoolBytes, tl_captureWorkspaceExtraArgsBytes,
+               untrackedWorkspaceBytes);
   tl_graphExecutionActive = false;  // deactivate before endCapture (guard restores remaining TLS at scope exit)
   restoreCublasWorkspaceAfterCapture(stream);
 

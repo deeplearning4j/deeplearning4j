@@ -1154,12 +1154,11 @@ struct GraphSegmentExec {
   // otherwise the compiled backend is preserved and graph capture is deferred.
   size_t peakWarmupAllocationBytes = 0;
 
-  // Gross DataBuffer allocation traffic observed during slot-by-slot warmup.
-  // Capture uses a non-reclaiming bump workspace, so sum bytes (plus per-buffer
-  // alignment) is a better segment-local workspace lower bound than peak bytes.
-  size_t warmupDataBufferAllocationBytes = 0;
-  int warmupDataBufferAllocationCount = 0;
-  bool warmupDataBufferAllocationObserved = false;
+  // Gross CUDA-pool and pointer-table allocation requests observed during
+  // slot-by-slot warmup. Capture's bump workspace cannot reclaim those addresses.
+  size_t warmupWorkspaceAllocationBytes = 0;
+  int warmupWorkspaceAllocationCount = 0;
+  bool warmupWorkspaceAllocationObserved = false;
 
   // LRU tracking: last executeCount_ at which this segment was replayed.
   // Used by proactive eviction to target least-recently-used graphs.
@@ -1309,9 +1308,9 @@ struct GraphSegmentExec {
     precommitFunctionalWarmupCount = 0;
     captureOomRetries = 0;
     captureRetryAfterExec = 0;
-    warmupDataBufferAllocationBytes = 0;
-    warmupDataBufferAllocationCount = 0;
-    warmupDataBufferAllocationObserved = false;
+    warmupWorkspaceAllocationBytes = 0;
+    warmupWorkspaceAllocationCount = 0;
+    warmupWorkspaceAllocationObserved = false;
     resetCaptureKeys();
     clearGraphContentFlags("reset_for_warmup");
     DSP_DIAG(LIFECYCLE, "RESET_FOR_WARMUP: counters+keys+graphflags reset phase=%s",
@@ -1519,9 +1518,9 @@ struct GraphSegmentExec {
     terminalReason = nullptr;
     captureOomRetries = 0;
     captureRetryAfterExec = 0;
-    warmupDataBufferAllocationBytes = 0;
-    warmupDataBufferAllocationCount = 0;
-    warmupDataBufferAllocationObserved = false;
+    warmupWorkspaceAllocationBytes = 0;
+    warmupWorkspaceAllocationCount = 0;
+    warmupWorkspaceAllocationObserved = false;
     lastReplayExecCount = 0;
     replayHandle.reset();
     outcome = SegmentExecOutcome::PENDING;

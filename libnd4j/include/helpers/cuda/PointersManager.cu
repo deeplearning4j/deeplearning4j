@@ -75,6 +75,7 @@ void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
     if (tl_captureWorkspaceOffset + aligned <= tl_captureWorkspaceSize) {
       dst = static_cast<char*>(tl_captureWorkspace) + tl_captureWorkspaceOffset;
       tl_captureWorkspaceOffset += aligned;
+      tl_captureWorkspacePointerBytes += aligned;
       fromCudaMalloc = false;  // workspace — don't free in destructor
       _allocatedPointers.emplace_back(dst, fromCudaMalloc);
       return dst;
@@ -109,6 +110,10 @@ void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
     // Allocate from workspace - workspace manages lifecycle
     dst = _context->getWorkspace()->allocateBytes(memory::MemoryType::DEVICE, sizeInBytes);
     fromCudaMalloc = false;
+    if (dst != nullptr && tl_dspWarmupAllocationTracking) {
+      tl_dspWarmupAllocationBytes += static_cast<long long>(sizeInBytes);
+      tl_dspWarmupAllocationCount++;
+    }
   }
 
   // Track allocation with its source

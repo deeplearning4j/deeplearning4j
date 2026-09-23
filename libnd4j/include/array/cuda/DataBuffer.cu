@@ -993,6 +993,7 @@ void DataBuffer::allocateSpecial() {
           _specialBuffer = reinterpret_cast<int8_t*>(
               static_cast<char*>(tl_captureWorkspace) + tl_captureWorkspaceOffset);
           tl_captureWorkspaceOffset += aligned;
+          tl_captureWorkspaceDataBufferBytes += aligned;
           // Workspace-allocated: NOT owned by this DataBuffer (workspace
           // lifecycle manages the memory). Set _isOwnerSpecial=false below
           // so deleteSpecial() doesn't try to free an interior pointer.
@@ -1028,12 +1029,15 @@ void DataBuffer::allocateSpecial() {
         const size_t remainingWorkspace = tl_captureWorkspaceSize - tl_captureWorkspaceOffset;
         DSP_DIAG(MEMORY,
                  "CAPTURE_WORKSPACE_EXHAUSTED: device=%d buffer=%p dataBytes=%lld "
-                 "allocBytes=%zu used=%zu/%zu need=%zu remaining=%zu — "
+                 "allocBytes=%zu used=%zu/%zu need=%zu remaining=%zu "
+                 "sources[data=%zu pointers=%zu pool=%zu extraArgs=%zu] — "
                  "failing capture (unsafe addresses would be baked into the graph)",
                  deviceId, static_cast<void*>(this),
                  static_cast<long long>(getLenInBytes()), allocSize,
                  tl_captureWorkspaceOffset, tl_captureWorkspaceSize,
-                 aligned, remainingWorkspace);
+                 aligned, remainingWorkspace, tl_captureWorkspaceDataBufferBytes,
+                 tl_captureWorkspacePointerBytes, tl_captureWorkspacePoolBytes,
+                 tl_captureWorkspaceExtraArgsBytes);
         const std::string exhaustionMessage = "CAPTURE_WORKSPACE_EXHAUSTED: capture workspace exhausted "
                         "during CUDA graph capture (need " +
                         std::to_string(aligned) + " bytes, " +

@@ -101,6 +101,7 @@ void* extraArgsCaptureDevAlloc(size_t bytes) {
   if (tl_captureWorkspaceOffset + aligned > tl_captureWorkspaceSize) return nullptr;
   void* ptr = static_cast<char*>(tl_captureWorkspace) + tl_captureWorkspaceOffset;
   tl_captureWorkspaceOffset += aligned;
+  tl_captureWorkspaceExtraArgsBytes += aligned;
   return ptr;
 }
 

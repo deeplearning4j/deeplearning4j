@@ -616,6 +616,10 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   if (tl_allocationRequestTrackingDepth > 0 && size > tl_peakAllocationRequestBytes) {
     tl_peakAllocationRequestBytes = size;
   }
+  if (tl_dspWarmupAllocationTracking && !tl_graphExecutionActive && size > 0) {
+    tl_dspWarmupAllocationBytes += static_cast<long long>(size);
+    tl_dspWarmupAllocationCount++;
+  }
 
   // After releaseAll(), the pool is torn down. Return nullptr.
   if (released_.load(std::memory_order_acquire)) {
@@ -637,6 +641,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     if (tl_captureWorkspaceOffset + aligned <= tl_captureWorkspaceSize) {
       void* ptr = static_cast<char*>(tl_captureWorkspace) + tl_captureWorkspaceOffset;
       tl_captureWorkspaceOffset += aligned;
+      tl_captureWorkspacePoolBytes += aligned;
       if (actualDeviceId) *actualDeviceId = deviceId;
       return ptr;
     }

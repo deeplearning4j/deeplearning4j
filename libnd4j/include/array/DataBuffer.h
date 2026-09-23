@@ -61,6 +61,13 @@ struct DataBufferThreadState {
   int dspAllocCount = 0;
   int dspFreeCount = 0;
   int dspFreeSkipCount = 0;
+  long long dspWarmupAllocationBytes = 0;
+  int dspWarmupAllocationCount = 0;
+  bool dspWarmupAllocationTracking = false;
+  size_t captureWorkspaceDataBufferBytes = 0;
+  size_t captureWorkspacePointerBytes = 0;
+  size_t captureWorkspacePoolBytes = 0;
+  size_t captureWorkspaceExtraArgsBytes = 0;
   bool dspReplayActive = false;
   bool cublasLtDisabled = false;
   void* graphCaptureStream = nullptr;   // cudaStream_t on CUDA, unused on CPU
@@ -98,6 +105,13 @@ SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState();
 #define tl_dspAllocCount          dataBufferThreadState().dspAllocCount
 #define tl_dspFreeCount           dataBufferThreadState().dspFreeCount
 #define tl_dspFreeSkipCount       dataBufferThreadState().dspFreeSkipCount
+#define tl_dspWarmupAllocationBytes dataBufferThreadState().dspWarmupAllocationBytes
+#define tl_dspWarmupAllocationCount dataBufferThreadState().dspWarmupAllocationCount
+#define tl_dspWarmupAllocationTracking dataBufferThreadState().dspWarmupAllocationTracking
+#define tl_captureWorkspaceDataBufferBytes dataBufferThreadState().captureWorkspaceDataBufferBytes
+#define tl_captureWorkspacePointerBytes dataBufferThreadState().captureWorkspacePointerBytes
+#define tl_captureWorkspacePoolBytes dataBufferThreadState().captureWorkspacePoolBytes
+#define tl_captureWorkspaceExtraArgsBytes dataBufferThreadState().captureWorkspaceExtraArgsBytes
 #define tl_dspReplayActive        dataBufferThreadState().dspReplayActive
 #define tl_cublasLtDisabled       dataBufferThreadState().cublasLtDisabled
 #define tl_graphCaptureStream     dataBufferThreadState().graphCaptureStream
