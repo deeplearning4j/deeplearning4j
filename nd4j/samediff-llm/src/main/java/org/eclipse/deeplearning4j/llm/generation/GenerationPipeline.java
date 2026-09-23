@@ -820,6 +820,13 @@ public class GenerationPipeline implements AutoCloseable {
 
         String normalized = requested.trim().toUpperCase(Locale.ROOT);
         switch (normalized) {
+            case "AUTO":
+                // Explicit AUTO: identical to the no-BenchmarkConfig default on a
+                // Triton-less backend. Needed when the native advertises Triton but
+                // the workload wants the AUTO graph-mode path (e.g. native decode
+                // loops, whose nested plans cannot satisfy TRITON's strict contract).
+                log.info("Using explicit LLM BenchmarkConfig override: AUTO");
+                return BenchmarkConfig.create("AUTO").executionMode(GraphExecutionMode.AUTO);
             case "SLOT_BY_SLOT":
                 log.warn("Using diagnostic LLM BenchmarkConfig override: SLOT_BY_SLOT");
                 return BenchmarkConfig.cpuSlotBySlot();
