@@ -1,6 +1,47 @@
 # DSP Plan Lifecycle — Factual Timeline and Root Cause
 
-## SESSION VERDICT (2026-09-23, post proc-059) — read this first
+## SESSION VERDICT v2 (2026-09-23, post proc-068) — read this first
+
+CAPTURE WALL ELIMINATED (proc-068): capability-stable placement sort
+(DynamicShapePlan.assignDevices: resident device first, then by TOTAL memory,
+never remaining-free budget) keeps assignments identical across generates.
+All three placement traces: device0=all ops. No capture-memory failure.
+
+REMAINING BLOCKER (precisely defined, one fix away):
+Double-compile. execute() resolves requested mode from sd.getGraphExecutionMode()
+(=AUTO), while -Dnd4j.dsp.graphExecutionMode=CUDA_GRAPHS forces recompile at the
+mode check. Consequences at doc2:
+  1. parked-prefill restore hits parkedMode(CUDA_GRAPHS) != requested(AUTO)
+     -> honest rejection (correct behavior), full recompile.
+  2. fresh compile's DataBuffer::migrate hits dev0's collapsed REMAINING budget
+     (3479MB; dev0 holds ~16GB of live plans) -> "actual target exceeds device
+     or DEVICE-group memory limits". Test failure.
+FIX: initial auto-compile must resolve the EFFECTIVE mode (same SameDiff/property
+path as execute()'s check), not raw AUTO. Plans then born under CUDA_GRAPHS:
+doc2 restore matches bytes + mode -> adopts without recompile -> no migrations.
+Secondary: even with the fix, restored plans may still want re-prefill migrations;
+if migrate rejections persist, the budget used by DataBuffer::migrate must count
+pinned/parked plans' live allocations (dev0 holds both plans by design).
+
+CONFIRMED WORKING (proc-068 evidence):
+- Capability-stable sort (this session) — placement identical across generates.
+- parkedMode captured at park; restore validates vs requested mode, never relabels.
+- Park/restore machinery; prefill-only parking.
+- Bounded placement trace (assignDevices: budgets=... ) — keep permanently.
+
+FALSIFIED / CORRECTED THIS SESSION (do not retry):
+- CAPACITY_SHIFT_CAPTURE: CUDA 700 (warmup outputs on secondary). Reverted.
+- Budget-descending placement sort: flips between generates (proc-064 trace).
+- Java capture gate from estimateSlotOutputBytes(): inert pre-warmup (proc-053).
+- Native rebuild without -Dlibnd4j.triton=ON: wrong binary (tritonAvailable=false).
+- "Disk cache freezes assignments": FALSE — byte-identity gate rejects changed
+  assignment bytes; the cache never overrode fresh placement.
+- "Restore validated end-to-end": NOT YET — blocked by double-compile.
+
+COMPILE ERRORS CAUGHT BY INSTALL-BEFORE-RUN (reminder 8 validated):
+proc-062 break-outside-if; proc-065 nativeOps scope; proc-066 getDeviceTotalMemory
+signature (int form: totalOps.getDeviceTotalMemory(deviceId)).
+
 
 CONFIRMED FIX (in tree, code-correct, validated only to the point of "no regression"):
 - `DynamicShapePlanExecutor` restore branch now re-derives mode/JIT/cudaGraphs/timing/trace
