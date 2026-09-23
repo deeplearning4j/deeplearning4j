@@ -261,9 +261,12 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
     }
 
-    /** Bounded retention: the fixed-buffer pipeline alternates exactly two plans. */
+    /** Bounded retention: the fixed-buffer pipeline alternates exactly two plans.
+     *  Keyed by serialized-bytes hash — each generate builds FRESH Java plan objects,
+     *  so identity keys never match across generates (proc-013: parks fired 3x,
+     *  restores 0x). The serialized bytes are the stable cross-generate identity. */
     private static final int RETAINED_FROZEN_PLAN_LIMIT = 2;
-    private final Map<DynamicShapePlan, RetainedFrozenPlan> retainedFrozenPlans = new LinkedHashMap<>();
+    private final Map<Integer, RetainedFrozenPlan> retainedFrozenPlans = new LinkedHashMap<>();
     private DynamicShapePlan completedExecutionPlan;
     private INDArray[] completedExecutionInputs;
     private String[] completedExecutionKeys;
@@ -992,10 +995,11 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (parkedFrozenOutgoing) {
             long parkedHandleAddress = nativePlanHandle.address();
             int parkedSerializedBytes = cachedSerializedPlan.length;
-            retainedFrozenPlans.put(nativePlanSource,
+            int parkedKey = java.util.Arrays.hashCode(cachedSerializedPlan);
+            retainedFrozenPlans.put(parkedKey,
                     new RetainedFrozenPlan(cachedSerializedPlan, nativePlanHandle));
             while (retainedFrozenPlans.size() > RETAINED_FROZEN_PLAN_LIMIT) {
-                DynamicShapePlan evictKey = retainedFrozenPlans.keySet().iterator().next();
+                Integer evictKey = retainedFrozenPlans.keySet().iterator().next();
                 releaseRetainedFrozenPlan(retainedFrozenPlans.remove(evictKey));
             }
             // Keep: nativePlanCacheHandle, pinnedPlanHandles (lease stays pinned),
@@ -2374,21 +2378,40 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (cachedSerializedPlan == null || nativePlanSource != plan) {
             // RESTORE PARKED FROZEN PLAN: the incoming plan was parked by initialize()
             // with its native lease still pinned — restore identity and skip recompilation.
-            // The C++ cache returns the same warm handle (O(1)), the frozen phase and
-            // cast caches are intact, and redispatch resumes replay without warmup.
-            RetainedFrozenPlan retained = retainedFrozenPlans.remove(plan);
-            if (retained != null && retained.handle != null && !retained.handle.isNull()
-                    && pinnedPlanHandles.containsKey(retained.handle.address())) {
-                cachedSerializedPlan = retained.serialized;
-                nativePlanSource = plan;
-                nativePlanHandle = retained.handle;
-                observedLifecycleSnapshot = DspLifecycleSnapshot.unavailable();
-                observedLifecycleHandleAddress = 0L;
-                nativeExecutorFailed = false;
-                log.info("Native executor: restored parked frozen plan 0x{} without recompilation "
-                                + "({} bytes serialized identity)",
-                        Long.toHexString(retained.handle.address()), retained.serialized.length);
-                return requestedMode != null ? requestedMode : configuredGraphExecutionMode;
+            // Keyed by serialized-bytes hash because Java plan identity does not survive
+            // across generates (fresh objects each call). The C++ cache returns the same
+            // warm handle (O(1)), the frozen phase and cast caches are intact, and
+            // redispatch resumes replay without slot-by-slot warmup.
+            byte[] incomingSerialized = null;
+            int incomingKey = 0;
+            try {
+                incomingSerialized = plan.serialize();
+                if (incomingSerialized == null || incomingSerialized.length == 0) incomingSerialized = null;
+            } catch (Exception serializationFailure) {
+                incomingSerialized = null;
+            }
+            if (incomingSerialized != null) {
+                incomingKey = java.util.Arrays.hashCode(incomingSerialized);
+                RetainedFrozenPlan retained = retainedFrozenPlans.remove(incomingKey);
+                if (retained != null
+                        && retained.handle != null && !retained.handle.isNull()
+                        && pinnedPlanHandles.containsKey(retained.handle.address())
+                        && java.util.Arrays.equals(retained.serialized, incomingSerialized)) {
+                    cachedSerializedPlan = retained.serialized;
+                    nativePlanSource = plan;
+                    nativePlanHandle = retained.handle;
+                    observedLifecycleSnapshot = DspLifecycleSnapshot.unavailable();
+                    observedLifecycleHandleAddress = 0L;
+                    nativeExecutorFailed = false;
+                    log.info("Native executor: restored parked frozen plan 0x{} without recompilation "
+                                    + "({} bytes serialized identity)",
+                            Long.toHexString(retained.handle.address()), retained.serialized.length);
+                    return requestedMode != null ? requestedMode : configuredGraphExecutionMode;
+                }
+                if (retained != null) {
+                    // Hash collision or unpinned handle — put it back; fall through to compile.
+                    retainedFrozenPlans.put(incomingKey, retained);
+                }
             }
             if (planChanged && cudaGraphsFailed) {
                 log.info("Native executor: resetting cudaGraphsFailed on plan recompilation");
