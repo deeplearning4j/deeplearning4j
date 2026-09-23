@@ -2409,8 +2409,24 @@ public class DynamicShapePlanExecutor implements Closeable {
                     return requestedMode != null ? requestedMode : configuredGraphExecutionMode;
                 }
                 if (retained != null) {
+                    // Name the exact failed condition — restore misses must be diagnosable
+                    // from the log alone, not inferred across runs (proc-019 lesson).
+                    String why;
+                    if (retained.handle == null || retained.handle.isNull()) {
+                        why = "parked handle is null";
+                    } else if (!pinnedPlanHandles.containsKey(retained.handle.address())) {
+                        why = "parked handle 0x" + Long.toHexString(retained.handle.address())
+                                + " no longer pinned (evicted or released)";
+                    } else {
+                        why = "serialized bytes differ (stored=" + retained.serialized.length
+                                + "B, incoming=" + incomingSerialized.length + "B)";
+                    }
+                    log.info("Native executor: parked-plan restore MISS ({}); falling through to compile", why);
                     // Hash collision or unpinned handle — put it back; fall through to compile.
                     retainedFrozenPlans.put(incomingKey, retained);
+                } else {
+                    log.info("Native executor: no parked plan for incoming hash {} (retained={})",
+                            incomingKey, retainedFrozenPlans.size());
                 }
             }
             if (planChanged && cudaGraphsFailed) {
