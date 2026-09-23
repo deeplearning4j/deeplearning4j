@@ -1089,14 +1089,36 @@ public class DynamicShapePlanExecutor implements Closeable {
                     Long.toHexString(parkedHandleAddress), parkedSerializedBytes,
                     retainedFrozenPlans.size());
         } else {
-            // Outgoing plan is NOT being parked (decode switch, or non-frozen).
-            // Do NOT release intermediates here: prefill and decode share staging pool
-            // buffers (the past_key_values staging tables), so freeing either plan's
-            // intermediates at a generate boundary invalidates addresses the other
-            // plan's fresh compile just rebound (proc-046/047: rebound_transfer
-            // cudaError=1 on past_key_values.23.value). The C++ plan cache reclaims
-            // replaced plans' intermediates through its own LRU accounting.
-            // Reset native executor state for new plan
+            // Outgoing plan is NOT being parked (this is the decode switch).
+            // PASSIVATE the decode plan's GPU arrays instead of tearing it down
+            // (fpna v4 design, replacing the proc-046/047 raw-release failure):
+            // NativeOps.releaseGpuIntermediates(handle) routes to
+            // NativeDynamicShapePlan::releaseGpuIntermediates(), which frees
+            // plan-owned slot arrays + CUDA graphs while KEEPING the plan handle,
+            // its frozen state, and its NativePlanCache membership intact. The
+            // plan is passivated — the C++ execute path re-warms automatically on
+            // the next cache hit (isPassivated() -> reactivate()).
+            // SAFETY GUARD: only passivate when no native binding is live on the
+            // handle (proc-046/047 wound: releasing arrays while rebound staging
+            // was live produced rebound_transfer cudaError=1).
+            if (nativePlanHandle != null && !nativePlanHandle.isNull()
+                    && isPrefillPlan(cachedSortedOutputs) == false
+                    && !hasNativeBinding(nativePlanHandle.address())) {
+                try {
+                    NativeOps passivateOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    int freed = passivateOps.releaseGpuIntermediates(nativePlanHandle);
+                    log.info("initialize: PASSIVATED decode plan 0x{} ({} intermediate arrays freed) "
+                                    + "— handle + frozen state stay cache-resident; decode re-warms on next use",
+                            Long.toHexString(nativePlanHandle.address()), freed);
+                } catch (Exception passivateFailure) {
+                    log.warn("initialize: decode passivation failed ({}); keeping arrays "
+                                    + "resident — may re-approach the device cap",
+                            passivateFailure.getMessage());
+                }
+            }
+            // Reset native executor state for new plan (the passivated plan remains
+            // in NativePlanCache under its lease; freeNativePlanHandle only unpins
+            // executor bookkeeping, it does NOT destroy the cache-owned plan).
             freeNativePlanHandle("PLAN_CHANGED");
         }
         // Decrement global frozen-executor count if this executor was registered.
