@@ -400,9 +400,38 @@ public class DynamicShapePlan implements Closeable {
             sorted = viable;
         }
 
-        // Sort devices largest-first so the device with the largest usable budget gets
-        // the bulk of ops, minimizing cross-device data transfers.
-        sorted.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
+        // CAPABILITY-STABLE SORT (proc-064 trace): sort by device IDENTITY order, not
+        // remaining budget. Budgets are remaining-FREE memory at compile time, so they
+        // flip between generates as devices fill up — doc2's prefill sorted dev1 first
+        // (7300MB free) after doc1 left dev0 with 3479MB, assigning ALL slots to the
+        // 8GB card, baking that into serialized bytes (breaking park/restore byte
+        // identity), and pushing the capture band onto a device that cannot hold its
+        // margin. Capability must come from what the card CAN hold: total memory,
+        // resident first. This keeps assignments identical across generates, which is
+        // also what makes parked-plan serialization byte-identical.
+        final int residentFinal = residentDevice;
+        final Map<Integer, Long> totalsById = new java.util.HashMap<>();
+        try {
+            NativeOps totalOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            for (Map.Entry<Integer, Long> entry : sorted) {
+                totalsById.put(entry.getKey(), totalOps.getDeviceTotalMemory(entry.getKey()));
+            }
+        } catch (Exception totalQueryFailure) {
+            log.warn("Device placement: total-memory query failed ({}); retaining budget order",
+                    totalQueryFailure.getMessage());
+            for (Map.Entry<Integer, Long> entry : deviceMemoryBudgets.entrySet()) {
+                totalsById.putIfAbsent(entry.getKey(), entry.getValue());
+            }
+        }
+        sorted.sort((a, b) -> {
+            // resident anchor always first
+            if (a.getKey() == residentFinal) return -1;
+            if (b.getKey() == residentFinal) return 1;
+            long totalA = totalsById.getOrDefault(a.getKey(), 0L);
+            long totalB = totalsById.getOrDefault(b.getKey(), 0L);
+            if (totalA != totalB) return Long.compare(totalB, totalA);
+            return Integer.compare(a.getKey(), b.getKey());  // deterministic tiebreak
+        });
 
         // Device-affinity pinning: constants/variables larger than
         // DEVICE_AFFINITY_THRESHOLD_BYTES are copied to the target device when a
