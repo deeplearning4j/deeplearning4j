@@ -62,7 +62,7 @@ public class Nd4jHexagon extends org.nd4j.presets.hexagon.Nd4jHexagonHelper {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
     public LongVectorVector(Pointer p) { super(p); }
-    public LongVectorVector(LongType[] ... array) { this(array.length); put(array); }
+    public LongVectorVector(long[] ... array) { this(array.length); put(array); }
     public LongVectorVector()       { allocate();  }
     public LongVectorVector(long n) { allocate(n); }
     private native void allocate();
@@ -78,13 +78,13 @@ public class Nd4jHexagon extends org.nd4j.presets.hexagon.Nd4jHexagonHelper {
     public void clear(@Cast("size_t") long i) { resize(i, 0); }
     public native @Index(function = "at") void resize(@Cast("size_t") long i, @Cast("size_t") long n);
 
-    @Index(function = "at") public native @ByRef LongType get(@Cast("size_t") long i, @Cast("size_t") long j);
-    public native LongVectorVector put(@Cast("size_t") long i, @Cast("size_t") long j, LongType value);
+    @Index(function = "at") public native @Cast("sd::LongType") long get(@Cast("size_t") long i, @Cast("size_t") long j);
+    public native LongVectorVector put(@Cast("size_t") long i, @Cast("size_t") long j, long value);
 
-    public LongType[][] get() {
-        LongType[][] array = new LongType[size() < Integer.MAX_VALUE ? (int)size() : Integer.MAX_VALUE][];
+    public long[][] get() {
+        long[][] array = new long[size() < Integer.MAX_VALUE ? (int)size() : Integer.MAX_VALUE][];
         for (int i = 0; i < array.length; i++) {
-            array[i] = new LongType[size(i) < Integer.MAX_VALUE ? (int)size(i) : Integer.MAX_VALUE];
+            array[i] = new long[size(i) < Integer.MAX_VALUE ? (int)size(i) : Integer.MAX_VALUE];
             for (int j = 0; j < array[i].length; j++) {
                 array[i][j] = get(i, j);
             }
@@ -95,7 +95,7 @@ public class Nd4jHexagon extends org.nd4j.presets.hexagon.Nd4jHexagonHelper {
         return java.util.Arrays.deepToString(get());
     }
 
-    public LongVectorVector put(LongType[] ... array) {
+    public LongVectorVector put(long[] ... array) {
         if (size() != array.length) { resize(array.length); }
         for (int i = 0; i < array.length; i++) {
             if (size(i) != array[i].length) { resize(i, array[i].length); }
@@ -440,12 +440,12 @@ public static final int
   private native void allocate(@Const Pointer hostBuffer,
                @Cast("const sd::DataType") int dataType, @Cast("const size_t") long lenInBytes);
 
-  public DataBuffer(@Const @ByVal LongType lenInBytes, @Cast("const sd::DataType") int dataType, Workspace workspace/*=nullptr*/,
+  public DataBuffer(@Cast("const sd::LongType") long lenInBytes, @Cast("const sd::DataType") int dataType, Workspace workspace/*=nullptr*/,
                @Cast("const bool") boolean allocBoth/*=false*/) { super((Pointer)null); allocate(lenInBytes, dataType, workspace, allocBoth); }
-  private native void allocate(@Const @ByVal LongType lenInBytes, @Cast("const sd::DataType") int dataType, Workspace workspace/*=nullptr*/,
+  private native void allocate(@Cast("const sd::LongType") long lenInBytes, @Cast("const sd::DataType") int dataType, Workspace workspace/*=nullptr*/,
                @Cast("const bool") boolean allocBoth/*=false*/);
-  public DataBuffer(@Const @ByVal LongType lenInBytes, @Cast("const sd::DataType") int dataType) { super((Pointer)null); allocate(lenInBytes, dataType); }
-  private native void allocate(@Const @ByVal LongType lenInBytes, @Cast("const sd::DataType") int dataType);
+  public DataBuffer(@Cast("const sd::LongType") long lenInBytes, @Cast("const sd::DataType") int dataType) { super((Pointer)null); allocate(lenInBytes, dataType); }
+  private native void allocate(@Cast("const sd::LongType") long lenInBytes, @Cast("const sd::DataType") int dataType);
 
   public DataBuffer(@Const @ByRef DataBuffer other) { super((Pointer)null); allocate(other); }
   private native void allocate(@Const @ByRef DataBuffer other);
@@ -539,8 +539,8 @@ public static final int
   public native void setToZeroBuffers(@Cast("const bool") boolean both/*=false*/);
   public native void setToZeroBuffers();
 
-  public native void copyBufferFrom(@Const @ByRef DataBuffer other, @Cast("size_t") long sizeToCopyinBytes/*=0*/, @Const @ByVal(nullValue = "LongType(0)") LongType offsetThis,
-                        @Const @ByVal(nullValue = "LongType(0)") LongType offsetOther);
+  public native void copyBufferFrom(@Const @ByRef DataBuffer other, @Cast("size_t") long sizeToCopyinBytes/*=0*/, @Cast("const sd::LongType") long offsetThis/*=0*/,
+                        @Cast("const sd::LongType") long offsetOther/*=0*/);
   public native void copyBufferFrom(@Const @ByRef DataBuffer other);
 
 
@@ -581,8 +581,8 @@ public static final int
    */
   public native @StdString BytePointer getCreationTraceAsString();
   public native void printHostDevice(long offset);
-  public static native void memcpy(DataBuffer dst, DataBuffer src, @ByVal LongType startingOffset, @ByVal LongType dstOffset, @ByVal(nullValue = "sd::LongType(0)") LongType n);
-  public static native void memcpy(DataBuffer dst, DataBuffer src, @ByVal LongType startingOffset, @ByVal LongType dstOffset);
+  public static native void memcpy(DataBuffer dst, DataBuffer src, @Cast("sd::LongType") long startingOffset, @Cast("sd::LongType") long dstOffset, @Cast("sd::LongType") long n/*=0*/);
+  public static native void memcpy(DataBuffer dst, DataBuffer src, @Cast("sd::LongType") long startingOffset, @Cast("sd::LongType") long dstOffset);
   /**
    * Print detailed buffer information including host and device content if available
    * @param msg - Optional message to display
@@ -766,11 +766,11 @@ public static final int
   private native void allocate(DoubleBuffer values, int length);
   public ConstantDescriptor(double[] values, int length) { super((Pointer)null); allocate(values, length); }
   private native void allocate(double[] values, int length);
-  public ConstantDescriptor(@Const LongType values, int length) { super((Pointer)null); allocate(values, length); }
-  private native void allocate(@Const LongType values, int length);
+  public ConstantDescriptor(@Cast("const sd::LongType*") LongPointer values, int length) { super((Pointer)null); allocate(values, length); }
+  private native void allocate(@Cast("const sd::LongType*") LongPointer values, int length);
 
-  public ConstantDescriptor(@StdVector LongType values) { super((Pointer)null); allocate(values); }
-  private native void allocate(@StdVector LongType values);
+  public ConstantDescriptor(@Cast("sd::LongType*") @StdVector LongPointer values) { super((Pointer)null); allocate(values); }
+  private native void allocate(@Cast("sd::LongType*") @StdVector LongPointer values);
   public ConstantDescriptor(@StdVector DoublePointer values) { super((Pointer)null); allocate(values); }
   private native void allocate(@StdVector DoublePointer values);
   public ConstantDescriptor(@StdVector DoubleBuffer values) { super((Pointer)null); allocate(values); }
@@ -787,9 +787,9 @@ public static final int
   public native @Cast("bool") boolean isInteger();
   public native @Cast("bool") boolean isFloat();
 
-  public native @ByVal LongType length();
+  public native @Cast("sd::LongType") long length();
 
-  public native @StdVector LongType integerValues();
+  public native @Cast("sd::LongType*") @StdVector LongPointer integerValues();
   public native @StdVector DoublePointer floatValues();
 }
   // namespace sd
@@ -978,9 +978,9 @@ public static final int
   public native @Cast("bool") boolean isValid();
 // #ifndef  __JAVACPP_HACK__
 // #endif
-  public native LongType primary();
-  public native LongType special();
-  public native LongType platform();
+  public native @Cast("sd::LongType*") LongPointer primary();
+  public native @Cast("sd::LongType*") LongPointer special();
+  public native @Cast("sd::LongType*") LongPointer platform();
 
   /**
    * Get the stack trace as a formatted string.
@@ -1077,9 +1077,9 @@ public static final int
 
   public native @Cast("bool") boolean isValid();
 
-  public native LongType primary();
-  public native LongType special();
-  public native LongType platform();
+  public native @Cast("sd::LongType*") LongPointer primary();
+  public native @Cast("sd::LongType*") LongPointer special();
+  public native @Cast("sd::LongType*") LongPointer platform();
 }
 
   // namespace sd
@@ -1443,6 +1443,652 @@ public static final int
  * Legacy flat accessors (env.tritonBuildThreads()) are preserved for backward
  * compatibility and forward to the subsystem.
  */
+// Parsed from system/config/CoreConfig.h
+// (Copied verbatim from Nd4jCuda.java — same shared libnd4j headers)
+@Namespace("sd::config") @NoOffset public static class CoreConfig extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public CoreConfig(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public CoreConfig(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public CoreConfig position(long position) {
+        return (CoreConfig)super.position(position);
+    }
+    @Override public CoreConfig getPointer(long i) {
+        return new CoreConfig((Pointer)this).offsetAddress(i);
+    }
+
+  public CoreConfig() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  // --- Verbose / Debug / Profile ---
+  public native @Cast("bool") boolean isVerbose();
+  public native void setVerbose(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isDebug();
+  public native void setDebug(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isDebugAndVerbose();
+  public native @Cast("bool") boolean isProfiling();
+  public native void setProfiling(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isDetectingLeaks();
+  public native void setLeaksDetector(@Cast("bool") boolean v);
+
+  // --- Helpers ---
+  public native @Cast("bool") boolean helpersAllowed();
+  public native void allowHelpers(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isUseONEDNN();
+  public native void setUseONEDNN(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isUseMPS();
+  public native void setUseMPS(@Cast("bool") boolean v);
+
+  // --- Threading ---
+  public native int maxThreads();
+  public native void setMaxThreads(int max);
+  public native int maxMasterThreads();
+  public native void setMaxMasterThreads(int max);
+  public native int tadThreshold();
+  public native void setTadThreshold(int v);
+  public native int elementwiseThreshold();
+  public native void setElementwiseThreshold(int v);
+
+  // --- Data type ---
+  public native @Cast("sd::DataType") int defaultFloatDataType();
+  public native void setDefaultFloatDataType(@Cast("sd::DataType") int dtype);
+  public native @Cast("bool") boolean precisionBoostAllowed();
+  public native void allowPrecisionBoost(@Cast("bool") boolean v);
+
+  // --- Memory limits ---
+  public native void setMaxPrimaryMemory(@Cast("uint64_t") long maxBytes);
+  public native void setMaxSpecialMemory(@Cast("uint64_t") long maxBytes);
+  public native void setMaxDeviceMemory(@Cast("uint64_t") long maxBytes);
+  public native @Cast("uint64_t") long maxPrimaryMemory();
+  public native @Cast("uint64_t") long maxSpecialMemory();
+  public native @Cast("int64_t") long maxDeviceMemory();
+
+  // --- CPU soft limit ---
+  public native int cpuSoftLimitPercent();
+  public native void setCpuSoftLimitPercent(int percent);
+
+  // --- BLAS ---
+  public native @Cast("bool") boolean blasFallback();
+  public native @Cast("bool") boolean isEnableBlas();
+  public native void setEnableBlas(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isSerializeBlasCalls();
+  public native void setSerializeBlasCalls(@Cast("bool") boolean serialize);
+  public native int getOpenBlasThreads();
+  public native void setOpenBlasThreads(int threads);
+
+  // --- Deletion control ---
+  public native @Cast("bool") boolean isDeleteSpecial();
+  public native void setDeleteSpecial(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isDeletePrimary();
+  public native void setDeletePrimary(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isDeleteShapeInfo();
+  public native void setDeleteShapeInfo(@Cast("bool") boolean v);
+
+  // --- Diagnostics ---
+  public native @Cast("bool") boolean isCheckOutputChange();
+  public native void setCheckOutputChange(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isCheckInputChange();
+  public native void setCheckInputChange(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isLogNDArrayEvents();
+  public native void setLogNDArrayEvents(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isLogNativeNDArrayCreation();
+  public native void setLogNativeNDArrayCreation(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isFuncTracePrintAllocate();
+  public native void setFuncTracePrintAllocate(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isFuncTracePrintDeallocate();
+  public native void setFuncTracePrintDeallocate(@Cast("bool") boolean v);
+
+  // --- Path helpers ---
+  public native @StdString BytePointer homeDirectory();
+  public native @StdString BytePointer cudaToolkitPath();
+
+  public native void initFromEnvironment();
+}
+
+// Parsed from system/config/MemoryConfig.h
+@Namespace("sd::config") public static class MemoryConfig extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public MemoryConfig(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public MemoryConfig(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public MemoryConfig position(long position) {
+        return (MemoryConfig)super.position(position);
+    }
+    @Override public MemoryConfig getPointer(long i) {
+        return new MemoryConfig((Pointer)this).offsetAddress(i);
+    }
+
+  public MemoryConfig() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  // --- Pool release threshold ---
+  public native int poolReleaseThresholdPercent();
+  public native void setPoolReleaseThresholdPercent(int percent);
+
+  // --- Non-peer failover headroom ---
+  public native int nonPeerHeadroomPercent();
+  public native void setNonPeerHeadroomPercent(int percent);
+
+  public native void initFromEnvironment();
+}
+
+// Parsed from system/config/PrintConfig.h
+@Namespace("sd::config") public static class PrintConfig extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public PrintConfig(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public PrintConfig(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public PrintConfig position(long position) {
+        return (PrintConfig)super.position(position);
+    }
+    @Override public PrintConfig getPointer(long i) {
+        return new PrintConfig((Pointer)this).offsetAddress(i);
+    }
+
+  public PrintConfig() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  public native int edgeItems();
+  public native void setEdgeItems(int v);
+
+  public native int threshold();
+  public native void setThreshold(int v);
+
+  public native int lineWidth();
+  public native void setLineWidth(int v);
+
+  public native int precision();
+  public native void setPrecision(int v);
+
+  public native void initFromEnvironment();
+}
+
+// Parsed from system/config/TritonConfig.h
+@Namespace("sd::config") @NoOffset public static class TritonConfig extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public TritonConfig(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public TritonConfig(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public TritonConfig position(long position) {
+        return (TritonConfig)super.position(position);
+    }
+    @Override public TritonConfig getPointer(long i) {
+        return new TritonConfig((Pointer)this).offsetAddress(i);
+    }
+
+  public TritonConfig() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  // --- Build settings ---
+  public native int buildThreads();
+  public native void setBuildThreads(int threads);
+  public native @Cast("bool") boolean cacheEnabled();
+  public native void setCacheEnabled(@Cast("bool") boolean v);
+  public native @Cast("int64_t") long moduleResidencyBudgetBytes();
+  public native void setModuleResidencyBudgetBytes(@Cast("int64_t") long bytes);
+  public native @Cast("int64_t") long moduleResidencyWarnBytes();
+  public native void setModuleResidencyWarnBytes(@Cast("int64_t") long bytes);
+  public native @Cast("int64_t") long moduleResidencyWarnFireCount();
+  public native void incrementModuleResidencyWarnFireCount();
+  public native void clearModuleResidencyWarnFireCount();
+  public native @Cast("bool") boolean batchPreloadModules();
+  public native void setBatchPreloadModules(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean cooperativeLaunch();
+  public native void setCooperativeLaunch(@Cast("bool") boolean v);
+  public native int coopTargetBlocks();
+  public native void setCoopTargetBlocks(int blocks);
+  public native int maxSubsegmentOps();
+  public native void setMaxSubsegmentOps(int ops);
+  public native int maxSubsegmentSections();
+  public native void setMaxSubsegmentSections(int sections);
+  public native @Cast("bool") boolean isVerbose();
+  public native void setVerbose(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean dumpSections();
+  public native void setDumpSections(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean dumpArgs();
+  public native void setDumpArgs(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean logAllPatterns();
+  public native void setLogAllPatterns(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean alwaysCompile();
+  public native void setAlwaysCompile(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean invalidateOnPlanFree();
+  public native void setInvalidateOnPlanFree(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean kernelDump();
+  public native void setKernelDump(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean kernelOverride();
+  public native void setKernelOverride(@Cast("bool") boolean v);
+
+  // --- Kernel tuning ---
+  public native int numWarps();
+  public native void setNumWarps(int warps);
+  public native int numStages();
+  public native void setNumStages(int stages);
+  public native int numCTAs();
+  public native void setNumCTAs(int ctas);
+  public native int maxNreg();
+  public native void setMaxNreg(int v);
+  public native int attentionBlockN();
+  public native void setAttentionBlockN(int v);
+  public native @Cast("bool") boolean enableFpFusion();
+  public native void setEnableFpFusion(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean disableLineInfo();
+  public native void setDisableLineInfo(@Cast("bool") boolean v);
+
+  // --- Directories ---
+  public native @StdString BytePointer cacheDir();
+  public native void setCacheDir(@StdString BytePointer v);
+  public native void setCacheDir(@StdString String v);
+  public native @StdString BytePointer dumpDir();
+  public native void setDumpDir(@StdString BytePointer v);
+  public native void setDumpDir(@StdString String v);
+  public native @StdString BytePointer overrideDir();
+  public native void setOverrideDir(@StdString BytePointer v);
+  public native void setOverrideDir(@StdString String v);
+  public native @StdString BytePointer overrideArch();
+  public native void setOverrideArch(@StdString BytePointer v);
+  public native void setOverrideArch(@StdString String v);
+
+  // --- CUDA graph integration ---
+  public native @Cast("bool") boolean allowFallbackCapture();
+  public native void setAllowFallbackCapture(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean graphCapture();
+  public native void setGraphCapture(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean dumpGraphDot();
+  public native void setDumpGraphDot(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean graphCtxPush();
+  public native void setGraphCtxPush(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean graphReinstantiate();
+  public native void setGraphReinstantiate(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean graphAutoFree();
+  public native void setGraphAutoFree(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean graphDotVerbose();
+  public native void setGraphDotVerbose(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean mergedCaptureThroughViews();
+  public native void setMergedCaptureThroughViews(@Cast("bool") boolean v);
+
+  // --- Compilation scope ---
+  public native @Cast("bool") boolean compileAll();
+  public native void setCompileAll(@Cast("bool") boolean v);
+  public native @StdString BytePointer excludeOps();
+  public native void setExcludeOps(@StdString BytePointer v);
+  public native void setExcludeOps(@StdString String v);
+  public native @Cast("bool") boolean isExcludedOp(@StdString BytePointer opName);
+  public native @Cast("bool") boolean isExcludedOp(@StdString String opName);
+  public native @StdString BytePointer includeTypes();
+  public native void setIncludeTypes(@StdString BytePointer v);
+  public native void setIncludeTypes(@StdString String v);
+
+  // --- Segment fusion ---
+  public native @Cast("bool") boolean fuseIdentityShapes();
+  public native void setFuseIdentityShapes(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean fuseCastChains();
+  public native void setFuseCastChains(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean specializePermuteSeq1();
+  public native void setSpecializePermuteSeq1(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean fusedMatmul();
+  public native void setFusedMatmul(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean fuseAttentionNeighborhoods();
+  public native void setFuseAttentionNeighborhoods(@Cast("bool") boolean v);
+
+  // --- Debugging ---
+  public native @Cast("bool") boolean skipKernels();
+  public native void setSkipKernels(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean verifyKernels();
+  public native void setVerifyKernels(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean verifyKeepNative();
+  public native void setVerifyKeepNative(@Cast("bool") boolean v);
+  public native int maxSubKernelIndex();
+  public native void setMaxSubKernelIndex(int v);
+  public native @Cast("bool") boolean verifyFullSnapshot();
+  public native void setVerifyFullSnapshot(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean forceRecapture();
+  public native void setForceRecapture(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean warmupOnly();
+  public native void setWarmupOnly(@Cast("bool") boolean v);
+  public native int captureMinExec();
+  public native void setCaptureMinExec(int v);
+
+  // --- Optimization flags ---
+  public native @Cast("bool") boolean tf32Enabled();
+  public native void setTf32Enabled(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean consolidatedArgTable();
+  public native void setConsolidatedArgTable(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean argDirtyTracking();
+  public native void setArgDirtyTracking(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean sectionFusion();
+  public native void setSectionFusion(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean fusionScoring();
+  public native void setFusionScoring(@Cast("bool") boolean v);
+  public native float fusionMinScore();
+  public native void setFusionMinScore(float v);
+
+  public native void initFromEnvironment();
+}
+
+// Parsed from system/config/DspConfig.h
+@Namespace("sd::config") @NoOffset public static class DspConfig extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public DspConfig(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public DspConfig(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public DspConfig position(long position) {
+        return (DspConfig)super.position(position);
+    }
+    @Override public DspConfig getPointer(long i) {
+        return new DspConfig((Pointer)this).offsetAddress(i);
+    }
+
+  public DspConfig() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  // --- Batch operations ---
+  public native @Cast("bool") boolean batchZero();
+  public native void setBatchZero(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean batchZeroVerbose();
+  public native void setBatchZeroVerbose(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean batchZeroGapOnly();
+  public native void setBatchZeroGapOnly(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean batchZeroKernel();
+  public native void setBatchZeroKernel(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean batchedGemm();
+  public native void setBatchedGemm(@Cast("bool") boolean v);
+
+  // --- Pool trim ---
+  public native int trimInterval();
+  public native void setTrimInterval(int v);
+
+  // --- Optimization flags ---
+  public native @Cast("bool") boolean castElimination();
+  public native void setCastElimination(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean matmulSegmentation();
+  public native void setMatmulSegmentation(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean fp16Compute();
+  public native void setFp16Compute(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean cublasTf32Enabled();
+  public native void setCublasTf32Enabled(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean cublasCaptureWorkspace();
+  public native void setCublasCaptureWorkspace(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean castSinkMatmul();
+  public native void setCastSinkMatmul(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean gapTensorCores();
+  public native void setGapTensorCores(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean cublasLtGapEnabled();
+  public native void setCublasLtGapEnabled(@Cast("bool") boolean v);
+
+  // --- Gap capture tuning ---
+  public native int maxCapturableGapSlots();
+  public native void setMaxCapturableGapSlots(int v);
+  public native @Cast("bool") boolean gapCaptureBlockExternalWorkspace();
+  public native void setGapCaptureBlockExternalWorkspace(@Cast("bool") boolean v);
+  public native int gapCaptureTensorCoreWarmup();
+  public native void setGapCaptureTensorCoreWarmup(int v);
+
+  // --- Symbolic shapes ---
+  public native @Cast("bool") boolean symbolicShapes();
+  public native void setSymbolicShapes(@Cast("bool") boolean v);
+  public static native int symbolicShapeWarmup();
+  public native void setSymbolicShapeWarmup(int arg0);
+
+  // --- Frozen-shape transition ---
+  public native @Cast("bool") boolean freezeMergeSegments();
+  public native void setFreezeMergeSegments(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean freezeRecompile();
+  public native void setFreezeRecompile(@Cast("bool") boolean v);
+
+  // --- Capture buffer pool ---
+  public native @Cast("bool") boolean capturePoolEnabled();
+  public native void setCapturePoolEnabled(@Cast("bool") boolean v);
+  public native long capturePoolMaxBytes();
+  public native void setCapturePoolMaxBytes(long v);
+  public native int captureHostWorkspaceMb();
+  public native void setCaptureHostWorkspaceMb(int mb);
+  public native int captureWorkspaceMb();
+  public native void setCaptureWorkspaceMb(int mb);
+
+  // --- OOM retry ---
+  public native int captureOomMaxRetries();
+  public native void setCaptureOomMaxRetries(int v);
+  public native int captureOomRetryInterval();
+  public native void setCaptureOomRetryInterval(int v);
+  public native int cublasWorkspaceMb();
+  public native void setCublasWorkspaceMb(int v);
+  public native int graphMetadataSafetyMb();
+  public native void setGraphMetadataSafetyMb(int v);
+  public native @Cast("bool") boolean proactiveEvictBeforeCapture();
+  public native void setProactiveEvictBeforeCapture(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean lruEviction();
+  public native void setLruEviction(@Cast("bool") boolean v);
+
+  // --- Diagnostics ---
+  public native @StdString BytePointer diagnosticsCategories();
+  public native void setDiagnosticsCategories(@StdString BytePointer v);
+  public native void setDiagnosticsCategories(@StdString String v);
+  public native @StdString BytePointer diagnosticsLevel();
+  public native void setDiagnosticsLevel(@StdString BytePointer v);
+  public native void setDiagnosticsLevel(@StdString String v);
+  public native @StdString BytePointer diagnosticsFile();
+  public native void setDiagnosticsFile(@StdString BytePointer v);
+  public native void setDiagnosticsFile(@StdString String v);
+  public native @Cast("bool") boolean diagnosticsTrace();
+  public native void setDiagnosticsTrace(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean diagnosticsTiming();
+  public native void setDiagnosticsTiming(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean diagnosticsNativeDump();
+  public native void setDiagnosticsNativeDump(@Cast("bool") boolean v);
+
+  // --- Diagnostic limits ---
+  public native int diagExecLimit();
+  public native void setDiagExecLimit(int v);
+  public native int diagDetailLimit();
+  public native void setDiagDetailLimit(int v);
+  public native int traceExtInput();
+  public native void setTraceExtInput(int v);
+
+  // --- Replay graph cache ---
+  public native @StdString BytePointer replayCacheDir();
+  public native void setReplayCacheDir(@StdString BytePointer v);
+  public native void setReplayCacheDir(@StdString String v);
+  public native @Cast("bool") boolean replayCacheEnabled();
+  public native void setReplayCacheEnabled(@Cast("bool") boolean v);
+  public native int traceSlot();
+  public native void setTraceSlot(int v);
+
+  // --- Shape-keyed plan cache ---
+  public native float planCacheBudgetFraction();
+  public native void setPlanCacheBudgetFraction(float v);
+  public native int planCacheMaxPlans();
+  public native void setPlanCacheMaxPlans(int v);
+  public native int planCacheMaxPlansCpu();
+  public native void setPlanCacheMaxPlansCpu(int v);
+
+  // --- Isolation flags ---
+  public native @Cast("bool") boolean dspDisableViewFastpath();
+  public native void setDspDisableViewFastpath(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean dspDisableCastHwm();
+  public native void setDspDisableCastHwm(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean dspDisableWorkspaceSkip();
+  public native void setDspDisableWorkspaceSkip(@Cast("bool") boolean v);
+
+  // --- Disk plan cache ---
+  public native @StdString BytePointer planCacheDiskDir();
+  public native void setPlanCacheDiskDir(@StdString BytePointer v);
+  public native void setPlanCacheDiskDir(@StdString String v);
+  public native @Cast("bool") boolean planCacheDiskEnabled();
+  public native void setPlanCacheDiskEnabled(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean planCacheDiskForceRecompile();
+  public native void setPlanCacheDiskForceRecompile(@Cast("bool") boolean v);
+  public native @StdString BytePointer planCacheOverrideDir();
+  public native void setPlanCacheOverrideDir(@StdString BytePointer v);
+  public native void setPlanCacheOverrideDir(@StdString String v);
+
+  public native void initFromEnvironment();
+}
+
+// Parsed from system/config/LifecycleConfig.h
+@Namespace("sd::config") public static class LifecycleConfig extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public LifecycleConfig(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public LifecycleConfig(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public LifecycleConfig position(long position) {
+        return (LifecycleConfig)super.position(position);
+    }
+    @Override public LifecycleConfig getPointer(long i) {
+        return new LifecycleConfig((Pointer)this).offsetAddress(i);
+    }
+
+  public LifecycleConfig() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  // --- Master switch ---
+  public native @Cast("bool") boolean isLifecycleTracking();
+  public native void setLifecycleTracking(@Cast("bool") boolean v);
+
+  // --- View/deletion tracking ---
+  public native @Cast("bool") boolean isTrackViews();
+  public native void setTrackViews(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isTrackDeletions();
+  public native void setTrackDeletions(@Cast("bool") boolean v);
+
+  // --- Stack depth & reporting ---
+  public native int getStackDepth();
+  public native void setStackDepth(int v);
+  public native int getReportInterval();
+  public native void setReportInterval(int v);
+  public native @Cast("size_t") long getMaxDeletionHistory();
+  public native void setMaxDeletionHistory(@Cast("size_t") long v);
+
+  // --- Snapshots & operations ---
+  public native @Cast("bool") boolean isSnapshotFiles();
+  public native void setSnapshotFiles(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isTrackOperations();
+  public native void setTrackOperations(@Cast("bool") boolean v);
+
+  // --- Per-tracker enable flags ---
+  public native @Cast("bool") boolean isNDArrayTracking();
+  public native void setNDArrayTracking(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isDataBufferTracking();
+  public native void setDataBufferTracking(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isTADCacheTracking();
+  public native void setTADCacheTracking(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isShapeCacheTracking();
+  public native void setShapeCacheTracking(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean isOpContextTracking();
+  public native void setOpContextTracking(@Cast("bool") boolean v);
+
+  public native void initFromEnvironment();
+}
+
+// Parsed from system/config/CudaDeviceConfig.h
+@Namespace("sd::config") @NoOffset public static class CudaDeviceConfig extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public CudaDeviceConfig(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public CudaDeviceConfig(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public CudaDeviceConfig position(long position) {
+        return (CudaDeviceConfig)super.position(position);
+    }
+    @Override public CudaDeviceConfig getPointer(long i) {
+        return new CudaDeviceConfig((Pointer)this).offsetAddress(i);
+    }
+
+  public CudaDeviceConfig() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  // --- Device management ---
+  public native int cudaDeviceCount();
+  public native void setCudaDeviceCount(int count);
+  public native int cudaCurrentDevice();
+  public native void setCudaCurrentDevice(int device);
+
+  // --- Memory ---
+  public native @Cast("bool") boolean cudaMemoryPinned();
+  public native void setCudaMemoryPinned(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean cudaUseManagedMemory();
+  public native void setCudaUseManagedMemory(@Cast("bool") boolean v);
+  public native int cudaMemoryPoolSize();
+  public native void setCudaMemoryPoolSize(int sizeInMB);
+  public native @Cast("bool") boolean cudaForceP2P();
+  public native void setCudaForceP2P(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean cudaAllocatorEnabled();
+  public native void setCudaAllocatorEnabled(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean cudaUseUnifiedMemory();
+  public native void setCudaUseUnifiedMemory(@Cast("bool") boolean v);
+  public native int cudaPrefetchSize();
+  public native void setCudaPrefetchSize(int sizeInMB);
+  public native @Cast("int64_t") long cudaPinnedHostLimit();
+  public native void setCudaPinnedHostLimit(@Cast("int64_t") long limitInMB);
+  public native int cudaSoftLimitPercent();
+  public native void setCudaSoftLimitPercent(int percent);
+  public native int cudaCachingAllocatorLimit();
+  public native void setCudaCachingAllocatorLimit(int limitInMB);
+
+  // --- Execution ---
+  public native int cudaMaxBlocks();
+  public native void setCudaMaxBlocks(int blocks);
+  public native int cudaMaxThreadsPerBlock();
+  public native void setCudaMaxThreadsPerBlock(int threads);
+  public native @Cast("bool") boolean cudaAsyncExecution();
+  public native void setCudaAsyncExecution(@Cast("bool") boolean v);
+  public native int cudaStreamLimit();
+  public native void setCudaStreamLimit(int _limit);
+  public native @Cast("bool") boolean cudaUseDeviceHost();
+  public native void setCudaUseDeviceHost(@Cast("bool") boolean v);
+  public native int cudaEventLimit();
+  public native void setCudaEventLimit(int _limit);
+  public native @Cast("bool") boolean cudaGraphOptimization();
+  public native void setCudaGraphOptimization(@Cast("bool") boolean v);
+  public native @Cast("bool") boolean cudaTensorCoreEnabled();
+  public native void setCudaTensorCoreEnabled(@Cast("bool") boolean enabled);
+  public native int cudaBlockingSync();
+  public native void setCudaBlockingSync(int mode);
+  public native int cudaDeviceSchedule();
+  public native void setCudaDeviceSchedule(int schedule);
+
+  // --- CUDA Device Limits ---
+  public native @Cast("size_t") long cudaStackSize();
+  public native void setCudaStackSize(@Cast("size_t") long size);
+  public native @Cast("size_t") long cudaMallocHeapSize();
+  public native void setCudaMallocHeapSize(@Cast("size_t") long size);
+  public native @Cast("size_t") long cudaPrintfFifoSize();
+  public native void setCudaPrintfFifoSize(@Cast("size_t") long size);
+  public native @Cast("size_t") long cudaDevRuntimeSyncDepth();
+  public native void setCudaDevRuntimeSyncDepth(@Cast("size_t") long depth);
+  public native @Cast("size_t") long cudaDevRuntimePendingLaunchCount();
+  public native void setCudaDevRuntimePendingLaunchCount(@Cast("size_t") long count);
+  public native @Cast("size_t") long cudaMaxL2FetchGranularity();
+  public native void setCudaMaxL2FetchGranularity(@Cast("size_t") long size);
+  public native @Cast("size_t") long cudaPersistingL2CacheSize();
+  public native void setCudaPersistingL2CacheSize(@Cast("size_t") long size);
+  public native @Cast("bool") boolean setCudaDeviceLimit(int limitType, @Cast("size_t") long value);
+
+  // --- Capabilities & BLAS version ---
+  public native @StdVector Pair capabilities();
+  public native int blasMajorVersion();
+  public native int blasMinorVersion();
+  public native int blasPatchVersion();
+  public native void setBlasMajorVersion(int v);
+  public native void setBlasMinorVersion(int v);
+  public native void setBlasPatchVersion(int v);
+
+  public native void initFromEnvironment();
+  public native void initCudaDeviceLimits();
+}
+
 @Namespace("sd") @NoOffset public static class Environment extends Pointer {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -1542,12 +2188,12 @@ public static final int
   public native @StdString BytePointer cudaToolkitPath();
 
   // Memory limits/counters (delegate to MemoryCounter — keep in Environment for JNI)
-  public native void setGroupLimit(int group, @ByVal LongType numBytes);
-  public native void setDeviceLimit(int deviceId, @ByVal LongType numBytes);
-  public native @ByVal LongType getGroupLimit(int group);
-  public native @ByVal LongType getDeviceLimit(int deviceId);
-  public native @ByVal LongType getGroupCounter(int group);
-  public native @ByVal LongType getDeviceCounter(int deviceId);
+  public native void setGroupLimit(int group, @Cast("sd::LongType") long numBytes);
+  public native void setDeviceLimit(int deviceId, @Cast("sd::LongType") long numBytes);
+  public native @Cast("sd::LongType") long getGroupLimit(int group);
+  public native @Cast("sd::LongType") long getDeviceLimit(int deviceId);
+  public native @Cast("sd::LongType") long getGroupCounter(int group);
+  public native @Cast("sd::LongType") long getDeviceCounter(int deviceId);
 
   public native int blasMajorVersion();
   public native int blasMinorVersion();
@@ -1961,7 +2607,7 @@ public static final int
 // #include <cstdlib>
 // #include <types/float16.h>
 
-public native @Cast("const char*") BytePointer getAllCustomOps();
+public native @Cast("char*") String getAllCustomOps();
 
 /**
  * Look up op trait flags by op name. Returns the OP_TRAIT_* bitmask
@@ -1971,82 +2617,82 @@ public native @Cast("const char*") BytePointer getAllCustomOps();
 public native @Cast("unsigned int") int getOpTraits(@Cast("const char*") BytePointer opName);
 public native @Cast("unsigned int") int getOpTraits(String opName);
 
-public native @Cast("OpaqueRandomGenerator*") RandomGenerator createRandomGenerator(@ByVal LongType rootSeed, @ByVal LongType nodeSeed);
+public native @Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator createRandomGenerator(@Cast("sd::LongType") long rootSeed, @Cast("sd::LongType") long nodeSeed);
 
 public native org.nd4j.nativeblas.OpaqueContext createGraphContext(int nodeId);
 public native void setGraphContextCudaContext(org.nd4j.nativeblas.OpaqueContext ptr, Pointer stream, Pointer reductionPointer,
                                               Pointer allocationPointer);
-public native @Cast("OpaqueRandomGenerator*") RandomGenerator getGraphContextRandomGenerator(org.nd4j.nativeblas.OpaqueContext ptr);
+public native @Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator getGraphContextRandomGenerator(org.nd4j.nativeblas.OpaqueContext ptr);
 
 public native void shuffle(@Cast("sd::Pointer*") PointerPointer extras,
-                           @Cast("OpaqueNDArrayArr") sd::NDArray x,
-                           @Cast("OpaqueNDArrayArr") sd::NDArray z,
+                           @Cast("OpaqueNDArrayArr") @ByVal org.nd4j.nativeblas.OpaqueNDArrayArr x,
+                           @Cast("OpaqueNDArrayArr") @ByVal org.nd4j.nativeblas.OpaqueNDArrayArr z,
                            int N,
-                           @Cast("OpaqueNDArray") sd::NDArray dimension,
-                           @Cast("OpaqueNDArray") sd::NDArray shuffleMap);
+                           @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension,
+                           @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray shuffleMap);
 
 
 
 
 
 public native void pullRows(@Cast("sd::Pointer*") PointerPointer extraPointers,
-                            @Cast("OpaqueNDArray") sd::NDArray x,
-                            @Cast("OpaqueNDArray") sd::NDArray z,
-                            @ByVal LongType n,
-                            @Cast("OpaqueNDArray") sd::NDArray indexes,
-                            @ByVal LongType dimension);
+                            @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x,
+                            @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z,
+                            @Cast("sd::LongType") long n,
+                            @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray indexes,
+                            @Cast("sd::LongType") long dimension);
 
 public native @Cast("ExecTrace**") @StdVector PointerPointer listOpTraces();
 public native @Cast("char*") BytePointer opName(Pointer execTrace);
 public native @Cast("bool*") @StdVector BooleanPointer bArgs(Pointer execTrace);
-public native @StdString @StdVector BytePointer sArgs(Pointer execTrace);
+public native @Cast("std::vector<std::string>*") PointerPointer sArgs(Pointer execTrace);
 public native @StdVector DoublePointer tArgs(Pointer execTrace);
-public native @StdVector LongType iArgs(Pointer execTrace);
+public native @Cast("sd::LongType*") @StdVector LongPointer iArgs(Pointer execTrace);
 public native @StdVector IntPointer dArgs(Pointer execTrace);
 public native @Cast("const sd::LongType**") @StdVector PointerPointer inputShapeBuffers(Pointer execTrace);
 public native @Cast("const sd::LongType**") @StdVector PointerPointer outputShapeBuffers(Pointer execTrace);
-public native void deleteNDArray(@Cast("OpaqueNDArray") sd::NDArray array);
+public native void deleteNDArray(@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray array);
 
-public native @ByVal LongType getOpaqueNDArrayOffset(@Cast("OpaqueNDArray") sd::NDArray array);
+public native @Cast("sd::LongType") long getOpaqueNDArrayOffset(@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray array);
 
 
-public native @Const LongType getOpaqueNDArrayShapeInfo(@Cast("OpaqueNDArray") sd::NDArray array);
+public native @Cast("const sd::LongType*") LongPointer getOpaqueNDArrayShapeInfo(@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray array);
 
-public native Pointer getOpaqueNDArrayBuffer(@Cast("OpaqueNDArray") sd::NDArray array);
+public native Pointer getOpaqueNDArrayBuffer(@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray array);
 
-public native Pointer getOpaqueNDArraySpecialBuffer(@Cast("OpaqueNDArray") sd::NDArray array);
+public native Pointer getOpaqueNDArraySpecialBuffer(@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray array);
 
-public native @Cast("OpaqueNDArray") sd::NDArray createOpaqueNDArray(@Cast("OpaqueDataBuffer*") InteropDataBuffer shapeInfo,
-                                                @Cast("OpaqueDataBuffer*") InteropDataBuffer buffer,
-                                                @Cast("OpaqueDataBuffer*") InteropDataBuffer specialBuffer,
-                                                @ByVal LongType offset);
+public native @ByVal @Name("createOpaqueNDArray") @NoDeallocator org.nd4j.nativeblas.OpaqueNDArray create(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo,
+                                                @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer buffer,
+                                                @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer specialBuffer,
+                                                @Cast("sd::LongType") long offset);
 
 
 public native @Cast("sd::Pointer") Pointer loadNpyFromHeader(@Cast("sd::Pointer") Pointer data);
-public native void saveNpy(@StdString BytePointer fname, @Cast("const OpaqueDataBuffer*") InteropDataBuffer data, @Cast("const unsigned int*") IntPointer shape, @Cast("const unsigned int") int ndims,
+public native void saveNpy(@StdString BytePointer fname, @Cast("const OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer data, @Cast("const unsigned int*") IntPointer shape, @Cast("const unsigned int") int ndims,
                            @StdString BytePointer mode);
-public native void saveNpy(@StdString String fname, @Cast("const OpaqueDataBuffer*") InteropDataBuffer data, @Cast("const unsigned int*") IntBuffer shape, @Cast("const unsigned int") int ndims,
+public native void saveNpy(@StdString String fname, @Cast("const OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer data, @Cast("const unsigned int*") IntBuffer shape, @Cast("const unsigned int") int ndims,
                            @StdString String mode);
-public native void saveNpy(@StdString BytePointer fname, @Cast("const OpaqueDataBuffer*") InteropDataBuffer data, @Cast("const unsigned int*") int[] shape, @Cast("const unsigned int") int ndims,
+public native void saveNpy(@StdString BytePointer fname, @Cast("const OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer data, @Cast("const unsigned int*") int[] shape, @Cast("const unsigned int") int ndims,
                            @StdString BytePointer mode);
-public native void saveNpy(@StdString String fname, @Cast("const OpaqueDataBuffer*") InteropDataBuffer data, @Cast("const unsigned int*") IntPointer shape, @Cast("const unsigned int") int ndims,
+public native void saveNpy(@StdString String fname, @Cast("const OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer data, @Cast("const unsigned int*") IntPointer shape, @Cast("const unsigned int") int ndims,
                            @StdString String mode);
-public native void saveNpy(@StdString BytePointer fname, @Cast("const OpaqueDataBuffer*") InteropDataBuffer data, @Cast("const unsigned int*") IntBuffer shape, @Cast("const unsigned int") int ndims,
+public native void saveNpy(@StdString BytePointer fname, @Cast("const OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer data, @Cast("const unsigned int*") IntBuffer shape, @Cast("const unsigned int") int ndims,
                            @StdString BytePointer mode);
-public native void saveNpy(@StdString String fname, @Cast("const OpaqueDataBuffer*") InteropDataBuffer data, @Cast("const unsigned int*") int[] shape, @Cast("const unsigned int") int ndims,
+public native void saveNpy(@StdString String fname, @Cast("const OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer data, @Cast("const unsigned int*") int[] shape, @Cast("const unsigned int") int ndims,
                            @StdString String mode);
 
-public native void inspectArray(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::Pointer") Pointer buffer, LongType shapeInfo, @Cast("sd::Pointer") Pointer specialBuffer,
-                                LongType specialShapeInfo, @Cast("sd::Pointer") Pointer debugInfo);
+public native void inspectArray(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::Pointer") Pointer buffer, @Cast("sd::LongType*") LongPointer shapeInfo, @Cast("sd::Pointer") Pointer specialBuffer,
+                                @Cast("sd::LongType*") LongPointer specialShapeInfo, @Cast("sd::Pointer") Pointer debugInfo);
 
 
 
-public native @Const LongType getPrimaryShapeInfo(@Cast("OpaqueTadPack*") TadPack pack);
-public native @Const LongType getPrimaryOffsets(@Cast("OpaqueTadPack*") TadPack pack);
-public native @Const LongType getSpecialShapeInfo(@Cast("OpaqueTadPack*") TadPack pack);
-public native @Const LongType getSpecialOffsets(@Cast("OpaqueTadPack*") TadPack pack);
-public native @ByVal LongType getNumberOfTads(@Cast("OpaqueTadPack*") TadPack pack);
-public native int getShapeInfoLength(@Cast("OpaqueTadPack*") TadPack pack);
+public native @Cast("const sd::LongType*") LongPointer getPrimaryShapeInfo(@Cast("OpaqueTadPack*") org.nd4j.nativeblas.OpaqueTadPack pack);
+public native @Cast("const sd::LongType*") LongPointer getPrimaryOffsets(@Cast("OpaqueTadPack*") org.nd4j.nativeblas.OpaqueTadPack pack);
+public native @Cast("const sd::LongType*") LongPointer getSpecialShapeInfo(@Cast("OpaqueTadPack*") org.nd4j.nativeblas.OpaqueTadPack pack);
+public native @Cast("const sd::LongType*") LongPointer getSpecialOffsets(@Cast("OpaqueTadPack*") org.nd4j.nativeblas.OpaqueTadPack pack);
+public native @Cast("sd::LongType") long getNumberOfTads(@Cast("OpaqueTadPack*") org.nd4j.nativeblas.OpaqueTadPack pack);
+public native int getShapeInfoLength(@Cast("OpaqueTadPack*") org.nd4j.nativeblas.OpaqueTadPack pack);
 
 /**
  * Get the stack trace for a TadPack as a string.
@@ -2056,45 +2702,45 @@ public native int getShapeInfoLength(@Cast("OpaqueTadPack*") TadPack pack);
  * @param pack The TadPack to get the stack trace from
  * @return C-string containing the formatted stack trace (caller must NOT free this)
  */
-public native @Cast("const char*") BytePointer getTadPackStackTrace(@Cast("OpaqueTadPack*") TadPack pack);
+public native @Cast("char*") String getTadPackStackTrace(@Cast("OpaqueTadPack*") org.nd4j.nativeblas.OpaqueTadPack pack);
 
-public native @Cast("OpaqueTadPack*") TadPack tadOnlyShapeInfo(@Cast("OpaqueDataBuffer*") InteropDataBuffer hXShapeInfo, LongType dimension, @ByVal LongType dimensionLength);
-public native @Cast("OpaqueConstantDataBuffer") ConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, LongType data, int length);
-public native @Cast("OpaqueConstantDataBuffer") ConstantDataBuffer constantBufferDouble(@Cast("sd::DataType") int dtype, DoublePointer data, int length);
-public native @Cast("OpaqueConstantDataBuffer") ConstantDataBuffer constantBufferDouble(@Cast("sd::DataType") int dtype, DoubleBuffer data, int length);
-public native @Cast("OpaqueConstantDataBuffer") ConstantDataBuffer constantBufferDouble(@Cast("sd::DataType") int dtype, double[] data, int length);
-public native @Cast("OpaqueConstantDataBuffer") ConstantDataBuffer constantBuffer(@Cast("sd::DataType") int dtype, ConstantDescriptor descriptor);
+public native @Cast("OpaqueTadPack*") org.nd4j.nativeblas.OpaqueTadPack tadOnlyShapeInfo(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer hXShapeInfo, @Cast("sd::LongType*") LongPointer dimension, @Cast("sd::LongType") long dimensionLength);
+public native @Cast("OpaqueConstantDataBuffer") org.nd4j.nativeblas.OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("sd::LongType*") LongPointer data, int length);
+public native @Cast("OpaqueConstantDataBuffer") org.nd4j.nativeblas.OpaqueConstantDataBuffer constantBufferDouble(@Cast("sd::DataType") int dtype, DoublePointer data, int length);
+public native @Cast("OpaqueConstantDataBuffer") org.nd4j.nativeblas.OpaqueConstantDataBuffer constantBufferDouble(@Cast("sd::DataType") int dtype, DoubleBuffer data, int length);
+public native @Cast("OpaqueConstantDataBuffer") org.nd4j.nativeblas.OpaqueConstantDataBuffer constantBufferDouble(@Cast("sd::DataType") int dtype, double[] data, int length);
+public native @Cast("OpaqueConstantDataBuffer") org.nd4j.nativeblas.OpaqueConstantDataBuffer constantBuffer(@Cast("sd::DataType") int dtype, ConstantDescriptor descriptor);
 
-public native @Cast("const char*") BytePointer getDeviceName(int device);
+public native @Cast("char*") String getDeviceName(int device);
 
-public native void execRandom(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("sd::Pointer") Pointer stateHost, @Cast("OpaqueNDArray") sd::NDArray z, Pointer extraArguments);
+public native void execRandom(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("sd::Pointer") Pointer stateHost, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraArguments);
 
-public native void execRandom2(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("sd::Pointer") Pointer stateHost, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray z, Pointer extraArguments);
+public native void execRandom2(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("sd::Pointer") Pointer stateHost, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraArguments);
 
 public native void execRandom3(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("sd::Pointer") Pointer stateHost,
-                               @Cast("OpaqueNDArray") sd::NDArray x,
-                               @Cast("OpaqueNDArray") sd::NDArray y, @Cast("OpaqueNDArray") sd::NDArray z, Pointer extraArguments);
+                               @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x,
+                               @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraArguments);
 
-public native @Const LongType getShape(@Cast("OpaqueShapeList*") ShapeList list, @ByVal LongType i);
+public native @Cast("const sd::LongType*") LongPointer getShape(@Cast("OpaqueShapeList*") org.nd4j.nativeblas.OpaqueShapeList list, @Cast("sd::LongType") long i);
 
-public native @Cast("OpaqueShapeList*") ShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @ByVal LongType hash, org.nd4j.nativeblas.OpaqueContext context);
+public native @Cast("OpaqueShapeList*") org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash, org.nd4j.nativeblas.OpaqueContext context);
 
 /**
  * Same as calculateOutputShapes2 but skips forceSyncToHost() on input arrays.
  * Use for ops whose shape function only reads shape info (not array values).
  * Avoids expensive CUDA D2H synchronization for shape-only ops.
  */
-public native @Cast("OpaqueShapeList*") ShapeList calculateOutputShapesNoSync(@Cast("sd::Pointer*") PointerPointer extraPointers, @ByVal LongType hash, org.nd4j.nativeblas.OpaqueContext context);
+public native @Cast("OpaqueShapeList*") org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapesNoSync(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash, org.nd4j.nativeblas.OpaqueContext context);
 
-public native @ByVal LongType getShapeListSize(@Cast("OpaqueShapeList*") ShapeList list);
+public native @Cast("sd::LongType") long getShapeListSize(@Cast("OpaqueShapeList*") org.nd4j.nativeblas.OpaqueShapeList list);
 
-public native void dbPrintAllocationTrace(@Cast("OpaqueDataBuffer*") InteropDataBuffer db);
+public native void dbPrintAllocationTrace(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer db);
 public native int numIntermediateResults(org.nd4j.nativeblas.OpaqueContext contextPointer);
-public native @ByVal LongType dbBufferLength(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
+public native @Cast("sd::LongType") long dbBufferLength(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void toggleOpTrace(@Cast("bool") boolean opTrace);
 public native void purgeOpTrace();
 public native void printOpTrace();
-public native void copyBuffer(@Cast("OpaqueDataBuffer*") InteropDataBuffer target, long n,  @Cast("OpaqueDataBuffer*") InteropDataBuffer from, long fromOffset, long targetOffset);
+public native void copyBuffer(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer target, long n,  @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer from, long fromOffset, long targetOffset);
 public native int contextNumInputs(Pointer contextPointer);
 public native int contextNumOutputs(Pointer contextPointer);
 public native int numInputs(Pointer execTrace);
@@ -2102,35 +2748,35 @@ public native int numOutputs(Pointer execTrace);
 public native int getDeviceId(@Cast("sd::Pointer") Pointer ptrToDeviceId);
 public native int getDeviceBlockThreshold(int deviceId);
 public native int getDeviceSharedThreshold(int deviceId);
-public native void printDeviceBuffer(@Cast("OpaqueDataBuffer*") InteropDataBuffer buffer, @ByVal LongType offset);
-public native void printDeviceBuffer(@Cast("OpaqueDataBuffer*") InteropDataBuffer buffer);
-public native void execPairwiseTransform(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray y, @Cast("OpaqueNDArray") sd::NDArray z, Pointer extraParams);
-public native void execPairwiseTransformBool(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray y, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z);
-public native void execSummaryStatsScalar(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("bool") boolean biasCorrected);
-public native void execSummaryStatsTad(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z,
-                                       @Cast("OpaqueNDArray") sd::NDArray dimension, @Cast("bool") boolean biasCorrected);
-public native void execBroadcastBool(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray y, @Cast("OpaqueNDArray") sd::NDArray z, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray dimension);
-public native void execScalarBool(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray scalar, Pointer extraParams);
+public native void printDeviceBuffer(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer buffer, @Cast("sd::LongType") long offset);
+public native void printDeviceBuffer(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer buffer);
+public native void execPairwiseTransform(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
+public native void execPairwiseTransformBool(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z);
+public native void execSummaryStatsScalar(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("bool") boolean biasCorrected);
+public native void execSummaryStatsTad(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z,
+                                       @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension, @Cast("bool") boolean biasCorrected);
+public native void execBroadcastBool(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
+public native void execScalarBool(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray scalar, Pointer extraParams);
 ////////////////////////////////////////////////////////////////////////
-public native void execScalarBoolTad(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray scalar, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray dimension);
-public native void execScalar(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray scalar, Pointer extraParams);
-public native void execScalarTad(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray scalar, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray dimension);
-public native void execBroadcast(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray y, @Cast("OpaqueNDArray") sd::NDArray z, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray dimension);
-public native void execReduceFloat(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z);
-public native void execReduce3All(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray y, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray dimension, Pointer extraParams);
+public native void execScalarBoolTad(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray scalar, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
+public native void execScalar(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray scalar, Pointer extraParams);
+public native void execScalarTad(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray scalar, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
+public native void execBroadcast(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
+public native void execReduceFloat(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z);
+public native void execReduce3All(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
 
 
-public native void execReduceLong(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray dimension);
-public native void execReduceBool2(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray dimension);
-public native void execReduceBool(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray dimension);
-public native void execIndexReduce(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray dimension);
-public native void execReduceFloat2(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray dimension);
-public native void execIndexReduceScalar(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z);
-public native void execTransformSame(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z);
-public native void execTransformBool(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z);
-public native void execTransformAny(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z);
-public native void execTransformStrict(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z);
-public native void execTransformFloat(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray z);
+public native void execReduceLong(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
+public native void execReduceBool2(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
+public native void execReduceBool(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
+public native void execIndexReduce(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
+public native void execReduceFloat2(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
+public native void execIndexReduceScalar(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z);
+public native void execTransformSame(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z);
+public native void execTransformBool(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z);
+public native void execTransformAny(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z);
+public native void execTransformStrict(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z);
+public native void execTransformFloat(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z);
 public native void checkP2P();
 public native void enableP2P(@Cast("bool") boolean enable);
 public native @Cast("bool") boolean isP2PAvailable();
@@ -2163,20 +2809,20 @@ public native void initializeShapeCache();
  */
 public native void initializeTadCache();
 
-public native @Cast("sd::Pointer") Pointer mallocHost(@ByVal LongType memorySize, int flags);
-public native @Cast("sd::Pointer") Pointer mallocDevice(@ByVal LongType memorySize, int deviceId, int flags);
+public native @Cast("sd::Pointer") Pointer mallocHost(@Cast("sd::LongType") long memorySize, int flags);
+public native @Cast("sd::Pointer") Pointer mallocDevice(@Cast("sd::LongType") long memorySize, int deviceId, int flags);
 public native int freeHost(@Cast("sd::Pointer") Pointer pointer);
 public native int freeDevice(@Cast("sd::Pointer") Pointer pointer, int deviceId);
 
 // CUDA Memory Pool functions (CUDA 11.2+)
 public native @Cast("bool") boolean isMemoryPoolEnabled();
 public native void setMemoryPoolEnabled(@Cast("bool") boolean enabled);
-public native void getMemoryPoolStats(int deviceId, LongType usedBytes, LongType reservedBytes);
+public native void getMemoryPoolStats(int deviceId, @Cast("sd::LongType*") LongPointer usedBytes, @Cast("sd::LongType*") LongPointer reservedBytes);
 public native void trimMemoryPool(int deviceId);
 public native void trimMemoryPoolOnStream(int deviceId, Pointer stream);
-public native @ByVal LongType getPinnedHostBytesUsed();
-public native @ByVal LongType getPinnedHostBytesLimit();
-public native void setPinnedHostBytesLimit(@ByVal LongType maxBytes);
+public native @Cast("sd::LongType") long getPinnedHostBytesUsed();
+public native @Cast("sd::LongType") long getPinnedHostBytesLimit();
+public native void setPinnedHostBytesLimit(@Cast("sd::LongType") long maxBytes);
 
 // Proactive soft-limit for memory pool allocation
 public native void setMemoryPoolSoftLimitPercent(int percent);
@@ -2196,13 +2842,13 @@ public native int setDevice(int deviceId);
 public native void setAvailableDevices(IntPointer devices, int size);
 public native void setAvailableDevices(IntBuffer devices, int size);
 public native void setAvailableDevices(int[] devices, int size);
-public native @ByVal LongType getDeviceFreeMemoryDefault();
-public native @ByVal LongType getDeviceFreeMemory(int device);
-public native @ByVal LongType getDeviceTotalMemory(int device);
-public native int memcpySync(@Cast("sd::Pointer") Pointer dst, @Cast("sd::Pointer") Pointer src, @ByVal LongType size, int flags, @Cast("sd::Pointer") Pointer reserved);
-public native int memcpyAsync(@Cast("sd::Pointer") Pointer dst, @Cast("sd::Pointer") Pointer src, @ByVal LongType size, int flags, @Cast("sd::Pointer") Pointer reserved);
-public native int memsetSync(@Cast("sd::Pointer") Pointer dst, int value, @ByVal LongType size, int flags, @Cast("sd::Pointer") Pointer reserved);
-public native int memsetAsync(@Cast("sd::Pointer") Pointer dst, int value, @ByVal LongType size, int flags, @Cast("sd::Pointer") Pointer reserved);
+public native @Cast("sd::LongType") long getDeviceFreeMemoryDefault();
+public native @Cast("sd::LongType") long getDeviceFreeMemory(int device);
+public native @Cast("sd::LongType") long getDeviceTotalMemory(int device);
+public native int memcpySync(@Cast("sd::Pointer") Pointer dst, @Cast("sd::Pointer") Pointer src, @Cast("sd::LongType") long size, int flags, @Cast("sd::Pointer") Pointer reserved);
+public native int memcpyAsync(@Cast("sd::Pointer") Pointer dst, @Cast("sd::Pointer") Pointer src, @Cast("sd::LongType") long size, int flags, @Cast("sd::Pointer") Pointer reserved);
+public native int memsetSync(@Cast("sd::Pointer") Pointer dst, int value, @Cast("sd::LongType") long size, int flags, @Cast("sd::Pointer") Pointer reserved);
+public native int memsetAsync(@Cast("sd::Pointer") Pointer dst, int value, @Cast("sd::LongType") long size, int flags, @Cast("sd::Pointer") Pointer reserved);
 public native int destroyEvent(@Cast("sd::Pointer") Pointer event);
 public native int streamSynchronize(@Cast("sd::Pointer") Pointer stream);
 public native int eventSynchronize(@Cast("sd::Pointer") Pointer event);
@@ -2251,91 +2897,93 @@ public native void setSerializeBlasCalls(@Cast("bool") boolean serialize);
 public native void enableVerboseMode(@Cast("bool") boolean reallyEnable);
 public native int getDeviceMajor(int device);
 public native int getDeviceMinor(int device);
-public native int memcpyConstantAsync(@ByVal LongType dst, @Cast("sd::Pointer") Pointer src, @ByVal LongType size, int flags, @Cast("sd::Pointer") Pointer reserved);
+public native int memcpyConstantAsync(@Cast("sd::LongType") long dst, @Cast("sd::Pointer") Pointer src, @Cast("sd::LongType") long size, int flags, @Cast("sd::Pointer") Pointer reserved);
 public native @Cast("sd::Pointer") Pointer getConstantSpace();
 public native @Cast("bool") boolean isExperimentalEnabled();
 public native void setOmpMinThreads(int threads);
 public native int getDevice();
 public native void setElementThreshold(int num);
 public native void setTADThreshold(int num);
-public native void execReduceSame(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x,
-                                  Pointer extraParams,@Cast("OpaqueNDArray") sd::NDArray z);
+public native void execReduceSame(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x,
+                                  Pointer extraParams,@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z);
 public native void execReduceSame2(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum,
-                                   @Cast("OpaqueNDArray") sd::NDArray x,Pointer extraParams,
-                                   @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray dimension);
-public native void execReduce3(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray y, @Cast("OpaqueNDArray") sd::NDArray z);
-public native void execReduce3Scalar(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray y, @Cast("OpaqueNDArray") sd::NDArray z);
-public native void execReduce3Tad(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x, Pointer extraParams, @Cast("OpaqueNDArray") sd::NDArray y, @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray dimension);
+                                   @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x,Pointer extraParams,
+                                   @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
+public native void execReduce3(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z);
+public native void execReduce3Scalar(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z);
+public native void execReduce3Tad(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
 public native @Cast("sd::Pointer") Pointer initRandom(@Cast("sd::Pointer*") PointerPointer extraPointers, long seed, long bufferSize, @Cast("sd::Pointer") Pointer ptrToBuffer);
 public native void destroyRandom(@Cast("sd::Pointer") Pointer ptrBuffer);
 public native void refreshBuffer(@Cast("sd::Pointer*") PointerPointer extraPointers, long seed, @Cast("sd::Pointer") Pointer ptrRandom);
 public native void reSeedBuffer(@Cast("sd::Pointer*") PointerPointer extraPointers, long seed, @Cast("sd::Pointer") Pointer ptrRandom);
 public native int lengthForShapeBufferPointer(@Cast("sd::Pointer") Pointer buffer);
-public native @Cast("sd::Pointer") Pointer pointerForAddress(@ByVal LongType _address);
+public native @Cast("sd::Pointer") Pointer pointerForAddress(@Cast("sd::LongType") long _address);
 public native void prescanArrayRecursive(@Cast("sd::Pointer*") PointerPointer extras, IntPointer dZ, IntPointer dX, int numElements, int level);
 public native void prescanArrayRecursive(@Cast("sd::Pointer*") PointerPointer extras, IntBuffer dZ, IntBuffer dX, int numElements, int level);
 public native void prescanArrayRecursive(@Cast("sd::Pointer*") PointerPointer extras, int[] dZ, int[] dX, int numElements, int level);
-public native @Cast("bool") boolean checkOpaqueNDArrayElementsNull(@Cast("OpaqueNDArrayArr") sd::NDArray elements,int numElements);
-public native @ByVal LongType getShapeInfoLength(@Cast("OpaqueNDArray") sd::NDArray array);
-public native @ByVal LongType getOpaqueNDArrayLength(@Cast("OpaqueNDArray") sd::NDArray array);
-public native void sort(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("bool") boolean descending);
-public native void sortTad(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("OpaqueNDArray") sd::NDArray x,
-                           LongType dimension, @ByVal LongType dimensionLength,
-                           LongType tadShapeInfo,  LongType tadOffsets, @Cast("bool") boolean descending);
-public native void sortByKey(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray y, @Cast("bool") boolean descending);
-public native void sortByValue(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("OpaqueNDArray") sd::NDArray x, @Cast("OpaqueNDArray") sd::NDArray y, @Cast("bool") boolean descending);
+public native @Cast("bool") boolean checkOpaqueNDArrayElementsNull(@Cast("OpaqueNDArrayArr") @ByVal org.nd4j.nativeblas.OpaqueNDArrayArr elements,int numElements);
+public native @Cast("sd::LongType") long getShapeInfoLength(@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray array);
+public native @Cast("sd::LongType") long getOpaqueNDArrayLength(@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray array);
+public native void sort(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("bool") boolean descending);
+public native void sortTad(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x,
+                           @Cast("sd::LongType*") LongPointer dimension, @Cast("sd::LongType") long dimensionLength,
+                           @Cast("sd::LongType*") LongPointer tadShapeInfo,  @Cast("sd::LongType*") LongPointer tadOffsets, @Cast("bool") boolean descending);
+public native void sortByKey(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y, @Cast("bool") boolean descending);
+public native void sortByValue(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y, @Cast("bool") boolean descending);
 
-public native void execReduceLong2(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") sd::NDArray x,
+public native void execReduceLong2(@Cast("sd::Pointer*") PointerPointer extraPointers, int opNum, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x,
                                    Pointer extraParams,
-                                   @Cast("OpaqueNDArray") sd::NDArray z, @Cast("OpaqueNDArray") sd::NDArray dimension);
+                                   @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray z, @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension);
 
 public native void sortTadByKey(@Cast("sd::Pointer*") PointerPointer extraPointers,
-                                @Cast("OpaqueNDArray") sd::NDArray x,
-                                @Cast("OpaqueNDArray") sd::NDArray y,
-                                @Cast("OpaqueNDArray") sd::NDArray dimension,
+                                @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x,
+                                @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y,
+                                @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension,
                                 @Cast("bool") boolean descending);
 
 public native void sortTadByValue(@Cast("sd::Pointer*") PointerPointer extraPointers,
-                                  @Cast("OpaqueNDArray") sd::NDArray x,
-                                  @Cast("OpaqueNDArray") sd::NDArray y,
-                                  @Cast("OpaqueNDArray") sd::NDArray dimension,
+                                  @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray x,
+                                  @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray y,
+                                  @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray dimension,
                                   @Cast("bool") boolean descending);
-public native void munmapFile(@Cast("sd::Pointer*") PointerPointer extraPointers, LongType ptrMap, @ByVal LongType length);
-public native LongType mmapFile(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("const char*") BytePointer fileName, @ByVal LongType length);
-public native LongType mmapFile(@Cast("sd::Pointer*") PointerPointer extraPointers, String fileName, @ByVal LongType length);
-public native @ByVal Status execCustomOp2(@Cast("sd::Pointer*") PointerPointer extraPointers, @ByVal LongType hash, org.nd4j.nativeblas.OpaqueContext opContext);
-public native @ByVal LongType getVariablesSetSize(@Cast("OpaqueVariablesSet*") VariablesSet set);
-public native @ByVal Status getVariablesSetStatus(@Cast("OpaqueVariablesSet*") VariablesSet set);
-public native @Const LongType getVariableShape(@Cast("OpaqueVariable*") Variable variable);
-public native @Cast("OpaqueVariable*") Variable getVariable(@Cast("OpaqueVariablesSet*") VariablesSet set, @ByVal LongType i);
-public native int getVariableId(@Cast("OpaqueVariable*") Variable variable);
-public native int getVariableIndex(@Cast("OpaqueVariable*") Variable variable);
-public native Pointer getVariableBuffer(@Cast("OpaqueVariable*") Variable variable);
-public native @Cast("const char*") BytePointer getVariableName(@Cast("OpaqueVariable*") Variable variable);
+public native void munmapFile(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType*") LongPointer ptrMap, @Cast("sd::LongType") long length);
+public native void munmapFile(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType*") LongBuffer ptrMap, @Cast("sd::LongType") long length);
+public native void munmapFile(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType*") long[] ptrMap, @Cast("sd::LongType") long length);
+public native @Cast("sd::LongType*") LongPointer mmapFile(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("char*") String fileName, @Cast("sd::LongType") long length);
+public native @Cast("sd::LongType*") LongPointer mmapFile(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("char*") BytePointer fileName, @Cast("sd::LongType") long length);
+public native @Cast("sd::Status") int execCustomOp2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash, org.nd4j.nativeblas.OpaqueContext opContext);
+public native @Cast("sd::LongType") long getVariablesSetSize(@Cast("OpaqueVariablesSet*") org.nd4j.nativeblas.OpaqueVariablesSet set);
+public native @Cast("sd::Status") int getVariablesSetStatus(@Cast("OpaqueVariablesSet*") org.nd4j.nativeblas.OpaqueVariablesSet set);
+public native @Cast("const sd::LongType*") LongPointer getVariableShape(@Cast("OpaqueVariable*") org.nd4j.nativeblas.OpaqueVariable variable);
+public native @Cast("OpaqueVariable*") org.nd4j.nativeblas.OpaqueVariable getVariable(@Cast("OpaqueVariablesSet*") org.nd4j.nativeblas.OpaqueVariablesSet set, @Cast("sd::LongType") long i);
+public native int getVariableId(@Cast("OpaqueVariable*") org.nd4j.nativeblas.OpaqueVariable variable);
+public native int getVariableIndex(@Cast("OpaqueVariable*") org.nd4j.nativeblas.OpaqueVariable variable);
+public native Pointer getVariableBuffer(@Cast("OpaqueVariable*") org.nd4j.nativeblas.OpaqueVariable variable);
+public native @Cast("char*") String getVariableName(@Cast("OpaqueVariable*") org.nd4j.nativeblas.OpaqueVariable variable);
 public native void deletePointerArray(@Cast("sd::Pointer") Pointer pointer);
 public native void deleteCharArray(@Cast("sd::Pointer") Pointer pointer);
 public native void deleteIntArray(@Cast("sd::Pointer") Pointer pointer);
 public native void deleteLongArray(@Cast("sd::Pointer") Pointer pointer);
-public native void deleteVariablesSet(@Cast("OpaqueVariablesSet*") VariablesSet pointer);
+public native void deleteVariablesSet(@Cast("OpaqueVariablesSet*") org.nd4j.nativeblas.OpaqueVariablesSet pointer);
 public native void deleteShapeList(@Cast("sd::Pointer") Pointer shapeList);
-public native @Cast("sd::Pointer") Pointer getGraphState(@ByVal LongType id);
+public native @Cast("sd::Pointer") Pointer getGraphState(@Cast("sd::LongType") long id);
 public native void deleteGraphState(@Cast("sd::Pointer") Pointer state);
-public native void convertTypes(@Cast("sd::Pointer*") PointerPointer extras, int srcType, @Cast("sd::Pointer") Pointer dX, @ByVal LongType N, int dstType, @Cast("sd::Pointer") Pointer dZ);
+public native void convertTypes(@Cast("sd::Pointer*") PointerPointer extras, int srcType, @Cast("sd::Pointer") Pointer dX, @Cast("sd::LongType") long N, int dstType, @Cast("sd::Pointer") Pointer dZ);
 public native @Cast("sd::Pointer") Pointer createUtf8String(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("const char*") BytePointer string, int length);
 public native @Cast("sd::Pointer") Pointer createUtf8String(@Cast("sd::Pointer*") PointerPointer extraPointers, String string, int length);
-public native @ByVal LongType getUtf8StringLength(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::Pointer") Pointer ptr);
+public native @Cast("sd::LongType") long getUtf8StringLength(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::Pointer") Pointer ptr);
 public native void deleteUtf8String(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::Pointer") Pointer ptr);
 public native void tryPointer(@Cast("sd::Pointer") Pointer extra, @Cast("sd::Pointer") Pointer p, int len);
-public native void deleteConstantShapeBuffer(@Cast("OpaqueConstantShapeBuffer*") PointerPointer ptr);
-public native void deleteConstantDataBuffer(@Cast("OpaqueConstantDataBuffer*") PointerPointer ptr);
-public native void deleteTadPack(@Cast("OpaqueTadPack*") TadPack ptr);
+public native void deleteConstantShapeBuffer(org.nd4j.nativeblas.OpaqueConstantShapeBuffer ptr);
+public native void deleteConstantDataBuffer(org.nd4j.nativeblas.OpaqueConstantDataBuffer ptr);
+public native void deleteTadPack(@Cast("OpaqueTadPack*") org.nd4j.nativeblas.OpaqueTadPack ptr);
 public native @Cast("bool") boolean isBlasVersionMatches(int major, int minor, int build);
-public native @Cast("sd::Pointer") Pointer getConstantDataBufferPrimary(@Cast("OpaqueConstantDataBuffer") ConstantDataBuffer dbf);
-public native @Cast("sd::Pointer") Pointer getConstantDataBufferSpecial(@Cast("OpaqueConstantDataBuffer") ConstantDataBuffer dbf);
-public native @ByVal LongType getConstantDataBufferLength(@Cast("OpaqueConstantDataBuffer") ConstantDataBuffer dbf);
-public native @ByVal LongType getConstantDataBufferSizeOf(@Cast("OpaqueConstantDataBuffer") ConstantDataBuffer dbf);
-public native @Cast("sd::Pointer") Pointer getConstantShapeBufferPrimary(@Cast("OpaqueConstantShapeBuffer") ConstantShapeBuffer dbf);
-public native @Cast("sd::Pointer") Pointer getConstantShapeBufferSpecial(@Cast("OpaqueConstantShapeBuffer") ConstantShapeBuffer dbf);
+public native @Cast("sd::Pointer") Pointer getConstantDataBufferPrimary(@Cast("OpaqueConstantDataBuffer") org.nd4j.nativeblas.OpaqueConstantDataBuffer dbf);
+public native @Cast("sd::Pointer") Pointer getConstantDataBufferSpecial(@Cast("OpaqueConstantDataBuffer") org.nd4j.nativeblas.OpaqueConstantDataBuffer dbf);
+public native @Cast("sd::LongType") long getConstantDataBufferLength(@Cast("OpaqueConstantDataBuffer") org.nd4j.nativeblas.OpaqueConstantDataBuffer dbf);
+public native @Cast("sd::LongType") long getConstantDataBufferSizeOf(@Cast("OpaqueConstantDataBuffer") org.nd4j.nativeblas.OpaqueConstantDataBuffer dbf);
+public native @Cast("sd::Pointer") Pointer getConstantShapeBufferPrimary(@Cast("OpaqueConstantShapeBuffer") org.nd4j.nativeblas.OpaqueConstantShapeBuffer dbf);
+public native @Cast("sd::Pointer") Pointer getConstantShapeBufferSpecial(@Cast("OpaqueConstantShapeBuffer") org.nd4j.nativeblas.OpaqueConstantShapeBuffer dbf);
 
 /**
  * Get the stack trace for a ConstantShapeBuffer as a string.
@@ -2345,29 +2993,31 @@ public native @Cast("sd::Pointer") Pointer getConstantShapeBufferSpecial(@Cast("
  * @param buffer The ConstantShapeBuffer to get the stack trace from
  * @return C-string containing the formatted stack trace (caller must NOT free this)
  */
-public native @Cast("const char*") BytePointer getConstantShapeBufferStackTrace(@Cast("OpaqueConstantShapeBuffer") ConstantShapeBuffer buffer);
+public native @Cast("char*") String getConstantShapeBufferStackTrace(@Cast("OpaqueConstantShapeBuffer") org.nd4j.nativeblas.OpaqueConstantShapeBuffer buffer);
 
 public native void markGraphContextInplace(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("bool") boolean reallyInplace);
-public native @Cast("OpaqueNDArray") sd::NDArray getOutputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
-public native @Cast("OpaqueNDArray") sd::NDArray getInputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
-public native @ByVal LongType dataTypeNativeAt(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
+public native @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray getOutputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
+public native @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray getInputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
+public native @Cast("sd::LongType") long dataTypeNativeAt(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
 public native @Cast("bool") boolean bArgAtNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
-public native @ByVal LongType iArgumentAtNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
-public native @ByVal LongType numDNative(org.nd4j.nativeblas.OpaqueContext ptr);
-public native @ByVal LongType numBNative(org.nd4j.nativeblas.OpaqueContext ptr);
-public native @ByVal LongType numOutputsNative(org.nd4j.nativeblas.OpaqueContext ptr);
-public native @ByVal LongType numInputsNative(org.nd4j.nativeblas.OpaqueContext ptr);
+public native @Cast("sd::LongType") long iArgumentAtNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
+public native @Cast("sd::LongType") long numDNative(org.nd4j.nativeblas.OpaqueContext ptr);
+public native @Cast("sd::LongType") long numBNative(org.nd4j.nativeblas.OpaqueContext ptr);
+public native @Cast("sd::LongType") long numOutputsNative(org.nd4j.nativeblas.OpaqueContext ptr);
+public native @Cast("sd::LongType") long numInputsNative(org.nd4j.nativeblas.OpaqueContext ptr);
 public native double tArgumentNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
-public native @ByVal LongType numTArgumentsNative(org.nd4j.nativeblas.OpaqueContext ptr);
-public native @ByVal LongType numIArgumentsNative(org.nd4j.nativeblas.OpaqueContext ptr);
-public native void setGraphContextOutputArray(org.nd4j.nativeblas.OpaqueContext ptr, int index,@Cast("OpaqueNDArray") sd::NDArray arr);
-public native void setGraphContextInputArray(org.nd4j.nativeblas.OpaqueContext ptr,int index,@Cast("OpaqueNDArray") sd::NDArray arr);
-public native void setGraphContextOutputArraysArr(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, @Cast("OpaqueNDArrayArr") sd::NDArray arr);
-public native void setGraphContextInputArraysArr(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, @Cast("OpaqueNDArrayArr") sd::NDArray arr);
+public native @Cast("sd::LongType") long numTArgumentsNative(org.nd4j.nativeblas.OpaqueContext ptr);
+public native @Cast("sd::LongType") long numIArgumentsNative(org.nd4j.nativeblas.OpaqueContext ptr);
+public native void setGraphContextOutputArray(org.nd4j.nativeblas.OpaqueContext ptr, int index,@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray arr);
+public native void setGraphContextInputArray(org.nd4j.nativeblas.OpaqueContext ptr,int index,@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray arr);
+public native void setGraphContextOutputArraysArr(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, @Cast("OpaqueNDArrayArr") @ByVal org.nd4j.nativeblas.OpaqueNDArrayArr arr);
+public native void setGraphContextInputArraysArr(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, @Cast("OpaqueNDArrayArr") @ByVal org.nd4j.nativeblas.OpaqueNDArrayArr arr);
 public native void setGraphContextTArguments(org.nd4j.nativeblas.OpaqueContext ptr, DoublePointer arguments, int numberOfArguments);
 public native void setGraphContextTArguments(org.nd4j.nativeblas.OpaqueContext ptr, DoubleBuffer arguments, int numberOfArguments);
 public native void setGraphContextTArguments(org.nd4j.nativeblas.OpaqueContext ptr, double[] arguments, int numberOfArguments);
-public native void setGraphContextIArguments(org.nd4j.nativeblas.OpaqueContext ptr, LongType arguments, int numberOfArguments);
+public native void setGraphContextIArguments(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("sd::LongType*") LongPointer arguments, int numberOfArguments);
+public native void setGraphContextIArguments(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("sd::LongType*") LongBuffer arguments, int numberOfArguments);
+public native void setGraphContextIArguments(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("sd::LongType*") long[] arguments, int numberOfArguments);
 public native void setGraphContextBArguments(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("bool*") BooleanPointer arguments, int numberOfArguments);
 public native void setGraphContextBArguments(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("bool*") boolean[] arguments, int numberOfArguments);
 public native void setGraphContextDArguments(org.nd4j.nativeblas.OpaqueContext ptr, IntPointer arguments, int numberOfArguments);
@@ -2376,26 +3026,26 @@ public native void setGraphContextDArguments(org.nd4j.nativeblas.OpaqueContext p
 public native void setGraphContextSArgument(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("const char*") BytePointer argument, int index);
 public native void setGraphContextSArgument(org.nd4j.nativeblas.OpaqueContext ptr, String argument, int index);
 public native void deleteGraphContext(org.nd4j.nativeblas.OpaqueContext ptr);
-public native @ByVal LongType getRandomGeneratorRootState(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr);
-public native @ByVal LongType getRandomGeneratorNodeState(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr);
-public native void setRandomGeneratorStates(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr, @ByVal LongType rootSeed, @ByVal LongType nodeSeed);
-public native float getRandomGeneratorRelativeFloat(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr, @ByVal LongType index);
-public native double getRandomGeneratorRelativeDouble(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr, @ByVal LongType index);
-public native int getRandomGeneratorRelativeInt(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr, @ByVal LongType index);
-public native @ByVal LongType getRandomGeneratorRelativeLong(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr, @ByVal LongType index);
-public native int getRandomGeneratorNextInt(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr);
-public native @ByVal LongType getRandomGeneratorNextLong(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr);
-public native float getRandomGeneratorNextFloat(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr);
-public native double getRandomGeneratorNextDouble(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr);
-public native void deleteRandomGenerator(@Cast("OpaqueRandomGenerator*") RandomGenerator ptr);
-public native @ByVal LongType getCachedMemory(int deviceId);
-public native @Cast("sd::Pointer") Pointer lcScalarPointer(@Cast("OpaqueLaunchContext") sd::LaunchContext lc);
-public native @Cast("sd::Pointer") Pointer lcReductionPointer(@Cast("OpaqueLaunchContext") sd::LaunchContext lc);
-public native @Cast("sd::Pointer") Pointer lcAllocationPointer(@Cast("OpaqueLaunchContext") sd::LaunchContext lc);
-public native @Cast("sd::Pointer") Pointer lcExecutionStream(@Cast("OpaqueLaunchContext") sd::LaunchContext lc);
-public native @Cast("sd::Pointer") Pointer lcCopyStream(@Cast("OpaqueLaunchContext") sd::LaunchContext lc);
-public native @Cast("sd::Pointer") Pointer lcBlasHandle(@Cast("OpaqueLaunchContext") sd::LaunchContext lc);
-public native @Cast("sd::Pointer") Pointer lcSolverHandle(@Cast("OpaqueLaunchContext") sd::LaunchContext lc);
+public native @Cast("sd::LongType") long getRandomGeneratorRootState(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native @Cast("sd::LongType") long getRandomGeneratorNodeState(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native void setRandomGeneratorStates(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long rootSeed, @Cast("sd::LongType") long nodeSeed);
+public native float getRandomGeneratorRelativeFloat(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
+public native double getRandomGeneratorRelativeDouble(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
+public native int getRandomGeneratorRelativeInt(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
+public native @Cast("sd::LongType") long getRandomGeneratorRelativeLong(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
+public native int getRandomGeneratorNextInt(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native @Cast("sd::LongType") long getRandomGeneratorNextLong(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native float getRandomGeneratorNextFloat(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native double getRandomGeneratorNextDouble(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native void deleteRandomGenerator(@Cast("OpaqueRandomGenerator*") org.nd4j.nativeblas.OpaqueRandomGenerator ptr);
+public native @Cast("sd::LongType") long getCachedMemory(int deviceId);
+public native @Cast("sd::Pointer") Pointer lcScalarPointer(@Cast("OpaqueLaunchContext") org.nd4j.nativeblas.OpaqueLaunchContext lc);
+public native @Cast("sd::Pointer") Pointer lcReductionPointer(@Cast("OpaqueLaunchContext") org.nd4j.nativeblas.OpaqueLaunchContext lc);
+public native @Cast("sd::Pointer") Pointer lcAllocationPointer(@Cast("OpaqueLaunchContext") org.nd4j.nativeblas.OpaqueLaunchContext lc);
+public native @Cast("sd::Pointer") Pointer lcExecutionStream(@Cast("OpaqueLaunchContext") org.nd4j.nativeblas.OpaqueLaunchContext lc);
+public native @Cast("sd::Pointer") Pointer lcCopyStream(@Cast("OpaqueLaunchContext") org.nd4j.nativeblas.OpaqueLaunchContext lc);
+public native @Cast("sd::Pointer") Pointer lcBlasHandle(@Cast("OpaqueLaunchContext") org.nd4j.nativeblas.OpaqueLaunchContext lc);
+public native @Cast("sd::Pointer") Pointer lcSolverHandle(@Cast("OpaqueLaunchContext") org.nd4j.nativeblas.OpaqueLaunchContext lc);
 public native void ctxShapeFunctionOverride(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("bool") boolean reallyOverride);
 public native void ctxPurge(org.nd4j.nativeblas.OpaqueContext ptr);
 public native void ctxPurgeNoSync(org.nd4j.nativeblas.OpaqueContext ptr);
@@ -2405,19 +3055,19 @@ public native @Cast("bool") boolean isMinimalRequirementsMet();
 public native @Cast("bool") boolean isOptimalRequirementsMet();
 public native void ctxAllowHelpers(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("bool") boolean reallyAllow);
 public native void ctxSetExecutionMode(org.nd4j.nativeblas.OpaqueContext ptr, int execMode);
-public native @Cast("sd::Pointer") Pointer dbPrimaryBuffer(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native @Cast("sd::Pointer") Pointer dbSpecialBuffer(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void deleteDataBuffer(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbSetPrimaryBuffer(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer, @Cast("sd::Pointer") Pointer primaryBuffer, @ByVal LongType numBytes);
-public native void dbSetSpecialBuffer(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer, @Cast("sd::Pointer") Pointer specialBuffer, @ByVal LongType numBytes);
-public native void dbAllocatePrimaryBuffer(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbAllocateSpecialBuffer(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbExpandBuffer(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer, @ByVal LongType elements);
-public native int dbUseCount(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbSyncToSpecial(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbSyncToPrimary(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbForceSyncToPrimary(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbForceSyncToSpecial(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
+public native @Cast("sd::Pointer") Pointer dbPrimaryBuffer(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native @Cast("sd::Pointer") Pointer dbSpecialBuffer(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void deleteDataBuffer(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbSetPrimaryBuffer(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::Pointer") Pointer primaryBuffer, @Cast("sd::LongType") long numBytes);
+public native void dbSetSpecialBuffer(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::Pointer") Pointer specialBuffer, @Cast("sd::LongType") long numBytes);
+public native void dbAllocatePrimaryBuffer(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbAllocateSpecialBuffer(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbExpandBuffer(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::LongType") long elements);
+public native int dbUseCount(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbSyncToSpecial(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbSyncToPrimary(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbForceSyncToPrimary(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbForceSyncToSpecial(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 
 /**
  * Batched asynchronous synchronization of multiple data buffers from host to device.
@@ -2429,9 +3079,9 @@ public native void dbForceSyncToSpecial(@Cast("OpaqueDataBuffer*") InteropDataBu
  * @param streamCount Number of CUDA streams to use for parallel transfers (typically 2-8)
  */
 public native void batchSyncToSpecialAsync(@Cast("OpaqueDataBuffer**") PointerPointer buffers, int bufferCount, int streamCount);
-public native void batchSyncToSpecialAsync(@Cast("OpaqueDataBuffer**") @ByPtrPtr InteropDataBuffer buffers, int bufferCount, int streamCount);
+public native void batchSyncToSpecialAsync(@Cast("OpaqueDataBuffer**") @ByPtrPtr org.nd4j.nativeblas.OpaqueDataBuffer buffers, int bufferCount, int streamCount);
 
-public native void dbMigrate(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
+public native void dbMigrate(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 
 /**
  * Async cross-device buffer copy: copies srcBuffer's device data into dstBuffer's device memory
@@ -2451,25 +3101,25 @@ public native void dbMigrate(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBu
  * @param dstStream  Stream on which to issue the copy (typically DSP execution stream).
  *                   If null, uses the default stream for dstBuffer's device.
  */
-public native void dbAsyncCrossDeviceCopy(@Cast("OpaqueDataBuffer*") InteropDataBuffer dstBuffer, @Cast("OpaqueDataBuffer*") InteropDataBuffer srcBuffer, Pointer dstStream);
+public native void dbAsyncCrossDeviceCopy(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dstBuffer, @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer srcBuffer, Pointer dstStream);
 
-public native void dbTickHostRead(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbTickHostWrite(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbTickDeviceRead(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbTickDeviceWrite(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbExpand(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer, @ByVal LongType elements);
-public native void dbClose(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbFreeBuffersOnly(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbFreeBuffersOnStream(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer, Pointer stream);
-public native @Cast("bool") boolean dbIsOwner(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbCloseGetDiagnostics(LongType outStats);
+public native void dbTickHostRead(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbTickHostWrite(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbTickDeviceRead(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbTickDeviceWrite(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbExpand(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::LongType") long elements);
+public native void dbClose(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbFreeBuffersOnly(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbFreeBuffersOnStream(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, Pointer stream);
+public native @Cast("bool") boolean dbIsOwner(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbCloseGetDiagnostics(@Cast("sd::LongType*") LongPointer outStats);
 public native void dbCloseResetDiagnostics();
-public native int dbDeviceId(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native void dbSetDeviceId(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer, int deviceId);
-public native int dbLocality(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
-public native @Cast("OpaqueDataBuffer*") InteropDataBuffer dbCreateView(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer, @ByVal LongType length);
-public native @Cast("OpaqueDataBuffer*") InteropDataBuffer dbAllocateDataBuffer(@ByVal LongType elements, int dataType, @Cast("bool") boolean allocateBoth);
-public native @Cast("OpaqueDataBuffer*") InteropDataBuffer dbCreateExternalDataBuffer(@ByVal LongType elements, int dataType, @Cast("sd::Pointer") Pointer primary, @Cast("sd::Pointer") Pointer special);
+public native int dbDeviceId(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbSetDeviceId(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, int deviceId);
+public native int dbLocality(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dbCreateView(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::LongType") long length);
+public native @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dbAllocateDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("bool") boolean allocateBoth);
+public native @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("sd::Pointer") Pointer primary, @Cast("sd::Pointer") Pointer special);
 
 /**
  * Create an externalized data buffer that is ALREADY marked as constant.
@@ -2485,7 +3135,7 @@ public native @Cast("OpaqueDataBuffer*") InteropDataBuffer dbCreateExternalDataB
  * @param special Special (device) pointer
  * @return Buffer that is already marked as constant and will never be deallocated
  */
-public native @Cast("OpaqueDataBuffer*") InteropDataBuffer dbCreateConstantExternalDataBuffer(@ByVal LongType elements, int dataType, @Cast("sd::Pointer") Pointer primary, @Cast("sd::Pointer") Pointer special);
+public native @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dbCreateConstantExternalDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("sd::Pointer") Pointer primary, @Cast("sd::Pointer") Pointer special);
 
 /**
  * Set the constant flag on an OpaqueDataBuffer.
@@ -2498,12 +3148,12 @@ public native @Cast("OpaqueDataBuffer*") InteropDataBuffer dbCreateConstantExter
  *         (already closed or freed). If false is returned, the buffer may have
  *         been deallocated by GC and should not be used.
  */
-public native @Cast("bool") boolean dbSetConstant(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer, @Cast("bool") boolean isConstant);
+public native @Cast("bool") boolean dbSetConstant(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("bool") boolean isConstant);
 
 /**
  * Check if a buffer is marked as constant.
  */
-public native @Cast("bool") boolean dbIsConstant(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
+public native @Cast("bool") boolean dbIsConstant(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 
 // =====================================================
 // DSP Lifecycle Gates — query DSP (DynamicShapePlan) state from Java
@@ -2518,13 +3168,13 @@ public native @Cast("bool") boolean dbIsConstant(@Cast("OpaqueDataBuffer*") Inte
  * or slot contexts; the buffer must not be closed, reallocated, or content-
  * overwritten outside DSP's own reconciliation path.
  */
-public native @Cast("bool") boolean dbIsFrozenPlanRegistered(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
+public native @Cast("bool") boolean dbIsFrozenPlanRegistered(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 
 /**
  * True if {@code dataBuffer} is DSP-protected (frozen plan ref OR constant flag).
  * This is the single gate the slot-by-slot close() and resync paths consult.
  */
-public native @Cast("bool") boolean dbDspProtects(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
+public native @Cast("bool") boolean dbDspProtects(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 
 /**
  * True iff the current thread is inside a DSP graph capture session. Returns
@@ -2550,13 +3200,13 @@ public native @Cast("bool") boolean dspIsOwned();
  * {@code syncToSpecial} on this buffer before executing an op. True when DSP
  * owns the thread AND the buffer is DSP-protected.
  */
-public native @Cast("bool") boolean dspShouldSkipResync(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
+public native @Cast("bool") boolean dspShouldSkipResync(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 
 /**
  * Returns true iff a slot-by-slot close() on this buffer must be deferred
  * to avoid freeing memory DSP still references.
  */
-public native @Cast("bool") boolean dspShouldDeferClose(@Cast("OpaqueDataBuffer*") InteropDataBuffer dataBuffer);
+public native @Cast("bool") boolean dspShouldDeferClose(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 
 /**
  * Process-wide DspExecutionMode (see graph/DspLifecycleContext.h).
@@ -2587,52 +3237,52 @@ public native void transferMetricsSetLogTransfers(@Cast("bool") boolean log);
 /**
  * Set minimum bytes threshold for logging individual transfers
  */
-public native void transferMetricsSetMinBytesForLogging(@ByVal LongType bytes);
+public native void transferMetricsSetMinBytesForLogging(@Cast("sd::LongType") long bytes);
 
 /**
  * Get total bytes transferred (H2D)
  */
-public native @ByVal LongType transferMetricsGetH2DBytes();
+public native @Cast("sd::LongType") long transferMetricsGetH2DBytes();
 
 /**
  * Get total bytes transferred (D2H)
  */
-public native @ByVal LongType transferMetricsGetD2HBytes();
+public native @Cast("sd::LongType") long transferMetricsGetD2HBytes();
 
 /**
  * Get total bytes transferred (D2D within device)
  */
-public native @ByVal LongType transferMetricsGetD2DBytes();
+public native @Cast("sd::LongType") long transferMetricsGetD2DBytes();
 
 /**
  * Get total bytes transferred (P2P between devices)
  */
-public native @ByVal LongType transferMetricsGetP2PBytes();
+public native @Cast("sd::LongType") long transferMetricsGetP2PBytes();
 
 /**
  * Get total transfer count (H2D)
  */
-public native @ByVal LongType transferMetricsGetH2DCount();
+public native @Cast("sd::LongType") long transferMetricsGetH2DCount();
 
 /**
  * Get total transfer count (D2H)
  */
-public native @ByVal LongType transferMetricsGetD2HCount();
+public native @Cast("sd::LongType") long transferMetricsGetD2HCount();
 
 /**
  * Get total transfer count (D2D)
  */
-public native @ByVal LongType transferMetricsGetD2DCount();
+public native @Cast("sd::LongType") long transferMetricsGetD2DCount();
 
 /**
  * Get total transfer count (P2P)
  */
-public native @ByVal LongType transferMetricsGetP2PCount();
+public native @Cast("sd::LongType") long transferMetricsGetP2PCount();
 
 /**
  * Get total transfer time in nanoseconds (all types)
  */
-public native @ByVal LongType transferMetricsGetTotalTimeNs();
+public native @Cast("sd::LongType") long transferMetricsGetTotalTimeNs();
 
 /**
  * Get transfer overhead as percentage of op execution time
@@ -2649,18 +3299,18 @@ public native void transferMetricsReset();
  */
 public native void transferMetricsPrintSummary();
 
-public native void setShapeBuffer(LongType inputShapeData,@Cast("sd::DataType") int dt,LongType bufferToSet,@Cast("char") byte order,int elementWiseStride,@Cast("bool") boolean isEmpty,@Cast("bool") boolean isView);
-public native @Cast("OpaqueConstantShapeBuffer") ConstantShapeBuffer cacheAndStoreShapeBuffer(LongType shapeInfo);
-public native @Cast("OpaqueConstantShapeBuffer") ConstantShapeBuffer shapeBuffer(int rank, LongType shape, LongType strides,
-                                                    @Cast("sd::DataType") int dtype, @Cast("char") byte order, @ByVal LongType ews, @Cast("bool") boolean empty);
-public native @Cast("OpaqueConstantShapeBuffer") ConstantShapeBuffer shapeBufferEx(int rank, LongType shape, LongType strides,
-                                                      @Cast("sd::DataType") int dtype, @Cast("char") byte order, @ByVal LongType ews,
-                                                      @ByVal LongType extras);
+public native void setShapeBuffer(@Cast("sd::LongType*") LongPointer inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") LongPointer bufferToSet,char order,int elementWiseStride,@Cast("bool") boolean isEmpty,@Cast("bool") boolean isView);
+public native @Cast("OpaqueConstantShapeBuffer") org.nd4j.nativeblas.OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(@Cast("sd::LongType*") long[] shapeInfo);
+public native @Cast("OpaqueConstantShapeBuffer") org.nd4j.nativeblas.OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("sd::LongType*") LongPointer shape, @Cast("sd::LongType*") LongPointer strides,
+                                                    @Cast("sd::DataType") int dtype, @Cast("char") byte order, @Cast("sd::LongType") long ews, @Cast("bool") boolean empty);
+public native @Cast("OpaqueConstantShapeBuffer") org.nd4j.nativeblas.OpaqueConstantShapeBuffer shapeBufferEx(int rank, @Cast("sd::LongType*") LongPointer shape, @Cast("sd::LongType*") LongPointer strides,
+                                                      @Cast("sd::DataType") int dtype, char order, @Cast("sd::LongType") long ews,
+                                                      @Cast("sd::LongType") long extras);
 
-public native @Cast("OpaqueDataBuffer*") InteropDataBuffer allocateDataBuffer(@ByVal LongType elements, int dataType, @Cast("bool") boolean allocateBoth);
+public native @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer allocateDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("bool") boolean allocateBoth);
 
 
-public native @Cast("OpaqueLaunchContext") sd::LaunchContext defaultLaunchContext();
+public native @Cast("OpaqueLaunchContext") org.nd4j.nativeblas.OpaqueLaunchContext defaultLaunchContext();
 
 public native @Cast("sd::Pointer") Pointer lcScalarPointer(@Cast("OpaqueLaunchContext*") PointerPointer lc);
 
@@ -2674,11 +3324,15 @@ public native @Cast("sd::Pointer") Pointer lcCopyStream(@Cast("OpaqueLaunchConte
 
 public native @Cast("sd::Pointer") Pointer lcBlasHandle(@Cast("OpaqueLaunchContext*") PointerPointer lc);
 public native long numpyHeaderLengthWordSize(@Cast("sd::Pointer") Pointer shapeBuffer,long wordSize);
-public native long numpyHeaderLength(@Cast("OpaqueDataBuffer*") InteropDataBuffer opaqueDataBuffer,@Cast("sd::Pointer") Pointer shapeBuffer);
+public native long numpyHeaderLength(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer opaqueDataBuffer,@Cast("sd::Pointer") Pointer shapeBuffer);
 public native @Cast("sd::Pointer") Pointer shapeBufferForNumpyHeader(@Cast("sd::Pointer") Pointer npyArray);
-public native @Cast("sd::Pointer") Pointer numpyHeaderForNd4j(@Cast("sd::Pointer") Pointer data, @Cast("sd::Pointer") Pointer shapeBuffer, @ByVal LongType wordSize,
-                                              LongType headerSize);
-public native @Cast("sd::Pointer") Pointer numpyFromNd4j(@Cast("sd::Pointer") Pointer data, @Cast("sd::Pointer") Pointer shapeBuffer, @ByVal LongType wordSize);
+public native @Cast("sd::Pointer") Pointer numpyHeaderForNd4j(@Cast("sd::Pointer") Pointer data, @Cast("sd::Pointer") Pointer shapeBuffer, @Cast("sd::LongType") long wordSize,
+                                              @Cast("sd::LongType*") LongPointer headerSize);
+public native @Cast("sd::Pointer") Pointer numpyHeaderForNd4j(@Cast("sd::Pointer") Pointer data, @Cast("sd::Pointer") Pointer shapeBuffer, @Cast("sd::LongType") long wordSize,
+                                              @Cast("sd::LongType*") LongBuffer headerSize);
+public native @Cast("sd::Pointer") Pointer numpyHeaderForNd4j(@Cast("sd::Pointer") Pointer data, @Cast("sd::Pointer") Pointer shapeBuffer, @Cast("sd::LongType") long wordSize,
+                                              @Cast("sd::LongType*") long[] headerSize);
+public native @Cast("sd::Pointer") Pointer numpyFromNd4j(@Cast("sd::Pointer") Pointer data, @Cast("sd::Pointer") Pointer shapeBuffer, @Cast("sd::LongType") long wordSize);
 public native @Cast("sd::Pointer") Pointer dataPointForNumpyHeader(@Cast("sd::Pointer") Pointer npyArray);
 public native @Cast("sd::Pointer") Pointer dataPointForNumpyStruct(@Cast("sd::Pointer") Pointer npyArrayStruct);
 public native @Cast("sd::Pointer") Pointer dataPointForNumpy(@Cast("sd::Pointer") Pointer npyArray);
@@ -2687,15 +3341,16 @@ public native @Cast("sd::Pointer") Pointer numpyFromFile(@StdString String path)
 public native Pointer mapFromNpzFile(@StdString BytePointer path);
 public native Pointer mapFromNpzFile(@StdString String path);
 public native int getNumNpyArraysInMap(Pointer map);
-public native @Cast("const char*") BytePointer getNpyArrayNameFromMap(Pointer map, int index, @Cast("char*") BytePointer nameBuffer);
+public native @Cast("char*") String getNpyArrayNameFromMap(Pointer map, int index, @Cast("char*") BytePointer nameBuffer);
+public native @Cast("char*") BytePointer getNpyArrayNameFromMap(Pointer map, int index, @Cast("char*") String nameBuffer);
 public native String getNpyArrayNameFromMap(Pointer map, int index, @Cast("char*") ByteBuffer nameBuffer);
-public native @Cast("const char*") BytePointer getNpyArrayNameFromMap(Pointer map, int index, @Cast("char*") byte[] nameBuffer);
+public native @Cast("char*") String getNpyArrayNameFromMap(Pointer map, int index, @Cast("char*") byte[] nameBuffer);
 public native Pointer getNpyArrayFromMap(Pointer map, int index);
 public native int dataTypeFromNpyHeader(Pointer header);
 public native Pointer getNpyArrayData(Pointer npArray);
 public native int getNpyArrayRank(Pointer npArray);
-public native LongType getNpyArrayShape(Pointer npArray);
-public native @Cast("char") byte getNpyArrayOrder(Pointer npArray);
+public native @Cast("sd::LongType*") LongPointer getNpyArrayShape(Pointer npArray);
+public native char getNpyArrayOrder(Pointer npArray);
 public native int getNpyArrayElemSize(Pointer npArray);
 public native void deleteNPArrayStruct(Pointer npArray);
 public native void deleteNPArrayMap(Pointer map);
@@ -2706,13 +3361,13 @@ public native @Cast("sd::Pointer") Pointer shapeBufferForNumpy(@Cast("sd::Pointe
 
 public native @Cast("OpaqueDataBuffer**") @StdVector PointerPointer intermediateResults(org.nd4j.nativeblas.OpaqueContext contextPointer);
 public native @Cast("const sd::LongType**") @StdVector PointerPointer intermediateResultsShapeInfo(org.nd4j.nativeblas.OpaqueContext contextPointer);
-public native void setIntermediateResult(org.nd4j.nativeblas.OpaqueContext contextPointer, int index, @Cast("OpaqueDataBuffer*") InteropDataBuffer buffer,
-                                         @Cast("OpaqueDataBuffer*") InteropDataBuffer shapeInfo, @ByVal LongType dataOffset);
-public native void pushIntermediateResult(org.nd4j.nativeblas.OpaqueContext contextPointer, @Cast("OpaqueDataBuffer*") InteropDataBuffer buffer,
-                                          @Cast("OpaqueDataBuffer*") InteropDataBuffer shapeInfo, @ByVal LongType offset);
-public native @Cast("OpaqueDataBuffer*") InteropDataBuffer intermediateResultDataAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
-public native @Const LongType intermediateResultShapeInfoAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
-public native @Cast("const char*") BytePointer lastErrorMessage();
+public native void setIntermediateResult(org.nd4j.nativeblas.OpaqueContext contextPointer, int index, @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer buffer,
+                                         @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo, @Cast("sd::LongType") long dataOffset);
+public native void pushIntermediateResult(org.nd4j.nativeblas.OpaqueContext contextPointer, @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer buffer,
+                                          @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo, @Cast("sd::LongType") long offset);
+public native @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
+public native @Cast("const sd::LongType*") LongPointer intermediateResultShapeInfoAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
+public native @Cast("char*") String lastErrorMessage();
 public native int lastErrorCode();
 public native void clearLastError();
 public native void triggerLeakCheck();
@@ -2780,7 +3435,7 @@ public native @Cast("bool") boolean isOpExecutionLoggingEnabled();
  *
  * @return C-string containing the log file path (caller must NOT free this)
  */
-public native @Cast("const char*") BytePointer getOpExecutionLogPath();
+public native @Cast("char*") String getOpExecutionLogPath();
 
 /**
  * Get the current operation execution log contents as a string.
@@ -2790,7 +3445,7 @@ public native @Cast("const char*") BytePointer getOpExecutionLogPath();
  * @param fromEnd If true, read from end of file (most recent entries)
  * @return C-string containing the log contents (caller must NOT free this)
  */
-public native @Cast("const char*") BytePointer getOpExecutionLogContents(@Cast("size_t") long maxBytes, @Cast("bool") boolean fromEnd);
+public native @Cast("char*") String getOpExecutionLogContents(@Cast("size_t") long maxBytes, @Cast("bool") boolean fromEnd);
 
 /**
  * Force a flush of the operation execution log to disk.
@@ -2823,7 +3478,7 @@ public native void dumpOpExecutionState(String message);
  *
  * @return C-string containing the log file path (caller must NOT free this)
  */
-public native @Cast("const char*") BytePointer getAllocationLogPath();
+public native @Cast("char*") String getAllocationLogPath();
 
 /**
  * Set the current allocation context (operation name) for lifecycle tracking.
@@ -2853,8 +3508,8 @@ public native void clearAllocationContext();
  * @param array The OpaqueNDArray whose allocation record should be updated
  * @param javaStackTrace The full Java stack trace as a string
  */
-public native void updateAllocationJavaStackTrace(@Cast("OpaqueNDArray") sd::NDArray array, @Cast("const char*") BytePointer javaStackTrace);
-public native void updateAllocationJavaStackTrace(@Cast("OpaqueNDArray") sd::NDArray array, String javaStackTrace);
+public native void updateAllocationJavaStackTrace(@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray array, @Cast("const char*") BytePointer javaStackTrace);
+public native void updateAllocationJavaStackTrace(@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray array, String javaStackTrace);
 
 // ===============================
 // Java-side Lifecycle Recording API
@@ -2869,13 +3524,13 @@ public native void updateAllocationJavaStackTrace(@Cast("OpaqueNDArray") sd::NDA
  * @param dataType Data type of the array
  * @param isView Whether this is a view of another array
  */
-public native void recordJavaNDArrayAllocation(@Cast("OpaqueNDArray") sd::NDArray array, long size, int dataType, @Cast("bool") boolean isView);
+public native void recordJavaNDArrayAllocation(@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray array, long size, int dataType, @Cast("bool") boolean isView);
 
 /**
  * Record an NDArray deallocation from Java side.
  * @param array The OpaqueNDArray being deallocated
  */
-public native void recordJavaNDArrayDeallocation(@Cast("OpaqueNDArray") sd::NDArray array);
+public native void recordJavaNDArrayDeallocation(@Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray array);
 
 /**
  * Record a DataBuffer allocation from Java side.
@@ -2884,13 +3539,13 @@ public native void recordJavaNDArrayDeallocation(@Cast("OpaqueNDArray") sd::NDAr
  * @param dataType Data type of the buffer
  * @param isWorkspace Whether this buffer is from a workspace
  */
-public native void recordJavaDataBufferAllocation(@Cast("OpaqueDataBuffer*") InteropDataBuffer buffer, long size, int dataType, @Cast("bool") boolean isWorkspace);
+public native void recordJavaDataBufferAllocation(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer buffer, long size, int dataType, @Cast("bool") boolean isWorkspace);
 
 /**
  * Record a DataBuffer deallocation from Java side.
  * @param buffer The OpaqueDataBuffer being deallocated
  */
-public native void recordJavaDataBufferDeallocation(@Cast("OpaqueDataBuffer*") InteropDataBuffer buffer);
+public native void recordJavaDataBufferDeallocation(@Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer buffer);
 
 /**
  * Record an OpContext allocation from Java side.
@@ -2967,50 +3622,50 @@ public native @Cast("bool") boolean isShapeCacheShutdownInProgress();
  * Get the total number of cached shape buffer entries.
  * @return Total number of cached shape buffers across all stripes
  */
-public native @ByVal LongType getShapeCachedEntries();
+public native @Cast("sd::LongType") long getShapeCachedEntries();
 
 /**
  * Get the total memory used by cached shape buffers in bytes.
  * @return Total memory used in bytes
  */
-public native @ByVal LongType getShapeCachedBytes();
+public native @Cast("sd::LongType") long getShapeCachedBytes();
 
 /**
  * Get the peak number of shape entries that were cached simultaneously.
  * @return Peak number of cached shape buffers
  */
-public native @ByVal LongType getShapePeakCachedEntries();
+public native @Cast("sd::LongType") long getShapePeakCachedEntries();
 
 /**
  * Get the peak memory usage by cached shape buffers in bytes.
  * @return Peak memory usage in bytes
  */
-public native @ByVal LongType getShapePeakCachedBytes();
+public native @Cast("sd::LongType") long getShapePeakCachedBytes();
 
 /**
  * Get the total number of cached TAD pack entries.
  * @return Total number of cached TAD packs across all stripes
  */
-public native @ByVal LongType getTADCachedEntries();
+public native @Cast("sd::LongType") long getTADCachedEntries();
 
 /**
  * Get the total memory used by cached TAD packs in bytes.
  * This includes both shape_info and offset buffer sizes.
  * @return Total memory used in bytes
  */
-public native @ByVal LongType getTADCachedBytes();
+public native @Cast("sd::LongType") long getTADCachedBytes();
 
 /**
  * Get the peak number of TAD pack entries that were cached simultaneously.
  * @return Peak number of cached TAD packs
  */
-public native @ByVal LongType getTADPeakCachedEntries();
+public native @Cast("sd::LongType") long getTADPeakCachedEntries();
 
 /**
  * Get the peak memory usage by cached TAD packs in bytes.
  * @return Peak memory usage in bytes
  */
-public native @ByVal LongType getTADPeakCachedBytes();
+public native @Cast("sd::LongType") long getTADPeakCachedBytes();
 
 /**
  * Get a string representation of the shape cache for debugging.
@@ -3020,7 +3675,7 @@ public native @ByVal LongType getTADPeakCachedBytes();
  * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
  * @return String representation of the shape cache
  */
-public native @Cast("const char*") BytePointer getShapeCacheString(int maxDepth, int maxEntries);
+public native @Cast("char*") String getShapeCacheString(int maxDepth, int maxEntries);
 
 /**
  * Get a string representation of the TAD cache for debugging.
@@ -3030,7 +3685,7 @@ public native @Cast("const char*") BytePointer getShapeCacheString(int maxDepth,
  * @param maxEntries Maximum number of entries to show (default: 100, -1 for unlimited)
  * @return String representation of the TAD cache
  */
-public native @Cast("const char*") BytePointer getTADCacheString(int maxDepth, int maxEntries);
+public native @Cast("char*") String getTADCacheString(int maxDepth, int maxEntries);
 
 /**
  * Free a string returned by native code.
@@ -3169,19 +3824,19 @@ public native void generateLifecycleLeakReport(String outputPath);
  * @param deviceId The device ID (0 for CPU, 0+ for CUDA devices)
  * @return Number of bytes cached for constants
  */
-public native @ByVal LongType getConstantCacheBytes(int deviceId);
+public native @Cast("sd::LongType") long getConstantCacheBytes(int deviceId);
 
 /**
  * Get TAD cache statistics.
  * @return Number of cached TAD entries
  */
-public native @ByVal LongType getTadCacheEntries();
+public native @Cast("sd::LongType") long getTadCacheEntries();
 
 /**
  * Get TAD cache memory usage in bytes.
  * @return Number of bytes used by TAD cache
  */
-public native @ByVal LongType getTadCacheBytes();
+public native @Cast("sd::LongType") long getTadCacheBytes();
 
 /**
  * Clear constant cache for all devices.
@@ -3247,8 +3902,8 @@ public native void generateTADCacheTemporalLeakReport(String outputPath, int win
  *
  * NOTE: Returns 0 when SD_GCC_FUNCTRACE is not defined.
  */
-public native @ByVal LongType captureNDArrayLeakSnapshot();
-public native @ByVal LongType captureTADCacheLeakSnapshot();
+public native @Cast("sd::LongType") long captureNDArrayLeakSnapshot();
+public native @Cast("sd::LongType") long captureTADCacheLeakSnapshot();
 
 /**
  * Generate differential report comparing two snapshots.
@@ -3259,10 +3914,10 @@ public native @ByVal LongType captureTADCacheLeakSnapshot();
  *
  * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
-public native void generateNDArraySnapshotDiff(@ByVal LongType snapshot1, @ByVal LongType snapshot2, @Cast("const char*") BytePointer outputPath);
-public native void generateNDArraySnapshotDiff(@ByVal LongType snapshot1, @ByVal LongType snapshot2, String outputPath);
-public native void generateTADCacheSnapshotDiff(@ByVal LongType snapshot1, @ByVal LongType snapshot2, @Cast("const char*") BytePointer outputPath);
-public native void generateTADCacheSnapshotDiff(@ByVal LongType snapshot1, @ByVal LongType snapshot2, String outputPath);
+public native void generateNDArraySnapshotDiff(@Cast("sd::LongType") long snapshot1, @Cast("sd::LongType") long snapshot2, @Cast("const char*") BytePointer outputPath);
+public native void generateNDArraySnapshotDiff(@Cast("sd::LongType") long snapshot1, @Cast("sd::LongType") long snapshot2, String outputPath);
+public native void generateTADCacheSnapshotDiff(@Cast("sd::LongType") long snapshot1, @Cast("sd::LongType") long snapshot2, @Cast("const char*") BytePointer outputPath);
+public native void generateTADCacheSnapshotDiff(@Cast("sd::LongType") long snapshot1, @Cast("sd::LongType") long snapshot2, String outputPath);
 
 /**
  * Clear all stored snapshots to free memory.
@@ -3292,9 +3947,9 @@ public native void clearTADCacheSnapshots();
  * NOTE: No-op when SD_GCC_FUNCTRACE is not defined.
  */
 public native void recordDeallocatorServiceSnapshot(
-    @ByVal LongType totalAllocations, @ByVal LongType totalDeallocations,
-    @ByVal LongType totalBytesAllocated, @ByVal LongType totalBytesDeallocated,
-    @ByVal LongType peakLiveCount, @ByVal LongType peakBytes);
+    @Cast("sd::LongType") long totalAllocations, @Cast("sd::LongType") long totalDeallocations,
+    @Cast("sd::LongType") long totalBytesAllocated, @Cast("sd::LongType") long totalBytesDeallocated,
+    @Cast("sd::LongType") long peakLiveCount, @Cast("sd::LongType") long peakBytes);
 
 /**
  * Enables DeallocatorService lifecycle tracking on the C++ side.
@@ -3326,7 +3981,7 @@ public native @Cast("bool") boolean isDeallocatorServiceTrackingEnabled();
  *
  * NOTE: Returns 0 when SD_GCC_FUNCTRACE is not defined.
  */
-public native @ByVal LongType getDeallocatorServiceLiveCount();
+public native @Cast("sd::LongType") long getDeallocatorServiceLiveCount();
 
 /**
  * Gets the current bytes in use from DeallocatorService tracker.
@@ -3335,7 +3990,7 @@ public native @ByVal LongType getDeallocatorServiceLiveCount();
  *
  * NOTE: Returns 0 when SD_GCC_FUNCTRACE is not defined.
  */
-public native @ByVal LongType getDeallocatorServiceBytesInUse();
+public native @Cast("sd::LongType") long getDeallocatorServiceBytesInUse();
 
 // =====================================================
 // Op Timing Tracker API
@@ -3406,7 +4061,7 @@ public native int getOpTimingNumOps();
  * Get total number of op executions tracked.
  * @return total execution count
  */
-public native @ByVal LongType getOpTimingTotalExecutions();
+public native @Cast("sd::LongType") long getOpTimingTotalExecutions();
 
 /**
  * Export timing data to Chrome trace JSON format.
@@ -3433,28 +4088,28 @@ public native int exportOpTimingCSV(String filename);
  * @param initialSize initial allocation in bytes
  * @return opaque workspace pointer
  */
-public native @Cast("OpaqueWorkspace") sd::memory::Workspace createNativeWorkspace(@ByVal LongType initialSize);
+public native @Cast("OpaqueWorkspace") Pointer createNativeWorkspace(@Cast("sd::LongType") long initialSize);
 
 /**
  * Destroy a native workspace and free all memory.
  */
-public native void destroyNativeWorkspace(@Cast("OpaqueWorkspace") sd::memory::Workspace workspace);
+public native void destroyNativeWorkspace(@Cast("OpaqueWorkspace") Pointer workspace);
 
 /**
  * Enter workspace scope - resets offsets for new allocation cycle.
  */
-public native void workspaceScopeIn(@Cast("OpaqueWorkspace") sd::memory::Workspace workspace);
+public native void workspaceScopeIn(@Cast("OpaqueWorkspace") Pointer workspace);
 
 /**
  * Exit workspace scope - resets offsets, making memory reusable.
  */
-public native void workspaceScopeOut(@Cast("OpaqueWorkspace") sd::memory::Workspace workspace);
+public native void workspaceScopeOut(@Cast("OpaqueWorkspace") Pointer workspace);
 
 /**
  * Attach a workspace to an op execution context.
  * All subsequent allocations by ops using this context will come from the workspace.
  */
-public native void attachWorkspaceToContext(org.nd4j.nativeblas.OpaqueContext ctx, @Cast("OpaqueWorkspace") sd::memory::Workspace workspace);
+public native void attachWorkspaceToContext(org.nd4j.nativeblas.OpaqueContext ctx, @Cast("OpaqueWorkspace") Pointer workspace);
 
 /**
  * Detach workspace from context (ops will allocate from heap again).
@@ -3464,12 +4119,12 @@ public native void detachWorkspaceFromContext(org.nd4j.nativeblas.OpaqueContext 
 /**
  * Get the current used size (offset) of the workspace.
  */
-public native @ByVal LongType getWorkspaceCurrentOffset(@Cast("OpaqueWorkspace") sd::memory::Workspace workspace);
+public native @Cast("sd::LongType") long getWorkspaceCurrentOffset(@Cast("OpaqueWorkspace") Pointer workspace);
 
 /**
  * Get the total allocated size of the workspace.
  */
-public native @ByVal LongType getWorkspaceAllocatedSize(@Cast("OpaqueWorkspace") sd::memory::Workspace workspace);
+public native @Cast("sd::LongType") long getWorkspaceAllocatedSize(@Cast("OpaqueWorkspace") Pointer workspace);
 
 // ========================
 // Multi-Backend Workspace API (for multi-device / multi-GPU support)
@@ -3478,41 +4133,41 @@ public native @ByVal LongType getWorkspaceAllocatedSize(@Cast("OpaqueWorkspace")
 /**
  * Create a multi-backend workspace with device awareness.
  */
-public native @Cast("OpaqueMultiBackendWorkspace") sd::memory::MultiBackendWorkspace createNativeMultiBackendWorkspace(
-    @ByVal LongType initialSize, int primaryDeviceType, int primaryDeviceIndex);
+public native @ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer createNativeMultiBackendWorkspace(
+    @Cast("sd::LongType") long initialSize, int primaryDeviceType, int primaryDeviceIndex);
 
 /**
  * Destroy a multi-backend workspace.
  */
-public native void destroyNativeMultiBackendWorkspace(@Cast("OpaqueMultiBackendWorkspace") sd::memory::MultiBackendWorkspace handle);
+public native void destroyNativeMultiBackendWorkspace(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
 
 /**
  * Allocate bytes from multi-backend workspace on primary device.
  */
-public native Pointer nativeMbwAllocateBytes(@Cast("OpaqueMultiBackendWorkspace") sd::memory::MultiBackendWorkspace handle, @ByVal LongType numBytes);
+public native Pointer nativeMbwAllocateBytes(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle, @Cast("sd::LongType") long numBytes);
 
 /**
  * Multi-backend workspace scope management.
  */
-public native void nativeMbwScopeIn(@Cast("OpaqueMultiBackendWorkspace") sd::memory::MultiBackendWorkspace handle);
-public native void nativeMbwScopeOut(@Cast("OpaqueMultiBackendWorkspace") sd::memory::MultiBackendWorkspace handle);
+public native void nativeMbwScopeIn(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
+public native void nativeMbwScopeOut(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
 
 /**
  * Transfer data between devices in multi-backend workspace.
  */
-public native void nativeMbwTransferTo(@Cast("OpaqueMultiBackendWorkspace") sd::memory::MultiBackendWorkspace handle,
+public native void nativeMbwTransferTo(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle,
     int srcDeviceType, int srcDeviceIndex, int dstDeviceType, int dstDeviceIndex);
 
 /**
  * Get coherence state for a device.
  */
-public native int nativeMbwGetCoherenceState(@Cast("OpaqueMultiBackendWorkspace") sd::memory::MultiBackendWorkspace handle,
+public native int nativeMbwGetCoherenceState(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle,
     int deviceType, int deviceIndex);
 
 /**
  * Get total allocated size across all devices.
  */
-public native @ByVal LongType nativeMbwGetTotalAllocatedSize(@Cast("OpaqueMultiBackendWorkspace") sd::memory::MultiBackendWorkspace handle);
+public native @Cast("sd::LongType") long nativeMbwGetTotalAllocatedSize(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
 
 // DSP subsystem declarations are in dsp/NativeOpsDsp.h — parsed separately by JavaCPP
 // to avoid recompilation blast radius. ALL new DSP/plan/graph/triton/NCCL functions
@@ -3577,7 +4232,7 @@ public native @ByVal LongType nativeMbwGetTotalAllocatedSize(@Cast("OpaqueMultiB
  * @param planSize  Size of the serialized plan in bytes
  * @return Opaque handle to the compiled plan, or nullptr on failure
  */
-public native @Cast("sd::Pointer") Pointer compileDynamicShapePlan(@Cast("sd::Pointer") Pointer serializedPlan, @ByVal LongType planSize);
+public native @Cast("sd::Pointer") Pointer compileDynamicShapePlan(@Cast("sd::Pointer") Pointer serializedPlan, @Cast("sd::LongType") long planSize);
 
 /**
  * Execute a compiled native plan.
@@ -3650,11 +4305,11 @@ public native void clearNativePlanCacheHandle(@Cast("sd::Pointer") Pointer cache
  */
 public native @Cast("sd::Pointer") Pointer dispatchNativePlan(@Cast("sd::Pointer") Pointer cacheHandle,
                                              @Cast("sd::Pointer") Pointer planBytes,
-                                             @ByVal LongType planBytesLen,
+                                             @Cast("sd::LongType") long planBytesLen,
                                              @Cast("sd::Pointer") Pointer outputNames,
-                                             @ByVal LongType numOutputs,
+                                             @Cast("sd::LongType") long numOutputs,
                                              @Cast("sd::Pointer") Pointer phShapeInfoPtrs,
-                                             @ByVal LongType numPlaceholders,
+                                             @Cast("sd::LongType") long numPlaceholders,
                                              int graphExecutionMode,
                                              int newBorrower);
 
@@ -3738,7 +4393,7 @@ public native int getPlanPhase(@Cast("sd::Pointer") Pointer planHandle);
  * The result is a thread-local key/value payload consumed by the Java
  * DspLifecycleSnapshot value type. Returns "valid=false" for an invalid handle.
  */
-public native @Cast("const char*") BytePointer getPlanLifecycleSnapshot(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("char*") String getPlanLifecycleSnapshot(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Get the execution count for a segment (number of times executed).
@@ -3856,9 +4511,9 @@ public native @Cast("sd::Pointer") Pointer loadModelFromFileWithOptions(
  * @return Borrowed NDArray pointer, or nullptr when the model does not own it.
  *         The pointer is valid only while modelHandle remains loaded.
  */
-public native @Cast("OpaqueNDArray") sd::NDArray getLoadedModelVariable(
+public native @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray getLoadedModelVariable(
     @Cast("sd::Pointer") Pointer modelHandle, @Cast("const char*") BytePointer variableName);
-public native @Cast("OpaqueNDArray") sd::NDArray getLoadedModelVariable(
+public native @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray getLoadedModelVariable(
     @Cast("sd::Pointer") Pointer modelHandle, String variableName);
 
 /**
@@ -3871,10 +4526,10 @@ public native @Cast("OpaqueNDArray") sd::NDArray getLoadedModelVariable(
  */
 public native int getLoadedModelVariableShape(
     @Cast("sd::Pointer") Pointer modelHandle, @Cast("const char*") BytePointer variableName,
-    LongType dimensions, int maxRank);
+    @Cast("sd::LongType*") LongPointer dimensions, int maxRank);
 public native int getLoadedModelVariableShape(
     @Cast("sd::Pointer") Pointer modelHandle, String variableName,
-    LongType dimensions, int maxRank);
+    @Cast("sd::LongType*") LongPointer dimensions, int maxRank);
 
 /**
  * Compile a loaded model into a native execution plan.
@@ -3931,7 +4586,7 @@ public native int getPlanNumExternalInputs(@Cast("sd::Pointer") Pointer planHand
  * @param index       External input index in [0, getPlanNumExternalInputs())
  * @return Input name (valid for the plan's lifetime), or nullptr if invalid
  */
-public native @Cast("const char*") BytePointer getPlanExternalInputName(@Cast("sd::Pointer") Pointer planHandle, int index);
+public native @Cast("char*") String getPlanExternalInputName(@Cast("sd::Pointer") Pointer planHandle, int index);
 
 /**
  * Get the plan's current GraphExecutionMode (the mode in force after
@@ -4069,12 +4724,12 @@ public native void setPlanTraceEnabled(@Cast("sd::Pointer") Pointer planHandle, 
  * @param slotIndices      Array of output slot indices to pre-allocate
  * @param maxSizes         Array of maximum sizes (in number of elements, not bytes)
  */
-public native void setPlanOutputSlotMaxSizes(@Cast("sd::Pointer") Pointer planHandle, @ByVal LongType numSlots,
-                                               @Const IntPointer slotIndices, @Const LongType maxSizes);
-public native void setPlanOutputSlotMaxSizes(@Cast("sd::Pointer") Pointer planHandle, @ByVal LongType numSlots,
-                                               @Const IntBuffer slotIndices, @Const LongType maxSizes);
-public native void setPlanOutputSlotMaxSizes(@Cast("sd::Pointer") Pointer planHandle, @ByVal LongType numSlots,
-                                               @Const int[] slotIndices, @Const LongType maxSizes);
+public native void setPlanOutputSlotMaxSizes(@Cast("sd::Pointer") Pointer planHandle, @Cast("sd::LongType") long numSlots,
+                                               @Const IntPointer slotIndices, @Cast("const sd::LongType*") LongPointer maxSizes);
+public native void setPlanOutputSlotMaxSizes(@Cast("sd::Pointer") Pointer planHandle, @Cast("sd::LongType") long numSlots,
+                                               @Const IntBuffer slotIndices, @Cast("const sd::LongType*") LongPointer maxSizes);
+public native void setPlanOutputSlotMaxSizes(@Cast("sd::Pointer") Pointer planHandle, @Cast("sd::LongType") long numSlots,
+                                               @Const int[] slotIndices, @Cast("const sd::LongType*") LongPointer maxSizes);
 
 /**
  * Configure plan-managed KV scatter for CUDA-graph-compatible decode loops.
@@ -4097,44 +4752,44 @@ public native void setPlanOutputSlotMaxSizes(@Cast("sd::Pointer") Pointer planHa
 public native void configurePlanKvScatter(@Cast("sd::Pointer") Pointer planHandle,
                                            @Const IntPointer presentSlotIndices,
                                            @Cast("const sd::Pointer*") PointerPointer staticKvBufferPtrs,
-                                           @ByVal LongType numPairs,
+                                           @Cast("sd::LongType") long numPairs,
                                            int dtypeInt,
-                                           @ByVal LongType heads,
-                                           @ByVal LongType srcSeqLen,
-                                           @ByVal LongType dstSeqLen,
-                                           @ByVal LongType dim,
-                                           LongType kvPositionPtr);
+                                           @Cast("sd::LongType") long heads,
+                                           @Cast("sd::LongType") long srcSeqLen,
+                                           @Cast("sd::LongType") long dstSeqLen,
+                                           @Cast("sd::LongType") long dim,
+                                           @Cast("sd::LongType*") LongPointer kvPositionPtr);
 public native void configurePlanKvScatter(@Cast("sd::Pointer") Pointer planHandle,
                                            @Const IntBuffer presentSlotIndices,
                                            @Cast("const sd::Pointer*") PointerPointer staticKvBufferPtrs,
-                                           @ByVal LongType numPairs,
+                                           @Cast("sd::LongType") long numPairs,
                                            int dtypeInt,
-                                           @ByVal LongType heads,
-                                           @ByVal LongType srcSeqLen,
-                                           @ByVal LongType dstSeqLen,
-                                           @ByVal LongType dim,
-                                           LongType kvPositionPtr);
+                                           @Cast("sd::LongType") long heads,
+                                           @Cast("sd::LongType") long srcSeqLen,
+                                           @Cast("sd::LongType") long dstSeqLen,
+                                           @Cast("sd::LongType") long dim,
+                                           @Cast("sd::LongType*") LongPointer kvPositionPtr);
 public native void configurePlanKvScatter(@Cast("sd::Pointer") Pointer planHandle,
                                            @Const int[] presentSlotIndices,
                                            @Cast("const sd::Pointer*") PointerPointer staticKvBufferPtrs,
-                                           @ByVal LongType numPairs,
+                                           @Cast("sd::LongType") long numPairs,
                                            int dtypeInt,
-                                           @ByVal LongType heads,
-                                           @ByVal LongType srcSeqLen,
-                                           @ByVal LongType dstSeqLen,
-                                           @ByVal LongType dim,
-                                           LongType kvPositionPtr);
+                                           @Cast("sd::LongType") long heads,
+                                           @Cast("sd::LongType") long srcSeqLen,
+                                           @Cast("sd::LongType") long dstSeqLen,
+                                           @Cast("sd::LongType") long dim,
+                                           @Cast("sd::LongType*") LongPointer kvPositionPtr);
 
 /**
  * Reset the KV cache position managed by the plan (e.g., after prefill).
  */
-public native void resetPlanKvCachePosition(@Cast("sd::Pointer") Pointer planHandle, @ByVal LongType _position);
+public native void resetPlanKvCachePosition(@Cast("sd::Pointer") Pointer planHandle, @Cast("sd::LongType") long _position);
 
 /**
  * Get the current KV cache position managed by the plan.
  * Returns -1 if KV scatter is not configured.
  */
-public native @ByVal LongType getPlanKvCachePosition(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("sd::LongType") long getPlanKvCachePosition(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Get the number of graph segments in a compiled plan.
@@ -4184,7 +4839,7 @@ public native int getPlanNumHostOnlyOps(@Cast("sd::Pointer") Pointer planHandle)
  * @param planHandle  Handle from compileDynamicShapePlan()
  * @return Pipe-delimited string of op names (thread-local static storage)
  */
-public native @Cast("const char*") BytePointer getPlanHostOnlyOpNames(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("char*") String getPlanHostOnlyOpNames(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Print the full CUDA graph contents and capture audit to stderr.
@@ -4200,7 +4855,7 @@ public native void printPlanCapturedGraphDebug(@Cast("sd::Pointer") Pointer plan
  * @param planHandle  Handle from compileDynamicShapePlan()
  * @return Thread-local static buffer with stats string
  */
-public native @Cast("const char*") BytePointer getPlanCaptureStats(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("char*") String getPlanCaptureStats(@Cast("sd::Pointer") Pointer planHandle);
 
 // =============================================================================
 // Per-Segment Replay State
@@ -4220,13 +4875,13 @@ public native int getPlanSegmentReplayCount(@Cast("sd::Pointer") Pointer planHan
 /**
  * Get backend name for a specific segment ("CUDA", "CPU", or "").
  */
-public native @Cast("const char*") BytePointer getPlanSegmentBackendName(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
+public native @Cast("char*") String getPlanSegmentBackendName(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
 
 /**
  * Get statistics JSON for a specific segment.
  * Returns: {"numOperations":N,"replayCount":N,"backendName":"..."}
  */
-public native @Cast("const char*") BytePointer getPlanSegmentStatisticsJson(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
+public native @Cast("char*") String getPlanSegmentStatisticsJson(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
 
 /**
  * Get total execution count for a specific segment.
@@ -4280,7 +4935,7 @@ public native int getPlanSlotState(@Cast("sd::Pointer") Pointer planHandle, int 
  * Get the op name for a specific slot. Returns "" if invalid.
  * Caller must NOT free the returned string (static lifetime).
  */
-public native @Cast("const char*") BytePointer getPlanSlotOpName(@Cast("sd::Pointer") Pointer planHandle, int slotIdx);
+public native @Cast("char*") String getPlanSlotOpName(@Cast("sd::Pointer") Pointer planHandle, int slotIdx);
 
 /**
  * Get per-slot flags as a bitmask:
@@ -4381,7 +5036,7 @@ public native int getPlanExecuteCount(@Cast("sd::Pointer") Pointer planHandle);
  * Get tracked external input pointer addresses for a segment as JSON.
  * Returns: [{"inputIdx":0,"capturedAddr":"0x...","currentAddr":"0x...","match":true}, ...]
  */
-public native @Cast("const char*") BytePointer getPlanSegmentTrackedPointers(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
+public native @Cast("char*") String getPlanSegmentTrackedPointers(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
 
 /**
  * Get number of capture buffers for a segment.
@@ -4391,7 +5046,7 @@ public native int getPlanSegmentNumCaptureBuffers(@Cast("sd::Pointer") Pointer p
 /**
  * Get capture buffer descriptors as JSON for a segment.
  */
-public native @Cast("const char*") BytePointer getPlanSegmentCaptureBuffersJson(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
+public native @Cast("char*") String getPlanSegmentCaptureBuffersJson(@Cast("sd::Pointer") Pointer planHandle, int segmentIdx);
 
 /**
  * Get number of pinned host pointers held by segment's replay handle.
@@ -4425,12 +5080,12 @@ public native void clearReplayCache();
 /**
  * Get replay cache directory path.
  */
-public native @Cast("const char*") BytePointer getReplayCacheDir();
+public native @Cast("char*") String getReplayCacheDir();
 
 /**
  * Get per-device replay cache statistics as JSON.
  */
-public native @Cast("const char*") BytePointer getReplayCacheDeviceStatsJson();
+public native @Cast("char*") String getReplayCacheDeviceStatsJson();
 
 /**
  * Get replay cache entry count for a specific device.
@@ -4460,7 +5115,7 @@ public native int loadReplayCacheForDevice(@Cast("sd::Pointer") Pointer planHand
 /**
  * Get all cached device keys as JSON.
  */
-public native @Cast("const char*") BytePointer getReplayCachedDevicesJson();
+public native @Cast("char*") String getReplayCachedDevicesJson();
 
 // =============================================================================
 // Backend Plan Management
@@ -4469,17 +5124,17 @@ public native @Cast("const char*") BytePointer getReplayCachedDevicesJson();
 /**
  * Get available backends as JSON array.
  */
-public native @Cast("const char*") BytePointer getPlanAvailableBackends(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("char*") String getPlanAvailableBackends(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Get which backend compiled a specific segment.
  */
-public native @Cast("const char*") BytePointer getPlanSegmentCompiledBackend(@Cast("sd::Pointer") Pointer planHandle, int segIdx);
+public native @Cast("char*") String getPlanSegmentCompiledBackend(@Cast("sd::Pointer") Pointer planHandle, int segIdx);
 
 /**
  * Get compilation audit JSON for a segment.
  */
-public native @Cast("const char*") BytePointer getPlanSegmentCompilationAudit(@Cast("sd::Pointer") Pointer planHandle, int segIdx);
+public native @Cast("char*") String getPlanSegmentCompilationAudit(@Cast("sd::Pointer") Pointer planHandle, int segIdx);
 
 /**
  * Invalidate compiled cache for a specific segment.
@@ -4495,7 +5150,7 @@ public native void invalidatePlanBackendCaches(@Cast("sd::Pointer") Pointer plan
 /**
  * Get aggregated cache stats JSON for all backends.
  */
-public native @Cast("const char*") BytePointer getPlanBackendCacheStats(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("char*") String getPlanBackendCacheStats(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Override backend selection for a segment.
@@ -4551,7 +5206,7 @@ public native @Cast("bool") boolean debugDumpPlanCudaGraph(@Cast("sd::Pointer") 
  * @param planHandle  Handle from compileDynamicShapePlan()
  * @return JSON string, or empty string if no graph data
  */
-public native @Cast("const char*") BytePointer getPlanCudaGraphChromeTraceJson(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("char*") String getPlanCudaGraphChromeTraceJson(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Clear the CUDA graph execution timeline history.
@@ -4574,13 +5229,13 @@ public native @Cast("bool") boolean isTritonAvailable();
  * Get the total number of Triton kernel launches since the backend was initialized.
  * Returns 0 if Triton is not available.
  */
-public native @ByVal LongType getTritonKernelLaunchCount();
+public native @Cast("sd::LongType") long getTritonKernelLaunchCount();
 
 /**
  * Get the total number of Triton PTX cache hits since the backend was initialized.
  * Returns 0 if Triton is not available.
  */
-public native @ByVal LongType getTritonCacheHitCount();
+public native @Cast("sd::LongType") long getTritonCacheHitCount();
 
 /**
  * Reset all Triton execution counters to zero.
@@ -4662,21 +5317,21 @@ public native void dspDiagSetJsonPath(String path);
  * Record a diagnostic event from Java.
  */
 public native void dspDiagRecordJavaEvent(int category, int slotId, int segmentId,
-                                            @Cast("const char*") BytePointer opName, @ByVal LongType timingUs,
+                                            @Cast("const char*") BytePointer opName, @Cast("sd::LongType") long timingUs,
                                             @Cast("const char*") BytePointer message);
 public native void dspDiagRecordJavaEvent(int category, int slotId, int segmentId,
-                                            String opName, @ByVal LongType timingUs,
+                                            String opName, @Cast("sd::LongType") long timingUs,
                                             String message);
 
 /**
  * Get human-readable plan execution report.
  */
-public native @Cast("const char*") BytePointer dspDiagGetPlanReport();
+public native @Cast("char*") String dspDiagGetPlanReport();
 
 /**
  * Get JSON-formatted diagnostic report.
  */
-public native @Cast("const char*") BytePointer dspDiagGetJsonReport();
+public native @Cast("char*") String dspDiagGetJsonReport();
 
 /** Persist the current diagnostic ring to the configured native JSON path. */
 public native void dspDiagFlushJson();
@@ -4744,7 +5399,7 @@ public native @Cast("bool") boolean getDspFreezeRecompile();
 /**
  * Get segments summary as JSON.
  */
-public native @Cast("const char*") BytePointer getPlanSegmentsSummaryJson(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("char*") String getPlanSegmentsSummaryJson(@Cast("sd::Pointer") Pointer planHandle);
 
 // =============================================================================
 // Staging Buffer Introspection
@@ -4774,14 +5429,14 @@ public native long getPlanLastExternalInputAddress(@Cast("sd::Pointer") Pointer 
  * Get the staging buffer as an OpaqueNDArray for ext[extIdx].
  * Returns null if no staging buffer exists.
  */
-public native @Cast("OpaqueNDArray") sd::NDArray getPlanStagingBufferArray(@Cast("sd::Pointer") Pointer planHandle, int extIdx);
+public native @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray getPlanStagingBufferArray(@Cast("sd::Pointer") Pointer planHandle, int extIdx);
 
 /**
  * Atomically copy staging buffer content for ext[extIdx] into dstBuffer.
  * This avoids the stale-pointer race of extracting specialBuffer() then copying separately.
  * Returns: 0 = success, -1 = no plan, -2 = no staging buffer, -3 = copy failed.
  */
-public native int copyPlanStagingToBuffer(@Cast("sd::Pointer") Pointer planHandle, int extIdx, @Cast("OpaqueDataBuffer*") InteropDataBuffer dstBuffer);
+public native int copyPlanStagingToBuffer(@Cast("sd::Pointer") Pointer planHandle, int extIdx, @Cast("OpaqueDataBuffer*") org.nd4j.nativeblas.OpaqueDataBuffer dstBuffer);
 
 // =============================================================================
 // Slot Output Introspection
@@ -4790,7 +5445,7 @@ public native int copyPlanStagingToBuffer(@Cast("sd::Pointer") Pointer planHandl
 /**
  * Get a slot's output array as OpaqueNDArray.
  */
-public native @Cast("OpaqueNDArray") sd::NDArray getPlanSlotOutputArray(@Cast("sd::Pointer") Pointer planHandle, int slotIdx);
+public native @Cast("OpaqueNDArray") @ByVal org.nd4j.nativeblas.OpaqueNDArray getPlanSlotOutputArray(@Cast("sd::Pointer") Pointer planHandle, int slotIdx);
 
 /**
  * Get the total number of output slots.
@@ -4910,7 +5565,7 @@ public native void ncclCommDestroy(@Cast("sd::Pointer") Pointer commHandle);
  */
 public native int ncclDoAllReduce(@Cast("sd::Pointer") Pointer commHandle,
                                    @Cast("sd::Pointer") Pointer sendBuf, @Cast("sd::Pointer") Pointer recvBuf,
-                                   @ByVal LongType numElements, int dataType,
+                                   @Cast("sd::LongType") long numElements, int dataType,
                                    int reduceOp, @Cast("sd::Pointer") Pointer stream);
 
 /**
@@ -4926,7 +5581,7 @@ public native int ncclDoAllReduce(@Cast("sd::Pointer") Pointer commHandle,
  */
 public native int ncclDoAllGather(@Cast("sd::Pointer") Pointer commHandle,
                                    @Cast("sd::Pointer") Pointer sendBuf, @Cast("sd::Pointer") Pointer recvBuf,
-                                   @ByVal LongType sendCount, int dataType,
+                                   @Cast("sd::LongType") long sendCount, int dataType,
                                    @Cast("sd::Pointer") Pointer stream);
 
 /**
@@ -4943,7 +5598,7 @@ public native int ncclDoAllGather(@Cast("sd::Pointer") Pointer commHandle,
  */
 public native int ncclDoReduceScatter(@Cast("sd::Pointer") Pointer commHandle,
                                        @Cast("sd::Pointer") Pointer sendBuf, @Cast("sd::Pointer") Pointer recvBuf,
-                                       @ByVal LongType recvCount, int dataType,
+                                       @Cast("sd::LongType") long recvCount, int dataType,
                                        int reduceOp, @Cast("sd::Pointer") Pointer stream);
 
 /**
@@ -4958,7 +5613,7 @@ public native int ncclDoReduceScatter(@Cast("sd::Pointer") Pointer commHandle,
  * @return 0 on success, non-zero on failure
  */
 public native int ncclDoSend(@Cast("sd::Pointer") Pointer commHandle,
-                              @Cast("sd::Pointer") Pointer sendBuf, @ByVal LongType numElements,
+                              @Cast("sd::Pointer") Pointer sendBuf, @Cast("sd::LongType") long numElements,
                               int dataType, int peerRank, @Cast("sd::Pointer") Pointer stream);
 
 /**
@@ -4973,7 +5628,7 @@ public native int ncclDoSend(@Cast("sd::Pointer") Pointer commHandle,
  * @return 0 on success, non-zero on failure
  */
 public native int ncclDoRecv(@Cast("sd::Pointer") Pointer commHandle,
-                              @Cast("sd::Pointer") Pointer recvBuf, @ByVal LongType numElements,
+                              @Cast("sd::Pointer") Pointer recvBuf, @Cast("sd::LongType") long numElements,
                               int dataType, int peerRank, @Cast("sd::Pointer") Pointer stream);
 
 /**
@@ -5017,7 +5672,7 @@ public native @Cast("bool") boolean getPlanBufferColoringApplied(@Cast("sd::Poin
 public native int getPlanBufferColoringNumColors(@Cast("sd::Pointer") Pointer planHandle);
 
 /** Estimated bytes saved by coloring. */
-public native @ByVal LongType getPlanBufferColoringBytesSaved(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("sd::LongType") long getPlanBufferColoringBytesSaved(@Cast("sd::Pointer") Pointer planHandle);
 
 /** Color assigned to a specific slot (-1 if uncolored). */
 public native int getPlanSlotColor(@Cast("sd::Pointer") Pointer planHandle, int slotIdx);
@@ -5027,16 +5682,16 @@ public native int getPlanSlotColor(@Cast("sd::Pointer") Pointer planHandle, int 
 // ========================
 
 /** Total bytes currently pooled on the given device. */
-public native @ByVal LongType getBufferPoolPooledBytes(int deviceId);
+public native @Cast("sd::LongType") long getBufferPoolPooledBytes(int deviceId);
 
 /** Number of buffers currently in the pool on the given device. */
 public native int getBufferPoolPooledCount(int deviceId);
 
 /** Lifetime acquire count on the given device. */
-public native @ByVal LongType getBufferPoolTotalAcquired(int deviceId);
+public native @Cast("sd::LongType") long getBufferPoolTotalAcquired(int deviceId);
 
 /** Lifetime reuse count (acquires satisfied from pool) on the given device. */
-public native @ByVal LongType getBufferPoolTotalReused(int deviceId);
+public native @Cast("sd::LongType") long getBufferPoolTotalReused(int deviceId);
 
 // ========================
 // Sync-free Buffer Fingerprint Ring
@@ -5054,7 +5709,7 @@ public native void drainPlanFingerprintRing(@Cast("sd::Pointer") Pointer planHan
  * buffers. Call after drainPlanFingerprintRing(). Returns "null" if not
  * enabled or not drained.
  */
-public native @Cast("const char*") BytePointer getPlanFingerprintJson(@Cast("sd::Pointer") Pointer planHandle);
+public native @Cast("char*") String getPlanFingerprintJson(@Cast("sd::Pointer") Pointer planHandle);
 
 // #endif // NATIVEOPSDSP_H
 
@@ -5103,14 +5758,14 @@ public native @Cast("const char*") BytePointer getPlanFingerprintJson(@Cast("sd:
   public ExternalWorkspace() { super((Pointer)null); allocate(); }
   private native void allocate();
 
-  public ExternalWorkspace(@Cast("sd::Pointer") Pointer ptrH, @ByVal LongType sizeH, @Cast("sd::Pointer") Pointer ptrD, @ByVal LongType sizeD) { super((Pointer)null); allocate(ptrH, sizeH, ptrD, sizeD); }
-  private native void allocate(@Cast("sd::Pointer") Pointer ptrH, @ByVal LongType sizeH, @Cast("sd::Pointer") Pointer ptrD, @ByVal LongType sizeD);
+  public ExternalWorkspace(@Cast("sd::Pointer") Pointer ptrH, @Cast("sd::LongType") long sizeH, @Cast("sd::Pointer") Pointer ptrD, @Cast("sd::LongType") long sizeD) { super((Pointer)null); allocate(ptrH, sizeH, ptrD, sizeD); }
+  private native void allocate(@Cast("sd::Pointer") Pointer ptrH, @Cast("sd::LongType") long sizeH, @Cast("sd::Pointer") Pointer ptrD, @Cast("sd::LongType") long sizeD);
 
   public native Pointer pointerHost();
   public native Pointer pointerDevice();
 
-  public native @ByVal LongType sizeHost();
-  public native @ByVal LongType sizeDevice();
+  public native @Cast("sd::LongType") long sizeHost();
+  public native @Cast("sd::LongType") long sizeDevice();
 }
   // namespace memory
   // namespace sd
@@ -5179,39 +5834,39 @@ public native @Cast("const char*") BytePointer getPlanFingerprintJson(@Cast("sd:
     }
 
   // Size of canary region appended after workspace host buffer (debug mode only)
-  @MemberGetter public static native @Const @ByRef LongType CANARY_SIZE();
+  @MemberGetter public static native @Cast("const sd::LongType") long CANARY_SIZE();
   @MemberGetter public static native @Cast("const unsigned char") byte CANARY_BYTE();
   public static final byte CANARY_BYTE = CANARY_BYTE();
   public Workspace(ExternalWorkspace external) { super((Pointer)null); allocate(external); }
   private native void allocate(ExternalWorkspace external);
-  public Workspace(@ByVal(nullValue = "sd::LongType(0L)") LongType initialSize, @ByVal(nullValue = "sd::LongType(0L)") LongType secondaryBytes,
+  public Workspace(@Cast("sd::LongType") long initialSize/*=0L*/, @Cast("sd::LongType") long secondaryBytes/*=0L*/,
               @Cast("bool") boolean secondaryUsePlainMalloc/*=false*/) { super((Pointer)null); allocate(initialSize, secondaryBytes, secondaryUsePlainMalloc); }
-  private native void allocate(@ByVal(nullValue = "sd::LongType(0L)") LongType initialSize, @ByVal(nullValue = "sd::LongType(0L)") LongType secondaryBytes,
+  private native void allocate(@Cast("sd::LongType") long initialSize/*=0L*/, @Cast("sd::LongType") long secondaryBytes/*=0L*/,
               @Cast("bool") boolean secondaryUsePlainMalloc/*=false*/);
   public Workspace() { super((Pointer)null); allocate(); }
   private native void allocate();
 
-  public native @ByVal LongType getAllocatedSize();
-  public native @ByVal LongType getCurrentSize();
-  public native @ByVal LongType getCurrentOffset();
-  public native @ByVal LongType getSpilledSize();
-  public native @ByVal LongType getUsedSize();
+  public native @Cast("sd::LongType") long getAllocatedSize();
+  public native @Cast("sd::LongType") long getCurrentSize();
+  public native @Cast("sd::LongType") long getCurrentOffset();
+  public native @Cast("sd::LongType") long getSpilledSize();
+  public native @Cast("sd::LongType") long getUsedSize();
 
-  public native @ByVal LongType getAllocatedSecondarySize();
-  public native @ByVal LongType getCurrentSecondarySize();
-  public native @ByVal LongType getCurrentSecondaryOffset();
-  public native @ByVal LongType getSpilledSecondarySize();
-  public native @ByVal LongType getUsedSecondarySize();
+  public native @Cast("sd::LongType") long getAllocatedSecondarySize();
+  public native @Cast("sd::LongType") long getCurrentSecondarySize();
+  public native @Cast("sd::LongType") long getCurrentSecondaryOffset();
+  public native @Cast("sd::LongType") long getSpilledSecondarySize();
+  public native @Cast("sd::LongType") long getUsedSecondarySize();
 
-  public native void expandBy(@ByVal LongType primaryBytes, @ByVal(nullValue = "sd::LongType(0L)") LongType secondaryBytes);
-  public native void expandBy(@ByVal LongType primaryBytes);
-  public native void expandTo(@ByVal LongType primaryBytes, @ByVal(nullValue = "sd::LongType(0L)") LongType secondaryBytes);
-  public native void expandTo(@ByVal LongType primaryBytes);
+  public native void expandBy(@Cast("sd::LongType") long primaryBytes, @Cast("sd::LongType") long secondaryBytes/*=0L*/);
+  public native void expandBy(@Cast("sd::LongType") long primaryBytes);
+  public native void expandTo(@Cast("sd::LongType") long primaryBytes, @Cast("sd::LongType") long secondaryBytes/*=0L*/);
+  public native void expandTo(@Cast("sd::LongType") long primaryBytes);
 
   //            bool resizeSupported();
 
-  public native Pointer allocateBytes(@ByVal LongType numBytes);
-  public native Pointer allocateBytes(@Cast("sd::memory::MemoryType") int type, @ByVal LongType numBytes);
+  public native Pointer allocateBytes(@Cast("sd::LongType") long numBytes);
+  public native Pointer allocateBytes(@Cast("sd::memory::MemoryType") int type, @Cast("sd::LongType") long numBytes);
 
   public native void scopeIn();
   public native void scopeOut();
@@ -5228,7 +5883,7 @@ public native @Cast("const char*") BytePointer getPlanFingerprintJson(@Cast("sd:
    * Returns the byte offset of the first corrupted byte, or -1 if canary is intact.
    * Only checks if canary was previously enabled.
    */
-  public native @ByVal LongType checkCanary();
+  public native @Cast("sd::LongType") long checkCanary();
 
   /**
    * Get the raw host (secondary) memory pointer for this workspace.
@@ -5304,13 +5959,13 @@ public native @Cast("const char*") BytePointer getPlanFingerprintJson(@Cast("sd:
   public native @Cast("bool") boolean isPoint();
   public native @Cast("bool") boolean isInterval();
 
-  public native @StdVector LongType getIndices();
-  public native @ByVal LongType stride();
+  public native @Cast("sd::LongType*") @StdVector LongPointer getIndices();
+  public native @Cast("sd::LongType") long stride();
 
   public native NDIndex all();
-  public native NDIndex point(@ByVal LongType pt);
-  public native NDIndex interval(@ByVal LongType start, @ByVal LongType end, @ByVal(nullValue = "LongType(1)") LongType stride);
-  public native NDIndex interval(@ByVal LongType start, @ByVal LongType end);
+  public native NDIndex point(@Cast("sd::LongType") long pt);
+  public native NDIndex interval(@Cast("sd::LongType") long start, @Cast("sd::LongType") long end, @Cast("sd::LongType") long stride/*=1*/);
+  public native NDIndex interval(@Cast("sd::LongType") long start, @Cast("sd::LongType") long end);
 }
 
 @Namespace("sd") public static class NDIndexAll extends NDIndex {
@@ -5337,8 +5992,8 @@ public native @Cast("const char*") BytePointer getPlanFingerprintJson(@Cast("sd:
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
     public NDIndexPoint(Pointer p) { super(p); }
 
-  public NDIndexPoint(@ByVal LongType point) { super((Pointer)null); allocate(point); }
-  private native void allocate(@ByVal LongType point);
+  public NDIndexPoint(@Cast("sd::LongType") long point) { super((Pointer)null); allocate(point); }
+  private native void allocate(@Cast("sd::LongType") long point);
   public native @Cast("bool") boolean isInterval();
 }
 
@@ -5347,10 +6002,10 @@ public native @Cast("const char*") BytePointer getPlanFingerprintJson(@Cast("sd:
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
     public NDIndexInterval(Pointer p) { super(p); }
 
-  public NDIndexInterval(@ByVal LongType start, @ByVal LongType end, @ByVal(nullValue = "LongType(1)") LongType stride) { super((Pointer)null); allocate(start, end, stride); }
-  private native void allocate(@ByVal LongType start, @ByVal LongType end, @ByVal(nullValue = "LongType(1)") LongType stride);
-  public NDIndexInterval(@ByVal LongType start, @ByVal LongType end) { super((Pointer)null); allocate(start, end); }
-  private native void allocate(@ByVal LongType start, @ByVal LongType end);
+  public NDIndexInterval(@Cast("sd::LongType") long start, @Cast("sd::LongType") long end, @Cast("sd::LongType") long stride/*=1*/) { super((Pointer)null); allocate(start, end, stride); }
+  private native void allocate(@Cast("sd::LongType") long start, @Cast("sd::LongType") long end, @Cast("sd::LongType") long stride/*=1*/);
+  public NDIndexInterval(@Cast("sd::LongType") long start, @Cast("sd::LongType") long end) { super((Pointer)null); allocate(start, end); }
+  private native void allocate(@Cast("sd::LongType") long start, @Cast("sd::LongType") long end);
   public native @Cast("bool") boolean isInterval();
 }
   // namespace sd
@@ -5657,19 +6312,19 @@ public static final int
   /**
    *  do not allocate memory, memory for array is passed from outside
    */
-  public NDArray(Pointer buffer, LongType shapeInfo, LaunchContext context, @Cast("const bool") boolean isBuffAlloc,
-            @ByVal LongType offset) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc, offset); }
-  private native void allocate(Pointer buffer, LongType shapeInfo, LaunchContext context, @Cast("const bool") boolean isBuffAlloc,
-            @ByVal LongType offset);
+  public NDArray(Pointer buffer, @Cast("sd::LongType*") LongPointer shapeInfo, LaunchContext context, @Cast("const bool") boolean isBuffAlloc,
+            @Cast("sd::LongType") long offset) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc, offset); }
+  private native void allocate(Pointer buffer, @Cast("sd::LongType*") LongPointer shapeInfo, LaunchContext context, @Cast("const bool") boolean isBuffAlloc,
+            @Cast("sd::LongType") long offset);
 
   /**
    *  do not allocate memory, memory for array is passed from outside
    *  we suppose the content of both (device and host) buffers is identical
    */
-  public NDArray(Pointer buffer, Pointer bufferD, LongType shapeInfo, LaunchContext context,
-            @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isBuffDAlloc, @ByVal LongType offset) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc, offset); }
-  private native void allocate(Pointer buffer, Pointer bufferD, LongType shapeInfo, LaunchContext context,
-            @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isBuffDAlloc, @ByVal LongType offset);
+  public NDArray(Pointer buffer, Pointer bufferD, @Cast("sd::LongType*") LongPointer shapeInfo, LaunchContext context,
+            @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isBuffDAlloc, @Cast("sd::LongType") long offset) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc, offset); }
+  private native void allocate(Pointer buffer, Pointer bufferD, @Cast("sd::LongType*") LongPointer shapeInfo, LaunchContext context,
+            @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isBuffDAlloc, @Cast("sd::LongType") long offset);
 
   /**
    *  copy constructor
@@ -5691,73 +6346,73 @@ public static final int
    *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros,
    * if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
    */
-  public NDArray( LongType shapeInfo, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context, nullify); }
-  private native void allocate( LongType shapeInfo, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/);
-  public NDArray( LongType shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
-  private native void allocate( LongType shapeInfo);
+  public NDArray( @Cast("sd::LongType*") LongPointer shapeInfo, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context, nullify); }
+  private native void allocate( @Cast("sd::LongType*") LongPointer shapeInfo, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/);
+  public NDArray( @Cast("sd::LongType*") LongPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+  private native void allocate( @Cast("sd::LongType*") LongPointer shapeInfo);
 
   /**
    *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be
    * zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently set
    * dtype as array type
    */
-  public NDArray(LongType shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/,
+  public NDArray(@Cast("sd::LongType*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/,
             LaunchContext context/*=LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context, nullify); }
-  private native void allocate(LongType shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/,
+  private native void allocate(@Cast("sd::LongType*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/,
             LaunchContext context/*=LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
-  public NDArray(LongType shapeInfo, @Cast("const sd::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
-  private native void allocate(LongType shapeInfo, @Cast("const sd::DataType") int dtype);
+  public NDArray(@Cast("sd::LongType*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+  private native void allocate(@Cast("sd::LongType*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype);
 
   /**
    *  this constructor creates new array using shape information contained in vector argument
    */
-  public NDArray(@Cast("const char") byte order, @StdVector LongType shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
+  public NDArray(@Cast("const char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
             LaunchContext context/*=LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
-  private native void allocate(@Cast("const char") byte order, @StdVector LongType shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
+  private native void allocate(@Cast("const char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
             LaunchContext context/*=LaunchContext::defaultContext()*/);
-  public NDArray(@Cast("const char") byte order, @StdVector LongType shape) { super((Pointer)null); allocate(order, shape); }
-  private native void allocate(@Cast("const char") byte order, @StdVector LongType shape);
+  public NDArray(@Cast("const char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape) { super((Pointer)null); allocate(order, shape); }
+  private native void allocate(@Cast("const char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape);
 
   /**
    * This constructor creates new array with elements copied from data and using shape information stored in shape,
    * elements from data will be casted to dtype
    */
-  public NDArray(@Cast("char") byte order, @StdVector LongType shape,  @StdVector DoublePointer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
+  public NDArray(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector DoublePointer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
             LaunchContext context/*=LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
-  private native void allocate(@Cast("char") byte order, @StdVector LongType shape,  @StdVector DoublePointer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
+  private native void allocate(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector DoublePointer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
             LaunchContext context/*=LaunchContext::defaultContext()*/);
-  public NDArray(@Cast("char") byte order, @StdVector LongType shape,  @StdVector DoublePointer data) { super((Pointer)null); allocate(order, shape, data); }
-  private native void allocate(@Cast("char") byte order, @StdVector LongType shape,  @StdVector DoublePointer data);
-  public NDArray(@Cast("char") byte order, @StdVector LongType shape,  @StdVector DoubleBuffer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
+  public NDArray(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector DoublePointer data) { super((Pointer)null); allocate(order, shape, data); }
+  private native void allocate(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector DoublePointer data);
+  public NDArray(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector DoubleBuffer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
             LaunchContext context/*=LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
-  private native void allocate(@Cast("char") byte order, @StdVector LongType shape,  @StdVector DoubleBuffer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
+  private native void allocate(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector DoubleBuffer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
             LaunchContext context/*=LaunchContext::defaultContext()*/);
-  public NDArray(@Cast("char") byte order, @StdVector LongType shape,  @StdVector DoubleBuffer data) { super((Pointer)null); allocate(order, shape, data); }
-  private native void allocate(@Cast("char") byte order, @StdVector LongType shape,  @StdVector DoubleBuffer data);
-  public NDArray(@Cast("char") byte order, @StdVector LongType shape,  @StdVector double[] data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
+  public NDArray(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector DoubleBuffer data) { super((Pointer)null); allocate(order, shape, data); }
+  private native void allocate(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector DoubleBuffer data);
+  public NDArray(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector double[] data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
             LaunchContext context/*=LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
-  private native void allocate(@Cast("char") byte order, @StdVector LongType shape,  @StdVector double[] data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
+  private native void allocate(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector double[] data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/,
             LaunchContext context/*=LaunchContext::defaultContext()*/);
-  public NDArray(@Cast("char") byte order, @StdVector LongType shape,  @StdVector double[] data) { super((Pointer)null); allocate(order, shape, data); }
-  private native void allocate(@Cast("char") byte order, @StdVector LongType shape,  @StdVector double[] data);
+  public NDArray(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector double[] data) { super((Pointer)null); allocate(order, shape, data); }
+  private native void allocate(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape,  @StdVector double[] data);
 
   /**
    *  this constructor creates new array using given buffer (without memory allocation) and shape information stored in
    * shape
    */
-  public NDArray(Pointer buffer, @Cast("char") byte order, @StdVector LongType shape, @Cast("sd::DataType") int dtype,
+  public NDArray(Pointer buffer, @Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype,
             LaunchContext context/*=LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc); }
-  private native void allocate(Pointer buffer, @Cast("char") byte order, @StdVector LongType shape, @Cast("sd::DataType") int dtype,
+  private native void allocate(Pointer buffer, @Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype,
             LaunchContext context/*=LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
-  public NDArray(Pointer buffer, @Cast("char") byte order, @StdVector LongType shape, @Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
-  private native void allocate(Pointer buffer, @Cast("char") byte order, @StdVector LongType shape, @Cast("sd::DataType") int dtype);
+  public NDArray(Pointer buffer, @Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
+  private native void allocate(Pointer buffer, @Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype);
 
 
   // Static helper methods
   // Static helper methods
-  public native LongType reshapeShapeInfo( NDArray array, @Cast("char") byte order, @StdVector LongType newShape);
-  public native @Const LongType modifyShapeForAssign( NDArray thisArray,  NDArray other);
-  public native void copyDataForAssign(NDArray thisArray,  NDArray other, @Const LongType otherShapeInfo, @Cast("bool") boolean allowParallelism);
+  public native @Cast("sd::LongType*") LongPointer reshapeShapeInfo( NDArray array, @Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer newShape);
+  public native @Cast("const sd::LongType*") LongPointer modifyShapeForAssign( NDArray thisArray,  NDArray other);
+  public native void copyDataForAssign(NDArray thisArray,  NDArray other, @Cast("const sd::LongType*") LongPointer otherShapeInfo, @Cast("bool") boolean allowParallelism);
   public native void validateAssign( NDArray thisArray,  NDArray other);
 
 
@@ -5850,9 +6505,9 @@ public static final int
    * @param offset
    * @return
    */
-  public native Pointer bufferWithOffset(@ByVal LongType offset);
+  public native Pointer bufferWithOffset(@Cast("sd::LongType") long offset);
 
-  public native Pointer specialBufferWithOffset(@ByVal LongType offset);
+  public native Pointer specialBufferWithOffset(@Cast("sd::LongType") long offset);
   /**
    *  copy assignment operator
    *  in particular, when dataType() != other.dataType() and both shapes are the same, there will be allocation of new
@@ -5882,7 +6537,7 @@ public static final int
    *  axis - axis along which to repeat elements
    *  repeats - number of repetitions
    */
-  public native @ByVal NDArray repeat(int axis, @StdVector LongType repeats);
+  public native @ByVal NDArray repeat(int axis, @Cast("sd::LongType*") @StdVector LongPointer repeats);
 
   /**
    * This method fills this array with zeros
@@ -5902,7 +6557,7 @@ public static final int
    *  axis - axis along which to repeat elements
    *  repeats - vector containing numbers of repetition for elements at given axis
    */
-  public native void repeat(int axis, @StdVector LongType repeats, @ByRef NDArray target);
+  public native void repeat(int axis, @Cast("sd::LongType*") @StdVector LongPointer repeats, @ByRef NDArray target);
 
   /**
    *  cast array elements to given dtype
@@ -5927,7 +6582,7 @@ public static final int
   /**
    *   returns buffer offset (offset is the same for host and device buffers)
    */
-  public native @ByVal LongType offset();
+  public native @Cast("sd::LongType") long offset();
 
   /**
    *  checks if array has padded buffer
@@ -5950,7 +6605,7 @@ public static final int
    *   returns _shapeInfo
    *   If _shapeInfo is nullptr, attempts to reacquire from ConstantShapeHelper
    */
-  public native LongType shapeInfo();
+  public native @Cast("sd::LongType*") LongPointer shapeInfo();
 
 
   /**
@@ -5977,35 +6632,35 @@ public static final int
   /**
    *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
    */
-  public native LongType specialShapeInfo();
+  public native @Cast("sd::LongType*") LongPointer specialShapeInfo();
 
 
   /**
    *  permutes (in-place) the dimensions in array according to "dimensions" array
    */
-  public native @Cast("bool") boolean permutei(@StdVector LongType dimensions, @Cast("const bool") boolean copyToNewBuff, @Cast("const bool") boolean resetStrides);
-  public native @Cast("bool") boolean permutei(LongType dimensions, int rank);
-  public native @Cast("bool") boolean permutei(LongType dimensions, int rank, @Cast("const bool") boolean resetStrides);
+  public native @Cast("bool") boolean permutei(@Cast("sd::LongType*") @StdVector LongPointer dimensions, @Cast("const bool") boolean copyToNewBuff, @Cast("const bool") boolean resetStrides);
+  public native @Cast("bool") boolean permutei(@Cast("sd::LongType*") LongPointer dimensions, int rank);
+  public native @Cast("bool") boolean permutei(@Cast("sd::LongType*") LongPointer dimensions, int rank, @Cast("const bool") boolean resetStrides);
 
 
   public native @Cast("bool") boolean isFinite();
   public native @Cast("bool") boolean hasNaNs();
   public native @Cast("bool") boolean hasInfs();
 
-  public native void copyBuffersContinuouslyFrom(@ByRef NDArray other, @Cast("size_t") long sizeToCopyInBytes/*=0*/, @ByVal(nullValue = "LongType(0)") LongType offsetThis,
-                                     @ByVal(nullValue = "LongType(0)") LongType offsetOther);
+  public native void copyBuffersContinuouslyFrom(@ByRef NDArray other, @Cast("size_t") long sizeToCopyInBytes/*=0*/, @Cast("sd::LongType") long offsetThis/*=0*/,
+                                     @Cast("sd::LongType") long offsetOther/*=0*/);
   public native void copyBuffersContinuouslyFrom(@ByRef NDArray other);
 
   /**
    *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
    */
-  public native NDArray permute(@StdVector LongType dimensions, @Cast("bool") boolean copyToNewBuff, @Cast("bool") boolean resetStrides);
+  public native NDArray permute(@Cast("sd::LongType*") @StdVector LongPointer dimensions, @Cast("bool") boolean copyToNewBuff, @Cast("bool") boolean resetStrides);
 
-  public native NDArray permute(LongType dimensions, int rank, @Cast("const bool") boolean copyToNewBuff, @Cast("const bool") boolean resetStrides);
+  public native NDArray permute(@Cast("sd::LongType*") LongPointer dimensions, int rank, @Cast("const bool") boolean copyToNewBuff, @Cast("const bool") boolean resetStrides);
   
   
 
-  public native void permute(LongType dimensions, int rank, @ByRef NDArray target, @Cast("const bool") boolean resetStrides);
+  public native void permute(@Cast("sd::LongType*") LongPointer dimensions, int rank, @ByRef NDArray target, @Cast("const bool") boolean resetStrides);
 
   /**
 * This method streamlines given view or permuted array, and reallocates buffer
@@ -6031,13 +6686,13 @@ public static final int
    *  msg - message to print out
    *  limit - number of array elements to print out
    */
-  public native void printIndexedBuffer(@Cast("const char*") BytePointer msg/*=nullptr*/, @ByVal(nullValue = "LongType(-1)") LongType _limit);
+  public native void printIndexedBuffer(@Cast("const char*") BytePointer msg/*=nullptr*/, @Cast("sd::LongType") long _limit/*=-1*/);
   public native void printIndexedBuffer();
-  public native void printIndexedBuffer(String msg/*=nullptr*/, @ByVal(nullValue = "LongType(-1)") LongType _limit);
+  public native void printIndexedBuffer(String msg/*=nullptr*/, @Cast("sd::LongType") long _limit/*=-1*/);
 
-  public native @StdString BytePointer asIndexedString(@ByVal(nullValue = "LongType(-1)") LongType _limit);
+  public native @StdString BytePointer asIndexedString(@Cast("sd::LongType") long _limit/*=-1*/);
   public native @StdString BytePointer asIndexedString();
-  public native @StdString BytePointer asString(@ByVal(nullValue = "LongType(-1)") LongType _limit);
+  public native @StdString BytePointer asString(@Cast("sd::LongType") long _limit/*=-1*/);
   public native @StdString BytePointer asString();
 
   /**
@@ -6101,7 +6756,7 @@ public static final int
    *  returns the number of arrays pointing on specified dimension(s)
    *  dimensions - array of dimensions to point on
    */
-  public native @ByVal LongType tensorsAlongDimension(@StdVector LongType dimensions);
+  public native @Cast("sd::LongType") long tensorsAlongDimension(@Cast("sd::LongType*") @StdVector LongPointer dimensions);
 
   /**
    *  returns true if elements of two arrays are equal to within given epsilon value
@@ -6160,15 +6815,15 @@ public static final int
   /**
    *  returns number of bytes used by _buffer and _shapeInfo
    */
-  public native @ByVal LongType memoryFootprint();
+  public native @Cast("sd::LongType") long memoryFootprint();
 
   /**
    *  these methods suited for FlatBuffers use
    */
-  public native @StdVector LongType getShapeAsVector();
-  public native @StdVector LongType getStrideAsVector();
+  public native @Cast("sd::LongType*") @StdVector LongPointer getShapeAsVector();
+  public native @Cast("sd::LongType*") @StdVector LongPointer getStrideAsVector();
   public native @StdVector IntPointer getShapeAsVectorInt();
-  public native @StdVector LongType getShapeInfoAsVector();
+  public native @Cast("sd::LongType*") @StdVector LongPointer getShapeInfoAsVector();
   public native @Cast("int64_t*") @StdVector LongPointer getShapeInfoAsFlatVector();
   public native @Cast("int64_t*") @StdVector LongPointer getShapeAsFlatVector();
 
@@ -6179,8 +6834,8 @@ public static final int
    *  copyToNewBuff - if true then old buffer will be copied to new buffer if last one will be allocated after reshaping
    *  if there was permute applied before or there are weird strides, then new buffer is allocated for array
    */
-  public native @Cast("bool") boolean reshapei(@Cast("const char") byte order, @StdVector LongType shape);
-  public native @Cast("bool") boolean reshapei(@StdVector LongType shape);
+  public native @Cast("bool") boolean reshapei(@Cast("const char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape);
+  public native @Cast("bool") boolean reshapei(@Cast("sd::LongType*") @StdVector LongPointer shape);
 
   public native void printStringInternalState();
   public native void printStringType();
@@ -6195,8 +6850,8 @@ public static final int
    * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
    */
 
-  public native NDArray reshape(@Cast("char") byte order, @StdVector LongType shape, @Cast("bool") boolean copyToNewBuff/*=true*/);
-  public native NDArray reshape(@Cast("char") byte order, @StdVector LongType shape);
+  public native NDArray reshape(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("bool") boolean copyToNewBuff/*=true*/);
+  public native NDArray reshape(@Cast("char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape);
   
 
   /**
@@ -6205,26 +6860,26 @@ public static final int
    */
   public native void updateStrides(@Cast("const char") byte order);
 
-  public native NDArray newShapeNoCopy(@StdVector LongType newShape, @Cast("const char") byte order);
+  public native NDArray newShapeNoCopy(@Cast("sd::LongType*") @StdVector LongPointer newShape, @Cast("const char") byte order);
 
   /**
    *  change an array by repeating it the number of times given by reps (in-place operation)
    *  repeats - contains numbers of repetitions
    */
-  public native void tilei(@StdVector LongType repeats);
+  public native void tilei(@Cast("sd::LongType*") @StdVector LongPointer repeats);
 
   /**
    *  returns new array which is created by repeating of this array the number of times given by reps
    *  repeats - contains numbers of repetitions
    */
-  public native @ByVal NDArray tile(@StdVector LongType repeats);
+  public native @ByVal NDArray tile(@Cast("sd::LongType*") @StdVector LongPointer repeats);
 
   /**
    *  change an array by repeating it the number of times given by reps (in-place operation)
    *  repeats - contains numbers of repetitions
    *  target - where to store result
    */
-  public native void tile(@StdVector LongType repeats, @ByRef NDArray target);
+  public native void tile(@Cast("sd::LongType*") @StdVector LongPointer repeats, @ByRef NDArray target);
 
   /**
    *  change an array by repeating it the number of times to acquire the new shape which is the same as target shape
@@ -6289,8 +6944,8 @@ public static final int
    *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case
    * tile operation is done in place
    */
-  public native @ByVal NDArray tileToShape(@Const LongType shapeInfo);
-  public native void tileToShape(@StdVector LongType shape, @ByRef NDArray target);
+  public native @ByVal NDArray tileToShape(@Cast("const sd::LongType*") LongPointer shapeInfo);
+  public native void tileToShape(@Cast("sd::LongType*") @StdVector LongPointer shape, @ByRef NDArray target);
 // #ifndef __JAVACPP_HACK__
 // #endif
 
@@ -6305,27 +6960,27 @@ public static final int
    */
   public native double getTrace();
 
-  public native @ByVal ResultSet multipleTensorsAlongDimension(@StdVector LongType indices,
-                                            @StdVector LongType dimensions);
+  public native @ByVal ResultSet multipleTensorsAlongDimension(@Cast("sd::LongType*") @StdVector LongPointer indices,
+                                            @Cast("sd::LongType*") @StdVector LongPointer dimensions);
 
-  public native @ByVal ResultSet allTensorsAlongDimension(@StdVector LongType dimensions);
+  public native @ByVal ResultSet allTensorsAlongDimension(@Cast("sd::LongType*") @StdVector LongPointer dimensions);
 
-  public native void printAllTensorsAlongDimension(@StdVector LongType dimensions);
-  public native void printTensorAlongDimension(@ByVal LongType index,@StdVector LongType dimensions);
+  public native void printAllTensorsAlongDimension(@Cast("sd::LongType*") @StdVector LongPointer dimensions);
+  public native void printTensorAlongDimension(@Cast("sd::LongType") long index,@Cast("sd::LongType*") @StdVector LongPointer dimensions);
 
   public native @ByVal ResultSet allExamples();
 
   /**
    *  set _shapeInfo
    */
-  public native void setShapeInfo(LongType shapeInfo);
+  public native void setShapeInfo(@Cast("sd::LongType*") LongPointer shapeInfo);
   public native void setShapeInfo(ShapeDescriptor descriptor);
   public native void setShapeInfo(@Const ConstantShapeBuffer shapeBuffer);
 
   /**
    *  returns absolute offset which corresponds to given sequential index
    */
-  public native @ByVal LongType getOffset(@Const @ByVal LongType i);
+  public native @Cast("sd::LongType") long getOffset(@Const @Cast("sd::LongType") long i);
 
   /**
    *  returns reference on array element with given index
@@ -6344,12 +6999,12 @@ public static final int
   /**
    *  returns the value of "dim" dimension
    */
-  public native @ByVal LongType sizeAt(int dim);
+  public native @Cast("sd::LongType") long sizeAt(int dim);
 
   /**
    *  returns stride of "dim" dimension
    */
-  public native @ByVal LongType strideAt(int dim);
+  public native @Cast("sd::LongType") long strideAt(int dim);
 
   /**
    *  returns order of array
@@ -6364,12 +7019,12 @@ public static final int
   /**
    *  returns shape portion of shapeInfo
    */
-  public native LongType shapeOf();
+  public native @Cast("sd::LongType*") LongPointer shapeOf();
 
   /**
    *  returns strides portion of shapeInfo
    */
-  public native LongType stridesOf();
+  public native @Cast("sd::LongType*") LongPointer stridesOf();
 
   /**
    *  returns rank of array
@@ -6379,17 +7034,17 @@ public static final int
   /**
    *  returns length of array
    */
-  public native @ByVal LongType lengthOf();
+  public native @Cast("sd::LongType") long lengthOf();
 
   /**
    *  returns number of rows in array
    */
-  public native @ByVal LongType rows();
+  public native @Cast("sd::LongType") long rows();
 
   /**
    *  returns number of columns in array
    */
-  public native @ByVal LongType columns();
+  public native @Cast("sd::LongType") long columns();
 
   /**
    *  returns size of array elements type
@@ -6399,11 +7054,11 @@ public static final int
   /**
    *  returns element-wise-stride
    */
-  public native @ByVal LongType ews();
+  public native @Cast("sd::LongType") long ews();
 
   // returns true if arrays have same shape
   public native @Cast("bool") boolean isSameShape(NDArray other);
-  public native @Cast("bool") boolean isSameShape(@StdVector LongType shape);
+  public native @Cast("bool") boolean isSameShape(@Cast("sd::LongType*") @StdVector LongPointer shape);
   public native @Cast("bool") boolean areSameShapeAndType(@ByRef NDArray other);
 
   /**
@@ -6443,11 +7098,11 @@ public static final int
    *  returns array-scalar containing element of this array with given index
    *  i - element index in array
    */
-  public native @ByVal NDArray e(@Const @ByVal LongType i);
+  public native @ByVal NDArray e(@Const @Cast("sd::LongType") long i);
 
 
 
-  public native void p(@Const @ByVal LongType i, NDArray value);
+  public native void p(@Const @Cast("sd::LongType") long i, NDArray value);
 
   /**
    *  assigns given scalar to 2D array element by given indexes
@@ -6463,7 +7118,7 @@ public static final int
    *  k - depth
    *  value - scalar value to assign
    */
-  public native void p(@Const @ByVal LongType i, @Const @ByVal LongType j, @Const @ByVal LongType k, @Const @ByVal LongType l, NDArray value);
+  public native void p(@Const @Cast("sd::LongType") long i, @Const @Cast("sd::LongType") long j, @Const @Cast("sd::LongType") long k, @Const @Cast("sd::LongType") long l, NDArray value);
 
   /**
    *  returns true if array is 2D
@@ -6489,7 +7144,7 @@ public static final int
    *  returns true if all dimensions of array except one are unities, for example: [1,1,n,1], [n,1,1], [n], ...
    *  posOfNonUnityDim - one dimension with value &gt; 1
    */
-  public native @Cast("bool") boolean isCommonVector(@ByRef LongType posOfNonUnityDim);
+  public native @Cast("bool") boolean isCommonVector(@Cast("sd::LongType*") @ByRef LongPointer posOfNonUnityDim);
 
   /**
    *  returns true if array is scalar
@@ -6539,10 +7194,10 @@ public static final int
   public native @Cast("bool") @Name("operator ==") boolean equals(@ByRef NDArray other);
 
   public native @Cast("bool") @Name("operator !=") boolean notEquals(@ByRef NDArray other);
-  public NDArray(Pointer buffer, @Cast("const char") byte order, @StdVector LongType shape, @Cast("sd::DataType") int dtype,
-            LaunchContext context, @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isView, @ByVal LongType offset) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc, isView, offset); }
-  private native void allocate(Pointer buffer, @Cast("const char") byte order, @StdVector LongType shape, @Cast("sd::DataType") int dtype,
-            LaunchContext context, @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isView, @ByVal LongType offset);
+  public NDArray(Pointer buffer, @Cast("const char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype,
+            LaunchContext context, @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isView, @Cast("sd::LongType") long offset) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc, isView, offset); }
+  private native void allocate(Pointer buffer, @Cast("const char") byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype,
+            LaunchContext context, @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isView, @Cast("sd::LongType") long offset);
 // #ifndef __JAVACPP_HACK__
 // #endif
 // #ifndef __JAVACPP_HACK__
@@ -6776,14 +7431,14 @@ public static final int
   public native NDArray remove(int idx);
   public native NDArray read(int idx);
   public native NDArray readRaw(int idx);
-  public native @ByVal Status write(int idx, NDArray array);
-  public native NDArray pick(@StdVector LongType indices);
+  public native @Cast("sd::Status") int write(int idx, NDArray array);
+  public native NDArray pick(@Cast("sd::LongType*") @StdVector LongPointer indices);
   public native @Cast("bool") boolean isWritten(int index);
 
-  public native @StdVector LongType shape();
+  public native @Cast("sd::LongType*") @StdVector LongPointer shape();
 
   public native NDArray stack();
-  public native void unstack(NDArray array, @ByVal LongType axis);
+  public native void unstack(NDArray array, @Cast("sd::LongType") long axis);
 
   public native @ByRef IntIntPair id();
   public native @StdString @ByRef BytePointer name();
@@ -6872,8 +7527,8 @@ public static final int
   public native @Name("operator []") NDArray get(@Cast("const unsigned long") long idx);
   public native void push_back(NDArray array);
 
-  public native @ByVal Status status();
-  public native void setStatus(@ByVal Status status);
+  public native @Cast("sd::Status") int status();
+  public native void setStatus(@Cast("sd::Status") int status);
   public native void purge();
   public native void setNonRemovable();
   public native void printIndexedBuffers();
@@ -6932,22 +7587,22 @@ public static final int
         return new RandomGenerator((Pointer)this).offsetAddress(i);
     }
 
-  public RandomGenerator(@ByVal(nullValue = "LongType(0)") LongType rootSeed, @ByVal(nullValue = "LongType(0)") LongType nodeSeed) { super((Pointer)null); allocate(rootSeed, nodeSeed); }
-  private native void allocate(@ByVal(nullValue = "LongType(0)") LongType rootSeed, @ByVal(nullValue = "LongType(0)") LongType nodeSeed);
+  public RandomGenerator(@Cast("sd::LongType") long rootSeed/*=0*/, @Cast("sd::LongType") long nodeSeed/*=0*/) { super((Pointer)null); allocate(rootSeed, nodeSeed); }
+  private native void allocate(@Cast("sd::LongType") long rootSeed/*=0*/, @Cast("sd::LongType") long nodeSeed/*=0*/);
   public RandomGenerator() { super((Pointer)null); allocate(); }
   private native void allocate();
-  public native void setStates(@ByVal LongType rootSeed, @ByVal(nullValue = "LongType(0)") LongType nodeState);
-  public native void setStates(@ByVal LongType rootSeed);
+  public native void setStates(@Cast("sd::LongType") long rootSeed, @Cast("sd::LongType") long nodeState/*=0*/);
+  public native void setStates(@Cast("sd::LongType") long rootSeed);
 
-  public native int relativeInt(@ByVal LongType index);
-  public native @ByVal LongType relativeLong(@ByVal LongType index);
+  public native int relativeInt(@Cast("sd::LongType") long index);
+  public native @Cast("sd::LongType") long relativeLong(@Cast("sd::LongType") long index);
   public native void rewindH(@Cast("uint64_t") long steps);
 
   public native void setSeed(int seed);
   public native void setSeed(@Cast("uint64_t") long seed);
 
-  public native @ByVal LongType rootState();
-  public native @ByVal LongType nodeState();
+  public native @Cast("sd::LongType") long rootState();
+  public native @Cast("sd::LongType") long nodeState();
 
   public native @Cast("uint32_t") int xoroshiro32(@Cast("uint64_t") long index);
   public native @Cast("uint64_t") long xoroshiro64(@Cast("uint64_t") long index);
@@ -7196,7 +7851,7 @@ public static final int
   public native @StdString BytePointer getName();
   public native void setName(@StdString BytePointer name);
 
-  public native @StdVector LongType shape();
+  public native @Cast("sd::LongType*") @StdVector LongPointer shape();
 
 // #ifndef __JAVACPP_HACK__
 // #endif
@@ -7252,12 +7907,12 @@ public static final int
         return new VariablesSet((Pointer)this).offsetAddress(i);
     }
 
-  public VariablesSet(@ByVal(nullValue = "Status::OK") Status status) { super((Pointer)null); allocate(status); }
-  private native void allocate(@ByVal(nullValue = "Status::OK") Status status);
+  public VariablesSet(@Cast("sd::Status") int status/*=sd::Status::OK*/) { super((Pointer)null); allocate(status); }
+  private native void allocate(@Cast("sd::Status") int status/*=sd::Status::OK*/);
   public VariablesSet() { super((Pointer)null); allocate(); }
   private native void allocate();
 
-  public native @ByVal Status status();
+  public native @Cast("sd::Status") int status();
 
   public native int size();
 
@@ -7322,11 +7977,11 @@ public static final int
   private native void allocate();
 
   // constructor
-  public Intervals(@StdVector std::vector<LongType> content) { super((Pointer)null); allocate(content); }
-  private native void allocate(@StdVector std::vector<LongType> content);
+  public Intervals(@Const @ByRef LongVectorVector content) { super((Pointer)null); allocate(content); }
+  private native void allocate(@Const @ByRef LongVectorVector content);
 
   // accessing operator
-  public native @StdVector @Name("operator []") LongType get(@Const @ByVal LongType i);
+  public native @Cast("sd::LongType*") @StdVector @Name("operator []") LongPointer get(@Cast("const sd::LongType") long i);
 
   // returns size of _content
   public native int size();
@@ -7537,9 +8192,9 @@ public static final int
   public native void replaceVariable(Variable variable);
 
   // memory-related statistics
-  public native @ByVal LongType externalMemory();
-  public native @ByVal LongType internalMemory();
-  public native @ByVal LongType totalMemory();
+  public native @Cast("sd::LongType") long externalMemory();
+  public native @Cast("sd::LongType") long internalMemory();
+  public native @Cast("sd::LongType") long totalMemory();
 
   public native int externalEntries();
   public native int internalEntries();
@@ -7630,12 +8285,12 @@ public static final int
 // #ifdef __CUDACC__
 // #endif
 
-  public RandomBuffer(@ByVal LongType seed, @ByVal LongType size, @Cast("uint64_t*") LongPointer buffer) { super((Pointer)null); allocate(seed, size, buffer); }
-  private native void allocate(@ByVal LongType seed, @ByVal LongType size, @Cast("uint64_t*") LongPointer buffer);
-  public RandomBuffer(@ByVal LongType seed, @ByVal LongType size, @Cast("uint64_t*") LongBuffer buffer) { super((Pointer)null); allocate(seed, size, buffer); }
-  private native void allocate(@ByVal LongType seed, @ByVal LongType size, @Cast("uint64_t*") LongBuffer buffer);
-  public RandomBuffer(@ByVal LongType seed, @ByVal LongType size, @Cast("uint64_t*") long[] buffer) { super((Pointer)null); allocate(seed, size, buffer); }
-  private native void allocate(@ByVal LongType seed, @ByVal LongType size, @Cast("uint64_t*") long[] buffer);
+  public RandomBuffer(@Cast("sd::LongType") long seed, @Cast("sd::LongType") long size, @Cast("uint64_t*") LongPointer buffer) { super((Pointer)null); allocate(seed, size, buffer); }
+  private native void allocate(@Cast("sd::LongType") long seed, @Cast("sd::LongType") long size, @Cast("uint64_t*") LongPointer buffer);
+  public RandomBuffer(@Cast("sd::LongType") long seed, @Cast("sd::LongType") long size, @Cast("uint64_t*") LongBuffer buffer) { super((Pointer)null); allocate(seed, size, buffer); }
+  private native void allocate(@Cast("sd::LongType") long seed, @Cast("sd::LongType") long size, @Cast("uint64_t*") LongBuffer buffer);
+  public RandomBuffer(@Cast("sd::LongType") long seed, @Cast("sd::LongType") long size, @Cast("uint64_t*") long[] buffer) { super((Pointer)null); allocate(seed, size, buffer); }
+  private native void allocate(@Cast("sd::LongType") long seed, @Cast("sd::LongType") long size, @Cast("uint64_t*") long[] buffer);
 
   public native @Cast("uint64_t*") LongPointer getBuffer();
 
@@ -7644,21 +8299,21 @@ public static final int
 // #ifdef __CUDACC__
 // #endif
 
-  public native @ByVal LongType getSize();
+  public native @Cast("sd::LongType") long getSize();
 
-  public native @ByVal LongType getSeed();
+  public native @Cast("sd::LongType") long getSeed();
 
-  public native void setSeed(@ByVal LongType seedIn);
+  public native void setSeed(@Cast("sd::LongType") long seedIn);
 
-  public native @ByVal LongType getAllocatedSize();
+  public native @Cast("sd::LongType") long getAllocatedSize();
 
-  public native @ByVal LongType getOffset();
+  public native @Cast("sd::LongType") long getOffset();
 
-  public native void setOffset(@ByVal LongType offsetIn);
+  public native void setOffset(@Cast("sd::LongType") long offsetIn);
 
-  public native void reSeed(@ByVal LongType amplifierIn);
+  public native void reSeed(@Cast("sd::LongType") long amplifierIn);
 
-  public native @Cast("uint64_t") long getElement(@ByVal LongType positionIn);
+  public native @Cast("uint64_t") long getElement(@Cast("sd::LongType") long positionIn);
 
   public native @Cast("uint64_t") long next64(@Cast("uint64_t") long shiftedSeed);
 
@@ -7666,11 +8321,11 @@ public static final int
 
   public native @Cast("uint64_t") long safeShift(@Cast("uint64_t") long x, @Cast("uint64_t") long y);
 
-  public native @Cast("uint64_t") long seedConv(@ByVal LongType seedIn);
+  public native @Cast("uint64_t") long seedConv(@Cast("sd::LongType") long seedIn);
 
   public native void incrementGeneration();
 
-  public native @ByVal LongType getNextIndex();
+  public native @Cast("sd::LongType") long getNextIndex();
 
   public native @Cast("uint64_t") long getNextElement();
 
@@ -7681,7 +8336,7 @@ public static final int
    */
 // #ifdef __CUDACC__
 // #endif
-  public native void rewindH(@ByVal LongType numberOfElements);
+  public native void rewindH(@Cast("sd::LongType") long numberOfElements);
 
   /**
    * This method returns random int in range [0..SD_MAX_INT]
@@ -7729,12 +8384,12 @@ public static final int
    * @param index the relative element index
    * @return the random unsigned 64-bit value
    */
-  public native @Cast("uint64_t") long relativeUInt64(@ByVal LongType index);
+  public native @Cast("uint64_t") long relativeUInt64(@Cast("sd::LongType") long index);
 
   /**
    *  relative methods are made as workaround for lock-free concurrent execution
    */
-  public native int relativeInt(@ByVal LongType index);
+  public native int relativeInt(@Cast("sd::LongType") long index);
 
   /**
    * This method returns random int within [0..to]
@@ -7743,7 +8398,7 @@ public static final int
    * @param to
    * @return
    */
-  public native int relativeInt(@ByVal LongType index, int to);
+  public native int relativeInt(@Cast("sd::LongType") long index, int to);
 
   /**
    * This method returns random int within [from..to]
@@ -7753,7 +8408,7 @@ public static final int
    * @param from
    * @return
    */
-  public native int relativeInt(@ByVal LongType index, int from, int to);
+  public native int relativeInt(@Cast("sd::LongType") long index, int from, int to);
 
   /**
    * This method returns random T within [0..1]
@@ -7788,11 +8443,11 @@ public static final int
 
   public native RandomBuffer getBuffer();
 
-  public native void setOffset(@ByVal LongType offset);
+  public native void setOffset(@Cast("sd::LongType") long offset);
 
-  public native @ByVal LongType getElementAbsolute(@ByVal LongType _position);
+  public native @Cast("sd::LongType") long getElementAbsolute(@Cast("sd::LongType") long _position);
 
-  public native @ByVal LongType getElementRelative(@ByVal LongType _position);
+  public native @Cast("sd::LongType") long getElementRelative(@Cast("sd::LongType") long _position);
 
   public native void refreshBuffer();
 }
@@ -7864,20 +8519,20 @@ public static final int
   /**
    * These methods just adding amount of bytes to various counters
    */
-  public native void addToTotal(@ByVal LongType bytes);
-  public native void addToActivations(@ByVal LongType bytes);
-  public native void addToTemporary(@ByVal LongType bytes);
-  public native void addToObjects(@ByVal LongType bytes);
+  public native void addToTotal(@Cast("sd::LongType") long bytes);
+  public native void addToActivations(@Cast("sd::LongType") long bytes);
+  public native void addToTemporary(@Cast("sd::LongType") long bytes);
+  public native void addToObjects(@Cast("sd::LongType") long bytes);
 
   /**
    * This method allows to set graph construction (i.e. deserialization) time in nanoseconds
    */
-  public native void setBuildTime(@ByVal LongType nanos);
+  public native void setBuildTime(@Cast("sd::LongType") long nanos);
 
   /**
    * This method sets graph execution time in nanoseconds.
    */
-  public native void setExecutionTime(@ByVal LongType nanos);
+  public native void setExecutionTime(@Cast("sd::LongType") long nanos);
 
   public native void startEvent(@Cast("const char*") BytePointer name);
   public native void startEvent(String name);
@@ -7911,8 +8566,8 @@ public static final int
   /**
    * These methods are just utility methods for time
    */
-  public native @ByVal LongType currentTime();
-  public native @ByVal LongType relativeTime(@ByVal LongType time);
+  public native @Cast("sd::LongType") long currentTime();
+  public native @Cast("sd::LongType") long relativeTime(@Cast("sd::LongType") long time);
 
   public native void printOut();
 }
@@ -7975,28 +8630,28 @@ public static final int
   public NodeProfile(int id, String name) { super((Pointer)null); allocate(id, name); }
   private native void allocate(int id, String name);
 
-  public native void setBuildTime(@ByVal LongType time);
-  public native void setPreparationTime(@ByVal LongType time);
-  public native void setExecutionTime(@ByVal LongType time);
-  public native void setTotalTime(@ByVal LongType time);
-  public native void setShapeFunctionTime(@ByVal LongType time);
-  public native void setArrayTime(@ByVal LongType time);
-  public native void setInputTime(@ByVal LongType time);
+  public native void setBuildTime(@Cast("sd::LongType") long time);
+  public native void setPreparationTime(@Cast("sd::LongType") long time);
+  public native void setExecutionTime(@Cast("sd::LongType") long time);
+  public native void setTotalTime(@Cast("sd::LongType") long time);
+  public native void setShapeFunctionTime(@Cast("sd::LongType") long time);
+  public native void setArrayTime(@Cast("sd::LongType") long time);
+  public native void setInputTime(@Cast("sd::LongType") long time);
 
-  public native void setActivationsSize(@ByVal LongType bytes);
-  public native void setTemporarySize(@ByVal LongType bytes);
-  public native void setObjectsSize(@ByVal LongType bytes);
-  public native void setTotalSize(@ByVal LongType bytes);
+  public native void setActivationsSize(@Cast("sd::LongType") long bytes);
+  public native void setTemporarySize(@Cast("sd::LongType") long bytes);
+  public native void setObjectsSize(@Cast("sd::LongType") long bytes);
+  public native void setTotalSize(@Cast("sd::LongType") long bytes);
 
-  public native void addInputShape(@Const LongType shapeInfo);
-  public native void addOutputShape(@Const LongType shapeInfo);
+  public native void addInputShape(@Cast("const sd::LongType*") LongPointer shapeInfo);
+  public native void addOutputShape(@Cast("const sd::LongType*") LongPointer shapeInfo);
 
-  public native @ByVal LongType getActivationsSize();
-  public native @ByVal LongType getTemporarySize();
-  public native @ByVal LongType getObjectsSize();
-  public native @ByVal LongType getTotalSize();
+  public native @Cast("sd::LongType") long getActivationsSize();
+  public native @Cast("sd::LongType") long getTemporarySize();
+  public native @Cast("sd::LongType") long getObjectsSize();
+  public native @Cast("sd::LongType") long getTotalSize();
 
-  public native @ByVal LongType getExecutionTime();
+  public native @Cast("sd::LongType") long getExecutionTime();
 
   public native @StdString @ByRef BytePointer name();
 
@@ -8070,10 +8725,10 @@ public static final int
   // default destructor
 
   // these methods are for execution timing
-  public native void setOuterTime(@ByVal LongType time);
-  public native void setInnerTime(@ByVal LongType time);
-  public native @ByVal LongType getOuterTime();
-  public native @ByVal LongType getInnerTime();
+  public native void setOuterTime(@Cast("sd::LongType") long time);
+  public native void setInnerTime(@Cast("sd::LongType") long time);
+  public native @Cast("sd::LongType") long getOuterTime();
+  public native @Cast("sd::LongType") long getInnerTime();
 
   public native @Cast("sd::DataType") int dataType();
 
@@ -8254,7 +8909,7 @@ public static final int
   public native void setTArguments(DoublePointer arguments, int numberOfArguments);
   public native void setTArguments(DoubleBuffer arguments, int numberOfArguments);
   public native void setTArguments(double[] arguments, int numberOfArguments);
-  public native void setIArguments(LongType arguments, int numberOfArguments);
+  public native void setIArguments(@Cast("sd::LongType*") LongPointer arguments, int numberOfArguments);
   public native void setBArguments(@Cast("bool*") BooleanPointer arguments, int numberOfArguments);
   public native void setBArguments(@Cast("bool*") boolean[] arguments, int numberOfArguments);
   public native void setDArguments(@Cast("sd::DataType*") IntPointer arguments, int numberOfArguments);
@@ -8264,7 +8919,7 @@ public static final int
   public native void setTArguments(@StdVector DoublePointer tArgs);
   public native void setTArguments(@StdVector DoubleBuffer tArgs);
   public native void setTArguments(@StdVector double[] tArgs);
-  public native void setIArguments(@StdVector LongType tArgs);
+  public native void setIArguments(@Cast("sd::LongType*") @StdVector LongPointer tArgs);
   public native void setBArguments(@Cast("bool*") @StdVector BooleanPointer tArgs);
   public native void setBArguments(@Cast("bool*") @StdVector boolean[] tArgs);
   public native void setDArguments(@Cast("sd::DataType*") @StdVector IntPointer dArgs);
@@ -8383,12 +9038,12 @@ public static final int
   public native @StdVector IntIntPair inputs();
 
   public native @StdVector DoublePointer getTArguments();
-  public native @StdVector LongType getIArguments();
+  public native @Cast("sd::LongType*") @StdVector LongPointer getIArguments();
   public native @Cast("bool*") @StdVector BooleanPointer getBArguments();
   public native @Cast("sd::DataType*") @StdVector IntPointer getDArguments();
 // #ifndef __JAVACPP_HACK__
 // #endif
-  public native @StdVector LongType getAxis();
+  public native @Cast("sd::LongType*") @StdVector LongPointer getAxis();
 
   public native @Cast("samediff::Engine") int engine();
 
@@ -8501,15 +9156,15 @@ public static final int
         return new ShapeInformation((Pointer)this).offsetAddress(i);
     }
 
-  public ShapeInformation(LongType shape_/*=nullptr*/, LongType stride_/*=nullptr*/, @Cast("char") byte order_/*=0*/,
+  public ShapeInformation(@Cast("sd::LongType*") LongPointer shape_/*=nullptr*/, @Cast("sd::LongType*") LongPointer stride_/*=nullptr*/, @Cast("char") byte order_/*=0*/,
                                     int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/, @Cast("bool") boolean isEmpty_/*=false*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_, isEmpty_); }
-  private native void allocate(LongType shape_/*=nullptr*/, LongType stride_/*=nullptr*/, @Cast("char") byte order_/*=0*/,
+  private native void allocate(@Cast("sd::LongType*") LongPointer shape_/*=nullptr*/, @Cast("sd::LongType*") LongPointer stride_/*=nullptr*/, @Cast("char") byte order_/*=0*/,
                                     int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/, @Cast("bool") boolean isEmpty_/*=false*/);
   public ShapeInformation() { super((Pointer)null); allocate(); }
   private native void allocate();
 
-  public native LongType shape(); public native ShapeInformation shape(LongType setter);
-  public native LongType stride(); public native ShapeInformation stride(LongType setter);
+  public native @Cast("sd::LongType*") LongPointer shape(); public native ShapeInformation shape(LongPointer setter);
+  public native @Cast("sd::LongType*") LongPointer stride(); public native ShapeInformation stride(LongPointer setter);
   public native @Cast("char") byte order(); public native ShapeInformation order(byte setter);
   public native int rank(); public native ShapeInformation rank(int setter);
   public native int offset(); public native ShapeInformation offset(int setter);
@@ -8518,7 +9173,7 @@ public static final int
 }
 
 
-@Namespace("shape") public native @ByRef LongType extra(LongType buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") @ByRef LongPointer extra(@Cast("sd::LongType*") LongPointer buffer);
 
 
 
@@ -8527,7 +9182,7 @@ public static final int
 * info has the flag view set.
  */
 
-@Namespace("shape") public native @Cast("bool") boolean isViewConst(@Const LongType shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isViewConst(@Cast("const sd::LongType*") LongPointer shapeInfo);
 
 
 /**
@@ -8535,45 +9190,45 @@ public static final int
 * given shape info has an empty flag set.
  */
 
-@Namespace("shape") public native @Cast("bool") boolean isEmptyConst(@Const LongType shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isEmptyConst(@Cast("const sd::LongType*") LongPointer shapeInfo);
 
 
 
 
-@Namespace("shape") public native @Cast("bool") boolean shapeEquals(int shape1Rank, @Const LongType shape1, int shape2Rank,
-                                              @Const LongType shape2);
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const sd::LongType*") LongPointer shape1, int shape2Rank,
+                                              @Cast("const sd::LongType*") LongPointer shape2);
 
-@Namespace("shape") public native LongType detachShape(LongType originalShape);
-
-
-@Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Const LongType shapeInfo1, @Const LongType shapeInfo2);
-
-@Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Const LongType shapeInfo1, @Const LongType shapeInfo2,
-                                              @Const LongType shapeInfo3);
-
-@Namespace("shape") public native @Cast("bool") boolean strideEquals(int shape1Rank, @Const LongType shape1, int shape2Rank,
-                                               @Const LongType shape2);
-
-@Namespace("shape") public native @Cast("bool") boolean strideEquals(@Const LongType shapeInfo1, @Const LongType shapeInfo2);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer detachShape(@Cast("sd::LongType*") LongPointer originalShape);
 
 
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") LongPointer shapeInfo1, @Cast("const sd::LongType*") LongPointer shapeInfo2);
 
-@Namespace("shape") public native @Cast("bool") boolean equalsSoft(@Const LongType shapeA, @Const LongType shapeB);
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") LongPointer shapeInfo1, @Cast("const sd::LongType*") LongPointer shapeInfo2,
+                                              @Cast("const sd::LongType*") LongPointer shapeInfo3);
 
-@Namespace("shape") public native @Cast("bool") boolean equalsTypesAndShapesSoft(@Const LongType shapeA, @Const LongType shapeB);
+@Namespace("shape") public native @Cast("bool") boolean strideEquals(int shape1Rank, @Cast("const sd::LongType*") LongPointer shape1, int shape2Rank,
+                                               @Cast("const sd::LongType*") LongPointer shape2);
 
-@Namespace("shape") public native @Cast("bool") boolean equalsStrict(@Const LongType shapeA, @Const LongType shapeB);
+@Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") LongPointer shapeInfo1, @Cast("const sd::LongType*") LongPointer shapeInfo2);
+
+
+
+@Namespace("shape") public native @Cast("bool") boolean equalsSoft(@Cast("const sd::LongType*") LongPointer shapeA, @Cast("const sd::LongType*") LongPointer shapeB);
+
+@Namespace("shape") public native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const sd::LongType*") LongPointer shapeA, @Cast("const sd::LongType*") LongPointer shapeB);
+
+@Namespace("shape") public native @Cast("bool") boolean equalsStrict(@Cast("const sd::LongType*") LongPointer shapeA, @Cast("const sd::LongType*") LongPointer shapeB);
 
 // returns true if ranks, shapes and strides are the same
-@Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Const LongType shapeInfo1,
-                                                          @Const LongType shapeInfo2);
-@Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Const LongType shapeInfo1,
-                                                          @Const LongType shapeInfo2,
-                                                          @Const LongType shapeInfo3);
+@Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") LongPointer shapeInfo1,
+                                                          @Cast("const sd::LongType*") LongPointer shapeInfo2);
+@Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") LongPointer shapeInfo1,
+                                                          @Cast("const sd::LongType*") LongPointer shapeInfo2,
+                                                          @Cast("const sd::LongType*") LongPointer shapeInfo3);
 
 
-@Namespace("shape") public native @ByVal LongType tadLength(@Const LongType shapeInfo, @Const LongType dimension,
-                                                    @ByVal LongType dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long tadLength(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("const sd::LongType*") LongPointer dimension,
+                                                    @Cast("sd::LongType") long dimensionLength);
 
 
 /**
@@ -8581,58 +9236,58 @@ public static final int
 * info has the flag view set.
 */
 
-@Namespace("shape") public native @Cast("bool") boolean isView(LongType shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isView(@Cast("sd::LongType*") LongPointer shapeInfo);
 /**
 * Returns whether the
 * given shape info has an empty flag set.
 */
 
-@Namespace("shape") public native @Cast("bool") boolean isEmpty(LongType shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isEmpty(@Cast("sd::LongType*") LongPointer shapeInfo);
 
 
 
-@Namespace("shape") public native @Cast("bool") boolean reshapeC(@Const LongType oldShapeInfo, @Cast("const char") byte newOrder, @ByVal LongType newRank, @Const LongType newShape,
-                                           LongType newShapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") LongPointer oldShapeInfo, @Cast("const char") byte newOrder, @Cast("sd::LongType") long newRank, @Cast("const sd::LongType*") LongPointer newShape,
+                                           @Cast("sd::LongType*") LongPointer newShapeInfo);
 /**
 * newShapeInfo contains rank, shape and order only, no strides/ews/type
 */
-@Namespace("shape") public native @Cast("bool") boolean reshapeC(@Const LongType oldShapeInfo, LongType newShapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") LongPointer oldShapeInfo, @Cast("sd::LongType*") LongPointer newShapeInfo);
 
 /**
 * Get the shape info buffer
 * for the given rank and shape.
 */
-@Namespace("shape") public native LongType shapeBuffer(@ByVal LongType rank, @Cast("sd::DataType") int dtype, LongType shape);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBuffer(@Cast("sd::LongType") long rank, @Cast("sd::DataType") int dtype, @Cast("sd::LongType*") LongPointer shape);
 
-@Namespace("shape") public native LongType shapeBuffer(@ByVal LongType rank, @Cast("sd::DataType") int dtype, LongType shape,
-                                                       LongType buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBuffer(@Cast("sd::LongType") long rank, @Cast("sd::DataType") int dtype, @Cast("sd::LongType*") LongPointer shape,
+                                                       @Cast("sd::LongType*") LongPointer buffer);
 
-@Namespace("shape") public native void transposeInplace(LongType shapeBuffer);
+@Namespace("shape") public native void transposeInplace(@Cast("sd::LongType*") LongPointer shapeBuffer);
 
 /**
 * Get the shape info buffer
 * for the given rank and shape.
 */
-@Namespace("shape") public native LongType shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Const LongType shape);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongPointer shape);
 
-@Namespace("shape") public native LongType shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Const LongType shape,
-                                                              LongType output);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongPointer shape,
+                                                              @Cast("sd::LongType*") LongPointer output);
 
 // #ifdef __CUDACC__
 // #endif
 
 
-@Namespace("shape") public native void updateStrides(LongType shape, @Cast("const char") byte order, @Cast("bool") boolean resetStridesIfView);
-@Namespace("shape") public native void updateStrides(@Const @ByVal LongType rank, @Const LongType shapeOnly,
-                                                LongType stridesOnly, @Cast("const char") byte order);
+@Namespace("shape") public native void updateStrides(@Cast("sd::LongType*") LongPointer shape, @Cast("const char") byte order, @Cast("bool") boolean resetStridesIfView);
+@Namespace("shape") public native void updateStrides(@Cast("const sd::LongType") long rank, @Cast("const sd::LongType*") LongPointer shapeOnly,
+                                                @Cast("sd::LongType*") LongPointer stridesOnly, @Cast("const char") byte order);
 
 
 
 
 
-@Namespace("shape") public native void doPermuteShapeInfo(LongType shapeBuffer, @Const LongType rearrange,
-                                                     @ByVal(nullValue = "sd::LongType(-1)") LongType len);
-@Namespace("shape") public native void doPermuteShapeInfo(LongType shapeBuffer, @Const LongType rearrange);
+@Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") LongPointer shapeBuffer, @Cast("const sd::LongType*") LongPointer rearrange,
+                                                     @Cast("sd::LongType") long len/*=-1*/);
+@Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") LongPointer shapeBuffer, @Cast("const sd::LongType*") LongPointer rearrange);
 
 
 /**
@@ -8643,7 +9298,7 @@ public static final int
 * @param elementStride
 * @return
 */
-@Namespace("shape") public native @Cast("char") byte getOrder(int length, LongType shape, LongType stride, int elementStride);
+@Namespace("shape") public native @Cast("char") byte getOrder(int length, @Cast("sd::LongType*") LongPointer shape, @Cast("sd::LongType*") LongPointer stride, int elementStride);
 
 /**
 * Ensure that every value in the re arrange
@@ -8661,8 +9316,8 @@ public static final int
 * @param rearrange the order to re arrange
 * @param rank the rank of the rearrange array
 */
-@Namespace("shape") public native void permute(@Cast("shape::ShapeInformation**") PointerPointer info, LongType rearrange, @ByVal LongType rank);
-@Namespace("shape") public native void permute(@ByPtrPtr ShapeInformation info, LongType rearrange, @ByVal LongType rank);
+@Namespace("shape") public native void permute(@Cast("shape::ShapeInformation**") PointerPointer info, @Cast("sd::LongType*") LongPointer rearrange, @Cast("sd::LongType") long rank);
+@Namespace("shape") public native void permute(@ByPtrPtr ShapeInformation info, @Cast("sd::LongType*") LongPointer rearrange, @Cast("sd::LongType") long rank);
 
 /**
 * Returns whether the
@@ -8670,26 +9325,26 @@ public static final int
 * @param shape the shape of the array
 * @param rank the rank of cthe shape
 */
-@Namespace("shape") public native int isVector(@Const LongType shape, int rank);
+@Namespace("shape") public native int isVector(@Cast("const sd::LongType*") LongPointer shape, int rank);
 
 
 
-@Namespace("shape") public native int isVector(LongType shapeInfo);
+@Namespace("shape") public native int isVector(@Cast("sd::LongType*") LongPointer shapeInfo);
 
-@Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Const LongType shapeInfo, @ByRef IntPointer posOfNonUnityDim);
-@Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Const LongType shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
-@Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Const LongType shapeInfo, @ByRef int[] posOfNonUnityDim);
+@Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const sd::LongType*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
+@Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const sd::LongType*") LongPointer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
+@Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const sd::LongType*") LongPointer shapeInfo, @ByRef int[] posOfNonUnityDim);
 
-@Namespace("shape") public native @Cast("bool") boolean isCommonVector(@Const LongType shapeInfo, @ByRef LongType posOfNonUnityDim);
+@Namespace("shape") public native @Cast("bool") boolean isCommonVector(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") @ByRef LongPointer posOfNonUnityDim);
 
-@Namespace("shape") public native @Cast("bool") boolean isRowVector(LongType shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isRowVector(@Cast("sd::LongType*") LongPointer shapeInfo);
 
 
 /**
 * shape - input inShape is shape only, not shapeInfo
 * returns number of non-unity dimensions in inShape
 */
-@Namespace("shape") public native int numOfNonUnitDims(int rank, @Const LongType inShape);
+@Namespace("shape") public native int numOfNonUnitDims(int rank, @Cast("const sd::LongType*") LongPointer inShape);
 
 /**
 * Returns whether the
@@ -8698,15 +9353,15 @@ public static final int
 * @param rank the rank of the shape
 */
 
-@Namespace("shape") public native int isMatrix(@Const LongType shape, int rank);
+@Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") LongPointer shape, int rank);
 
 
-@Namespace("shape") public native int isMatrix(@Const LongType shapeInfo);
+@Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") LongPointer shapeInfo);
 /**
 * Returns the shape portion of an information
 * buffer
 */
-@Namespace("shape") public native LongType shapeOf(LongType shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeOf(@Cast("sd::LongType*") LongPointer shapeInfo);
 
 /**
 * Return a copy of a buffer.
@@ -8729,60 +9384,60 @@ public static final int
 * info length for
 * @return rank * 2 + 4
 */
-@Namespace("shape") public native @ByVal LongType shapeInfoLength(@ByVal LongType rank);
+@Namespace("shape") public native @Cast("sd::LongType") long shapeInfoLength(@Cast("sd::LongType") long rank);
 
-@Namespace("shape") public native @ByVal LongType shapeInfoByteLength(@ByVal LongType rank);
+@Namespace("shape") public native @Cast("sd::LongType") long shapeInfoByteLength(@Cast("sd::LongType") long rank);
 
 /**
 * Returns the rank portion of
 * an information buffer
 */
-@Namespace("shape") public native @ByVal LongType rank(@Const LongType shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long rank(@Cast("const sd::LongType*") LongPointer shapeInfo);
 
 
 /**
 * Returns the stride portion of an information
 * buffer
 */
-@Namespace("shape") public native LongType stride(LongType buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer stride(@Cast("sd::LongType*") LongPointer buffer);
 
 
 
-@Namespace("shape") public native @ByVal LongType length(@Const LongType shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long length(@Cast("const sd::LongType*") LongPointer shapeInfo);
 
-@Namespace("shape") public native @ByVal LongType sizeAt(@Const LongType shapeInfo, @Const @ByVal LongType dim);
+@Namespace("shape") public native @Cast("sd::LongType") long sizeAt(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const @Cast("sd::LongType") long dim);
 
-@Namespace("shape") public native @ByVal LongType strideAt(@Const LongType shapeInfo, @Const @ByVal LongType dim);
+@Namespace("shape") public native @Cast("sd::LongType") long strideAt(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const @Cast("sd::LongType") long dim);
 
-@Namespace("shape") public native void setShape(LongType shapeInfo, LongType shape);
+@Namespace("shape") public native void setShape(@Cast("sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer shape);
 
-@Namespace("shape") public native void setStrideConst(LongType buffer, @Const LongType strides);
-
-
-
-@Namespace("shape") public native @Cast("char") byte setOrder(LongType buffer, @Cast("char") byte c);
+@Namespace("shape") public native void setStrideConst(@Cast("sd::LongType*") LongPointer buffer, @Cast("const sd::LongType*") LongPointer strides);
 
 
 
+@Namespace("shape") public native @Cast("char") byte setOrder(@Cast("sd::LongType*") LongPointer buffer, @Cast("char") byte c);
 
-@Namespace("shape") public native void setExtra(LongType buffer, @ByVal LongType extra);
+
+
+
+@Namespace("shape") public native void setExtra(@Cast("sd::LongType*") LongPointer buffer, @Cast("sd::LongType") long extra);
 /**
 * Returns the ordering
 * for this shape information buffer
 */
-@Namespace("shape") public native @Cast("char") byte order(@Const LongType buffer);
+@Namespace("shape") public native @Cast("char") byte order(@Cast("const sd::LongType*") LongPointer buffer);
 
 /**
 * Returns the type
 */
-@Namespace("shape") public native @ByVal LongType type(@Const LongType shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long type(@Cast("const sd::LongType*") LongPointer shapeInfo);
 
 /**
 * Returns whether
 * the given shape info buffer
 * represents a scalar shape
 */
-@Namespace("shape") public native int isScalar(@Const LongType info);
+@Namespace("shape") public native int isScalar(@Cast("const sd::LongType*") LongPointer info);
 
 /**
 * Returns whether
@@ -8826,7 +9481,7 @@ public static final int
 * Keep the given indexes
 * in the data
 */
-@Namespace("shape") public native LongType keep(LongType data, @Const LongType index, int indexLength,
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer keep(@Cast("sd::LongType*") LongPointer data, @Cast("const sd::LongType*") LongPointer index, int indexLength,
                                                 int dataLength);
 
 
@@ -8856,19 +9511,19 @@ public static final int
 * Returns a shape buffer
 * for the shape information metadata.
 */
-@Namespace("shape") public native LongType toShapeBuffer(ShapeInformation info);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer toShapeBuffer(ShapeInformation info);
 
-@Namespace("shape") public native LongType toShapeBuffer(ShapeInformation info, LongType ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer toShapeBuffer(ShapeInformation info, @Cast("sd::LongType*") LongPointer ret);
 
 
 /**
 * Returns the prod of the data
 * up to the given length
 */
-@Namespace("shape") public native @ByVal LongType prodLong(@Const LongType data, int length);
+@Namespace("shape") public native @Cast("sd::LongType") long prodLong(@Cast("const sd::LongType*") LongPointer data, int length);
 
 
-@Namespace("shape") public native void printShapeInfo(@Const LongType shapeInfo);
+@Namespace("shape") public native void printShapeInfo(@Cast("const sd::LongType*") LongPointer shapeInfo);
 
 
 
@@ -8878,14 +9533,14 @@ public static final int
 // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
 // (already stored in maxIdxs) dimsToExclude - should be sorted in increasing order dimsLen - length of dimsToExclude,
 // if not set (= -1), then it is calculated as maxRank - minRank
-@Namespace("shape") public native void maxIndToMinInd(LongType maxIdxs, LongType minIdxs,
-                                                 @Const LongType maxShapeInfo, @Const LongType minShapeInfo,
-                                                 @Const LongType dimsToExclude/*=nullptr*/,
-                                                 @ByVal(nullValue = "sd::LongType(-1)") LongType dimsLen);
-@Namespace("shape") public native void maxIndToMinInd(LongType maxIdxs, LongType minIdxs,
-                                                 @Const LongType maxShapeInfo, @Const LongType minShapeInfo);
+@Namespace("shape") public native void maxIndToMinInd(@Cast("sd::LongType*") LongPointer maxIdxs, @Cast("sd::LongType*") LongPointer minIdxs,
+                                                 @Cast("const sd::LongType*") LongPointer maxShapeInfo, @Cast("const sd::LongType*") LongPointer minShapeInfo,
+                                                 @Cast("const sd::LongType*") LongPointer dimsToExclude/*=nullptr*/,
+                                                 @Cast("sd::LongType") long dimsLen/*=-1*/);
+@Namespace("shape") public native void maxIndToMinInd(@Cast("sd::LongType*") LongPointer maxIdxs, @Cast("sd::LongType*") LongPointer minIdxs,
+                                                 @Cast("const sd::LongType*") LongPointer maxShapeInfo, @Cast("const sd::LongType*") LongPointer minShapeInfo);
 
-@Namespace("shape") public native @ByVal LongType tensorsAlongDimension(@Const LongType shapeInfo, LongType dimensions, @ByVal LongType dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer dimensions, @Cast("sd::LongType") long dimensionLength);
 
 
 /*
@@ -9061,15 +9716,15 @@ public static final int
  * This native-only helper is skipped by JavaCPP; keep its documentation a plain
  * comment so it cannot become Javadoc for the next emitted declaration.
  */
-@Namespace("shape") public native @ByVal LongType subArrayIndex(@ByVal LongType maxIdx, @Const LongType maxShapeInfo,
-                                                                  @Const LongType minShapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                                  @Cast("const sd::LongType*") LongPointer minShapeInfo);
 
 
-@Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF( LongType shapeBuffer);
+@Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF( @Cast("sd::LongType*") LongPointer shapeBuffer);
 
-@Namespace("shape") public native int outerArrayOffsets(LongType maxOffsets, @Const @ByVal LongType minIdx,
-                                                      @Const LongType maxShapeInfo, @Const LongType minShapeInfo,
-                                                      LongType memBuff, @Const LongType dimsToExclude);
+@Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") LongPointer maxOffsets, @Const @Cast("sd::LongType") long minIdx,
+                                                      @Cast("const sd::LongType*") LongPointer maxShapeInfo, @Cast("const sd::LongType*") LongPointer minShapeInfo,
+                                                      @Cast("sd::LongType*") LongPointer memBuff, @Cast("const sd::LongType*") LongPointer dimsToExclude);
 
 // max array is outer for min array, min array is sub-array of max array
 // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
@@ -9081,31 +9736,31 @@ public static final int
 // max-array maxOffsets - will contain calculated offsets of max-array, buffer for maxOffsets should be allocated
 // beforehand dimsToExclude - should be sorted in increasing order memBuff - auxiliary memory buffer (size = 2 *
 // max_rank) for coordinates and increments storing, should be allocated beforehand
-@Namespace("shape") public native int outerArrayOffsets(LongType maxOffsets, @Const @ByVal LongType minIdx,
-                                                   @Const LongType maxShapeInfo, @Const LongType minShapeInfo,
-                                                   LongType memBuff);
+@Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") LongPointer maxOffsets, @Const @Cast("sd::LongType") long minIdx,
+                                                   @Cast("const sd::LongType*") LongPointer maxShapeInfo, @Cast("const sd::LongType*") LongPointer minShapeInfo,
+                                                   @Cast("sd::LongType*") LongPointer memBuff);
 
 // calculates offsets for entities (elements or sub-arrays), shape in context of sub-array means dimensions excluded
 // from outer array rank is equal to size of shape
-@Namespace("shape") public native void calcOffsets(@Const @ByVal LongType rank, @Const LongType shape, @Const LongType strides,
-                               LongType offsets, @Cast("const char") byte order/*='c'*/);
-@Namespace("shape") public native void calcOffsets(@Const @ByVal LongType rank, @Const LongType shape, @Const LongType strides,
-                               LongType offsets);
-@Namespace("shape") public native void calcOffsets(@Const LongType shapeInfo, LongType offsets, @Cast("const char") byte order/*='c'*/);
-@Namespace("shape") public native void calcOffsets(@Const LongType shapeInfo, LongType offsets);
+@Namespace("shape") public native void calcOffsets(@Const @Cast("sd::LongType") long rank, @Cast("const sd::LongType*") LongPointer shape, @Cast("const sd::LongType*") LongPointer strides,
+                               @Cast("sd::LongType*") LongPointer offsets, @Cast("const char") byte order/*='c'*/);
+@Namespace("shape") public native void calcOffsets(@Const @Cast("sd::LongType") long rank, @Cast("const sd::LongType*") LongPointer shape, @Cast("const sd::LongType*") LongPointer strides,
+                               @Cast("sd::LongType*") LongPointer offsets);
+@Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer offsets, @Cast("const char") byte order/*='c'*/);
+@Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer offsets);
 
-@Namespace("shape") public native void shapeOldScalar(@Cast("sd::DataType") int dtype, LongType buffer, @Cast("const char") byte order);
+@Namespace("shape") public native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("sd::LongType*") LongPointer buffer, @Cast("const char") byte order);
 
 // deduce order and element-wise stride
 // if array is scalar or unit length vector then ews = 1 and order is preserved
 // if array is common vector then ews = stride of non-unity dimension and order is preserved
 // if strides are normal/contiguous then ews = 1 and corresponding order is set, otherwise ews = 0 and order is
 // preserved
-@Namespace("shape") public native void checkStridesEwsAndOrder(LongType shapeInfo, @Cast("const char") byte proposedOrder,
-                                                          @Const @ByVal LongType numOfNonUnitDims,
-                                                          @Const LongType shapeNoUnities,
-                                                          @Const LongType stridesNoUnities);
-@Namespace("shape") public native void checkStridesEwsAndOrder(LongType shapeInfo);
+@Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") LongPointer shapeInfo, @Cast("const char") byte proposedOrder,
+                                                          @Const @Cast("sd::LongType") long numOfNonUnitDims,
+                                                          @Cast("const sd::LongType*") LongPointer shapeNoUnities,
+                                                          @Cast("const sd::LongType*") LongPointer stridesNoUnities);
+@Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") LongPointer shapeInfo);
 
 /**
 * processes whole set of sub-arrays
@@ -9120,12 +9775,12 @@ public static final int
 * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -&gt; {a,b}
 */
 @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(
-    @Const LongType wholeShapeInfo, @Const @ByVal LongType numOfSubArrs, @Const @ByVal LongType dimsSize,
-    @Const LongType dimsToExclude, LongType subArrShapeInfo, LongType subArrOffsets,
+    @Cast("const sd::LongType*") LongPointer wholeShapeInfo, @Const @Cast("sd::LongType") long numOfSubArrs, @Const @Cast("sd::LongType") long dimsSize,
+    @Cast("const sd::LongType*") LongPointer dimsToExclude, @Cast("sd::LongType*") LongPointer subArrShapeInfo, @Cast("sd::LongType*") LongPointer subArrOffsets,
     @Cast("bool") boolean keepUnitiesInShape/*=false*/);
 @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(
-    @Const LongType wholeShapeInfo, @Const @ByVal LongType numOfSubArrs, @Const @ByVal LongType dimsSize,
-    @Const LongType dimsToExclude, LongType subArrShapeInfo, LongType subArrOffsets);
+    @Cast("const sd::LongType*") LongPointer wholeShapeInfo, @Const @Cast("sd::LongType") long numOfSubArrs, @Const @Cast("sd::LongType") long dimsSize,
+    @Cast("const sd::LongType*") LongPointer dimsToExclude, @Cast("sd::LongType*") LongPointer subArrShapeInfo, @Cast("sd::LongType*") LongPointer subArrOffsets);
 
 /**
 * processes only one sub-array, evaluates shapeInfo of sub-array and its buffer offset from original array
@@ -9141,12 +9796,12 @@ public static final int
 * numbers which correspond to stride between dimStart and dimEnd, numOfUntiesInMinShape - input argument, number of
 * occurrences in idx when (dimEnd - dimStart) = 1
 */
-@Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Const LongType idx, @Const LongType maxShapeInfo,
-                                                LongType minShapeInfo, @ByRef LongType minOffset,
+@Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") LongPointer idx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                @Cast("sd::LongType*") LongPointer minShapeInfo, @Cast("sd::LongType*") @ByRef LongPointer minOffset,
                                                 @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/,
-                                                @Const @ByVal(nullValue = "sd::LongType(0)") LongType numOfUntiesInMinShape);
-@Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Const LongType idx, @Const LongType maxShapeInfo,
-                                                LongType minShapeInfo, @ByRef LongType minOffset);
+                                                @Cast("const sd::LongType") long numOfUntiesInMinShape/*=0*/);
+@Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") LongPointer idx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                @Cast("sd::LongType*") LongPointer minShapeInfo, @Cast("sd::LongType*") @ByRef LongPointer minOffset);
 
 /**
 * for example inShapeInfo is {3, 2,1,4, 4,4,1, 16384,1,99}
@@ -9156,17 +9811,17 @@ public static final int
 * if there is no unities in inShapeInfo, then no copy procedure will be performed and shapeNoUnities/stridesNoUnities
 * will point on corresponding places in inShapeInfo
 */
-@Namespace("shape") public native int excludeUnitiesFromShapeInfo(@Const LongType inShapeInfo,
-                                                             LongType shapeNoUnities,
-                                                             LongType stridesNoUnities);
+@Namespace("shape") public native int excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") LongPointer inShapeInfo,
+                                                             @Cast("sd::LongType*") LongPointer shapeNoUnities,
+                                                             @Cast("sd::LongType*") LongPointer stridesNoUnities);
 
 /**
 * for example inShapeInfo is {3, 2,1,3,1,4,  12,12,4,4,1, 16384,1,99}, dimsToExclude(points on unity dimensions) =
 * {1,3}, dimsSize = 2 then outShapeInfo will contain {3, 2,3,4, 12,4,1, 16384,1,99}
 */
-@Namespace("shape") public native void excludeUnitiesFromShapeInfo(@Const LongType inShapeInfo,
-                                                              @Const LongType dimsToExclude,
-                                                              @Const @ByVal LongType dimsSize, LongType outShapeInfo);
+@Namespace("shape") public native void excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") LongPointer inShapeInfo,
+                                                              @Cast("const sd::LongType*") LongPointer dimsToExclude,
+                                                              @Cast("const sd::LongType") long dimsSize, @Cast("sd::LongType*") LongPointer outShapeInfo);
 
 /**
 * get stride over contiguous axis (contiguous axis must have stride = 1)
@@ -9183,9 +9838,9 @@ public static final int
 * @param startNum the start number for the strides
 * @return the strides for a matrix of n dimensions
 */
-@Namespace("shape") public native LongType calcStridesFortran(@Const LongType shape, @ByVal LongType rank, @ByVal LongType startNum);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, @Cast("sd::LongType") long rank, @Cast("sd::LongType") long startNum);
 
-@Namespace("shape") public native LongType calcStridesFortran(@Const LongType shape, int rank, int startNum, LongType ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, int rank, int startNum, @Cast("sd::LongType*") LongPointer ret);
 
 
 
@@ -9210,16 +9865,16 @@ public static final int
 
 
 
-@Namespace("shape") public native @Cast("const char*") BytePointer shapeInfoString(@Const LongType shapeInfo);
+@Namespace("shape") public native @Cast("const char*") BytePointer shapeInfoString(@Cast("const sd::LongType*") LongPointer shapeInfo);
 
-@Namespace("shape") public native void printShapeInfoLinear(@Const LongType shapeInfo);
-
-
-@Namespace("shape") public native void printShapeInfoLinear(@Cast("const char*") BytePointer msg, @Const LongType shapeInfo);
-@Namespace("shape") public native void printShapeInfoLinear(String msg, @Const LongType shapeInfo);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("const sd::LongType*") LongPointer shapeInfo);
 
 
-@Namespace("shape") public native LongType shapeBufferOfNpy(@ByVal LongType rank, LongType shape, @Cast("bool") boolean fortranOrder);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("const char*") BytePointer msg, @Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native void printShapeInfoLinear(String msg, @Cast("const sd::LongType*") LongPointer shapeInfo);
+
+
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBufferOfNpy(@Cast("sd::LongType") long rank, @Cast("sd::LongType*") LongPointer shape, @Cast("bool") boolean fortranOrder);
 
 
 
@@ -9230,39 +9885,26 @@ public static final int
 * @param startNum the start number for the strides
 * @return the strides for a matrix of n dimensions
 */
-@Namespace("shape") public native LongType calcStrides(@Const LongType shape, @ByVal LongType rank, @ByVal LongType startNum);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, @Cast("sd::LongType") long rank, @Cast("sd::LongType") long startNum);
 
 
-@Namespace("shape") public native LongType calcStrides(@Const LongType shape, @ByVal LongType rank, @ByVal LongType startNum,
-                                                   LongType ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, @Cast("sd::LongType") long rank, @Cast("sd::LongType") long startNum,
+                                                   @Cast("sd::LongType*") LongPointer ret);
 
-@Namespace("shape") public native LongType calcStrides(@Const LongType shape, int rank, LongType ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, int rank, @Cast("sd::LongType*") LongPointer ret);
 
 
 // function calculates absolute offset of min array, min is sub-array of max, offset to be returned corresponds to
 // maxIdx of max array dimsToExclude - should be sorted in increasing order
-@Namespace("shape") public native @ByVal LongType subArrayOffset(@Const @ByVal LongType maxIdx, @Const LongType maxShapeInfo,
-                                                                   @Const LongType minShapeInfo,
-                                                                   @Const LongType dimsToExclude/*=nullptr*/,
-                                                                   @Const @ByVal(nullValue = "sd::LongType(-1)") LongType dimsLen);
-@Namespace("shape") public native @ByVal LongType subArrayOffset(@Const @ByVal LongType maxIdx, @Const LongType maxShapeInfo,
-                                                                   @Const LongType minShapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Const @Cast("sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                                   @Cast("const sd::LongType*") LongPointer minShapeInfo,
+                                                                   @Cast("const sd::LongType*") LongPointer dimsToExclude/*=nullptr*/,
+                                                                   @Cast("const sd::LongType") long dimsLen/*=-1*/);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Const @Cast("sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                                   @Cast("const sd::LongType*") LongPointer minShapeInfo);
 
-@Namespace("shape") public native @Cast("const char*") BytePointer shapeToString(@Const LongType shapeInfo, @Cast("const char*") BytePointer message);
-@Namespace("shape") public native String shapeToString(@Const LongType shapeInfo, String message);
-
-
-/**
-* Computes the standard packed array strides for a given shape.
-*
-* @param shape    the shape of a matrix:
-* @param rank the number of dimensions
-* @return the strides for a matrix of n dimensions, starting at one
-*/
-@Namespace("shape") public native LongType calcStridesFortran(@Const LongType shape, @ByVal LongType rank);
-
-@Namespace("shape") public native LongType calcStridesFortran(@Const LongType shape, int rank, LongType ret);
-
+@Namespace("shape") public native @Cast("const char*") BytePointer shapeToString(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("const char*") BytePointer message);
+@Namespace("shape") public native String shapeToString(@Cast("const sd::LongType*") LongPointer shapeInfo, String message);
 
 
 /**
@@ -9272,7 +9914,20 @@ public static final int
 * @param rank the number of dimensions
 * @return the strides for a matrix of n dimensions, starting at one
 */
-@Namespace("shape") public native LongType calcStrides(@Const LongType shape, @ByVal LongType rank);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, @Cast("sd::LongType") long rank);
+
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, int rank, @Cast("sd::LongType*") LongPointer ret);
+
+
+
+/**
+* Computes the standard packed array strides for a given shape.
+*
+* @param shape    the shape of a matrix:
+* @param rank the number of dimensions
+* @return the strides for a matrix of n dimensions, starting at one
+*/
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, @Cast("sd::LongType") long rank);
 
 
 
@@ -9285,7 +9940,7 @@ public static final int
 /**
 * BEWARE: THIS METHOD DOES NOT CHECKS ALLOCATION BOUNDARIES
 */
-@Namespace("shape") public native LongType cuMalloc(LongType buffer, long size);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer cuMalloc(@Cast("sd::LongType*") LongPointer buffer, long size);
 // #endif
 
 //////////////////////////////////////////////////////////////////////
@@ -9324,11 +9979,11 @@ public static final int
  * @param shapeInfo the array shape information
  * @return true for a vector whose first dimension is not one
  */
-@Namespace("shape") public native @Cast("bool") boolean isColumnVector( LongType shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isColumnVector( @Cast("sd::LongType*") LongPointer shapeInfo);
 
 //////////////////////////////////////////////////////////////////////
 
-@Namespace("shape") public native int oneDimEqualToLength(LongType shape, int rank);
+@Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") LongPointer shape, int rank);
 
 
 
@@ -9375,7 +10030,7 @@ public static final int
  * Uses the SD_SHAPE_ALLOC_PADDING guard zone at the end of allocations.
  * Only performs validation when debug mode is enabled to avoid performance impact.
  */
-@Namespace("shape") public native @Cast("bool") boolean validateShapeInfoGuardBytes(@Const LongType shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean validateShapeInfoGuardBytes(@Cast("const sd::LongType*") LongPointer shapeInfo);
 
 /**
 * Returns the rank portion of
@@ -9385,7 +10040,7 @@ public static final int
 
 
 
-@Namespace("shape") public native void setStride(LongType buffer, LongType strides);
+@Namespace("shape") public native void setStride(@Cast("sd::LongType*") LongPointer buffer, @Cast("sd::LongType*") LongPointer strides);
 
 
 /**
@@ -9418,7 +10073,7 @@ public static final int
 * Returns the element wise stride for this information
 * buffer
 */
-@Namespace("shape") public native @ByVal LongType elementWiseStride(@Const LongType buffer);
+@Namespace("shape") public native @Cast("sd::LongType") long elementWiseStride(@Cast("const sd::LongType*") LongPointer buffer);
 
 
 /**
@@ -9466,7 +10121,7 @@ public static final int
 * for the shape to be returned as
 * @return the new shape
 */
-@Namespace("shape") public native LongType ensureVectorShape(LongType shape, int dimension);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer ensureVectorShape(@Cast("sd::LongType*") LongPointer shape, int dimension);
 
 
 /**
@@ -9527,16 +10182,16 @@ public static final int
 * a global element given the shape information
 * and the offset to be read.
 */
-@Namespace("shape") public native int tadOffset(LongType xInfo, int offset);
+@Namespace("shape") public native int tadOffset(@Cast("sd::LongType*") LongPointer xInfo, int offset);
 // #else
 // #endif
 
 
 
 
-@Namespace("shape") public native LongType createScalarShapeInfo();
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer createScalarShapeInfo();
 
-@Namespace("shape") public native LongType createScalarShapeInfo(LongType ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer createScalarShapeInfo(@Cast("sd::LongType*") LongPointer ret);
 
 /**
 * Returns the prod of the data
@@ -9544,7 +10199,7 @@ public static final int
 */
 
 // #if defined(__CUDACC__)
-@Namespace("shape") public native void sweepShapeInfoBuffer(LongType shapeInfoBuffer, LongType targetBuffer);
+@Namespace("shape") public native void sweepShapeInfoBuffer(@Cast("sd::LongType*") LongPointer shapeInfoBuffer, @Cast("sd::LongType*") LongPointer targetBuffer);
 // #else
 // #endif
 
@@ -9553,7 +10208,7 @@ public static final int
 // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too
 // big number of dimensions) also it sorts input array of dimensions, this operation is also necessary for creating TAD
 // object
-@Namespace("shape") public native void checkDimensions(@Const @ByVal LongType rank, @StdVector LongType dimensions);
+@Namespace("shape") public native void checkDimensions(@Const @Cast("sd::LongType") long rank, @Cast("sd::LongType*") @StdVector LongPointer dimensions);
 
 
 
@@ -9568,7 +10223,7 @@ public static final int
  * @param shape the shape entries to update
  * @param rearrange the permutation of dimension indices
 */
-@Namespace("shape") public native void doPermuteSwap(@ByVal LongType length, LongType shape, LongType rearrange);
+@Namespace("shape") public native void doPermuteSwap(@Cast("sd::LongType") long length, @Cast("sd::LongType*") LongPointer shape, @Cast("sd::LongType*") LongPointer rearrange);
 
 
 
@@ -9623,7 +10278,7 @@ public static final int
  */
 @Namespace("shape") public native ShapeInformation shapeCopy(ShapeInformation toCopy);
 
-@Namespace("shape") public native void fillStrides(LongType shapeInfo);
+@Namespace("shape") public native void fillStrides(@Cast("sd::LongType*") LongPointer shapeInfo);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -9679,21 +10334,21 @@ public static final int
         return new ShapeList((Pointer)this).offsetAddress(i);
     }
 
-  public ShapeList( LongType shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
-  private native void allocate( LongType shape/*=nullptr*/);
+  public ShapeList( @Cast("sd::LongType*") LongPointer shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
+  private native void allocate( @Cast("sd::LongType*") LongPointer shape/*=nullptr*/);
   public ShapeList() { super((Pointer)null); allocate(); }
   private native void allocate();
   public ShapeList(@Cast("sd::LongType**") @StdVector PointerPointer shapes, @Cast("bool") boolean isWorkspace) { super((Pointer)null); allocate(shapes, isWorkspace); }
   private native void allocate(@Cast("sd::LongType**") @StdVector PointerPointer shapes, @Cast("bool") boolean isWorkspace);
-  public ShapeList(@StdVector @ByPtrPtr LongType shapes, @Cast("bool") boolean isWorkspace) { super((Pointer)null); allocate(shapes, isWorkspace); }
-  private native void allocate(@StdVector @ByPtrPtr LongType shapes, @Cast("bool") boolean isWorkspace);
+  public ShapeList(@Cast("sd::LongType**") @StdVector @ByPtrPtr LongPointer shapes, @Cast("bool") boolean isWorkspace) { super((Pointer)null); allocate(shapes, isWorkspace); }
+  private native void allocate(@Cast("sd::LongType**") @StdVector @ByPtrPtr LongPointer shapes, @Cast("bool") boolean isWorkspace);
   public ShapeList(@Cast("sd::LongType**") @StdVector PointerPointer shapes) { super((Pointer)null); allocate(shapes); }
   private native void allocate(@Cast("sd::LongType**") @StdVector PointerPointer shapes);
 
   public native void destroy();
   public native int size();
-  public native LongType at(int idx);
-  public native void push_back( LongType shape);
+  public native @Cast("sd::LongType*") LongPointer at(int idx);
+  public native void push_back( @Cast("sd::LongType*") LongPointer shape);
 
   /**
    * PLEASE NOTE: This method should be called ONLY if shapes were generated at workspaces. Otherwise you'll get memory
@@ -12615,10 +13270,10 @@ public static final int
         return new OpExecTrace((Pointer)this).offsetAddress(i);
     }
 
-  public native @Cast("const LongType**") @StdVector PointerPointer inputShapeBuffers(); public native OpExecTrace inputShapeBuffers(PointerPointer setter);
-  public native @Cast("const LongType**") @StdVector PointerPointer outputShapeBuffers(); public native OpExecTrace outputShapeBuffers(PointerPointer setter);
+  public native @Cast("const sd::LongType**") @StdVector PointerPointer inputShapeBuffers(); public native OpExecTrace inputShapeBuffers(PointerPointer setter);
+  public native @Cast("const sd::LongType**") @StdVector PointerPointer outputShapeBuffers(); public native OpExecTrace outputShapeBuffers(PointerPointer setter);
   public native @Const @StdString BytePointer opName(); public native OpExecTrace opName(BytePointer setter);
-  public native @StdVector LongType iArgs(); public native OpExecTrace iArgs(LongType setter);
+  public native @Cast("sd::LongType*") @StdVector LongPointer iArgs(); public native OpExecTrace iArgs(LongPointer setter);
   public native @StdVector DoublePointer tArgs(); public native OpExecTrace tArgs(DoublePointer setter);
   public native @Cast("sd::DataType*") @StdVector IntPointer dArgs(); public native OpExecTrace dArgs(IntPointer setter);
   public native @Cast("bool*") @StdVector BooleanPointer bArgs(); public native OpExecTrace bArgs(BooleanPointer setter);
@@ -12634,16 +13289,16 @@ public static final int
 
 
 
-  public native @Cast("const LongType**") @StdVector PointerPointer getInputShapeBuffers();
-  public native void setInputShapeBuffers(@Cast("const LongType**") @StdVector PointerPointer inputShapeBuffersIn);
-  public native void setInputShapeBuffers(@Const @StdVector @ByPtrPtr LongType inputShapeBuffersIn);
-  public native @Cast("const LongType**") @StdVector PointerPointer getOutputShapeBuffers();
-  public native void setOutputShapeBuffers(@Cast("const LongType**") @StdVector PointerPointer outputShapeBuffersIn);
-  public native void setOutputShapeBuffers(@Const @StdVector @ByPtrPtr LongType outputShapeBuffersIn);
+  public native @Cast("const sd::LongType**") @StdVector PointerPointer getInputShapeBuffers();
+  public native void setInputShapeBuffers(@Cast("const sd::LongType**") @StdVector PointerPointer inputShapeBuffersIn);
+  public native void setInputShapeBuffers(@Cast("sd::LongType**") @StdVector @ByPtrPtr LongPointer inputShapeBuffersIn);
+  public native @Cast("const sd::LongType**") @StdVector PointerPointer getOutputShapeBuffers();
+  public native void setOutputShapeBuffers(@Cast("const sd::LongType**") @StdVector PointerPointer outputShapeBuffersIn);
+  public native void setOutputShapeBuffers(@Cast("sd::LongType**") @StdVector @ByPtrPtr LongPointer outputShapeBuffersIn);
   public native @Const @StdString BytePointer getOpName();
   public native void setOpName(@Const @StdString BytePointer opNameIn);
-  public native @StdVector LongType getIArgs();
-  public native void setIArgs(@StdVector LongType iArgsIn);
+  public native @Cast("sd::LongType*") @StdVector LongPointer getIArgs();
+  public native void setIArgs(@Cast("sd::LongType*") @StdVector LongPointer iArgsIn);
   public native @StdVector DoublePointer getTArgs();
   public native void setTArgs(@StdVector DoublePointer tArgsIn);
   public native void setTArgs(@StdVector DoubleBuffer tArgsIn);
@@ -12728,7 +13383,7 @@ public static final int
   public native int getNumberOfInputs();
 
   // this method returns hash code for this operation
-  public native @ByVal LongType getHash();
+  public native @Cast("sd::LongType") long getHash();
 
   // this method returns minimal expected number of outputs
   public native int getNumberOfOutputs();
@@ -12751,7 +13406,7 @@ public static final int
   // this method allows to set specific opNum
   public native void setOpNum(int opNum);
 
-  public native void setHash(@ByVal LongType hash);
+  public native void setHash(@Cast("sd::LongType") long hash);
 
   public native @Cast("sd::ops::InputType") int inputType();
 
@@ -12845,6 +13500,115 @@ public static final int
 /**
  * This abstract class defines methods used by platform-specific helpers implementations
  */
+// Parsed from helpers/HelperVersionRegistry.h
+// (Copied verbatim from Nd4jTpu.java — same shared libnd4j headers)
+@Namespace("sd::ops::platforms") @NoOffset public static class HelperVersion extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public HelperVersion(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public HelperVersion(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public HelperVersion position(long position) {
+        return (HelperVersion)super.position(position);
+    }
+    @Override public HelperVersion getPointer(long i) {
+        return new HelperVersion((Pointer)this).offsetAddress(i);
+    }
+
+  // Field names avoid 'major'/'minor' which collide with glibc macros
+  // from <sys/sysmacros.h> on older Linux toolchains (devtoolset-7).
+  public native int majorVersion(); public native HelperVersion majorVersion(int setter);
+  public native int minorVersion(); public native HelperVersion minorVersion(int setter);
+  public native int patchVersion(); public native HelperVersion patchVersion(int setter);
+  public native @StdString BytePointer buildInfo(); public native HelperVersion buildInfo(BytePointer setter);  // Additional build info (e.g., "CUDA 12.0", "AVX512")
+
+  public HelperVersion() { super((Pointer)null); allocate(); }
+  private native void allocate();
+  public HelperVersion(int maj, int min, int pat, @StdString BytePointer info/*=""*/) { super((Pointer)null); allocate(maj, min, pat, info); }
+  private native void allocate(int maj, int min, int pat, @StdString BytePointer info/*=""*/);
+  public HelperVersion(int maj, int min, int pat) { super((Pointer)null); allocate(maj, min, pat); }
+  private native void allocate(int maj, int min, int pat);
+  public HelperVersion(int maj, int min, int pat, @StdString String info/*=""*/) { super((Pointer)null); allocate(maj, min, pat, info); }
+  private native void allocate(int maj, int min, int pat, @StdString String info/*=""*/);
+
+  public native @Cast("bool") boolean meetsMinimum(@Const @ByRef HelperVersion min);
+
+  public native @Cast("bool") boolean inRange(@Const @ByRef HelperVersion min, @Const @ByRef HelperVersion max);
+
+  public native @StdString @Name("toString") BytePointer toVersionString();
+
+  public native int toInt();
+
+  public native @ByVal HelperVersion fromInt(int version);
+
+  public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef HelperVersion other);
+
+  public native @Cast("bool") @Name("operator !=") boolean notEquals(@Const @ByRef HelperVersion other);
+
+  public native @Cast("bool") @Name("operator <") boolean lessThan(@Const @ByRef HelperVersion other);
+
+  public native @Cast("bool") @Name("operator <=") boolean lessThanEquals(@Const @ByRef HelperVersion other);
+
+  public native @Cast("bool") @Name("operator >") boolean greaterThan(@Const @ByRef HelperVersion other);
+
+  public native @Cast("bool") @Name("operator >=") boolean greaterThanEquals(@Const @ByRef HelperVersion other);
+}
+
+/** enum class sd::ops::platforms::HelperCapability */
+public static final long
+  NONE = 0,
+  FLOAT16_COMPUTE = 1L << 0,
+  BFLOAT16_COMPUTE = 1L << 1,
+  INT8_COMPUTE = 1L << 2,
+  INT4_COMPUTE = 1L << 3,
+  FLASH_ATTENTION = 1L << 4,
+  MULTI_HEAD_ATTENTION = 1L << 5,
+  GROUPED_QUERY_ATTENTION = 1L << 6,
+  KV_CACHE = 1L << 7,
+  TENSOR_CORES = 1L << 8,
+  MATRIX_CORES = 1L << 9,
+  AMX = 1L << 10,
+  SVE = 1L << 11,
+  SVE2 = 1L << 12,
+  NEON = 1L << 13,
+  AVX2 = 1L << 14,
+  AVX512 = 1L << 15,
+  UNIFIED_MEMORY = 1L << 16,
+  P2P_TRANSFER = 1L << 17,
+  ASYNC_COPY = 1L << 18,
+  GRAPH_EXECUTION = 1L << 19,
+  DYNAMIC_SHAPES = 1L << 20,
+  MODEL_PARALLEL = 1L << 21,
+  QUANTIZATION_Q4 = 1L << 22,
+  QUANTIZATION_Q8 = 1L << 23,
+  QUANTIZATION_DYNAMIC = 1L << 24,
+  LAYER_NORM = 1L << 25,
+  RMS_NORM = 1L << 26,
+  GROUP_NORM = 1L << 27,
+  INSTANCE_NORM = 1L << 28,
+  GELU = 1L << 29,
+  SWISH = 1L << 30,
+  MISH = 1L << 31,
+  HARDSWISH = 1L << 32,
+  SOFTPLUS = 1L << 33,
+  NEW_RNN_API = 1L << 34,
+  LSTM_PEEPHOLE = 1L << 35,
+  GRU = 1L << 36,
+  WINOGRAD = 1L << 37,
+  FFT_CONV = 1L << 38,
+  DEPTHWISE_CONV = 1L << 39,
+  CUDA_GRAPHS = 1L << 40,
+  METAL_SHADERS = 1L << 41,
+  VULKAN_COMPUTE = 1L << 42,
+  SYCL_BACKEND = 1L << 43;
+
+@Namespace("sd::ops::platforms") public native @Cast("sd::ops::platforms::HelperCapability") @Name("operator |") long or(@Cast("sd::ops::platforms::HelperCapability") long a, @Cast("sd::ops::platforms::HelperCapability") long b);
+
+@Namespace("sd::ops::platforms") public native @Cast("sd::ops::platforms::HelperCapability") @Name("operator &") long and(@Cast("sd::ops::platforms::HelperCapability") long a, @Cast("sd::ops::platforms::HelperCapability") long b);
+
+@Namespace("sd::ops::platforms") public native @Cast("bool") boolean hasCapability(@Cast("sd::ops::platforms::HelperCapability") long capabilities, @Cast("sd::ops::platforms::HelperCapability") long check);
+
 @Namespace("sd::ops::platforms") @NoOffset public static class PlatformHelper extends Pointer {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -12859,7 +13623,7 @@ public static final int
 
   public native @Cast("samediff::Engine") int engine();
 
-  public native @ByVal LongType hash();
+  public native @Cast("sd::LongType") long hash();
 
   /**
    * This method checks, if given helper can be used with given input/output/configuration options
@@ -12875,7 +13639,7 @@ public static final int
    * @param context
    * @return
    */
-  public native @ByVal Status invokeHelper(@ByRef Context context);
+  public native @Cast("sd::Status") int invokeHelper(@ByRef Context context);
 
   /**
    * Helper method, needed for compatibility with DeclarableOp macros
@@ -12915,7 +13679,7 @@ public static final int
   /**
    * Get required capabilities
    */
-  public native @ByVal HelperCapability requiredCapabilities();
+  public native @Cast("sd::ops::platforms::HelperCapability") long requiredCapabilities();
 
   /**
    * Set version requirements (for helpers that need to configure this dynamically)
@@ -12925,7 +13689,7 @@ public static final int
   /**
    * Set required capabilities
    */
-  public native void setRequiredCapabilities(@ByVal HelperCapability capabilities);
+  public native void setRequiredCapabilities(@Cast("sd::ops::platforms::HelperCapability") long capabilities);
 
   /**
    * Set helper library name
@@ -13105,42 +13869,42 @@ public static final int
 
   // constructor
   public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
   private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
   public OpArgsHolder(@Const @ByRef NDArrayVector inArrs) { super((Pointer)null); allocate(inArrs); }
   private native void allocate(@Const @ByRef NDArrayVector inArrs);
   public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
   private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
   public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
   private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
   public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
   private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
   public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
   private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
   public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
   private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/,
-                 @StdVector LongType iArgs/*=std::vector<LongType>()*/,
+                 @Cast("sd::LongType*") @StdVector LongPointer iArgs/*=std::vector<sd::LongType>()*/,
                  @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
 
   // move constructor
@@ -13154,7 +13918,7 @@ public static final int
 
   public native @StdVector DoublePointer getTArgs();
 
-  public native @StdVector LongType getIArgs();
+  public native @Cast("sd::LongType*") @StdVector LongPointer getIArgs();
 
   public native @Cast("bool*") @StdVector BooleanPointer getBArgs();
 
@@ -13260,7 +14024,7 @@ public static final int
    */
   public native void initializeDescriptor();
 
-  public native @ByVal Status validateDataTypes(@ByRef Context block);
+  public native @Cast("sd::Status") int validateDataTypes(@ByRef Context block);
 
   /**
    *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input
@@ -13278,7 +14042,7 @@ public static final int
   /**
    * Returns opHash
    */
-  public native @ByVal LongType getOpHash();
+  public native @Cast("sd::LongType") long getOpHash();
 
 
 
@@ -13288,146 +14052,146 @@ public static final int
    * @param block
    * @return 0 if OK, error code otherwise
    */
-  public native @ByVal Status execute(Context block);
+  public native @Cast("sd::Status") int execute(Context block);
 
-  public native @ByVal Status execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs);
+  public native @Cast("sd::Status") int execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs);
 
-  public native @ByVal Status execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
-                       @StdVector DoublePointer tArgs, @StdVector LongType iArgs,
+  public native @Cast("sd::Status") int execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
+                       @StdVector DoublePointer tArgs, @Cast("sd::LongType*") @StdVector LongPointer iArgs,
                        @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
                        @Cast("sd::DataType*") @StdVector IntPointer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
-  public native @ByVal Status execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
-                       @StdVector DoublePointer tArgs, @StdVector LongType iArgs);
-  public native @ByVal Status execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
-                       @StdVector DoubleBuffer tArgs, @StdVector LongType iArgs,
+  public native @Cast("sd::Status") int execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
+                       @StdVector DoublePointer tArgs, @Cast("sd::LongType*") @StdVector LongPointer iArgs);
+  public native @Cast("sd::Status") int execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
+                       @StdVector DoubleBuffer tArgs, @Cast("sd::LongType*") @StdVector LongPointer iArgs,
                        @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
                        @Cast("sd::DataType*") @StdVector IntBuffer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
-  public native @ByVal Status execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
-                       @StdVector DoubleBuffer tArgs, @StdVector LongType iArgs);
-  public native @ByVal Status execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
-                       @StdVector double[] tArgs, @StdVector LongType iArgs,
+  public native @Cast("sd::Status") int execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
+                       @StdVector DoubleBuffer tArgs, @Cast("sd::LongType*") @StdVector LongPointer iArgs);
+  public native @Cast("sd::Status") int execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
+                       @StdVector double[] tArgs, @Cast("sd::LongType*") @StdVector LongPointer iArgs,
                        @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
                        @Cast("sd::DataType*") @StdVector int[] dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
-  public native @ByVal Status execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
-                       @StdVector double[] tArgs, @StdVector LongType iArgs);
-  public native @ByVal Status execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
-                       @StdVector DoublePointer tArgs, @StdVector LongType iArgs,
+  public native @Cast("sd::Status") int execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
+                       @StdVector double[] tArgs, @Cast("sd::LongType*") @StdVector LongPointer iArgs);
+  public native @Cast("sd::Status") int execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
+                       @StdVector DoublePointer tArgs, @Cast("sd::LongType*") @StdVector LongPointer iArgs,
                        @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
                        @Cast("sd::DataType*") @StdVector IntPointer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
-  public native @ByVal Status execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
-                       @StdVector DoubleBuffer tArgs, @StdVector LongType iArgs,
+  public native @Cast("sd::Status") int execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
+                       @StdVector DoubleBuffer tArgs, @Cast("sd::LongType*") @StdVector LongPointer iArgs,
                        @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
                        @Cast("sd::DataType*") @StdVector IntBuffer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
-  public native @ByVal Status execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
-                       @StdVector double[] tArgs, @StdVector LongType iArgs,
+  public native @Cast("sd::Status") int execute(@Const @ByRef NDArrayVector inputs, @Const @ByRef NDArrayVector outputs,
+                       @StdVector double[] tArgs, @Cast("sd::LongType*") @StdVector LongPointer iArgs,
                        @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
                        @Cast("sd::DataType*") @StdVector int[] dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
 
   public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs);
 
   public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
-                           @StdVector LongType iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
+                           @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector IntPointer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
   public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
-                           @StdVector LongType iArgs);
+                           @Cast("sd::LongType*") @StdVector LongPointer iArgs);
   public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
-                           @StdVector LongType iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
+                           @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector IntBuffer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
   public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
-                           @StdVector LongType iArgs);
+                           @Cast("sd::LongType*") @StdVector LongPointer iArgs);
   public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs,
-                           @StdVector LongType iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
+                           @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector int[] dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
   public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs,
-                           @StdVector LongType iArgs);
+                           @Cast("sd::LongType*") @StdVector LongPointer iArgs);
   public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
-                           @StdVector LongType iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
+                           @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector IntPointer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
   public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
-                           @StdVector LongType iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
+                           @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector IntBuffer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
   public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs,
-                           @StdVector LongType iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
+                           @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector int[] dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
 
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs,
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs,
                        @Cast("sd::DataType*") @StdVector IntPointer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/,
                        @Cast("sd::DataType") int type/*=sd::DataType::FLOAT32*/);
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector boolean[] bArgs,
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs,
                        @Cast("sd::DataType*") @StdVector IntBuffer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/,
                        @Cast("sd::DataType") int type/*=sd::DataType::FLOAT32*/);
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector double[] tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs,
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs,
                        @Cast("sd::DataType*") @StdVector int[] dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/,
                        @Cast("sd::DataType") int type/*=sd::DataType::FLOAT32*/);
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector double[] tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector boolean[] bArgs,
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs,
                        @Cast("sd::DataType*") @StdVector IntPointer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/,
                        @Cast("sd::DataType") int type/*=sd::DataType::FLOAT32*/);
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs,
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs,
                        @Cast("sd::DataType*") @StdVector IntBuffer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/,
                        @Cast("sd::DataType") int type/*=sd::DataType::FLOAT32*/);
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector double[] tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector boolean[] bArgs,
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs,
                        @Cast("sd::DataType*") @StdVector int[] dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/,
                        @Cast("sd::DataType") int type/*=sd::DataType::FLOAT32*/);
-  public native @ByVal Status execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
+  public native @Cast("sd::Status") int execute(@ByRef RandomGenerator rng, @Const @ByRef NDArrayVector inputs,
                        @Const @ByRef NDArrayVector outputs, @StdVector double[] tArgs,
-                       @StdVector LongType iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+                       @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
 
   public native @ByVal ResultSet execute(@Const @ByRef OpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
   public native @ByVal ResultSet execute(@Const @ByRef OpArgsHolder holder);
 
   // There methods provide various validation options
-  public native @ByVal Status validateNonEmptyInput(@ByRef Context block);
+  public native @Cast("sd::Status") int validateNonEmptyInput(@ByRef Context block);
 
   // this method checks if all input arrays have equal lengths
-  public native @ByVal Status validateInputLengthMatch(@ByRef Context block);
+  public native @Cast("sd::Status") int validateInputLengthMatch(@ByRef Context block);
 
   // this method checks if all input arrays have the same shapes (orders/strides are NOT checked)
-  public native @ByVal Status validateInputDimensionsMatch(@ByRef Context block);
+  public native @Cast("sd::Status") int validateInputDimensionsMatch(@ByRef Context block);
 
   // this method check if all input arrays have the same orders
-  public native @ByVal Status validateOrdersMatch(@ByRef Context block);
+  public native @Cast("sd::Status") int validateOrdersMatch(@ByRef Context block);
 
   // this method checks if all input arrays are 2D
-  public native @ByVal Status validateInput2D(@ByRef Context block);
+  public native @Cast("sd::Status") int validateInput2D(@ByRef Context block);
 
   // this method checks if all input arrays are 3D
-  public native @ByVal Status validateInput3D(@ByRef Context block);
+  public native @Cast("sd::Status") int validateInput3D(@ByRef Context block);
 
   // this method checks if all input arrays are 4D
-  public native @ByVal Status validateInput4D(@ByRef Context block);
+  public native @Cast("sd::Status") int validateInput4D(@ByRef Context block);
 
   // this method checks if all input arrays are ND
-  public native @ByVal Status validateInputDimensions(@ByRef Context block, int rank);
+  public native @Cast("sd::Status") int validateInputDimensions(@ByRef Context block, int rank);
 
   // this method checks if number of available arguments matches op expectations
-  public native @ByVal Status validateArguments(@ByRef Context block);
+  public native @Cast("sd::Status") int validateArguments(@ByRef Context block);
   public native void overwriteResult(@ByRef Context block, int outputIdx, NDArray array, @Cast("bool") boolean remove);
   public native void traceExecIfNeeded(@ByRef Context block);
 }
@@ -13473,7 +14237,7 @@ public static final int
     public DeclarableListOp(Pointer p) { super(p); }
 
 
-  public native @ByVal Status execute(Context block);
+  public native @Cast("sd::Status") int execute(Context block);
   public native @ByVal ResultSet execute(NDArrayList list, @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
                       @StdVector IntPointer iArgs);
   public native @ByVal ResultSet execute(NDArrayList list, @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
@@ -13610,7 +14374,7 @@ public static final int
   public native @Cast("bool") boolean verify(@Const @ByRef NDArrayVector args);
   public native @Cast("bool") boolean verify(@ByRef Context block);
 
-  public native @ByVal Status execute(Context block);
+  public native @Cast("sd::Status") int execute(Context block);
 
   public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
 }
@@ -13734,7 +14498,7 @@ public static final int
 
   public native @ByRef OpRegistrator getInstance();
 
-  public native void updateMSVC(@ByVal LongType newHash, @StdString @ByRef BytePointer oldName);
+  public native void updateMSVC(@Cast("sd::LongType") long newHash, @StdString @ByRef BytePointer oldName);
   public native @Cast("const char*") BytePointer getAllCustomOperations();
 
   /**
@@ -13750,31 +14514,31 @@ public static final int
   public native void registerHelper(PlatformHelper op);
 
 
-  public native @Cast("bool") boolean hasHelper(@ByVal LongType hash, @Cast("samediff::Engine") int engine);
+  public native @Cast("bool") boolean hasHelper(@Cast("sd::LongType") long hash, @Cast("samediff::Engine") int engine);
 
   /**
    * Check if any helper exists for this operation (any engine)
    */
-  public native @Cast("bool") boolean hasAnyHelper(@ByVal LongType hash);
+  public native @Cast("bool") boolean hasAnyHelper(@Cast("sd::LongType") long hash);
 
   public native DeclarableOp getOperation(@Cast("const char*") BytePointer name);
   public native DeclarableOp getOperation(String name);
-  public native DeclarableOp getOperation(@ByVal LongType hash);
+  public native DeclarableOp getOperation(@Cast("sd::LongType") long hash);
 
-  public native PlatformHelper getPlatformHelper(@ByVal LongType hash, @Cast("samediff::Engine") int engine);
+  public native PlatformHelper getPlatformHelper(@Cast("sd::LongType") long hash, @Cast("samediff::Engine") int engine);
 
   /**
    * Get all registered helpers for an operation across all engines.
    * Used by MultiPlatformDispatcher for kernel selection.
    */
-  public native @Cast("sd::ops::platforms::PlatformHelper**") @StdVector PointerPointer getAllHelpersForOp(@ByVal LongType hash);
+  public native @Cast("sd::ops::platforms::PlatformHelper**") @StdVector PointerPointer getAllHelpersForOp(@Cast("sd::LongType") long hash);
 
   /**
    * Get all available engines that have helpers for an operation
    */
-  public native @Cast("samediff::Engine*") @StdVector IntPointer getAvailableEnginesForOp(@ByVal LongType hash);
+  public native @Cast("samediff::Engine*") @StdVector IntPointer getAvailableEnginesForOp(@Cast("sd::LongType") long hash);
 
-  public native @StdVector LongType getAllHashes();
+  public native @Cast("sd::LongType*") @StdVector LongPointer getAllHashes();
 
   /**
    * Get all registered operation names
@@ -14103,23 +14867,23 @@ public static final int SHAPE_DESC_INVALID_EMPTY = 5;     // rank > 32 or shape 
   public native void invalidateHash();
 
   public native @Cast("uint64_t") long getCachedHash();
-  public native @ByVal LongType arrLength();
-  public native @ByVal LongType offset();
+  public native @Cast("sd::LongType") long arrLength();
+  public native @Cast("sd::LongType") long offset();
   public native @Cast("char") byte order();
   public native @Cast("sd::DataType") int dataType();
   public native @Cast("bool") boolean isEmpty();
-  public native LongType shape_strides();
-  public native @Const LongType stridesPtr();
-  public native @ByVal LongType extra();
+  public native @Cast("sd::LongType*") LongPointer shape_strides();
+  public native @Cast("const sd::LongType*") LongPointer stridesPtr();
+  public native @Cast("sd::LongType") long extra();
 
 
   public native void collectStoreStackTrace();
   public native void print();
   // returns minimal allocation length
-  public native @ByVal LongType allocLength();
+  public native @Cast("sd::LongType") long allocLength();
 
   // returns Status for the correctness
-  public native @ByVal LongType validate();
+  public native @Cast("sd::LongType") long validate();
 
   // we use default copy assignment operator
   // Modify assignment operator to reset hash cache:
@@ -14131,17 +14895,17 @@ public static final int SHAPE_DESC_INVALID_EMPTY = 5;     // rank > 32 or shape 
   // less than operator
   public native @Cast("bool") @Name("operator <") boolean lessThan(@Const @ByRef ShapeDescriptor other);
 
-  public native LongType toShapeInfo();
+  public native @Cast("sd::LongType*") LongPointer toShapeInfo();
 
-  public native @Cast("const char*") BytePointer toString();
+  public native @Cast("char*") String toString();
   public native ShapeDescriptor emptyDescriptor(@Cast("const sd::DataType") int type);
   public native ShapeDescriptor scalarDescriptor(@Cast("const sd::DataType") int type);
-  public native ShapeDescriptor vectorDescriptor(@Const @ByVal LongType length, @Cast("const sd::DataType") int type);
+  public native ShapeDescriptor vectorDescriptor(@Const @Cast("sd::LongType") long length, @Cast("const sd::DataType") int type);
 
   // create Descriptor with padded buffer.
   public native ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, @Cast("const char") byte order,
-                                                    @StdVector LongType shape,
-                                                    @StdVector LongType paddings);
+                                                    @Cast("sd::LongType*") @StdVector LongPointer shape,
+                                                    @Cast("sd::LongType*") @StdVector LongPointer paddings);
 
   public native @Cast("const char*") BytePointer messageForShapeDescriptorError(int errorCode);
   public native @Cast("bool") boolean isScalar();
@@ -14191,12 +14955,12 @@ public static final int SHAPE_DESC_INVALID_EMPTY = 5;     // rank > 32 or shape 
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
     public TadDescriptor(Pointer p) { super(p); }
 
-  public TadDescriptor(@Const LongType originalShape, @Const LongType dimensions, @Const @ByVal LongType length,
+  public TadDescriptor(@Cast("const sd::LongType*") LongPointer originalShape, @Cast("const sd::LongType*") LongPointer dimensions, @Const @Cast("sd::LongType") long length,
                            @Cast("const bool") boolean keepUnitiesInShape/*=false*/) { super((Pointer)null); allocate(originalShape, dimensions, length, keepUnitiesInShape); }
-  private native void allocate(@Const LongType originalShape, @Const LongType dimensions, @Const @ByVal LongType length,
+  private native void allocate(@Cast("const sd::LongType*") LongPointer originalShape, @Cast("const sd::LongType*") LongPointer dimensions, @Const @Cast("sd::LongType") long length,
                            @Cast("const bool") boolean keepUnitiesInShape/*=false*/);
-  public TadDescriptor(@Const LongType originalShape, @Const LongType dimensions, @Const @ByVal LongType length) { super((Pointer)null); allocate(originalShape, dimensions, length); }
-  private native void allocate(@Const LongType originalShape, @Const LongType dimensions, @Const @ByVal LongType length);
+  public TadDescriptor(@Cast("const sd::LongType*") LongPointer originalShape, @Cast("const sd::LongType*") LongPointer dimensions, @Const @Cast("sd::LongType") long length) { super((Pointer)null); allocate(originalShape, dimensions, length); }
+  private native void allocate(@Cast("const sd::LongType*") LongPointer originalShape, @Cast("const sd::LongType*") LongPointer dimensions, @Const @Cast("sd::LongType") long length);
 
 
   // NCC has issues with copy constructors
@@ -14212,8 +14976,8 @@ public static final int SHAPE_DESC_INVALID_EMPTY = 5;     // rank > 32 or shape 
   // less than operator
   public native @Cast("bool") @Name("operator <") boolean lessThan(@Const @ByRef TadDescriptor other);
 
-  public native @StdVector LongType axis();
-  public native LongType originalShape();
+  public native @Cast("sd::LongType*") @StdVector LongPointer axis();
+  public native @Cast("sd::LongType*") LongPointer originalShape();
   public native @Cast("bool") boolean areUnitiesinShape();
 }
   // namespace sd
@@ -14281,11 +15045,11 @@ public static final int SHAPE_DESC_INVALID_EMPTY = 5;     // rank > 32 or shape 
   public native double _maxValue(); public native DebugInfo _maxValue(double setter);
   public native double _meanValue(); public native DebugInfo _meanValue(double setter);
   public native double _stdDevValue(); public native DebugInfo _stdDevValue(double setter);
-  public native @ByRef LongType _zeroCount(); public native DebugInfo _zeroCount(LongType setter);
-  public native @ByRef LongType _positiveCount(); public native DebugInfo _positiveCount(LongType setter);
-  public native @ByRef LongType _negativeCount(); public native DebugInfo _negativeCount(LongType setter);
-  public native @ByRef LongType _infCount(); public native DebugInfo _infCount(LongType setter);
-  public native @ByRef LongType _nanCount(); public native DebugInfo _nanCount(LongType setter);
+  public native @Cast("sd::LongType") long _zeroCount(); public native DebugInfo _zeroCount(long setter);
+  public native @Cast("sd::LongType") long _positiveCount(); public native DebugInfo _positiveCount(long setter);
+  public native @Cast("sd::LongType") long _negativeCount(); public native DebugInfo _negativeCount(long setter);
+  public native @Cast("sd::LongType") long _infCount(); public native DebugInfo _infCount(long setter);
+  public native @Cast("sd::LongType") long _nanCount(); public native DebugInfo _nanCount(long setter);
 }
 
 @Namespace("sd") public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef DebugInfo first, @Const @ByRef DebugInfo second);
@@ -14554,14 +15318,14 @@ public static final int SHAPE_DESC_INVALID_EMPTY = 5;     // rank > 32 or shape 
 // #endif
 
 // Existing build info functions
-public native @Cast("const char*") BytePointer buildInfo();
+public native @Cast("char*") String buildInfo();
 // Single-line canonical form of buildInfo() for cache fingerprinting.
 // buildInfo() is a multi-line human-readable report; line-oriented consumers
 // (key=value sidecar files like the DSP plan cache .meta) truncate multi-line
 // values on read, so fingerprints MUST use this form. Canonicalization:
 // every '\n'/'\r' becomes a single space, leading/trailing whitespace trimmed
 // (byte-identical to the Java-side fallback in DspPlanDiskCache).
-public native @Cast("const char*") BytePointer buildInfoFingerprint();
+public native @Cast("char*") String buildInfoFingerprint();
 public native @Cast("bool") boolean isFuncTrace();
 
 // Type information functions
