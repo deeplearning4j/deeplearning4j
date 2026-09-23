@@ -262,13 +262,23 @@ public class DynamicShapePlanExecutor implements Closeable {
         final boolean independentLease;
         final String[] sortedOutputs;
         final String[] phKeys;
+        /** Graph execution mode the native handle was actually compiled under.
+         *  Captured at park time from configuredGraphExecutionMode — the teardown
+         *  tail resets that field to AUTO, so restore must use this, not the live
+         *  field, to validate against the caller's requested mode. */
+        final GraphExecutionMode parkedMode;
         RetainedFrozenPlan(byte[] serialized, Pointer handle, boolean independentLease,
                            String[] sortedOutputs, String[] phKeys) {
+            this(serialized, handle, independentLease, sortedOutputs, phKeys, null);
+        }
+        RetainedFrozenPlan(byte[] serialized, Pointer handle, boolean independentLease,
+                           String[] sortedOutputs, String[] phKeys, GraphExecutionMode parkedMode) {
             this.serialized = serialized;
             this.handle = handle;
             this.independentLease = independentLease;
             this.sortedOutputs = sortedOutputs;
             this.phKeys = phKeys;
+            this.parkedMode = parkedMode;
         }
     }
 
@@ -1032,7 +1042,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             retainedFrozenPlans.put(parkedKey,
                     new RetainedFrozenPlan(cachedSerializedPlan, nativePlanHandle, independentLease,
-                            cachedSortedOutputs, cachedPhKeys));
+                            cachedSortedOutputs, cachedPhKeys, configuredGraphExecutionMode));
             while (retainedFrozenPlans.size() > RETAINED_FROZEN_PLAN_LIMIT) {
                 Integer evictKey = retainedFrozenPlans.keySet().iterator().next();
                 releaseRetainedFrozenPlan(retainedFrozenPlans.remove(evictKey));
@@ -2436,6 +2446,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // across generates (fresh objects each call). The C++ cache returns the same
             // warm handle (O(1)), the frozen phase and cast caches are intact, and
             // redispatch resumes replay without slot-by-slot warmup.
+            boolean restoreRejectedForModeChange = false;
             byte[] incomingSerialized = null;
             int incomingKey = 0;
             try {
@@ -2444,7 +2455,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             } catch (Exception serializationFailure) {
                 incomingSerialized = null;
             }
-            if (incomingSerialized != null) {
+            if (incomingSerialized != null && !restoreRejectedForModeChange) {
                 incomingKey = java.util.Arrays.hashCode(incomingSerialized);
                 RetainedFrozenPlan retained = retainedFrozenPlans.remove(incomingKey);
                 boolean pinOk = retained != null && retained.handle != null && !retained.handle.isNull()
@@ -2471,17 +2482,33 @@ public class DynamicShapePlanExecutor implements Closeable {
                     // RESTORE CACHED SETTINGS — the teardown tail (freeNativePlanHandle)
                     // reset these to defaults; the parked plan's native handle still
                     // carries the mode it was compiled under (mode is part of the C++
-                    // cache key). Re-deriving them here matches the fresh-compile path
-                    // (lines ~2609-2629) so execute()'s mode-mismatch check does not
-                    // trigger a full recompile that destroys the restored frozen state
-                    // (proc-049: restore immediately followed by "mode change detected").
+                    // cache key). Mode authority is retained.parkedMode — captured at
+                    // park time BEFORE the teardown reset. Validate it against the
+                    // caller's requested mode: a genuine mode change (request differs
+                    // from what the handle runs) still recompiles; same-mode restore
+                    // proceeds without the spurious "mode change detected" recompile
+                    // that destroyed every restored plan since proc-041.
                     // configuredHandleAddresses is cleared so applySettingsIfNewHandle()
                     // re-applies per-handle settings on the next redispatch.
-                    GraphExecutionMode requestedRestoreMode = resolveRequestedGraphExecutionMode(null);
+                    GraphExecutionMode requestedRestoreMode = resolveRequestedGraphExecutionMode(requestedMode);
                     boolean tritonAvailableRestore = requestedRestoreMode != GraphExecutionMode.TRITON
                             || isTritonAvailable(nativeOps);
-                    GraphExecutionMode effectiveRestoreMode = resolveEffectiveGraphExecutionMode(
+                    GraphExecutionMode effectiveRequestedMode = resolveEffectiveGraphExecutionMode(
                             requestedRestoreMode, tritonAvailableRestore, sd.isDspFallbackToAutoIfTritonUnavailable());
+                    if (retained.parkedMode != null
+                            && effectiveRequestedMode != retained.parkedMode) {
+                        // Genuine mode change vs the parked handle: fall through to a
+                        // full recompile with the requested mode (same contract as a
+                        // fresh compile). Do not relabel the handle.
+                        log.info("Native executor: parked plan 0x{} was compiled under {} but {} is "
+                                        + "requested — recompiling with the requested mode",
+                                Long.toHexString(retained.handle.address()),
+                                retained.parkedMode, effectiveRequestedMode);
+                        retainedFrozenPlans.put(incomingKey, retained);
+                        restoreRejectedForModeChange = true;
+                    } else {
+                    GraphExecutionMode effectiveRestoreMode = retained.parkedMode != null
+                            ? retained.parkedMode : effectiveRequestedMode;
                     cachedEffectiveGraphModeCode = effectiveRestoreMode.getNativeCode();
                     configuredGraphExecutionMode = effectiveRestoreMode;
                     configuredHandleAddresses.clear();
@@ -2517,6 +2544,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                             Long.toHexString(retained.handle.address()), retained.serialized.length,
                             retained.independentLease, configuredGraphExecutionMode);
                     return configuredGraphExecutionMode;
+                    }
                 }
                 if (retained != null) {
                     // Name the exact failed condition — restore misses must be diagnosable

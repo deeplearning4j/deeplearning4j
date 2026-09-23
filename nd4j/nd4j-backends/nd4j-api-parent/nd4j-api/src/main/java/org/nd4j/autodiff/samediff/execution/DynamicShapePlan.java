@@ -569,11 +569,49 @@ public class DynamicShapePlan implements Closeable {
                     avgUnpinnedBytes / (1024 * 1024), knownShapeSlots);
         }
 
+        // OBSERVABILITY (2026-09-23 review): bounded one-line placement trace. The
+        // multi-GPU capture failure (proc-051/053/059/061) cannot be root-caused
+        // without knowing who assigned slots where. This logs the assignment inputs
+        // and outcome for every placement; the reviewer-mandated diagnostic before
+        // any further policy change.
+        StringBuilder placementTrace = new StringBuilder("assignDevices: budgets=[");
+        boolean firstEntry = true;
+        for (Map.Entry<Integer, Long> entry : sorted) {
+            if (!firstEntry) placementTrace.append(", ");
+            placementTrace.append("dev").append(entry.getKey())
+                    .append("=").append(entry.getValue() / (1024 * 1024)).append("MB");
+            firstEntry = false;
+        }
+        placementTrace.append("] resident=").append(residentDevice)
+                .append(" totalBytes=").append(effectiveTotalBytes / (1024 * 1024)).append("MB")
+                .append(" knownShapes=").append(knownShapeSlots).append("/").append(slots.length)
+                .append(" avgSlot=").append(avgUnpinnedBytes / 1024).append("KB")
+                .append(" pinned=").append(pinnedCount)
+                .append(" ranges=");
+        long traceCumulative = 0L;
+        firstEntry = true;
+        for (int i = 0; i < sorted.size(); i++) {
+            int deviceId = sorted.get(i).getKey();
+            long bytesTargetForTrace = lastDeviceTrace(i, sorted)
+                    ? effectiveTotalBytes
+                    : (long) Math.round((double) (traceCumulative += sorted.get(i).getValue())
+                            / totalMem * effectiveTotalBytes);
+            placementTrace.append("dev").append(deviceId).append("->")
+                    .append(bytesTargetForTrace / (1024 * 1024)).append("MB");
+            if (i < sorted.size() - 1) placementTrace.append(", ");
+        }
+        placementTrace.append(" result=").append(getDeviceAssignmentSummary());
+        log.info(placementTrace.toString());
+
         // Compute numDistinctDevices from actual assignments
         computeNumDistinctDevices();
 
         log.debug("Device placement: {} slots across {} devices — {}",
                 slots.length, numDistinctDevices, getDeviceAssignmentSummary());
+    }
+
+    private static boolean lastDeviceTrace(int i, java.util.List<Map.Entry<Integer, Long>> sorted) {
+        return i == sorted.size() - 1;
     }
 
     /**
