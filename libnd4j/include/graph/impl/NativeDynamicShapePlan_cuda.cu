@@ -1290,6 +1290,46 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     auto* db = arr->dataBuffer();
     if (db == nullptr) continue;
 
+    // During a capture-time rehome, device-managed external state/weights keep
+    // their caller-owned address. Do not route them through the generic copy
+    // path (which is not valid for every packed/FLOAT8 storage contract). They
+    // may remain remote only when CUDA peer access or unified memory makes that
+    // exact pointer addressable from the target device.
+    if (seg.exec.captureRehomePending && externalSource &&
+        isDeviceManagedExternalInput(externalInputIdx, arr)) {
+      void* pointer = db->special();
+      cudaPointerAttributes attributes;
+      const cudaError_t attrError = pointer != nullptr
+          ? cudaPointerGetAttributes(&attributes, pointer)
+          : cudaErrorInvalidValue;
+      if (attrError == cudaSuccess &&
+          attributes.type == cudaMemoryTypeManaged) {
+        continue;
+      }
+      if (attrError == cudaSuccess &&
+          attributes.type == cudaMemoryTypeDevice &&
+          attributes.device == targetDevice) {
+        continue;
+      }
+      const int sourceDevice = attrError == cudaSuccess &&
+              attributes.type == cudaMemoryTypeDevice
+          ? attributes.device : -1;
+      int canAccess = 0;
+      const cudaError_t peerError = sourceDevice >= 0
+          ? cudaDeviceCanAccessPeer(&canAccess, targetDevice, sourceDevice)
+          : cudaErrorInvalidValue;
+      if (peerError == cudaSuccess && canAccess) {
+        continue;
+      }
+      if (attrError != cudaSuccess) cudaGetLastError();
+      if (peerError != cudaSuccess) cudaGetLastError();
+      return cudaPlanFailure(
+          "CUDA capture rehome cannot access device-managed external input: "
+          "external=%d sourceDevice=%d targetDevice=%d attrError=%d peerError=%d peer=%d",
+          externalInputIdx, sourceDevice, targetDevice,
+          static_cast<int>(attrError), static_cast<int>(peerError), canAccess);
+    }
+
     // Writable externals need a stable, bidirectional replica, not a disposable
     // input copy. Reuse the existing per-device staging owners (including their
     // release/accounting lifecycle), but keep these state inputs out of ordinary
