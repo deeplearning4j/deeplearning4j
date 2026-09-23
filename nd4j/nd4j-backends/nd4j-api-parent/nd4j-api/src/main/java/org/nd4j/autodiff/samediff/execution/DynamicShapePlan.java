@@ -414,52 +414,18 @@ public class DynamicShapePlan implements Closeable {
         // copy to a 4 GiB secondary device).
         int anchorDevice = residentDevice >= 0 ? residentDevice : sorted.get(0).getKey();
 
-        // Capture-capacity gate (proc-051): before the band split, compute the
-        // total slot working set and verify the SEGMENT-CAPTURE admission
-        // contract can hold on a secondary device. Native capture (cudagraph.cu
-        // pre-capture check) requires 20% of the segment's slot bytes free on
-        // the capturing device AT CAPTURE TIME — a device whose entire budget
-        // is consumed by its own slot band cannot pass that check, and
-        // capture-time rejection (KERNEL_FAILURE) kills the whole nested
-        // generate. A device whose budget cannot cover (its share of slots'
-        // working set + the 20% capture margin) is dropped from the split; the
-        // resident anchor absorbs everything.
-        long workingSetBytes = 0L;
-        long knownBytes = 0L;
-        int knownSlots = 0;
-        for (DynamicShapeSlot slot : slots) {
-            long b = estimateSlotOutputBytes(slot);
-            if (b > 0) { knownSlots++; knownBytes += b; }
-            workingSetBytes += b;
-        }
-        if (knownSlots < slots.length && knownSlots > 0) {
-            long avg = knownBytes / knownSlots;
-            workingSetBytes += (long)(slots.length - knownSlots) * avg;
-        }
-        long captureMarginBytes = workingSetBytes / 5;  // matches native 20% margin
-        List<Map.Entry<Integer, Long>> captureViable = new ArrayList<>(sorted.size());
-        for (Map.Entry<Integer, Long> entry : sorted) {
-            if (entry.getKey() == residentDevice
-                    || entry.getValue() >= workingSetBytes + captureMarginBytes) {
-                captureViable.add(entry);
-            } else {
-                log.info("Device placement: excluding device {} from DSP split — budget {}MB "
-                                + "cannot hold its slot working set ({}MB) + capture margin ({}MB); "
-                                + "capture would reject at runtime (proc-051 contract)",
-                        entry.getKey(), entry.getValue() / (1024 * 1024),
-                        workingSetBytes / (1024 * 1024),
-                        captureMarginBytes / (1024 * 1024));
-            }
-        }
-        if (captureViable.isEmpty()) {
-            log.info("Device placement: no device passes the capture-capacity gate; "
-                    + "falling back to standard viability split");
-        } else if (captureViable.size() < sorted.size()) {
-            sorted = captureViable;
-            long viableTotal = 0;
-            for (Map.Entry<Integer, Long> entry : sorted) viableTotal += entry.getValue();
-            totalMem = viableTotal;
-        }
+        // Capture-capacity gate (proc-051 contract): native graph capture (cudagraph.cu
+        // pre-capture check) requires 20% of a segment's slot bytes FREE on the capturing
+        // device at capture time. A device whose entire budget is consumed by its own
+        // slot band fails that check at runtime, killing the nested generate with
+        // KERNEL_FAILURE. Band assignment below therefore caps each device's band at
+        // budget/1.2 — leaving 20% of the band as free capture headroom — instead of
+        // allowing the proportional split to fill the budget exactly. Devices that
+        // cannot even hold that margin over a minimal band stay in the split (their
+        // target shrinks to ~0 and they simply receive no band).
+        // NOTE (proc-053 lesson): a gate computed from estimateSlotOutputBytes() here is
+        // inert — slot shapes are unknown before warmup, so the estimate is 0. The
+        // reservation must live in the BAND FILL where budgets are known per device.
 
         boolean[] pinned = new boolean[slots.length];
         int pinnedCount = 0;
@@ -555,6 +521,26 @@ public class DynamicShapePlan implements Closeable {
             long bytesTarget = lastDevice
                     ? effectiveTotalBytes
                     : (long) Math.round((double) cumulativeMem / totalMem * effectiveTotalBytes);
+
+            // CAPTURE-MARGIN RESERVATION (proc-051/053/059): a device's band may not
+            // consume its whole budget — native capture demands 20% of the band's
+            // bytes free on the device at capture time. Cap the band at budget/1.2 so
+            // the remaining ~17% of the budget (>= 20% of bandBytes) stays free. The
+            // resident device is exempt: it already holds the weights, its remaining
+            // budget is not the capture constraint, and shrinking it would push an
+            // oversized share onto smaller devices.
+            long bandCap = Long.MAX_VALUE;
+            if (deviceId != residentDevice) {
+                bandCap = deviceMem - deviceMem / 6;  // budget * 5/6: band*0.2 <= deviceMem/6
+                if (bytesTarget > bandCap) {
+                    bytesTarget = bandCap;
+                    log.info("Device placement: capped device {} band at {}MB (budget {}MB) "
+                                    + "to reserve the {}MB capture margin required by the "
+                                    + "native pre-capture check (proc-051 contract)",
+                            deviceId, bandCap / (1024 * 1024), deviceMem / (1024 * 1024),
+                            (deviceMem / 6) / (1024 * 1024));
+                }
+            }
 
             int deviceSlotStart = assigned;
             while (assigned < slots.length) {
