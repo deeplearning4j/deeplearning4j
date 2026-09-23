@@ -1228,6 +1228,24 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
 
   migratedInputs_.clear();
 
+  // A capture-time rehome must give every output produced by this segment a
+  // device-local publication before cudaStreamBeginCapture. Normal segment
+  // sharding only stages inputs; their producers already allocated outputs on
+  // the target device during warmup. A rehomed, not-yet-captured segment is the
+  // one exception: its warmup outputs still belong to the source device.
+  std::unordered_set<int> rehomedSegmentOutputSlots;
+  if (seg.exec.captureRehomePending) {
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+      const NativeSlot& slot = slots_[s];
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        if (outputSlot >= 0 && outputSlot < totalOutputSlots_) {
+          rehomedSegmentOutputSlots.insert(outputSlot);
+        }
+      }
+    }
+  }
+
   // Collect every unique input publication consumed by the segment. Internal
   // publications use their non-negative output-slot index; external inputs keep
   // their normal negative encoding -(externalIndex + 1).
@@ -1247,6 +1265,15 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
           neededInputSources.insert(srcIdx);
         }
       }
+    }
+  }
+
+  // Preserve all warmed outputs of a rehomed segment in the target-device
+  // staging table. Capture will overwrite them in graph order, but it must not
+  // bake source-device addresses into the target graph.
+  for (const int outputSlot : rehomedSegmentOutputSlots) {
+    if (outputSlots_[outputSlot] != nullptr) {
+      neededInputSources.insert(outputSlot);
     }
   }
 
@@ -1353,6 +1380,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
           mi.outputSlotIdx = -1;
           mi.original = arr;
           mi.migrated = state;
+          mi.targetDevice = targetDevice;
           mi.externalInputTable = externalInputs;
           mi.externalInputIdx = externalInputIdx;
           migratedInputs_.push_back(mi);
@@ -1527,6 +1555,8 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       mi.original = arr;
       mi.migrated = migrated;
       mi.retained = true;
+      mi.targetDevice = targetDevice;
+      mi.segmentOutput = rehomedSegmentOutputSlots.count(slotIdx) > 0;
       migratedInputs_.push_back(mi);
       outputSlots_[slotIdx] = migrated;
       DSP_DIAG(MULTI_DEVICE,
@@ -1690,6 +1720,8 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       mi.original = arr;
       mi.migrated = staged;
       mi.retained = true;
+      mi.targetDevice = targetDevice;
+      mi.segmentOutput = rehomedSegmentOutputSlots.count(slotIdx) > 0;
       migratedInputs_.push_back(mi);
       outputSlots_[slotIdx] = staged;
       DSP_DIAG(MULTI_DEVICE,
@@ -1771,6 +1803,14 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                slotIdx, sourceDevice, targetDevice, srcLen, freeBytes, poolReusable, totalBytes);
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      if (seg.exec.captureRehomePending) {
+        return cudaPlanFailure(
+            "CUDA capture rehome input staging exceeded target-device capacity: "
+            "slot=%d sourceDevice=%d targetDevice=%d bytes=%zu free=%zu "
+            "poolReusable=%zu total=%zu",
+            slotIdx, sourceDevice, targetDevice, srcLen, freeBytes,
+            poolReusable, totalBytes);
+      }
       // POLICY (device-shift react): the segment's device cannot hold this
       // input copy. The compute must move to where the data already lives.
       // Rebind the whole segment to the source device for this invocation and
@@ -1954,6 +1994,8 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     mi.original = arr;
     mi.migrated = copy;
     mi.retained = true;
+    mi.targetDevice = targetDevice;
+    mi.segmentOutput = rehomedSegmentOutputSlots.count(slotIdx) > 0;
     mi.externalInputTable = externalSource ? externalInputs : nullptr;
     mi.externalInputIdx = externalInputIdx;
     migratedInputs_.push_back(mi);
@@ -1986,7 +2028,24 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
 }
 
 void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
-  if (migratedInputs_.empty()) return;
+  if (migratedInputs_.empty()) {
+    for (auto& segment : segments_) {
+      if (!segment.exec.captureRehomePending) continue;
+      if (!segment.exec.captureRehomeCommitted) {
+        const int sourceDevice = segment.exec.captureRehomeSourceDevice;
+        if (sourceDevice >= 0) {
+          for (int s = segment.def.startSlot;
+               s <= segment.def.endSlot && s < numSlots_; s++) {
+            slots_[s].targetDeviceId = sourceDevice;
+          }
+        }
+        segment.exec.captureRehomeSourceDevice = -1;
+        segment.exec.captureRehomeTargetDevice = -1;
+      }
+      segment.exec.captureRehomePending = false;
+    }
+    return;
+  }
 
   // Segment binding routes replay and gap kernels onto this stream. Retained
   // state uses event dependencies below, with no host barrier. Disposable input
@@ -2030,7 +2089,28 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
       }
     }
     if (outputSlots_ != nullptr && mi.outputSlotIdx >= 0 && mi.outputSlotIdx < totalOutputSlots_) {
-      outputSlots_[mi.outputSlotIdx] = mi.original;
+      if (mi.persistOutput) {
+        // Keep the address that the newly captured segment actually used. A
+        // view/in-place output may have installed a wrapper over mi.migrated;
+        // do not replace it with the pre-capture warmup wrapper.
+        NDArray* current = outputSlots_[mi.outputSlotIdx];
+        if (current == nullptr || current == mi.original) {
+          outputSlots_[mi.outputSlotIdx] = mi.migrated;
+          current = mi.migrated;
+        }
+        if (mi.original != nullptr && mi.original != current &&
+            planOwnedArrays_.count(mi.original) > 0 &&
+            !isSlotArrayShared(mi.original, mi.outputSlotIdx)) {
+          planOwnedArrays_.erase(mi.original);
+          deferredSlotDeletes_.push_back(mi.original);
+          DSP_DIAG(MEMORY,
+                   "platformCleanupMigratedInputs: retired rehomed source output "
+                   "slot=%d owner=%p targetDevice=%d",
+                   mi.outputSlotIdx, (void*)mi.original, mi.targetDevice);
+        }
+      } else {
+        outputSlots_[mi.outputSlotIdx] = mi.original;
+      }
     }
     if (mi.externalInputTable != nullptr && mi.externalInputIdx >= 0) {
       mi.externalInputTable[mi.externalInputIdx] = mi.original;
@@ -2055,6 +2135,21 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
     }
   }
   migratedInputs_.clear();
+  for (auto& segment : segments_) {
+    if (!segment.exec.captureRehomePending) continue;
+    if (!segment.exec.captureRehomeCommitted) {
+      const int sourceDevice = segment.exec.captureRehomeSourceDevice;
+      if (sourceDevice >= 0) {
+        for (int s = segment.def.startSlot;
+             s <= segment.def.endSlot && s < numSlots_; s++) {
+          slots_[s].targetDeviceId = sourceDevice;
+        }
+      }
+      segment.exec.captureRehomeSourceDevice = -1;
+      segment.exec.captureRehomeTargetDevice = -1;
+    }
+    segment.exec.captureRehomePending = false;
+  }
   if (writebackFailure) std::rethrow_exception(writebackFailure);
   if (syncErr != cudaSuccess)
     throw std::runtime_error(std::string("migration segment completion failed: ") + cudaGetErrorString(syncErr));

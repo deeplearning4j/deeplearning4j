@@ -1160,6 +1160,14 @@ struct GraphSegmentExec {
   int warmupWorkspaceAllocationCount = 0;
   bool warmupWorkspaceAllocationObserved = false;
 
+  // A capture-time capacity move is allowed only before this segment has a
+  // replay handle. The move is transactional: slot outputs are staged on the
+  // target device before capture, then retained only after capture succeeds.
+  bool captureRehomePending = false;
+  bool captureRehomeCommitted = false;
+  int captureRehomeSourceDevice = -1;
+  int captureRehomeTargetDevice = -1;
+
   // LRU tracking: last executeCount_ at which this segment was replayed.
   // Used by proactive eviction to target least-recently-used graphs.
   int lastReplayExecCount = 0;
@@ -1311,6 +1319,10 @@ struct GraphSegmentExec {
     warmupWorkspaceAllocationBytes = 0;
     warmupWorkspaceAllocationCount = 0;
     warmupWorkspaceAllocationObserved = false;
+    captureRehomePending = false;
+    captureRehomeCommitted = false;
+    captureRehomeSourceDevice = -1;
+    captureRehomeTargetDevice = -1;
     resetCaptureKeys();
     clearGraphContentFlags("reset_for_warmup");
     DSP_DIAG(LIFECYCLE, "RESET_FOR_WARMUP: counters+keys+graphflags reset phase=%s",
@@ -1521,6 +1533,10 @@ struct GraphSegmentExec {
     warmupWorkspaceAllocationBytes = 0;
     warmupWorkspaceAllocationCount = 0;
     warmupWorkspaceAllocationObserved = false;
+    captureRehomePending = false;
+    captureRehomeCommitted = false;
+    captureRehomeSourceDevice = -1;
+    captureRehomeTargetDevice = -1;
     lastReplayExecCount = 0;
     replayHandle.reset();
     outcome = SegmentExecOutcome::PENDING;
@@ -4061,10 +4077,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   struct MigratedInput {
     int outputSlotIdx;       // Which outputSlots_[] entry was replaced
     NDArray* original;       // Original array (on source device) - restore after segment
-    NDArray* migrated;       // Migrated copy (on target device) - delete after segment
+    NDArray* migrated;       // Per-device staging copy, retained in migrationBuffers_ when reusable
     NDArray** externalInputTable = nullptr;  // Non-null when an external input was replaced
     int externalInputIdx = -1;
+    int targetDevice = -1;
     bool retained = false;
+    bool segmentOutput = false;  // Produced inside a capture-time rehomed segment
+    bool persistOutput = false;  // Commit this output publication after capture succeeds
   };
   std::vector<MigratedInput> migratedInputs_;
   // Stable input storage baked into captured consumers. Key is device/source

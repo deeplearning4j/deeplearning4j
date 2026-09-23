@@ -47,6 +47,7 @@
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/MmulHelper.h>
 #include <memory/cuda/CudaMemoryPool.h>
+#include <memory/MemoryCounter.h>
 #include <helpers/AttentionWorkspace.h>
 #include <graph/gpu/NvrtcKernelBuilder.h>
 #include <graph/gpu/NvrtcKernelCache.h>
@@ -946,6 +947,60 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
+  // Keep the pre-capture source publications for transaction rollback. This
+  // snapshot is created only on the first-capture path, not on graph replay.
+  std::vector<NDArray*> preCapOutputSlots(
+      outputSlots_, outputSlots_ + totalOutputSlots_);
+  std::vector<int> captureRehomeOriginalTargets;
+  bool captureRehomeActive = false;
+  bool captureRehomeCommitted = false;
+  int captureRehomeSourceDevice = -1;
+  cudaStream_t captureRehomeStream = nullptr;
+  auto rollbackCaptureRehome = [this, &seg, &preCapOutputSlots,
+                                &captureRehomeOriginalTargets,
+                                &captureRehomeActive,
+                                &captureRehomeCommitted,
+                                &captureRehomeSourceDevice](void*) noexcept {
+    if (!captureRehomeActive || captureRehomeCommitted) return;
+    try {
+      if (seg.exec.replayHandle != nullptr) {
+        platformCleanupSegmentForRebuild(seg);
+      }
+      platformCleanupMigratedInputs();
+    } catch (const std::exception& error) {
+      DSP_DIAG(MEMORY,
+               "CAPTURE_DEVICE_REHOME_ROLLBACK: cleanup failed for seg[%d-%d]: %s",
+               seg.def.startSlot, seg.def.endSlot, error.what());
+    } catch (...) {
+      DSP_DIAG(MEMORY,
+               "CAPTURE_DEVICE_REHOME_ROLLBACK: cleanup failed for seg[%d-%d]",
+               seg.def.startSlot, seg.def.endSlot);
+    }
+    const int count = seg.def.endSlot - seg.def.startSlot + 1;
+    if (captureRehomeOriginalTargets.size() == static_cast<size_t>(count)) {
+      for (int i = 0; i < count; i++) {
+        slots_[seg.def.startSlot + i].targetDeviceId = captureRehomeOriginalTargets[i];
+      }
+    } else if (captureRehomeSourceDevice >= 0) {
+      for (int i = seg.def.startSlot; i <= seg.def.endSlot && i < numSlots_; i++) {
+        slots_[i].targetDeviceId = captureRehomeSourceDevice;
+      }
+    }
+    if (outputSlots_ != nullptr &&
+        preCapOutputSlots.size() == static_cast<size_t>(totalOutputSlots_)) {
+      std::memcpy(outputSlots_, preCapOutputSlots.data(),
+                  sizeof(NDArray*) * totalOutputSlots_);
+    }
+    seg.exec.captureRehomePending = false;
+    seg.exec.captureRehomeCommitted = false;
+    seg.exec.captureRehomeSourceDevice = -1;
+    seg.exec.captureRehomeTargetDevice = -1;
+    platformRestoreSegmentDevice();
+    captureRehomeActive = false;
+  };
+  std::unique_ptr<void, decltype(rollbackCaptureRehome)> captureRehomeRollbackGuard(
+      reinterpret_cast<void*>(static_cast<uintptr_t>(1)), rollbackCaptureRehome);
+
   auto& scheduler = ::sd::cuda::CudaGraphScheduler::getInstance();
 
   int currentDevice = 0;
@@ -1094,7 +1149,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   std::vector<std::pair<int, NDArray*>> savedExternalInputs;
   std::vector<std::pair<int, NDArray*>> savedOutputSlots;
-  std::vector<NDArray*> preCapOutputSlots(outputSlots_, outputSlots_ + totalOutputSlots_);
 
   std::vector<SlotPhase> savedSlotPhases(seg.def.endSlot - seg.def.startSlot + 1);
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
