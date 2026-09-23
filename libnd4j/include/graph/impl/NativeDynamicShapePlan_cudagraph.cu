@@ -66,6 +66,7 @@
 #include <mutex>
 #include <new>
 #include <string>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -1542,6 +1543,34 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     handle->endCapture(cudaStr);
     clearGraphStreamError(cudaStr);
     restoreCublasWorkspaceAfterCapture(stream);
+    size_t captureDeviceFree = 0, captureDeviceTotal = 0;
+    cudaMemGetInfo(&captureDeviceFree, &captureDeviceTotal);
+    size_t capturePoolUsed = 0, capturePoolReserved = 0;
+    memory::CudaMemoryPool::getInstance().getStats(
+        currentDevice, capturePoolUsed, capturePoolReserved);
+    const size_t captureWorkspaceUsed = captureGuard.workspaceUsed();
+    const size_t captureWorkspaceBytes = seg.exec.replayHandle != nullptr
+        ? seg.exec.replayHandle->getWorkspaceBytes()
+        : 0;
+    const size_t currentPlanOwnedBytes = estimatedOwnedBytes();
+    char captureSnapshot[768];
+    std::snprintf(
+        captureSnapshot, sizeof(captureSnapshot),
+        " [capture snapshot: plan=%p segment=[%d-%d] slot=%d op=%s "
+        "workspace=%zu/%zu planOwned=%zuMB ownedArrays=%zu segments=%zu "
+        "deviceFree=%zuMB deviceTotal=%zuMB poolUsed=%zuMB poolReserved=%zuMB]",
+        static_cast<void*>(this), seg.def.startSlot, seg.def.endSlot,
+        lastCaptureSlot,
+        lastCaptureSlot >= 0 && lastCaptureSlot < numSlots_
+            ? slots_[lastCaptureSlot].ident.opName.c_str()
+            : "<out-of-range>",
+        captureWorkspaceUsed, captureWorkspaceBytes,
+        currentPlanOwnedBytes / (1024 * 1024), planOwnedArrays_.size(),
+        segments_.size(), captureDeviceFree / (1024 * 1024),
+        captureDeviceTotal / (1024 * 1024), capturePoolUsed / (1024 * 1024),
+        capturePoolReserved / (1024 * 1024));
+    std::string enrichedCaptureError(e.what());
+    enrichedCaptureError.append(captureSnapshot);
     for (auto& [extIdx, origPtr] : savedExternalInputs) {
       externalArrays[extIdx] = origPtr;
     }
@@ -1553,7 +1582,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
     }
     platformCleanupSegmentForRebuild(seg);
-    throw;
+    throw std::runtime_error(enrichedCaptureError);
   } catch (...) {
     tl_graphExecutionActive = false;
     handle->endCapture(cudaStr);
