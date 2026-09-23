@@ -962,6 +962,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   // ── PRE-CAPTURE MEMORY CHECK ──
+  size_t CONFIGURED_CAPTURE_WORKSPACE = static_cast<size_t>(sd::env_dspCaptureWorkspaceMb()) * 1024ULL * 1024ULL;
+  const size_t CAPTURE_WORKSPACE_HEADROOM_BYTES = 256ULL * 1024 * 1024;
+  const bool hasWarmupAllocationSample =
+      segments_.size() > 1 && seg.exec.warmupWorkspaceAllocationObserved;
   size_t estimatedCaptureBytes = 0;
   for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
     NativeSlot& slot = slots_[stepIdx];
@@ -979,10 +983,33 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     size_t gpuFree = 0, gpuTotal = 0;
     cudaMemGetInfo(&gpuFree, &gpuTotal);
 
-    // Preserve the historical segment-relative headroom check. Capture workspace
-    // is allocated and validated separately below; a fixed 512MB free-memory floor
-    // incorrectly rejects small segments even when their segment estimate is small.
-    size_t requiredFree = estimatedCaptureBytes / 5;  // 20% segment-relative margin
+    // Keep the historical estimate check when no warmup sample exists. For a
+    // measured segmented capture, admission must cover the actual planned bump
+    // workspace plus the allocator's execution headroom, not a fraction of output
+    // tensor bytes that are already resident.
+    bool measuredWorkspaceBudget = false;
+    size_t requiredFree = estimatedCaptureBytes / 5;
+    if (hasWarmupAllocationSample && CONFIGURED_CAPTURE_WORKSPACE > 0) {
+      size_t adaptiveCeiling = CONFIGURED_CAPTURE_WORKSPACE;
+      if (CONFIGURED_CAPTURE_WORKSPACE <= ((size_t)-1) / 4) {
+        adaptiveCeiling = CONFIGURED_CAPTURE_WORKSPACE * 4;
+      }
+      size_t measuredWorkspace = seg.exec.warmupWorkspaceAllocationBytes;
+      const size_t allocationCount = static_cast<size_t>(
+          std::max(0, seg.exec.warmupWorkspaceAllocationCount));
+      const size_t maxSize = (size_t)-1;
+      const size_t alignmentBytes = allocationCount <= maxSize / 256
+          ? allocationCount * 256 : maxSize;
+      measuredWorkspace = measuredWorkspace <= maxSize - alignmentBytes
+          ? measuredWorkspace + alignmentBytes : maxSize;
+      const size_t minimumSegmentWorkspace =
+          std::min(static_cast<size_t>(32) * 1024 * 1024, adaptiveCeiling);
+      measuredWorkspace = std::max(minimumSegmentWorkspace,
+                                   std::min(measuredWorkspace, adaptiveCeiling));
+      requiredFree = measuredWorkspace <= maxSize - CAPTURE_WORKSPACE_HEADROOM_BYTES
+          ? measuredWorkspace + CAPTURE_WORKSPACE_HEADROOM_BYTES : maxSize;
+      measuredWorkspaceBudget = true;
+    }
     size_t gpuFreeBeforeTrim = gpuFree;
     size_t poolUsedBeforeTrim = 0, poolReservedBeforeTrim = 0;
     size_t poolUsedAfterTrim = 0, poolReservedAfterTrim = 0;
@@ -1016,12 +1043,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           : 0;
       DSP_DIAG_SEG(MEMORY, segIdx,
                     "insufficient GPU memory for graph capture seg[%d-%d] (%d ops): "
-                    "estimated overhead %zuMB (20%% of %zuMB working set) > free %zuMB "
+                    "requiredFree=%zuMB basis=%s workingSet=%zuMB > free %zuMB "
                     "(preTrimFree=%zuMB, poolUsed=%zuMB, poolReserved=%zuMB, poolReusable=%zuMB, total %zuMB) "
                     "currentPlan=%p planOwned=%zuMB ownedArrays=%zu segments=%zu "
                     "— returning KERNEL_FAILURE (memory-budget segmentation should prevent this)",
                     seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
                     requiredFree / (1024 * 1024),
+                    measuredWorkspaceBudget ? "warmupWorkspace+headroom" : "20% output estimate",
                     estimatedCaptureBytes / (1024 * 1024),
                     gpuFree / (1024 * 1024),
                     gpuFreeBeforeTrim / (1024 * 1024),
@@ -1033,10 +1061,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                     currentPlanOwnedArrayCount, currentPlanSegmentCount);
       return cudaGraphFailure(
           "CUDA graph capture memory check failed for seg[%d-%d]: "
-          "requiredFree=%zuMB, gpuFree=%zuMB (preTrimFree=%zuMB, poolUsed=%zuMB, "
+          "requiredFree=%zuMB basis=%s, gpuFree=%zuMB (preTrimFree=%zuMB, poolUsed=%zuMB, "
           "poolReserved=%zuMB, poolReusable=%zuMB), workingSet=%zuMB, gpuTotal=%zuMB, "
           "plan=%p planOwned=%zuMB ownedArrays=%zu segments=%zu",
           seg.def.startSlot, seg.def.endSlot, requiredFree / (1024 * 1024),
+          measuredWorkspaceBudget ? "warmupWorkspace+headroom" : "20% output estimate",
           gpuFree / (1024 * 1024), gpuFreeBeforeTrim / (1024 * 1024),
           poolUsedAfterTrim / (1024 * 1024), poolReservedAfterTrim / (1024 * 1024),
           poolReusableAfterTrim / (1024 * 1024),
@@ -1089,7 +1118,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // known segment instead of reserving the full default repeatedly. Bound the
   // estimate and then scale down to available GPU memory. Trim cached pool
   // buffers before sizing. Read config dynamically for request/test overrides.
-  size_t CONFIGURED_CAPTURE_WORKSPACE = static_cast<size_t>(sd::env_dspCaptureWorkspaceMb()) * 1024ULL * 1024ULL;
   DSP_DIAG_SEG(MEMORY, segIdx, "capture workspace check seg[%d-%d]: ptr=%p bytes=%zu",
                seg.def.startSlot, seg.def.endSlot, seg.exec.replayHandle->getWorkspacePtr(), seg.exec.replayHandle->getWorkspaceBytes());
   if (seg.exec.replayHandle->getWorkspacePtr() == nullptr) {
@@ -1105,9 +1133,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     // Reserve at least 256MB headroom for kernel temporaries + cuBLAS workspace.
     size_t gpuFree = 0, gpuTotal = 0;
     cudaMemGetInfo(&gpuFree, &gpuTotal);
-    size_t headroom = 256ULL * 1024 * 1024;
-    const bool hasWarmupAllocationSample =
-        segments_.size() > 1 && seg.exec.warmupWorkspaceAllocationObserved;
+    size_t headroom = CAPTURE_WORKSPACE_HEADROOM_BYTES;
     size_t workspaceSize = CONFIGURED_CAPTURE_WORKSPACE;
     if (CONFIGURED_CAPTURE_WORKSPACE > 0 &&
         (estimatedCaptureBytes > 0 || hasWarmupAllocationSample)) {
