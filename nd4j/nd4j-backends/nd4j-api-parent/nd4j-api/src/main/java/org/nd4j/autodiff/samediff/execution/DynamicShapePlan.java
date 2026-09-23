@@ -551,25 +551,12 @@ public class DynamicShapePlan implements Closeable {
                     ? effectiveTotalBytes
                     : (long) Math.round((double) cumulativeMem / totalMem * effectiveTotalBytes);
 
-            // CAPTURE-MARGIN RESERVATION (proc-051/053/059): a device's band may not
-            // consume its whole budget — native capture demands 20% of the band's
-            // bytes free on the device at capture time. Cap the band at budget/1.2 so
-            // the remaining ~17% of the budget (>= 20% of bandBytes) stays free. The
-            // resident device is exempt: it already holds the weights, its remaining
-            // budget is not the capture constraint, and shrinking it would push an
-            // oversized share onto smaller devices.
-            long bandCap = Long.MAX_VALUE;
-            if (deviceId != residentDevice) {
-                bandCap = deviceMem - deviceMem / 6;  // budget * 5/6: band*0.2 <= deviceMem/6
-                if (bytesTarget > bandCap) {
-                    bytesTarget = bandCap;
-                    log.info("Device placement: capped device {} band at {}MB (budget {}MB) "
-                                    + "to reserve the {}MB capture margin required by the "
-                                    + "native pre-capture check (proc-051 contract)",
-                            deviceId, bandCap / (1024 * 1024), deviceMem / (1024 * 1024),
-                            (deviceMem / 6) / (1024 * 1024));
-                }
-            }
+            // NOTE: a capture-margin band cap (proc-051/053/059) was tried here and
+            // removed: it compared the CUMULATIVE assignedBytes against a PER-DEVICE
+            // allowance, the last device bypassed it via !lastDevice, and with
+            // unknown pre-warmup shapes both sides are ~0 so it never fired
+            // (proc-061/068 traces). Capture-time free memory is enforced by the
+            // native pre-capture check; this Java layer must not guess margins.
 
             int deviceSlotStart = assigned;
             while (assigned < slots.length) {

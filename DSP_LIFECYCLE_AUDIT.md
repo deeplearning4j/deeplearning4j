@@ -7,21 +7,46 @@ CAPTURE WALL ELIMINATED (proc-068): capability-stable placement sort
 never remaining-free budget) keeps assignments identical across generates.
 All three placement traces: device0=all ops. No capture-memory failure.
 
-REMAINING BLOCKER (precisely defined, one fix away):
-Double-compile. execute() resolves requested mode from sd.getGraphExecutionMode()
-(=AUTO), while -Dnd4j.dsp.graphExecutionMode=CUDA_GRAPHS forces recompile at the
-mode check. Consequences at doc2:
-  1. parked-prefill restore hits parkedMode(CUDA_GRAPHS) != requested(AUTO)
-     -> honest rejection (correct behavior), full recompile.
-  2. fresh compile's DataBuffer::migrate hits dev0's collapsed REMAINING budget
-     (3479MB; dev0 holds ~16GB of live plans) -> "actual target exceeds device
-     or DEVICE-group memory limits". Test failure.
-FIX: initial auto-compile must resolve the EFFECTIVE mode (same SameDiff/property
-path as execute()'s check), not raw AUTO. Plans then born under CUDA_GRAPHS:
-doc2 restore matches bytes + mode -> adopts without recompile -> no migrations.
-Secondary: even with the fix, restored plans may still want re-prefill migrations;
-if migrate rejections persist, the budget used by DataBuffer::migrate must count
-pinned/parked plans' live allocations (dev0 holds both plans by design).
+REMAINING BLOCKER v2 (proc-070, stack traced):
+The doc-2 failure is NOT KV-write memory need. Exact sequence:
+  1. dev0 remaining budget collapsed (3479MB budget line) after doc1 resident plans.
+  2. Doc2 prefill warmup: 6MB intermediate allocation FAILED the dev0 counter ->
+     DeviceMemoryManager FAILOVER placed it on dev1 (log 17:25:11.440).
+  3. valBuf.assign() (GenerationPipeline:2329) -> DeviceAwareOpExecutioner saw the
+     input on dev1, migrated it BACK to dev0 -> MemoryCounter admission rejected
+     (dev0 counter at/over 85% limit; pool-reserved 21.3GB counted, mostly
+     parked-plan slot arrays that are pool-reclaimable but not released).
+CORRECTION to v2 record: the "double-compile" fix DID work (zero mode-change
+lines, restore adopted with mode=CUDA_GRAPHS). The remaining failure is the
+interaction of (a) the environment device-limit COUNTER accounting pool-reserved
+memory against the cap, and (b) silent per-buffer failover to dev1 for transient
+allocations. Fix direction: transient warmup intermediates must not fail over to
+a foreign device they will immediately migrate back from; either failover should
+prefer trimming the dev0 pool (pool-reserved is largely reclaimable parked-plan
+arrays), or the migrate-back must be avoided by keeping the allocation on dev0.
+Band-cap heuristic REMOVED (was dead code comparing cumulative counter vs
+per-device allowance, last device bypassed, zero at unknown shapes).
+
+CONFIRMED WORKING (proc-070 evidence):
+- Capability-stable placement sort — placement identical across generates.
+- property-overrides-AUTO mode resolution — zero mode-change recompiles; plans
+  born CUDA_GRAPHS; restore adopted (mode=CUDA_GRAPHS, independentLease=true).
+- parkedMode capture at park; restore validates vs requested, never relabels.
+- Park/restore machinery; prefill-only parking.
+- Bounded placement trace (assignDevices: budgets=...) — keep permanently.
+
+FALSIFIED / CORRECTED THIS SESSION (do not retry):
+- CAPACITY_SHIFT_CAPTURE: CUDA 700 (warmup outputs on secondary). Reverted.
+- Budget-descending placement sort: flips between generates (proc-064 trace).
+- Java capture gate from estimateSlotOutputBytes(): inert pre-warmup (proc-053).
+- Band-cap bandCap heuristic: dead code (cumulative vs per-device mixup) — removed.
+- Native rebuild without -Dlibnd4j.triton=ON: wrong binary (tritonAvailable=false).
+- "Disk cache freezes assignments": FALSE — byte-identity gate rejects changed
+  assignment bytes; the cache never overrode fresh placement.
+- "Restore validated end-to-end": NOW TRUE (proc-070: restore adopted, mode match,
+  no recompile) — but downstream migration still failed, so end-to-end reuse of
+  the RESTORED plan through a full doc-2 generate is still unproven.
+
 
 CONFIRMED WORKING (proc-068 evidence):
 - Capability-stable sort (this session) — placement identical across generates.
