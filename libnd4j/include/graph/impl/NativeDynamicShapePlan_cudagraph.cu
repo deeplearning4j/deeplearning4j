@@ -1080,7 +1080,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       if (CONFIGURED_CAPTURE_WORKSPACE <= ((size_t)-1) / 4) {
         adaptiveCeiling = CONFIGURED_CAPTURE_WORKSPACE * 4;
       }
-      size_t workingSetWorkspace = estimatedCaptureBytes / 4;
+      // Output bytes omit some operator scratch. The segmented CUDA_GRAPHS
+      // reproduction exceeded one quarter at a later attention allocation, so
+      // retain a one-third workspace allowance for segmented plans while leaving
+      // the historical single-segment growth ratio unchanged.
+      const size_t workspaceEstimateDivisor = segments_.size() > 1 ? 3 : 4;
+      size_t workingSetWorkspace = estimatedCaptureBytes / workspaceEstimateDivisor;
       if (workingSetWorkspace > adaptiveCeiling) {
         workingSetWorkspace = adaptiveCeiling;
       }
@@ -1090,10 +1095,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         workspaceSize = std::max(minimumSegmentWorkspace, workingSetWorkspace);
         DSP_DIAG_SEG(MEMORY, segIdx,
                      "segmented capture workspace target seg[%d-%d]: configured=%zuMB "
-                     "outputEstimate=%zuMB target=%zuMB ceiling=%zuMB",
+                     "outputEstimate=%zuMB divisor=%zu target=%zuMB ceiling=%zuMB",
                      seg.def.startSlot, seg.def.endSlot,
                      CONFIGURED_CAPTURE_WORKSPACE / (1024*1024),
-                     estimatedCaptureBytes / (1024*1024),
+                     estimatedCaptureBytes / (1024*1024), workspaceEstimateDivisor,
                      workspaceSize / (1024*1024),
                      adaptiveCeiling / (1024*1024));
       } else if (workingSetWorkspace > workspaceSize) {
@@ -1130,11 +1135,23 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                      workspaceSize / (1024*1024), CONFIGURED_CAPTURE_WORKSPACE / (1024*1024));
       }
     } else {
-      // Barely any free memory — use minimum viable workspace (32MB)
-      workspaceSize = 32ULL * 1024 * 1024;
-      DSP_DIAG_SEG(MEMORY, segIdx,
-                   "capture workspace minimal: gpuFree=%zuMB < headroom=%zuMB → workspace=32MB",
-                   gpuFree / (1024*1024), headroom / (1024*1024));
+      // Preserve the existing minimum viable workspace for single/unknown-size
+      // captures. A known multi-segment target already carries its per-segment
+      // estimate; do not throw that estimate away merely because the 256MB
+      // headroom threshold was crossed.
+      if (segments_.size() <= 1 || estimatedCaptureBytes == 0 ||
+          CONFIGURED_CAPTURE_WORKSPACE == 0) {
+        workspaceSize = 32ULL * 1024 * 1024;
+        DSP_DIAG_SEG(MEMORY, segIdx,
+                     "capture workspace minimal: gpuFree=%zuMB < headroom=%zuMB → workspace=32MB",
+                     gpuFree / (1024*1024), headroom / (1024*1024));
+      } else {
+        DSP_DIAG_SEG(MEMORY, segIdx,
+                     "low-free segmented capture retains estimated workspace: "
+                     "gpuFree=%zuMB headroom=%zuMB workspace=%zuMB",
+                     gpuFree / (1024*1024), headroom / (1024*1024),
+                     workspaceSize / (1024*1024));
+      }
     }
 
     DSP_DIAG_SEG(MEMORY, segIdx,
