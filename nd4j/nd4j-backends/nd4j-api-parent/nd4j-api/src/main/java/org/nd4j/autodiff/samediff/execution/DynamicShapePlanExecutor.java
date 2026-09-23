@@ -894,6 +894,53 @@ public class DynamicShapePlanExecutor implements Closeable {
             nativeExecutionDevice = -1;
             return;
         }
+
+        // BYTE-IDENTICAL PLAN ADOPTION (one-shot fixed-buffer reuse lifecycle):
+        // A NEW Java DynamicShapePlan object that serializes identically to the currently
+        // compiled frozen plan is the SAME logical plan. Reaching here with a fresh object
+        // used to take the PLAN_CHANGED teardown below, which destroys the native plan
+        // (CUDA graphs + TAD pointers + graph context) that the retained generation state
+        // still holds captured external-input addresses into — the next decode then failed
+        // with CUDA_ERROR_INVALID_RESOURCE_HANDLE (r36 evidence: "Reusing cached fixed-buffer
+        // state" at log 14125 immediately followed by "PLAN_DESTRUCTION reason='PLAN_CHANGED'
+        // execCount=114 frozen=true" at 14133 → assignKernel failed [400]).
+        // Adopt the incoming object instead and keep the native plan, its frozen phase,
+        // cast caches, and pinned cache leases fully intact.
+        if (currentPlan != plan && cachedSerializedPlan != null && nativePlanSource != null) {
+            byte[] incomingBytes;
+            try {
+                incomingBytes = plan.serialize();
+            } catch (Exception serializationFailure) {
+                incomingBytes = null;
+            }
+            if (incomingBytes != null && incomingBytes.length == cachedSerializedPlan.length
+                    && java.util.Arrays.equals(incomingBytes, cachedSerializedPlan)) {
+                log.info("initialize: PLAN_CHANGED suppressed — incoming plan is byte-identical to the "
+                                + "compiled frozen plan (execCount={}, frozen={}); adopting Java object, "
+                                + "keeping native handle and captured graph state",
+                        lifecycleExecutionCount(), isShapesFrozen());
+                currentPlan = plan;
+                nativePlanSource = plan;
+                // Clear only the pure-Java per-execution input metadata so stale arrays from
+                // the previous generate cannot leak into the fast path — with cachedInputArrays
+                // null, the next executeNative() takes the full input-resolution path, rebuilds
+                // every cache, and ATOMICALLY swaps contextInputRefs after all wrappers are set
+                // (the only safe replacement point while cachedOpContext stays alive).
+                // contextInputRefs itself MUST be retained here: cachedOpContext still holds
+                // raw NDArray* pointers into those C++ OpaqueNDArray wrappers, and nulling the
+                // only strong refs would let the DeallocatorService free them while the native
+                // context still references them — the exact UAF the atomic-swap contract
+                // (line ~5018) exists to prevent.
+                cachedInputArrays = null;
+                cachedInputOpaques = null;
+                inputIsPlaceholder = null;
+                placeholderIndices = null;
+                cachedVariableTypeIndices = null;
+                frozenControlInputIndices = null;
+                frozenDerivedExternalInputIndices = null;
+                return;
+            }
+        }
         // Plan changed — flush old slot cache when switching plans
         closeSlotArrayCache();
         closeZeroCopyOutputCache();
@@ -2278,13 +2325,20 @@ public class DynamicShapePlanExecutor implements Closeable {
                     byte[] freshSerialized = plan.serialize();
                     long freshHash = DynamicShapePlan.computeStructureHash(freshSerialized);
                     long diskHash = DynamicShapePlan.computeStructureHash(diskBytes);
-                    if (freshHash == diskHash) {
+                    if (freshHash == diskHash && java.util.Arrays.equals(freshSerialized, diskBytes)) {
+                        // Accept only byte-identical disk plans. The structure hash covers graph
+                        // structure but was never a uniqueness guarantee for the captured slot
+                        // inventory (the stale-cache comment below already documents iArgs
+                        // collisions). Proc-004 showed hash-equal but byte-different in practice:
+                        // the disk plan was adopted and the run's first matmul exceeded its
+                        // device cap. Identical bytes guarantee the exact plan that previously
+                        // validated; anything else must recompile from the current plan.
                         serialized = diskBytes;
                         structureHash = diskHash;
                         loadedFromDiskCache = true;
-                        log.info("Native executor: loaded plan from disk cache (model identity hit, validated, {} bytes)", diskBytes.length);
+                        log.info("Native executor: loaded plan from disk cache (model identity hit, byte-identical, {} bytes)", diskBytes.length);
                     } else {
-                        log.info("Native executor: disk cache plan STALE (hash mismatch: disk=0x{} fresh=0x{}), recompiling",
+                        log.info("Native executor: disk cache plan STALE (bytes differ: disk=0x{} fresh=0x{}), recompiling",
                                 Long.toHexString(diskHash), Long.toHexString(freshHash));
                         serialized = freshSerialized;
                         structureHash = freshHash;
@@ -2323,7 +2377,11 @@ public class DynamicShapePlanExecutor implements Closeable {
             cachedPhKeys = phKeys.toArray(new String[0]);
 
             // --- Disk cache: store serialized plan bytes to disk ---
-            if (DspPlanDiskCache.isEnabled() && !loadedFromDiskCache && !DspPlanDiskCache.exists(structureHash)) {
+            // Store whenever this compile is fresh (not loaded from disk): the byte-identity
+            // gate above means a hash match with differing bytes recompiles every start until
+            // the entry is refreshed. exists() previously blocked that refresh, leaving a
+            // stale entry permanently shadowing the current plan under the same hash.
+            if (DspPlanDiskCache.isEnabled() && !loadedFromDiskCache) {
                 String outputSetStr = String.join(",", cachedSortedOutputs);
                 DspPlanDiskCache.store(structureHash, serialized,
                         plan.getSlots().length, extKeys.length,
