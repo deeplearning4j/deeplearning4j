@@ -1096,8 +1096,40 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           }
           segmentOutputSlots.insert(outputSlot);
           NDArray* output = outputSlots_[outputSlot];
+          if (output != nullptr && output->dataBuffer() != nullptr)
+            segmentOutputBuffers.insert(output->dataBuffer());
+        }
+      }
+
+      // A zero-copy view can move with its segment only when it directly aliases
+      // a distinct SLOT_OWNED output produced by this same segment. The parent
+      // will be staged once; the view wrapper is rebuilt over that target owner.
+      // External views, view chains, and views over another segment remain
+      // explicitly unsupported.
+      auto internalOwnedViewParent = [&](int outputSlot, NDArray* output) {
+        if (output == nullptr || !output->isView() || slotOwnership_ == nullptr ||
+            outputSlot < 0 || outputSlot >= totalOutputSlots_ ||
+            slotOwnership_[outputSlot].ownership != BufferOwnership::VIEW_OF_SLOT)
+          return -1;
+        const int parentSlot = slotOwnership_[outputSlot].parentSlotIdx;
+        if (parentSlot < 0 || parentSlot >= totalOutputSlots_ ||
+            segmentOutputSlots.count(parentSlot) == 0 ||
+            slotOwnership_[parentSlot].ownership != BufferOwnership::SLOT_OWNED)
+          return -1;
+        NDArray* parent = outputSlots_[parentSlot];
+        if (parent == nullptr || parent->isView() || parent->dataBuffer() == nullptr ||
+            parent->dataBuffer() != output->dataBuffer())
+          return -1;
+        return parentSlot;
+      };
+      std::unordered_map<int, int> rehomedViewParentSlots;
+      for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+        const NativeSlot& slot = slots_[s];
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[o];
+          if (outputSlot < 0 || outputSlot >= totalOutputSlots_) continue;
+          NDArray* output = outputSlots_[outputSlot];
           DataBuffer* outputBuffer = output != nullptr ? output->dataBuffer() : nullptr;
-          if (outputBuffer != nullptr) segmentOutputBuffers.insert(outputBuffer);
           if (slots_[s].targetDeviceId >= 0 &&
               slots_[s].targetDeviceId != currentDevice) {
             unsupportedOutputContract = true;
@@ -1108,6 +1140,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           const bool ownershipAlias = slotOwnership_ != nullptr &&
               (slotOwnership_[outputSlot].ownership == BufferOwnership::VIEW_OF_SLOT ||
                slotOwnership_[outputSlot].ownership == BufferOwnership::VIEW_OF_WEIGHT);
+          const int viewParentSlot = internalOwnedViewParent(outputSlot, output);
+          const bool supportedInternalView = viewParentSlot >= 0;
+          if (supportedInternalView)
+            rehomedViewParentSlots[outputSlot] = viewParentSlot;
           bool aliasesExternalInput = false;
           if (outputBuffer != nullptr && externalArrays != nullptr) {
             for (int e = 0; e < numExt; e++) {
@@ -1122,9 +1158,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
               outputBuffer != nullptr &&
               (outputBuffer->special() != nullptr ||
                (outputBuffer->primary() != nullptr && outputBuffer->isPrimaryActual()));
-          if (slot.aliasesInput() || slot.isInPlaceFused() || fusedAlias ||
-              (output != nullptr && output->isView()) || ownershipAlias ||
-              aliasesExternalInput ||
+          if ((slot.aliasesInput() && !supportedInternalView) ||
+              slot.isInPlaceFused() || fusedAlias ||
+              ((output != nullptr && output->isView()) && !supportedInternalView) ||
+              (ownershipAlias && !supportedInternalView) || aliasesExternalInput ||
               !hasStableWarmupStorage) {
             unsupportedOutputContract = true;
             unsupportedOutputSlot = outputSlot;
@@ -1147,8 +1184,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       if (unsupportedOutputContract) {
         DSP_DIAG_SEG(MEMORY, segIdx,
                      "CAPTURE_DEVICE_REHOME_REJECT: seg[%d-%d] output slot=%d has "
-                     "an alias/view or unstable warmup-storage contract that cannot "
-                     "be preserved by staging",
+                     "an external, chained, fused, cross-segment, or unstable "
+                     "ownership contract that cannot be preserved by staging",
                      seg.def.startSlot, seg.def.endSlot, unsupportedOutputSlot);
       }
       for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
@@ -1344,6 +1381,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         // Include every segment output, including terminal outputs, because the
         // captured graph needs a stable target-device address for each one.
         for (const int outputSlot : segmentOutputSlots) {
+          // A supported direct view shares its parent's candidate allocation. Charge
+          // and stage the SLOT_OWNED parent once, never a redundant dense copy for
+          // the aliased output wrapper.
+          if (rehomedViewParentSlots.count(outputSlot) > 0) continue;
           estimateCopy(outputSlot, outputSlots_[outputSlot], false, -1);
         }
         for (const int sourceSlot : boundarySources) {
@@ -1792,6 +1833,41 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     // caller-owned device address into downstream graph nodes.
     int viewRefreshResult =
         refreshStaleViewWrappersInSegment(seg, captureExternals, numExt);
+    if (seg.exec.captureRehomePending) {
+      for (auto& migrated : migratedInputs_) {
+        if (!migrated.segmentViewAlias) continue;
+        // The source view remains the rollback publication even though the view
+        // refresh path may have queued it while installing the target wrapper.
+        deferredSlotDeletes_.erase(
+            std::remove(deferredSlotDeletes_.begin(), deferredSlotDeletes_.end(), migrated.original),
+            deferredSlotDeletes_.end());
+        if (migrated.original != nullptr) planOwnedArrays_.insert(migrated.original);
+        NDArray* targetView = outputSlots_[migrated.outputSlotIdx];
+        NDArray* parent = migrated.aliasParentOutputSlotIdx >= 0 &&
+                          migrated.aliasParentOutputSlotIdx < totalOutputSlots_
+            ? outputSlots_[migrated.aliasParentOutputSlotIdx] : nullptr;
+        if (targetView == nullptr || !targetView->isView() || parent == nullptr ||
+            parent->dataBuffer() == nullptr ||
+            targetView->dataBuffer() != parent->dataBuffer() ||
+            parent->dataBuffer()->deviceId() != seg.exec.captureRehomeTargetDevice ||
+            targetView->dataType() != migrated.original->dataType() ||
+            targetView->offset() != migrated.original->offset() ||
+            targetView->ordering() != migrated.original->ordering() ||
+            !shape::equalsStrict(targetView->shapeInfo(), migrated.original->shapeInfo()) ||
+            !shape::strideEquals(targetView->shapeInfo(), migrated.original->shapeInfo())) {
+          DSP_DIAG_SEG(MEMORY, segIdx,
+                       "CAPTURE_DEVICE_REHOME_VIEW_REJECT: outputSlot=%d parentSlot=%d "
+                       "targetDevice=%d view/dataBuffer contract changed during refresh",
+                       migrated.outputSlotIdx, migrated.aliasParentOutputSlotIdx,
+                       seg.exec.captureRehomeTargetDevice);
+          return cudaGraphFailure(
+              "CUDA capture rehome could not preserve refreshed output-view alias "
+              "for slot %d over owner slot %d",
+              migrated.outputSlotIdx, migrated.aliasParentOutputSlotIdx);
+        }
+        migrated.migrated = targetView;
+      }
+    }
     if (viewRefreshResult < 0) {
       DSP_DIAG_SEG(COMPILE, segIdx,
                    "CUDA graph capture preparation failed while refreshing "
@@ -2624,10 +2700,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   recordManagedExtBakedAddrsForCapture(seg, captureExternals, numExt);
 
   if (seg.exec.captureRehomePending) {
-    // Alias/view-producing outputs are rejected during preflight. Verify the
-    // capture did not replace a staged output with a different allocation; if it
-    // did, discard this graph transaction rather than publish an address the
-    // target graph did not use.
+    // Verify every materialized output still uses its staged target allocation,
+    // and every admitted view still aliases the staged owner with its original
+    // logical layout. Any change aborts the transaction before publication.
     for (const auto& migrated : migratedInputs_) {
       if (!migrated.segmentOutput) continue;
       if (migrated.outputSlotIdx < 0 ||
@@ -2637,6 +2712,38 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             seg.def.startSlot, seg.def.endSlot);
       }
       NDArray* capturedOutput = outputSlots_[migrated.outputSlotIdx];
+      if (migrated.segmentViewAlias) {
+        NDArray* parent = migrated.aliasParentOutputSlotIdx >= 0 &&
+                          migrated.aliasParentOutputSlotIdx < totalOutputSlots_
+            ? outputSlots_[migrated.aliasParentOutputSlotIdx] : nullptr;
+        DataBuffer* parentBuffer = parent != nullptr ? parent->dataBuffer() : nullptr;
+        DataBuffer* capturedBuffer = capturedOutput != nullptr
+            ? capturedOutput->dataBuffer() : nullptr;
+        void* capturedPointer = capturedBuffer != nullptr
+            ? capturedBuffer->special() : nullptr;
+        cudaPointerAttributes capturedAttributes;
+        const cudaError_t attrError = capturedPointer != nullptr
+            ? cudaPointerGetAttributes(&capturedAttributes, capturedPointer)
+            : cudaErrorInvalidValue;
+        if (attrError != cudaSuccess) cudaGetLastError();
+        if (parentBuffer == nullptr || parentBuffer != migrated.migrated->dataBuffer() ||
+            capturedOutput == nullptr || !capturedOutput->isView() ||
+            capturedBuffer != parentBuffer || attrError != cudaSuccess ||
+            capturedAttributes.type != cudaMemoryTypeDevice ||
+            capturedAttributes.device != seg.exec.captureRehomeTargetDevice ||
+            capturedOutput->dataType() != migrated.migrated->dataType() ||
+            capturedOutput->offset() != migrated.migrated->offset() ||
+            capturedOutput->ordering() != migrated.migrated->ordering() ||
+            !shape::equalsStrict(capturedOutput->shapeInfo(), migrated.migrated->shapeInfo()) ||
+            !shape::strideEquals(capturedOutput->shapeInfo(), migrated.migrated->shapeInfo())) {
+          return cudaGraphFailure(
+              "CUDA capture rehome view alias changed: seg[%d-%d] outputSlot=%d "
+              "parentSlot=%d targetDevice=%d",
+              seg.def.startSlot, seg.def.endSlot, migrated.outputSlotIdx,
+              migrated.aliasParentOutputSlotIdx, seg.exec.captureRehomeTargetDevice);
+        }
+        continue;
+      }
       DataBuffer* capturedBuffer = capturedOutput != nullptr
           ? capturedOutput->dataBuffer() : nullptr;
       DataBuffer* stagedBuffer = migrated.migrated->dataBuffer();

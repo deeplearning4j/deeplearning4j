@@ -1234,15 +1234,44 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   // the target device during warmup. A rehomed, not-yet-captured segment is the
   // one exception: its warmup outputs still belong to the source device.
   std::unordered_set<int> rehomedSegmentOutputSlots;
+  std::unordered_map<int, int> rehomedViewParentSlots;
+  std::unordered_map<int, NDArray*> rehomedViewOriginals;
   if (seg.exec.captureRehomePending) {
     for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
       const NativeSlot& slot = slots_[s];
       for (int o = 0; o < slot.wiring.numOutputs; o++) {
         const int outputSlot = slot.wiring.outputSlotIndices[o];
-        if (outputSlot >= 0 && outputSlot < totalOutputSlots_) {
+        if (outputSlot >= 0 && outputSlot < totalOutputSlots_)
           rehomedSegmentOutputSlots.insert(outputSlot);
-        }
       }
+    }
+
+    // Revalidate the narrow owner/view contract selected during admission. The
+    // view wrapper is provisional source-device state; preserve it for rollback,
+    // but never stage it as an independent dense segment output.
+    for (const int outputSlot : rehomedSegmentOutputSlots) {
+      NDArray* output = outputSlots_[outputSlot];
+      if (output == nullptr || !output->isView()) continue;
+      if (slotOwnership_ == nullptr ||
+          slotOwnership_[outputSlot].ownership != BufferOwnership::VIEW_OF_SLOT) {
+        return cudaPlanFailure(
+            "CUDA capture rehome view output has no tracked slot owner: outputSlot=%d",
+            outputSlot);
+      }
+      const int parentSlot = slotOwnership_[outputSlot].parentSlotIdx;
+      NDArray* parent = parentSlot >= 0 && parentSlot < totalOutputSlots_
+          ? outputSlots_[parentSlot] : nullptr;
+      if (parentSlot < 0 || rehomedSegmentOutputSlots.count(parentSlot) == 0 ||
+          parent == nullptr || parent->isView() || parent->dataBuffer() == nullptr ||
+          parent->dataBuffer() != output->dataBuffer() ||
+          slotOwnership_[parentSlot].ownership != BufferOwnership::SLOT_OWNED) {
+        return cudaPlanFailure(
+            "CUDA capture rehome only supports a direct view of an owned output "
+            "in the same segment: outputSlot=%d parentSlot=%d",
+            outputSlot, parentSlot);
+      }
+      rehomedViewParentSlots.emplace(outputSlot, parentSlot);
+      rehomedViewOriginals.emplace(outputSlot, output);
     }
   }
 
@@ -1255,7 +1284,8 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-        if (outputSlots_[srcIdx] != nullptr) {
+        if (outputSlots_[srcIdx] != nullptr &&
+            rehomedViewParentSlots.count(srcIdx) == 0) {
           neededInputSources.insert(srcIdx);
         }
       } else if (srcIdx < 0 && externalInputs != nullptr) {
@@ -1272,13 +1302,18 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   // staging table. Capture will overwrite them in graph order, but it must not
   // bake source-device addresses into the target graph.
   for (const int outputSlot : rehomedSegmentOutputSlots) {
-    if (outputSlots_[outputSlot] != nullptr) {
+    if (outputSlots_[outputSlot] != nullptr &&
+        rehomedViewParentSlots.count(outputSlot) == 0) {
       neededInputSources.insert(outputSlot);
     }
   }
 
   int migrated = 0;
   for (int sourceIdx : neededInputSources) {
+    if (seg.exec.captureRehomePending &&
+        rehomedViewParentSlots.count(sourceIdx) > 0) {
+      continue;  // Rebuilt over the staged owner after all owner copies complete.
+    }
     const bool externalSource = sourceIdx < 0;
     const int slotIdx = externalSource ? -1 : sourceIdx;
     const int externalInputIdx = externalSource ? -(sourceIdx + 1) : -1;
@@ -2065,9 +2100,84 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   }
 
   if (seg.exec.captureRehomePending) {
-    // This check runs before CUDA graph capture begins. Every existing output
-    // publication of a rehomed segment must now be a device-local target buffer;
-    // no source-device address may reach the target graph.
+    // Rebuild supported views only after their owners have been staged. This
+    // preserves the zero-copy alias rather than migrating the view as a dense
+    // array. Keep the original source wrapper in the transaction for rollback.
+    std::vector<int> viewSlots;
+    viewSlots.reserve(rehomedViewParentSlots.size());
+    for (const auto& entry : rehomedViewParentSlots) viewSlots.push_back(entry.first);
+    std::sort(viewSlots.begin(), viewSlots.end());
+    for (const int viewSlot : viewSlots) {
+      const int parentSlot = rehomedViewParentSlots.at(viewSlot);
+      NDArray* originalView = rehomedViewOriginals.at(viewSlot);
+      NDArray* parent = outputSlots_[parentSlot];
+      DataBuffer* parentBuffer = parent != nullptr ? parent->dataBuffer() : nullptr;
+      if (parentBuffer == nullptr || parent->isView() ||
+          parentBuffer->deviceId() != targetDevice) {
+        return cudaPlanFailure(
+            "CUDA capture rehome lost its target owner before view rebuild: "
+            "outputSlot=%d parentSlot=%d targetDevice=%d",
+            viewSlot, parentSlot, targetDevice);
+      }
+
+      NDArray* targetView = nullptr;
+      try {
+        targetView = new NDArray(parentBuffer,
+                                 const_cast<LongType*>(originalView->shapeInfo()),
+                                 LaunchContext::defaultContext(), originalView->offset());
+      } catch (const std::exception& error) {
+        return cudaPlanFailure(
+            "CUDA capture rehome could not rebuild output view %d over owner %d: %s",
+            viewSlot, parentSlot, error.what());
+      }
+      if (targetView == nullptr || !targetView->isView() ||
+          targetView->dataBuffer() != parentBuffer ||
+          targetView->dataType() != originalView->dataType() ||
+          targetView->offset() != originalView->offset() ||
+          targetView->ordering() != originalView->ordering() ||
+          !shape::equalsStrict(targetView->shapeInfo(), originalView->shapeInfo()) ||
+          !shape::strideEquals(targetView->shapeInfo(), originalView->shapeInfo())) {
+        if (targetView != nullptr) deferredSlotDeletes_.push_back(targetView);
+        return cudaPlanFailure(
+            "CUDA capture rehome could not preserve output-view layout: "
+            "outputSlot=%d parentSlot=%d",
+            viewSlot, parentSlot);
+      }
+
+      MigratedInput alias;
+      alias.outputSlotIdx = viewSlot;
+      alias.original = originalView;
+      alias.migrated = targetView;
+      alias.targetDevice = targetDevice;
+      alias.retained = true;
+      alias.segmentOutput = true;
+      alias.segmentViewAlias = true;
+      alias.aliasParentOutputSlotIdx = parentSlot;
+      migratedInputs_.push_back(alias);
+      writeOutputSlot(viewSlot, targetView, "view-op-install");
+      // writeOutputSlot queues the source view for deferred deletion. It remains
+      // the rollback publication until graph capture commits, so protect it from
+      // the end-of-execution drain and keep its plan ownership intact.
+      deferredSlotDeletes_.erase(
+          std::remove(deferredSlotDeletes_.begin(), deferredSlotDeletes_.end(), originalView),
+          deferredSlotDeletes_.end());
+      planOwnedArrays_.insert(originalView);
+      if (slotOwnership_ != nullptr) {
+        classifyAndUpdateOwnership(
+            slotOwnership_[viewSlot], targetView, viewSlot,
+            externalInputs, numExternalInputs,
+            outputSlots_, totalOutputSlots_, slotOwnership_);
+      }
+      DSP_DIAG(MULTI_DEVICE,
+               "CAPTURE_DEVICE_REHOME_VIEW: outputSlot=%d ownerSlot=%d targetDevice=%d "
+               "sourceWrapper=%p targetWrapper=%p sharedBuffer=%p",
+               viewSlot, parentSlot, targetDevice, (void*)originalView,
+               (void*)targetView, (void*)parentBuffer);
+    }
+
+    // This check runs before CUDA graph capture begins. Every materialized output
+    // and rebuilt view publication must now resolve to the target device; no
+    // source-device address may reach the target graph.
     for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
       const NativeSlot& slot = slots_[s];
       for (int o = 0; o < slot.wiring.numOutputs; o++) {
@@ -2075,6 +2185,22 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
         if (outputSlot < 0 || outputSlot >= totalOutputSlots_) continue;
         NDArray* output = outputSlots_[outputSlot];
         if (output == nullptr || output->isEmpty()) continue;
+        if (rehomedViewParentSlots.count(outputSlot) > 0) {
+          auto alias = std::find_if(migratedInputs_.begin(), migratedInputs_.end(),
+              [outputSlot](const MigratedInput& entry) {
+                return entry.segmentViewAlias && entry.outputSlotIdx == outputSlot;
+              });
+          NDArray* parent = outputSlots_[rehomedViewParentSlots.at(outputSlot)];
+          if (alias == migratedInputs_.end() || !output->isView() || parent == nullptr ||
+              parent->dataBuffer() == nullptr || output->dataBuffer() != parent->dataBuffer() ||
+              parent->dataBuffer()->deviceId() != targetDevice) {
+            return cudaPlanFailure(
+                "CUDA capture rehome view lost its target alias before capture: "
+                "outputSlot=%d parentSlot=%d targetDevice=%d",
+                outputSlot, rehomedViewParentSlots.at(outputSlot), targetDevice);
+          }
+          continue;
+        }
         DataBuffer* outputBuffer = output->dataBuffer();
         void* pointer = outputBuffer != nullptr ? outputBuffer->special() : nullptr;
         cudaPointerAttributes attributes;
@@ -2154,11 +2280,43 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   const auto syncErr = hasTemporary ? cudaStreamSynchronize(segmentStream) : cudaSuccess;
 
   std::exception_ptr writebackFailure;
+  // Restore/retire alias wrappers before their backing owner entries. On rollback,
+  // restoring the source view first lets the owner stage below become unshared and
+  // retire; on commit, deferred deletion sorts all non-owning views before owners.
+  for (auto& mi : migratedInputs_) {
+    if (!mi.segmentViewAlias || outputSlots_ == nullptr || mi.outputSlotIdx < 0 ||
+        mi.outputSlotIdx >= totalOutputSlots_) continue;
+    NDArray* current = outputSlots_[mi.outputSlotIdx];
+    if (mi.persistOutput) {
+      if (mi.original != nullptr && mi.original != current) {
+        planOwnedArrays_.erase(mi.original);
+        deferredSlotDeletes_.push_back(mi.original);
+      }
+      continue;
+    }
+
+    outputSlots_[mi.outputSlotIdx] = mi.original;
+    if (mi.original != nullptr) {
+      deferredSlotDeletes_.erase(
+          std::remove(deferredSlotDeletes_.begin(), deferredSlotDeletes_.end(), mi.original),
+          deferredSlotDeletes_.end());
+      planOwnedArrays_.insert(mi.original);
+    }
+    auto retireViewWrapper = [&](NDArray* view) {
+      if (view == nullptr || view == mi.original || !view->isView()) return;
+      planOwnedArrays_.erase(view);
+      deferredSlotDeletes_.push_back(view);
+    };
+    retireViewWrapper(current);
+    if (mi.migrated != current) retireViewWrapper(mi.migrated);
+  }
+
   // Restore original arrays in the publication table. A consumer view can still
   // share a migrated owner's DataBuffer after this segment completes. Retire that
   // owner through the plan-level deferred queue so it stays alive until the view
   // is replaced; deleting it here leaves a dangling output-slot wrapper.
   for (auto& mi : migratedInputs_) {
+    if (mi.segmentViewAlias) continue;
     const bool stateReplica = mi.externalInputIdx >= 0 &&
         externalInputIsVariable_[mi.externalInputIdx] &&
         !externalInputIsPlaceholder_[mi.externalInputIdx];
@@ -2261,6 +2419,18 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
                (void*)mi.migrated);
       mi.migrated = nullptr;
     }
+  }
+  // Rebuild view ownership only after every owner publication has been restored.
+  // Classifying earlier would compare the rollback view with its still-staged
+  // candidate parent and silently record an invalid ownership edge.
+  for (const auto& mi : migratedInputs_) {
+    if (!mi.segmentViewAlias || mi.persistOutput || mi.original == nullptr ||
+        slotOwnership_ == nullptr) continue;
+    classifyAndUpdateOwnership(
+        slotOwnership_[mi.outputSlotIdx], mi.original, mi.outputSlotIdx,
+        lastExternalInputsCopy_.data(),
+        static_cast<int>(lastExternalInputsCopy_.size()),
+        outputSlots_, totalOutputSlots_, slotOwnership_);
   }
   migratedInputs_.clear();
   for (auto& segment : segments_) {
