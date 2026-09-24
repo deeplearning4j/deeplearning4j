@@ -1262,8 +1262,10 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       NDArray* parent = parentSlot >= 0 && parentSlot < totalOutputSlots_
           ? outputSlots_[parentSlot] : nullptr;
       if (parentSlot < 0 || rehomedSegmentOutputSlots.count(parentSlot) == 0 ||
-          parent == nullptr || parent->isView() || parent->dataBuffer() == nullptr ||
+          parent == nullptr || parent->isView() || parent->offset() != 0 ||
+          output->offset() != 0 || parent->dataBuffer() == nullptr ||
           parent->dataBuffer() != output->dataBuffer() ||
+          !shape::strideDescendingCAscendingF(parent->shapeInfo()) ||
           slotOwnership_[parentSlot].ownership != BufferOwnership::SLOT_OWNED) {
         return cudaPlanFailure(
             "CUDA capture rehome only supports a direct view of an owned output "
@@ -2165,8 +2167,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       if (slotOwnership_ != nullptr) {
         classifyAndUpdateOwnership(
             slotOwnership_[viewSlot], targetView, viewSlot,
-            externalInputs, numExternalInputs,
-            outputSlots_, totalOutputSlots_, slotOwnership_);
+            nullptr, 0, outputSlots_, totalOutputSlots_, slotOwnership_);
       }
       DSP_DIAG(MULTI_DEVICE,
                "CAPTURE_DEVICE_REHOME_VIEW: outputSlot=%d ownerSlot=%d targetDevice=%d "

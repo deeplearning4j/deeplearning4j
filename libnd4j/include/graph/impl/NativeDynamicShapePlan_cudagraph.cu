@@ -1117,8 +1117,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             slotOwnership_[parentSlot].ownership != BufferOwnership::SLOT_OWNED)
           return -1;
         NDArray* parent = outputSlots_[parentSlot];
-        if (parent == nullptr || parent->isView() || parent->dataBuffer() == nullptr ||
-            parent->dataBuffer() != output->dataBuffer())
+        // The migration cache copies a dense logical owner from offset zero. Do
+        // not claim alias preservation for offset owners/views whose base-storage
+        // extent is not represented by that copy contract.
+        if (parent == nullptr || parent->isView() || parent->offset() != 0 ||
+            output->offset() != 0 || parent->dataBuffer() == nullptr ||
+            parent->dataBuffer() != output->dataBuffer() ||
+            !shape::strideDescendingCAscendingF(parent->shapeInfo()))
           return -1;
         return parentSlot;
       };
