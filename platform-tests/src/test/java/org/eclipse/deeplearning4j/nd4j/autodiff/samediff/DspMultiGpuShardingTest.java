@@ -1685,7 +1685,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
      * Capture rehome must stage an in-place producer once and keep its exact
      * output/source wrapper alias through capture, commit, and replay.
      *
-     * <p>This uses bounded physical pressure on the smaller GPU to force the real
+     * <p>This uses bounded physical pressure on the source GPU to force the real
      * capture-admission path. Keep it in the serialized multi-GPU test lane.</p>
      */
     @Test
@@ -1795,14 +1795,23 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         } finally {
             try {
                 if (graph != null) graph.close();
-                Nd4j.getExecutioner().commit();
-                if (pressure != null) pressure.close();
-                if (input != null) input.close();
             } finally {
-                for (int device = 0; device < 2; device++)
-                    Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
-                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+                try {
+                    Nd4j.getExecutioner().commit();
+                } finally {
+                    try {
+                        SameDiffMemoryUtils.safeClose(pressure);
+                    } finally {
+                        try {
+                            SameDiffMemoryUtils.safeClose(input);
+                        } finally {
+                            for (int device = 0; device < 2; device++)
+                                Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
+                            InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                            Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+                        }
+                    }
+                }
             }
         }
     }
