@@ -1236,6 +1236,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   std::unordered_set<int> rehomedSegmentOutputSlots;
   std::unordered_map<int, int> rehomedViewParentSlots;
   std::unordered_map<int, NDArray*> rehomedViewOriginals;
+  std::unordered_map<int, int> rehomedInPlaceParentSlots;
   if (seg.exec.captureRehomePending) {
     for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
       const NativeSlot& slot = slots_[s];
@@ -1275,6 +1276,40 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       rehomedViewParentSlots.emplace(outputSlot, parentSlot);
       rehomedViewOriginals.emplace(outputSlot, output);
     }
+
+    // In-place outputs are not view wrappers: they publish the exact same
+    // NDArray owner as their source slot. Revalidate that narrow contract here
+    // and stage only the source owner; the child publication is rebound after
+    // all owner copies have completed.
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+      const NativeSlot& slot = slots_[s];
+      if (!slot.isInPlaceFused()) continue;
+      if (slot.wiring.numOutputs < 1 || slotOwnership_ == nullptr) {
+        return cudaPlanFailure(
+            "CUDA capture rehome lost in-place output metadata: step=%d", s);
+      }
+      const int outputSlot = slot.wiring.outputSlotIndices[0];
+      const int parentSlot = slot.inPlaceSourceSlot();
+      NDArray* output = outputSlot >= 0 && outputSlot < totalOutputSlots_
+          ? outputSlots_[outputSlot] : nullptr;
+      NDArray* parent = parentSlot >= 0 && parentSlot < totalOutputSlots_
+          ? outputSlots_[parentSlot] : nullptr;
+      const int parentProducer = parentSlot >= 0
+          ? dsp::findProducingStepForOutputSlot(slots_, numSlots_, parentSlot) : -1;
+      if (parentSlot < 0 || outputSlot < 0 || output == nullptr || parent == nullptr ||
+          output != parent || parent->isView() || parent->dataBuffer() == nullptr ||
+          slotOwnership_[outputSlot].ownership != BufferOwnership::VIEW_OF_SLOT ||
+          slotOwnership_[outputSlot].parentSlotIdx != parentSlot ||
+          slotOwnership_[parentSlot].ownership != BufferOwnership::SLOT_OWNED ||
+          rehomedSegmentOutputSlots.count(parentSlot) == 0 ||
+          parentProducer < seg.def.startSlot || parentProducer > seg.def.endSlot) {
+        return cudaPlanFailure(
+            "CUDA capture rehome only supports an exact in-place alias of an owned "
+            "output in the same segment: step=%d outputSlot=%d parentSlot=%d",
+            s, outputSlot, parentSlot);
+      }
+      rehomedInPlaceParentSlots.emplace(outputSlot, parentSlot);
+    }
   }
 
   // Collect every unique input publication consumed by the segment. Internal
@@ -1287,7 +1322,8 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
         if (outputSlots_[srcIdx] != nullptr &&
-            rehomedViewParentSlots.count(srcIdx) == 0) {
+            rehomedViewParentSlots.count(srcIdx) == 0 &&
+            rehomedInPlaceParentSlots.count(srcIdx) == 0) {
           neededInputSources.insert(srcIdx);
         }
       } else if (srcIdx < 0 && externalInputs != nullptr) {
@@ -1305,7 +1341,8 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   // bake source-device addresses into the target graph.
   for (const int outputSlot : rehomedSegmentOutputSlots) {
     if (outputSlots_[outputSlot] != nullptr &&
-        rehomedViewParentSlots.count(outputSlot) == 0) {
+        rehomedViewParentSlots.count(outputSlot) == 0 &&
+        rehomedInPlaceParentSlots.count(outputSlot) == 0) {
       neededInputSources.insert(outputSlot);
     }
   }
@@ -1313,7 +1350,8 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   int migrated = 0;
   for (int sourceIdx : neededInputSources) {
     if (seg.exec.captureRehomePending &&
-        rehomedViewParentSlots.count(sourceIdx) > 0) {
+        (rehomedViewParentSlots.count(sourceIdx) > 0 ||
+         rehomedInPlaceParentSlots.count(sourceIdx) > 0)) {
       continue;  // Rebuilt over the staged owner after all owner copies complete.
     }
     const bool externalSource = sourceIdx < 0;
@@ -2102,6 +2140,39 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   }
 
   if (seg.exec.captureRehomePending) {
+    // Publish exact-wrapper in-place aliases only after their owner has been
+    // staged. This is a slot publication, not a second allocation or migration
+    // owner; rollback restores the original wrapper and the owner's migration
+    // record remains solely responsible for retiring the staged buffer.
+    for (const auto& [outputSlot, parentSlot] : rehomedInPlaceParentSlots) {
+      NDArray* original = outputSlots_[outputSlot];
+      NDArray* parent = outputSlots_[parentSlot];
+      DataBuffer* parentBuffer = parent != nullptr ? parent->dataBuffer() : nullptr;
+      if (original == nullptr || parent == nullptr || parent->isView() ||
+          parentBuffer == nullptr || parentBuffer->deviceId() != targetDevice) {
+        return cudaPlanFailure(
+            "CUDA capture rehome lost exact in-place owner before publication: "
+            "outputSlot=%d parentSlot=%d targetDevice=%d",
+            outputSlot, parentSlot, targetDevice);
+      }
+      outputSlots_[outputSlot] = parent;
+      MigratedInput alias;
+      alias.outputSlotIdx = outputSlot;
+      alias.original = original;
+      alias.migrated = parent;
+      alias.targetDevice = targetDevice;
+      alias.retained = true;
+      alias.segmentOutput = true;
+      alias.segmentViewAlias = true;
+      alias.aliasParentOutputSlotIdx = parentSlot;
+      migratedInputs_.push_back(alias);
+      DSP_DIAG(MULTI_DEVICE,
+               "CAPTURE_DEVICE_REHOME_INPLACE_ALIAS: outputSlot=%d ownerSlot=%d "
+               "targetDevice=%d sharedWrapper=%p sharedBuffer=%p",
+               outputSlot, parentSlot, targetDevice, (void*)parent,
+               (void*)parentBuffer);
+    }
+
     // Ownership records describe the source publications until rehome. Reset
     // this segment's relationships, then classify the staged owners before
     // rebuilding any child view wrappers against them.
@@ -2211,6 +2282,26 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
         if (outputSlot < 0 || outputSlot >= totalOutputSlots_) continue;
         NDArray* output = outputSlots_[outputSlot];
         if (output == nullptr || output->isEmpty()) continue;
+        if (rehomedInPlaceParentSlots.count(outputSlot) > 0) {
+          const int parentSlot = rehomedInPlaceParentSlots.at(outputSlot);
+          NDArray* parent = outputSlots_[parentSlot];
+          auto alias = std::find_if(migratedInputs_.begin(), migratedInputs_.end(),
+              [outputSlot, parentSlot](const MigratedInput& entry) {
+                return entry.segmentViewAlias && entry.outputSlotIdx == outputSlot &&
+                    entry.aliasParentOutputSlotIdx == parentSlot;
+              });
+          if (alias == migratedInputs_.end() || !slot.isInPlaceFused() ||
+              slot.inPlaceSourceSlot() != parentSlot || output != parent ||
+              alias->migrated != parent || parent == nullptr || parent->isView() ||
+              parent->dataBuffer() == nullptr ||
+              parent->dataBuffer()->deviceId() != targetDevice) {
+            return cudaPlanFailure(
+                "CUDA capture rehome lost exact in-place alias before capture: "
+                "outputSlot=%d parentSlot=%d targetDevice=%d",
+                outputSlot, parentSlot, targetDevice);
+          }
+          continue;
+        }
         if (rehomedViewParentSlots.count(outputSlot) > 0) {
           auto alias = std::find_if(migratedInputs_.begin(), migratedInputs_.end(),
               [outputSlot](const MigratedInput& entry) {
@@ -2306,13 +2397,37 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   const auto syncErr = hasTemporary ? cudaStreamSynchronize(segmentStream) : cudaSuccess;
 
   std::exception_ptr writebackFailure;
+  auto isExactInPlaceOwnerAlias = [&](const MigratedInput& alias) {
+    if (!alias.segmentViewAlias || alias.original == nullptr || alias.migrated == nullptr ||
+        alias.aliasParentOutputSlotIdx < 0 ||
+        alias.aliasParentOutputSlotIdx >= totalOutputSlots_) return false;
+    return std::any_of(migratedInputs_.begin(), migratedInputs_.end(),
+        [&](const MigratedInput& owner) {
+          return &owner != &alias && !owner.segmentViewAlias && owner.segmentOutput &&
+              owner.outputSlotIdx == alias.aliasParentOutputSlotIdx &&
+              owner.original == alias.original && owner.migrated == alias.migrated;
+        });
+  };
   // Restore/retire alias wrappers before their backing owner entries. On rollback,
-  // restoring the source view first lets the owner stage below become unshared and
-  // retire; on commit, deferred deletion sorts all non-owning views before owners.
+  // restoring source aliases first lets the owner stage below become unshared and
+  // retire; on commit, deferred deletion sorts non-owning views before owners.
   for (auto& mi : migratedInputs_) {
     if (!mi.segmentViewAlias || outputSlots_ == nullptr || mi.outputSlotIdx < 0 ||
         mi.outputSlotIdx >= totalOutputSlots_) continue;
     NDArray* current = outputSlots_[mi.outputSlotIdx];
+    if (isExactInPlaceOwnerAlias(mi)) {
+      // Child and owner are the same NDArray wrapper. The owner migration entry
+      // alone controls allocation lifetime; the alias entry only restores the
+      // child publication on rollback.
+      if (!mi.persistOutput) {
+        outputSlots_[mi.outputSlotIdx] = mi.original;
+        if (current != nullptr && current != mi.original && current != mi.migrated) {
+          planOwnedArrays_.erase(current);
+          deferredSlotDeletes_.push_back(current);
+        }
+      }
+      continue;
+    }
     if (mi.persistOutput) {
       if (mi.original != nullptr && mi.original != current) {
         planOwnedArrays_.erase(mi.original);
