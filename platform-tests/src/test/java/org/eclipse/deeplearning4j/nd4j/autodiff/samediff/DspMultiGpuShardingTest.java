@@ -1682,6 +1682,132 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
     }
 
     /**
+     * Capture rehome must stage an in-place producer once and keep its exact
+     * output/source wrapper alias through capture, commit, and replay.
+     *
+     * <p>This uses bounded physical pressure on the smaller GPU to force the real
+     * capture-admission path. Keep it in the serialized multi-GPU test lane.</p>
+     */
+    @Test
+    public void testCaptureRehomePreservesExactInPlaceAlias() {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2,
+                "requires exactly two CUDA devices");
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int sourceDevice = nativeOps.getDeviceFreeMemory(0) < nativeOps.getDeviceFreeMemory(1) ? 0 : 1;
+        int candidateDevice = 1 - sourceDevice;
+        final long elements = 67_108_864L; // 256 MiB FLOAT input and producer output
+        final long tensorBytes = elements * DataType.FLOAT.width();
+        final long mib = 1024L * 1024L;
+        final long leaveFreeBytes = 16L * mib;
+        final long candidateReserveBytes = 1024L * mib;
+        final long candidateFree = nativeOps.getDeviceFreeMemory(candidateDevice);
+        assumeTrue(candidateFree > 2 * tensorBytes + candidateReserveBytes,
+                "candidate GPU lacks conservative space for input/output staging and capture workspace");
+
+        final int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        final boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        final long[] originalLimits = {
+                Nd4j.getEnvironment().getDeviceLimit(0),
+                Nd4j.getEnvironment().getDeviceLimit(1)
+        };
+        SameDiff graph = null;
+        INDArray input = null;
+        INDArray pressure = null;
+        try {
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            for (int device = 0; device < 2; device++) {
+                long physicalFree = nativeOps.getDeviceFreeMemory(device);
+                long counter = Nd4j.getEnvironment().getDeviceCounter(device);
+                Nd4j.getEnvironment().setDeviceLimit(device, counter + physicalFree);
+            }
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(sourceDevice);
+
+            graph = SameDiff.create();
+            graph.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
+            SDVariable x = graph.placeHolder("x", DataType.FLOAT, 1, elements);
+            SDVariable producer = x.add("producer", 1.0f);
+            producer.mul("out", 2.0f);
+            DynamicShapePlan plan = graph.compileDynamicShapePlan("out");
+            for (var slot : plan.getSlots()) slot.setTargetDeviceId(sourceDevice);
+            graph.compileNativeDynamicShapePlan("out");
+
+            input = Nd4j.ones(DataType.FLOAT, 1, elements);
+            nativeOps.dbSyncToSpecial(input.data().opaqueBuffer());
+            assertEquals(sourceDevice, nativeOps.dbDeviceId(input.data().opaqueBuffer()),
+                    "input must be resident on the initially assigned source device");
+
+            int multiplyStep = -1;
+            for (int i = 0; i < plan.getSlots().length; i++) {
+                if ("multiply".equals(plan.getSlots()[i].getOpName())) multiplyStep = i;
+            }
+            assertTrue(multiplyStep >= 0, "test graph must contain a multiply slot");
+            DspPlanAssertions.assertSlotHasTrait(graph, multiplyStep, 4,
+                    "multiply must use in-place fusion for this regression");
+
+            // The first call is the documented initial slot-by-slot warmup.
+            // Apply pressure only after the producer has a real source allocation,
+            // immediately before its first eligible capture attempt.
+            input.assign(1.0);
+            Map<String, INDArray> warmup = graph.outputDirect(Map.of("x", input), "out");
+            assertEquals(4.0f, warmup.get("out").getFloat(0), 0.0f);
+            assertEquals(0, DspPlanAssertions.getTotalGraphReplays(graph),
+                    "the initial warmup must not capture before pressure is applied");
+
+            // Return only reusable pool reservations before sizing pressure, so
+            // capture's own preflight trim cannot create unexpected source headroom.
+            nativeOps.trimMemoryPool(sourceDevice);
+            // Drain only unused reservation so the pressure size corresponds to
+            // actual CUDA free bytes; the warmup input/output remain live.
+            nativeOps.trimMemoryPool(sourceDevice);
+            long freeAfterWarmup = nativeOps.getDeviceFreeMemory(sourceDevice);
+            long pressureBytes = freeAfterWarmup - leaveFreeBytes;
+            assumeTrue(pressureBytes > 64L * mib,
+                    "not enough source-device headroom to force a bounded capture rejection");
+            pressure = Nd4j.create(DataType.BYTE, 1, pressureBytes);
+            nativeOps.dbSyncToSpecial(pressure.data().opaqueBuffer());
+            assertEquals(sourceDevice, nativeOps.dbDeviceId(pressure.data().opaqueBuffer()),
+                    "pressure reservation must stay on the source device");
+            assertTrue(nativeOps.getDeviceFreeMemory(sourceDevice) < 64L * mib,
+                    "source device should have less free memory than capture workspace headroom");
+
+            for (int iteration = 2; iteration <= 5; iteration++) {
+                input.assign(iteration);
+                Nd4j.getExecutioner().commit();
+                Map<String, INDArray> output = graph.outputDirect(Map.of("x", input), "out");
+                assertEquals(2.0f * (iteration + 1), output.get("out").getFloat(0), 0.0f,
+                        "capture/replay parity at iteration " + iteration);
+                assertEquals(2.0f * (iteration + 1),
+                        output.get("out").getFloat(elements - 1), 0.0f,
+                        "capture/replay tail parity at iteration " + iteration);
+            }
+
+            Map<String, INDArray> finalOutput = graph.outputDirect(Map.of("x", input), "out");
+            assertEquals(candidateDevice,
+                    nativeOps.dbDeviceId(finalOutput.get("out").data().opaqueBuffer()),
+                    "captured output must be published on the admitted candidate device");
+            DspPlanAssertions.assertAllCapturableSegmentsReachedPhase(graph,
+                    ExecutionPhase.REPLAYING, "exact in-place alias capture rehome");
+            DspPlanAssertions.assertNoCaptureFailures(graph, "exact in-place alias capture rehome");
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > 0,
+                    "the segment must capture and replay, never fall back to slot-by-slot");
+        } finally {
+            try {
+                if (graph != null) graph.close();
+                Nd4j.getExecutioner().commit();
+                if (pressure != null) pressure.close();
+                if (input != null) input.close();
+            } finally {
+                for (int device = 0; device < 2; device++)
+                    Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
+                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+            }
+        }
+    }
+
+    /**
      * Behavior 8: automatic placement must use each device's remaining configured
      * allocation allowance, and later placement logic must preserve that weighted split.
      */
