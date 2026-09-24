@@ -4084,6 +4084,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     bool retained = false;
     bool segmentOutput = false;  // Produced inside a capture-time rehomed segment
     bool persistOutput = false;  // Commit this output publication after capture succeeds
+    bool newlyAllocated = false;  // This migration created the staging wrapper
   };
   std::vector<MigratedInput> migratedInputs_;
   // Stable input storage baked into captured consumers. Key is device/source

@@ -1037,7 +1037,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   bool isOomRetry = (seg.exec.captureOomRetries > 0);
   if (!isOomRetry) {
     size_t gpuFree = 0, gpuTotal = 0;
-    cudaMemGetInfo(&gpuFree, &gpuTotal);
+    const cudaError_t initialInfoError = cudaMemGetInfo(&gpuFree, &gpuTotal);
+    if (initialInfoError != cudaSuccess) {
+      cudaGetLastError();
+      gpuFree = 0;
+      gpuTotal = 0;
+    }
 
     // Keep the historical estimate check when no warmup sample exists. For a
     // measured segmented capture, admission must cover the actual planned bump
@@ -1066,20 +1071,99 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           ? measuredWorkspace + CAPTURE_WORKSPACE_HEADROOM_BYTES : maxSize;
       measuredWorkspaceBudget = true;
     }
+    auto& capturePool = memory::CudaMemoryPool::getInstance();
+    const size_t configuredCublasWorkspace = !tl_cublasLtDisabled
+        ? static_cast<size_t>(sd::env_dspCublasWorkspaceMb()) * 1024ULL * 1024ULL
+        : 0;
+    auto cublasWorkspaceNeed = [&](int device) {
+      if (configuredCublasWorkspace == 0) return size_t{0};
+      const auto found = cublasWorkspaces_.find(device);
+      return found == cublasWorkspaces_.end() || found->second.first == nullptr ||
+                     found->second.second < configuredCublasWorkspace
+          ? configuredCublasWorkspace : size_t{0};
+    };
+    const size_t sourceCublasNeed = cublasWorkspaceNeed(currentDevice);
+    size_t captureAdmissionBytes = sourceCublasNeed <= SIZE_MAX - requiredFree
+        ? requiredFree + sourceCublasNeed : SIZE_MAX;
     size_t gpuFreeBeforeTrim = gpuFree;
     size_t poolUsedBeforeTrim = 0, poolReservedBeforeTrim = 0;
     size_t poolUsedAfterTrim = 0, poolReservedAfterTrim = 0;
-    if (requiredFree > gpuFree && seg.exec.replayHandle == nullptr) {
+    try {
+      capturePool.getStats(currentDevice, poolUsedBeforeTrim, poolReservedBeforeTrim);
+    } catch (...) {
+      poolUsedBeforeTrim = 0;
+      poolReservedBeforeTrim = 0;
+    }
+    poolUsedAfterTrim = poolUsedBeforeTrim;
+    poolReservedAfterTrim = poolReservedBeforeTrim;
+    if (captureAdmissionBytes > gpuFree) {
+      capturePool.trimPool(currentDevice);
+      const cudaError_t trimmedInfoError = cudaMemGetInfo(&gpuFree, &gpuTotal);
+      if (trimmedInfoError != cudaSuccess) {
+        cudaGetLastError();
+        gpuFree = 0;
+      }
+      try {
+        capturePool.getStats(currentDevice, poolUsedAfterTrim, poolReservedAfterTrim);
+      } catch (...) {
+        poolUsedAfterTrim = 0;
+        poolReservedAfterTrim = 0;
+      }
+      DSP_DIAG_SEG(MEMORY, segIdx,
+                   "pre-capture source-pool trim seg[%d-%d] device=%d: free=%zu->%zuMB, "
+                   "poolUsed=%zu->%zuMB, poolReserved=%zu->%zuMB",
+                   seg.def.startSlot, seg.def.endSlot, currentDevice,
+                   gpuFreeBeforeTrim / (1024 * 1024), gpuFree / (1024 * 1024),
+                   poolUsedBeforeTrim / (1024 * 1024), poolUsedAfterTrim / (1024 * 1024),
+                   poolReservedBeforeTrim / (1024 * 1024), poolReservedAfterTrim / (1024 * 1024));
+    }
+    if (captureAdmissionBytes > gpuFree && seg.exec.replayHandle == nullptr) {
       std::unordered_set<int> segmentOutputSlots;
       std::unordered_set<int> boundarySources;
       std::unordered_set<int> externalSources;
+      bool unsupportedOutputContract = false;
+      int unsupportedOutputSlot = -1;
       for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
         const NativeSlot& slot = slots_[s];
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
           const int outputSlot = slot.wiring.outputSlotIndices[o];
-          if (outputSlot >= 0 && outputSlot < totalOutputSlots_)
-            segmentOutputSlots.insert(outputSlot);
+          const bool optionalOutput = slot.wiring.optionalOutputMask != nullptr &&
+              slot.wiring.optionalOutputMask[o] != 0;
+          if (outputSlot < 0 || outputSlot >= totalOutputSlots_) {
+            if (!optionalOutput) {
+              unsupportedOutputContract = true;
+              unsupportedOutputSlot = outputSlot;
+            }
+            continue;
+          }
+          segmentOutputSlots.insert(outputSlot);
+          NDArray* output = outputSlots_[outputSlot];
+          const bool fusedAlias = slot.fusedChain.fusedChainLength > 1 ||
+              slot.fusedChain.isFusedChainHead || slot.fusedChain.isFusedChainTail;
+          const bool ownershipAlias = slotOwnership_ != nullptr &&
+              (slotOwnership_[outputSlot].ownership == BufferOwnership::VIEW_OF_SLOT ||
+               slotOwnership_[outputSlot].ownership == BufferOwnership::VIEW_OF_WEIGHT);
+          DataBuffer* outputBuffer = output != nullptr ? output->dataBuffer() : nullptr;
+          const bool hasStableWarmupStorage =
+              (output != nullptr && output->isEmpty()) ||
+              (output == nullptr && optionalOutput) ||
+              (outputBuffer != nullptr &&
+               (outputBuffer->special() != nullptr ||
+                (outputBuffer->primary() != nullptr && outputBuffer->isPrimaryActual())));
+          if (slot.aliasesInput() || slot.isInPlaceFused() || fusedAlias ||
+              (output != nullptr && output->isView()) || ownershipAlias ||
+              !hasStableWarmupStorage) {
+            unsupportedOutputContract = true;
+            unsupportedOutputSlot = outputSlot;
+          }
         }
+      }
+      if (unsupportedOutputContract) {
+        DSP_DIAG_SEG(MEMORY, segIdx,
+                     "CAPTURE_DEVICE_REHOME_REJECT: seg[%d-%d] output slot=%d has "
+                     "an alias/view or unstable warmup-storage contract that cannot "
+                     "be preserved by staging",
+                     seg.def.startSlot, seg.def.endSlot, unsupportedOutputSlot);
       }
       for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
         const NativeSlot& slot = slots_[s];
@@ -1146,14 +1230,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       size_t bestRemainingBytes = 0;
       size_t bestCandidateStageBytes = 0;
       size_t bestCandidateFreeBytes = 0;
-      size_t bestCandidatePoolUsed = 0;
-      size_t bestCandidatePoolReserved = 0;
-      auto& candidatePool = memory::CudaMemoryPool::getInstance();
+      size_t bestCandidateCublasNeed = 0;
 
       for (int candidate = 0;
-           countError == cudaSuccess && candidate < deviceCount;
+           countError == cudaSuccess && !unsupportedOutputContract && candidate < deviceCount;
            candidate++) {
         if (candidate == currentDevice) continue;
+        if (!scheduler.deviceSupportsGraphs(candidate)) continue;
 
         size_t stageBytes = 0;
         std::unordered_map<int, size_t> sourceViewPeaks;
@@ -1176,11 +1259,60 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
           const bool managedExternal = externalSource &&
               isDeviceManagedExternalInput(externalIndex, array);
+          const bool writableExternalState = externalSource && !managedExternal &&
+              externalIndex >= 0 &&
+              externalIndex < static_cast<int>(externalInputIsVariable_.size()) &&
+              externalIndex < static_cast<int>(externalInputIsPlaceholder_.size()) &&
+              externalInputIsVariable_[externalIndex] &&
+              !externalInputIsPlaceholder_[externalIndex];
+          if (writableExternalState) {
+            DataBuffer* sourceBuffer = array->dataBuffer();
+            const size_t storageBytes = sourceBuffer != nullptr
+                ? sourceBuffer->getLenInBytes() : 0;
+            NDArray* staging = nullptr;
+            if (candidate == 0) {
+              staging = placeholderStagingBuffers_ != nullptr
+                  ? placeholderStagingBuffers_[externalIndex] : nullptr;
+            } else {
+              auto stagingIt = deviceStagingBuffers_.find(candidate);
+              if (stagingIt != deviceStagingBuffers_.end() &&
+                  externalIndex < static_cast<int>(stagingIt->second.size()))
+                staging = stagingIt->second[externalIndex];
+            }
+            if (sourceBuffer == nullptr || storageBytes < bytes ||
+                (sourceDevice >= 0 && sourceBuffer->deviceId() != sourceDevice)) {
+              eligible = false;
+              return;
+            }
+            if (staging != nullptr) {
+              DataBuffer* stagingBuffer = staging->dataBuffer();
+              if (stagingBuffer == nullptr || !stagingBuffer->isValid() ||
+                  stagingBuffer->isClosed() || stagingBuffer->deviceId() != candidate ||
+                  stagingBuffer->getLenInBytes() != storageBytes ||
+                  staging->offset() != array->offset() ||
+                  !shape::equalsStrict(staging->shapeInfo(), array->shapeInfo())) {
+                eligible = false;
+              }
+            } else if (sourceBuffer->deviceId() == candidate) {
+              if ((!managed && sourceDevice < 0) ||
+                  (sourceDevice >= 0 && sourceDevice != candidate))
+                eligible = false;
+            } else if (sourceBuffer->deviceId() < 0) {
+              eligible = false;
+            } else {
+              addStageBytes(storageBytes);
+            }
+            return;
+          }
           if (managedExternal) {
             // Device-managed weights/state remain caller-owned. They may be
             // consumed by the target graph only when unified memory or a
             // supported peer mapping makes the existing pointer addressable.
-            if (managed || sourceDevice < 0 || sourceDevice == candidate) return;
+            if (managed || sourceDevice == candidate) return;
+            if (sourceDevice < 0) {
+              eligible = false;
+              return;
+            }
             int canAccess = 0;
             const cudaError_t peerError =
                 cudaDeviceCanAccessPeer(&canAccess, candidate, sourceDevice);
@@ -1188,12 +1320,34 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             if (peerError != cudaSuccess || !canAccess) eligible = false;
             return;
           }
+          const bool segmentOutput = !externalSource &&
+              segmentOutputSlots.count(sourceIndex) > 0;
+          if (managed && segmentOutput) {
+            // A managed warmup output cannot be rebound to the target graph's
+            // device-local publication by the current staging helper.
+            eligible = false;
+            return;
+          }
           if (!managed && sourceDevice == candidate) return;
-          if (hasReusableMigrationCopy(candidate, sourceIndex, array, bytes)) return;
+          if (!managed &&
+              hasReusableMigrationCopy(candidate, sourceIndex, array, bytes)) return;
+          if (managed && array->isView()) {
+            // The source placement for a managed view is not represented by a
+            // device-pointer attribute, so its materialization capacity cannot
+            // be checked conservatively.
+            eligible = false;
+            return;
+          }
           addStageBytes(bytes);
-          if (array->isView() && sourceDevice >= 0 && sourceDevice != candidate) {
-            auto& peak = sourceViewPeaks[sourceDevice];
-            peak = std::max(peak, bytes);
+          if (array->isView()) {
+            if (sourceDevice < 0) {
+              eligible = false;
+              return;
+            }
+            if (sourceDevice != candidate) {
+              auto& peak = sourceViewPeaks[sourceDevice];
+              peak = std::max(peak, bytes);
+            }
           }
         };
 
@@ -1264,7 +1418,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           const cudaError_t viewInfoError = bindError == cudaSuccess
               ? cudaMemGetInfo(&viewFree, &viewTotal) : bindError;
           try {
-            candidatePool.getStats(sourceDevice, viewPoolUsed, viewPoolReserved);
+            capturePool.getStats(sourceDevice, viewPoolUsed, viewPoolReserved);
           } catch (...) {
             viewPoolUsed = 0;
             viewPoolReserved = 0;
@@ -1277,9 +1431,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
               viewBytes <= static_cast<size_t>(std::numeric_limits<LongType>::max()) &&
               memory::MemoryCounter::getInstance().validateDevice(
                   sourceDevice, static_cast<LongType>(viewBytes));
-          cudaSetDevice(savedDevice);
-          if (viewInfoError != cudaSuccess || !logicalViewCapacity ||
-              viewAvailable < viewBytes) {
+          const cudaError_t restoreError = cudaSetDevice(savedDevice);
+          if (viewInfoError != cudaSuccess || restoreError != cudaSuccess ||
+              !logicalViewCapacity || viewAvailable < viewBytes) {
+            if (restoreError != cudaSuccess) cudaGetLastError();
             sourceViewCapacityOk = false;
             break;
           }
@@ -1292,6 +1447,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           continue;
         }
 
+        const size_t candidateCublasNeed = cublasWorkspaceNeed(candidate);
+        if (stageBytes > SIZE_MAX - requiredFree ||
+            stageBytes + requiredFree > SIZE_MAX - candidateCublasNeed) {
+          continue;
+        }
+        const size_t candidateNeed =
+            stageBytes + requiredFree + candidateCublasNeed;
         size_t candidateFree = 0, candidateTotal = 0;
         size_t candidatePoolUsed = 0, candidatePoolReserved = 0;
         const int savedDevice = currentDevice;
@@ -1299,27 +1461,26 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         const cudaError_t candidateInfoError = bindError == cudaSuccess
             ? cudaMemGetInfo(&candidateFree, &candidateTotal) : bindError;
         try {
-          candidatePool.getStats(candidate, candidatePoolUsed,
-                                 candidatePoolReserved);
+          capturePool.getStats(candidate, candidatePoolUsed,
+                               candidatePoolReserved);
         } catch (...) {
           candidatePoolUsed = 0;
           candidatePoolReserved = 0;
         }
-        cudaSetDevice(savedDevice);
+        const cudaError_t restoreError = cudaSetDevice(savedDevice);
         const size_t candidateReusable = candidatePoolReserved > candidatePoolUsed
             ? candidatePoolReserved - candidatePoolUsed : 0;
         size_t candidateAvailable = candidateFree;
         if (candidateReusable <= SIZE_MAX - candidateAvailable)
           candidateAvailable += candidateReusable;
-        const size_t candidateNeed = stageBytes <= SIZE_MAX - requiredFree
-            ? stageBytes + requiredFree : SIZE_MAX;
-        if (candidateInfoError != cudaSuccess ||
+        if (candidateInfoError != cudaSuccess || restoreError != cudaSuccess ||
             candidateAvailable < candidateNeed) {
+          if (restoreError != cudaSuccess) cudaGetLastError();
           DSP_DIAG_SEG(MEMORY, segIdx,
                        "CAPTURE_DEVICE_REHOME_REJECT: seg[%d-%d] candidateRuntimeDevice=%d "
-                       "stage=%zu requiredFree=%zu available=%zu",
+                       "stage=%zu requiredFree=%zu cublas=%zu available=%zu",
                        seg.def.startSlot, seg.def.endSlot, candidate, stageBytes,
-                       requiredFree, candidateAvailable);
+                       requiredFree, candidateCublasNeed, candidateAvailable);
           continue;
         }
         const size_t remaining = candidateAvailable - candidateNeed;
@@ -1328,8 +1489,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           bestRemainingBytes = remaining;
           bestCandidateStageBytes = stageBytes;
           bestCandidateFreeBytes = candidateFree;
-          bestCandidatePoolUsed = candidatePoolUsed;
-          bestCandidatePoolReserved = candidatePoolReserved;
+          bestCandidateCublasNeed = candidateCublasNeed;
         }
       }
 
@@ -1374,10 +1534,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             platformMigrateSegmentInputs(seg, externalArrays, numExt);
         if (migrationStatus != Status::OK) return migrationStatus;
 
-        // The initial query was a preflight. Re-query after the real target
-        // allocations; the ordinary capture admission remains authoritative.
-        const cudaError_t migratedInfoError = cudaMemGetInfo(&gpuFree, &gpuTotal);
-        if (migratedInfoError != cudaSuccess) {
+        // A candidate is only a preflight estimate. Account for the actual
+        // target allocations, release its unused pool cache, and re-query before
+        // the final capture admission.
+        captureAdmissionBytes = bestCandidateCublasNeed <= SIZE_MAX - requiredFree
+            ? requiredFree + bestCandidateCublasNeed : SIZE_MAX;
+        const cudaError_t stagedInfoError = cudaMemGetInfo(&gpuFree, &gpuTotal);
+        if (stagedInfoError != cudaSuccess) {
           cudaGetLastError();
           gpuFree = 0;
         }
@@ -1385,62 +1548,63 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         poolUsedBeforeTrim = 0;
         poolReservedBeforeTrim = 0;
         try {
-          candidatePool.getStats(currentDevice, poolUsedBeforeTrim,
-                                 poolReservedBeforeTrim);
+          capturePool.getStats(currentDevice, poolUsedBeforeTrim,
+                               poolReservedBeforeTrim);
         } catch (...) {
           poolUsedBeforeTrim = 0;
           poolReservedBeforeTrim = 0;
         }
-        poolUsedAfterTrim = poolUsedBeforeTrim;
-        poolReservedAfterTrim = poolReservedBeforeTrim;
+        capturePool.trimPool(currentDevice);
+        const cudaError_t trimmedInfoError = cudaMemGetInfo(&gpuFree, &gpuTotal);
+        if (trimmedInfoError != cudaSuccess) {
+          cudaGetLastError();
+          gpuFree = 0;
+        }
+        poolUsedAfterTrim = 0;
+        poolReservedAfterTrim = 0;
+        try {
+          capturePool.getStats(currentDevice, poolUsedAfterTrim,
+                               poolReservedAfterTrim);
+        } catch (...) {
+          poolUsedAfterTrim = 0;
+          poolReservedAfterTrim = 0;
+        }
         DSP_DIAG_SEG(MEMORY, segIdx,
                      "CAPTURE_DEVICE_REHOME: seg[%d-%d] runtimeDevice %d -> %d "
-                     "staged=%zu candidateFree=%zu remaining=%zu postStageFree=%zu "
-                     "requiredFree=%zu pool=%zu/%zu",
+                     "staged=%zu candidateFree=%zu remaining=%zu postTrimFree=%zu "
+                     "requiredFree=%zu cublas=%zu pool=%zu/%zu",
                      seg.def.startSlot, seg.def.endSlot,
                      captureRehomeSourceDevice, bestCandidate,
                      bestCandidateStageBytes, bestCandidateFreeBytes,
                      bestRemainingBytes, gpuFree, requiredFree,
+                     bestCandidateCublasNeed,
                      poolUsedAfterTrim / (1024 * 1024),
                      poolReservedAfterTrim / (1024 * 1024));
       }
     }
-    if (requiredFree > gpuFree) {
-      auto& capturePool = memory::CudaMemoryPool::getInstance();
-      capturePool.getStats(currentDevice, poolUsedBeforeTrim, poolReservedBeforeTrim);
-      capturePool.trimPool(currentDevice);
-      cudaMemGetInfo(&gpuFree, &gpuTotal);
-      capturePool.getStats(currentDevice, poolUsedAfterTrim, poolReservedAfterTrim);
-      DSP_DIAG_SEG(MEMORY, segIdx,
-                   "pre-capture pool trim seg[%d-%d] device=%d: free=%zu->%zuMB, "
-                   "poolUsed=%zu->%zuMB, poolReserved=%zu->%zuMB",
-                   seg.def.startSlot, seg.def.endSlot, currentDevice,
-                   gpuFreeBeforeTrim / (1024 * 1024), gpuFree / (1024 * 1024),
-                   poolUsedBeforeTrim / (1024 * 1024), poolUsedAfterTrim / (1024 * 1024),
-                   poolReservedBeforeTrim / (1024 * 1024), poolReservedAfterTrim / (1024 * 1024));
-    }
-    if (requiredFree > gpuFree) {
+    if (captureAdmissionBytes > gpuFree) {
       const size_t currentPlanOwnedBytes = estimatedOwnedBytes();
       const size_t currentPlanOwnedArrayCount = planOwnedArrays_.size();
       const size_t currentPlanSegmentCount = segments_.size();
-      // REVERTED (2026-09-23): a CAPACITY_SHIFT_CAPTURE variant here re-homed the
-      // segment to the plan primary and re-ran slot-by-slot. It produced CUDA 700
-      // illegal memory access (proc-055/057): warmup-era output arrays remain on
-      // the secondary device, so re-executing on the primary touches cross-device
-      // pointers. A correct re-home must migrate existing allocations first —
-      // that is the parked multi-GPU defect (resolve device/stream/ownership),
-      // not a local patch. Keep the loud capture-memory failure as the contract.
+      // Never turn capture-capacity rejection into slot-by-slot execution: that
+      // would use a different execution contract and can touch stale cross-device
+      // warmup pointers. The only retry here is the transactional, fully staged
+      // candidate path above; if it cannot pass final admission, fail closed.
       const size_t poolReusableAfterTrim = poolReservedAfterTrim > poolUsedAfterTrim
           ? poolReservedAfterTrim - poolUsedAfterTrim
           : 0;
+      const size_t admittedCublasBytes = captureAdmissionBytes >= requiredFree
+          ? captureAdmissionBytes - requiredFree : SIZE_MAX;
       DSP_DIAG_SEG(MEMORY, segIdx,
                     "insufficient GPU memory for graph capture seg[%d-%d] (%d ops): "
-                    "requiredFree=%zuMB basis=%s workingSet=%zuMB > free %zuMB "
+                    "requiredFree=%zuMB workspaceHeadroom=%zuMB cublas=%zuMB basis=%s "
+                    "workingSet=%zuMB > free %zuMB "
                     "(preTrimFree=%zuMB, poolUsed=%zuMB, poolReserved=%zuMB, poolReusable=%zuMB, total %zuMB) "
                     "currentPlan=%p planOwned=%zuMB ownedArrays=%zu segments=%zu "
                     "— returning KERNEL_FAILURE (memory-budget segmentation should prevent this)",
                     seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1,
-                    requiredFree / (1024 * 1024),
+                    captureAdmissionBytes / (1024 * 1024),
+                    requiredFree / (1024 * 1024), admittedCublasBytes / (1024 * 1024),
                     measuredWorkspaceBudget ? "warmupWorkspace+headroom" : "20% output estimate",
                     estimatedCaptureBytes / (1024 * 1024),
                     gpuFree / (1024 * 1024),
@@ -1453,10 +1617,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                     currentPlanOwnedArrayCount, currentPlanSegmentCount);
       return cudaGraphFailure(
           "CUDA graph capture memory check failed for seg[%d-%d]: "
-          "requiredFree=%zuMB basis=%s, gpuFree=%zuMB (preTrimFree=%zuMB, poolUsed=%zuMB, "
+          "requiredFree=%zuMB workspaceHeadroom=%zuMB cublas=%zuMB basis=%s, "
+          "gpuFree=%zuMB (preTrimFree=%zuMB, poolUsed=%zuMB, "
           "poolReserved=%zuMB, poolReusable=%zuMB), workingSet=%zuMB, gpuTotal=%zuMB, "
           "plan=%p planOwned=%zuMB ownedArrays=%zu segments=%zu",
-          seg.def.startSlot, seg.def.endSlot, requiredFree / (1024 * 1024),
+          seg.def.startSlot, seg.def.endSlot, captureAdmissionBytes / (1024 * 1024),
+          requiredFree / (1024 * 1024), admittedCublasBytes / (1024 * 1024),
           measuredWorkspaceBudget ? "warmupWorkspace+headroom" : "20% output estimate",
           gpuFree / (1024 * 1024), gpuFreeBeforeTrim / (1024 * 1024),
           poolUsedAfterTrim / (1024 * 1024), poolReservedAfterTrim / (1024 * 1024),
@@ -2531,6 +2697,45 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // ADDRESS IDENTITY against this baseline on every replay: a skip is only
   // valid while the live address still equals the baked address.
   recordManagedExtBakedAddrsForCapture(seg, captureExternals, numExt);
+
+  if (captureRehomeActive) {
+    // Alias/view-producing outputs are rejected during preflight. Verify the
+    // capture did not replace a staged output with a different allocation; if it
+    // did, discard this graph transaction rather than publish an address the
+    // target graph did not use.
+    for (const auto& migrated : migratedInputs_) {
+      if (!migrated.segmentOutput) continue;
+      if (migrated.outputSlotIdx < 0 ||
+          migrated.outputSlotIdx >= totalOutputSlots_ || migrated.migrated == nullptr) {
+        return cudaGraphFailure(
+            "CUDA capture rehome lost staged output publication for seg[%d-%d]",
+            seg.def.startSlot, seg.def.endSlot);
+      }
+      NDArray* capturedOutput = outputSlots_[migrated.outputSlotIdx];
+      DataBuffer* capturedBuffer = capturedOutput != nullptr
+          ? capturedOutput->dataBuffer() : nullptr;
+      DataBuffer* stagedBuffer = migrated.migrated->dataBuffer();
+      void* capturedPointer = capturedBuffer != nullptr
+          ? capturedBuffer->special() : nullptr;
+      cudaPointerAttributes capturedAttributes;
+      const cudaError_t attrError = capturedPointer != nullptr
+          ? cudaPointerGetAttributes(&capturedAttributes, capturedPointer)
+          : cudaErrorInvalidValue;
+      if (attrError != cudaSuccess) cudaGetLastError();
+      if (capturedBuffer == nullptr || stagedBuffer == nullptr ||
+          capturedBuffer != stagedBuffer || attrError != cudaSuccess ||
+          capturedAttributes.type != cudaMemoryTypeDevice ||
+          capturedAttributes.device != seg.exec.captureRehomeTargetDevice) {
+        return cudaGraphFailure(
+            "CUDA capture rehome output address changed during capture: "
+            "seg[%d-%d] outputSlot=%d targetDevice=%d actualDevice=%d attrError=%d",
+            seg.def.startSlot, seg.def.endSlot, migrated.outputSlotIdx,
+            seg.exec.captureRehomeTargetDevice,
+            attrError == cudaSuccess ? capturedAttributes.device : -1,
+            static_cast<int>(attrError));
+      }
+    }
+  }
 
   // Pin every device address this captured graph baked in (weights/intermediates/outputs),
   // at seal — so no later close()/rebind/pool-reuse can dangle a buffer a live replay reads.

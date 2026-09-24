@@ -7580,6 +7580,42 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
     }
 
     platformCleanupMigratedInputs();
+    if (segment.exec.captureRehomeCommitted) {
+      // Capture committed target-device publications. Rebuild the complete
+      // ownership relation graph before the next segment can consume these
+      // outputs, then move frozen pins/snapshots off the source allocations.
+      if (slotOwnership_ != nullptr && outputSlots_ != nullptr) {
+        for (int i = 0; i < totalOutputSlots_; i++) slotOwnership_[i].reset();
+        for (int i = 0; i < totalOutputSlots_; i++) {
+          if (outputSlots_[i] == nullptr) continue;
+          classifyAndUpdateOwnership(
+              slotOwnership_[i], outputSlots_[i], i,
+              externalInputs, numExternalInputs,
+              outputSlots_, totalOutputSlots_, slotOwnership_);
+        }
+      }
+      for (int s = segment.def.startSlot; s <= segment.def.endSlot && s < numSlots_; s++) {
+        NativeSlot& slot = slots_[s];
+        if (slot.frozenOutputPtrs.empty()) continue;
+        for (int o = 0; o < slot.wiring.numOutputs &&
+                        o < static_cast<int>(slot.frozenOutputPtrs.size()); o++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[o];
+          if (outputSlot < 0 || outputSlot >= totalOutputSlots_) continue;
+          NDArray* output = outputSlots_[outputSlot];
+          slot.frozenOutputPtrs[o] =
+              output != nullptr && output->dataBuffer() != nullptr
+                  ? output->dataBuffer()->primary() : nullptr;
+        }
+      }
+      if (planLifecycle_.isInFrozenOrReplayState() ||
+          hasTrackedPlanFrozenRefs(frozenProtectedRefBuffers_, frozenOutputRefBuffers_)) {
+        replacePlanFrozenRefsForCurrentState(
+            "phaseReplayCaptureRehome", protectedWeightBuffers_, outputSlots_,
+            totalOutputSlots_, frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
+      }
+      if (frozenSnapshot_.valid) frozenSnapshot_.clear();
+      segment.exec.captureRehomeCommitted = false;
+    }
     auto postStatus = platformCheckPostSegment(segment);
     // Multi-GPU sharding: restore the plan-primary device + execution TLS after a secondary
     // segment (no-op for single-GPU / primary segments). Must run before the next segment binds.

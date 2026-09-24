@@ -1496,7 +1496,9 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     // acquire their real payload when the producer executes below. Do not reject
     // those wrappers merely because migration inspected them before execution.
     void* originalDev = (arr->dataBuffer() != nullptr) ? arr->dataBuffer()->special() : nullptr;
-    if (!externalSource && originalDev == nullptr &&
+    const bool rehomedSegmentOutput = seg.exec.captureRehomePending && !externalSource &&
+        rehomedSegmentOutputSlots.count(slotIdx) > 0;
+    if (!externalSource && !rehomedSegmentOutput && originalDev == nullptr &&
         sourceDevice == targetDevice) {
       DSP_DIAG(MULTI_DEVICE,
                "migrateSlotInputsToTargetDevice: defer same-device metadata-only "
@@ -1597,6 +1599,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       mi.retained = true;
       mi.targetDevice = targetDevice;
       mi.segmentOutput = rehomedSegmentOutputSlots.count(slotIdx) > 0;
+      mi.newlyAllocated = true;
       migratedInputs_.push_back(mi);
       outputSlots_[slotIdx] = migrated;
       DSP_DIAG(MULTI_DEVICE,
@@ -1762,6 +1765,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       mi.retained = true;
       mi.targetDevice = targetDevice;
       mi.segmentOutput = rehomedSegmentOutputSlots.count(slotIdx) > 0;
+      mi.newlyAllocated = true;
       migratedInputs_.push_back(mi);
       outputSlots_[slotIdx] = staged;
       DSP_DIAG(MULTI_DEVICE,
@@ -2038,6 +2042,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     mi.segmentOutput = rehomedSegmentOutputSlots.count(slotIdx) > 0;
     mi.externalInputTable = externalSource ? externalInputs : nullptr;
     mi.externalInputIdx = externalInputIdx;
+    mi.newlyAllocated = !reuseCopy;
     migratedInputs_.push_back(mi);
     if (srcMat != nullptr) {
       MigratedInput tmp;
@@ -2057,6 +2062,39 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       outputSlots_[slotIdx] = copy;
     }
     migrated++;
+  }
+
+  if (seg.exec.captureRehomePending) {
+    // This check runs before CUDA graph capture begins. Every existing output
+    // publication of a rehomed segment must now be a device-local target buffer;
+    // no source-device address may reach the target graph.
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+      const NativeSlot& slot = slots_[s];
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        if (outputSlot < 0 || outputSlot >= totalOutputSlots_) continue;
+        NDArray* output = outputSlots_[outputSlot];
+        if (output == nullptr || output->isEmpty()) continue;
+        DataBuffer* outputBuffer = output->dataBuffer();
+        void* pointer = outputBuffer != nullptr ? outputBuffer->special() : nullptr;
+        cudaPointerAttributes attributes;
+        const cudaError_t attrError = pointer != nullptr
+            ? cudaPointerGetAttributes(&attributes, pointer)
+            : cudaErrorInvalidValue;
+        if (attrError != cudaSuccess) cudaGetLastError();
+        if (outputBuffer == nullptr || attrError != cudaSuccess ||
+            attributes.type != cudaMemoryTypeDevice ||
+            attributes.device != targetDevice ||
+            outputBuffer->deviceId() != targetDevice) {
+          return cudaPlanFailure(
+              "CUDA capture rehome rejected non-local segment output before capture: "
+              "slot=%d outputSlot=%d targetDevice=%d actualDevice=%d attrError=%d",
+              s, outputSlot, targetDevice,
+              attrError == cudaSuccess ? attributes.device : -1,
+              static_cast<int>(attrError));
+        }
+      }
+    }
   }
 
   if (migrated > 0) {
@@ -2130,13 +2168,24 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
     }
     if (outputSlots_ != nullptr && mi.outputSlotIdx >= 0 && mi.outputSlotIdx < totalOutputSlots_) {
       if (mi.persistOutput) {
-        // Keep the address that the newly captured segment actually used. A
-        // view/in-place output may have installed a wrapper over mi.migrated;
-        // do not replace it with the pre-capture warmup wrapper.
+        // Keep the wrapper published by the captured segment when it aliases
+        // the validated staged DataBuffer; never restore its source warmup wrapper.
         NDArray* current = outputSlots_[mi.outputSlotIdx];
         if (current == nullptr || current == mi.original) {
           outputSlots_[mi.outputSlotIdx] = mi.migrated;
           current = mi.migrated;
+        }
+        if (mi.segmentOutput && mi.migrated != nullptr && current == mi.migrated) {
+          // The exact staged wrapper is now the output publication, so transfer
+          // it from the migration cache to normal slot ownership. If capture
+          // installed another wrapper over the same DataBuffer, keep the cached
+          // wrapper as its backing owner rather than deleting an alias owner.
+          const uint64_t key = (static_cast<uint64_t>(mi.targetDevice) << 32) |
+                               static_cast<uint32_t>(mi.outputSlotIdx);
+          auto cached = migrationBuffers_.find(key);
+          if (cached != migrationBuffers_.end() && cached->second == mi.migrated)
+            migrationBuffers_.erase(cached);
+          planOwnedArrays_.insert(mi.migrated);
         }
         if (mi.original != nullptr && mi.original != current &&
             planOwnedArrays_.count(mi.original) > 0 &&
@@ -2158,6 +2207,25 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
           effectiveExternals_[mi.externalInputIdx] == mi.migrated) {
         effectiveExternals_[mi.externalInputIdx] = mi.original;
       }
+    }
+    if (mi.segmentOutput && !mi.persistOutput && mi.newlyAllocated &&
+        mi.migrated != nullptr && !isSlotArrayShared(mi.migrated, mi.outputSlotIdx)) {
+      // A failed rehome has no graph that can use this newly-created target
+      // output wrapper. Reused migration-cache entries are left alone; newly
+      // allocated stages are removed from the cache and retired after the full
+      // segment/plan traversal, never deleted inline.
+      const uint64_t key = (static_cast<uint64_t>(mi.targetDevice) << 32) |
+                           static_cast<uint32_t>(mi.outputSlotIdx);
+      auto cached = migrationBuffers_.find(key);
+      if (cached != migrationBuffers_.end() && cached->second == mi.migrated)
+        migrationBuffers_.erase(cached);
+      planOwnedArrays_.erase(mi.migrated);
+      deferredSlotDeletes_.push_back(mi.migrated);
+      DSP_DIAG(MEMORY,
+               "platformCleanupMigratedInputs: retired failed rehome output stage "
+               "slot=%d owner=%p targetDevice=%d",
+               mi.outputSlotIdx, (void*)mi.migrated, mi.targetDevice);
+      mi.migrated = nullptr;
     }
     if (mi.migrated != nullptr && !stateReplica && !mi.retained) {
       // Slot replacement may already have queued this same wrapper. Deleting
