@@ -1902,6 +1902,29 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         refreshStaleViewWrappersInSegment(seg, captureExternals, numExt);
     if (seg.exec.captureRehomePending) {
       for (auto& migrated : migratedInputs_) {
+        if (migrated.segmentInPlaceAlias) {
+          const int inPlaceProducer = dsp::findProducingStepForOutputSlot(
+              slots_, numSlots_, migrated.outputSlotIdx);
+          NDArray* targetOutput = outputSlots_[migrated.outputSlotIdx];
+          NDArray* parent = migrated.aliasParentOutputSlotIdx >= 0 &&
+                            migrated.aliasParentOutputSlotIdx < totalOutputSlots_
+              ? outputSlots_[migrated.aliasParentOutputSlotIdx] : nullptr;
+          if (inPlaceProducer < seg.def.startSlot || inPlaceProducer > seg.def.endSlot ||
+              !slots_[inPlaceProducer].isInPlaceFused() ||
+              slots_[inPlaceProducer].inPlaceSourceSlot() !=
+                  migrated.aliasParentOutputSlotIdx ||
+              targetOutput == nullptr || targetOutput != parent ||
+              targetOutput != migrated.migrated || targetOutput->isView() ||
+              targetOutput->dataBuffer() == nullptr ||
+              targetOutput->dataBuffer()->deviceId() !=
+                  seg.exec.captureRehomeTargetDevice) {
+            return cudaGraphFailure(
+                "CUDA capture rehome could not preserve exact in-place alias "
+                "for output slot %d over owner slot %d",
+                migrated.outputSlotIdx, migrated.aliasParentOutputSlotIdx);
+          }
+          continue;
+        }
         if (!migrated.segmentViewAlias) continue;
         // The source view remains the rollback publication even though the view
         // refresh path may have queued it while installing the target wrapper.
@@ -2779,6 +2802,35 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             seg.def.startSlot, seg.def.endSlot);
       }
       NDArray* capturedOutput = outputSlots_[migrated.outputSlotIdx];
+      if (migrated.segmentInPlaceAlias) {
+        NDArray* parent = migrated.aliasParentOutputSlotIdx >= 0 &&
+                          migrated.aliasParentOutputSlotIdx < totalOutputSlots_
+            ? outputSlots_[migrated.aliasParentOutputSlotIdx] : nullptr;
+        const int inPlaceProducer = dsp::findProducingStepForOutputSlot(
+            slots_, numSlots_, migrated.outputSlotIdx);
+        DataBuffer* buffer = capturedOutput != nullptr ? capturedOutput->dataBuffer() : nullptr;
+        void* pointer = buffer != nullptr ? buffer->special() : nullptr;
+        cudaPointerAttributes attributes;
+        const cudaError_t attrError = pointer != nullptr
+            ? cudaPointerGetAttributes(&attributes, pointer) : cudaErrorInvalidValue;
+        if (attrError != cudaSuccess) cudaGetLastError();
+        if (parent == nullptr || capturedOutput != parent || migrated.migrated != parent ||
+            inPlaceProducer < seg.def.startSlot || inPlaceProducer > seg.def.endSlot ||
+            !slots_[inPlaceProducer].isInPlaceFused() ||
+            slots_[inPlaceProducer].inPlaceSourceSlot() !=
+                migrated.aliasParentOutputSlotIdx ||
+            buffer == nullptr || attrError != cudaSuccess ||
+            attributes.type != cudaMemoryTypeDevice ||
+            attributes.device != seg.exec.captureRehomeTargetDevice ||
+            buffer->deviceId() != seg.exec.captureRehomeTargetDevice) {
+          return cudaGraphFailure(
+              "CUDA capture rehome exact in-place alias changed: seg[%d-%d] "
+              "outputSlot=%d parentSlot=%d targetDevice=%d",
+              seg.def.startSlot, seg.def.endSlot, migrated.outputSlotIdx,
+              migrated.aliasParentOutputSlotIdx, seg.exec.captureRehomeTargetDevice);
+        }
+        continue;
+      }
       if (migrated.segmentViewAlias) {
         NDArray* parent = migrated.aliasParentOutputSlotIdx >= 0 &&
                           migrated.aliasParentOutputSlotIdx < totalOutputSlots_

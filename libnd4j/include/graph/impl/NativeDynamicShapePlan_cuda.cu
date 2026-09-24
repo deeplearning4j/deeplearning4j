@@ -2155,7 +2155,6 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
             "outputSlot=%d parentSlot=%d targetDevice=%d",
             outputSlot, parentSlot, targetDevice);
       }
-      outputSlots_[outputSlot] = parent;
       MigratedInput alias;
       alias.outputSlotIdx = outputSlot;
       alias.original = original;
@@ -2163,9 +2162,10 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       alias.targetDevice = targetDevice;
       alias.retained = true;
       alias.segmentOutput = true;
-      alias.segmentViewAlias = true;
+      alias.segmentInPlaceAlias = true;
       alias.aliasParentOutputSlotIdx = parentSlot;
       migratedInputs_.push_back(alias);
+      outputSlots_[outputSlot] = parent;
       DSP_DIAG(MULTI_DEVICE,
                "CAPTURE_DEVICE_REHOME_INPLACE_ALIAS: outputSlot=%d ownerSlot=%d "
                "targetDevice=%d sharedWrapper=%p sharedBuffer=%p",
@@ -2398,7 +2398,7 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
 
   std::exception_ptr writebackFailure;
   auto isExactInPlaceOwnerAlias = [&](const MigratedInput& alias) {
-    if (!alias.segmentViewAlias || alias.original == nullptr || alias.migrated == nullptr ||
+    if (!alias.segmentInPlaceAlias || alias.original == nullptr || alias.migrated == nullptr ||
         alias.aliasParentOutputSlotIdx < 0 ||
         alias.aliasParentOutputSlotIdx >= totalOutputSlots_) return false;
     return std::any_of(migratedInputs_.begin(), migratedInputs_.end(),
@@ -2412,7 +2412,8 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   // restoring source aliases first lets the owner stage below become unshared and
   // retire; on commit, deferred deletion sorts non-owning views before owners.
   for (auto& mi : migratedInputs_) {
-    if (!mi.segmentViewAlias || outputSlots_ == nullptr || mi.outputSlotIdx < 0 ||
+    if ((!mi.segmentViewAlias && !mi.segmentInPlaceAlias) ||
+        outputSlots_ == nullptr || mi.outputSlotIdx < 0 ||
         mi.outputSlotIdx >= totalOutputSlots_) continue;
     NDArray* current = outputSlots_[mi.outputSlotIdx];
     if (isExactInPlaceOwnerAlias(mi)) {
@@ -2457,7 +2458,7 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   // owner through the plan-level deferred queue so it stays alive until the view
   // is replaced; deleting it here leaves a dangling output-slot wrapper.
   for (auto& mi : migratedInputs_) {
-    if (mi.segmentViewAlias) continue;
+    if (mi.segmentViewAlias || mi.segmentInPlaceAlias) continue;
     const bool stateReplica = mi.externalInputIdx >= 0 &&
         externalInputIsVariable_[mi.externalInputIdx] &&
         !externalInputIsPlaceholder_[mi.externalInputIdx];
