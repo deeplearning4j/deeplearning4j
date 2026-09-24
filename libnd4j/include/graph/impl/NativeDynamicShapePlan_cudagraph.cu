@@ -949,58 +949,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
-  // A capture-time rehome is transactional and applies only before this
-  // segment has a replay handle. Preserve source publications for rollback;
-  // the snapshot is created only on the first-capture path.
+  // Capture may replace output publications while it is being recorded. Keep
+  // the normal capture rollback snapshot; device rehome itself is requested
+  // here but performed by phaseReplay after the source dispatch unwinds.
   std::vector<NDArray*> preCapOutputSlots(
       outputSlots_, outputSlots_ + totalOutputSlots_);
-  std::vector<int> captureRehomeOriginalTargets;
-  bool captureRehomeActive = false;
-  bool captureRehomeCommitted = false;
-  int captureRehomeSourceDevice = -1;
-  cudaStream_t captureRehomeStream = nullptr;
-  auto rollbackCaptureRehome = [this, &seg, &preCapOutputSlots,
-                                &captureRehomeOriginalTargets,
-                                &captureRehomeActive,
-                                &captureRehomeCommitted,
-                                &captureRehomeSourceDevice](void*) noexcept {
-    if (!captureRehomeActive || captureRehomeCommitted) return;
-    try {
-      if (seg.exec.replayHandle != nullptr) platformCleanupSegmentForRebuild(seg);
-      platformCleanupMigratedInputs();
-    } catch (const std::exception& error) {
-      DSP_DIAG(MEMORY,
-               "CAPTURE_DEVICE_REHOME_ROLLBACK: cleanup failed for seg[%d-%d]: %s",
-               seg.def.startSlot, seg.def.endSlot, error.what());
-    } catch (...) {
-      DSP_DIAG(MEMORY,
-               "CAPTURE_DEVICE_REHOME_ROLLBACK: cleanup failed for seg[%d-%d]",
-               seg.def.startSlot, seg.def.endSlot);
-    }
-    const int count = seg.def.endSlot - seg.def.startSlot + 1;
-    if (captureRehomeOriginalTargets.size() == static_cast<size_t>(count)) {
-      for (int i = 0; i < count; i++) {
-        slots_[seg.def.startSlot + i].targetDeviceId = captureRehomeOriginalTargets[i];
-      }
-    } else if (captureRehomeSourceDevice >= 0) {
-      for (int i = seg.def.startSlot; i <= seg.def.endSlot && i < numSlots_; i++) {
-        slots_[i].targetDeviceId = captureRehomeSourceDevice;
-      }
-    }
-    if (outputSlots_ != nullptr &&
-        preCapOutputSlots.size() == static_cast<size_t>(totalOutputSlots_)) {
-      std::memcpy(outputSlots_, preCapOutputSlots.data(),
-                  sizeof(NDArray*) * totalOutputSlots_);
-    }
-    seg.exec.captureRehomePending = false;
-    seg.exec.captureRehomeCommitted = false;
-    seg.exec.captureRehomeSourceDevice = -1;
-    seg.exec.captureRehomeTargetDevice = -1;
-    platformRestoreSegmentDevice();
-    captureRehomeActive = false;
-  };
-  std::unique_ptr<void, decltype(rollbackCaptureRehome)> captureRehomeRollbackGuard(
-      reinterpret_cast<void*>(static_cast<uintptr_t>(1)), rollbackCaptureRehome);
 
   auto& scheduler = ::sd::cuda::CudaGraphScheduler::getInstance();
 
@@ -1117,7 +1070,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                    poolUsedBeforeTrim / (1024 * 1024), poolUsedAfterTrim / (1024 * 1024),
                    poolReservedBeforeTrim / (1024 * 1024), poolReservedAfterTrim / (1024 * 1024));
     }
-    if (captureAdmissionBytes > gpuFree && seg.exec.replayHandle == nullptr) {
+    if (captureAdmissionBytes > gpuFree && seg.exec.replayHandle == nullptr &&
+        !seg.exec.captureRehomePending) {
       std::unordered_set<int> segmentOutputSlots;
       std::unordered_set<int> boundarySources;
       std::unordered_set<int> externalSources;
@@ -1505,92 +1459,20 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       }
 
       if (bestCandidate >= 0) {
-        // No CUDA graph has been created for this segment yet. Move all slot
-        // targets and stage the segment's warmup outputs before capture; never
-        // replay a source-device address on the selected target.
-        platformCleanupMigratedInputs();
-        platformRestoreSegmentDevice();
-        captureRehomeOriginalTargets.clear();
-        captureRehomeOriginalTargets.reserve(
-            static_cast<size_t>(seg.def.endSlot - seg.def.startSlot + 1));
-        for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-          captureRehomeOriginalTargets.push_back(slots_[s].targetDeviceId);
-          slots_[s].targetDeviceId = bestCandidate;
-        }
-        captureRehomeSourceDevice = currentDevice;
-        captureRehomeActive = true;
-        seg.exec.captureRehomePending = true;
+        // Do not change devices or stream state from inside dispatch: the
+        // caller owns that segment's stream/TLS scope. phaseReplay consumes
+        // this request only after the source-device dispatch and staging cleanup
+        // have unwound, then rebinds and redispatches at the outer boundary.
         seg.exec.captureRehomeSourceDevice = currentDevice;
         seg.exec.captureRehomeTargetDevice = bestCandidate;
-        if (!platformBindSegmentDevice(seg)) {
-          return cudaGraphFailure(
-              "CUDA graph capture rehome could not bind seg[%d-%d] to runtime device %d",
-              seg.def.startSlot, seg.def.endSlot, bestCandidate);
-        }
-        void* boundStream = dspGetExecutionStream();
-        captureRehomeStream = boundStream != nullptr
-            ? reinterpret_cast<cudaStream_t>(boundStream)
-            : cudaStreamPerThread;
-        stream = &captureRehomeStream;
-        cudaStr = captureRehomeStream;
-        const cudaError_t boundDeviceError = cudaGetDevice(&currentDevice);
-        if (boundDeviceError != cudaSuccess || currentDevice != bestCandidate) {
-          if (boundDeviceError != cudaSuccess) cudaGetLastError();
-          return cudaGraphFailure(
-              "CUDA graph capture rehome device verification failed for seg[%d-%d]: "
-              "requestedRuntimeDevice=%d activeRuntimeDevice=%d",
-              seg.def.startSlot, seg.def.endSlot, bestCandidate, currentDevice);
-        }
-        const Status migrationStatus =
-            platformMigrateSegmentInputs(seg, externalArrays, numExt);
-        if (migrationStatus != Status::OK) return migrationStatus;
-
-        // A candidate is only a preflight estimate. Account for the actual
-        // target allocations, release its unused pool cache, and re-query before
-        // the final capture admission.
-        captureAdmissionBytes = bestCandidateCublasNeed <= SIZE_MAX - requiredFree
-            ? requiredFree + bestCandidateCublasNeed : SIZE_MAX;
-        const cudaError_t stagedInfoError = cudaMemGetInfo(&gpuFree, &gpuTotal);
-        if (stagedInfoError != cudaSuccess) {
-          cudaGetLastError();
-          gpuFree = 0;
-        }
-        gpuFreeBeforeTrim = gpuFree;
-        poolUsedBeforeTrim = 0;
-        poolReservedBeforeTrim = 0;
-        try {
-          capturePool.getStats(currentDevice, poolUsedBeforeTrim,
-                               poolReservedBeforeTrim);
-        } catch (...) {
-          poolUsedBeforeTrim = 0;
-          poolReservedBeforeTrim = 0;
-        }
-        capturePool.trimPool(currentDevice);
-        const cudaError_t trimmedInfoError = cudaMemGetInfo(&gpuFree, &gpuTotal);
-        if (trimmedInfoError != cudaSuccess) {
-          cudaGetLastError();
-          gpuFree = 0;
-        }
-        poolUsedAfterTrim = 0;
-        poolReservedAfterTrim = 0;
-        try {
-          capturePool.getStats(currentDevice, poolUsedAfterTrim,
-                               poolReservedAfterTrim);
-        } catch (...) {
-          poolUsedAfterTrim = 0;
-          poolReservedAfterTrim = 0;
-        }
         DSP_DIAG_SEG(MEMORY, segIdx,
-                     "CAPTURE_DEVICE_REHOME: seg[%d-%d] runtimeDevice %d -> %d "
-                     "staged=%zu candidateFree=%zu remaining=%zu postTrimFree=%zu "
-                     "requiredFree=%zu cublas=%zu pool=%zu/%zu",
-                     seg.def.startSlot, seg.def.endSlot,
-                     captureRehomeSourceDevice, bestCandidate,
+                     "CAPTURE_DEVICE_REHOME_REQUEST: seg[%d-%d] sourceRuntimeDevice=%d "
+                     "candidateRuntimeDevice=%d stage=%zu candidateFree=%zu "
+                     "remainingAfterAdmission=%zu requiredFree=%zu cublas=%zu",
+                     seg.def.startSlot, seg.def.endSlot, currentDevice, bestCandidate,
                      bestCandidateStageBytes, bestCandidateFreeBytes,
-                     bestRemainingBytes, gpuFree, requiredFree,
-                     bestCandidateCublasNeed,
-                     poolUsedAfterTrim / (1024 * 1024),
-                     poolReservedAfterTrim / (1024 * 1024));
+                     bestRemainingBytes, requiredFree, bestCandidateCublasNeed);
+        return Status::MAYBE;
       }
     }
     if (captureAdmissionBytes > gpuFree) {
@@ -2709,7 +2591,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // valid while the live address still equals the baked address.
   recordManagedExtBakedAddrsForCapture(seg, captureExternals, numExt);
 
-  if (captureRehomeActive) {
+  if (seg.exec.captureRehomePending)
     // Alias/view-producing outputs are rejected during preflight. Verify the
     // capture did not replace a staged output with a different allocation; if it
     // did, discard this graph transaction rather than publish an address the
@@ -2803,16 +2685,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
   }
 
-  if (captureRehomeActive) {
+  if (seg.exec.captureRehomePending)
     // The captured graph now owns the target-device output addresses. Commit
     // these publications only after instantiate, launch, and post-capture
     // fixup all succeeded; failure paths leave the source table intact.
     for (auto& migrated : migratedInputs_) {
       if (migrated.segmentOutput) migrated.persistOutput = true;
     }
-    seg.exec.captureRehomePending = false;
     seg.exec.captureRehomeCommitted = true;
-    captureRehomeCommitted = true;
   }
 
   if (executionTimingEnabled_) {
