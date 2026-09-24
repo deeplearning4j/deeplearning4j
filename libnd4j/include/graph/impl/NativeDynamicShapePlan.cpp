@@ -7561,9 +7561,20 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
       dispatchStatus = dispatchSegment(segment, externalInputs, numExternalInputs,
                                        stream, segUsedGraph);
     } catch (...) {
-      platformCleanupMigratedInputs();
+      const std::exception_ptr dispatchFailure = std::current_exception();
+      try {
+        platformCleanupMigratedInputs();
+      } catch (const std::exception& error) {
+        DSP_DIAG(MEMORY,
+                 "phaseReplay dispatch cleanup failed for seg[%d-%d]: %s",
+                 segment.def.startSlot, segment.def.endSlot, error.what());
+      } catch (...) {
+        DSP_DIAG(MEMORY,
+                 "phaseReplay dispatch cleanup failed for seg[%d-%d]",
+                 segment.def.startSlot, segment.def.endSlot);
+      }
       platformRestoreSegmentDevice();
-      throw;
+      std::rethrow_exception(dispatchFailure);
     }
 
     if (dispatchStatus == Status::MAYBE &&
@@ -7582,7 +7593,14 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
       }
 
       // Retire only the source dispatch's transient input copies before switching.
-      platformCleanupMigratedInputs();
+      try {
+        platformCleanupMigratedInputs();
+      } catch (...) {
+        segment.exec.captureRehomeSourceDevice = -1;
+        segment.exec.captureRehomeTargetDevice = -1;
+        platformRestoreSegmentDevice();
+        throw;
+      }
       platformRestoreSegmentDevice();
 
       for (int s = segment.def.startSlot; s <= segment.def.endSlot; s++) {
@@ -7623,8 +7641,14 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
                 std::to_string(segment.def.endSlot) + "]");
         return Status::KERNEL_FAILURE;
       }
-      const auto rehomeMigrationStatus =
-          platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
+      Status rehomeMigrationStatus = Status::KERNEL_FAILURE;
+      try {
+        rehomeMigrationStatus =
+            platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
+      } catch (...) {
+        rollbackRehome();
+        throw;
+      }
       if (rehomeMigrationStatus != Status::OK) {
         rollbackRehome();
         return rehomeMigrationStatus;
@@ -7641,7 +7665,8 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
         throw;
       }
       if (dispatchStatus != Status::OK || !segment.exec.captureRehomeCommitted) {
-        const Status failure = dispatchStatus == Status::OK
+        const Status failure = dispatchStatus == Status::OK ||
+                                       dispatchStatus == Status::MAYBE
             ? Status::KERNEL_FAILURE : dispatchStatus;
         rollbackRehome();
         if (failure == Status::KERNEL_FAILURE) {

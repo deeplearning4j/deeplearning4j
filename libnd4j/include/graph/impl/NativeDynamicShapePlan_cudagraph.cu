@@ -1087,13 +1087,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         const NativeSlot& slot = slots_[s];
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
           const int outputSlot = slot.wiring.outputSlotIndices[o];
-          const bool optionalOutput = slot.wiring.optionalOutputMask != nullptr &&
-              slot.wiring.optionalOutputMask[o] != 0;
           if (outputSlot < 0 || outputSlot >= totalOutputSlots_) {
-            if (!optionalOutput) {
-              unsupportedOutputContract = true;
-              unsupportedOutputSlot = outputSlot;
-            }
+            // Untracked outputs are owned by a separate plan-wide cache and are
+            // not included in this segment's staged-output transaction.
+            unsupportedOutputContract = true;
+            unsupportedOutputSlot = outputSlot;
             continue;
           }
           segmentOutputSlots.insert(outputSlot);
