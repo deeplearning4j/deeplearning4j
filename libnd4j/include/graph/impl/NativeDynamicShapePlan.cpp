@@ -7612,12 +7612,12 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
 
       auto rollbackRehome = [&]() noexcept {
         try {
-          // Destroy any graph that may have been instantiated before a later
-          // capture/fixup failure. It must not retain pointers to staged outputs
-          // that the following migration cleanup retires.
+          // First synchronize the candidate stream and restore slot publications.
+          // Migration retirement is deferred; destroying the graph next releases
+          // its address pins before those staged buffers can be drained.
+          platformCleanupMigratedInputs();
           if (segment.exec.replayHandle != nullptr)
             platformCleanupSegmentForRebuild(segment);
-          platformCleanupMigratedInputs();
         } catch (const std::exception& error) {
           DSP_DIAG(MEMORY,
                    "CAPTURE_DEVICE_REHOME_ROLLBACK: cleanup failed for seg[%d-%d]: %s",
