@@ -1118,12 +1118,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
               }
             }
           }
-          const bool hasStableWarmupStorage =
-              (output != nullptr && output->isEmpty()) ||
-              (output == nullptr && optionalOutput) ||
-              (outputBuffer != nullptr &&
-               (outputBuffer->special() != nullptr ||
-                (outputBuffer->primary() != nullptr && outputBuffer->isPrimaryActual())));
+          const bool hasStableWarmupStorage = output != nullptr && !output->isEmpty() &&
+              outputBuffer != nullptr &&
+              (outputBuffer->special() != nullptr ||
+               (outputBuffer->primary() != nullptr && outputBuffer->isPrimaryActual()));
           if (slot.aliasesInput() || slot.isInPlaceFused() || fusedAlias ||
               (output != nullptr && output->isView()) || ownershipAlias ||
               aliasesExternalInput ||
@@ -2719,16 +2717,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
   }
 
-  if (seg.exec.captureRehomePending) {
-    // The captured graph now owns the target-device output addresses. Commit
-    // these publications only after instantiate, launch, and post-capture
-    // fixup all succeeded; failure paths leave the source table intact.
-    for (auto& migrated : migratedInputs_) {
-      if (migrated.segmentOutput) migrated.persistOutput = true;
-    }
-    seg.exec.captureRehomeCommitted = true;
-  }
-
   if (executionTimingEnabled_) {
     auto stats = handle->getStatistics();
     double wsUtilPct = seg.exec.replayHandle->getWorkspaceBytes() > 0
@@ -2745,6 +2733,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     if (!lastCaptureAudit_.empty()) {
       printCaptureAudit();
     }
+  }
+
+  if (seg.exec.captureRehomePending) {
+    // Publish the target output wrappers only after all capture, launch, fixup,
+    // timing, and audit work has returned without error.
+    for (auto& migrated : migratedInputs_) {
+      if (migrated.segmentOutput) migrated.persistOutput = true;
+    }
+    seg.exec.captureRehomeCommitted = true;
   }
 
   return Status::OK;
