@@ -2627,11 +2627,24 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
 
     case SelectedBackend::DEVICE_REPLAY: {
       auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
+      if (status == Status::MAYBE && !segment.exec.captureRehomePending &&
+          segment.exec.captureRehomeSourceDevice >= 0 &&
+          segment.exec.captureRehomeTargetDevice >= 0) {
+        // This is a typed outer-loop request, not an execution success or a
+        // reason to run slot-by-slot. phaseReplay owns device/stream rebinding.
+        DSP_DIAG(MULTI_DEVICE,
+                 "CUDA graph capture requested outer rehome for seg[%d-%d] "
+                 "runtimeDevice=%d->%d",
+                 segment.def.startSlot, segment.def.endSlot,
+                 segment.exec.captureRehomeSourceDevice,
+                 segment.exec.captureRehomeTargetDevice);
+        return status;
+      }
       if (status != Status::OK) {
-        // A genuine capture OOM is deferred by executeSegmentWithGraph.  Count
-        // this attempted execution so the next invocation reaches the scheduled
-        // retry interval, while preserving the graph-only execution contract.
-        if (segment.exec.segPhase.oomRetryPending) {
+        // A genuine capture OOM is deferred by executeSegmentWithGraph only
+        // before a rehome transaction starts. Rehome must either commit or fail.
+        if (segment.exec.segPhase.oomRetryPending &&
+            !segment.exec.captureRehomePending) {
           dspSegIncrementExecCount(segment, "cuda-graph-capture-oom-deferred");
           DSP_DIAG(MEMORY,
                    "CUDA graph capture OOM deferred for seg[%d-%d]; "
@@ -2641,6 +2654,18 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
                    GraphSegment::maxOomRetries(),
                    segment.exec.captureRetryAfterExec);
           return Status::OK;
+        }
+
+        // A rehome capture failure is returned to phaseReplay so it can clean
+        // target staging and restore the original placement. Never fall back.
+        if (segment.exec.captureRehomePending) {
+          if (!segment.exec.segPhase.isFailed()) {
+            SegmentLifecycle::markFailed(segment.exec,
+                                         "cuda_graph_rehome_capture_failed",
+                                         segment.def.startSlot,
+                                         segment.def.endSlot);
+          }
+          return status;
         }
 
         // Non-OOM capture failures are terminal and must retain their original

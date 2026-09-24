@@ -7556,14 +7556,110 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
     int segSlots = segment.def.endSlot - segment.def.startSlot + 1;
 
     // Consolidated dispatch — single entry point for all segment execution.
-    {
-      auto status = dispatchSegment(segment, externalInputs, numExternalInputs,
-                                    stream, segUsedGraph);
-      if (status != Status::OK) {
-        platformCleanupMigratedInputs();
-        platformRestoreSegmentDevice();
-        return status;
+    Status dispatchStatus = Status::OK;
+    try {
+      dispatchStatus = dispatchSegment(segment, externalInputs, numExternalInputs,
+                                       stream, segUsedGraph);
+    } catch (...) {
+      platformCleanupMigratedInputs();
+      platformRestoreSegmentDevice();
+      throw;
+    }
+
+    if (dispatchStatus == Status::MAYBE &&
+        !segment.exec.captureRehomePending &&
+        segment.exec.captureRehomeSourceDevice >= 0 &&
+        segment.exec.captureRehomeTargetDevice >= 0) {
+      // The source-device capture preflight requested a different runtime
+      // ordinal. The source dispatch has returned, so it is now safe to change
+      // the segment placement and install the target device's own stream/TLS.
+      const int sourceDevice = segment.exec.captureRehomeSourceDevice;
+      const int targetDevice = segment.exec.captureRehomeTargetDevice;
+      std::vector<int> originalTargets;
+      originalTargets.reserve(static_cast<size_t>(segSlots));
+      for (int s = segment.def.startSlot; s <= segment.def.endSlot; s++) {
+        originalTargets.push_back(slots_[s].targetDeviceId);
       }
+
+      // Retire only the source dispatch's transient input copies before switching.
+      platformCleanupMigratedInputs();
+      platformRestoreSegmentDevice();
+
+      for (int s = segment.def.startSlot; s <= segment.def.endSlot; s++) {
+        slots_[s].targetDeviceId = targetDevice;
+      }
+      segment.exec.captureRehomePending = true;
+      segment.exec.captureRehomeCommitted = false;
+
+      auto rollbackRehome = [&]() noexcept {
+        try {
+          platformCleanupMigratedInputs();
+        } catch (const std::exception& error) {
+          DSP_DIAG(MEMORY,
+                   "CAPTURE_DEVICE_REHOME_ROLLBACK: cleanup failed for seg[%d-%d]: %s",
+                   segment.def.startSlot, segment.def.endSlot, error.what());
+        } catch (...) {
+          DSP_DIAG(MEMORY,
+                   "CAPTURE_DEVICE_REHOME_ROLLBACK: cleanup failed for seg[%d-%d]",
+                   segment.def.startSlot, segment.def.endSlot);
+        }
+        for (int i = 0; i < segSlots && i < static_cast<int>(originalTargets.size()); i++) {
+          slots_[segment.def.startSlot + i].targetDeviceId = originalTargets[i];
+        }
+        segment.exec.captureRehomePending = false;
+        segment.exec.captureRehomeCommitted = false;
+        segment.exec.captureRehomeSourceDevice = -1;
+        segment.exec.captureRehomeTargetDevice = -1;
+        platformRestoreSegmentDevice();
+      };
+
+      if (!platformBindSegmentDevice(segment)) {
+        rollbackRehome();
+        recordPlanFailureIfMissing(
+            Status::KERNEL_FAILURE,
+            "phaseReplay could not bind capture-rehome candidate runtime device " +
+                std::to_string(targetDevice) + " for segment [" +
+                std::to_string(segment.def.startSlot) + "-" +
+                std::to_string(segment.def.endSlot) + "]");
+        return Status::KERNEL_FAILURE;
+      }
+      const auto rehomeMigrationStatus =
+          platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
+      if (rehomeMigrationStatus != Status::OK) {
+        rollbackRehome();
+        return rehomeMigrationStatus;
+      }
+
+      DSP_DIAG(MULTI_DEVICE,
+               "CAPTURE_DEVICE_REHOME_DISPATCH: seg[%d-%d] runtimeDevice %d -> %d",
+               segment.def.startSlot, segment.def.endSlot, sourceDevice, targetDevice);
+      try {
+        dispatchStatus = dispatchSegment(segment, externalInputs, numExternalInputs,
+                                         stream, segUsedGraph);
+      } catch (...) {
+        rollbackRehome();
+        throw;
+      }
+      if (dispatchStatus != Status::OK || !segment.exec.captureRehomeCommitted) {
+        const Status failure = dispatchStatus == Status::OK
+            ? Status::KERNEL_FAILURE : dispatchStatus;
+        rollbackRehome();
+        if (failure == Status::KERNEL_FAILURE) {
+          recordPlanFailureIfMissing(
+              failure,
+              "capture rehome did not commit for segment [" +
+                  std::to_string(segment.def.startSlot) + "-" +
+                  std::to_string(segment.def.endSlot) + "] on runtime device " +
+                  std::to_string(targetDevice));
+        }
+        return failure;
+      }
+    }
+
+    if (dispatchStatus != Status::OK) {
+      platformCleanupMigratedInputs();
+      platformRestoreSegmentDevice();
+      return dispatchStatus;
     }
 
     if (executionTimingEnabled_) {
@@ -7615,6 +7711,8 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
       }
       if (frozenSnapshot_.valid) frozenSnapshot_.clear();
       segment.exec.captureRehomeCommitted = false;
+      segment.exec.captureRehomeSourceDevice = -1;
+      segment.exec.captureRehomeTargetDevice = -1;
     }
     auto postStatus = platformCheckPostSegment(segment);
     // Multi-GPU sharding: restore the plan-primary device + execution TLS after a secondary

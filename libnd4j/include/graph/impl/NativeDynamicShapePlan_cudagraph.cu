@@ -921,6 +921,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   if (seg.exec.captureOomRetries > 0 &&
       seg.exec.executionCount < seg.exec.captureRetryAfterExec) {
+    if (seg.exec.captureRehomePending) {
+      return cudaGraphFailure(
+          "CUDA capture rehome cannot be deferred after target staging for seg[%d-%d]",
+          seg.def.startSlot, seg.def.endSlot);
+    }
     // Keep the segment deferred until its bounded retry interval. This is a
     // successful no-op for the current execution: the previous warmup output
     // remains published, and the next invocation retries capture. There is no
@@ -988,7 +993,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   bool isOomRetry = (seg.exec.captureOomRetries > 0);
-  if (!isOomRetry) {
+  if (!isOomRetry || seg.exec.captureRehomePending) {
     size_t gpuFree = 0, gpuTotal = 0;
     const cudaError_t initialInfoError = cudaMemGetInfo(&gpuFree, &gpuTotal);
     if (initialInfoError != cudaSuccess) {
@@ -1838,14 +1843,21 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // If another thread is already capturing, skip capture for this iteration.
   // Execute slot-by-slot instead — capture will be attempted next execution.
   if (!cudaGraphCaptureGuard.acquired()) {
-    DSP_DIAG(COMPILE, "CUDA_GRAPH_CAPTURE_DEFER: seg[%d-%d] another thread capturing, "
-             "executing slot-by-slot this iteration",
-             seg.def.startSlot, seg.def.endSlot);
     restoreCublasWorkspaceAfterCapture(stream);
-    // Restore slot states saved before capture
+    // Restore slot states saved before capture. Rehoming has already moved
+    // staging to the target and must never execute under the slot-by-slot path.
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];
     }
+    if (seg.exec.captureRehomePending) {
+      return cudaGraphFailure(
+          "CUDA graph capture lock unavailable for rehomed seg[%d-%d]; "
+          "refusing slot-by-slot execution",
+          seg.def.startSlot, seg.def.endSlot);
+    }
+    DSP_DIAG(COMPILE, "CUDA_GRAPH_CAPTURE_DEFER: seg[%d-%d] another thread capturing, "
+             "executing slot-by-slot this iteration",
+             seg.def.startSlot, seg.def.endSlot);
     SegmentLifecycle::markCaptureBailout(seg.exec, seg.def.startSlot, seg.def.endSlot);
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
@@ -2591,7 +2603,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // valid while the live address still equals the baked address.
   recordManagedExtBakedAddrsForCapture(seg, captureExternals, numExt);
 
-  if (seg.exec.captureRehomePending)
+  if (seg.exec.captureRehomePending) {
     // Alias/view-producing outputs are rejected during preflight. Verify the
     // capture did not replace a staged output with a different allocation; if it
     // did, discard this graph transaction rather than publish an address the
@@ -2685,7 +2697,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
   }
 
-  if (seg.exec.captureRehomePending)
+  if (seg.exec.captureRehomePending) {
     // The captured graph now owns the target-device output addresses. Commit
     // these publications only after instantiate, launch, and post-capture
     // fixup all succeeded; failure paths leave the source table intact.
