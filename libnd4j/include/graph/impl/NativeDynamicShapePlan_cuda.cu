@@ -2125,6 +2125,17 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
     return;
   }
 
+  // A rehome is still provisional until capture, launch, and post-capture
+  // fixup have all committed. Writable state replicas from that transaction must
+  // not be copied back to caller storage on rollback.
+  std::unordered_set<int> uncommittedRehomeTargets;
+  for (const auto& segment : segments_) {
+    if (segment.exec.captureRehomePending && !segment.exec.captureRehomeCommitted &&
+        segment.exec.captureRehomeTargetDevice >= 0) {
+      uncommittedRehomeTargets.insert(segment.exec.captureRehomeTargetDevice);
+    }
+  }
+
   // Segment binding routes replay and gap kernels onto this stream. Retained
   // state uses event dependencies below, with no host barrier. Disposable input
   // copies need completion before the deferred owner drain can reclaim them.
@@ -2136,7 +2147,9 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
     const bool stateReplica = mi.externalInputIdx >= 0 &&
         externalInputIsVariable_[mi.externalInputIdx] &&
         !externalInputIsPlaceholder_[mi.externalInputIdx];
-    hasTemporary |= !stateReplica;
+    const bool discardUncommittedRehomeState = stateReplica &&
+        uncommittedRehomeTargets.count(mi.targetDevice) > 0;
+    hasTemporary |= !stateReplica || discardUncommittedRehomeState;
   }
   const auto syncErr = hasTemporary ? cudaStreamSynchronize(segmentStream) : cudaSuccess;
 
@@ -2149,7 +2162,9 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
     const bool stateReplica = mi.externalInputIdx >= 0 &&
         externalInputIsVariable_[mi.externalInputIdx] &&
         !externalInputIsPlaceholder_[mi.externalInputIdx];
-    if (stateReplica && syncErr == cudaSuccess) {
+    const bool discardUncommittedRehomeState = stateReplica &&
+        uncommittedRehomeTargets.count(mi.targetDevice) > 0;
+    if (stateReplica && !discardUncommittedRehomeState && syncErr == cudaSuccess) {
       try {
         // Only writable state is returned; weights and ordinary feeds remain
         // input-only. The retained source survives this asynchronous peer copy,

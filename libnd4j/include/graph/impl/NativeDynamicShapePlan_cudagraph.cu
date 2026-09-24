@@ -1078,6 +1078,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     if (captureAdmissionBytes > gpuFree && seg.exec.replayHandle == nullptr &&
         !seg.exec.captureRehomePending) {
       std::unordered_set<int> segmentOutputSlots;
+      std::unordered_set<DataBuffer*> segmentOutputBuffers;
       std::unordered_set<int> boundarySources;
       std::unordered_set<int> externalSources;
       bool unsupportedOutputContract = false;
@@ -1097,12 +1098,18 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           }
           segmentOutputSlots.insert(outputSlot);
           NDArray* output = outputSlots_[outputSlot];
+          DataBuffer* outputBuffer = output != nullptr ? output->dataBuffer() : nullptr;
+          if (outputBuffer != nullptr) segmentOutputBuffers.insert(outputBuffer);
+          if (slots_[s].targetDeviceId >= 0 &&
+              slots_[s].targetDeviceId != currentDevice) {
+            unsupportedOutputContract = true;
+            unsupportedOutputSlot = outputSlot;
+          }
           const bool fusedAlias = slot.fusedChain.fusedChainLength > 1 ||
               slot.fusedChain.isFusedChainHead || slot.fusedChain.isFusedChainTail;
           const bool ownershipAlias = slotOwnership_ != nullptr &&
               (slotOwnership_[outputSlot].ownership == BufferOwnership::VIEW_OF_SLOT ||
                slotOwnership_[outputSlot].ownership == BufferOwnership::VIEW_OF_WEIGHT);
-          DataBuffer* outputBuffer = output != nullptr ? output->dataBuffer() : nullptr;
           bool aliasesExternalInput = false;
           if (outputBuffer != nullptr && externalArrays != nullptr) {
             for (int e = 0; e < numExt; e++) {
@@ -1126,6 +1133,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             unsupportedOutputContract = true;
             unsupportedOutputSlot = outputSlot;
           }
+        }
+      }
+      // A plan-colored DataBuffer may also back a slot in another segment. A
+      // prior capture can have baked that address, so rehome must reject such
+      // shared storage rather than moving only one publication.
+      for (int slotIndex = 0; slotIndex < totalOutputSlots_ &&
+                              !unsupportedOutputContract; slotIndex++) {
+        if (segmentOutputSlots.count(slotIndex) > 0) continue;
+        NDArray* other = outputSlots_[slotIndex];
+        if (other != nullptr && other->dataBuffer() != nullptr &&
+            segmentOutputBuffers.count(other->dataBuffer()) > 0) {
+          unsupportedOutputContract = true;
+          unsupportedOutputSlot = slotIndex;
         }
       }
       if (unsupportedOutputContract) {
@@ -1315,8 +1335,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
               return;
             }
             if (sourceDevice != candidate) {
-              auto& peak = sourceViewPeaks[sourceDevice];
-              peak = std::max(peak, bytes);
+              auto& viewBytesTotal = sourceViewPeaks[sourceDevice];
+              if (bytes > SIZE_MAX - viewBytesTotal) {
+                eligible = false;
+                return;
+              }
+              viewBytesTotal += bytes;
             }
           }
         };
