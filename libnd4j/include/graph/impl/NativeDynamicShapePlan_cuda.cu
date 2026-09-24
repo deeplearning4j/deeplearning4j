@@ -2175,17 +2175,22 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
           outputSlots_[mi.outputSlotIdx] = mi.migrated;
           current = mi.migrated;
         }
-        if (mi.segmentOutput && mi.migrated != nullptr && current == mi.migrated) {
-          // The exact staged wrapper is now the output publication, so transfer
-          // it from the migration cache to normal slot ownership. If capture
-          // installed another wrapper over the same DataBuffer, keep the cached
-          // wrapper as its backing owner rather than deleting an alias owner.
+        if (mi.segmentOutput && mi.migrated != nullptr) {
           const uint64_t key = (static_cast<uint64_t>(mi.targetDevice) << 32) |
                                static_cast<uint32_t>(mi.outputSlotIdx);
           auto cached = migrationBuffers_.find(key);
-          if (cached != migrationBuffers_.end() && cached->second == mi.migrated)
-            migrationBuffers_.erase(cached);
-          planOwnedArrays_.insert(mi.migrated);
+          if (current == mi.migrated) {
+            // The exact staged wrapper is now the output publication, so
+            // transfer it from the migration cache to normal slot ownership.
+            if (cached != migrationBuffers_.end() && cached->second == mi.migrated)
+              migrationBuffers_.erase(cached);
+            planOwnedArrays_.insert(mi.migrated);
+          } else if (cached == migrationBuffers_.end() ||
+                     cached->second != mi.migrated) {
+            // A distinct capture wrapper shares this DataBuffer. Keep the
+            // staged wrapper as its plan-owned backing owner.
+            planOwnedArrays_.insert(mi.migrated);
+          }
         }
         if (mi.original != nullptr && mi.original != current &&
             planOwnedArrays_.count(mi.original) > 0 &&

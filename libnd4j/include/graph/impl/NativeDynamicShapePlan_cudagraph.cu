@@ -1144,6 +1144,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
               (slotOwnership_[outputSlot].ownership == BufferOwnership::VIEW_OF_SLOT ||
                slotOwnership_[outputSlot].ownership == BufferOwnership::VIEW_OF_WEIGHT);
           DataBuffer* outputBuffer = output != nullptr ? output->dataBuffer() : nullptr;
+          bool aliasesExternalInput = false;
+          if (outputBuffer != nullptr && externalArrays != nullptr) {
+            for (int e = 0; e < numExt; e++) {
+              NDArray* external = externalArrays[e];
+              if (external != nullptr && external->dataBuffer() == outputBuffer) {
+                aliasesExternalInput = true;
+                break;
+              }
+            }
+          }
           const bool hasStableWarmupStorage =
               (output != nullptr && output->isEmpty()) ||
               (output == nullptr && optionalOutput) ||
@@ -1152,6 +1162,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                 (outputBuffer->primary() != nullptr && outputBuffer->isPrimaryActual())));
           if (slot.aliasesInput() || slot.isInPlaceFused() || fusedAlias ||
               (output != nullptr && output->isView()) || ownershipAlias ||
+              aliasesExternalInput ||
               !hasStableWarmupStorage) {
             unsupportedOutputContract = true;
             unsupportedOutputSlot = outputSlot;
