@@ -2302,13 +2302,13 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
           deferredSlotDeletes_.end());
       planOwnedArrays_.insert(mi.original);
     }
-    auto retireViewWrapper = [&](NDArray* view) {
-      if (view == nullptr || view == mi.original || !view->isView()) return;
-      planOwnedArrays_.erase(view);
-      deferredSlotDeletes_.push_back(view);
+    auto retireCandidateWrapper = [&](NDArray* candidate) {
+      if (candidate == nullptr || candidate == mi.original) return;
+      planOwnedArrays_.erase(candidate);
+      deferredSlotDeletes_.push_back(candidate);
     };
-    retireViewWrapper(current);
-    if (mi.migrated != current) retireViewWrapper(mi.migrated);
+    retireCandidateWrapper(current);
+    if (mi.migrated != current) retireCandidateWrapper(mi.migrated);
   }
 
   // Restore original arrays in the publication table. A consumer view can still
@@ -2376,7 +2376,16 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
                    mi.outputSlotIdx, (void*)mi.original, mi.targetDevice);
         }
       } else {
+        NDArray* current = outputSlots_[mi.outputSlotIdx];
         outputSlots_[mi.outputSlotIdx] = mi.original;
+        // Capture may have regenerated a wrapper during target execution. Restore
+        // the source publication and retire any distinct candidate wrapper after
+        // graph teardown; deferred cleanup destroys views before owner buffers.
+        if (mi.segmentOutput && current != nullptr && current != mi.original &&
+            current != mi.migrated) {
+          planOwnedArrays_.erase(current);
+          deferredSlotDeletes_.push_back(current);
+        }
       }
     }
     if (mi.externalInputTable != nullptr && mi.externalInputIdx >= 0) {
@@ -2428,9 +2437,7 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
         slotOwnership_ == nullptr) continue;
     classifyAndUpdateOwnership(
         slotOwnership_[mi.outputSlotIdx], mi.original, mi.outputSlotIdx,
-        lastExternalInputsCopy_.data(),
-        static_cast<int>(lastExternalInputsCopy_.size()),
-        outputSlots_, totalOutputSlots_, slotOwnership_);
+        nullptr, 0, outputSlots_, totalOutputSlots_, slotOwnership_);
   }
   migratedInputs_.clear();
   for (auto& segment : segments_) {
