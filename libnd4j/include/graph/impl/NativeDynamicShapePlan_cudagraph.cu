@@ -1083,6 +1083,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       std::unordered_set<int> externalSources;
       bool unsupportedOutputContract = false;
       int unsupportedOutputSlot = -1;
+      // Keep the fail-closed preflight diagnostic actionable without changing
+      // its admission policy. Bits: untracked=0x001, target-device=0x002,
+      // aliases-input=0x004, in-place=0x008, fused=0x010, output-view=0x020,
+      // ownership-alias=0x040, external-input-alias=0x080, unstable-storage=0x100,
+      // cross-segment-buffer=0x200.
+      int unsupportedOutputReasonFlags = 0;
+      int unsupportedOutputProducerStep = -1;
       for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
         const NativeSlot& slot = slots_[s];
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
@@ -1092,6 +1099,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             // not included in this segment's staged-output transaction.
             unsupportedOutputContract = true;
             unsupportedOutputSlot = outputSlot;
+            unsupportedOutputReasonFlags = 0x001;
+            unsupportedOutputProducerStep = s;
             continue;
           }
           segmentOutputSlots.insert(outputSlot);
@@ -1135,10 +1144,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           if (outputSlot < 0 || outputSlot >= totalOutputSlots_) continue;
           NDArray* output = outputSlots_[outputSlot];
           DataBuffer* outputBuffer = output != nullptr ? output->dataBuffer() : nullptr;
+          int outputReasonFlags = 0;
           if (slots_[s].targetDeviceId >= 0 &&
               slots_[s].targetDeviceId != currentDevice) {
-            unsupportedOutputContract = true;
-            unsupportedOutputSlot = outputSlot;
+            outputReasonFlags |= 0x002;
           }
           const bool fusedAlias = slot.fusedChain.fusedChainLength > 1 ||
               slot.fusedChain.isFusedChainHead || slot.fusedChain.isFusedChainTail;
@@ -1163,13 +1172,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
               outputBuffer != nullptr &&
               (outputBuffer->special() != nullptr ||
                (outputBuffer->primary() != nullptr && outputBuffer->isPrimaryActual()));
-          if ((slot.aliasesInput() && !supportedInternalView) ||
-              slot.isInPlaceFused() || fusedAlias ||
-              ((output != nullptr && output->isView()) && !supportedInternalView) ||
-              (ownershipAlias && !supportedInternalView) || aliasesExternalInput ||
-              !hasStableWarmupStorage) {
+          if (slot.aliasesInput() && !supportedInternalView) outputReasonFlags |= 0x004;
+          if (slot.isInPlaceFused()) outputReasonFlags |= 0x008;
+          if (fusedAlias) outputReasonFlags |= 0x010;
+          if (output != nullptr && output->isView() && !supportedInternalView)
+            outputReasonFlags |= 0x020;
+          if (ownershipAlias && !supportedInternalView) outputReasonFlags |= 0x040;
+          if (aliasesExternalInput) outputReasonFlags |= 0x080;
+          if (!hasStableWarmupStorage) outputReasonFlags |= 0x100;
+          if (outputReasonFlags != 0) {
             unsupportedOutputContract = true;
             unsupportedOutputSlot = outputSlot;
+            unsupportedOutputReasonFlags = outputReasonFlags;
+            unsupportedOutputProducerStep = s;
           }
         }
       }
@@ -1184,14 +1199,26 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             segmentOutputBuffers.count(other->dataBuffer()) > 0) {
           unsupportedOutputContract = true;
           unsupportedOutputSlot = slotIndex;
+          unsupportedOutputReasonFlags = 0x200;
+          unsupportedOutputProducerStep = -1;
         }
       }
       if (unsupportedOutputContract) {
+        const char* producerOp = unsupportedOutputProducerStep >= 0 &&
+                                 unsupportedOutputProducerStep < numSlots_
+            ? slots_[unsupportedOutputProducerStep].ident.opName.c_str()
+            : "cross-segment-or-untracked";
         DSP_DIAG_SEG(MEMORY, segIdx,
-                     "CAPTURE_DEVICE_REHOME_REJECT: seg[%d-%d] output slot=%d has "
-                     "an external, chained, fused, cross-segment, or unstable "
-                     "ownership contract that cannot be preserved by staging",
-                     seg.def.startSlot, seg.def.endSlot, unsupportedOutputSlot);
+                     "CAPTURE_DEVICE_REHOME_REJECT: seg[%d-%d] output slot=%d "
+                     "reasonFlags=0x%x producerStep=%d op=%s; "
+                     "contract cannot be preserved by staging "
+                     "(untracked=0x001 target-device=0x002 aliases-input=0x004 "
+                     "in-place=0x008 fused=0x010 output-view=0x020 "
+                     "ownership-alias=0x040 external-input-alias=0x080 "
+                     "unstable-storage=0x100 cross-segment-buffer=0x200)",
+                     seg.def.startSlot, seg.def.endSlot, unsupportedOutputSlot,
+                     unsupportedOutputReasonFlags, unsupportedOutputProducerStep,
+                     producerOp);
       }
       for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
         const NativeSlot& slot = slots_[s];
