@@ -2102,6 +2102,31 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   }
 
   if (seg.exec.captureRehomePending) {
+    // Ownership records describe the source publications until rehome. Reset
+    // this segment's relationships, then classify the staged owners before
+    // rebuilding any child view wrappers against them.
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+      const NativeSlot& slot = slots_[s];
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        if (outputSlot >= 0 && outputSlot < totalOutputSlots_ && slotOwnership_ != nullptr)
+          resetSlotBufferOwnership(slotOwnership_, totalOutputSlots_, outputSlot);
+      }
+    }
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+      const NativeSlot& slot = slots_[s];
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        if (outputSlot < 0 || outputSlot >= totalOutputSlots_ ||
+            rehomedViewParentSlots.count(outputSlot) > 0 ||
+            outputSlots_[outputSlot] == nullptr || slotOwnership_ == nullptr)
+          continue;
+        classifyAndUpdateOwnership(
+            slotOwnership_[outputSlot], outputSlots_[outputSlot], outputSlot,
+            nullptr, 0, outputSlots_, totalOutputSlots_, slotOwnership_);
+      }
+    }
+
     // Rebuild supported views only after their owners have been staged. This
     // preserves the zero-copy alias rather than migrating the view as a dense
     // array. Keep the original source wrapper in the transaction for rollback.
@@ -2430,15 +2455,32 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
       mi.migrated = nullptr;
     }
   }
-  // Rebuild view ownership only after every owner publication has been restored.
-  // Classifying earlier would compare the rollback view with its still-staged
-  // candidate parent and silently record an invalid ownership edge.
-  for (const auto& mi : migratedInputs_) {
-    if (!mi.segmentViewAlias || mi.persistOutput || mi.original == nullptr ||
-        slotOwnership_ == nullptr) continue;
-    classifyAndUpdateOwnership(
-        slotOwnership_[mi.outputSlotIdx], mi.original, mi.outputSlotIdx,
-        nullptr, 0, outputSlots_, totalOutputSlots_, slotOwnership_);
+  // On rollback, rebuild the complete segment ownership relation only after all
+  // source publications are restored. This handles owner/view groups without
+  // leaving either the parent viewRefCount or child parentSlot tied to staging.
+  if (slotOwnership_ != nullptr) {
+    for (const auto& segment : segments_) {
+      if (!segment.exec.captureRehomePending || segment.exec.captureRehomeCommitted) continue;
+      for (int s = segment.def.startSlot; s <= segment.def.endSlot && s < numSlots_; s++) {
+        const NativeSlot& slot = slots_[s];
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[o];
+          if (outputSlot >= 0 && outputSlot < totalOutputSlots_)
+            resetSlotBufferOwnership(slotOwnership_, totalOutputSlots_, outputSlot);
+        }
+      }
+      for (int s = segment.def.startSlot; s <= segment.def.endSlot && s < numSlots_; s++) {
+        const NativeSlot& slot = slots_[s];
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[o];
+          if (outputSlot < 0 || outputSlot >= totalOutputSlots_ ||
+              outputSlots_[outputSlot] == nullptr) continue;
+          classifyAndUpdateOwnership(
+              slotOwnership_[outputSlot], outputSlots_[outputSlot], outputSlot,
+              nullptr, 0, outputSlots_, totalOutputSlots_, slotOwnership_);
+        }
+      }
+    }
   }
   migratedInputs_.clear();
   for (auto& segment : segments_) {
