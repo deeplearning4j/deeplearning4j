@@ -2162,7 +2162,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       alias.targetDevice = targetDevice;
       alias.retained = true;
       alias.segmentOutput = true;
-      alias.segmentInPlaceAlias = true;
+      alias.segmentViewAlias = true;
       alias.aliasParentOutputSlotIdx = parentSlot;
       migratedInputs_.push_back(alias);
       outputSlots_[outputSlot] = parent;
@@ -2398,7 +2398,7 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
 
   std::exception_ptr writebackFailure;
   auto isExactInPlaceOwnerAlias = [&](const MigratedInput& alias) {
-    if (!alias.segmentInPlaceAlias || alias.original == nullptr || alias.migrated == nullptr ||
+    if (!alias.segmentViewAlias || alias.original == nullptr || alias.migrated == nullptr ||
         alias.aliasParentOutputSlotIdx < 0 ||
         alias.aliasParentOutputSlotIdx >= totalOutputSlots_) return false;
     return std::any_of(migratedInputs_.begin(), migratedInputs_.end(),
@@ -2412,8 +2412,7 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   // restoring source aliases first lets the owner stage below become unshared and
   // retire; on commit, deferred deletion sorts non-owning views before owners.
   for (auto& mi : migratedInputs_) {
-    if ((!mi.segmentViewAlias && !mi.segmentInPlaceAlias) ||
-        outputSlots_ == nullptr || mi.outputSlotIdx < 0 ||
+    if (!mi.segmentViewAlias || outputSlots_ == nullptr || mi.outputSlotIdx < 0 ||
         mi.outputSlotIdx >= totalOutputSlots_) continue;
     NDArray* current = outputSlots_[mi.outputSlotIdx];
     if (isExactInPlaceOwnerAlias(mi)) {
@@ -2458,7 +2457,7 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   // owner through the plan-level deferred queue so it stays alive until the view
   // is replaced; deleting it here leaves a dangling output-slot wrapper.
   for (auto& mi : migratedInputs_) {
-    if (mi.segmentViewAlias || mi.segmentInPlaceAlias) continue;
+    if (mi.segmentViewAlias) continue;
     const bool stateReplica = mi.externalInputIdx >= 0 &&
         externalInputIsVariable_[mi.externalInputIdx] &&
         !externalInputIsPlaceholder_[mi.externalInputIdx];

@@ -1902,22 +1902,25 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         refreshStaleViewWrappersInSegment(seg, captureExternals, numExt);
     if (seg.exec.captureRehomePending) {
       for (auto& migrated : migratedInputs_) {
-        if (migrated.segmentInPlaceAlias) {
-          const int inPlaceProducer = dsp::findProducingStepForOutputSlot(
-              slots_, numSlots_, migrated.outputSlotIdx);
-          NDArray* targetOutput = outputSlots_[migrated.outputSlotIdx];
-          NDArray* parent = migrated.aliasParentOutputSlotIdx >= 0 &&
-                            migrated.aliasParentOutputSlotIdx < totalOutputSlots_
-              ? outputSlots_[migrated.aliasParentOutputSlotIdx] : nullptr;
+        if (!migrated.segmentViewAlias) continue;
+        const int inPlaceProducer = dsp::findProducingStepForOutputSlot(
+            slots_, numSlots_, migrated.outputSlotIdx);
+        NDArray* inPlaceOutput = outputSlots_[migrated.outputSlotIdx];
+        NDArray* inPlaceParent = migrated.aliasParentOutputSlotIdx >= 0 &&
+                                 migrated.aliasParentOutputSlotIdx < totalOutputSlots_
+            ? outputSlots_[migrated.aliasParentOutputSlotIdx] : nullptr;
+        const bool exactInPlaceAlias = inPlaceProducer >= seg.def.startSlot &&
+            inPlaceProducer <= seg.def.endSlot && slots_[inPlaceProducer].isInPlaceFused() &&
+            slots_[inPlaceProducer].inPlaceSourceSlot() == migrated.aliasParentOutputSlotIdx &&
+            inPlaceOutput != nullptr && inPlaceOutput == inPlaceParent &&
+            inPlaceOutput == migrated.migrated && !inPlaceOutput->isView();
+        if (exactInPlaceAlias) {
           if (inPlaceProducer < seg.def.startSlot || inPlaceProducer > seg.def.endSlot ||
               !slots_[inPlaceProducer].isInPlaceFused() ||
               slots_[inPlaceProducer].inPlaceSourceSlot() !=
                   migrated.aliasParentOutputSlotIdx ||
-              targetOutput == nullptr || targetOutput != parent ||
-              targetOutput != migrated.migrated || targetOutput->isView() ||
-              targetOutput->dataBuffer() == nullptr ||
-              targetOutput->dataBuffer()->deviceId() !=
-                  seg.exec.captureRehomeTargetDevice) {
+              inPlaceOutput->dataBuffer() == nullptr ||
+              inPlaceOutput->dataBuffer()->deviceId() != seg.exec.captureRehomeTargetDevice) {
             return cudaGraphFailure(
                 "CUDA capture rehome could not preserve exact in-place alias "
                 "for output slot %d over owner slot %d",
@@ -1925,7 +1928,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           }
           continue;
         }
-        if (!migrated.segmentViewAlias) continue;
         // The source view remains the rollback publication even though the view
         // refresh path may have queued it while installing the target wrapper.
         deferredSlotDeletes_.erase(
@@ -2802,13 +2804,47 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             seg.def.startSlot, seg.def.endSlot);
       }
       NDArray* capturedOutput = outputSlots_[migrated.outputSlotIdx];
-      if (migrated.segmentInPlaceAlias) {
+      if (migrated.segmentViewAlias) {
         NDArray* parent = migrated.aliasParentOutputSlotIdx >= 0 &&
                           migrated.aliasParentOutputSlotIdx < totalOutputSlots_
             ? outputSlots_[migrated.aliasParentOutputSlotIdx] : nullptr;
         const int inPlaceProducer = dsp::findProducingStepForOutputSlot(
             slots_, numSlots_, migrated.outputSlotIdx);
-        DataBuffer* buffer = capturedOutput != nullptr ? capturedOutput->dataBuffer() : nullptr;
+        const bool exactInPlaceAlias = parent != nullptr && capturedOutput == parent &&
+            migrated.migrated == parent && inPlaceProducer >= seg.def.startSlot &&
+            inPlaceProducer <= seg.def.endSlot &&
+            slots_[inPlaceProducer].isInPlaceFused() &&
+            slots_[inPlaceProducer].inPlaceSourceSlot() == migrated.aliasParentOutputSlotIdx &&
+            !capturedOutput->isView();
+        if (!exactInPlaceAlias) {
+          DataBuffer* capturedBuffer = capturedOutput != nullptr
+              ? capturedOutput->dataBuffer() : nullptr;
+          DataBuffer* parentBuffer = parent != nullptr ? parent->dataBuffer() : nullptr;
+          void* capturedPointer = capturedBuffer != nullptr ? capturedBuffer->special() : nullptr;
+          cudaPointerAttributes capturedAttributes;
+          const cudaError_t viewAttrError = capturedPointer != nullptr
+              ? cudaPointerGetAttributes(&capturedAttributes, capturedPointer)
+              : cudaErrorInvalidValue;
+          if (viewAttrError != cudaSuccess) cudaGetLastError();
+          if (parentBuffer == nullptr || parentBuffer != migrated.migrated->dataBuffer() ||
+              capturedOutput == nullptr || !capturedOutput->isView() ||
+              capturedBuffer != parentBuffer || viewAttrError != cudaSuccess ||
+              capturedAttributes.type != cudaMemoryTypeDevice ||
+              capturedAttributes.device != seg.exec.captureRehomeTargetDevice ||
+              capturedOutput->dataType() != migrated.migrated->dataType() ||
+              capturedOutput->offset() != migrated.migrated->offset() ||
+              capturedOutput->ordering() != migrated.migrated->ordering() ||
+              !shape::equalsStrict(capturedOutput->shapeInfo(), migrated.migrated->shapeInfo()) ||
+              !shape::strideEquals(capturedOutput->shapeInfo(), migrated.migrated->shapeInfo())) {
+            return cudaGraphFailure(
+                "CUDA capture rehome view alias changed: seg[%d-%d] outputSlot=%d "
+                "parentSlot=%d targetDevice=%d",
+                seg.def.startSlot, seg.def.endSlot, migrated.outputSlotIdx,
+                migrated.aliasParentOutputSlotIdx, seg.exec.captureRehomeTargetDevice);
+          }
+          continue;
+        }
+        DataBuffer* buffer = capturedOutput->dataBuffer();
         void* pointer = buffer != nullptr ? buffer->special() : nullptr;
         cudaPointerAttributes attributes;
         const cudaError_t attrError = pointer != nullptr
