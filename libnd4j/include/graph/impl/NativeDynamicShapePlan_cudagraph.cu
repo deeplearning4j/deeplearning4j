@@ -1137,6 +1137,33 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         return parentSlot;
       };
       std::unordered_map<int, int> rehomedViewParentSlots;
+      std::unordered_map<int, int> rehomedInPlaceParentSlots;
+      // In-place fusion publishes the exact owner wrapper in a second output
+      // slot. It can be rehomed only when that owner is a distinct SLOT_OWNED
+      // output produced earlier in this same segment. External-source,
+      // cross-segment, and non-identical aliases remain fail-closed.
+      auto internalOwnedInPlaceParent = [&](const NativeSlot& slot,
+                                             int outputSlot,
+                                             NDArray* output) {
+        if (!slot.isInPlaceFused() || output == nullptr || slotOwnership_ == nullptr ||
+            outputSlot < 0 || outputSlot >= totalOutputSlots_ ||
+            slotOwnership_[outputSlot].ownership != BufferOwnership::VIEW_OF_SLOT)
+          return -1;
+        const int parentSlot = slot.inPlaceSourceSlot();
+        if (parentSlot < 0 || parentSlot >= totalOutputSlots_ ||
+            segmentOutputSlots.count(parentSlot) == 0 ||
+            slotOwnership_[outputSlot].parentSlotIdx != parentSlot ||
+            slotOwnership_[parentSlot].ownership != BufferOwnership::SLOT_OWNED)
+          return -1;
+        const int parentProducer =
+            dsp::findProducingStepForOutputSlot(slots_, numSlots_, parentSlot);
+        NDArray* parent = outputSlots_[parentSlot];
+        if (parentProducer < seg.def.startSlot || parentProducer > seg.def.endSlot ||
+            parent == nullptr || parent->isView() || parent != output ||
+            parent->dataBuffer() == nullptr || output->dataBuffer() != parent->dataBuffer())
+          return -1;
+        return parentSlot;
+      };
       for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
         const NativeSlot& slot = slots_[s];
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
@@ -1158,6 +1185,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           const bool supportedInternalView = viewParentSlot >= 0;
           if (supportedInternalView)
             rehomedViewParentSlots[outputSlot] = viewParentSlot;
+          const int inPlaceParentSlot =
+              internalOwnedInPlaceParent(slot, outputSlot, output);
+          const bool supportedInternalInPlace = inPlaceParentSlot >= 0;
+          if (supportedInternalInPlace)
+            rehomedInPlaceParentSlots[outputSlot] = inPlaceParentSlot;
           bool aliasesExternalInput = false;
           if (outputBuffer != nullptr && externalArrays != nullptr) {
             for (int e = 0; e < numExt; e++) {
@@ -1172,12 +1204,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
               outputBuffer != nullptr &&
               (outputBuffer->special() != nullptr ||
                (outputBuffer->primary() != nullptr && outputBuffer->isPrimaryActual()));
-          if (slot.aliasesInput() && !supportedInternalView) outputReasonFlags |= 0x004;
-          if (slot.isInPlaceFused()) outputReasonFlags |= 0x008;
+          if (slot.aliasesInput() && !supportedInternalView && !supportedInternalInPlace)
+            outputReasonFlags |= 0x004;
+          if (slot.isInPlaceFused() && !supportedInternalInPlace)
+            outputReasonFlags |= 0x008;
           if (fusedAlias) outputReasonFlags |= 0x010;
           if (output != nullptr && output->isView() && !supportedInternalView)
             outputReasonFlags |= 0x020;
-          if (ownershipAlias && !supportedInternalView) outputReasonFlags |= 0x040;
+          if (ownershipAlias && !supportedInternalView && !supportedInternalInPlace)
+            outputReasonFlags |= 0x040;
           if (aliasesExternalInput) outputReasonFlags |= 0x080;
           if (!hasStableWarmupStorage) outputReasonFlags |= 0x100;
           if (outputReasonFlags != 0) {
