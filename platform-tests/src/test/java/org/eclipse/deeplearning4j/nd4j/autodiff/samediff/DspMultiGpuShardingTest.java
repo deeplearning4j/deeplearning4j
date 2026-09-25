@@ -1743,8 +1743,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 if ("mul_scalar".equals(plan.getSlots()[i].getOpName())) multiplyStep = i;
             }
             assertTrue(multiplyStep >= 0, "test graph must contain a multiply slot");
-            DspPlanAssertions.assertSlotHasTrait(graph, multiplyStep, 4,
-                    "multiply must use in-place fusion for this regression");
 
             // The first call is the documented initial slot-by-slot warmup.
             // Apply pressure only after the producer has a real source allocation,
@@ -1752,6 +1750,8 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             input.assign(1.0);
             Map<String, INDArray> warmup = graph.outputDirect(Map.of("x", input), "out");
             assertEquals(4.0f, warmup.get("out").getFloat(0), 0.0f);
+            DspPlanAssertions.assertSlotHasTrait(graph, multiplyStep, 4,
+                    "multiply must use in-place fusion for this regression");
             assertEquals(0, DspPlanAssertions.getTotalGraphReplays(graph),
                     "the initial warmup must not capture before pressure is applied");
 
