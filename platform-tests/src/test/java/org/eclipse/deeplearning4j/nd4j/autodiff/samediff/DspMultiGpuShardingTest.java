@@ -1748,6 +1748,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             // Apply pressure only after the producer has a real source allocation,
             // immediately before its first eligible capture attempt.
             input.assign(1.0);
+            Nd4j.getExecutioner().commit();
             Map<String, INDArray> warmup = graph.outputDirect(Map.of("x", input), "out");
             assertEquals(4.0f, warmup.get("out").getFloat(0), 0.0f);
             DspPlanAssertions.assertSlotHasTrait(graph, multiplyStep, 4,
