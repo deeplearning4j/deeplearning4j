@@ -1,8 +1,0 @@
-{
-  "mcpServers" : {
-    "kompile" : {
-      "command" : "/home/agibsonccc/.sdkman/candidates/java/current/bin/java",
-      "args" : [ "-jar", "/home/agibsonccc/.kompile/lib/kompile-cli.jar", "mcp-stdio", "--work-dir", "/home/agibsonccc/Documents/GitHub/deeplearning4j" ]
-    }
-  }
-}
