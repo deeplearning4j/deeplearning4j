@@ -31,17 +31,17 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-cuda-13.1-preset</artifactId>
+    <artifactId>nd4j-cuda-12.9-preset</artifactId>
 
-    <name>nd4j-cuda-13.1-preset</name>
+    <name>nd4j-cuda-12.9-preset</name>
 
     <properties>
         <skipPublishing>false</skipPublishing>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
         <!-- Note there could be different versions of javacpp for different cuda versions. -->
-        <cuda.version>13.1</cuda.version>
-        <cudnn.version>9.19</cudnn.version>
-        <javacpp-presets.cuda.version>1.5.13</javacpp-presets.cuda.version>
+        <cuda.version>12.9</cuda.version>
+        <cudnn.version>9.10</cudnn.version>
+        <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
         <module.name>nd4j.cuda.preset</module.name>
     </properties>
 
