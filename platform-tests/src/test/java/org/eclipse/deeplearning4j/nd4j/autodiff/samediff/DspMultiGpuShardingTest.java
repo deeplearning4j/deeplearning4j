@@ -1700,9 +1700,9 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         final long elements = 67_108_864L; // 256 MiB FLOAT input and producer output
         final long tensorBytes = elements * DataType.FLOAT.width();
         final long mib = 1024L * 1024L;
-        // Preserve the default 256 MiB cuBLAS workspace allocation with margin,
-        // while the graph's output estimate still forces capture rehome.
-        final long leaveFreeBytes = 400L * mib;
+        // Leave a 64 MiB margin after the default 256 MiB cuBLAS workspace,
+        // while staying below this graph's ~358 MiB capture-admission estimate.
+        final long leaveFreeBytes = 320L * mib;
         final long candidateReserveBytes = 1024L * mib;
         final long candidateFree = nativeOps.getDeviceFreeMemory(candidateDevice);
         assumeTrue(candidateFree > 2 * tensorBytes + candidateReserveBytes,
@@ -1775,7 +1775,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             assertEquals(sourceDevice, nativeOps.dbDeviceId(pressure.data().opaqueBuffer()),
                     "pressure reservation must stay on the source device");
             assertTrue(nativeOps.getDeviceFreeMemory(sourceDevice) < 384L * mib,
-                    "source device should remain below capture admission after workspace reserve");
+                    "pressure reservation must keep source free memory below the capture admission bound");
 
             for (int iteration = 2; iteration <= 5; iteration++) {
                 input.assign(iteration);
