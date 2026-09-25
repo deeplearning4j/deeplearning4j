@@ -1700,9 +1700,9 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         final long elements = 67_108_864L; // 256 MiB FLOAT input and producer output
         final long tensorBytes = elements * DataType.FLOAT.width();
         final long mib = 1024L * 1024L;
-        // Preserve the default 256 MiB cuBLAS workspace allocation, while keeping
-        // free memory below this graph's ~358 MiB capture-admission requirement.
-        final long leaveFreeBytes = 320L * mib;
+        // Preserve the default 256 MiB cuBLAS workspace allocation with margin,
+        // while the graph's output estimate still forces capture rehome.
+        final long leaveFreeBytes = 400L * mib;
         final long candidateReserveBytes = 1024L * mib;
         final long candidateFree = nativeOps.getDeviceFreeMemory(candidateDevice);
         assumeTrue(candidateFree > 2 * tensorBytes + candidateReserveBytes,
