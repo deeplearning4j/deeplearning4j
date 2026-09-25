@@ -1752,7 +1752,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             input.assign(1.0);
             Nd4j.getExecutioner().commit();
             assertEquals(1.0f, input.getFloat(0), 0.0f,
-                    "synchronized warmup input must contain the assigned value");
+                    "host-side warmup input must contain the assigned value");
             Map<String, INDArray> warmup = graph.outputDirect(Map.of("x", input), "out");
             assertEquals(2.0f, warmup.get("out").getFloat(0), 0.0f);
             DspPlanAssertions.assertSlotHasTrait(graph, inPlaceStep, 4,
@@ -1775,7 +1775,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             assertEquals(sourceDevice, nativeOps.dbDeviceId(pressure.data().opaqueBuffer()),
                     "pressure reservation must stay on the source device");
             assertTrue(nativeOps.getDeviceFreeMemory(sourceDevice) < 384L * mib,
-                    "pressure reservation must keep source free memory below the capture admission bound");
+                    "pressure reservation must leave <384 MiB free before capture is attempted");
 
             for (int iteration = 2; iteration <= 5; iteration++) {
                 input.assign(iteration);
