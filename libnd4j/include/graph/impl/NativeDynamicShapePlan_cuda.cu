@@ -1294,8 +1294,21 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
           ? outputSlots_[outputSlot] : nullptr;
       NDArray* parent = parentSlot >= 0 && parentSlot < totalOutputSlots_
           ? outputSlots_[parentSlot] : nullptr;
-      const int parentProducer = parentSlot >= 0
-          ? dsp::findProducingStepForOutputSlot(slots_, numSlots_, parentSlot) : -1;
+      int parentProducer = -1;
+      if (parentSlot >= 0) {
+        for (int producerStep = seg.def.startSlot;
+             producerStep <= seg.def.endSlot && producerStep < numSlots_;
+             producerStep++) {
+          const NativeSlot& producer = slots_[producerStep];
+          for (int output = 0; output < producer.wiring.numOutputs; output++) {
+            if (producer.wiring.outputSlotIndices[output] == parentSlot) {
+              parentProducer = producerStep;
+              break;
+            }
+          }
+          if (parentProducer >= 0) break;
+        }
+      }
       if (parentSlot < 0 || outputSlot < 0 || output == nullptr || parent == nullptr ||
           output != parent || parent->isView() || parent->dataBuffer() == nullptr ||
           slotOwnership_[outputSlot].ownership != BufferOwnership::VIEW_OF_SLOT ||
@@ -2162,7 +2175,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       alias.targetDevice = targetDevice;
       alias.retained = true;
       alias.segmentOutput = true;
-      alias.segmentViewAlias = true;
+      alias.segmentInPlaceAlias = true;
       alias.aliasParentOutputSlotIdx = parentSlot;
       migratedInputs_.push_back(alias);
       outputSlots_[outputSlot] = parent;
@@ -2287,7 +2300,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
           NDArray* parent = outputSlots_[parentSlot];
           auto alias = std::find_if(migratedInputs_.begin(), migratedInputs_.end(),
               [outputSlot, parentSlot](const MigratedInput& entry) {
-                return entry.segmentViewAlias && entry.outputSlotIdx == outputSlot &&
+                return entry.segmentInPlaceAlias && entry.outputSlotIdx == outputSlot &&
                     entry.aliasParentOutputSlotIdx == parentSlot;
               });
           if (alias == migratedInputs_.end() || !slot.isInPlaceFused() ||
@@ -2397,28 +2410,18 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   const auto syncErr = hasTemporary ? cudaStreamSynchronize(segmentStream) : cudaSuccess;
 
   std::exception_ptr writebackFailure;
-  auto isExactInPlaceOwnerAlias = [&](const MigratedInput& alias) {
-    if (!alias.segmentViewAlias || alias.original == nullptr || alias.migrated == nullptr ||
-        alias.aliasParentOutputSlotIdx < 0 ||
-        alias.aliasParentOutputSlotIdx >= totalOutputSlots_) return false;
-    return std::any_of(migratedInputs_.begin(), migratedInputs_.end(),
-        [&](const MigratedInput& owner) {
-          return &owner != &alias && !owner.segmentViewAlias && owner.segmentOutput &&
-              owner.outputSlotIdx == alias.aliasParentOutputSlotIdx &&
-              owner.original == alias.original && owner.migrated == alias.migrated;
-        });
-  };
-  // Restore/retire alias wrappers before their backing owner entries. On rollback,
-  // restoring source aliases first lets the owner stage below become unshared and
-  // retire; on commit, deferred deletion sorts non-owning views before owners.
+  // Restore child publications before their backing owner entries. On rollback,
+  // restoring source views and exact-wrapper publications first lets the owner
+  // stage below become unshared and retire; committed views remain deferred.
   for (auto& mi : migratedInputs_) {
-    if (!mi.segmentViewAlias || outputSlots_ == nullptr || mi.outputSlotIdx < 0 ||
+    if ((!mi.segmentViewAlias && !mi.segmentInPlaceAlias) ||
+        outputSlots_ == nullptr || mi.outputSlotIdx < 0 ||
         mi.outputSlotIdx >= totalOutputSlots_) continue;
     NDArray* current = outputSlots_[mi.outputSlotIdx];
-    if (isExactInPlaceOwnerAlias(mi)) {
+    if (mi.segmentInPlaceAlias) {
       // Child and owner are the same NDArray wrapper. The owner migration entry
-      // alone controls allocation lifetime; the alias entry only restores the
-      // child publication on rollback.
+      // alone controls allocation lifetime; this entry only restores the child
+      // publication on rollback.
       if (!mi.persistOutput) {
         outputSlots_[mi.outputSlotIdx] = mi.original;
         if (current != nullptr && current != mi.original && current != mi.migrated) {
@@ -2457,7 +2460,7 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   // owner through the plan-level deferred queue so it stays alive until the view
   // is replaced; deleting it here leaves a dangling output-slot wrapper.
   for (auto& mi : migratedInputs_) {
-    if (mi.segmentViewAlias) continue;
+    if (mi.segmentViewAlias || mi.segmentInPlaceAlias) continue;
     const bool stateReplica = mi.externalInputIdx >= 0 &&
         externalInputIsVariable_[mi.externalInputIdx] &&
         !externalInputIsPlaceholder_[mi.externalInputIdx];

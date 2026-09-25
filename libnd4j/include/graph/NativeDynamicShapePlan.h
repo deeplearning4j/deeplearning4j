@@ -4085,8 +4085,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     bool segmentOutput = false;  // Produced inside a capture-time rehomed segment
     bool persistOutput = false;  // Commit this output publication after capture succeeds
     bool newlyAllocated = false;  // This migration created the staging wrapper
-    bool segmentViewAlias = false;  // Rehomed view or exact-wrapper alias of a segment output
-    int aliasParentOutputSlotIdx = -1;  // Owner publication for segmentViewAlias
+    bool segmentViewAlias = false;  // Rehomed view publication of a segment output
+    bool segmentInPlaceAlias = false;  // Exact-wrapper in-place output publication
+    int aliasParentOutputSlotIdx = -1;  // Owner publication for either segment output alias
   };
   std::vector<MigratedInput> migratedInputs_;
   // Stable input storage baked into captured consumers. Key is device/source
