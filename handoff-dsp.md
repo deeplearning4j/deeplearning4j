@@ -1,0 +1,40 @@
+# DSP CUDA capture-rehome regression — fresh-session handoff
+
+## Start here
+
+Continue the unresolved regression in `/home/agibsonccc/Documents/GitHub/deeplearning4j`. Stay on the existing branch; do not reset, rebase, cherry-pick, or create a worktree. Before diagnosing the prior failure, consult relevant memories and git history. Keep CUDA tests/native builds serialized and do not overlap GPU/native work. Plan the next diagnostic before running it; do not change memory-pressure settings speculatively.
+
+The branch `ag_new_release_updates_2` was fetched, normally merged with `origin/ag_new_release_updates_2`, and pushed. Merge commit: `05e07865efd4f3c9c2234ec7b0fd9542ee4dca4f`. The merge had one conflict in `kompile.project.json`; it was resolved by retaining the newer local `updatedAt` timestamp. Push succeeded. Subsequent Kompile auto-commit advanced local HEAD to `b21aeae478`; current status is one commit ahead of origin, with `handoff-dsp.md` untracked. Do not push blindly; inspect that auto-commit and the final handoff diff in the fresh session.
+
+## Regression under investigation
+
+Test: `platform-tests/src/test/java/org/eclipse/deeplearning4j/nd4j/autodiff/samediff/DspMultiGpuShardingTest.java`, `testCaptureRehomePreservesExactInPlaceAlias()` (currently around lines 1692–1822).
+
+The graph is a placeholder `x`, `producer = x.add("producer", 1.0f)`, then `relu("out", producer, 0.0)`. The DSP plan places both ops initially on the source GPU. It expects input value 1 to produce output value 2 during the initial slot-by-slot warmup; only after warmup does it apply memory pressure to force capture admission/rehome. The regression also asserts exact in-place aliasing for ReLU and eventual captured replay on the candidate GPU.
+
+## Evidence from prior runs
+
+- Latest run: Kompile process `proc-017`, output at `/home/agibsonccc/Documents/GitHub/kompile/.kompile/process-output/f6201f87-2ca7-4123-bab0-090bc5efeda3/proc-017.log`; Compute Sanitizer output at `/tmp/compute_sanitizer_20260925_151702.log`.
+- `proc-017` failed at the warmup assertion (test line 1757): expected `2.0`, received `1.0`. This is **before** pressure allocation and capture/rehome. Sanitizer reported `ERROR SUMMARY: 0 errors` for the execution it observed; it did not validate the capture/rehome path.
+- The test’s preceding host-side check observed `input.getFloat(0) == 1.0`. Diagnostics show the two planned ops are `add_scalar` and `relu`; ReLU's input and output pointers are the same during warmup. Device-value sampling was disabled (`[device-values-disabled]`), so the log does not tell us the scalar-add output's actual value.
+- Earlier, separate non-sanitized runs reached farther: `proc-010` reported a 268,435,464-byte CUDA allocation failure followed by cuBLAS status 1; `proc-013` reported cuBLAS handle creation status 1 after warmup; `proc-016` logged successful capture sealing and then an illegal CUDA memory access at execution cleanup. Do not conflate these with `proc-017`: it never attempted capture/rehome.
+- `proc-014` successfully installed `platform-tests`, but that install **predates** the upstream merge. `proc-005`'s native install also predates the merge. The merge changed Java/native sources and platform-test build configuration, so neither install establishes that post-merge artifacts are current.
+
+## Source facts and a concrete readback lead
+
+- `SDVariable.add(String, double)` creates `ScalarAdd`; `SDMath.add(SDVariable, double)` does the same. `DynamicShapePlanCompiler` copies `BaseScalarOp.scalar()` into `tArgs[0]`. Native `LegacyScalarOp::validateAndExecute` reads `T_ARG(0)`. This is the intended scalar-add contract, but does not prove what value reached the executed kernel.
+- Native CUDA output delivery `platformGetOutputForDevice0` creates a detached delivery buffer on device 0 and copies the plan output from device 1 to it. It synchronizes the producer stream, then the device-0 destination copy stream before returning the delivery array.
+- In `proc-017`, native diagnostics log delivery buffer `db=0x7fa3ad954720`, initially allocated on device 0 at `0x179c015200`, then later log that same DataBuffer migrating to device 1 at `0x2390031800` after native execution returned successfully.
+- The merged source maps that event more specifically: after native execution, Java `DynamicShapePlanExecutor` calls `getOpaqueNDArraySpecialBuffer(opaqueOut)` to obtain the output pointer. The JNI helper delegates to `NDArray::specialBuffer()`, which calls `syncToDevice()` if the DataBuffer's actual device differs from the current device. `syncToDevice()` migrates the DataBuffer to current affinity. Thus the observed device-0-to-device-1 migration is consistent with Java output extraction immediately after the native delivery copy, before Java's separate `copyBuffer` readback. This establishes a concrete migration-at-readback path; it still does **not** establish that the migration corrupts values or caused the scalar warmup mismatch.
+- The Java fresh-output path wraps that extracted pointer in an external DataBuffer, allocates a Java-owned result with the native shape/strides, calls `copyBuffer`, and commits before returning. Instrument the source and destination pointer/device plus values at these boundaries before attributing the mismatch.
+- Diagnostic value sampling in native CUDA is explicitly disabled (`dspDumpSlotValues` returns `[device-values-disabled]`). Existing full VERIFY probes call `probePhaseCompileOutputs` before/after selected warmup slots and may force host synchronization; inspect their exact behavior and configure only a single relevant slot if choosing that route. Alternatively, use a narrowly scoped readback trace on the delivery/DataBuffer migration path.
+
+## Next-session guardrails and next action
+
+1. Check current tree/branch and coordination state. At handoff update, local branch is one commit ahead of origin and this file is untracked; inspect both before deciding whether to commit/push.
+2. The current merged Java/native output-delivery and scalar-op paths have now been read (the locations summarized above); verify they have not changed before relying on the observations.
+3. Design a bounded diagnostic that distinguishes native scalar-op output from cross-device output/readback. Inspect any proposed `VERIFY`/trace probe first: some probes force host synchronization and can perturb stream timing.
+4. Before running `platform-tests`, install the relevant post-merge Java artifacts; before relying on CUDA DSP behavior, build/install the relevant post-merge native artifacts as needed. Use `/home/agibsonccc/dev-apps/mvn/bin/mvn`; do not use `clean` for iterative native builds. Serialize the install/build and single GPU run.
+5. The first validation target is the warmup parity failure. Only after that passes should a run be used to evaluate pressure admission, capture, rehome, and replay. Report each stage's evidence separately; do not claim the sanitizer result validates capture/rehome.
+
+No tests or builds were run after the merge or during this continued source inspection.
