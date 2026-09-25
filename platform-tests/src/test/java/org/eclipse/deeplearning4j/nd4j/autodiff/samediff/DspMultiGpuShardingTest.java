@@ -1740,7 +1740,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
 
             int multiplyStep = -1;
             for (int i = 0; i < plan.getSlots().length; i++) {
-                if ("multiply".equals(plan.getSlots()[i].getOpName())) multiplyStep = i;
+                if ("mul_scalar".equals(plan.getSlots()[i].getOpName())) multiplyStep = i;
             }
             assertTrue(multiplyStep >= 0, "test graph must contain a multiply slot");
             DspPlanAssertions.assertSlotHasTrait(graph, multiplyStep, 4,
