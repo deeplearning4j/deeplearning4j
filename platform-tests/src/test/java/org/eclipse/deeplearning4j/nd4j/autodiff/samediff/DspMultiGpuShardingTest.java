@@ -1728,7 +1728,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             graph.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
             SDVariable x = graph.placeHolder("x", DataType.FLOAT, 1, elements);
             SDVariable producer = x.add("producer", 1.0f);
-            producer.mul("out", 2.0f);
+            graph.nn.relu("out", producer, 0.0);
             DynamicShapePlan plan = graph.compileDynamicShapePlan("out");
             for (var slot : plan.getSlots()) slot.setTargetDeviceId(sourceDevice);
             graph.compileNativeDynamicShapePlan("out");
@@ -1738,11 +1738,11 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             assertEquals(sourceDevice, nativeOps.dbDeviceId(input.data().opaqueBuffer()),
                     "input must be resident on the initially assigned source device");
 
-            int multiplyStep = -1;
+            int inPlaceStep = -1;
             for (int i = 0; i < plan.getSlots().length; i++) {
-                if ("mul_scalar".equals(plan.getSlots()[i].getOpName())) multiplyStep = i;
+                if ("relu".equals(plan.getSlots()[i].getOpName())) inPlaceStep = i;
             }
-            assertTrue(multiplyStep >= 0, "test graph must contain a multiply slot");
+            assertTrue(inPlaceStep >= 0, "test graph must contain a relu slot");
 
             // The first call is the documented initial slot-by-slot warmup.
             // Apply pressure only after the producer has a real source allocation,
@@ -1750,9 +1750,9 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             input.assign(1.0);
             Nd4j.getExecutioner().commit();
             Map<String, INDArray> warmup = graph.outputDirect(Map.of("x", input), "out");
-            assertEquals(4.0f, warmup.get("out").getFloat(0), 0.0f);
-            DspPlanAssertions.assertSlotHasTrait(graph, multiplyStep, 4,
-                    "multiply must use in-place fusion for this regression");
+            assertEquals(2.0f, warmup.get("out").getFloat(0), 0.0f);
+            DspPlanAssertions.assertSlotHasTrait(graph, inPlaceStep, 4,
+                    "relu must use in-place fusion for this regression");
             assertEquals(0, DspPlanAssertions.getTotalGraphReplays(graph),
                     "the initial warmup must not capture before pressure is applied");
 
@@ -1777,9 +1777,9 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 input.assign(iteration);
                 Nd4j.getExecutioner().commit();
                 Map<String, INDArray> output = graph.outputDirect(Map.of("x", input), "out");
-                assertEquals(2.0f * (iteration + 1), output.get("out").getFloat(0), 0.0f,
+                assertEquals(iteration + 1.0f, output.get("out").getFloat(0), 0.0f,
                         "capture/replay parity at iteration " + iteration);
-                assertEquals(2.0f * (iteration + 1),
+                assertEquals(iteration + 1.0f,
                         output.get("out").getFloat(elements - 1), 0.0f,
                         "capture/replay tail parity at iteration " + iteration);
             }
