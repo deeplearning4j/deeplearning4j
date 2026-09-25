@@ -20,14 +20,46 @@
 // Created by raver119 on 16.10.2017.
 //
 #include <array/NDArrayFactory.h>
+#include <execution/AffinityManager.h>
 #include <ops/declarable/LegacyScalarOp.h>
 
 #include <ops/declarable/OpRegistrator.h>
 #include <legacy/NativeOpExecutioner.h>
 
+#include <cstring>
+
 namespace sd {
 namespace ops {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+namespace {
+// The cached scalar outlives the device it was built on: a DSP capture rehome
+// warms a plan up on one device and captures it on another, and a kernel that
+// reads a non-peer device's buffer faults (err700). Outside capture migrate()
+// moves the cached buffer in place. During capture migrate() declines so the
+// buffer never moves under recorded work; the call then gets a replica built
+// on the current device, whose capture allocation and H2D staging are
+// graph-owned and stay valid for every replay.
+NDArray *scalarOperandOnCurrentDevice(NDArray *cached, LaunchContext *context) {
+  const int device = AffinityManager::currentDeviceId();
+  if (cached->dataBuffer()->deviceId() == device) return cached;
+  cached->syncToDevice();
+  if (cached->dataBuffer()->deviceId() == device) return cached;
+
+  if (!cached->isActualOnHostSide())
+    THROW_EXCEPTION("LegacyScalarOp: cached scalar is resident on another device and its host copy is stale");
+  auto replica = new NDArray(cached->dataType(), context);
+  std::memcpy(replica->buffer(), cached->buffer(), cached->sizeOfT());
+  replica->tickWriteHost();
+  replica->syncToDevice();
+  return replica;
+}
+
+struct ScalarReplica {
+  NDArray *array;
+  ~ScalarReplica() { delete array; }
+};
+}  // namespace
+
 LegacyScalarOp::LegacyScalarOp() : LegacyOp(1) {
   this->getOpDescriptor()->allowInplace(true);
   this->getOpDescriptor()->addTraits(
@@ -40,7 +72,9 @@ LegacyScalarOp::LegacyScalarOp(int opNum) : LegacyOp(1, opNum) {
       OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
-LegacyOp *LegacyScalarOp::clone() { return new LegacyScalarOp(this->_opNum, *this->_scalar); }
+LegacyOp *LegacyScalarOp::clone() {
+  return _scalar == nullptr ? new LegacyScalarOp(this->_opNum) : new LegacyScalarOp(this->_opNum, *this->_scalar);
+}
 
 LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar) : LegacyOp(1, opNum) {
   this->getOpDescriptor()->allowInplace(true);
@@ -95,24 +129,33 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
       _cachedScalarType = xDt;
     }
 
-    NDArray::prepareSpecialUse({z}, {x, _scalar});
+    auto scalar = scalarOperandOnCurrentDevice(_scalar, block.launchContext());
+    ScalarReplica replica{scalar == _scalar ? nullptr : scalar};
+
+    NDArray::prepareSpecialUse({z}, {x, scalar});
 
     NativeOpExecutioner::execScalar(
         block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(),
-        _scalar->specialBuffer(), _scalar->specialShapeInfo(),
+        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), scalar->buffer(), scalar->shapeInfo(),
+        scalar->specialBuffer(), scalar->specialShapeInfo(),
         extras.length() > 1 ? extras.argumentsAsT(z->dataType(), 1) : nullptr);
 
-    NDArray::registerSpecialUse({z}, {x, _scalar});
+    NDArray::registerSpecialUse({z}, {x, scalar});
   } else {
-    NDArray::prepareSpecialUse({z}, {x, _scalar});
+    REQUIRE_TRUE(_scalar != nullptr, 0,
+                 "LegacyScalarOp: no scalar value provided (neither via tArgs, input[1], nor pre-set _scalar). "
+                 "OpNum=%d. This typically means the DSP plan compiler did not extract the scalar value.", opNum);
+    auto scalar = scalarOperandOnCurrentDevice(_scalar, block.launchContext());
+    ScalarReplica replica{scalar == _scalar ? nullptr : scalar};
+
+    NDArray::prepareSpecialUse({z}, {x, scalar});
 
     NativeOpExecutioner::execScalar(
         block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(),
-        _scalar->specialBuffer(), _scalar->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
+        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), scalar->buffer(), scalar->shapeInfo(),
+        scalar->specialBuffer(), scalar->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
 
-    NDArray::registerSpecialUse({z}, {x, _scalar});
+    NDArray::registerSpecialUse({z}, {x, scalar});
   }
 
 
