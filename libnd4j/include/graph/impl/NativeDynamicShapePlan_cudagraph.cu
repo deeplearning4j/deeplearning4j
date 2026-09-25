@@ -2830,9 +2830,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         NDArray* parent = migrated.aliasParentOutputSlotIdx >= 0 &&
                           migrated.aliasParentOutputSlotIdx < totalOutputSlots_
             ? outputSlots_[migrated.aliasParentOutputSlotIdx] : nullptr;
-        NDArray* parent = migrated.aliasParentOutputSlotIdx >= 0 &&
-                          migrated.aliasParentOutputSlotIdx < totalOutputSlots_
-            ? outputSlots_[migrated.aliasParentOutputSlotIdx] : nullptr;
         DataBuffer* parentBuffer = parent != nullptr ? parent->dataBuffer() : nullptr;
         DataBuffer* capturedBuffer = capturedOutput != nullptr
             ? capturedOutput->dataBuffer() : nullptr;
