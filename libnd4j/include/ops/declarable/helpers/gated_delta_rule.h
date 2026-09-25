@@ -30,6 +30,19 @@ SD_LIB_HIDDEN void gatedDeltaRule(LaunchContext* context,
                                    NDArray* beta, NDArray* gate, NDArray* stateIn,
                                    NDArray* actualLen, NDArray* output, NDArray* stateOut);
 
+/**
+ * Same recurrence as gatedDeltaRule, additionally capturing the state AFTER
+ * each consumed input row t into prefixOut. prefixOut layout is time-leading
+ * C-order [W, B, H, D_k, D_v]; slot t must remain exactly the working state
+ * snapshot at that boundary (no rounded re-feeding). W = prefixOut->sizeAt(0)
+ * and only t < min(actualLen, L) slots are written. May be null.
+ */
+SD_LIB_HIDDEN void gatedDeltaRuleWithPrefix(LaunchContext* context,
+                                            NDArray* Q, NDArray* K, NDArray* V,
+                                            NDArray* beta, NDArray* gate, NDArray* stateIn,
+                                            NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                                            NDArray* prefixOut);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

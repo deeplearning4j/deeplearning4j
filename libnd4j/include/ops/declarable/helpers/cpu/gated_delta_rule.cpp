@@ -63,7 +63,8 @@ static SD_INLINE AccT gatedDeltaReproducibleDot(
 template <typename T>
 static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                              NDArray* beta, NDArray* gate, NDArray* stateIn,
-                             NDArray* actualLen, NDArray* output, NDArray* stateOut) {
+                             NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                             NDArray* prefixOut) {
     using AccT = typename simdOps::AggregateType<T>::type;
 
     const auto B = Q->sizeAt(0);
@@ -77,6 +78,8 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
         if (effectiveLen < 0) effectiveLen = 0;
         if (effectiveLen > L) effectiveLen = L;
     }
+    T* prefixBuf = prefixOut != nullptr ? prefixOut->bufferAsT<T>() : nullptr;
+    const LongType prefixW = prefixOut != nullptr ? prefixOut->sizeAt(0) : 0;
 
     const T* qBuf = Q->bufferAsT<T>();
     const T* kBuf = K->bufferAsT<T>();
@@ -169,6 +172,16 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
                 const LongType qBase = b * qS0 + t * qS1 + h * qS2;
                 for (LongType dk = 0; dk < D_k; ++dk)
                     qLocal[dk] = static_cast<AccT>(qBuf[qBase + dk * qS3]);
+
+                if (prefixBuf != nullptr && t < prefixW && t < effectiveLen) {
+                    // Checkpoint the unrounded working state AFTER consuming input t.
+                    // stateBuf is transposed [B,H,D_v,D_k]; prefixOut is [W,B,H,D_k,D_v].
+                    T* pBase = prefixBuf + ((t * B + b) * H + h) * D_k * D_v;
+                    for (LongType dk = 0; dk < D_k; ++dk)
+                        for (LongType dv = 0; dv < D_v; ++dv)
+                            pBase[dk * D_v + dv] =
+                                static_cast<T>(stateBuf[((b * H + h) * D_v + dv) * D_k + dk]);
+                }
 
                 for (LongType dv = 0; dv < D_v; ++dv) {
                     AccT* sRow = sBase + dv * D_k;
@@ -488,26 +501,91 @@ static void gatedDeltaRuleChunked_(LaunchContext* context, NDArray* Q, NDArray* 
 void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                      NDArray* beta, NDArray* gate, NDArray* stateIn,
                      NDArray* actualLen, NDArray* output, NDArray* stateOut) {
+    gatedDeltaRuleWithPrefix(context, Q, K, V, beta, gate, stateIn, actualLen,
+                             output, stateOut, nullptr);
+}
+
+void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
+                              NDArray* beta, NDArray* gate, NDArray* stateIn,
+                              NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                              NDArray* prefixOut) {
     if (Q->sizeAt(3) > GDR_MAX_HEAD_DIM) {
         THROW_EXCEPTION("gatedDeltaRule: key head dimension exceeds supported maximum");
     }
     NDArray::preparePrimaryUse({output, stateOut}, {Q, K, V, beta, gate, actualLen});
     if (stateIn != nullptr) NDArray::preparePrimaryUse({}, {stateIn});
+    if (prefixOut != nullptr) NDArray::preparePrimaryUse({prefixOut}, {});
+
+    // Range-overlap check for two byte intervals [aStart, aStart+aBytes) and
+    // [bStart, bStart+bBytes). Equal start pointers are a special case.
+    auto rangesOverlap = [](const void* aStart, size_t aBytes,
+                            const void* bStart, size_t bBytes) {
+        const auto a = reinterpret_cast<std::uintptr_t>(aStart);
+        const auto b = reinterpret_cast<std::uintptr_t>(bStart);
+        return a < b + bBytes && b < a + aBytes;
+    };
+    const size_t stateBytes =
+        static_cast<size_t>(Q->sizeAt(0)) * Q->sizeAt(2) * Q->sizeAt(3) * V->sizeAt(3)
+            * stateOut->sizeOfT();
+    const size_t outputBytes = static_cast<size_t>(output->lengthOf()) * output->sizeOfT();
+    // Prefix layout: time-leading flat [W, B, H, D_k, D_v] C-order; slot t is the
+    // state after consuming inputs 0..t, so capacity W >= L is required.
+    if (prefixOut != nullptr) {
+        if (prefixOut->rankOf() != 5) {
+            THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut must have rank 5 [W,B,H,D_k,D_v]");
+        }
+        const size_t slotBytes = static_cast<size_t>(stateOut->lengthOf()) * stateOut->sizeOfT();
+        if (prefixOut->sizeAt(1) != Q->sizeAt(0) || prefixOut->sizeAt(2) != Q->sizeAt(2)
+                || prefixOut->sizeAt(3) != Q->sizeAt(3) || prefixOut->sizeAt(4) != V->sizeAt(3)
+                || prefixOut->sizeAt(0) < Q->sizeAt(1)
+                || static_cast<size_t>(prefixOut->lengthOf()) * prefixOut->sizeOfT()
+                    < slotBytes * static_cast<size_t>(Q->sizeAt(1))) {
+            THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut capacity/layout mismatch for [W,B,H,D_k,D_v]");
+        }
+        const size_t prefixBytes = static_cast<size_t>(prefixOut->lengthOf()) * prefixOut->sizeOfT();
+        // Companion storage contract (range-aware): the prefix snapshot must not
+        // overlap the committed state, the committed stateIn, or the activations
+        // when capture is enabled.
+        const bool aliasesStateIn = stateIn != nullptr
+            && rangesOverlap(stateIn->buffer(), stateBytes, prefixOut->buffer(), prefixBytes);
+        const bool aliasesStateOut =
+            rangesOverlap(stateOut->buffer(), stateBytes, prefixOut->buffer(), prefixBytes);
+        const bool aliasesOutput =
+            rangesOverlap(output->buffer(), outputBytes, prefixOut->buffer(), prefixBytes);
+        if (aliasesStateIn || aliasesStateOut || aliasesOutput) {
+            THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut must not overlap stateIn, stateOut, or output");
+        }
+    } else if (stateIn != nullptr) {
+        // Legacy path: the long-standing direct-state fast path already validates
+        // stateIn/stateOut aliasing in the backend selector; equal-buffer reuse
+        // remains legal here. Capture mode requires strict separation instead.
+        if (rangesOverlap(stateIn->buffer(), stateBytes,
+                          stateOut->buffer(), stateBytes)) {
+            const bool identical = stateIn->buffer() == stateOut->buffer();
+            if (!identical) {
+                THROW_EXCEPTION("gatedDeltaRule: stateIn partially overlaps stateOut");
+            }
+        }
+    }
 
     const auto L   = Q->sizeAt(1);
     // Chunked path: L >= C=64, no actualLen masking (chunked doesn't support partial masking)
     const bool useChunked = (L >= GDN_CHUNK_CPU) && (actualLen == nullptr);
+    if (prefixOut != nullptr && useChunked) {
+        THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefix capture requires the sequential path; pass actualLen");
+    }
 
     if (useChunked) {
         BUILD_SINGLE_SELECTOR(Q->dataType(), gatedDeltaRuleChunked_,
             (context, Q, K, V, beta, gate, stateIn, output, stateOut), SD_FLOAT_TYPES);
     } else {
         BUILD_SINGLE_SELECTOR(Q->dataType(), gatedDeltaRule_,
-            (context, Q, K, V, beta, gate, stateIn, actualLen, output, stateOut), SD_FLOAT_TYPES);
+            (context, Q, K, V, beta, gate, stateIn, actualLen, output, stateOut, prefixOut), SD_FLOAT_TYPES);
     }
 
     NDArray::registerPrimaryUse({output, stateOut}, {Q, K, V, beta, gate, actualLen});
     if (stateIn != nullptr) NDArray::registerPrimaryUse({}, {stateIn});
+    if (prefixOut != nullptr) NDArray::registerPrimaryUse({prefixOut}, {});
 }
 
 }  // namespace helpers

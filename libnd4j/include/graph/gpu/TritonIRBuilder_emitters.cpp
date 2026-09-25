@@ -1275,14 +1275,24 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
     // The RMS norm computation is identical to rms_norm.
     mlir::Value squared = builder.create<mlir::arith::MulFOp>(loc, input, input);
     mlir::Value sumSquared;
-    // Match rmsBlockReduceSum exactly for the one-value-per-thread kernels:
-    // each warp pairs lower and upper halves at offsets 16,8,4,2,1, then
-    // warp 0 applies the same tree to the warp totals. Generic tt.reduce is
-    // free to reassociate and differs by one ULP for production decode rows.
-    bool nativeWarpTree = tensorTy.getRank() == 1 && axis == 0 &&
-                          tensorTy.getShape()[0] == reductionSize &&
-                          reductionSize >= 32 && reductionSize <= 1024 &&
-                          (reductionSize & (reductionSize - 1)) == 0;
+    // Replicate rmsNormKernel + device::blockReduceSum association EXACTLY.
+    // Native geometry (rmsLaunchDims default): blockDim=256, so each thread
+    // left-folds its stride-256 positions under nvcc fmad contraction —
+    //   s = fma(x[t+768],x[t+768], fma(x[t+512],x[t+512],
+    //         fma(x[t+256],x[t+256], x[t]*x[t])))
+    // — then warpReduceSum pairs (lane, lane+16/8/4/2/1) within each of the 8
+    // warps, and the 8 warp totals combine as ((w0+w4)+(w2+w6)) +
+    // ((w1+w5)+(w3+w7)) (the shuffle-16/8 stages add exact zeros).
+    // Generic tt.reduce reassociates freely and differs by 1 ULP (reproduced:
+    // prefill rms_norm width 1024, element 12289, row 12 position 1).
+    //
+    // The mapping is pinned in VALUES via reshape/transpose/split with
+    // allowReorder=false, so Triton's launch layout (e.g. 16 warps vs native
+    // 8) cannot change the arithmetic. Padded tail rows/lanes are exact
+    // zero no-ops in the fold, matching native threads beyond `cols`.
+    int64_t rowLen = tensorTy.getRank() > 0 ? tensorTy.getShape()[tensorTy.getRank() - 1] : 0;
+    bool nativeWarpTree = tensorTy.getRank() == 1 && rowLen >= 32 &&
+                          (rowLen & (rowLen - 1)) == 0 && reductionSize <= rowLen;
     if (nativeWarpTree) {
       auto roundedBinary = [&](mlir::Value lhs, mlir::Value rhs,
                                const char* symbol) -> mlir::Value {
@@ -1290,13 +1300,49 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
             loc, lhs.getType(), mlir::ValueRange{lhs, rhs},
             /*libname=*/"", /*libpath=*/"", symbol, /*pure=*/true).getResult();
       };
-      // These intrinsics require an FP32 rounding boundary. In particular,
-      // __nv_fmul_rn prevents LLVM from contracting x*x + y*y into an FMA.
-      squared = roundedBinary(input, input, "__nv_fmul_rn");
-      int64_t numWarps = reductionSize / 32;
-      mlir::Value partials = builder.create<mlir::triton::ReshapeOp>(
+      auto fusedFma = [&](mlir::Value a, mlir::Value b, mlir::Value c) -> mlir::Value {
+        return builder.create<mlir::triton::ExternElementwiseOp>(
+            loc, a.getType(), mlir::ValueRange{a, b, c},
+            /*libname=*/"", /*libpath=*/"", "__nv_fmaf_rn", /*pure=*/true).getResult();
+      };
+      // ── Stage 1: stride-256 thread-local left fold (fmad-contracted) ──
+      int64_t lanes = std::min<int64_t>(rowLen, 256);
+      int64_t iters = rowLen / lanes;  // power of two; 1 when rowLen <= 256
+      auto rowPairType = mlir::RankedTensorType::get({iters, lanes}, elemType);
+      auto rows2d = builder.create<mlir::triton::ReshapeOp>(
+          loc, rowPairType, input, /*allowReorder=*/false);
+      // Peel rows 0..iters-1 (row-major [k][t] = x[t + k*lanes]) by
+      // recursively splitting the leading axis; 2 goes to the END before
+      // SplitOp (it splits the last dimension).
+      std::vector<mlir::Value> frontier;
+      frontier.push_back(rows2d);
+      int64_t span = iters;
+      while (span > 1) {
+        std::vector<mlir::Value> next;
+        int64_t half = span / 2;
+        for (const auto& v : frontier) {
+          auto shaped = builder.create<mlir::triton::ReshapeOp>(
+              loc, mlir::RankedTensorType::get({2, half, lanes}, elemType), v,
+              /*allowReorder=*/false);
+          auto order = builder.getDenseI32ArrayAttr({1, 2, 0});
+          auto transposed = builder.create<mlir::triton::TransOp>(loc, shaped, order);
+          auto split = builder.create<mlir::triton::SplitOp>(loc, transposed);
+          next.push_back(split.getResult(0));  // lower row block
+          next.push_back(split.getResult(1));  // upper row block
+        }
+        frontier = std::move(next);
+        span = half;
+      }
+      mlir::Value s = roundedBinary(frontier[0], frontier[0], "__nv_fmul_rn");
+      for (int64_t k = 1; k < iters; ++k) {
+        s = fusedFma(frontier[k], frontier[k], s);
+      }
+      mlir::Value partials = s;  // [lanes]
+      // ── Stage 2: warp-local pairing (shuffle-down 16,8,4,2,1) ──
+      int64_t numWarps = lanes / 32;
+      partials = builder.create<mlir::triton::ReshapeOp>(
           loc, mlir::RankedTensorType::get({numWarps, 32}, elemType),
-          squared, /*allowReorder=*/false);
+          partials, /*allowReorder=*/false);
       for (int64_t width = 32; width > 1; width /= 2) {
         auto paired = builder.create<mlir::triton::ReshapeOp>(
             loc, mlir::RankedTensorType::get({numWarps, 2, width / 2}, elemType),
@@ -1310,6 +1356,9 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
       partials = builder.create<mlir::triton::ReshapeOp>(
           loc, mlir::RankedTensorType::get({numWarps}, elemType),
           partials, /*allowReorder=*/false);
+      // ── Stage 3: cross-warp combine over the (<=8) warp totals ──
+      // Native runs warp 0's shuffle tree over 8 slots; absent warps add
+      // exact zeros, so the reduced-width tree below is bit-identical.
       for (int64_t width = numWarps; width > 1; width /= 2) {
         auto paired = builder.create<mlir::triton::ReshapeOp>(
             loc, mlir::RankedTensorType::get({2, width / 2}, elemType),

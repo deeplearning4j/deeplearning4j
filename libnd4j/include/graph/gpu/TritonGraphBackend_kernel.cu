@@ -553,6 +553,11 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
            compiled.numWarps * 32, compiled.blockY, compiled.blockZ,
            compiled.sharedMemBytes, compiled.numWarps, compiled.kernelFunction,
            compiled.globalScratchBytes);
+  // Live-launch arg values — pairs with NODE_AUDIT PARAM dumps for the same
+  // sub-kernel to prove baked-vs-live param identity across capture.
+  DSP_DIAG(EXECUTE, "LAUNCH ARGS: [%d-%d] nElements=%d useIndirectArgs=%d",
+           compiled.startSlot_, compiled.endSlot_, nElem32,
+           compiled.useIndirectArgs ? 1 : 0);
 
   // Build kernel args — either direct (each ptr is a separate arg) or indirect
   // (all ptrs packed into a device-side i64 array, kernel receives 1 pointer)
@@ -1125,6 +1130,84 @@ void TritonGraphBackend::recordKernelArgumentSubmission(CompiledKernel& kernel, 
   recordKernelArgumentSubmissionAfterCaptureCheck(kernel, stream);
 }
 
+// ALIAS_PUB probe: export sealed alias bindings for merged-replay
+// fingerprinting. Diagnostic only — reads cached metadata under the cache
+// mutex and allocates one small vector; no CUDA calls, no execution impact.
+std::vector<TritonGraphBackend::AliasFingerprint>
+TritonGraphBackend::getCapturedAliasBuffers(const GraphSegment& seg) const {
+  std::vector<AliasFingerprint> out;
+  std::lock_guard<std::mutex> lock(cacheMtx_);
+  for (const auto& entry : cache_) {
+    if (entry.first.segmentInstance != &seg ||
+        entry.first.shapeKey != seg.def.shapeKeyState.compiledShapeKey) continue;
+    for (const auto& kernel : entry.second.subKernels) {
+      if (!kernel.aliasBindingsCaptured) continue;
+      for (const auto& alias : kernel.aliasBindings) {
+        if (alias.origPtr == nullptr || alias.tempPtr == nullptr || alias.bytes == 0) continue;
+        out.push_back({alias.slotIdx, alias.bytes, alias.tempPtr, alias.origPtr});
+      }
+    }
+  }
+  return out;
+}
+
+// KERNEL_PUB probe (diagnostic, BUF_FP_RING=1): export the output-buffer
+// addresses for every compiled sub-kernel of this segment whose startSlot is
+// in [slotFilterStart, slotFilterEnd]. The caller fingerprints these buffers
+// before and after a merged-graph replay so the first sub-kernel whose
+// replay output differs from its capture-execution output can be named.
+// Reads only cached metadata under the cache mutex; no CUDA calls.
+std::vector<TritonGraphBackend::AliasFingerprint>
+TritonGraphBackend::getSubKernelOutputBuffers(const GraphSegment& seg,
+                                              NDArray** outputSlots,
+                                              int totalOutputSlots,
+                                              int slotFilterStart,
+                                              int slotFilterEnd) const {
+  std::vector<AliasFingerprint> out;
+  std::lock_guard<std::mutex> lock(cacheMtx_);
+  for (const auto& entry : cache_) {
+    if (entry.first.segmentInstance != &seg ||
+        entry.first.shapeKey != seg.def.shapeKeyState.compiledShapeKey) continue;
+    for (const auto& kernel : entry.second.subKernels) {
+      if (kernel.startSlot_ < slotFilterStart || kernel.startSlot_ > slotFilterEnd) continue;
+      for (const auto& arg : kernel.argSlotMapping) {
+        if (!arg.isOutput) continue;
+        int slotIdx = arg.slotIndex;
+        if (slotIdx < 0 || slotIdx >= totalOutputSlots) continue;
+        NDArray* arr = outputSlots[slotIdx];
+        if (arr == nullptr || arr->isEmpty()) continue;
+        auto* db = arr->dataBuffer();
+        if (db == nullptr) continue;
+        void* p = db->special();
+        if (p == nullptr) continue;
+        // One snapshot per slot: skip duplicates within this segment's kernels.
+        bool seen = false;
+        for (const auto& prev : out) seen |= (prev.slotIdx == slotIdx);
+        if (seen) continue;
+        size_t bytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
+        if (bytes == 0) continue;
+        out.push_back({slotIdx, bytes, p, p});
+      }
+    }
+  }
+  return out;
+}
+
+// DEVICE_TABLE_PUB probe: the device arg-table address of the subKernelIdx-th
+// compiled sub-kernel of `seg`. Diagnostic only — one cache lookup under the
+// cache mutex; no CUDA calls.
+void* TritonGraphBackend::getSubKernelArgTableDevice(const GraphSegment& seg,
+                                                     size_t subKernelIdx) const {
+  std::lock_guard<std::mutex> lock(cacheMtx_);
+  for (const auto& entry : cache_) {
+    if (entry.first.segmentInstance != &seg ||
+        entry.first.shapeKey != seg.def.shapeKeyState.compiledShapeKey) continue;
+    if (subKernelIdx >= entry.second.subKernels.size()) return nullptr;
+    return entry.second.subKernels[subKernelIdx].cachedArgTableDevice;
+  }
+  return nullptr;
+}
+
 void TritonGraphBackend::recordKernelArgumentSubmissionAfterCaptureCheck(
     CompiledKernel& kernel, void* stream) {
   auto cudaStream = reinterpret_cast<cudaStream_t>(stream);
@@ -1358,6 +1441,45 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
 
   bool useDirtyTracking = Environment::getInstance().tritonArgDirtyTracking()
                           && compiledSeg->hasDirtyTrackingInfo();
+  // ── SINGLE-RESOLUTION INVARIANT (fail-closed) ────────────────────────────
+  // The cache key above includes env-derived fields (compileAll, excludeOps,
+  // includeTypes, graphCapture) that can change mid-process (e.g.
+  // BenchmarkConfigApplier). If they flip after compile, lookups construct a
+  // DIFFERENT key and can resolve an ORPHAN entry — one whose arg tables are
+  // NOT the tables the captured graph's H2D/kernel nodes reference. Refreshing
+  // an orphan silently updates the wrong tables while the graph replays stale
+  // ones: capture-exec output differs from replay output by a deterministic
+  // kernel-specialization delta (observed: 1-ULP rms_norm drift on Qwen3.5
+  // MTP prepared-binding, Proc set dsp-prepared-binding/staging-tracks).
+  // Guard: the resolved entry must be the ONLY cache entry for this segment
+  // instance + shapeKey. Multiple entries = fragmented keys = ambiguous
+  // identity = refuse to refresh rather than update the wrong tables.
+  {
+    size_t instanceMatches = 0;
+    {
+      std::lock_guard<std::mutex> lock(cacheMtx_);
+      for (const auto& entry : cache_) {
+        if (entry.first.segmentInstance == &seg &&
+            entry.first.shapeKey == seg.def.shapeKeyState.compiledShapeKey)
+          instanceMatches++;
+      }
+    }
+    if (instanceMatches > 1) {
+      DSP_DIAG(EXECUTE,
+               "SINGLE_RESOLUTION_VIOLATION: %zu cache entries share segment instance %p "
+               "shapeKey=%lld seg[%d-%d] — arg-table refresh cannot identify the entry the "
+               "captured graph reads; failing closed instead of refreshing an orphan",
+               instanceMatches, (const void*)&seg,
+               (long long)seg.def.shapeKeyState.compiledShapeKey,
+               seg.def.startSlot, seg.def.endSlot);
+      auto* errorRef = LaunchContext::defaultContext()->errorReference();
+      errorRef->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+      errorRef->setErrorMessage(
+          "Triton arg-table refresh: " + std::to_string(instanceMatches) +
+          " cache entries for one segment instance (env-fragmented keys) [DSP status=KERNEL_FAILURE (50)]");
+      return Status::KERNEL_FAILURE;
+    }
+  }
   // specialBuffer() addresses are CPU-side pointer values set during allocation
   // (cudaMallocAsync returns pointers synchronously). No stream sync needed
   // to read them — actual data ordering is handled by graph launch on cudaStr.
@@ -1463,6 +1585,27 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
       } else {
         DSP_DIAG(EXECUTE, "REFRESH: subK[%zu] [%d-%d] %d/%d ptrs changed",
                  ki, subKernel.startSlot_, subKernel.endSlot_, changedPtrs, numBufferArgs);
+      }
+    }
+    // ROW_AUDIT (diagnostic, level=full, first audit per kernel): dump every
+    // pinned-table row value with its slot resolution, so live-launch ARG rows
+    // (SUBKERNEL ENTRY dump) can be compared row-by-row against what the
+    // replayed graph will actually consume via the baked H2D copies. Diverging
+    // rows here name the kernel-visible input that changed between live exec
+    // and replay.
+    if (DspDiagnostics::getInstance().getLevel() >= DSP_LEVEL_FULL &&
+        firstRowAuditSlots_.insert(subKernel.startSlot_).second) {
+      for (int i = 0; i < numBufferArgs; ++i) {
+        auto& am = subKernel.argSlotMapping[i];
+        if (am.slotIndex < 0) {
+          DSP_DIAG(EXECUTE, "ROW_AUDIT: subK[%zu] [%d-%d] arg[%d] ext#%d -> %p",
+                   ki, subKernel.startSlot_, subKernel.endSlot_, i,
+                   -(am.slotIndex + 1), reinterpret_cast<void*>(published[i]));
+        } else {
+          DSP_DIAG(EXECUTE, "ROW_AUDIT: subK[%zu] [%d-%d] arg[%d] slot%d -> %p",
+                   ki, subKernel.startSlot_, subKernel.endSlot_, i,
+                   am.slotIndex, reinterpret_cast<void*>(published[i]));
+        }
       }
     }
     if (isStaticByDirtyTracking) dirtySkippedCount++;

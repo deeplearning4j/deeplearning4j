@@ -21,17 +21,17 @@
     </parent>
 
     <!-- Generated bindings and dependencies are CUDA-version-specific. -->
-    <artifactId>nd4j-cuda-12.9-backend-common</artifactId>
+    <artifactId>nd4j-cuda-13.1-backend-common</artifactId>
     <packaging>jar</packaging>
-    <name>nd4j-cuda-12.9-backend-common</name>
+    <name>nd4j-cuda-13.1-backend-common</name>
 
     <properties>
         <skipPublishing>false</skipPublishing>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <module.name>nd4j.cuda.backend.common</module.name>
-        <cuda.version>12.9</cuda.version>
-        <cudnn.version>9.10</cudnn.version>
-        <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
+        <cuda.version>13.1</cuda.version>
+        <cudnn.version>9.19</cudnn.version>
+        <javacpp-presets.cuda.version>1.5.13</javacpp-presets.cuda.version>
         <!-- Lets controlled producers redirect classes without changing normal Maven output. -->
         <nd4j.cudaBackendCommon.outputDirectory>${project.build.directory}/classes</nd4j.cudaBackendCommon.outputDirectory>
     </properties>
@@ -50,12 +50,12 @@
              concrete backend and -platform artifacts, not this common JAR. -->
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-cuda-12.9-preset</artifactId>
+            <artifactId>nd4j-cuda-13.1-preset</artifactId>
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-cuda-12.9-preset</artifactId>
+                    <artifactId>nd4j-cuda-13.1-preset</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.bytedeco</groupId>
@@ -148,7 +148,7 @@
                     </dependency>
                     <dependency>
                         <groupId>org.eclipse.deeplearning4j</groupId>
-                        <artifactId>nd4j-cuda-12.9-preset</artifactId>
+                        <artifactId>nd4j-cuda-13.1-preset</artifactId>
                         <version>${project.version}</version>
                     </dependency>
                     <dependency>

@@ -1948,6 +1948,58 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Rebind named external-input slots to caller-owned arrays in one locked batch.
+     *
+     * <p>Session-ownership fix for recurrent (GDN/conv) state: the executor's
+     * {@code externalInputs} cache persists across executions AND across sessions
+     * on the same loaded graph. A newly opened session must explicitly rebind its
+     * own state buffers over the slots, or the plan can serve a previous session's
+     * array (in-flight or stale) as the state input — observed as cross-session
+     * token divergence on hybrid GDN models.</p>
+     *
+     * <p>Each entry rebinds slot {name → array} exactly like
+     * {@link #overrideExternalInput(int, INDArray)}: identity replacement in the
+     * ext-input array plus a retain of the refreshed array against the current
+     * native plan handle. Unknown names fail loudly — silent skips would leave a
+     * session reading another session's state.</p>
+     *
+     * @param arraysByName external input variable name → session-owned array
+     */
+    public void overrideExternalInputs(Map<String, INDArray> arraysByName) {
+        if (arraysByName == null || arraysByName.isEmpty()) return;
+        nativeExecLock.lock();
+        try {
+            if (activeNativeBinding != null)
+                throw new IllegalStateException("Complete binding use before rebinding inputs");
+            invalidateCompletedExecution();
+            if (externalInputs == null) {
+                throw new IllegalStateException("overrideExternalInputs: no external inputs resolved for the current plan");
+            }
+            boolean changed = false;
+            for (Map.Entry<String, INDArray> e : arraysByName.entrySet()) {
+                int extIdx = findExternalInputIndex(e.getKey());
+                if (extIdx < 0) {
+                    throw new IllegalStateException(
+                            "overrideExternalInputs: no external input named '" + e.getKey()
+                                    + "' in the current plan");
+                }
+                INDArray arr = e.getValue();
+                if (arr == null || arr.wasClosed()) {
+                    throw new IllegalStateException(
+                            "overrideExternalInputs: closed/null array for '" + e.getKey() + "'");
+                }
+                externalInputs[extIdx] = arr;
+                changed = true;
+            }
+            if (changed && nativePlanHandle != null && !nativePlanHandle.isNull()) {
+                retainExternalInputsForPlan(nativePlanHandle.address(), externalInputs);
+            }
+        } finally {
+            nativeExecLock.unlock();
+        }
+    }
+
+    /**
      * Freeze shapes on the native plan, enabling CUDA graph capture and buffer reuse.
      * When frozen, shape inference and cache clearing are skipped between executions.
      * Use during static KV decode where all external input shapes are guaranteed constant.

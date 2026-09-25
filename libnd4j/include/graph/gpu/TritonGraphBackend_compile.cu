@@ -1806,6 +1806,33 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   CompiledSegment* installedSeg = nullptr;
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
+    // ── SINGLE-RESOLUTION INVARIANT (fail-closed) ────────────────────────
+    // The cache key includes env-derived fields (compileAll, excludeOps,
+    // includeTypes, graphCapture) that can change mid-process (e.g.
+    // BenchmarkConfigApplier). If they flip after an earlier compile of the
+    // SAME segment instance + shapeKey, this insert would create a SECOND
+    // entry; later lookups constructing a different key combination would
+    // resolve an ORPHAN entry whose arg tables are not the tables the
+    // captured graph reads (observed as deterministic replay-vs-capture
+    // divergence). Refuse to create the duplicate: an existing entry for the
+    // same instance+shapeKey is authoritative — reuse it instead.
+    for (auto it = cache_.begin(); it != cache_.end(); ++it) {
+      if (it->first.segmentInstance != &seg ||
+          it->first.shapeKey != seg.def.shapeKeyState.compiledShapeKey) continue;
+      if (it->first.deviceId == key.deviceId &&
+          it->first.segInternalDtypeHash == key.segInternalDtypeHash) {
+        DSP_DIAG(COMPILE,
+                 "SINGLE_RESOLUTION: reusing existing cache entry for segment instance %p "
+                 "shapeKey=%lld seg[%d-%d] (env fields differed but instance identity wins)",
+                 (const void*)&seg, (long long)seg.def.shapeKeyState.compiledShapeKey,
+                 seg.def.startSlot, seg.def.endSlot);
+        lastCompilationAudit_ = it->second.audit;
+        totalCacheHits_++;
+        return true;  // existing entry is authoritative; drop the recompile
+      }
+      // Same instance+shapeKey but different device or dtype: distinct kernel,
+      // keep both (they are genuinely different compilations).
+    }
     failedCache_.erase(key);
     cache_[key] = std::move(compiledSeg);
     installedSeg = &cache_[key];

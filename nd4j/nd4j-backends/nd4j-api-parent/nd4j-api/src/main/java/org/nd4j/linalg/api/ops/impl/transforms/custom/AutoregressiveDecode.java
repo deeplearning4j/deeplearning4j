@@ -1027,6 +1027,117 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     private static final long MTP_REPAIR_TRAILER_MARKER = 0x4D545052L;
     /** Optional trailer marker for the fixed-width B=1 repair plan. */
     private static final long MTP_BATCH_REPAIR_TRAILER_MARKER = 0x4D545042L;
+    /** Optional trailer marker for accepted-prefix checkpoint capture (GDN/conv companions). */
+    private static final long MTP_PREFIX_TRAILER_MARKER = 0x4D545050L;
+
+    /** True once the prefix-select trailer has been appended; it must be the LAST trailer. */
+    private boolean prefixTrailerAttached = false;
+
+    /**
+     * Attach accepted-prefix checkpoint capture metadata for the verification
+     * graph's recurrent companions.
+     *
+     * <p>mode: 0=off (NO trailer is appended at all), 1=shadow (capture +
+     * independent comparison against legacy recovery), 2=select (controller
+     * commits checkpoint[consumed-1]; ordinary partial acceptance requires zero
+     * full-target reruns).</p>
+     *
+     * <p>Canonical wire layout, N=G+C total layers:</p>
+     * <pre>
+     *   magic (0x4D545050)
+     *   mode
+     *   G
+     *   C
+     *   G state input indices
+     *   G ordinary state output indices
+     *   C state input indices
+     *   C ordinary state output indices
+     *   G prefix output indices
+     *   C prefix output indices
+     * </pre>
+     * Total words = 4 + 3*N. prefixOutputIndices is the COMBINED prefix list in
+     * GDN-first then conv order (packet 04 supplies it paired correctly); it is
+     * serialized as G prefix entries followed by C prefix entries. Ordinary
+     * state-output indices and prefix indices are DISTINCT arrays with distinct
+     * meanings - never reinterpret one as the other.
+     *
+     * <p>The prefix trailer must be the LAST attachment: any scalar-target or
+     * repair attachment after it is rejected, and duplicate prefix attachment is
+     * rejected.</p>
+     */
+    public AutoregressiveDecode withMtpPrefixSelect(
+            int mode,
+            int[] gdnStateInputIndices, int[] gdnStateOutputIndices,
+            int[] convStateInputIndices, int[] convStateOutputIndices,
+            int[] prefixOutputIndices) {
+        if (mode != 0 && mode != 1 && mode != 2) {
+            throw new IllegalArgumentException("prefix select mode must be 0, 1, or 2");
+        }
+        if (mode == 1) {
+            // Packet 08: shadow is a COMPARISON transaction, not a capture-only mode
+            // value. The comparison is not implemented, so mode 1 is rejected here
+            // rather than silently behaving as capture-only while claiming validation.
+            throw new IllegalArgumentException(
+                    "prefix select mode 1 (shadow) is unsupported: the checkpoint-vs-reference "
+                    + "comparison transaction is not implemented. Use mode 0 (off) or 2 (select).");
+        }
+        if (prefixTrailerAttached) {
+            throw new IllegalArgumentException("prefix select trailer already attached");
+        }
+        if (mode == 0) {
+            // OFF is represented by NO trailer: return without appending any
+            // words and without touching null/absent prefix arrays.
+            return this;
+        }
+        if (gdnStateInputIndices == null || gdnStateOutputIndices == null
+                || convStateInputIndices == null || convStateOutputIndices == null
+                || prefixOutputIndices == null) {
+            throw new IllegalArgumentException("prefix select requires the recurrent and prefix index arrays");
+        }
+        if (gdnStateInputIndices.length != gdnStateOutputIndices.length
+                || convStateInputIndices.length != convStateOutputIndices.length) {
+            throw new IllegalArgumentException("GDN/conv input/output index arrays must be paired");
+        }
+        int g = gdnStateInputIndices.length;
+        int c = convStateInputIndices.length;
+        if (g < 0 || c < 0 || g + c == 0 || g + c > 64) {
+            throw new IllegalArgumentException("prefix layer count " + (g + c)
+                    + " out of bounds (1..64)");
+        }
+        if (prefixOutputIndices.length != g + c) {
+            throw new IllegalArgumentException("one prefix output index per recurrent layer required: got "
+                    + prefixOutputIndices.length + " for " + (g + c) + " layers");
+        }
+        requireNonNegativeUnique("gdn input", gdnStateInputIndices);
+        requireNonNegativeUnique("gdn ordinary output", gdnStateOutputIndices);
+        requireNonNegativeUnique("conv input", convStateInputIndices);
+        requireNonNegativeUnique("conv ordinary output", convStateOutputIndices);
+        requireNonNegativeUnique("prefix output", prefixOutputIndices);
+        while (tArguments.size() < 45) tArguments.add(0.0);
+        tArguments.add((double) MTP_PREFIX_TRAILER_MARKER);
+        tArguments.add((double) mode);
+        tArguments.add((double) g);
+        tArguments.add((double) c);
+        for (int idx : gdnStateInputIndices) tArguments.add((double) idx);
+        for (int idx : gdnStateOutputIndices) tArguments.add((double) idx);
+        for (int idx : convStateInputIndices) tArguments.add((double) idx);
+        for (int idx : convStateOutputIndices) tArguments.add((double) idx);
+        for (int idx : prefixOutputIndices) tArguments.add((double) idx);
+        prefixTrailerAttached = true;
+        return this;
+    }
+
+    private static void requireNonNegativeUnique(String label, int[] indices) {
+        java.util.Set<Integer> seen = new java.util.HashSet<>();
+        for (int idx : indices) {
+            if (idx < 0) {
+                throw new IllegalArgumentException(label + " indices must be resolved, got " + idx);
+            }
+            if (!seen.add(idx)) {
+                throw new IllegalArgumentException(label + " indices contain duplicate " + idx);
+            }
+        }
+    }
 
     /**
      * Attach an optional KV-only predictor repair plan. The trailer is appended
@@ -1040,6 +1151,9 @@ public class AutoregressiveDecode extends DynamicCustomOp {
             int positionOffsetExtIdx, int cachePositionExtIdx,
             int keyOutputIdx, int valueOutputIdx,
             int keyInputExtIdx, int valueInputExtIdx) {
+        if (prefixTrailerAttached) {
+            throw new IllegalArgumentException("MTP repair attachment must precede the prefix trailer");
+        }
         if (planHandle == null || planHandle.isNull() || contextHandle == null || contextHandle.isNull()) {
             throw new IllegalArgumentException("MTP repair requires non-null plan and context handles");
         }
@@ -1087,6 +1201,9 @@ public class AutoregressiveDecode extends DynamicCustomOp {
             int positionOffsetExtIdx, int cachePositionExtIdx,
             int keyOutputIdx, int valueOutputIdx,
             int keyInputExtIdx, int valueInputExtIdx) {
+        if (prefixTrailerAttached) {
+            throw new IllegalArgumentException("batched MTP repair attachment must precede the prefix trailer");
+        }
         if ((iArguments.get(4) & 256L) == 0L) {
             throw new IllegalStateException("Batched MTP repair requires withMtpPlan first");
         }
@@ -1162,6 +1279,9 @@ public class AutoregressiveDecode extends DynamicCustomOp {
             String inputIdsName, String causalMaskName, String positionOffsetName,
             String cachePositionName, String actualSequenceLengthName,
             String logitsName, String targetHiddenName) {
+        if (prefixTrailerAttached) {
+            throw new IllegalArgumentException("scalar-target attachment must precede the prefix trailer");
+        }
         if (binding == null || speculatorType != SPECULATOR_TYPE_MTP
                 || targetInputKeys == null || targetOutputs == null) {
             throw new IllegalArgumentException("Scalar target requires an MTP plan and complete named mappings");

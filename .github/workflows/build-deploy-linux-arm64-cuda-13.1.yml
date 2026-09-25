@@ -1,0 +1,97 @@
+name: Build Linux arm64 CUDA 13.1 classifier
+
+on:
+  workflow_dispatch:
+    inputs:
+      commitId:
+        description: Source commit or ref. Empty uses the triggering commit.
+        required: false
+        default: ""
+      runsOn:
+        description: Optional runner label override.
+        required: false
+        default: ""
+      buildThreads:
+        description: Optional native build thread override.
+        required: false
+        default: ""
+      mvnFlags:
+        description: Additional Maven flags passed to the shared worker.
+        required: false
+        default: ""
+      classifiers:
+        description: Comma-separated published classifier IDs; requires targetedRetry=1.
+        required: false
+        default: ""
+      targetedRetry:
+        description: Explicitly run only the classifiers above instead of the complete matrix.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
+      snapshotVersion:
+        description: Snapshot version to publish when deployToReleaseStaging=0.
+        required: false
+        default: "1.0.0-SNAPSHOT"
+      deployToReleaseStaging:
+        description: Deploy to the Central release staging repository instead of snapshots.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "1"
+      releaseVersion:
+        description: Release version used when deployToReleaseStaging=1.
+        required: false
+        default: "1.0.0-rewrite"
+      dryRun:
+        description: Build without deploying.
+        required: true
+        type: choice
+        options: ["false", "true"]
+        default: "true"
+      stagingProfileId:
+        description: Exact OPEN staging profile ID for deployToReleaseStaging=1.
+        required: false
+        default: ""
+      stagingRepositoryId:
+        description: Shared OPEN staging repository ID for deployToReleaseStaging=1.
+        required: false
+        default: ""
+      libnd4jUrl:
+        description: Optional prebuilt libnd4j archive URL.
+        required: false
+        default: ""
+      buildAot:
+        description: Build GraalVM AOT artifacts for the base variant.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
+      aotAllSpins:
+        description: Build AOT artifacts for every selected classifier.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
+
+jobs:
+  release:
+    uses: ./.github/workflows/_release-worker.yml
+    with:
+      workflow: build-deploy-linux-arm64-cuda-13.1.yml
+      sourceRef: ${{ inputs.commitId || github.sha }}
+      runnerOverride: ${{ inputs.runsOn }}
+      buildThreads: ${{ inputs.buildThreads }}
+      mvnFlags: ${{ inputs.mvnFlags }}
+      classifiers: ${{ inputs.classifiers }}
+      targetedRetry: ${{ inputs.targetedRetry }}
+      snapshotVersion: ${{ inputs.snapshotVersion }}
+      deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}
+      releaseVersion: ${{ inputs.releaseVersion }}
+      dryRun: ${{ inputs.dryRun }}
+      stagingProfileId: ${{ inputs.stagingProfileId }}
+      stagingRepositoryId: ${{ inputs.stagingRepositoryId }}
+      libnd4jUrl: ${{ inputs.libnd4jUrl }}
+      buildAot: ${{ inputs.buildAot }}
+      aotAllSpins: ${{ inputs.aotAllSpins }}
+    secrets: inherit

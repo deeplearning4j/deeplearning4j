@@ -42,7 +42,9 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -1746,12 +1748,31 @@ public class DspMixedPrecisionReplayTest {
                 for (int step = 0; step < 4; step++) {
                     INDArray actual = tritonGraph.output(placeholders, "rms_norm").get("rms_norm");
                     float[] actualValues = actual.toFloatVector();
+                    // Census, not first-mismatch-stop: the full mismatch pattern
+                    // (dense vs scattered vs single) discriminates a per-row
+                    // scalar difference from a per-element tail difference.
+                    List<Integer> mismatchPositions = new ArrayList<>();
                     for (int i = 0; i < referenceValues.length; i++) {
                         int expectedBits = Float.floatToRawIntBits(referenceValues[i]);
                         int actualBits = Float.floatToRawIntBits(actualValues[i]);
-                        assertEquals(expectedBits, actualBits,
-                                String.format("prefill rms_norm step %d element %d: native=0x%08x triton=0x%08x",
-                                        step, i, expectedBits, actualBits));
+                        if (expectedBits != actualBits) mismatchPositions.add(i);
+                    }
+                    if (!mismatchPositions.isEmpty()) {
+                        StringBuilder positions = new StringBuilder();
+                        int shown = Math.min(8, mismatchPositions.size());
+                        for (int p = 0; p < shown; p++) {
+                            int i = mismatchPositions.get(p);
+                            positions.append(String.format("[i=%d row=%d col=%d native=0x%08x triton=0x%08x]",
+                                    i, i / headDim, i % headDim,
+                                    Float.floatToRawIntBits(referenceValues[i]),
+                                    Float.floatToRawIntBits(actualValues[i])));
+                            if (p < shown - 1) positions.append(" ");
+                        }
+                        assertEquals(0, mismatchPositions.size(),
+                                String.format("prefill rms_norm step %d: %d/%d elements differ (ulp deltas within ±1: %s) %s",
+                                        step, mismatchPositions.size(), referenceValues.length,
+                                        ulpDeltaSummary(referenceValues, actualValues, mismatchPositions),
+                                        positions));
                     }
                 }
             }
@@ -1763,6 +1784,23 @@ public class DspMixedPrecisionReplayTest {
             inputData.close();
             gammaData.close();
         }
+    }
+
+    /**
+     * Summarizes signed ULP deltas (floatToRawIntBits distance) for the given
+     * mismatch positions; keeps the assertion message bounded.
+     */
+    private static String ulpDeltaSummary(float[] expected, float[] actual,
+                                          List<Integer> positions) {
+        int maxDelta = 0;
+        boolean beyondOne = false;
+        for (int idx : positions) {
+            int d = Math.abs(Float.floatToRawIntBits(expected[idx])
+                    - Float.floatToRawIntBits(actual[idx]));
+            if (d > maxDelta) maxDelta = d;
+            if (d > 1) beyondOne = true;
+        }
+        return (beyondOne ? "YES" : "no") + " (maxDelta=" + maxDelta + ")";
     }
 
     /**

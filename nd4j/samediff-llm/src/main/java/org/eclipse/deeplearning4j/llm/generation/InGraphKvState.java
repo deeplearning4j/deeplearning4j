@@ -31,6 +31,7 @@ import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintMasker;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -216,6 +217,23 @@ class InGraphKvState implements AutoCloseable {
     int numPlanOutputs;
     int numKvPairs;
 
+    /**
+     * Non-owning metadata: the EXACT native requested-output order of the prepared
+     * target plan (new ArrayList<>(plan.getRequestedOutputs()), matching
+     * DynamicShapePlanExecutor.findOutputIndex). The native decode declares this
+     * count/order to the C++ op; the reduced decodeOutputNames list stays a
+     * separate Java-consumer contract. Refreshed whenever target preparation
+     * legitimately changes plan identity; asserted unchanged at native handoff.
+     * Never closed through this field - no arrays are owned here.
+     */
+    List<String> nativeTargetOutputNames;
+    /**
+     * Non-owning metadata: the exact external-input key order of the prepared
+     * target plan (plan.getExternalInputKeys()). Same identity/refresh rules as
+     * nativeTargetOutputNames; same count but different order is an error.
+     */
+    String[] nativeTargetInputKeys;
+
     /** Target-plan output carrying pre-final-norm hidden rows used to refresh the MTP state. */
     int targetHiddenOutputIdx = -1;
     int mtpInputIdsExtIdx = -1;
@@ -274,6 +292,42 @@ class InGraphKvState implements AutoCloseable {
      * maintained") instead of bypassing the maintenance implementation.
      */
     volatile Integer forcedSpecDepth;
+
+    /**
+     * Accepted-prefix state-selection mode for the bundled MTP verification graph.
+     *
+     * <ul>
+     *   <li>{@code OFF} — companion capture ops are absent; the legacy
+     *       restore/re-execute recovery path runs (default).</li>
+     *   <li>{@code SHADOW} — companion checkpoints are captured and compared
+     *       against the legacy recovery reference; never used for performance.</li>
+     *   <li>{@code SELECT} — the controller commits {@code checkpoint[consumed-1]}
+     *       directly; ordinary partial acceptance requires zero full-target reruns.</li>
+     * </ul>
+     * Select is disabled until the DSP retirement fix lands and the integrated
+     * build passes repeated exact-length 250-token equality.
+     */
+    enum PrefixSelectMode { OFF, SHADOW, SELECT }
+
+    /**
+     * Resolved prefix-selection mode. Default OFF. Set once at state preparation
+     * from {@code nd4j.mtp.prefixSelect} (off|shadow|select); unknown values and
+     * incomplete checkpoint bindings are preparation errors, never a silent OFF.
+     */
+    PrefixSelectMode prefixSelectMode = PrefixSelectMode.OFF;
+
+    /**
+     * Per-layer accepted-prefix checkpoint output INDEX arrays, grouped
+     * GDN-first then conv, in the SAME order as the ordinary state feedback
+     * arrays ({@code gdnStateOutputIndices} / {@code convStateOutputIndices}).
+     * These are indices into the prepared plan's requested-output list, resolved
+     * by name at preparation time - never map iteration order and never
+     * placeholder-owned arrays. The checkpoint tensors themselves are borrowed
+     * plan outputs owned by the prepared plan/session leases; this metadata does
+     * not own them. Null when prefixSelectMode == OFF.
+     */
+    int[] gdnPrefixOutputIndices;
+    int[] convPrefixOutputIndices;
 
     // ── Capacity / shape metadata ────────────────────────────────────────────────────────────────
     long maxKvLen;          // total KV buffer length (the hard capacity ceiling)

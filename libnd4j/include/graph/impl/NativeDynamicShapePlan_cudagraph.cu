@@ -277,13 +277,20 @@ void NativeDynamicShapePlan::drainFingerprintRingPublic() {
 
 const char* NativeDynamicShapePlan::getFingerprintJson() {
   if (!fpRingEnabled_ || !fpRingDrained_ || h_fpRing_ == nullptr) return "null";
-  // Collect all active track indices: staging [0..fpRingStagingCount_-1]
-  // + gemm [BUF_FP_MAX_STAGING..BUF_FP_MAX_STAGING+fpRingGemmCount_*2-1].
-  // Build two sorted lists so the JSON is ordered and trackIdx is explicit.
+  // Collect all active track indices: external-entry e<*> [0, BUF_FP_MAX_STAGING)
+  // + gemm [BUF_FP_MAX_STAGING..BUF_FP_MAX_STAGING+fpRingGemmCount_*2-1]
+  // + staging-after-D2D stg<*> [BUF_FP_STAGING_BASE..BUF_FP_STAGING_BASE+fpRingStagingCount_-1].
+  // fpRingStagingCount_ counts ONLY the disjoint stg<*> tracks since the
+  // track-partition fix; e<*> entry tracks are enumerated from their labels.
   std::vector<int> activeTrackIdxs;
-  for (int t = 0; t < fpRingStagingCount_; t++) activeTrackIdxs.push_back(t);
+  for (int t = 0; t < BUF_FP_MAX_STAGING; t++) {
+    if (fpLabels_[t].tag[0] != '\0') activeTrackIdxs.push_back(t);
+  }
   for (int t = BUF_FP_MAX_STAGING;
        t < BUF_FP_MAX_STAGING + fpRingGemmCount_ && t < BUF_FP_TRACE_TRACK; t++)
+    activeTrackIdxs.push_back(t);
+  for (int t = BUF_FP_STAGING_BASE;
+       t < BUF_FP_STAGING_BASE + fpRingStagingCount_ && t < BUF_FP_TRACE_TRACK; t++)
     activeTrackIdxs.push_back(t);
   if (fpLabels_[BUF_FP_TRACE_TRACK].tag[0] != '\0') {
     activeTrackIdxs.push_back(BUF_FP_TRACE_TRACK);
@@ -4412,21 +4419,30 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       // Record XOR fingerprint of the staging buffer AFTER D2D, on the same
       // stream — no host sync, ordered with the copy above.
       if (fpRingEnabled_) {
-        // Assign a stable track slot: use position of i in cachedVariableExtIndices_
-        // (determined once; order is fixed after first entry into the fast path).
-        int trackSlot = fpRingStagingCount_;
+        // Assign a stable DISJOINT track: BUF_FP_STAGING_BASE + position of i in
+        // cachedVariableExtIndices_ (determined once; order is fixed after first
+        // entry into the fast path). Disjoint from the e<*> external-entry tracks
+        // [0, BUF_FP_MAX_STAGING) — the previous colliding assignment let the
+        // segment-entry recorder zero-and-overwrite every staging fingerprint in
+        // the same step, so no staging content was ever observable.
+        int trackSlot = BUF_FP_STAGING_BASE + fpRingStagingCount_;
         // Walk cachedVariableExtIndices_ to find the slot for i
         for (int ci = 0; ci < static_cast<int>(cachedVariableExtIndices_.size()); ci++) {
-          if (cachedVariableExtIndices_[ci] == i) { trackSlot = ci; break; }
+          if (cachedVariableExtIndices_[ci] == i) { trackSlot = BUF_FP_STAGING_BASE + ci; break; }
         }
-        if (trackSlot < BUF_FP_MAX_STAGING) {
+        if (trackSlot < BUF_FP_STAGING_BASE + BUF_FP_MAX_STAGING && trackSlot < BUF_FP_TRACE_TRACK) {
           // Register label on first step (executeCount_ == stable first step)
           if (fpLabels_[trackSlot].tag[0] == '\0') {
-            snprintf(fpLabels_[trackSlot].tag, sizeof(fpLabels_[trackSlot].tag), "stg[%d]", i);
+            snprintf(fpLabels_[trackSlot].tag, sizeof(fpLabels_[trackSlot].tag), "stg%d", i);
             fpLabels_[trackSlot].extIdx   = i;
             fpLabels_[trackSlot].groupIdx = -1;
             fpLabels_[trackSlot].whichAB  = -1;
-            if (trackSlot + 1 > fpRingStagingCount_) fpRingStagingCount_ = trackSlot + 1;
+            if (trackSlot + 1 - BUF_FP_STAGING_BASE > fpRingStagingCount_)
+              fpRingStagingCount_ = trackSlot + 1 - BUF_FP_STAGING_BASE;
+            DSP_DIAG(MEMORY,
+                     "STAGING_D2D_TRACK_LABEL: ext[%d] track=%d tag='%s' base=%d — "
+                     "staging fingerprint track assigned",
+                     i, trackSlot, fpLabels_[trackSlot].tag, (int)BUF_FP_STAGING_BASE);
           }
           size_t fpBytes = static_cast<size_t>(staging->dataBuffer()->getLenInBytes());
           recordBufFingerprintPublic(cudaStr, executeCount_, trackSlot,

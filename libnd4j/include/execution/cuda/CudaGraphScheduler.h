@@ -123,6 +123,20 @@ struct SD_LIB_EXPORT CudaGraphNodeInfo {
     size_t memsetBytes = 0;        // Bytes set (memset only)
     int memsetValue = 0;           // Value set (memset only)
     size_t nodeIndex = 0;          // Index in the graph node array
+    cudaGraphNode_t nodeHandle = nullptr;  // Raw node handle (driver-API introspection)
+    // Kernel-node launch parameters (kernels only; NODE_AUDIT diagnostic).
+    // funcPtr identifies the EXACT compiled kernel instance recorded in the
+    // graph — compared against live LAUNCH CONFIG kernelFunc pointers to
+    // detect specialization mismatches between live execution and replay.
+    const void* kernelFuncPtr = nullptr;
+    unsigned int gridX = 0, gridY = 0, gridZ = 0;
+    unsigned int blockX = 0, blockY = 0, blockZ = 0;
+    unsigned int sharedMemBytes = 0;
+    // NODE_AUDIT: memcpy node source/destination device addresses — matches
+    // each baked H2D node to its owning CompiledKernel's device arg table;
+    // a 22nd H2D against 21 sub-kernels exposes the duplicate launch pair.
+    void* memcpyDstPtr = nullptr;
+    void* memcpySrcPtr = nullptr;
 };
 
 /**

@@ -227,22 +227,56 @@ public class TestGgufMtpCapturedReplay {
                 binding.getBackendOwner().nativeOps().markPlanExternalInputVariable(binding.getPlanHandle(), index);
             }
             List<String> failures = new ArrayList<>();
+            // Sensitivity probe (diagnostic, -Dmtp.probe.call1Only=true):
+            // feed CALL-1 inputs on every bound call. If the graph then produces
+            // the call-1 reference every time, kernel compute is input-consistent
+            // and the defect is in how a CHANGED variable value propagates into
+            // some input the graph reads. Comparisons vs call-N references become
+            // call-1-vs-call-N; the assertion then holds only if call1Only kept
+            // the graph exact — treat mismatches as the probe's RESULT, recorded
+            // in the log, not forced red. Default path unchanged (chain mode).
+            boolean call1Only = Boolean.getBoolean("mtp.probe.call1Only");
             for (int call = 0; call < captures.size(); call++) {
-                restore(captures.get(call), retained);
+                int captureIndex = call1Only ? 0 : call;
+                restore(captures.get(captureIndex), retained);
                 Map<String, float[]> actual = executeBound(binding);
                 for (String name : DspTensorSnapshot.MTP_INPUTS) {
                     if (name.contains("past_key_values")) actual.put(name, floats(retained.get(name)));
                 }
-                Map<String, float[]> expected = references.get(call);
-                log.info("MTP_PREPARED call={} freshDraft={} boundDraft={}", call + 1,
-                        argmax(expected.get("mtp_logits")), argmax(actual.get("mtp_logits")));
+                // Under call1Only every call consumed call-1 inputs: compare against
+                // the CALL-1 reference so a consistent graph shows all-exact.
+                Map<String, float[]> expected = references.get(call1Only ? 0 : call);
+                log.info("MTP_PROBE call={} captureIndex={} freshDraft={} boundDraft={}", call + 1,
+                        captureIndex, argmax(expected.get("mtp_logits")), argmax(actual.get("mtp_logits")));
+                for (String hashName : new String[] {"mtp_logits", "mtp_hidden_states"}) {
+                    log.info("MTP_PREPARED call={} tensor={} expectedHash={} actualHash={}",
+                            call + 1, hashName,
+                            Long.toHexString(fnv1a(expected.get(hashName))),
+                            Long.toHexString(fnv1a(actual.get(hashName))));
+                }
                 for (String name : expected.keySet()) {
                     int first = Arrays.mismatch(expected.get(name), actual.get(name));
-                    log.info("MTP_PREPARED call={} tensor={} firstMismatch={}", call + 1, name, first);
-                    if (first >= 0) failures.add("call=" + (call + 1) + "/" + name + " firstMismatch=" + first);
+                    // Magnitude discriminator: max |expected-actual| over the common
+                    // prefix length. Tiny (<=1e-2) => numeric drift (workspace/reduction
+                    // order); large => structural operand/value divergence.
+                    float maxAbs = 0f;
+                    if (first >= 0) {
+                        int n = expected.get(name).length;
+                        for (int i = 0; i < n; i++) {
+                            float d = Math.abs(expected.get(name)[i] - actual.get(name)[i]);
+                            if (d > maxAbs) maxAbs = d;
+                        }
+                    }
+                    log.info("MTP_PREPARED call={} tensor={} firstMismatch={} maxAbsDiff={}",
+                            call + 1, name, first, first >= 0 ? String.format("%.6g", maxAbs) : "n/a");
+                    if (first >= 0 && !call1Only) failures.add("call=" + (call + 1) + "/" + name + " firstMismatch=" + first);
                 }
             }
-            assertTrue(failures.isEmpty(), () -> String.join("\n", failures));
+            if (!call1Only) {
+                assertTrue(failures.isEmpty(), () -> String.join("\n", failures));
+            } else {
+                log.info("MTP_PROBE call1Only complete — results in MTP_PREPARED/MTP_PROBE lines above (assertions suppressed)");
+            }
             // All inputs belong to the prepared session, never this verifier.
         }
     }
@@ -623,6 +657,16 @@ public class TestGgufMtpCapturedReplay {
                 return converted.data().asFloat().clone();
             }
         }
+    }
+
+    /** FNV-1a over raw float bits — diagnostic discriminator only. */
+    private static long fnv1a(float[] values) {
+        long h = 0xcbf29ce484222325L;
+        for (float v : values) {
+            h ^= Float.floatToRawIntBits(v);
+            h *= 0x100000001b3L;
+        }
+        return h;
     }
 
     private static int argmax(float[] values) {

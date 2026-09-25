@@ -205,6 +205,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
             } else {
                 outputNames.add("gdn_state_out_" + layer);
                 outputNames.add("conv_state_out_" + layer);
+                if (config.isExportRecurrentStatePrefixes()) {
+                    // Accepted-prefix capture: register the checkpoint tensors so
+                    // the controller's layer/state binding map can resolve them.
+                    outputNames.add("gdn_state_prefix_" + layer);
+                    outputNames.add("conv_state_prefix_" + layer);
+                }
             }
         }
 
@@ -923,10 +929,21 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // 2. Causal conv1d with SiLU activation
         if (convWeight != null) {
             SDVariable wConv = sd.var(attnPrefix + "conv.weight", convWeight);
-            SDVariable[] convResult = sd.nn().causalConv1d(
-                    new String[]{"gdn_conv_" + layerIdx, "conv_state_out_" + layerIdx},
-                    qkv, wConv, null, convStateIn, actualSequenceLength, 1, 0);
-            qkv = convResult[0];
+            if (config.isExportRecurrentStatePrefixes()) {
+                // Accepted-prefix capture: emit per-prefix history checkpoints.
+                // Namespaces a per-layer prefix output for the controller's
+                // layer/state binding map.
+                SDVariable[] convResult = sd.nn().causalConv1dWithPrefix(
+                        new String[]{"gdn_conv_" + layerIdx, "conv_state_out_" + layerIdx,
+                                     "conv_state_prefix_" + layerIdx},
+                        qkv, wConv, null, convStateIn, actualSequenceLength, 1, 0);
+                qkv = convResult[0];
+            } else {
+                SDVariable[] convResult = sd.nn().causalConv1d(
+                        new String[]{"gdn_conv_" + layerIdx, "conv_state_out_" + layerIdx},
+                        qkv, wConv, null, convStateIn, actualSequenceLength, 1, 0);
+                qkv = convResult[0];
+            }
         }
 
         // 3. Split QKV into Q [B, L, qkDim], K [B, L, qkDim], V [B, L, vDim]
@@ -1036,9 +1053,20 @@ public class LLaMAArchitecture implements ModelArchitecture {
         }
 
         // 8. Gated delta rule: [B, L, H, D] -> [B, L, H, D]
-        SDVariable[] gdrResult = sd.nn().gatedDeltaRule(
-                new String[]{"gdn_out_" + layerIdx, "gdn_state_out_" + layerIdx},
-                q, k, v, beta, gateDecay, gdnStateIn, actualSequenceLength);
+        SDVariable[] gdrResult;
+        if (config.isExportRecurrentStatePrefixes()) {
+            // Accepted-prefix capture: emit per-timestep state checkpoints from the
+            // companion op. Ordinary outputs (activation + final state) are identical
+            // to the legacy op; the extra third output is the prefix tensor.
+            gdrResult = sd.nn().gatedDeltaRuleWithPrefix(
+                    new String[]{"gdn_out_" + layerIdx, "gdn_state_out_" + layerIdx,
+                                 "gdn_state_prefix_" + layerIdx},
+                    q, k, v, beta, gateDecay, gdnStateIn, actualSequenceLength);
+        } else {
+            gdrResult = sd.nn().gatedDeltaRule(
+                    new String[]{"gdn_out_" + layerIdx, "gdn_state_out_" + layerIdx},
+                    q, k, v, beta, gateDecay, gdnStateIn, actualSequenceLength);
+        }
         SDVariable gdnOut = gdrResult[0];
 
         // 9. Gated RMSNorm per-head: output = RMSNorm(gdnOut) * weight * SiLU(z)

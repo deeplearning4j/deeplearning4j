@@ -657,6 +657,12 @@ std::vector<CudaGraphNodeInfo> CudaGraphHandle::getDetailedNodeInfo() const {
 
     if (_graph == nullptr) return result;
 
+    // Clear any sticky CUDA error left by preceding capture/launch work.
+    // cudaGraphKernelNodeGetParams fails wholesale when the thread carries a
+    // sticky error, zeroing every kernel entry in NODE_AUDIT (func=nil,
+    // grid=0x0x0) and hiding the real captured launch geometry.
+    cudaGetLastError();
+
     size_t numNodes = 0;
     cudaError_t err = cudaGraphGetNodes(_graph, nullptr, &numNodes);
     if (err != cudaSuccess || numNodes == 0) return result;
@@ -670,6 +676,7 @@ std::vector<CudaGraphNodeInfo> CudaGraphHandle::getDetailedNodeInfo() const {
     for (size_t i = 0; i < numNodes; i++) {
         CudaGraphNodeInfo info;
         info.nodeIndex = i;
+        info.nodeHandle = nodes[i];  // driver-API introspection fallback
 
         cudaGraphNodeType nodeType;
         err = cudaGraphNodeGetType(nodes[i], &nodeType);
@@ -684,9 +691,27 @@ std::vector<CudaGraphNodeInfo> CudaGraphHandle::getDetailedNodeInfo() const {
                 memset(&params, 0, sizeof(params));
                 err = cudaGraphKernelNodeGetParams(nodes[i], &params);
                 if (err != cudaSuccess) {
+                    // Surface the REAL query failure instead of silently emitting
+                    // a zeroed entry — a sticky thread error or capture-mode
+                    // limitation both land here and previously read as func=nil.
+                    DSP_DIAG(EXECUTE, "NODE_AUDIT_QUERY_FAIL: node[%zu] cudaGraphKernelNodeGetParams "
+                             "failed: %s (%d) — entry zeroed",
+                             info.nodeIndex, cudaGetErrorString(err), static_cast<int>(err));
                     cudaGetLastError();  // Clear sticky error from failed param query
                 }
                 if (err == cudaSuccess && params.func != nullptr) {
+                    // NODE_AUDIT: record the EXACT compiled kernel instance and
+                    // launch geometry recorded in the graph. Comparing funcPtr
+                    // against live LAUNCH CONFIG kernelFunc pointers detects
+                    // specialization mismatches between live execution and replay.
+                    info.kernelFuncPtr = params.func;
+                    info.gridX = params.gridDim.x;
+                    info.gridY = params.gridDim.y;
+                    info.gridZ = params.gridDim.z;
+                    info.blockX = params.blockDim.x;
+                    info.blockY = params.blockDim.y;
+                    info.blockZ = params.blockDim.z;
+                    info.sharedMemBytes = params.sharedMemBytes;
                     // Get kernel name from function pointer
                     const char* name = nullptr;
                     auto nameErr = cudaFuncGetName(&name, params.func);
@@ -718,6 +743,12 @@ std::vector<CudaGraphNodeInfo> CudaGraphHandle::getDetailedNodeInfo() const {
                                        std::max(mcpyParams.extent.height, (size_t)1) *
                                        std::max(mcpyParams.extent.depth, (size_t)1);
                     info.memcpyKind = memcpyKindName(mcpyParams.kind);
+                    // NODE_AUDIT: record dst/src addresses so each H2D arg-table
+                    // node can be matched to its owning CompiledKernel's device
+                    // table — exposing any duplicate (kernel + H2D) pair that
+                    // stream capture recorded for the same sub-kernel.
+                    info.memcpyDstPtr = mcpyParams.dstPtr.ptr;
+                    info.memcpySrcPtr = mcpyParams.srcPtr.ptr;
                 }
                 break;
             }

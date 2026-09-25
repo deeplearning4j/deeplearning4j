@@ -2063,15 +2063,13 @@ public class GenerationPipeline implements AutoCloseable {
 
             // Zero-filled recurrent state inputs for prefill (zeros = no prior history)
             // Shapes are derived from the ops that consume each state placeholder.
+            // A discovered pair with an underivable shape is a construction error, not
+            // a warning: the plan will later refuse the unresolved external input.
             for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
                 if (decoder.hasVariable(pair.inputName)) {
                     DataType dt = decoder.getVariable(pair.inputName).dataType();
-                    long[] stateShape = deriveRecurrentStateShape(decoder, pair.inputName);
-                    if (stateShape != null) {
-                        prefillInputMap.put(pair.inputName, Nd4j.zeros(dt, stateShape));
-                    } else {
-                        log.warn("[GGUF-KV] Cannot derive state shape for '{}' from graph", pair.inputName);
-                    }
+                    long[] stateShape = requireRecurrentStateShape(decoder, pair);
+                    prefillInputMap.put(pair.inputName, Nd4j.zeros(dt, stateShape));
                 }
             }
         }
@@ -2474,6 +2472,71 @@ public class GenerationPipeline implements AutoCloseable {
         // the second generate, timing-dependent). One commit per generate is negligible cost.
         Nd4j.getExecutioner().commit();
 
+        // ── Session-owned state rebinding (EXPERIMENTAL, review round 4) ──
+        // STATUS: not a validated cross-session fix. The 2026-06 proc-460 run
+        // showed the split-session divergence persisting with this rebind and
+        // the clearOutputCaches() call both firing. The reviewer also notes the
+        // cache clear runs AFTER prefill outputs are produced and copied, so its
+        // failure does not exclude prefill-output inheritance. This block is
+        // retained as an experimental narrowing, NOT as an established fix.
+        // MOVED EARLIER (was after ext-index resolution, too late): this must run
+        // BEFORE the warmup decode and any subsequent native execution of this
+        // session. The executor's externalInputs cache persists across executions
+        // AND across sessions sharing the loaded graph; a warmup decode executed
+        {
+            Map<String, INDArray> earlyStateBindings = new LinkedHashMap<>();
+            for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+                INDArray ownedBuf = recurrentStateBuffers.get(pair.inputName);
+                if (ownedBuf != null && decoder.hasVariable(pair.inputName)) {
+                    earlyStateBindings.put(pair.inputName, ownedBuf);
+                }
+            }
+            if (!earlyStateBindings.isEmpty()) {
+                DynamicShapePlanExecutor earlyExecutor = null;
+                try {
+                    InferenceSession earlySession = decoder.getOrCreateSession();
+                    earlyExecutor = earlySession != null
+                            ? earlySession.getDynamicShapePlanExecutor() : null;
+                } catch (Exception sessionLookupFailure) {
+                    log.info("[GGUF-KV] Early state rebind skipped (session unavailable): {}",
+                            sessionLookupFailure.getMessage());
+                }
+                if (earlyExecutor != null
+                        && earlyExecutor.getCurrentPlan() != null
+                        && earlyExecutor.getExternalInputsSnapshot() != null
+                        && earlyExecutor.getExternalInputsSnapshot().length > 0) {
+                    try {
+                        // EXPERIMENTAL (review round 4): drop the PRIOR session's
+                        // zero-copy output cache before rebinding. Unproven — kept
+                        // only as an experimental narrowing under investigation.
+                        earlyExecutor.clearOutputCaches();
+                        earlyExecutor.overrideExternalInputs(earlyStateBindings);
+                        log.info("[GGUF-KV] Session-owned state rebind (early, EXPERIMENTAL): "
+                                        + "{} recurrent state slots bound; prior output caches cleared",
+                                earlyStateBindings.size());
+                    } catch (IllegalStateException rebindFailure) {
+                        String message = rebindFailure.getMessage();
+                        if (message != null && message.contains("no external input named")) {
+                            // A live plan that does not know this input name is a
+                            // real contract failure: fail loudly.
+                            throw rebindFailure;
+                        }
+                        if (message != null && message.contains("Complete binding use")) {
+                            // An active native binding means the executor is
+                            // mid-flight for another owner: this is NOT a deferred
+                            // fresh-session case. Preserve the failure.
+                            throw rebindFailure;
+                        }
+                        // Expected fresh-graph case only: no plan/inputs resolved
+                        // yet ("no external inputs resolved for the current plan").
+                        // Everything else propagates (review round 4, finding 5).
+                        log.info("[GGUF-KV] Early state rebind deferred (plan not initialized yet): {}",
+                                message);
+                    }
+                }
+            }
+        }
+
         // ══════════════════════════════════════════════════════════════════════
         // STEP 3: Warmup decode step -- compile DSP plan for decode shapes
         //
@@ -2602,6 +2665,27 @@ public class GenerationPipeline implements AutoCloseable {
         if (useNativeMtp) decodeOutputNames.add(TARGET_HIDDEN_STATES_NAME);
         for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
             decodeOutputNames.add(pair.outputName);
+        }
+        // Packet 04: when shadow/select is explicitly requested, the checkpoint
+        // outputs must be REQUESTED outputs of the verification plan the warmup
+        // freezes, and the scalar diagnostic preparation must request the same
+        // names (its checkpoint width is one). The plan-request set is what
+        // attachPrefixSelect later resolves the prefix indices against. Prefill
+        // requests stay untouched - the checkpoint allocation is bounded to the
+        // verification window.
+        InGraphKvState.PrefixSelectMode requestedPrefixMode = requestedPrefixSelectMode();
+        if (requestedPrefixMode != InGraphKvState.PrefixSelectMode.OFF) {
+            for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+                String prefixName = pair.prefixOutputName();
+                if (prefixName == null || !decoder.hasVariable(prefixName)) {
+                    throw new IllegalStateException(
+                            "nd4j.mtp.prefixSelect=" + requestedPrefixMode
+                            + " requires the checkpoint output " + prefixName + " for " + pair);
+                }
+                if (!warmupDecodeOutputNames.contains(prefixName)) {
+                    warmupDecodeOutputNames.add(prefixName);
+                }
+            }
         }
         int kvBufCount = (isQuantizedV2 && quantizedKvBuffers != null) ? quantizedKvBuffers.size()
                 : (staticKvBuffers != null ? staticKvBuffers.size() : 0);
@@ -2875,6 +2959,45 @@ public class GenerationPipeline implements AutoCloseable {
         int[] convStateExtIndices = convExtList.stream().mapToInt(Integer::intValue).toArray();
         int[] convStateOutputIndices = convOutList.stream().mapToInt(Integer::intValue).toArray();
 
+        // ── Session-owned state rebinding (EXPERIMENTAL, review round 4) ──
+        // STATUS: not a validated cross-session fix; retained as an experimental
+        // narrowing. Rebind every state input slot to THIS session's own retained
+        // buffer so the plan can only ever read buffers owned by
+        // state.recurrentStateBuffers.
+        {
+            Map<String, INDArray> stateBindings = new LinkedHashMap<>();
+            for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+                INDArray ownedBuf = recurrentStateBuffers.get(pair.inputName);
+                if (ownedBuf != null && decoder.hasVariable(pair.inputName)) {
+                    stateBindings.put(pair.inputName, ownedBuf);
+                }
+            }
+            if (!stateBindings.isEmpty() && executor != null
+                    && executor.getCurrentPlan() != null) {
+                try {
+                    executor.overrideExternalInputs(stateBindings);
+                    log.info("[GGUF-KV] Session-owned state rebind (EXPERIMENTAL): {} recurrent "
+                                    + "state slots bound to this session's buffers",
+                            stateBindings.size());
+                } catch (IllegalStateException rebindFailure) {
+                    String message = rebindFailure.getMessage();
+                    if (message != null && message.contains("no external input named")) {
+                        // A live plan that does not know this input name is a real
+                        // contract failure: fail loudly.
+                        throw rebindFailure;
+                    }
+                    if (message != null && message.contains("Complete binding use")) {
+                        // Active native binding = executor mid-flight for another
+                        // owner: NOT a deferred fresh-session case. Preserve it.
+                        throw rebindFailure;
+                    }
+                    // Expected fresh-graph case only; everything else propagates.
+                    log.info("[GGUF-KV] State rebind deferred (plan not yet initialized): {}",
+                            message);
+                }
+            }
+        }
+
         MtpPreparedState preparedMtp = null;
         if (useNativeMtp) {
             preparedMtp = prepareBundledMtp(
@@ -2900,9 +3023,20 @@ public class GenerationPipeline implements AutoCloseable {
         // secondToken (the last unwritten token) will be written when it is fed.
         // ══════════════════════════════════════════════════════════════════════
         Pointer contextHandle = executor.getCachedOpContext();
-        int numPlanExternalInputs = executor.getCurrentPlan() != null
-                ? executor.getCurrentPlan().getExternalInputKeys().length : 0;
-        int numPlanOutputs = decodeOutputNames.size();
+        // Packet 02: capture the ACTUAL native target plan identity at the moment the
+        // indices are resolved, BEFORE any later execution could switch the executor's
+        // current plan. The warmup executed with the FULL warmupDecodeOutputNames list,
+        // so the frozen plan's requested-output set is the full list; declaring the
+        // REDUCED decodeOutputNames size to the native op makes the scalar mapping
+        // length disagree with the target handle's getNumRequestedOutputs().
+        DynamicShapePlan targetPlan = executor.getCurrentPlan();
+        int numPlanExternalInputs = targetPlan != null
+                ? targetPlan.getExternalInputKeys().length : 0;
+        List<String> nativeTargetOutputs = targetPlan != null
+                ? new ArrayList<>(targetPlan.getRequestedOutputs()) : new ArrayList<>();
+        String[] nativeTargetInputKeys = targetPlan != null
+                ? targetPlan.getExternalInputKeys().clone() : new String[0];
+        int numPlanOutputs = nativeTargetOutputs.size();
 
         // On reuse, write back into the SAME retained state object (its buffers ARE the ones just
         // refilled in place) so no buffer is aliased by two states → no double-free. The index / handle
@@ -2943,6 +3077,8 @@ public class GenerationPipeline implements AutoCloseable {
         state.convStateOutputIndices = convStateOutputIndices;
         state.numPlanExternalInputs = numPlanExternalInputs;
         state.numPlanOutputs = numPlanOutputs;
+        state.nativeTargetOutputNames = nativeTargetOutputs;
+        state.nativeTargetInputKeys = nativeTargetInputKeys;
         state.numKvPairs = numKvPairs;
         if (preparedMtp != null) {
             state.mtpKvBuffers = preparedMtp.kvBuffers;
@@ -3034,6 +3170,11 @@ public class GenerationPipeline implements AutoCloseable {
         state.actualSeqLenName = decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME) ? ACTUAL_SEQUENCE_LENGTH_NAME : null;
         state.prefillInputMap = prefillInputMap;
         state.retainRecurrentCopyDonors(warmupRecurrentCopyDonors);
+        // Accepted-prefix state selection: resolve the mode and the deterministic
+        // checkpoint-output binding (GDN-first then conv, same order as the
+        // ordinary state arrays). Explicit shadow/select with an incomplete
+        // binding is a preparation error, not a silent OFF.
+        state.prefixSelectMode = attachPrefixSelect(state, decoder, recurrentStates, executor);
         if (reuseState != null) {
             // Clear transient per-generate flags carried over from the previous generate.
             state.eosReached = false;
@@ -3405,10 +3546,8 @@ public class GenerationPipeline implements AutoCloseable {
             }
             if (initState == null) {
                 DataType dt = decoder.getVariable(pair.inputName).dataType();
-                long[] stateShape = GenerationPipeline.deriveRecurrentStateShape(decoder, pair.inputName);
-                if (stateShape != null) {
-                    initState = Nd4j.zeros(dt, stateShape);
-                }
+                long[] stateShape = requireRecurrentStateShape(decoder, pair);
+                initState = Nd4j.zeros(dt, stateShape);
             }
             if (initState != null) {
                 suffixInputMap.put(pair.inputName, initState);
@@ -3617,6 +3756,23 @@ public class GenerationPipeline implements AutoCloseable {
         for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
             decodeOutputNames.add(pair.outputName);
         }
+        // Packet 04: same checkpoint-request requirement as the main warmup path -
+        // the suffix warmup freezes this plan, and attachPrefixSelect resolves the
+        // prefix indices against its requested outputs.
+        InGraphKvState.PrefixSelectMode requestedPrefixMode = requestedPrefixSelectMode();
+        if (requestedPrefixMode != InGraphKvState.PrefixSelectMode.OFF) {
+            for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+                String prefixName = pair.prefixOutputName();
+                if (prefixName == null || !decoder.hasVariable(prefixName)) {
+                    throw new IllegalStateException(
+                            "nd4j.mtp.prefixSelect=" + requestedPrefixMode
+                            + " requires the checkpoint output " + prefixName + " for " + pair);
+                }
+                if (!decodeOutputNames.contains(prefixName)) {
+                    decodeOutputNames.add(prefixName);
+                }
+            }
+        }
 
         Map<String, INDArray> decodeOutputs;
         try {
@@ -3700,17 +3856,26 @@ public class GenerationPipeline implements AutoCloseable {
 
         List<Integer> gdnExtList = new ArrayList<>(), gdnOutList = new ArrayList<>();
         List<Integer> convExtList = new ArrayList<>(), convOutList = new ArrayList<>();
-        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
-            int extIdx = resolveExtInputIdx(executor, pair.inputName);
-            int outIdx = resolveOutputIdx(executor, pair.outputName);
-            if (pair.isGdn()) { gdnExtList.add(extIdx); gdnOutList.add(outIdx); }
-            else { convExtList.add(extIdx); convOutList.add(outIdx); }
-        }
+        // Packet 03: restore the ORDINARY recurrent feedback index population. This
+        // runs regardless of prefix mode - OFF mode still needs per-step recurrent
+        // feedback - and only the ordinary state handoff participates. The
+        // checkpoint outputs are excluded upstream by findRecurrentStatePairs
+        // (isPrefixCaptureOutput); prefix resolution (attachPrefixSelect) is a
+        // separate concern and never contributes to these lists.
+        resolveRecurrentFeedbackIndices(executor, recurrentStates,
+                gdnExtList, gdnOutList, convExtList, convOutList);
 
         Pointer contextHandle = executor.getCachedOpContext();
-        int numPlanExternalInputs = executor.getCurrentPlan() != null
-                ? executor.getCurrentPlan().getExternalInputKeys().length : 0;
-        int numPlanOutputs = decodeOutputNames.size();
+        // Packet 02: same native plan identity capture as the main warmup path - the
+        // suffix warmup executes the full output request and freezes that plan.
+        DynamicShapePlan targetPlan = executor.getCurrentPlan();
+        int numPlanExternalInputs = targetPlan != null
+                ? targetPlan.getExternalInputKeys().length : 0;
+        List<String> nativeTargetOutputs = targetPlan != null
+                ? new ArrayList<>(targetPlan.getRequestedOutputs()) : new ArrayList<>();
+        String[] nativeTargetInputKeys = targetPlan != null
+                ? targetPlan.getExternalInputKeys().clone() : new String[0];
+        int numPlanOutputs = nativeTargetOutputs.size();
 
         // Build a fresh prefillInputMap (the suffix-prefill path didn't use a retained one)
         Map<String, INDArray> prefillInputMap = new HashMap<>();
@@ -3736,8 +3901,8 @@ public class GenerationPipeline implements AutoCloseable {
         for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
             if (decoder.hasVariable(pair.inputName)) {
                 DataType dt = decoder.getVariable(pair.inputName).dataType();
-                long[] sh = deriveRecurrentStateShape(decoder, pair.inputName);
-                if (sh != null) prefillInputMap.put(pair.inputName, Nd4j.zeros(dt, sh));
+                long[] sh = requireRecurrentStateShape(decoder, pair);
+                prefillInputMap.put(pair.inputName, Nd4j.zeros(dt, sh));
             }
         }
 
@@ -3772,6 +3937,8 @@ public class GenerationPipeline implements AutoCloseable {
         state.convStateOutputIndices = convOutList.stream().mapToInt(Integer::intValue).toArray();
         state.numPlanExternalInputs = numPlanExternalInputs;
         state.numPlanOutputs = numPlanOutputs;
+        state.nativeTargetOutputNames = nativeTargetOutputs;
+        state.nativeTargetInputKeys = nativeTargetInputKeys;
         state.numKvPairs = numKvPairs;
         state.kvInputNames = kvInputNames;
         state.recurrentStates = recurrentStates;
@@ -3800,6 +3967,10 @@ public class GenerationPipeline implements AutoCloseable {
         state.cancelRequested = false;
         state.terminalResult = null;
         state.closed = false;
+        // Accepted-prefix state selection: resolve the mode and the deterministic
+        // checkpoint-output binding. Explicit shadow/select with an incomplete
+        // binding is a preparation error, not a silent OFF.
+        state.prefixSelectMode = attachPrefixSelect(state, decoder, recurrentStates, executor);
         return state;
     }
 
@@ -4081,6 +4252,85 @@ public class GenerationPipeline implements AutoCloseable {
         int remainingTokens = isContinuation ? maxNewTokens : (maxNewTokens - 2);
         long traceLastReserved = -1;
 
+        // ── Stage-1 handoff record: actual values this call will encode into the native op ──
+        // Bounded diagnostic at the common static-KV handoff; both the one-shot
+        // (generateSimpleWithInGraphKvCache) and session (decodeInSession) arms execute this
+        // method, so ONE record here describes the executed handoff for both.
+        {
+            DecodePolicy recPolicy = resolveDecodePolicy(state.sampling, config);
+            int recConfiguredK = config != null ? config.getMaxSpeculativeTokens() : 0;
+            int recAdaptive = adaptiveSpecK < 0 ? recConfiguredK : adaptiveSpecK;
+            int recResolved = state.forcedSpecDepth != null ? state.forcedSpecDepth : recAdaptive;
+            int recEffective = Math.min(recConfiguredK, recResolved);
+            int recFrozenWindow = state.decodeInputIds != null ? (int) state.decodeInputIds.size(1) : 1;
+            int recActiveWindow = recPolicy.kind == DecodePolicyKind.SPECULATIVE ? 1 : recPolicy.windowMax;
+            // Bounded mask visibility probe: count unmasked columns per window row of row 0
+            // (and row 1 when W>1) of the prepared causal mask. Exposes over/under-masking
+            // at a continuation boundary without dumping tensors.
+            String maskVisibility = "null";
+            if (state.decodeCausalMask != null && state.decodeCausalMask.rank() == 4) {
+                long cols = state.decodeCausalMask.size(3);
+                long rows = Math.min(2, state.decodeCausalMask.size(2));
+                StringBuilder sb = new StringBuilder();
+                for (long r = 0; r < rows; r++) {
+                    int visible = 0;
+                    for (long c = 0; c < cols; c++) {
+                        if (state.decodeCausalMask.getDouble(0, 0, r, c) > -1e9f) visible++;
+                    }
+                    if (r > 0) sb.append('/');
+                    sb.append(visible).append('/').append(cols);
+                }
+                maskVisibility = sb.toString();
+            }
+            log.info("[MTP-HANDOFF] caller={} continuation={} budget={} remaining={} genOffset={} soFar={} "
+                            + "lastTok={} cachePos={} prefillLen={} maxKvLen={} "
+                            + "strategy={} configuredK={} adaptiveK={} forcedK={} effectiveK={} speculator={} "
+                            + "windowW={} activeWindow={} "
+                            + "maskShape={} maskVisible(row/cols)={} posOffsetShape={} cachePosShape={} actualLenShape={} actualLenExtIdx={} actualLenVal={} "
+                            + "mtpPlan={} repair={} prefixMode={} gdnOuts={} convOuts={} "
+                            + "planHandle@{} ctxHandle@{} planInputs={} planOutputs={} manifestInputs={} manifestOutputs={} planPhase={} "
+                            + "minNewTokens={} temp={} doSample={} repPenalty={} freqPenalty={} presencePenalty={} topK={} topP={} "
+                            + "stopIds={} seed={}",
+                    isContinuation ? "SESSION" : "ONE-SHOT",
+                    isContinuation, maxNewTokens, remainingTokens,
+                    state.generatedSoFar != null ? state.generatedSoFar.size() : -1,
+                    state.generatedSoFar != null ? state.generatedSoFar.size() : -1,
+                    state.lastGeneratedToken, state.cachePosition,
+                    state.actualPrefillLen, state.maxKvLen,
+                    recPolicy.kind, recConfiguredK, adaptiveSpecK, state.forcedSpecDepth,
+                    recEffective,
+                    state.mtpPlanHandle != null && !state.mtpPlanHandle.isNull()
+                            ? (config != null && config.getMaxSpeculativeTokens() > 0 ? "MTP" : "NGRAM") : "NONE",
+                    recFrozenWindow, recActiveWindow,
+                    state.decodeCausalMask != null ? Arrays.toString(state.decodeCausalMask.shape()) : "null",
+                    maskVisibility,
+                    state.decodePositionOffset != null ? Arrays.toString(state.decodePositionOffset.shape()) : "null",
+                    state.decodeCachePosition != null ? Arrays.toString(state.decodeCachePosition.shape()) : "null",
+                    state.decodeActualSequenceLength != null
+                            ? Arrays.toString(state.decodeActualSequenceLength.shape()) : "null",
+                    state.actualSeqLenExtIdx,
+                    state.decodeActualSequenceLength != null ? state.decodeActualSequenceLength.getLong(0) : -1L,
+                    state.mtpPlanHandle != null && !state.mtpPlanHandle.isNull(),
+                    state.mtpRepairBinding != null,
+                    state.prefixSelectMode,
+                    state.gdnStateOutputIndices != null ? state.gdnStateOutputIndices.length : 0,
+                    state.convStateOutputIndices != null ? state.convStateOutputIndices.length : 0,
+                    state.planHandle != null ? state.planHandle.address() : 0L,
+                    state.contextHandle != null ? state.contextHandle.address() : 0L,
+                    state.nativeTargetInputKeys != null ? state.nativeTargetInputKeys.length : -1,
+                    state.nativeTargetOutputNames != null ? state.nativeTargetOutputNames.size() : -1,
+                    state.executor != null && state.executor.getCurrentPlan() != null
+                            ? state.executor.getCurrentPlan().getExternalInputKeys().length : -1,
+                    state.executor != null && state.executor.getCurrentPlan() != null
+                            ? state.executor.getCurrentPlan().getRequestedOutputs().size() : -1,
+                    state.executor != null ? state.executor.getPlanPhase() : "null",
+                    state.sampling.getMinNewTokens(), state.sampling.getTemperature(),
+                    state.sampling.isDoSample(), state.sampling.getRepetitionPenalty(),
+                    state.sampling.getFrequencyPenalty(), state.sampling.getPresencePenalty(),
+                    state.sampling.getTopK(), state.sampling.getTopP(),
+                    state.stopTokenIds, state.sampling.getSeed());
+        }
+
         // ── Prepare the current decode-step inputs: feed the last generated token at cachePosition ──
         state.decodeInputIds.assign(0);
         state.decodeInputIds.putScalar(new long[]{0, 0}, state.lastGeneratedToken);
@@ -4355,6 +4605,37 @@ public class GenerationPipeline implements AutoCloseable {
                 INDArray dummyEmbeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
                 INDArray dummyEmbTable = Nd4j.zeros(DataType.FLOAT, 1, 1);
 
+                // Packet 02 handoff assert: the prepared target plan identity captured at
+                // preparation time must still describe the executor's current plan. Same
+                // count but different order is an error; a replaced plan is an error. The
+                // plan handle/context were captured alongside these lists.
+                DynamicShapePlan currentPlan = state.executor.getCurrentPlan();
+                if (currentPlan == null) {
+                    throw new IllegalStateException(
+                            "Native decode handoff: executor has no current target plan");
+                }
+                String[] currentInputKeys = currentPlan.getExternalInputKeys();
+                List<String> currentOutputs = new ArrayList<>(currentPlan.getRequestedOutputs());
+                if (state.nativeTargetInputKeys == null || state.nativeTargetOutputNames == null
+                        || !Arrays.equals(state.nativeTargetInputKeys, currentInputKeys)) {
+                    throw new IllegalStateException(
+                            "Native decode handoff: target external-input identity changed since "
+                            + "preparation (prepared=" + state.nativeTargetInputKeys.length
+                            + " keys, current=" + currentInputKeys.length + " keys)");
+                }
+                if (!state.nativeTargetOutputNames.equals(currentOutputs)) {
+                    throw new IllegalStateException(
+                            "Native decode handoff: target requested-output identity changed since "
+                            + "preparation (prepared=" + state.nativeTargetOutputNames
+                            + ", current=" + currentOutputs + ")");
+                }
+                if (state.numPlanOutputs != currentOutputs.size()) {
+                    throw new IllegalStateException(
+                            "Native decode handoff: declared numPlanOutputs " + state.numPlanOutputs
+                            + " disagrees with the current plan's requested outputs "
+                            + currentOutputs.size());
+                }
+
                 AutoregressiveDecode op = new AutoregressiveDecode(
                         dummyEmbeddings, dummyEmbTable, state.decodeInputIds,
                         state.decodeCausalMask, null, staticKvArray,
@@ -4419,7 +4700,7 @@ public class GenerationPipeline implements AutoCloseable {
                                 state.mtpHiddenOutputIdx,
                                 state.targetHiddenOutputIdx);
                         op.withScalarTargetPlan(state.scalarTargetBinding,
-                                state.executor.getCurrentPlan().getExternalInputKeys(), state.decodeOutputNames,
+                                state.nativeTargetInputKeys, state.nativeTargetOutputNames,
                                 state.inputIdsName, state.causalMaskName, state.posOffsetName,
                                 state.cachePosName, state.actualSeqLenName,
                                 state.logitsName, TARGET_HIDDEN_STATES_NAME);
@@ -4461,6 +4742,28 @@ public class GenerationPipeline implements AutoCloseable {
                                 state.mtpRepairBatchValueOutputIdx,
                                 state.mtpRepairBatchKvInputExtIndices[0],
                                 state.mtpRepairBatchKvInputExtIndices[1]);
+                    }
+                    // Accepted-prefix capture metadata: the deterministic GDN-first
+                    // then conv checkpoint-output binding resolved at preparation time.
+                    // Shadow mode captures without selecting; select commits
+                    // checkpoint[consumed-1].
+                    if (state.prefixSelectMode != InGraphKvState.PrefixSelectMode.OFF) {
+                        if (state.gdnPrefixOutputIndices == null
+                                || state.convPrefixOutputIndices == null) {
+                            throw new IllegalStateException(
+                                    "prefix mode " + state.prefixSelectMode
+                                    + " without a resolved checkpoint-output binding");
+                        }
+                        int mode = state.prefixSelectMode == InGraphKvState.PrefixSelectMode.SELECT ? 2 : 1;
+                        int[] prefixOutIdx = new int[state.gdnPrefixOutputIndices.length
+                                + state.convPrefixOutputIndices.length];
+                        int p = 0;
+                        for (int gdnIdx : state.gdnPrefixOutputIndices) prefixOutIdx[p++] = gdnIdx;
+                        for (int convIdx : state.convPrefixOutputIndices) prefixOutIdx[p++] = convIdx;
+                        op.withMtpPrefixSelect(mode,
+                                state.gdnStateExtIndices, state.gdnStateOutputIndices,
+                                state.convStateExtIndices, state.convStateOutputIndices,
+                                prefixOutIdx);
                     }
                 }
                 applyConfiguredStopSequences(op, state.generatedSoFar);
@@ -5490,13 +5793,61 @@ public class GenerationPipeline implements AutoCloseable {
             try { op = sd.getOpById(opName); } catch (Exception e) { log.debug("deriveRecurrentStateShape: getOpById('{}') failed", opName, e); continue; }
             if (op == null) continue;
 
-            if (op instanceof GatedDeltaRule) {
+            // Dispatch by op NAME, not class: the accepted-prefix capture companions
+            // (gated_delta_rule_with_prefix / causal_conv1d_with_prefix) extend
+            // DynamicCustomOp, not the legacy op classes, and they share the exact
+            // same input roles as their two-output originals. Class-based dispatch
+            // fell through to null for the companions, so the prefill input map
+            // omitted the state placeholder and plan execution failed later with
+            // "missing external input past_gdn_state.N".
+            String opType = op.opName();
+            if ("gated_delta_rule".equals(opType)
+                    || "gated_delta_rule_with_prefix".equals(opType)) {
                 return deriveGdnStateShapeFromOp(sd, op, stateName);
-            } else if ("causal_conv1d".equals(op.opName())) {
+            }
+            if ("causal_conv1d".equals(opType)
+                    || "causal_conv1d_with_prefix".equals(opType)) {
                 return deriveConvStateShapeFromOp(sd, op);
             }
         }
         return null;
+    }
+
+    /**
+     * Require a derivable recurrent state shape for an already-discovered required
+     * pair. A discovered pair means the plan treats this placeholder as a recurrent
+     * state input; an unresolved shape here would later surface as a missing
+     * external input during plan execution. Fail at input-map construction with the
+     * input name, the consuming ops and the declared placeholder shape instead.
+     */
+    private static long[] requireRecurrentStateShape(SameDiff decoder,
+                                                     ModelIOConfig.RecurrentStatePair pair) {
+        long[] shape = deriveRecurrentStateShape(decoder, pair.inputName);
+        if (shape == null || shape.length == 0) {
+            StringBuilder consumers = new StringBuilder();
+            Variable var = decoder.getVariables().get(pair.inputName);
+            if (var != null && var.getInputsForOp() != null) {
+                for (String opId : var.getInputsForOp()) {
+                    if (consumers.length() > 0) consumers.append(", ");
+                    consumers.append(opId);
+                }
+            }
+            long[] declared = decoder.hasVariable(pair.inputName)
+                    ? decoder.getVariable(pair.inputName).getShape() : null;
+            throw new IllegalStateException(
+                    "Cannot derive recurrent state shape for required pair " + pair
+                    + ": no recognized consuming op among [" + consumers + "]"
+                    + " (declared placeholder shape="
+                    + (declared == null ? "dynamic" : Arrays.toString(declared)) + ")");
+        }
+        for (long dim : shape) {
+            if (dim <= 0) {
+                throw new IllegalStateException(
+                        "Derived nonpositive recurrent state shape " + Arrays.toString(shape)
+                        + " for required pair " + pair);
+            }
+        }
+        return shape;
     }
 
     /**
@@ -9031,6 +9382,153 @@ public class GenerationPipeline implements AutoCloseable {
     private static int resolveOutputIdx(DynamicShapePlanExecutor executor, String name) {
         if (name == null || executor == null) return -1;
         return executor.findOutputIndex(name);
+    }
+
+    /**
+     * Resolve the ORDINARY recurrent feedback index pairs (GDN and conv) against
+     * the prepared target plan. Checkpoint outputs are excluded upstream by
+     * findRecurrentStatePairs; this helper maps only the state handoff. An
+     * unrecognized kind is an error (never silently classified as conv), and a
+     * missing input/output index fails with the pair name. Runs regardless of
+     * prefix mode: OFF mode still needs per-step recurrent feedback.
+     */
+    static void resolveRecurrentFeedbackIndices(
+            DynamicShapePlanExecutor executor,
+            List<ModelIOConfig.RecurrentStatePair> recurrentStates,
+            List<Integer> gdnExtList, List<Integer> gdnOutList,
+            List<Integer> convExtList, List<Integer> convOutList) {
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            int extIdx = resolveExtInputIdx(executor, pair.inputName);
+            int outIdx = resolveOutputIdx(executor, pair.outputName);
+            if (extIdx < 0) {
+                throw new IllegalStateException(
+                        "Missing recurrent input index for " + pair.inputName
+                        + " against the prepared target plan");
+            }
+            if (outIdx < 0) {
+                throw new IllegalStateException(
+                        "Missing recurrent state output index for " + pair.outputName
+                        + " against the prepared target plan");
+            }
+            if (pair.isGdn()) {
+                gdnExtList.add(extIdx);
+                gdnOutList.add(outIdx);
+            } else if (pair.isConv()) {
+                convExtList.add(extIdx);
+                convOutList.add(outIdx);
+            } else {
+                throw new IllegalStateException(
+                        "Unrecognized recurrent state kind for pair " + pair
+                        + ": neither GDN nor conv against the prepared target plan");
+            }
+        }
+    }
+
+    /**
+     * Parse the accepted-prefix selection mode from the {@code nd4j.mtp.prefixSelect}
+     * system property. Unknown values are a preparation error - never guessed and
+     * never silently resolved to OFF (a silently-OFF SELECT request is not a
+     * fail-closed success).
+     */
+    static InGraphKvState.PrefixSelectMode requestedPrefixSelectMode() {
+        String flag = System.getProperty("nd4j.mtp.prefixSelect", "off");
+        String mode = flag == null ? "off" : flag.trim().toLowerCase(Locale.ROOT);
+        if ("off".equals(mode)) return InGraphKvState.PrefixSelectMode.OFF;
+        if ("shadow".equals(mode)) return InGraphKvState.PrefixSelectMode.SHADOW;
+        if ("select".equals(mode)) return InGraphKvState.PrefixSelectMode.SELECT;
+        throw new IllegalStateException(
+                "Unknown nd4j.mtp.prefixSelect='" + flag + "': expected off|shadow|select");
+    }
+
+    /**
+     * Resolve the accepted-prefix state-selection mode and the deterministic
+     * checkpoint-output binding for the prepared target plan.
+     *
+     * <p>For every ordinary recurrent pair, the triple (state input index,
+     * ordinary final-state output index, prefix checkpoint output index) is
+     * resolved against the ACTUAL prepared plan. Prefix indices are stored
+     * grouped GDN-first then conv, in the SAME order as the ordinary state
+     * arrays - never map iteration order and never placeholder-owned arrays.</p>
+     *
+     * <p>off: no requirement for prefix outputs. Explicit shadow/select: unknown
+     * mode, an incomplete pair set, a missing requested output or a stale plan
+     * identity is a PREPARATION ERROR - a silently resolved OFF is not a
+     * fail-closed success.</p>
+     */
+    static InGraphKvState.PrefixSelectMode attachPrefixSelect(
+            InGraphKvState state, SameDiff decoder,
+            List<ModelIOConfig.RecurrentStatePair> recurrentStates,
+            DynamicShapePlanExecutor executor) {
+        InGraphKvState.PrefixSelectMode resolved = requestedPrefixSelectMode();
+        if (resolved == InGraphKvState.PrefixSelectMode.OFF) {
+            return InGraphKvState.PrefixSelectMode.OFF;
+        }
+        // Packet 08: shadow means a COMPARISON transaction, not a capture-only mode
+        // value. The comparison transaction is not implemented, so an explicit
+        // shadow request fails at admission rather than running capture-only while
+        // claiming validation. select is the supported fast path.
+        if (resolved == InGraphKvState.PrefixSelectMode.SHADOW) {
+            throw new IllegalStateException(
+                    "nd4j.mtp.prefixSelect=shadow is not supported: the checkpoint-vs-reference "
+                    + "comparison transaction is not implemented. Use off or select.");
+        }
+        String mode = resolved.name().toLowerCase(Locale.ROOT);
+
+        if (decoder == null || executor == null
+                || recurrentStates == null || recurrentStates.isEmpty()) {
+            throw new IllegalStateException(
+                    "nd4j.mtp.prefixSelect=" + mode + " requires a prepared recurrent target plan");
+        }
+        // Build the triples in the SAME order as the ordinary state arrays
+        // (gdnStateOutputIndices / convStateOutputIndices), which the caller
+        // populated from the same recurrentStates iteration.
+        List<Integer> gdnPrefix = new ArrayList<>();
+        List<Integer> convPrefix = new ArrayList<>();
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            if (!pair.hasPrefixCapture()) {
+                throw new IllegalStateException(
+                        "nd4j.mtp.prefixSelect=" + mode + " requires a checkpoint output for "
+                        + pair + ", but the consuming op has no prefix capture");
+            }
+            String prefixName = pair.prefixOutputName();
+            if (prefixName == null || !decoder.hasVariable(prefixName)) {
+                throw new IllegalStateException(
+                        "nd4j.mtp.prefixSelect=" + mode + " requires the checkpoint output "
+                        + prefixName + " for pair " + pair + ", but the graph does not export it");
+            }
+            int prefixIdx = resolveOutputIdx(executor, prefixName);
+            if (prefixIdx < 0) {
+                throw new IllegalStateException(
+                        "nd4j.mtp.prefixSelect=" + mode + " cannot resolve checkpoint output "
+                        + prefixName + " in the prepared target plan for pair " + pair);
+            }
+            if (pair.isGdn()) {
+                gdnPrefix.add(prefixIdx);
+            } else if (pair.isConv()) {
+                convPrefix.add(prefixIdx);
+            } else {
+                throw new IllegalStateException(
+                        "nd4j.mtp.prefixSelect=" + mode + " unrecognized recurrent kind for " + pair);
+            }
+        }
+        // Cross-check the pairing against the ordinary feedback arrays the caller
+        // just built: same layer counts, same order, and the state-input indices
+        // resolve against the same plan identity.
+        if (state.gdnStateOutputIndices == null || state.convStateOutputIndices == null
+                || gdnPrefix.size() != state.gdnStateOutputIndices.length
+                || convPrefix.size() != state.convStateOutputIndices.length) {
+            throw new IllegalStateException(
+                    "nd4j.mtp.prefixSelect=" + mode + " ordinary/prefix layer counts disagree: "
+                    + "gdn ordinary=" + (state.gdnStateOutputIndices == null ? -1 : state.gdnStateOutputIndices.length)
+                    + " gdn prefix=" + gdnPrefix.size()
+                    + " conv ordinary=" + (state.convStateOutputIndices == null ? -1 : state.convStateOutputIndices.length)
+                    + " conv prefix=" + convPrefix.size());
+        }
+        state.gdnPrefixOutputIndices = gdnPrefix.stream().mapToInt(Integer::intValue).toArray();
+        state.convPrefixOutputIndices = convPrefix.stream().mapToInt(Integer::intValue).toArray();
+        log.info("[MTP-PREFIX] mode={} gdnLayers={} convLayers={}", resolved,
+                state.gdnPrefixOutputIndices.length, state.convPrefixOutputIndices.length);
+        return resolved;
     }
 
     /**

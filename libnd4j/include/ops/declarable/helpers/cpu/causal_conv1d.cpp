@@ -29,7 +29,7 @@ namespace helpers {
 template <typename X, typename W, typename S>
 static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
                            NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
-                           int activation, int wFormat) {
+                           NDArray* prefixOut, int activation, int wFormat) {
     using PromotedT = typename sd::math::promote_type3<X, W, S>::type;
     using AccT = typename simdOps::AggregateType<PromotedT>::type;
 
@@ -115,6 +115,14 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
             }
 
             // Update conv state from the last K-1 real timesteps, not fixed-buffer padding.
+            // The same srcT resolution evaluated at prefix boundaries m = 1..effectiveLen
+            // yields the per-prefix history slots the decoder selects after partial commits.
+            S* prefixBase = nullptr;
+            if (prefixOut != nullptr) {
+                prefixBase = prefixOut->bufferAsT<S>();
+            }
+            const LongType prefixW =
+                prefixOut != nullptr ? prefixOut->sizeAt(0) : 0;
             for (LongType kk = 0; kk < K - 1; ++kk) {
                 LongType srcT = effectiveLen - (K - 1) + kk;
                 S val = static_cast<S>(0);
@@ -127,6 +135,24 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
                     }
                 }
                 sOutBuf[b * soS0 + d * soS1 + kk * soS2] = val;
+
+                if (prefixBase != nullptr) {
+                    for (LongType m = 1; m <= effectiveLen && m - 1 < prefixW; ++m) {
+                        // history_m: slot kk stores concat(stateIn, x)[m - (K-1) + kk].
+                        LongType pSrcT = m - (K - 1) + kk;
+                        S pVal = static_cast<S>(0);
+                        if (pSrcT >= 0) {
+                            pVal = static_cast<S>(xBuf[b * xS0 + pSrcT * xS1 + d * xS2]);
+                        } else if (sInBuf != nullptr) {
+                            LongType pStateIdx = (K - 1) + pSrcT;
+                            if (pStateIdx >= 0) {
+                                pVal = sInBuf[b * siS0 + d * siS1 + pStateIdx * siS2];
+                            }
+                        }
+                        S* slot = prefixBase + (((m - 1) * B + b) * D + d) * (K - 1);
+                        slot[kk] = pVal;
+                    }
+                }
             }
         }
     };
@@ -136,16 +162,63 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
 void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
                    NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
                    int activation, int wFormat) {
+    causalConv1dWithPrefix(context, x, weight, bias, stateIn, actualLen,
+                           output, stateOut, nullptr, activation, wFormat);
+}
+
+void causalConv1dWithPrefix(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
+                            NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                            NDArray* prefixOut, int activation, int wFormat) {
+    if (prefixOut != nullptr && actualLen == nullptr) {
+        THROW_EXCEPTION("causalConv1dWithPrefix: prefix capture requires an actualLen input");
+    }
+    // Range-overlap predicate over byte intervals.
+    auto rangesOverlap = [](const void* aStart, size_t aBytes,
+                            const void* bStart, size_t bBytes) {
+        const auto a = reinterpret_cast<std::uintptr_t>(aStart);
+        const auto b = reinterpret_cast<std::uintptr_t>(bStart);
+        return a < b + bBytes && b < a + aBytes;
+    };
+    const auto K = (wFormat == 0) ? weight->sizeAt(1) : weight->sizeAt(0);
+    const size_t stateBytes = static_cast<size_t>(stateOut->lengthOf()) * stateOut->sizeOfT();
+    const size_t outputBytes = static_cast<size_t>(output->lengthOf()) * output->sizeOfT();
+    if (prefixOut != nullptr) {
+        // Companion storage contract (range-aware): prefix snapshots must not
+        // overlap the retained history, the incoming history, or the activations.
+        if (prefixOut->rankOf() != 4 || prefixOut->sizeAt(1) != x->sizeAt(0)
+                || prefixOut->sizeAt(2) != x->sizeAt(2) || prefixOut->sizeAt(3) != K - 1
+                || prefixOut->sizeAt(0) < x->sizeAt(1)) {
+            THROW_EXCEPTION("causalConv1dWithPrefix: prefixOut capacity/layout mismatch for [W,B,D,K-1]");
+        }
+        const size_t prefixBytes = static_cast<size_t>(prefixOut->lengthOf()) * prefixOut->sizeOfT();
+        const bool aliasesStateIn = stateIn != nullptr
+            && rangesOverlap(stateIn->buffer(), stateBytes, prefixOut->buffer(), prefixBytes);
+        const bool aliasesStateOut = rangesOverlap(stateOut->buffer(), stateBytes,
+                                                   prefixOut->buffer(), prefixBytes);
+        const bool aliasesOutput = rangesOverlap(output->buffer(), outputBytes,
+                                                 prefixOut->buffer(), prefixBytes);
+        if (aliasesStateIn || aliasesStateOut || aliasesOutput) {
+            THROW_EXCEPTION("causalConv1dWithPrefix: prefixOut must not overlap stateIn, stateOut, or output");
+        }
+    } else if (stateIn != nullptr) {
+        // Legacy path: identical buffer reuse stays legal; partial overlap was never legal.
+        if (rangesOverlap(stateIn->buffer(), stateBytes, stateOut->buffer(), stateBytes)
+                && stateIn->buffer() != stateOut->buffer()) {
+            THROW_EXCEPTION("causalConv1d: stateIn partially overlaps stateOut");
+        }
+    }
     NDArray::preparePrimaryUse({output, stateOut}, {x, weight, bias, actualLen});
     if (stateIn != nullptr) NDArray::preparePrimaryUse({}, {stateIn});
+    if (prefixOut != nullptr) NDArray::preparePrimaryUse({prefixOut}, {});
 
     const auto stateType = stateIn != nullptr ? stateIn->dataType() : x->dataType();
     BUILD_TRIPLE_SELECTOR(x->dataType(), weight->dataType(), stateType, causalConv1d_,
-        (context, x, weight, bias, stateIn, actualLen, output, stateOut, activation, wFormat),
+        (context, x, weight, bias, stateIn, actualLen, output, stateOut, prefixOut, activation, wFormat),
         SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
     NDArray::registerPrimaryUse({output, stateOut}, {x, weight, bias, actualLen});
     if (stateIn != nullptr) NDArray::registerPrimaryUse({}, {stateIn});
+    if (prefixOut != nullptr) NDArray::registerPrimaryUse({prefixOut}, {});
 }
 
 }  // namespace helpers

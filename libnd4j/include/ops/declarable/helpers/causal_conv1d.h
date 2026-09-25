@@ -79,6 +79,23 @@ SD_LIB_HIDDEN void causalConv1d(LaunchContext* context,
                                  NDArray* actualLen, NDArray* output, NDArray* stateOut,
                                  int activation, int wFormat = 0);
 
+/**
+ * Same convolution as causalConv1d, additionally capturing the retained raw-input
+ * history AFTER each consumed input row t into prefixOut.
+ *
+ * prefixOut layout is time-leading C-order [W, B, D, K-1]; slot t holds
+ * history_m for m = t+1: the last K-1 elements of concat(stateIn, raw x[0:m]).
+ * Slot m-1 is therefore the convolution history the decoder must retain after a
+ * prefix of m consumed inputs. Only t < min(actualLen, L) slots are written.
+ * Requires actualLen (capture rides the same effectiveLen masking). May be null.
+ * stateOut dtype is used for prefixOut; values are converted as the existing
+ * state update converts them (raw x, not activated outputs).
+ */
+SD_LIB_HIDDEN void causalConv1dWithPrefix(LaunchContext* context,
+                                          NDArray* x, NDArray* weight, NDArray* bias, NDArray* stateIn,
+                                          NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                                          NDArray* prefixOut, int activation, int wFormat = 0);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

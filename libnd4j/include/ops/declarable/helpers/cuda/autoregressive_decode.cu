@@ -2000,6 +2000,130 @@ void autoregressiveDecode(
     LongType mtpChainTok[33] = {};
     int mtpChainSampled = 0;
 
+    // ── Split-boundary discriminator (SEAM_WATCH): bounded global-token-window
+    // observation. Gated on the EXISTING DspDiagnostics KV_CACHE mask (the same
+    // -Dnd4j.dsp.diagnostics=KV_CACHE channel every other probe in this file
+    // uses) - no new configuration surface. The watched window is a named
+    // constant pair for THIS investigation: the first divergence is at global
+    // output index 20, and the window 18..21 includes the transaction that
+    // produces or crosses it. globalBegin = config->sampleConfig.generatedTokenOffset
+    // (the Java handoff's completed count) + this call's tokensGenerated.
+    constexpr int SEAM_WATCH_LO = 18;
+    constexpr int SEAM_WATCH_HI = 21;
+    bool seamWatchEnabled = DSP_DIAG_ENABLED(KV_CACHE);
+    const int seamGlobalOffset = config != nullptr ? config->sampleConfig.generatedTokenOffset : 0;
+    auto seamWatchActive = [&](int globalBegin, int emitCount) {
+        if (!seamWatchEnabled) return false;
+        const int globalEnd = globalBegin + emitCount;
+        return globalEnd > SEAM_WATCH_LO && globalBegin <= SEAM_WATCH_HI;
+    };
+    // Pinned observation slots: predictor-pre-exec (A), target-ext-ready (B),
+    // decision (C), finalized (D) - one slot per watched step invocation, small
+    // fixed counts. Owners retained through the loop; drained at the existing
+    // acceptance/final sync boundaries only.
+    struct SeamWatchSlot {
+        bool armed = false;
+        int globalBegin = -1;
+        LongType basePosition = -1;
+        LongType currentPositionBase = -1;
+        int step = -1;
+        // Observation A: predictor boundary.
+        LongType predTok = -1;
+        LongType predRow = -1;
+        LongType predRope = -1;
+        LongType predCache = -1;
+        // Predictor mask columns around the pending row (dtype-decoded floats).
+        float predMaskCols[6] = {};
+        LongType predMaskCol0 = -1;
+        int predMaskCount = 0;
+        // Observation B: target ext after preparation.
+        LongType targetInputIds[8] = {};
+        int targetInputCount = 0;
+        LongType deviceAsl = -1;
+        int activeWindow = -1;
+        int windowMax = -1;
+        float targetMaskCols[8] = {};
+        LongType targetMaskCol0 = -1;
+        int targetMaskCount = 0;
+        int proposedCount = 0;
+        int maxPropose = 0;
+        int remainingOutput = 0;
+        int outputDraftCapacity = 0;
+        int effectiveK = 0;
+        // Observation C: decision.
+        LongType draftIds[8] = {};
+        LongType argmaxRows[8] = {};
+        float logitsRow0Top[4] = {};
+        int acceptedDrafts = -1;
+        int provisionalConsumed = -1;
+        int finalizedConsumed = -1;
+        int storedCount = -1;
+        const char* recoveryPath = "none";
+        // Observation D: finalized.
+        LongType emittedTokens[8] = {};
+        int emittedCount = 0;
+        LongType nextPosition = -1;
+        LongType pendingTok = -1;
+        float postMaskCols[8] = {};
+        LongType postMaskCol0 = -1;
+        bool terminalNormalizeRan = false;
+        const char* exitPath = "spec";
+    };
+    // Watched steps cannot exceed the window span + a small margin (a step
+    // crossing the window arms once). 8 slots is ample for a 4-token window.
+    constexpr int SEAM_WATCH_SLOTS = 8;
+    SeamWatchSlot seamSlots[SEAM_WATCH_SLOTS];
+    int seamSlotCount = 0;
+    // Pinned host buffers for the async device reads queued by armed slots:
+    // mask neighborhood (both rows x 4 cols), input ids (8), ASL (1), logits
+    // row 0 top-4. All reads ride the existing acceptance sync; no new syncs.
+    static_assert(SEAM_WATCH_SLOTS > 0, "seam watch slots must be positive");
+    float* seamPinnedTargetMask = nullptr;
+    LongType* seamPinnedInputIds = nullptr;
+    LongType* seamPinnedAsl = nullptr;
+    float* seamPinnedLogits = nullptr;
+    float* seamPinnedPredMask = nullptr;
+    LongType* seamPinnedPredTok = nullptr;
+    LongType* seamPinnedPredRope = nullptr;
+    LongType* seamPinnedPredCache = nullptr;
+    // Loop-scope arming + drain state for Observation A (set in the step loop,
+    // consumed by executeMtpCuda, drained at the acceptance sync).
+    bool seamPredArmed = false;
+    LongType seamPredMaskCol0 = -1;
+    int seamPredMaskCount = 0;
+    if (seamWatchEnabled) {
+        cudaError_t pinErr = cudaSuccess;
+        pinErr = cudaHostAlloc(&seamPinnedTargetMask,
+            SEAM_WATCH_SLOTS * 8 * sizeof(float), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedInputIds,
+                SEAM_WATCH_SLOTS * 8 * sizeof(LongType), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedAsl,
+                SEAM_WATCH_SLOTS * sizeof(LongType), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedLogits,
+                SEAM_WATCH_SLOTS * 4 * sizeof(float), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedPredMask,
+                SEAM_WATCH_SLOTS * 6 * sizeof(float), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedPredTok,
+                SEAM_WATCH_SLOTS * sizeof(LongType), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedPredRope,
+                SEAM_WATCH_SLOTS * sizeof(LongType), cudaHostAllocDefault);
+        if (pinErr == cudaSuccess)
+            pinErr = cudaHostAlloc(&seamPinnedPredCache,
+                SEAM_WATCH_SLOTS * sizeof(LongType), cudaHostAllocDefault);
+        if (pinErr != cudaSuccess) {
+            // Allocation failure: disable (observability failure, loudly noted).
+            DSP_DIAG(KV_CACHE,
+                     "SEAM_WATCH disabled: pinned alloc failed %s", cudaGetErrorString(pinErr));
+            seamWatchEnabled = false;
+        }
+    }
+
     // KV self-row write-visibility probe (loop scope so the speculative accept
     // block drains it): slot-0 arm records the position; the accept block re-reads
     // the same K row after executeSteadyState and compares.
@@ -2170,7 +2294,9 @@ void autoregressiveDecode(
                      0, "autoregressive_decode: batched repair KV caches must be matching BSHD arrays");
 
         const LongType hiddenRowBytes = hidden->sizeAt(2) * hidden->sizeOfT();
-        NDArray::prepareSpecialUse({ids, hidden, position, cachePosition, mask},
+        // The graph may prune its mask input. Do not refill or publish a
+        // fabricated mask write when no repair-plan consumer exists.
+        NDArray::prepareSpecialUse({ids, hidden, position, cachePosition},
                                    {specArgmaxDevice, targetHiddenRows});
         cudaMemcpyAsync(ids->specialBuffer(), specArgmaxDevice->specialBuffer(),
                         static_cast<size_t>(activeRows) * sizeof(LongType),
@@ -2180,11 +2306,15 @@ void autoregressiveDecode(
                         cudaMemcpyDeviceToDevice, *stream);
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(position->specialBuffer(), predictorBase);
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(cachePosition->specialBuffer(), predictorBase);
-        BUILD_SINGLE_SELECTOR(mask->dataType(), refillRepairMaskLauncher,
-                              (stream, mask->specialBuffer(),
-                               static_cast<LongType>(config->mtpRepairBatchWidth), maskLen,
-                               predictorBase), SD_FLOAT_TYPES);
-        NDArray::registerSpecialUse({ids, hidden, position, cachePosition, mask},
+        if (config->mtpRepairBatchCausalMaskExtIdx >= 0) {
+            NDArray::prepareSpecialUse({mask}, {});
+            BUILD_SINGLE_SELECTOR(mask->dataType(), refillRepairMaskLauncher,
+                                  (stream, mask->specialBuffer(),
+                                   static_cast<LongType>(config->mtpRepairBatchWidth), maskLen,
+                                   predictorBase), SD_FLOAT_TYPES);
+            NDArray::registerSpecialUse({mask}, {});
+        }
+        NDArray::registerSpecialUse({ids, hidden, position, cachePosition},
                                     {specArgmaxDevice, targetHiddenRows});
 
         void* repairCarryEvent = sd::graph::dspCreateEvent();
@@ -2215,6 +2345,13 @@ void autoregressiveDecode(
                      0, "autoregressive_decode: batched repair output indices are invalid");
         NDArray* key = mtpRepairBatchPlanOutputs[config->mtpRepairBatchKeyOutputIdx];
         NDArray* value = mtpRepairBatchPlanOutputs[config->mtpRepairBatchValueOutputIdx];
+        // Match the floating source/destination families supported by the
+        // stride-aware BSHD scatter. It converts values while writing; requiring
+        // identical source/cache dtypes rejects valid FLOAT -> HALF repair.
+        const auto repairScatterTypeSupported = [](DataType dtype) {
+            return dtype == DataType::HALF || dtype == DataType::BFLOAT16
+                || dtype == DataType::FLOAT32 || dtype == DataType::DOUBLE;
+        };
         REQUIRE_TRUE(key != nullptr && value != nullptr && key->rankOf() == 4 && value->rankOf() == 4
                          && key->sizeAt(0) == 1 && value->sizeAt(0) == 1
                          && key->sizeAt(1) >= activeRows && value->sizeAt(1) >= activeRows
@@ -2222,8 +2359,10 @@ void autoregressiveDecode(
                          && value->sizeAt(2) == config->mtpKvBuffers[1]->sizeAt(2)
                          && key->sizeAt(3) == config->mtpKvBuffers[0]->sizeAt(3)
                          && value->sizeAt(3) == config->mtpKvBuffers[1]->sizeAt(3)
-                         && key->dataType() == config->mtpKvBuffers[0]->dataType()
-                         && value->dataType() == config->mtpKvBuffers[1]->dataType()
+                         && repairScatterTypeSupported(key->dataType())
+                         && repairScatterTypeSupported(value->dataType())
+                         && repairScatterTypeSupported(config->mtpKvBuffers[0]->dataType())
+                         && repairScatterTypeSupported(config->mtpKvBuffers[1]->dataType())
                          && predictorBase + activeRows <= config->mtpKvBuffers[0]->sizeAt(1)
                          && predictorBase + activeRows <= config->mtpKvBuffers[1]->sizeAt(1),
                      0, "autoregressive_decode: batched repair outputs/caches violate BSHD capacity contract");
@@ -2292,6 +2431,39 @@ void autoregressiveDecode(
                             config->mtpInputIds->specialBuffer(),
                             sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
             if (draftSlot + 1 > mtpChainSampled) mtpChainSampled = draftSlot + 1;
+        }
+
+        // SEAM_WATCH Observation A: queue predictor-boundary reads when armed.
+        // draftSlot 0 arms; later slots overwrite the same pinned buffers (the
+        // loop drains after the last proposal of the step, before reuse).
+        // NOTE: these buffers belong to the decode-loop scope; the loop knows
+        // seamWatchEnabled and drains at the acceptance sync. Queue only when
+        // the loop armed us for this step.
+        if (seamWatchEnabled && draftSlot == 0 && seamPinnedPredTok != nullptr
+                && seamPredArmed) {
+            cudaMemcpyAsync(seamPinnedPredTok, config->mtpInputIds->specialBuffer(),
+                            sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+            if (config->mtpPositionOffset != nullptr)
+                cudaMemcpyAsync(seamPinnedPredRope, config->mtpPositionOffset->specialBuffer(),
+                                sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+            if (config->mtpCachePosition != nullptr)
+                cudaMemcpyAsync(seamPinnedPredCache, config->mtpCachePosition->specialBuffer(),
+                                sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+            if (config->mtpCausalMask != nullptr && config->mtpCausalMask->rankOf() == 4) {
+                // Sample 6 columns around predictorRow: [r-3, r-2, r-1, r, r+1, r+2]
+                // (clamped), row 0 of the predictor mask.
+                const LongType cols = config->mtpCausalMask->sizeAt(3);
+                const LongType c0 = std::max<LongType>(0, predictorRow - 3);
+                const int n = static_cast<int>(std::min<LongType>(6, cols - c0));
+                seamPredMaskCol0 = c0;
+                seamPredMaskCount = n;
+                for (int c = 0; c < n; c++) {
+                    cudaMemcpyAsync(seamPinnedPredMask + c,
+                                    static_cast<const char*>(config->mtpCausalMask->specialBuffer())
+                                        + static_cast<size_t>(c0 + c) * config->mtpCausalMask->sizeOfT(),
+                                    config->mtpCausalMask->sizeOfT(), cudaMemcpyDeviceToHost, *stream);
+                }
+            }
         }
 
         // Capacity gate (packet C1 / review round 4, finding E): the converted
@@ -3055,9 +3227,25 @@ void autoregressiveDecode(
     LongType totalSpeculativeAccepted = 0;
     LongType speculativeStepCount = 0;
 
+    // PACKET 4: set when the current step committed state by selecting the
+    // accepted-prefix checkpoint instead of re-executing the target. Read by
+    // commitRecurrentState: after that selection the live ext inputs already
+    // hold the state for exactly the consumed prefix, and copying the plan's
+    // post-verify outputs over them would restore the rejected-suffix state
+    // this mode exists to avoid. Reset at every committed step boundary.
+    bool selectStateCommittedThisStep = false;
+
+    // PACKET 07: per-invocation SELECT scratch. Reserved before the step loop so
+    // the per-step eligibility probe never allocates, and cleared per step so the
+    // borrowed plan-output pointers cannot leak across invocations. Not owned:
+    // the checkpoint arrays belong to the plan's output storage.
+    std::vector<NDArray*> selectScratchSrc;
+    std::vector<NDArray*> selectScratchDst;
+
     for (int step = 0; step < maxNewTokens; step++) {
         // A rollback snapshot belongs to one commit transaction, not one restore.
         kvRowSnapshotBase = -1;
+        selectStateCommittedThisStep = false;
         // Cancellation is observed only at a committed step boundary. This
         // keeps KV/recurrent state coherent for a later continuation.
         if (config->cancelCallback != nullptr &&
@@ -3070,6 +3258,21 @@ void autoregressiveDecode(
         if (tokensGenerated >= maxNewTokens) break;
         const int tokensBeforeStep = tokensGenerated;
         auto stepStart = std::chrono::high_resolution_clock::now();
+
+        // SEAM_WATCH: arm Observation A for this step when its global output
+        // window intersects the watched range. globalBegin for this step is
+        // the invocation-entry offset + this call's tokensGenerated.
+        const int seamGlobalBegin = seamGlobalOffset + tokensGenerated;
+        const int seamEmitEstimate = std::min(maxNewTokens - tokensGenerated, 8);
+        const bool seamStepWatched = seamWatchActive(seamGlobalBegin, seamEmitEstimate);
+        seamPredArmed = seamStepWatched;
+        SeamWatchSlot* seamSlot = nullptr;
+        if (seamStepWatched && seamSlotCount < SEAM_WATCH_SLOTS) {
+            seamSlot = &seamSlots[seamSlotCount];
+            seamSlot->globalBegin = seamGlobalBegin;
+            seamSlot->step = step;
+            seamSlotCount++;
+        }
 
         // -- Step 1: Update plan external inputs for this decode step --
         // decodeEmbedding IS prefillEmbeddings (same NDArray, same device address).
@@ -3360,18 +3563,53 @@ void autoregressiveDecode(
             capturePreVerificationKvRows(currentPosition, 1 + proposedCount);
         }
         if (useScalarTarget) prepareScalarTarget();
-        // SCALAR-PLAN RETIREMENT (gates 8-10 evidence chain): the captured
-        // scalar plan is poisoned by ANY interleaved plan execution on the
-        // shared session. Gate 10 proved the predictor maintenance forward
-        // ALONE suffices (K=0 gen: step-0 scalar call clean after capture,
-        // one maintenance forward, step-1 scalar call all-NaN with all ext
-        // inputs finite and retry deterministically NaN). The window plan
-        // tolerates interleaving (gate-10 gen 1: 57 clean steps interleaved
-        // with predictor calls; gate-8: 57 bypass reruns clean). Routing the
-        // non-spec step through the window plan at activeWindow=1 - the same
-        // teacher-forced-proven geometry as the rerun bypass - preserves
-        // token parity while eliminating the poisoned capture. activeWindow
-        // is already 1 here (no proposals), so no refill changes are needed.
+        // SEAM_WATCH Observation B (TARGET_EXT_READY): queue the post-preparation
+        // ext-input reads immediately before the REAL target execution, after all
+        // preparation (mask refill, ASL update, prepareScalarTarget) is complete.
+        if (seamSlot != nullptr && seamPinnedTargetMask != nullptr) {
+            NDArray* tMask = causalMask;
+            NDArray* tIds = inputIds;
+            NDArray* tAsl = (config->actualSequenceLengthExtIdx >= 0
+                             && config->actualSequenceLengthExtIdx < numExtInputs)
+                            ? extInputs[config->actualSequenceLengthExtIdx] : nullptr;
+            seamSlot->activeWindow = config->activeWindow;
+            seamSlot->windowMax = static_cast<int>(config->windowMax);
+            seamSlot->currentPositionBase = currentPosition;
+            seamSlot->proposedCount = proposedCount;
+            seamSlot->maxPropose = maxPropose;
+            seamSlot->remainingOutput = remainingOutput;
+            seamSlot->outputDraftCapacity = outputDraftCapacity;
+            seamSlot->effectiveK = specK;
+            if (tIds != nullptr && tIds->dataType() == DataType::INT64) {
+                const int n = static_cast<int>(std::min<LongType>(8, tIds->lengthOf()));
+                seamSlot->targetInputCount = n;
+                cudaMemcpyAsync(seamPinnedInputIds, tIds->specialBuffer(),
+                                static_cast<size_t>(n) * sizeof(LongType),
+                                cudaMemcpyDeviceToHost, *stream);
+            }
+            if (tAsl != nullptr) {
+                cudaMemcpyAsync(seamPinnedAsl, tAsl->specialBuffer(),
+                                sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+            }
+            if (tMask != nullptr && tMask->rankOf() == 4) {
+                const LongType cols = tMask->sizeAt(3);
+                // Columns currentPosition-1 .. currentPosition+6 clamped, both rows.
+                const LongType c0 = std::max<LongType>(0, currentPosition - 1);
+                const int n = static_cast<int>(std::min<LongType>(4, cols - c0));
+                seamSlot->targetMaskCol0 = c0;
+                seamSlot->targetMaskCount = n;
+                const size_t tsize = tMask->sizeOfT();
+                for (int r = 0; r < 2 && r < tMask->sizeAt(2); r++) {
+                    for (int c = 0; c < n; c++) {
+                        cudaMemcpyAsync(
+                            seamPinnedTargetMask + r * 4 + c,
+                            static_cast<const char*>(tMask->specialBuffer())
+                                + (static_cast<size_t>(r) * cols + c0 + c) * tsize,
+                            tsize, cudaMemcpyDeviceToHost, *stream);
+                    }
+                }
+            }
+        }
         if (proposedCount > 0) p0.targetVerificationForwards++;
         const auto targetPhaseBefore = plan->getPlanPhase();
         Status planStatus = plan->executeSteadyState(
@@ -3518,6 +3756,15 @@ void autoregressiveDecode(
         // with same type/length (guaranteed by gated_delta_rule op shape function),
         // so raw memcpy is safe and avoids the stream mismatch entirely.
         auto commitRecurrentState = [&]() {
+            if (selectStateCommittedThisStep) {
+                // PACKET 4: the selected-state commit already wrote the live
+                // recurrent ext inputs for exactly the consumed prefix. The plan
+                // outputs still hold the post-verification full-window state
+                // (including the rejected suffix), so copying them here would
+                // overwrite the selection. The copy cost was already accounted
+                // as checkpointSelectBytes.
+                return;
+            }
             if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr
                 && config->gdnStateOutputIndices != nullptr) {
                 for (int s = 0; s < config->numGdnStatePairs; s++) {
@@ -3693,6 +3940,39 @@ void autoregressiveDecode(
             REQUIRE_TRUE(acceptanceSync == cudaSuccess, 0,
                          "autoregressive_decode: acceptance readback failed: %s",
                          cudaGetErrorString(acceptanceSync));
+            // SEAM_WATCH Observation C: fill the decision fields now - the
+            // acceptance sync completed all queued pinned reads (A + B) too.
+            if (seamSlot != nullptr) {
+                seamSlot->armed = true;
+                const int nd = std::min(proposedCount, 8);
+                for (int i = 0; i < nd; i++) seamSlot->draftIds[i] = draftIds[i];
+                const int na = std::min(numRows, 8);
+                for (int i = 0; i < na && i < 8; i++) seamSlot->argmaxRows[i] = argmaxDst[i];
+                for (int i = 0; i < 4; i++) seamSlot->logitsRow0Top[i] = specLogitsSample[i];
+                seamSlot->targetInputCount = seamSlot->targetInputCount > 0
+                    ? seamSlot->targetInputCount : 0;
+                if (seamPinnedInputIds != nullptr) {
+                    for (int i = 0; i < seamSlot->targetInputCount && i < 8; i++) {
+                        seamSlot->targetInputIds[i] = seamPinnedInputIds[i];
+                    }
+                }
+                if (seamPinnedAsl != nullptr) seamSlot->deviceAsl = seamPinnedAsl[0];
+                if (seamPinnedTargetMask != nullptr) {
+                    for (int i = 0; i < 8; i++) seamSlot->targetMaskCols[i] = seamPinnedTargetMask[i];
+                }
+                if (seamPinnedPredTok != nullptr) seamSlot->predTok = seamPinnedPredTok[0];
+                if (seamPinnedPredRope != nullptr) seamSlot->predRope = seamPinnedPredRope[0];
+                if (seamPinnedPredCache != nullptr) seamSlot->predCache = seamPinnedPredCache[0];
+                if (seamPinnedPredMask != nullptr) {
+                    seamSlot->predMaskCol0 = seamPredMaskCol0;
+                    seamSlot->predMaskCount = seamPredMaskCount;
+                    for (int i = 0; i < seamPredMaskCount && i < 6; i++) {
+                        seamSlot->predMaskCols[i] = seamPinnedPredMask[i];
+                    }
+                }
+                // acceptedDrafts filled by the accept rule just below; provisional
+                // consumedCount likewise. The final fill happens at Observation D.
+            }
             if (captureMtpInputs) {
                 tensorDiagnostics.drainTensorSnapshots(reinterpret_cast<void*>(*stream));
             }
@@ -3954,6 +4234,335 @@ void autoregressiveDecode(
                     && config->actualSequenceLengthExtIdx >= 0
                     && config->actualSequenceLengthExtIdx < numExtInputs
                     && extInputs[config->actualSequenceLengthExtIdx] != nullptr) {
+                // PACKET 07 SELECT FAST PATH (mode=2): the verification pass ran the
+                // companion recurrent ops, so prefix[consumedCount-1] holds exactly
+                // the state greedy decoding would hold after the consumed prefix -
+                // the same property the legacy rerun re-derives by re-executing the
+                // whole target. Admission is ALL-OR-NOTHING: every layer is fully
+                // validated (shape, dtype, storage, coverage, row capacity) BEFORE
+                // any mutation, so a malformed binding can never partly commit.
+                // An explicitly requested but unqualified layout takes the legacy
+                // restore/rerun fallback BEFORE any selected-state copy and is
+                // counted in checkpointSelectFallbacks.
+                bool selectEligible = config->mtpPrefixSelectMode == 2
+                    && (config->mtpPrefixGdnLayerCount + config->mtpPrefixConvLayerCount) > 0;
+                // Packet 07/09 pre-loop fallback reporting: every rejection BEFORE
+                // the layer loops gets its own reason record.
+                if (!selectEligible) {
+                    DSP_DIAG(KV_CACHE,
+                             "SELECT_INELIGIBLE reason=%s mode=%d gdnLayers=%d convLayers=%d",
+                             config->mtpPrefixSelectMode != 2 ? "mode-not-select" : "empty-layer-mapping",
+                             config->mtpPrefixSelectMode,
+                             config->mtpPrefixGdnLayerCount, config->mtpPrefixConvLayerCount);
+                }
+                // Per-invocation scratch, allocated once before the step loop and
+                // cleared per step (reviewer packet 07: thread-local vectors retain
+                // pointers across calls; per-invocation ownership stays explicit).
+                selectScratchSrc.clear();
+                selectScratchDst.clear();
+                std::vector<NDArray*>& selectPrefixSrc = selectScratchSrc;
+                std::vector<NDArray*>& selectStateDst = selectScratchDst;
+                if (selectEligible) {
+                    // consumedCount must address a row of THIS verification window.
+                    if (consumedCount < 1) {
+                        selectEligible = false;
+                        DSP_DIAG(KV_CACHE,
+                                 "SELECT_INELIGIBLE reason=invalid-consumed-count consumed=%d mode=%d",
+                                 consumedCount, config->mtpPrefixSelectMode);
+                    }
+                }
+                if (selectEligible && (config->actualSequenceLengthExtIdx < 0
+                        || config->actualSequenceLengthExtIdx >= numExtInputs
+                        || extInputs[config->actualSequenceLengthExtIdx] == nullptr)) {
+                    selectEligible = false;
+                    DSP_DIAG(KV_CACHE,
+                             "SELECT_INELIGIBLE reason=actual-length-control-unavailable extIdx=%d",
+                             config->actualSequenceLengthExtIdx);
+                }
+                if (selectEligible) {
+                    selectPrefixSrc.reserve(config->mtpPrefixGdnLayerCount
+                                            + config->mtpPrefixConvLayerCount);
+                    selectStateDst.reserve(config->mtpPrefixGdnLayerCount
+                                           + config->mtpPrefixConvLayerCount);
+                    // Genuine dense-contiguity check. ews() alone is NOT proof of
+                    // density: for singleton dimensions NDArray::ews() reports 0
+                    // (shape.cpp returns 0 when a dim size is 1), yet the storage can
+                    // be perfectly contiguous - dstShape=[1,1,2] dstStride=[2,2,1]
+                    // is dense. Verify via the C-order stride contract instead:
+                    // stride[d] == product of sizes[d+1..rank), plus row-major flag.
+                    auto isDenseCOrder = [](NDArray* a) -> bool {
+                        if (a == nullptr) return false;
+                        if (a->isEmpty()) return false;
+                        const int rank = a->rankOf();
+                        if (a->ordering() != 'c') return false;
+                        if (rank == 0) return true;
+                        LongType expected = 1;
+                        for (int d = rank - 1; d >= 0; --d) {
+                            if (a->sizeAt(d) != 1 && a->strideAt(d) != expected) {
+                                return false;
+                            }
+                            // Singleton dims may carry any stride; non-singleton dims
+                            // must follow the exact C-order packing.
+                            expected *= a->sizeAt(d);
+                        }
+                        return true;
+                    };
+                    // Host-side metadata snapshot helpers for the rejection record.
+                    // Built ONLY from declared NDArray APIs (rankOf/sizeAt/strideAt/
+                    // ordering/ews/dataType/lengthOf); kept alive through the
+                    // DSP_DIAG call below. No tensor values, no readback.
+                    auto shapeString = [](NDArray* a) {
+                        std::string s = "[";
+                        if (a == nullptr) return std::string("null");
+                        for (int d = 0; d < a->rankOf(); ++d) {
+                            if (d) s += ",";
+                            s += std::to_string(static_cast<long long>(a->sizeAt(d)));
+                        }
+                        s += "]";
+                        return s;
+                    };
+                    auto strideString = [](NDArray* a) {
+                        std::string s = "[";
+                        if (a == nullptr) return std::string("null");
+                        for (int d = 0; d < a->rankOf(); ++d) {
+                            if (d) s += ",";
+                            s += std::to_string(static_cast<long long>(a->strideAt(d)));
+                        }
+                        s += "]";
+                        return s;
+                    };
+                    // Resolves one layer and reports the FIRST failed predicate with
+                    // full host-side metadata when it fails. Returns the failure
+                    // reason, or nullptr when the layer is admitted.
+                    auto resolveLayer = [&](const char* kind, int pairOrdinal,
+                            int stateExtIdx, int prefixOutIdx) -> const char* {
+                        NDArray* dst = (stateExtIdx >= 0 && stateExtIdx < numExtInputs)
+                            ? extInputs[stateExtIdx] : nullptr;
+                        NDArray* src = (prefixOutIdx >= 0 && prefixOutIdx < numPlanOutputs)
+                            ? planOutputs[prefixOutIdx] : nullptr;
+                        const char* reason = nullptr;
+                        if (dst == nullptr) {
+                            reason = "missing-destination";
+                        } else if (src == nullptr) {
+                            reason = "missing-checkpoint-output";
+                        } else if (src->rankOf() != dst->rankOf() + 1) {
+                            reason = "wrong-rank";
+                        } else if (src->sizeAt(0) < consumedCount) {
+                            reason = "insufficient-checkpoint-capacity";
+                        } else {
+                            for (int d = 0; d < dst->rankOf(); ++d) {
+                                // FULL trailing-dim match including the last state
+                                // dimension: src [W, B, s0, ...] needs src->sizeAt(d+1)
+                                // == dst->sizeAt(d) for every d.
+                                if (src->sizeAt(d + 1) != dst->sizeAt(d)) {
+                                    reason = "trailing-dimension-mismatch";
+                                    break;
+                                }
+                            }
+                        }
+                        if (reason == nullptr && src->dataType() != dst->dataType()) {
+                            reason = "dtype-mismatch";
+                        }
+                        if (reason == nullptr && !isDenseCOrder(src)) {
+                            reason = "source-layout";
+                        }
+                        if (reason == nullptr && !isDenseCOrder(dst)) {
+                            reason = "destination-layout";
+                        }
+                        if (reason == nullptr) {
+                            // Overlap over the FULL checkpoint span (all W rows), not
+                            // just the selected row: any overlap between the whole
+                            // prefix storage and the destination disqualifies.
+                            const char* srcB = static_cast<const char*>(src->specialBuffer());
+                            char* dstB = static_cast<char*>(dst->specialBuffer());
+                            const size_t srcBytes = static_cast<size_t>(src->lengthOf())
+                                * static_cast<size_t>(src->sizeOfT());
+                            const size_t dstBytes = static_cast<size_t>(dst->lengthOf())
+                                * static_cast<size_t>(dst->sizeOfT());
+                            if (srcB < dstB + dstBytes && dstB < srcB + srcBytes) {
+                                reason = "overlapping-storage";
+                            }
+                        }
+                        if (reason != nullptr) {
+                            const std::string dstShape = shapeString(dst);
+                            const std::string srcShape = shapeString(src);
+                            const std::string dstStride = strideString(dst);
+                            const std::string srcStride = strideString(src);
+                            DSP_DIAG(KV_CACHE,
+                                     "SELECT_INELIGIBLE reason=%s layer=%s.%d consumed=%d "
+                                     "stateExtIdx=%d prefixOutIdx=%d "
+                                     "dstShape=%s srcShape=%s dstStride=%s srcStride=%s "
+                                     "dstOrder=%c srcOrder=%c dstEws=%lld srcEws=%lld "
+                                     "dstDtype=%d srcDtype=%d "
+                                     "dstWrapper=%p dstDevice=%p srcWrapper=%p srcDevice=%p",
+                                     reason, kind, pairOrdinal, consumedCount,
+                                     stateExtIdx, prefixOutIdx,
+                                     dstShape.c_str(), srcShape.c_str(),
+                                     dstStride.c_str(), srcStride.c_str(),
+                                     dst != nullptr ? dst->ordering() : '?',
+                                     src != nullptr ? src->ordering() : '?',
+                                     dst != nullptr ? (long long)dst->ews() : -1LL,
+                                     src != nullptr ? (long long)src->ews() : -1LL,
+                                     dst != nullptr ? (int)dst->dataType() : -1,
+                                     src != nullptr ? (int)src->dataType() : -1,
+                                     (void*)dst,
+                                     dst != nullptr ? dst->specialBuffer() : nullptr,
+                                     (void*)src,
+                                     src != nullptr ? src->specialBuffer() : nullptr);
+                        } else {
+                            // Admitted: record the copy pair. Without this the commit
+                            // block runs with an EMPTY destination list (observed as
+                            // SPEC_STATE_SELECT layers=0, checkpointSelectBytes=0) and
+                            // no state is written at all.
+                            selectPrefixSrc.push_back(src);
+                            selectStateDst.push_back(dst);
+                        }
+                        return reason;
+                    };
+                    for (int s = 0; s < config->mtpPrefixGdnLayerCount && selectEligible; s++) {
+                        const char* reason = resolveLayer("gdn", s,
+                                config->mtpPrefixGdnInputIndices[s],
+                                config->mtpPrefixGdnOutputIndices[s]);
+                        if (reason != nullptr) selectEligible = false;
+                    }
+                    for (int s = 0; s < config->mtpPrefixConvLayerCount && selectEligible; s++) {
+                        const char* reason = resolveLayer("conv", s,
+                                config->mtpPrefixConvInputIndices[s],
+                                config->mtpPrefixConvOutputIndices[s]);
+                        if (reason != nullptr) selectEligible = false;
+                    }
+                }
+                if (selectEligible) {
+                    // ONE selected-state commit. No restore, no rerun, no recovery
+                    // forward: ordinary partial acceptance costs ONE verification.
+                    //
+                    // COMMIT INVARIANT: an internally empty or incomplete copy list
+                    // must never count as a SELECT commit. Eligibility above
+                    // admitted exactly GDN+conv layers, so the recorded lists must
+                    // match that count exactly before any byte is written.
+                    const size_t expectedLayers =
+                        static_cast<size_t>(config->mtpPrefixGdnLayerCount)
+                        + static_cast<size_t>(config->mtpPrefixConvLayerCount);
+                    REQUIRE_TRUE(
+                        expectedLayers > 0
+                            && selectPrefixSrc.size() == expectedLayers
+                            && selectStateDst.size() == expectedLayers, 0,
+                        "autoregressive_decode: SELECT admission produced an incomplete "
+                        "copy list (expected %zu layers, got %zu sources / %zu destinations); "
+                        "refusing to commit or fall back silently",
+                        expectedLayers, selectPrefixSrc.size(), selectStateDst.size());
+                    // Cross-layer overlap: no destination may alias ANY checkpoint
+                    // source (not only its own) or any other destination. Per-layer
+                    // checks already cover own-source and same-kind pairs; add the
+                    // remaining cross pairs here, before the first write.
+                    for (size_t a = 0; a < selectStateDst.size(); a++) {
+                        for (size_t b = a + 1; b < selectStateDst.size(); b++) {
+                            const char* aB = static_cast<const char*>(selectStateDst[a]->specialBuffer());
+                            const size_t aBytes = static_cast<size_t>(selectStateDst[a]->lengthOf())
+                                * static_cast<size_t>(selectStateDst[a]->sizeOfT());
+                            const char* bB = static_cast<const char*>(selectStateDst[b]->specialBuffer());
+                            const size_t bBytes = static_cast<size_t>(selectStateDst[b]->lengthOf())
+                                * static_cast<size_t>(selectStateDst[b]->sizeOfT());
+                            if (aB < bB + bBytes && bB < aB + aBytes) {
+                                REQUIRE_TRUE(false, 0,
+                                    "autoregressive_decode: SELECT destinations overlap "
+                                    "(layer %zu vs %zu); refusing to commit",
+                                    a, b);
+                            }
+                            for (size_t k = 0; k < selectPrefixSrc.size(); k++) {
+                                const char* kB = static_cast<const char*>(selectPrefixSrc[k]->specialBuffer());
+                                const size_t kBytes = static_cast<size_t>(selectPrefixSrc[k]->lengthOf())
+                                    * static_cast<size_t>(selectPrefixSrc[k]->sizeOfT());
+                                if ((aB < kB + kBytes && kB < aB + aBytes)
+                                        || (bB < kB + kBytes && kB < bB + bBytes)) {
+                                    REQUIRE_TRUE(false, 0,
+                                        "autoregressive_decode: SELECT destination %zu or %zu "
+                                        "overlaps checkpoint source %zu; refusing to commit",
+                                        a, b, k);
+                                }
+                            }
+                        }
+                    }
+                    // Expected selected-state byte total from the admitted
+                    // destinations, with checked accumulation.
+                    std::uint64_t expectedSelectBytes = 0;
+                    for (NDArray* dst : selectStateDst) {
+                        const std::uint64_t bytes =
+                            static_cast<std::uint64_t>(dst->lengthOf())
+                            * static_cast<std::uint64_t>(dst->sizeOfT());
+                        if (bytes != 0 && expectedSelectBytes > (std::uint64_t)-1 - bytes) {
+                            REQUIRE_TRUE(false, 0,
+                                "autoregressive_decode: SELECT state byte total overflows");
+                        }
+                        expectedSelectBytes += bytes;
+                    }
+                    REQUIRE_TRUE(expectedSelectBytes > 0, 0,
+                        "autoregressive_decode: SELECT state byte total is zero");
+                    const LongType selectedRow = static_cast<LongType>(consumedCount) - 1;
+                    std::uint64_t copiedBytes = 0;
+                    for (size_t li = 0; li < selectStateDst.size(); li++) {
+                        NDArray* src = selectPrefixSrc[li];
+                        NDArray* dst = selectStateDst[li];
+                        // Per-layer slot size: GDN and conv states differ, so the row
+                        // stride is this layer's own element count (validated above:
+                        // the checkpoint's trailing dims equal the state shape exactly,
+                        // and both are dense C-order, so row stride == state length).
+                        const size_t slotElems = static_cast<size_t>(dst->lengthOf());
+                        const size_t rowBytes = slotElems * static_cast<size_t>(dst->sizeOfT());
+                        // BOTH sides participate in access bookkeeping: the checkpoint
+                        // read and the state write are ordered on the same stream.
+                        NDArray::prepareSpecialUse({dst}, {src});
+                        // The copy addresses are acquired AFTER preparation: the
+                        // pre-computed source base is not assumed to remain valid.
+                        const void* srcBase = static_cast<const char*>(src->specialBuffer())
+                            + static_cast<size_t>(selectedRow) * slotElems * src->sizeOfT();
+                        void* dstAddr = dst->specialBuffer();
+                        auto selErr = cudaMemcpyAsync(dstAddr, srcBase, rowBytes,
+                            cudaMemcpyDeviceToDevice, *stream);
+                        // Counted only for successfully submitted copies.
+                        REQUIRE_TRUE(selErr == cudaSuccess, 0,
+                            "autoregressive_decode: prefix checkpoint select copy failed "
+                            "(layer %zu of %zu, %zu bytes already submitted): %s",
+                            li, selectStateDst.size(), copiedBytes,
+                            cudaGetErrorString(selErr));
+                        copiedBytes += static_cast<std::uint64_t>(rowBytes);
+                        DSP_DIAG(KV_CACHE,
+                                 "SELECT_COPY layer=%zu src=%p dst=%p rowBytes=%zu row=%lld",
+                                 li, const_cast<void*>(srcBase), dstAddr, rowBytes,
+                                 static_cast<long long>(selectedRow));
+                        NDArray::registerSpecialUse({dst}, {src});
+                    }
+                    // The transaction is selected only after EVERY admitted layer's
+                    // copy has been submitted.
+                    REQUIRE_TRUE(copiedBytes == expectedSelectBytes, 0,
+                        "autoregressive_decode: SELECT copied %llu of %llu expected bytes",
+                        static_cast<unsigned long long>(copiedBytes),
+                        static_cast<unsigned long long>(expectedSelectBytes));
+                    p0.checkpointSelectBytes += copiedBytes;
+                    // Advance actual_sequence_length to the consumed prefix: the
+                    // state now reflects exactly those inputs.
+                    NDArray* aslArr = extInputs[config->actualSequenceLengthExtIdx];
+                    NDArray::prepareSpecialUse({aslArr}, {});
+                    updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
+                        aslArr->specialBuffer(), static_cast<LongType>(consumedCount));
+                    NDArray::registerSpecialUse({aslArr}, {});
+                    config->activeWindow = static_cast<int>(consumedCount);
+                    p0.checkpointSelectCommits++;
+                    selectStateCommittedThisStep = true;
+                    DSP_DIAG(KV_CACHE,
+                             "SPEC_STATE_SELECT step=%d proposed=%d accepted=%d "
+                             "consumed=%d layers=%d - checkpoint[m-1] committed, no rerun",
+                             step, proposedCount, acceptedDrafts, consumedCount,
+                             static_cast<int>(selectStateDst.size()));
+                }
+                if (config->mtpPrefixSelectMode == 2 && !selectStateCommittedThisStep) {
+                    // Select was requested but this step could not honour it (incomplete
+                    // binding, shape mismatch, or index unresolvable). The legacy
+                    // restore/rerun below runs unchanged; the count makes the fallback
+                    // visible instead of silently accepting the rerun cost.
+                    p0.checkpointSelectFallbacks++;
+                }
+                if (!selectStateCommittedThisStep) {
                 // T3b parity fix (step-99 flip, 1536 vs 5218): the rerun must be
                 // width-1 in GEOMETRY, not just in recurrent row count. asl only
                 // gates GDN/conv; attention/GEMM/softmax otherwise run the frozen
@@ -4311,6 +4920,7 @@ void autoregressiveDecode(
                                  (long long)rerunRefreshedToken, (long long)argmaxDst[0],
                                  rerunLogitsNan ? 1 : 0, rerunStateNan ? 1 : 0);
                 }
+                }   // end if (!selectStateCommittedThisStep)
             }
             // -- FINALIZED EMISSION SEQUENCE (review round 2) ---------------------
             // Reconstruct the lossless verify emission, apply the authoritative
@@ -4674,6 +5284,80 @@ void autoregressiveDecode(
             }
             NDArray::registerSpecialUse({generatedTokenIds}, {specArgmaxDevice});
 
+            // SEAM_WATCH Observation D: finalized commit. All decision fields are
+            // already in the slot (Observation C); fill the finalized fields and
+            // emit the complete record. Host-only data - no new sync needed.
+            if (seamSlot != nullptr) {
+                seamSlot->acceptedDrafts = acceptedDrafts;
+                seamSlot->provisionalConsumed = 1 + acceptedDrafts;
+                seamSlot->finalizedConsumed = consumedCount;
+                seamSlot->storedCount = storedCount;
+                seamSlot->basePosition = basePosition;
+                const int ne = std::min(n, 8);
+                seamSlot->emittedCount = ne;
+                for (int i = 0; i < ne; i++) seamSlot->emittedTokens[i] = argmaxDst[i];
+                seamSlot->nextPosition = basePosition + consumedCount;
+                seamSlot->pendingTok = argmaxDst[consumedCount - 1];
+                DSP_DIAG(KV_CACHE,
+                         "SEAM_WATCH_A step=%d globalBegin=%d basePos=%lld "
+                         "predTok=%lld predRope=%lld predCache=%lld "
+                         "predMask[col0=%lld n=%d]=[%g,%g,%g,%g,%g,%g]",
+                         step, seamSlot->globalBegin, (long long)basePosition,
+                         (long long)seamSlot->predTok, (long long)seamSlot->predRope,
+                         (long long)seamSlot->predCache,
+                         (long long)seamSlot->predMaskCol0, seamSlot->predMaskCount,
+                         seamSlot->predMaskCols[0], seamSlot->predMaskCols[1],
+                         seamSlot->predMaskCols[2], seamSlot->predMaskCols[3],
+                         seamSlot->predMaskCols[4], seamSlot->predMaskCols[5]);
+                DSP_DIAG(KV_CACHE,
+                         "SEAM_WATCH_B step=%d globalBegin=%d curPos=%lld W=%d activeWin=%d "
+                         "remainingOutput=%d draftCap=%d maxPropose=%d proposed=%d specK=%d "
+                         "deviceAsl=%lld inputIds=[%lld,%lld,%lld] "
+                         "mask[col0=%lld n=%d] r0=[%g,%g,%g,%g] r1=[%g,%g,%g,%g]",
+                         step, seamSlot->globalBegin,
+                         (long long)seamSlot->currentPositionBase,
+                         seamSlot->windowMax, seamSlot->activeWindow,
+                         seamSlot->remainingOutput, seamSlot->outputDraftCapacity,
+                         seamSlot->maxPropose, seamSlot->proposedCount, seamSlot->effectiveK,
+                         (long long)seamSlot->deviceAsl,
+                         (long long)seamSlot->targetInputIds[0],
+                         (long long)seamSlot->targetInputIds[1],
+                         (long long)seamSlot->targetInputIds[2],
+                         (long long)seamSlot->targetMaskCol0, seamSlot->targetMaskCount,
+                         seamSlot->targetMaskCols[0], seamSlot->targetMaskCols[1],
+                         seamSlot->targetMaskCols[2], seamSlot->targetMaskCols[3],
+                         seamSlot->targetMaskCols[4], seamSlot->targetMaskCols[5],
+                         seamSlot->targetMaskCols[6], seamSlot->targetMaskCols[7]);
+                DSP_DIAG(KV_CACHE,
+                         "SEAM_WATCH_C step=%d globalBegin=%d drafts=[%lld,%lld] "
+                         "argmax=[%lld,%lld,%lld] logitsRow0=[%g,%g,%g,%g] "
+                         "accepted=%d provisional=%d",
+                         step, seamSlot->globalBegin,
+                         (long long)seamSlot->draftIds[0], (long long)seamSlot->draftIds[1],
+                         (long long)seamSlot->argmaxRows[0], (long long)seamSlot->argmaxRows[1],
+                         (long long)seamSlot->argmaxRows[2],
+                         seamSlot->logitsRow0Top[0], seamSlot->logitsRow0Top[1],
+                         seamSlot->logitsRow0Top[2], seamSlot->logitsRow0Top[3],
+                         seamSlot->acceptedDrafts, seamSlot->provisionalConsumed);
+                DSP_DIAG(KV_CACHE,
+                         "SEAM_WATCH_D step=%d globalBegin=%d globalEnd=%d "
+                         "emitted=[%lld,%lld,%lld,%lld] stored=%d finalizedConsumed=%d "
+                         "nextPos=%lld pendingTok=%lld path=%s",
+                         step, seamSlot->globalBegin,
+                         seamSlot->globalBegin + seamSlot->emittedCount,
+                         (long long)seamSlot->emittedTokens[0],
+                         (long long)seamSlot->emittedTokens[1],
+                         (long long)seamSlot->emittedTokens[2],
+                         (long long)seamSlot->emittedTokens[3],
+                         seamSlot->storedCount, seamSlot->finalizedConsumed,
+                         (long long)seamSlot->nextPosition,
+                         (long long)seamSlot->pendingTok,
+                         consumedCount > 1 ? "multirow-rerun"
+                             : acceptedDrafts > 0 ? "rerun"
+                             : proposedCount > 0 ? "scalar-rerun"
+                             : "scalar-no-proposal");
+            }
+
             // Gated diagnostic event: the first speculative steps carry the whole
             // correctness story (which drafts were proposed, what the target's
             // per-row argmaxes were, where acceptance stopped). All values are
@@ -4771,6 +5455,10 @@ void autoregressiveDecode(
             // Row zero now exposes exactly the committed prefix; publish it to
             // every window row without changing the nonterminal verifier mask.
             if ((shouldStop || tokensGenerated == maxNewTokens) && useWindowSubstrate) {
+                if (seamSlot != nullptr) {
+                    seamSlot->terminalNormalizeRan = true;
+                    seamSlot->exitPath = (shouldStop ? "terminal-stop" : "terminal-budget");
+                }
                 NDArray* mask = config->windowGridMask;
                 LongType rowLen = mask->sizeAt(-1);
                 NDArray::prepareSpecialUse({mask}, {});
@@ -5470,6 +6158,8 @@ void autoregressiveDecode(
              "targetVerify=%d reruns=%d shortened=%d predictorProposal=%d "
              "predictorRepair=%d predictorMaintenance=%d repairLmHead=%d "
              "snapshotBytes=%llu restoreBytes=%llu stateCommitBytes=%llu "
+             "checkpointSelectCommits=%d checkpointSelectFallbacks=%d "
+             "checkpointSelectBytes=%llu "
              "hostReadbackBytes=%llu hostWaits=%llu phaseTransitions=%d "
              "planReplay=%d planWarmup=%d targetExec=%d targetPhase=%d "
              "multiRow=%d specK=%d windowMax=%d",
@@ -5482,6 +6172,8 @@ void autoregressiveDecode(
              (unsigned long long)p0.snapshotBytes,
              (unsigned long long)p0.restoreBytes,
              (unsigned long long)p0.stateCommitBytes,
+             p0.checkpointSelectCommits, p0.checkpointSelectFallbacks,
+             (unsigned long long)p0.checkpointSelectBytes,
              (unsigned long long)p0.hostReadbackBytes,
              (unsigned long long)p0.hostWaitBoundaries,
              p0.planPhaseTransitions, p0.planReplayForwards,

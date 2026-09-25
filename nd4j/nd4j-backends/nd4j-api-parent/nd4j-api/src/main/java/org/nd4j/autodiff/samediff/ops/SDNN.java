@@ -2675,6 +2675,64 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Gated Delta Rule with per-timestep state checkpoints (accepted-prefix capture).
+   *
+   * Same recurrence as {@link #gatedDeltaRule(String[], SDVariable, SDVariable, SDVariable,
+   * SDVariable, SDVariable, SDVariable, SDVariable)} but requires the actualLength scalar and
+   * additionally produces a time-leading prefix tensor whose slot t holds the recurrent state
+   * AFTER consuming input rows 0..t. Used by bundled-MTP accepted-prefix state selection.
+   *
+   * @param names names for [output, stateOut, prefix]
+   * @return output [B,L,H,D_v], stateOut [B,H,D_k,D_v], prefix [W,B,H,D_k,D_v]
+   */
+  public SDVariable[] gatedDeltaRuleWithPrefix(String[] names, SDVariable q, SDVariable k, SDVariable v,
+      SDVariable beta, SDVariable gate, SDVariable stateIn, SDVariable actualSequenceLength) {
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "q", q);
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "k", k);
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "v", v);
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "beta", beta);
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "gate", gate);
+    if (stateIn != null) {
+      SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "stateIn", stateIn);
+    }
+    if (actualSequenceLength == null) {
+      throw new IllegalArgumentException("gatedDeltaRuleWithPrefix requires actualSequenceLength");
+    }
+    SDVariable[] out = new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRuleWithPrefix(
+        sd, q, k, v, beta, gate, stateIn, actualSequenceLength).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Causal depthwise 1D convolution with per-prefix history checkpoints
+   * (accepted-prefix capture). Same convolution as
+   * {@link #causalConv1d(String[], SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, int, int)}
+   * but requires the actualLength scalar and additionally produces a time-leading prefix tensor
+   * whose slot t holds the retained raw-input history AFTER consuming input rows 0..t.
+   *
+   * @param names names for [output, stateOut, prefix]
+   * @return output [B,L,D], stateOut [B,D,K-1], prefix [W,B,D,K-1]
+   */
+  public SDVariable[] causalConv1dWithPrefix(String[] names, SDVariable x, SDVariable weight,
+      SDVariable bias, SDVariable convStateIn, SDVariable actualSequenceLength,
+      int activation, int wFormat) {
+    SDValidation.validateNumerical("causalConv1dWithPrefix", "x", x);
+    SDValidation.validateNumerical("causalConv1dWithPrefix", "weight", weight);
+    if (bias != null) {
+      SDValidation.validateNumerical("causalConv1dWithPrefix", "bias", bias);
+    }
+    if (convStateIn != null) {
+      SDValidation.validateNumerical("causalConv1dWithPrefix", "convStateIn", convStateIn);
+    }
+    if (actualSequenceLength == null) {
+      throw new IllegalArgumentException("causalConv1dWithPrefix requires actualSequenceLength");
+    }
+    SDVariable[] out = new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1dWithPrefix(
+        sd, x, weight, bias, convStateIn, actualSequenceLength, activation, wFormat).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
    * GELU activation function - Gaussian Error Linear Units
    * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
    * This method uses the sigmoid approximation

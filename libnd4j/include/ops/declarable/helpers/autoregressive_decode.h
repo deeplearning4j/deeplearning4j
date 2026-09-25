@@ -66,6 +66,10 @@ struct AutoregressiveP0Counters {
     int targetVerificationForwards = 0;
     int acceptedPrefixReruns = 0;
     int shortenedRecoveryForwards = 0;
+    /** Packet 4: steps that committed checkpoint[consumed-1] instead of re-running. */
+    int checkpointSelectCommits = 0;
+    /** Packet 4: steps where select was requested but ineligible (fallback to rerun). */
+    int checkpointSelectFallbacks = 0;
     int predictorProposalForwards = 0;
     int predictorRepairForwards = 0;
     int predictorMaintenanceForwards = 0;
@@ -76,6 +80,8 @@ struct AutoregressiveP0Counters {
     std::uint64_t snapshotBytes = 0;
     std::uint64_t restoreBytes = 0;
     std::uint64_t stateCommitBytes = 0;
+    /** Packet 4: bytes copied by checkpoint[consumed-1] selection. */
+    std::uint64_t checkpointSelectBytes = 0;
     std::uint64_t hostReadbackBytes = 0;
     std::uint64_t hostWaitBoundaries = 0;
 };
@@ -258,6 +264,28 @@ struct AutoregressiveDecodeConfig {
     int mtpRepairBatchKeyOutputIdx = -1;
     int mtpRepairBatchValueOutputIdx = -1;
     int mtpRepairBatchWidth = 0;
+
+    // ─── Accepted-prefix checkpoint capture (Packets 5/6 wire layout) ────
+    // 0 = off (no trailer), 1 = shadow (capture + compare against legacy recovery,
+    // never selected), 2 = select (controller commits checkpoint[consumed-1]).
+    // Select stays disabled until the integrated build passes repeated
+    // exact-length 250-token equality.
+    int mtpPrefixSelectMode = 0;
+    // Layer counts for the verification graph's recurrent companions.
+    int mtpPrefixGdnLayerCount = 0;
+    int mtpPrefixConvLayerCount = 0;
+    // Per-layer binding, GDN-first then conv, layer cap 64. Each layer carries
+    // THREE indices: committed-state external-input index, ORDINARY final-state
+    // output index (what commitRecurrentState copies on the reference path), and
+    // CHECKPOINT prefix-output index (what SELECT reads). The ordinary and
+    // checkpoint arrays are DISTINCT meanings and must never be conflated.
+    static constexpr int MTP_PREFIX_MAX_LAYERS = 64;
+    int mtpPrefixGdnInputIndices[MTP_PREFIX_MAX_LAYERS] = {};
+    int mtpPrefixGdnStateOutputIndices[MTP_PREFIX_MAX_LAYERS] = {};
+    int mtpPrefixGdnOutputIndices[MTP_PREFIX_MAX_LAYERS] = {};
+    int mtpPrefixConvInputIndices[MTP_PREFIX_MAX_LAYERS] = {};
+    int mtpPrefixConvStateOutputIndices[MTP_PREFIX_MAX_LAYERS] = {};
+    int mtpPrefixConvOutputIndices[MTP_PREFIX_MAX_LAYERS] = {};
 
     // Stable arrays passed as optional op inputs when the 1024 input-mask bit is set.
     NDArray* mtpRepairBatchInputIds = nullptr;

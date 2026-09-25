@@ -738,14 +738,14 @@ if [ "$BACKEND" = "cpu" ]; then
     NO_TRITON=false
     echo "[backend] CPU mode: artifact=$BACKEND_ARTIFACT"
 elif [ "$BACKEND" = "cuda" ]; then
-    BACKEND_ARTIFACT="nd4j-cuda-12.9"
+    BACKEND_ARTIFACT="nd4j-cuda-13.1"
     TRITON_FLAG="-Dlibnd4j.triton=ON"
     echo "[backend] CUDA mode: artifact=$BACKEND_ARTIFACT"
 elif [ "$BACKEND" = "vulkan" ]; then
     # The Vulkan profile adds Vulkan alongside the default CUDA artifact. This
     # preserves a true multi-backend classpath while Vulkan's higher backend
     # priority selects it for the benchmark.
-    BACKEND_ARTIFACT="nd4j-cuda-12.9"
+    BACKEND_ARTIFACT="nd4j-cuda-13.1"
     TRITON_FLAG="-Dlibnd4j.triton=ON"
     EXTRA_ARGS="$EXTRA_ARGS -Ptest-vulkan,test-cuda-vulkan-coexistence"
     echo "[backend] Vulkan mode: CUDA + Vulkan classpath, shared Triton/DSP enabled"

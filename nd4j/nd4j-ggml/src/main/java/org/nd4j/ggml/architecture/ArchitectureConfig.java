@@ -229,4 +229,16 @@ public class ArchitectureConfig {
     public boolean hasGroupedQueryAttention() {
         return numKVHeads > 0 && numKVHeads < numAttentionHeads;
     }
+
+    /**
+     * Emit accepted-prefix checkpoint outputs from the recurrent layers
+     * (gated_delta_rule_with_prefix / causal_conv1d_with_prefix). Off by default:
+     * the plain ops keep their exact legacy two-output graphs. When enabled, every
+     * GDN/conv layer additionally exports a time-leading prefix tensor
+     * ([W,B,H,D_k,D_v] / [W,B,D,K-1]) for accepted-prefix state selection in
+     * bundled MTP decoding. Production target verification enables this before
+     * graph freeze/capture; prefill and independent greedy references do not.
+     */
+    @Builder.Default
+    private boolean exportRecurrentStatePrefixes = false;
 }
