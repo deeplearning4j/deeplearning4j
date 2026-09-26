@@ -2737,6 +2737,51 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   // and cudaDeviceSynchronize both fails and invalidates that peer capture.
   cudaStream_t producerStream = ownedStream_ != nullptr && ownedStreamDeviceId_ == sourceDevice
       ? *ownedStream_ : cudaStreamPerThread;
+  // Slot-by-slot warmup ops enqueue on the caller's LaunchContext stream, not
+  // the plan stream (DataBuffer::asyncTransferStream routes away from
+  // tl_dspExecutionStream while tl_graphExecutionActive/tl_dspReplayActive are
+  // both false). This delivery boundary is the first sync point after those
+  // kernels, so order the LC stream into the producer stream here. Otherwise
+  // the Java readback can observe pre-kernel buffer contents — warmup returned
+  // the raw input instead of the computed result, deterministic under
+  // compute-sanitizer. lcDefaultStream is a stored stream VALUE
+  // (PlanExecutionContext, per the DspCudaDispatch convention), and the order
+  // must never be recorded inside a capture region (inGraphCapture authority).
+  auto* executionCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
+  cudaStream_t lcStream = (executionCtx != nullptr)
+      ? reinterpret_cast<cudaStream_t>(executionCtx->lcDefaultStream) : nullptr;
+  if (lcStream != nullptr && lcStream != producerStream &&
+      !DebugHelper::inGraphCapture(&lcStream)) {
+    if (ownedCrossStreamEvent_ == nullptr || ownedCrossStreamEventDeviceId_ != sourceDevice) {
+      if (ownedCrossStreamEvent_ != nullptr) {
+        int savedEvtDev = -1;
+        cudaGetDevice(&savedEvtDev);
+        cudaSetDevice(ownedCrossStreamEventDeviceId_ < 0 ? savedEvtDev
+                                                         : ownedCrossStreamEventDeviceId_);
+        cudaEventDestroy(reinterpret_cast<cudaEvent_t>(ownedCrossStreamEvent_));
+        cudaSetDevice(savedEvtDev);
+        ownedCrossStreamEvent_ = nullptr;
+      }
+      cudaEvent_t tmpEvt = nullptr;
+      const auto createErr = cudaEventCreateWithFlags(&tmpEvt, cudaEventDisableTiming);
+      if (createErr != cudaSuccess) {
+        cudaGetLastError();
+        ownedCrossStreamEvent_ = nullptr;
+      } else {
+        ownedCrossStreamEvent_ = static_cast<void*>(tmpEvt);
+        ownedCrossStreamEventDeviceId_ = sourceDevice;
+      }
+    }
+    if (ownedCrossStreamEvent_ != nullptr) {
+      checkCuda(cudaEventRecord(reinterpret_cast<cudaEvent_t>(ownedCrossStreamEvent_), lcStream),
+                "record LC producer completion");
+      checkCuda(cudaStreamWaitEvent(producerStream,
+                                    reinterpret_cast<cudaEvent_t>(ownedCrossStreamEvent_), 0),
+                "producer stream waits for LC stream");
+      DSP_DIAG(EXECUTE, "platformGetOutputForDevice0: ordered LC stream %p into producer stream %p (slot=%d)",
+               (void*)lcStream, (void*)producerStream, slotIdx);
+    }
+  }
   checkCuda(cudaStreamSynchronize(producerStream), "complete producer stream");
   {
     std::vector<NDArray*> reads{arr};
