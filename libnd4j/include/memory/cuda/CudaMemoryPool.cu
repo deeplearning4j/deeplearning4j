@@ -726,6 +726,9 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     allocStream = cudaStreamPerThread;
   }
 #endif
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=pool.allocate dev=%d resolved=%p final=%p",
+           deviceId, (void*)resolveNullStream(resolveCaptureStream(stream)), (void*)allocStream);
 
   // ─── Proactive soft-limit check ───────────────────────────────────────────
   // When enabled, check device usage BEFORE attempting local allocation.
@@ -1623,6 +1626,9 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     freeStream = cudaStreamPerThread;
   }
 #endif
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=pool.free dev=%d resolved=%p final=%p",
+           deviceId, (void*)resolveNullStream(resolveCaptureStream(stream)), (void*)freeStream);
 
   // Persistent capture-safe allocations from allocateDirect() are pool memory
   // (cudaMallocAsync) bound to a dedicated non-capturing allocation stream. Free

@@ -6090,6 +6090,10 @@ Status NativeDynamicShapePlan::executeSlot(
     }
     outputs[i] = out;
     writeOutputSlot(slotIdx, out, "normal-alloc-output");
+    DSP_DIAG(STREAM_SYNC,
+             "STREAM_ROUTE site=slotWrite slot=%d op=%s out=%p streamValue=%p streamPtrArg=%p",
+             slotIdx, slot.ident.opName.c_str(), (void*)out->specialBuffer(),
+             (void*)stream, (void*)&stream);
     DSP_DIAG_SLOT_WRITE(slotIdx, slot.ident.opName.c_str(),
                         out != nullptr && out->dataBuffer() != nullptr
                             ? out->dataBuffer()->getLenInBytes()

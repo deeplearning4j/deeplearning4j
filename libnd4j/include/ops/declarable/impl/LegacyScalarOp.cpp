@@ -216,6 +216,13 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
     ScalarReplica replica{scalar == _scalar ? nullptr : scalar};
 
     NDArray::prepareSpecialUse({z}, {x, scalar});
+    DSP_DIAG(STREAM_SYNC,
+             "STREAM_ROUTE site=execScalar.tArgs opNum=%d x=%p z=%p scalar=%p "
+             "xDev=%d zDev=%d scalarDev=%d",
+             opNum, (void*)x->specialBuffer(), (void*)z->specialBuffer(),
+             (void*)scalar->specialBuffer(), x->dataBuffer() ? x->dataBuffer()->deviceId() : -1,
+             z->dataBuffer() ? z->dataBuffer()->deviceId() : -1,
+             scalar->dataBuffer() ? scalar->dataBuffer()->deviceId() : -1);
 
     NativeOpExecutioner::execScalar(
         block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),

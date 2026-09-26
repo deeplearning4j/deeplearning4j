@@ -1604,6 +1604,10 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   auto startTime = std::chrono::high_resolution_clock::now();
 
   cudaStream_t stream = asyncTransferStream(switchedDevice);
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=syncToSpecial db=%p ptr=%p bytes=%lld bufDev=%d resolved=%p",
+           (void*)this, _specialBuffer, (long long)getLenInBytes(),
+           _specialDeviceId.load(), (void*)stream);
 
   // Validate stream and check for latent CUDA errors before cudaMemcpyAsync.
   // Catches: stale/destroyed streams, latent errors from prior ops.
@@ -2132,6 +2136,10 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
     // keeps the existing resolver so the single-GPU path stays byte-identical.
     stream = (bufferDeviceId != 0) ? cudaStreamPerThread : captureSafeStreamOrDefault();
   }
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=setToZeroBuffers db=%p ptr=%p bytes=%lld bufDev=%d resolved=%p capture=%d",
+           (void*)this, special(), (long long)getLenInBytes(), bufferDeviceId,
+           (void*)stream, (int)(tl_graphExecutionActive && tl_graphCaptureStream != nullptr));
   auto res = cudaMemsetAsync(special(), 0, getLenInBytes(), stream);
 
   if (res == 901 || res == 906) {
@@ -2262,6 +2270,11 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
   } deviceScope{currentDeviceId, switchedDevice};
 
   cudaStream_t stream = asyncTransferStream(switchedDevice);
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=memcpyWithT dst=%p src=%p bytes=%lld dstDev=%d srcDev=%d resolved=%p",
+           dst->special(), specialSource ? src->special() : src->primary(),
+           (long long)copyBytes, dstDeviceId,
+           specialSource ? src->deviceId() : src->deviceId(), (void*)stream);
   waitForLastDspCompletionIfNeeded(stream);
   dst->waitForSpecialWriteEvent(stream);
   if (copyBytes < dst->getLenInBytes() && !dst->isSpecialActual() && dst->isPrimaryActual()) {
