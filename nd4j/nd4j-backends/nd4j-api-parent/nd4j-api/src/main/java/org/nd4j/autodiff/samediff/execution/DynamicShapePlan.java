@@ -541,7 +541,6 @@ public class DynamicShapePlan implements Closeable {
 
         long cumulativeMem = 0L;
         long assignedBytes = 0L;
-        long assignedCount = 0L;
         int remainingSlots = slots.length - pinnedCount;
         for (int i = 0; i < sorted.size(); i++) {
             int deviceId = sorted.get(i).getKey();
@@ -560,22 +559,25 @@ public class DynamicShapePlan implements Closeable {
             // (proc-061/068 traces). Capture-time free memory is enforced by the
             // native pre-capture check; this Java layer must not guess margins.
 
-            int deviceSlotStart = assigned;
             // COUNT-PROPORTIONAL TARGET (parallel to the byte target). Pre-warmup
-            // placement often runs with zero shape-known slots: then avgUnpinnedBytes=0
-            // and both sides of the byte stop condition below are 0, so the byte band
-            // never fills and EVERY slot would land on the first (largest) device —
-            // observed as DevicePlacement{device0=N ops} on the 2-GPU sharding host
-            // (assertUsesEveryCudaDevice failures, proc-034). The comment above
-            // claiming a degrade to "the old count split" was wrong: the old loop
-            // (pre-ecdb405f9e) computed slotsForDevice from a count target and always
-            // opened each device's band. Restore that invariant: when nothing is
-            // byte-known, each device takes its memory-proportional COUNT of the
-            // remaining unpinned slots, so multi-device plans keep multi-device bands.
+            // placement often runs with zero shape-known slots: then avgUnpinnedBytes=0,
+            // slotCost=0 for every slot, and the byte stop condition (assignedBytes +
+            // slotCost > bytesTarget, i.e. 0 > 0) can never fire — so the band never
+            // fills and EVERY slot lands on the first (largest) device. Observed as
+            // DevicePlacement{device0=N ops} on the 2-GPU sharding host
+            // (assertUsesEveryCudaDevice failures, proc-034/035/037): the comment
+            // above claiming a degrade to "the old count split" was wrong — the old
+            // loop (pre-ecdb405f9e) computed slotsForDevice from a count target.
+            // Restore that invariant: when nothing is byte-known, each device takes
+            // its memory-proportional COUNT of the remaining unpinned slots, and the
+            // stop condition compares the assigned COUNT against it, so multi-device
+            // plans keep multi-device bands.
             long countTarget = lastDevice
                     ? remainingSlots
                     : (long) Math.round((double) cumulativeMem / totalMem * remainingSlots);
-            long bandTarget = avgUnpinnedBytes > 0 ? bytesTarget : countTarget;
+            boolean byteAware = avgUnpinnedBytes > 0;
+            int deviceSlotStart = assigned;
+            long deviceSlotCount = 0;
             while (assigned < slots.length) {
                 if (pinned[assigned]) {
                     // Skip pinned slots without consuming budget: their device is
@@ -583,13 +585,19 @@ public class DynamicShapePlan implements Closeable {
                     assigned++;
                     continue;
                 }
-                long slotCost = Math.max(slotBytes[assigned], avgUnpinnedBytes);
-                if (!lastDevice && assignedBytes + slotCost > bandTarget) {
-                    break; // this device's band is full; next device takes over
+                if (!lastDevice) {
+                    if (byteAware) {
+                        long slotCost = Math.max(slotBytes[assigned], avgUnpinnedBytes);
+                        if (assignedBytes + slotCost > bytesTarget) {
+                            break; // this device's byte band is full; next device takes over
+                        }
+                    } else if (deviceSlotCount >= countTarget) {
+                        break; // this device's count band is full; next device takes over
+                    }
                 }
                 slots[assigned].setTargetDeviceId(deviceId);
-                assignedBytes += slotCost;
-                assignedCount++;
+                assignedBytes += Math.max(slotBytes[assigned], avgUnpinnedBytes);
+                deviceSlotCount++;
                 assigned++;
             }
             MultiGpuTracer.traceDeviceAssignment(deviceId, assigned - deviceSlotStart, slots.length,
