@@ -510,7 +510,8 @@ public class DynamicShapePlan implements Closeable {
         // known at placement time from static shape-infos (zero-input ops) or the
         // previous invocation's shape cache; unknown-shape slots consume the
         // mean bytes of the known slots (0 when nothing is known — then the
-        // fill degrades exactly to the old count split).
+        // fill falls back to the COUNT-proportional target computed in the band
+        // loop below, matching the pre-byte-aware split).
         int assigned = 0;
         long totalUnpinnedBytes = 0L;
         long[] slotBytes = new long[slots.length];
@@ -540,6 +541,7 @@ public class DynamicShapePlan implements Closeable {
 
         long cumulativeMem = 0L;
         long assignedBytes = 0L;
+        long assignedCount = 0L;
         int remainingSlots = slots.length - pinnedCount;
         for (int i = 0; i < sorted.size(); i++) {
             int deviceId = sorted.get(i).getKey();
