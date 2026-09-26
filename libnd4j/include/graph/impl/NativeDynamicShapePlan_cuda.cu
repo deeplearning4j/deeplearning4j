@@ -4512,51 +4512,6 @@ void NativeDynamicShapePlan::platformPostSegmentPoolManagement(bool frozen, int 
   DSP_DIAG(MEMORY, "post-segments: pool used=%zuMB reserved=%zuMB",
            poolUsedPostSegs / (1024*1024), poolReservedPostSegs / (1024*1024));
 
-  // Slot-by-slot warmup ops intentionally enqueue on the execution device's
-  // LaunchContext stream: DataBuffer::asyncTransferStream routes away from the
-  // plan stream while tl_graphExecutionActive/tl_dspReplayActive are both
-  // false (routing warmup H2D to the plan stream historically zeroed K/V
-  // buffers). Nothing else orders that LC work into the plan stream — output
-  // delivery synchronizes only ownedStream_ and platformEndExecution records
-  // its completion event only on the plan stream — so a warmup readback could
-  // observe pre-kernel buffer contents (warmup returning the raw input value
-  // instead of the computed one; deterministic under compute-sanitizer).
-  // Order it once at this single post-segments boundary: record on the LC
-  // stream, make the plan stream wait. No per-op synchronization, and never
-  // inside a capture region (inGraphCapture is the capture authority).
-  if (!frozen) {
-    auto* lcCtx = LaunchContext::defaultContext();
-    auto* lcStreamPtr = lcCtx != nullptr ? lcCtx->getCudaStream() : nullptr;
-    cudaStream_t lcStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
-    cudaStream_t planStream = reinterpret_cast<cudaStream_t>(sd::graph::dspGetExecutionStream());
-    if (lcStream != nullptr && planStream != nullptr && lcStream != planStream &&
-        !DebugHelper::inGraphCapture(&lcStream)) {
-      if (ownedCrossStreamEvent_ == nullptr || ownedCrossStreamEventDeviceId_ != activeDevice) {
-        if (ownedCrossStreamEvent_ != nullptr) {
-          int savedDev = sd::graph::dspGetCurrentDevice();
-          sd::graph::dspSetCurrentDevice(ownedCrossStreamEventDeviceId_);
-          sd::graph::dspDestroyEvent(ownedCrossStreamEvent_);
-          sd::graph::dspSetCurrentDevice(savedDev);
-          ownedCrossStreamEvent_ = nullptr;
-        }
-        ownedCrossStreamEvent_ = sd::graph::dspCreateEvent();
-        if (ownedCrossStreamEvent_ == nullptr) {
-          sd::graph::dspClearLastCudaError();
-          DSP_DIAG(EXECUTE, "post-segments: LC->plan event create failed, skipping ordering (exec=%d)",
-                   execCount);
-        } else {
-          ownedCrossStreamEventDeviceId_ = activeDevice;
-        }
-      }
-      if (ownedCrossStreamEvent_ != nullptr && ownedCrossStreamEventDeviceId_ == activeDevice) {
-        sd::graph::dspEventRecord(ownedCrossStreamEvent_, lcStream);
-        sd::graph::dspStreamWaitEvent(planStream, ownedCrossStreamEvent_);
-        DSP_DIAG(EXECUTE, "post-segments: ordered LC stream %p into plan stream %p (exec=%d)",
-                 (void*)lcStream, (void*)planStream, execCount);
-      }
-    }
-  }
-
   if (frozen) {
     int trimInterval = Environment::getInstance().dspTrimInterval();
     if (trimInterval > 0 && (execCount == 0 || (execCount % trimInterval) == 0)) {
