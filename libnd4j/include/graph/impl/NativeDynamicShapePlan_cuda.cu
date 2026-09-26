@@ -4027,7 +4027,52 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
 
 void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* stream, bool frozen, int execCount) {
   auto* ctx = static_cast<PlanExecutionContext*>(executionState);
+  struct ExecutionFinalizer {
+    NativeDynamicShapePlan* plan;
+    PlanExecutionContext* ctx;
+    ~ExecutionFinalizer() noexcept {
+      if (ctx == nullptr) return;
 
+      // End-of-execution cleanup must run even if CUDA/cuBLAS reporting throws.
+      // Do not call into cuBLAS here: the CUDA context may already be unhealthy.
+      tl_dspReplayActive = false;
+      tl_graphExecutionActive = false;
+      tl_graphCaptureStream = nullptr;
+      tl_cublasWorkspacePtr = nullptr;
+      tl_cublasWorkspaceSize = 0;
+      if (tl_cublasLtDisabled) {
+        tl_cublasLtDisabled = false;
+        try {
+          CublasHelper::exitDeterministicWindow();
+        } catch (...) {
+        }
+      }
+      AttentionWorkspace::setActiveScope(ctx->previousAttentionWorkspaceScope);
+      ctx->previousAttentionWorkspaceScope = nullptr;
+      if (tl_activeMmulFpPlan == plan) {
+        tl_activeMmulFpPlan = nullptr;
+        tl_activeMmulFpOrdinal = 0;
+      }
+      if (tl_gapStreamPinnedByPlanExec) {
+        tl_dspGapStream = tl_prevGapStreamForPlanExec;
+        tl_prevGapStreamForPlanExec = nullptr;
+        tl_gapStreamPinnedByPlanExec = false;
+      }
+
+      const int endDevice = ctx->deviceId;
+      auto* streamGuard = static_cast<DspStreamGuard*>(ctx->streamGuard);
+      ctx->streamGuard = nullptr;
+      delete streamGuard;
+      delete ctx;
+
+      int device = endDevice;
+      if (device < 0 || device >= 16) device = 0;
+      if (g_execCount[device].fetch_sub(1, std::memory_order_acq_rel) <= 1)
+        g_captureCV[device].notify_all();
+    }
+  } finalizer{this, ctx};
+
+  bool cudaContextHealthy = true;
   // Cross-stream synchronization: make post-execution streams wait for DSP.
   if (stream != nullptr) {
     DSP_DIAG(EXECUTE, "platformEndExecution: frozen=%d execCount=%d syncLevel=%s "
@@ -4046,7 +4091,7 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
     // call below (cudaEventCreateWithFlags, cudaEventRecord, etc.) would
     // inherit the sticky error and crash the process.
     auto stickyErr = cudaGetLastError();
-    bool cudaContextHealthy = (stickyErr == cudaSuccess);
+    cudaContextHealthy = (stickyErr == cudaSuccess);
     if (!cudaContextHealthy) {
       DSP_DIAG(EXECUTE, "platformEndExecution: cleared sticky CUDA error: %s - skipping event sync",
                cudaGetErrorString(stickyErr));
@@ -4144,27 +4189,23 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
 
   // Restore cuBLAS state for modes that enforced deterministic cuBLAS.
   if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
-    // Clear workspace from handle and TLS (workspace buffer itself is kept for reuse)
-    auto* restoreHandle = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
-    if (restoreHandle != nullptr && tl_cublasWorkspacePtr != nullptr) {
-      cublasSetWorkspace(*restoreHandle, nullptr, 0);
+    // A sticky CUDA failure makes handle acquisition unsafe (and can replace the
+    // original execution error with a cuBLAS initialization failure). Restore
+    // the device handle only while the context is healthy; the finalizer always
+    // clears thread-local ownership and balances the global deterministic window.
+    if (cudaContextHealthy) {
+      auto* restoreHandle = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+      if (restoreHandle != nullptr && tl_cublasWorkspacePtr != nullptr) {
+        cublasSetWorkspace(*restoreHandle, nullptr, 0);
+      }
+      // Get handle while tl_cublasLtDisabled is still true so lazy TF32 policy
+      // cannot overwrite the explicit restore below.
+      auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+      if (handlePtr != nullptr) cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
     }
     tl_cublasWorkspacePtr = nullptr;
     tl_cublasWorkspaceSize = 0;
-    // Get handle while tl_cublasLtDisabled is still true - this suppresses
-    // the lazy-TF32 logic in CublasHelper::handle() so it doesn't overwrite
-    // our restore below with a stale TF32/DEFAULT mode.
-    auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
-    if (handlePtr != nullptr) {
-      cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
-    }
-    // Clear AFTER math mode restore - the next CublasHelper::handle() call
-    // from non-DSP code will see tl_cublasLtDisabled=false and correctly
-    // lazy-apply TF32 if wanted.
     tl_cublasLtDisabled = false;
-    // Close the deterministic window opened by platformBeginExecution.
-    // Other threads' handles converge back to TF32/DEFAULT on their next
-    // acquisition (lazy, per-thread).
     CublasHelper::exitDeterministicWindow();
   }
 
@@ -4201,11 +4242,11 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
     DSP_DIAG(EXECUTE, "TLS_CLEANUP: tl_cublasLtDisabled=true at platformEndExecution - "
              "force-resetting (mode=%d). Likely leaked from a prior crashed execution.",
              static_cast<int>(graphExecutionMode_));
-    tl_cublasLtDisabled = false;
-    auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
-    if (handlePtr != nullptr) {
-      cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
+    if (cudaContextHealthy) {
+      auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+      if (handlePtr != nullptr) cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
     }
+    tl_cublasLtDisabled = false;
     // The leaked flag implies a begin that never reached its end - balance
     // the deterministic window too (exit clamps at zero if already closed).
     CublasHelper::exitDeterministicWindow();
@@ -4223,44 +4264,8 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
     tl_graphCaptureStream = nullptr;
   }
 
-  // Restore AttentionWorkspace ownership before returning to non-plan code.
-  AttentionWorkspace::setActiveScope(ctx->previousAttentionWorkspaceScope);
-  ctx->previousAttentionWorkspaceScope = nullptr;
-
-  if (tl_activeMmulFpPlan == this) {
-    tl_activeMmulFpPlan = nullptr;
-    tl_activeMmulFpOrdinal = 0;
-  }
-
-  // Restore the plan-wide gap-stream pin (paired with platformBeginExecution).
-  // Must happen at plan end, NOT earlier - warmup/frozen slot-by-slot phases
-  // rely on it to keep ops, pool allocations, and frees on ONE stream (#57).
-  if (tl_gapStreamPinnedByPlanExec) {
-    tl_dspGapStream = tl_prevGapStreamForPlanExec;
-    tl_prevGapStreamForPlanExec = nullptr;
-    tl_gapStreamPinnedByPlanExec = false;
-  }
-
-  // Explicitly delete the stream guard before the context.
-  // DspStreamGuard restores tl_dspExecutionStream to its previous value.
-  // Reuse the device id resolved at begin (WS-N4 - was a redundant
-  // cudaGetDevice; DspStreamGuard pinned the device for the whole execution,
-  // and the paired fetch_add at begin used this same id).
-  int endDev = ctx->deviceId;
-  delete static_cast<DspStreamGuard*>(ctx->streamGuard);
-  ctx->streamGuard = nullptr;
-  delete ctx;
-
-  // Decrement per-device execution counter and notify any waiting capture thread.
-  {
-    int dev = endDev;
-    if (dev < 0 || dev >= 16) dev = 0;
-    int prev = g_execCount[dev].fetch_sub(1, std::memory_order_acq_rel);
-    if (prev <= 1) {
-      // Last executor on this device - wake the capture thread if waiting
-      g_captureCV[dev].notify_all();
-    }
-  }
+  // The scope finalizer restores stream/TLS ownership, deletes the execution
+  // context, and decrements the per-device execution count on every exit path.
 }
 
 void NativeDynamicShapePlan::platformSetDeterministicCublas(bool enable) {

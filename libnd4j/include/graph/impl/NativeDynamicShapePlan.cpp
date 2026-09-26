@@ -2992,11 +2992,30 @@ Status NativeDynamicShapePlan::execute(
     bool dismissed;
     PlatformEndGuard(NativeDynamicShapePlan* p, void*& sp, void* s, bool f, int e)
       : plan(p), statePtr(sp), stream(s), frozen(f), execCount(e), dismissed(false) {}
-    ~PlatformEndGuard() {
+    ~PlatformEndGuard() noexcept {
       if (!dismissed && statePtr != nullptr) {
         plan->activeExecCtx_ = nullptr;
-        plan->platformEndExecution(statePtr, stream, frozen, execCount);
+        void* state = statePtr;
         statePtr = nullptr;
+        try {
+          plan->platformEndExecution(state, stream, frozen, execCount);
+        } catch (const std::exception& cleanupError) {
+          // This guard runs during exception unwinding. Preserve the execution
+          // failure; platformEndExecution owns an independent finalizer for its
+          // stream guard and per-device execution count.
+          try {
+            DSP_DIAG(EXECUTE,
+                     "PlatformEndGuard: platformEndExecution also failed during unwinding: %s",
+                     cleanupError.what());
+          } catch (...) {
+          }
+        } catch (...) {
+          try {
+            DSP_DIAG(EXECUTE,
+                     "PlatformEndGuard: platformEndExecution also failed during unwinding with a non-standard exception");
+          } catch (...) {
+          }
+        }
       }
     }
     void dismiss() { dismissed = true; }
