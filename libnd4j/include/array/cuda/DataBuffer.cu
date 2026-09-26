@@ -102,6 +102,31 @@ SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
   return DebugHelper::captureSafeStream(lcStream);
 }
 
+// Single rule for where a buffer's device work runs (kernel peers: memset, mallocAsync,
+// freeAsync). The resolved stream (LaunchContext / plan stream) is the correct choice whenever
+// it belongs to the buffer's device — it is the same stream the H2D copies and kernels for
+// that device use, so everything stays stream-ordered without extra events. "Device != 0"
+// does NOT imply the resolved stream is foreign: a plan can be homed on any GPU. Only when
+// the resolved stream really belongs to another device fall back to the current device's
+// per-thread stream, mirroring platformBindSegmentDevice. Never called during capture (the
+// capture branches run first at every call site). Throws if the resolved stream's device
+// cannot be queried.
+SD_INLINE cudaStream_t streamForDeviceWork(int deviceId, cudaStream_t resolved, const char* site) {
+  if (resolved == nullptr || resolved == cudaStreamPerThread || resolved == cudaStreamLegacy)
+    return resolved;
+  int resolvedDev = -1;
+  auto err = cudaStreamGetDevice(resolved, &resolvedDev);
+  if (err != cudaSuccess) {
+    cudaGetLastError();
+    THROW_EXCEPTION("streamForDeviceWork: cudaStreamGetDevice failed");
+  }
+  const cudaStream_t finalStream = (resolvedDev == deviceId) ? resolved : cudaStreamPerThread;
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=%s dev=%d resolved=%p resolvedDev=%d final=%p",
+           site, deviceId, (void*)resolved, resolvedDev, (void*)finalStream);
+  return finalStream;
+}
+
 SD_INLINE cudaStream_t asyncTransferStream(bool switchedDevice) {
   // Any capture context (per-group flag OR composite outer region): route onto the recorded
   // capture stream so the transfer joins the graph, never cudaStreamPerThread. inGraphCapture
@@ -2134,7 +2159,8 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
     // a device-1 buffer fails with invalid argument even though we are on device 1. Use
     // cudaStreamPerThread (the current device's per-thread stream) for secondary buffers; device 0
     // keeps the existing resolver so the single-GPU path stays byte-identical.
-    stream = (bufferDeviceId != 0) ? cudaStreamPerThread : captureSafeStreamOrDefault();
+    stream = streamForDeviceWork(bufferDeviceId, captureSafeStreamOrDefault(),
+                                 "setToZeroBuffers");
   }
   DSP_DIAG(STREAM_SYNC,
            "STREAM_ROUTE site=setToZeroBuffers db=%p ptr=%p bytes=%lld bufDev=%d resolved=%p capture=%d",

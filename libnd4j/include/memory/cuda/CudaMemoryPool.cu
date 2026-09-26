@@ -722,8 +722,16 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   // here, so use its per-thread stream to guarantee the allocation lands in device
   // `deviceId`'s VRAM. Device 0 keeps the resolved DSP stream (single-GPU hot path untouched).
 #if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
-  if (deviceId != 0) {
-    allocStream = cudaStreamPerThread;
+  // Keep the buffer's work on its own device: use the resolved stream only when it
+  // belongs to deviceId (same stream the H2D/kernels use — stays stream-ordered);
+  // fall back to the per-thread stream only for a genuinely foreign stream.
+  if (allocStream != cudaStreamPerThread) {
+    int resolvedDev = -1;
+    if (cudaStreamGetDevice(allocStream, &resolvedDev) != cudaSuccess) {
+      cudaGetLastError();
+      resolvedDev = -1;
+    }
+    if (resolvedDev != deviceId) allocStream = cudaStreamPerThread;
   }
 #endif
   DSP_DIAG(STREAM_SYNC,
@@ -1622,8 +1630,15 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   // deviceId here (cudaSetDevice above), so use its per-thread stream. deviceId <= 0 (primary
   // or unknown) keeps the resolved stream so the single-GPU path is untouched.
 #if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
-  if (deviceId > 0) {
-    freeStream = cudaStreamPerThread;
+  // Mirror of allocate: free on the resolved stream when it belongs to deviceId;
+  // per-thread only for a genuinely foreign stream.
+  if (freeStream != cudaStreamPerThread) {
+    int resolvedDev = -1;
+    if (cudaStreamGetDevice(freeStream, &resolvedDev) != cudaSuccess) {
+      cudaGetLastError();
+      resolvedDev = -1;
+    }
+    if (resolvedDev != deviceId) freeStream = cudaStreamPerThread;
   }
 #endif
   DSP_DIAG(STREAM_SYNC,
