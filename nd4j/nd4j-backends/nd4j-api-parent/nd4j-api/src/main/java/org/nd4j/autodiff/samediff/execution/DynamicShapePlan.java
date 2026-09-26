@@ -541,6 +541,7 @@ public class DynamicShapePlan implements Closeable {
 
         long cumulativeMem = 0L;
         long assignedBytes = 0L;
+        long unpinnedAssignedTotal = 0L;
         int remainingSlots = slots.length - pinnedCount;
         for (int i = 0; i < sorted.size(); i++) {
             int deviceId = sorted.get(i).getKey();
@@ -568,16 +569,16 @@ public class DynamicShapePlan implements Closeable {
             // (assertUsesEveryCudaDevice failures, proc-034/035/037): the comment
             // above claiming a degrade to "the old count split" was wrong — the old
             // loop (pre-ecdb405f9e) computed slotsForDevice from a count target.
-            // Restore that invariant: when nothing is byte-known, each device takes
-            // its memory-proportional COUNT of the remaining unpinned slots, and the
-            // stop condition compares the assigned COUNT against it, so multi-device
-            // plans keep multi-device bands.
-            long countTarget = lastDevice
+            // Restore that invariant: when nothing is byte-known, the old loop's
+            // CUMULATIVE count boundary decides each device's band — a device
+            // stops once the running total of unpinned slots reaches
+            // round(cumulativeMem/totalMem * remainingSlots), and the last device
+            // takes the remainder (26/3/3 for 8:1:1 over 32 slots).
+            long cumulativeCountTarget = lastDevice
                     ? remainingSlots
                     : (long) Math.round((double) cumulativeMem / totalMem * remainingSlots);
             boolean byteAware = avgUnpinnedBytes > 0;
             int deviceSlotStart = assigned;
-            long deviceSlotCount = 0;
             while (assigned < slots.length) {
                 if (pinned[assigned]) {
                     // Skip pinned slots without consuming budget: their device is
@@ -591,13 +592,13 @@ public class DynamicShapePlan implements Closeable {
                         if (assignedBytes + slotCost > bytesTarget) {
                             break; // this device's byte band is full; next device takes over
                         }
-                    } else if (deviceSlotCount >= countTarget) {
+                    } else if (unpinnedAssignedTotal >= cumulativeCountTarget) {
                         break; // this device's count band is full; next device takes over
                     }
                 }
                 slots[assigned].setTargetDeviceId(deviceId);
                 assignedBytes += Math.max(slotBytes[assigned], avgUnpinnedBytes);
-                deviceSlotCount++;
+                unpinnedAssignedTotal++;
                 assigned++;
             }
             MultiGpuTracer.traceDeviceAssignment(deviceId, assigned - deviceSlotStart, slots.length,

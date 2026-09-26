@@ -33,7 +33,6 @@
 namespace sd {
 #ifdef SD_CUDA
 SD_LIB_EXPORT bool isCudaGraphCaptureActiveForScalarOps(void *stream);
-SD_LIB_EXPORT bool orderScalarH2DForKernelStream(void *kernelStreamPtr);
 #endif
 namespace ops {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
@@ -59,21 +58,6 @@ NDArray *scalarOperandOnCurrentDevice(NDArray *cached, LaunchContext *context) {
   const bool capturing = false;
 #endif
   if (cachedDevice == device) {
-    // The scalar buffer was created (or last synced) on this device, with its
-    // H2D enqueued on the caller's LC stream while this op's kernel runs on the
-    // context stream. The per-buffer write event is unavailable during plan
-    // execution (recordSpecialWriteEvent early-returns while the DSP stream is
-    // pinned), so order the streams directly — under compute-sanitizer this
-    // deterministically produced x + 0 instead of x + scalar. Stream-order
-    // only; the exported helper is capture-guarded and returns false when no
-    // ordering is needed (same stream) or possible (capture active).
-    auto *kernelStreamPtr = context != nullptr ? context->getCudaStream() : nullptr;
-    if (kernelStreamPtr != nullptr &&
-        orderScalarH2DForKernelStream(*kernelStreamPtr)) {
-      DSP_DIAG(MULTI_DEVICE,
-               "SCALAR_OPERAND: kernel stream %p ordered after scalar H2D on LC stream",
-               (void *)*kernelStreamPtr);
-    }
     DSP_DIAG(MULTI_DEVICE,
              "SCALAR_OPERAND: cachedDb=%p device=%d targetDevice=%d capture=%d special=%p replica=0",
              static_cast<void *>(cachedBuffer), cachedDevice, device, capturing ? 1 : 0,
@@ -88,25 +72,6 @@ NDArray *scalarOperandOnCurrentDevice(NDArray *cached, LaunchContext *context) {
   if (!capturing) {
     cached->syncToDevice();
     if (cachedBuffer->deviceId() == device) {
-      // The H2D above is enqueued on the caller's LC stream (DataBuffer routes
-      // away from tl_dspExecutionStream when tl_graphExecutionActive and
-      // tl_dspReplayActive are both false), while this op's kernel runs on the
-      // context stream. syncToSpecial recorded a write event; make the kernel
-      // stream wait on it so the kernel cannot read pre-upload device memory —
-      // under compute-sanitizer this deterministically produced x + 0 instead
-      // of x + scalar. Stream-order only, and never inside a capture region
-      // (the exported scalar-op helper delegates to the shared capture
-      // authority; plain op TUs cannot see DebugHelper's CUDA inline
-      // overloads).
-      auto *kernelStreamPtr = context != nullptr ? context->getCudaStream() : nullptr;
-      void *kernelStreamValue = (kernelStreamPtr != nullptr) ? *kernelStreamPtr : nullptr;
-      if (kernelStreamValue != nullptr &&
-          !isCudaGraphCaptureActiveForScalarOps(kernelStreamPtr)) {
-        cachedBuffer->waitForSpecialWriteEvent(kernelStreamValue);
-        DSP_DIAG(MULTI_DEVICE,
-                 "SCALAR_OPERAND: kernel stream %p waits for cached scalar H2D write event db=%p",
-                 kernelStreamValue, (void *)cachedBuffer);
-      }
       DSP_DIAG(MULTI_DEVICE,
                "SCALAR_OPERAND: cachedDb=%p device=%d targetDevice=%d capture=0 special=%p replica=0",
                static_cast<void *>(cachedBuffer), cachedBuffer->deviceId(), device,

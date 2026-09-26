@@ -53,40 +53,6 @@ SD_LIB_EXPORT bool isCudaGraphCaptureActiveForScalarOps(void* stream) {
   return DebugHelper::inGraphCapture(reinterpret_cast<cudaStream_t*>(stream));
 }
 
-// Order the async scalar H2D (enqueued on the caller's LC stream by
-// asyncTransferStream during slot-by-slot warmup) into the op's kernel stream.
-// The per-buffer write event is unavailable here: recordSpecialWriteEvent
-// early-returns while tl_dspExecutionStream is pinned (always true inside plan
-// execution), so waitForSpecialWriteEvent would silently no-op. Record a local
-// event on the LC stream and make the kernel stream wait. Stream-order only;
-// never recorded inside a capture region. Returns false when no ordering was
-// needed or possible.
-SD_LIB_EXPORT bool orderScalarH2DForKernelStream(void* kernelStreamPtr) {
-  auto* lcCtx = LaunchContext::defaultContext();
-  auto* lcStreamPtr = lcCtx != nullptr ? lcCtx->getCudaStream() : nullptr;
-  cudaStream_t lcStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
-  cudaStream_t kernelStream = reinterpret_cast<cudaStream_t>(kernelStreamPtr);
-  if (lcStream == nullptr || kernelStream == nullptr || lcStream == kernelStream) return false;
-  if (DebugHelper::inGraphCapture(kernelStreamPtr != nullptr
-                                      ? reinterpret_cast<cudaStream_t*>(kernelStreamPtr)
-                                      : nullptr))
-    return false;
-  cudaEvent_t evt = nullptr;
-  auto createErr = cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
-  if (createErr != cudaSuccess) {
-    cudaGetLastError();
-    return false;
-  }
-  auto recordErr = cudaEventRecord(evt, lcStream);
-  if (recordErr == cudaSuccess) recordErr = cudaStreamWaitEvent(kernelStream, evt, 0);
-  cudaEventDestroy(evt);
-  if (recordErr != cudaSuccess) {
-    cudaGetLastError();
-    return false;
-  }
-  return true;
-}
-
 SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState() {
   static thread_local DataBufferThreadState state;
   return state;
