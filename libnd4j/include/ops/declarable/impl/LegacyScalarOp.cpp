@@ -21,6 +21,8 @@
 //
 #include <array/NDArrayFactory.h>
 #include <execution/AffinityManager.h>
+#include <graph/DspDiagnostics.h>
+#include <helpers/DebugHelper.h>
 #include <ops/declarable/LegacyScalarOp.h>
 
 #include <ops/declarable/OpRegistrator.h>
@@ -29,6 +31,9 @@
 #include <cstring>
 
 namespace sd {
+#ifdef SD_CUDA
+SD_LIB_EXPORT bool isCudaGraphCaptureActiveForScalarOps(void *stream);
+#endif
 namespace ops {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 namespace {
@@ -40,17 +45,60 @@ namespace {
 // on the current device, whose capture allocation and H2D staging are
 // graph-owned and stay valid for every replay.
 NDArray *scalarOperandOnCurrentDevice(NDArray *cached, LaunchContext *context) {
+  if (cached == nullptr || cached->dataBuffer() == nullptr)
+    THROW_EXCEPTION("LegacyScalarOp: cached scalar has no valid DataBuffer");
+
   const int device = AffinityManager::currentDeviceId();
-  if (cached->dataBuffer()->deviceId() == device) return cached;
-  cached->syncToDevice();
-  if (cached->dataBuffer()->deviceId() == device) return cached;
+  auto *cachedBuffer = cached->dataBuffer();
+  const int cachedDevice = cachedBuffer->deviceId();
+  auto *stream = context != nullptr ? context->getCudaStream() : nullptr;
+#ifdef SD_CUDA
+  const bool capturing = isCudaGraphCaptureActiveForScalarOps(static_cast<void *>(stream));
+#else
+  const bool capturing = false;
+#endif
+  if (cachedDevice == device) {
+    DSP_DIAG(MULTI_DEVICE,
+             "SCALAR_OPERAND: cachedDb=%p device=%d targetDevice=%d capture=%d special=%p replica=0",
+             static_cast<void *>(cachedBuffer), cachedDevice, device, capturing ? 1 : 0,
+             cachedBuffer->special());
+    return cached;
+  }
+
+  // Never ask DataBuffer::migrate to move an address while a graph is being
+  // recorded. The migration guard preserves the old allocation for live plans,
+  // but NDArray::syncToDevice still updates its local affinity. During capture,
+  // make a capture-workspace replica from the scalar's authoritative host copy.
+  if (!capturing) {
+    cached->syncToDevice();
+    if (cachedBuffer->deviceId() == device) {
+      DSP_DIAG(MULTI_DEVICE,
+               "SCALAR_OPERAND: cachedDb=%p device=%d targetDevice=%d capture=0 special=%p replica=0",
+               static_cast<void *>(cachedBuffer), cachedBuffer->deviceId(), device,
+               cachedBuffer->special());
+      return cached;
+    }
+    THROW_EXCEPTION("LegacyScalarOp: cached scalar could not be migrated to the execution device");
+  }
 
   if (!cached->isActualOnHostSide())
-    THROW_EXCEPTION("LegacyScalarOp: cached scalar is resident on another device and its host copy is stale");
+    THROW_EXCEPTION("LegacyScalarOp: cannot rehome a stale host scalar during graph capture");
   auto replica = new NDArray(cached->dataType(), context);
-  std::memcpy(replica->buffer(), cached->buffer(), cached->sizeOfT());
-  replica->tickWriteHost();
-  replica->syncToDevice();
+  try {
+    std::memcpy(replica->buffer(), cached->buffer(), cached->sizeOfT());
+    replica->tickWriteHost();
+    replica->syncToDevice();
+    auto *replicaBuffer = replica->dataBuffer();
+    if (replicaBuffer == nullptr || replicaBuffer->deviceId() != device)
+      THROW_EXCEPTION("LegacyScalarOp: capture scalar replica was not allocated on the execution device");
+    DSP_DIAG(MULTI_DEVICE,
+             "SCALAR_OPERAND: cachedDb=%p cachedDevice=%d targetDevice=%d capture=1 replicaDb=%p replicaDevice=%d special=%p replica=1",
+             static_cast<void *>(cachedBuffer), cachedDevice, device,
+             static_cast<void *>(replicaBuffer), replicaBuffer->deviceId(), replicaBuffer->special());
+  } catch (...) {
+    delete replica;
+    throw;
+  }
   return replica;
 }
 

@@ -23,6 +23,7 @@
 //
 #include <array/DataTypeUtils.h>
 #include <climits>
+#include <limits>
 
 #include <execution/AffinityManager.h>
 #include <memory/MemoryCounter.h>
@@ -44,6 +45,13 @@
 #endif
 
 namespace sd {
+
+// Plain C++ declarable-op translation units cannot see DebugHelper's CUDA-only
+// inline overloads. Expose the same capture authority for host-side scalar-op
+// wrappers without duplicating the TLS/stream capture checks there.
+SD_LIB_EXPORT bool isCudaGraphCaptureActiveForScalarOps(void* stream) {
+  return DebugHelper::inGraphCapture(reinterpret_cast<cudaStream_t*>(stream));
+}
 
 SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState() {
   static thread_local DataBufferThreadState state;
@@ -1451,17 +1459,19 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     // The H2D memcpy node bakes the source address — if _primaryBuffer is freed
     // after capture, graph replay reads garbage. The pinned copy in the workspace
     // persists for the graph's lifetime (freed when replay handle is destroyed).
-    void* h2dSource = _primaryBuffer;
-    if (tl_captureHostWorkspace != nullptr) {
-      size_t aligned = (getLenInBytes() + 255) & ~255ULL;
-      if (tl_captureHostWorkspaceOffset + aligned <= tl_captureHostWorkspaceSize) {
-        void* pinnedCopy = static_cast<char*>(tl_captureHostWorkspace) + tl_captureHostWorkspaceOffset;
-        tl_captureHostWorkspaceOffset += aligned;
-        std::memcpy(pinnedCopy, _primaryBuffer, getLenInBytes());
-        h2dSource = pinnedCopy;
-      }
-      // If workspace exhausted, fall through to use _primaryBuffer directly
+    const size_t copyBytes = static_cast<size_t>(getLenInBytes());
+    if (copyBytes > std::numeric_limits<size_t>::max() - 255)
+      THROW_EXCEPTION("DataBuffer::syncToSpecial: capture host staging size overflow");
+    const size_t aligned = (copyBytes + 255) & ~static_cast<size_t>(255);
+    if (tl_captureHostWorkspace == nullptr ||
+        tl_captureHostWorkspaceOffset > tl_captureHostWorkspaceSize ||
+        aligned > tl_captureHostWorkspaceSize - tl_captureHostWorkspaceOffset) {
+      THROW_EXCEPTION("DataBuffer::syncToSpecial: capture host workspace unavailable or exhausted; "
+                      "refusing to record an H2D node with a potentially short-lived host source");
     }
+    void* h2dSource = static_cast<char*>(tl_captureHostWorkspace) + tl_captureHostWorkspaceOffset;
+    tl_captureHostWorkspaceOffset += aligned;
+    std::memcpy(h2dSource, _primaryBuffer, copyBytes);
 
     cudaStream_t capturedStream = captureSafeStreamOrDefault();
     auto res = memory::CudaMemoryPool::memcpyAsync(_specialBuffer, h2dSource, getLenInBytes(),
@@ -1470,7 +1480,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
              getLenInBytes(), h2dSource, _specialBuffer,
              (h2dSource != _primaryBuffer) ? 1 : 0, (void*)capturedStream);
     if (res != cudaSuccess) {
-      cudaGetLastError();  // Clear error
+      throwCudaStatus("DataBuffer::syncToSpecial: captured H2D copy failed", res);
     }
     writeSpecial();
     return;

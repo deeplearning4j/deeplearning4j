@@ -1755,6 +1755,8 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                     "host-side warmup input must contain the assigned value");
             Map<String, INDArray> warmup = graph.outputDirect(Map.of("x", input), "out");
             assertEquals(2.0f, warmup.get("out").getFloat(0), 0.0f);
+            assertEquals(2.0f, warmup.get("out").getFloat(elements - 1), 0.0f,
+                    "warmup scalar-add result must reach the final element before capture pressure");
             DspPlanAssertions.assertSlotHasTrait(graph, inPlaceStep, 4,
                     "relu must use in-place fusion for this regression");
             assertEquals(0, DspPlanAssertions.getTotalGraphReplays(graph),
