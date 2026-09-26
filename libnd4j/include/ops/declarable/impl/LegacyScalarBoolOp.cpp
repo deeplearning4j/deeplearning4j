@@ -62,6 +62,20 @@ NDArray *scalarOperandOnCurrentDevice(NDArray *cached, LaunchContext *context) {
   if (!capturing) {
     cached->syncToDevice();
     if (cachedBuffer->deviceId() == device) {
+      // Mirror the LegacyScalarOp fix: order the scalar's H2D (LC stream) into
+      // the kernel's context stream via its recorded write event, so the
+      // kernel cannot read pre-upload memory. The exported scalar-op helper
+      // delegates to the shared capture authority (plain op TUs cannot see
+      // DebugHelper's CUDA inline overloads); stream-order only.
+      auto *kernelStreamPtr = context != nullptr ? context->getCudaStream() : nullptr;
+      void *kernelStreamValue = (kernelStreamPtr != nullptr) ? *kernelStreamPtr : nullptr;
+      if (kernelStreamValue != nullptr &&
+          !isCudaGraphCaptureActiveForScalarOps(kernelStreamPtr)) {
+        cachedBuffer->waitForSpecialWriteEvent(kernelStreamValue);
+        DSP_DIAG(MULTI_DEVICE,
+                 "SCALAR_BOOL_OPERAND: kernel stream %p waits for cached scalar H2D write event db=%p",
+                 kernelStreamValue, (void *)cachedBuffer);
+      }
       DSP_DIAG(MULTI_DEVICE,
                "SCALAR_BOOL_OPERAND: cachedDb=%p device=%d targetDevice=%d capture=0 special=%p replica=0",
                static_cast<void *>(cachedBuffer), cachedBuffer->deviceId(), device,
