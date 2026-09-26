@@ -450,6 +450,8 @@ public interface NativeOps {
  long getOpaqueNDArrayOffset(org.nd4j.nativeblas.OpaqueNDArray array);
  Pointer getOpaqueNDArrayBuffer(org.nd4j.nativeblas.OpaqueNDArray array);
  Pointer getOpaqueNDArraySpecialBuffer(org.nd4j.nativeblas.OpaqueNDArray array);
+ Pointer getOpaqueNDArrayPrimaryBufferNoSync(OpaqueNDArray array);
+ Pointer getOpaqueNDArraySpecialBufferNoSync(OpaqueNDArray array);
  long getShapeInfoLength(org.nd4j.nativeblas.OpaqueNDArray array);
  long getOpaqueNDArrayLength(org.nd4j.nativeblas.OpaqueNDArray array);
  void sort(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, boolean descending);

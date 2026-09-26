@@ -119,6 +119,10 @@ SD_LIB_EXPORT void* getOpaqueNDArrayBuffer(OpaqueNDArray array);
 
 SD_LIB_EXPORT void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array);
 
+// Borrowed pointers that never synchronize or migrate the underlying DataBuffer.
+SD_LIB_EXPORT void* getOpaqueNDArrayPrimaryBufferNoSync(OpaqueNDArray array);
+SD_LIB_EXPORT void* getOpaqueNDArraySpecialBufferNoSync(OpaqueNDArray array);
+
 SD_LIB_EXPORT OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
                                                 OpaqueDataBuffer *buffer,
                                                 OpaqueDataBuffer *specialBuffer,
@@ -368,6 +372,8 @@ SD_LIB_EXPORT bool checkOpaqueNDArrayElementsNull(OpaqueNDArrayArr elements,int 
 SD_LIB_EXPORT sd::LongType getOpaqueNDArrayOffset(OpaqueNDArray array) ;
 SD_LIB_EXPORT void* getOpaqueNDArrayBuffer(OpaqueNDArray array) ;
 SD_LIB_EXPORT void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) ;
+SD_LIB_EXPORT void* getOpaqueNDArrayPrimaryBufferNoSync(OpaqueNDArray array) ;
+SD_LIB_EXPORT void* getOpaqueNDArraySpecialBufferNoSync(OpaqueNDArray array) ;
 SD_LIB_EXPORT sd::LongType getShapeInfoLength(OpaqueNDArray array) ;
 SD_LIB_EXPORT sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) ;
 SD_LIB_EXPORT void sort(sd::Pointer *extraPointers, OpaqueNDArray x, bool descending) ;

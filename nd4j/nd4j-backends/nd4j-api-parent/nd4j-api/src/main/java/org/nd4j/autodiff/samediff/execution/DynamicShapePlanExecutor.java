@@ -5738,10 +5738,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                         "This indicates the output slot was never populated by any op.");
                 }
                 // Check the underlying buffers are accessible
-                Pointer specialBuf = nativeOps.getOpaqueNDArraySpecialBuffer(opaqueOut);
+                Pointer specialBuf = nativeOps.getOpaqueNDArraySpecialBufferNoSync(opaqueOut);
                 long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
                 if (length > 0 && (specialBuf == null || specialBuf.isNull())) {
-                    Pointer primaryBuf = nativeOps.getOpaqueNDArrayBuffer(opaqueOut);
+                    Pointer primaryBuf = nativeOps.getOpaqueNDArrayPrimaryBufferNoSync(opaqueOut);
                     if (primaryBuf == null || primaryBuf.isNull()) {
                         throw new IllegalStateException(
                             "ARRAY_INVALID: output " + i + " has length=" + length +
@@ -5838,17 +5838,14 @@ public class DynamicShapePlanExecutor implements Closeable {
 
                     DataType dtype = nativeDtype;  // guaranteed == cached.dataType() here
 
-                    Pointer nativeSpecial = nativeOps.getOpaqueNDArraySpecialBuffer(opaqueOut);
-                    // On CUDA, prefer D2D copy from the device buffer. Calling
-                    // getOpaqueNDArrayBuffer triggers buffer() → syncToPrimary which
-                    // only syncs when primary is null (first call). On subsequent
-                    // executions the primary buffer is already allocated so buffer()
-                    // returns the STALE host pointer from the first sync without
-                    // re-syncing, causing all-zero outputs. By passing null for
-                    // primary when special is available, we force memcpyWithT to use
-                    // the device-to-device path which always reads fresh GPU data.
+                    // Read the captured output allocation without synchronizing or
+                    // migrating it to the caller's current device. A migration here can
+                    // invalidate an address already baked into the replay graph.
+                    Pointer nativeSpecial = nativeOps.getOpaqueNDArraySpecialBufferNoSync(opaqueOut);
+                    // Prefer the current device buffer. The primary buffer is only a
+                    // fallback when the native output has no special allocation.
                     Pointer nativePrimary = (nativeSpecial == null || nativeSpecial.isNull())
-                            ? nativeOps.getOpaqueNDArrayBuffer(opaqueOut) : null;
+                            ? nativeOps.getOpaqueNDArrayPrimaryBufferNoSync(opaqueOut) : null;
                     OpaqueDataBuffer srcOdb = nativeOps.dbCreateExternalDataBuffer(
                             length, dtype.toInt(), nativePrimary, nativeSpecial);
                     if (srcOdb != null) {
@@ -5989,16 +5986,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // results transfer to their caller in executeNative.
                 retiredMigrationArrays.add(result);
 
-                // Get raw pointers — prefer device buffer for D2D copy.
-                // On CUDA, getOpaqueNDArrayBuffer() calls buffer() which triggers
-                // syncToPrimary. This only syncs when the primary buffer is null
-                // (first execution). On subsequent executions the primary is already
-                // allocated, so buffer() returns STALE host data without re-syncing.
-                // By passing null for primary when the device buffer is available, we
-                // force memcpyWithT to use D2D copy from the always-fresh GPU buffer.
-                Pointer nativeSpecial = nativeOps.getOpaqueNDArraySpecialBuffer(opaqueOut);
+                // Read the captured output allocation without synchronizing or
+                // migrating it to the caller's current device. A migration here can
+                // invalidate an address already baked into the replay graph.
+                Pointer nativeSpecial = nativeOps.getOpaqueNDArraySpecialBufferNoSync(opaqueOut);
                 Pointer nativePrimary = (nativeSpecial == null || nativeSpecial.isNull())
-                        ? nativeOps.getOpaqueNDArrayBuffer(opaqueOut) : null;
+                        ? nativeOps.getOpaqueNDArrayPrimaryBufferNoSync(opaqueOut) : null;
                 OpaqueDataBuffer srcOdb = nativeOps.dbCreateExternalDataBuffer(
                         length, dtype.toInt(), nativePrimary, nativeSpecial);
                 if (srcOdb != null) {

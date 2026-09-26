@@ -136,6 +136,26 @@ void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
   return array->specialBuffer();
 }
 
+void* getOpaqueNDArrayPrimaryBufferNoSync(OpaqueNDArray array) {
+  if (array == nullptr || array->isEmpty() || array->dataBuffer() == nullptr ||
+      array->dataBuffer()->isClosed()) {
+    return nullptr;
+  }
+  auto* primary = static_cast<int8_t*>(array->dataBuffer()->primary());
+  if (primary == nullptr) return nullptr;
+  return primary + array->offset() * array->sizeOfT();
+}
+
+void* getOpaqueNDArraySpecialBufferNoSync(OpaqueNDArray array) {
+  if (array == nullptr || array->isEmpty() || array->dataBuffer() == nullptr ||
+      array->dataBuffer()->isClosed()) {
+    return nullptr;
+  }
+  auto* special = static_cast<int8_t*>(array->dataBuffer()->special());
+  if (special == nullptr) return nullptr;
+  return special + array->offset() * array->sizeOfT();
+}
+
 sd::LongType getShapeInfoLength(OpaqueNDArray array) {
   if (array == nullptr || array->shapeInfo() == nullptr) return 0;
   return shape::shapeInfoLength(array->rankOf());
