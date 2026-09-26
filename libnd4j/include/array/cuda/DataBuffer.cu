@@ -80,8 +80,10 @@ SD_LIB_EXPORT bool orderScalarH2DForKernelStream(void* kernelStreamPtr) {
   auto recordErr = cudaEventRecord(evt, lcStream);
   if (recordErr == cudaSuccess) recordErr = cudaStreamWaitEvent(kernelStream, evt, 0);
   cudaEventDestroy(evt);
-  cudaGetLastError();
-  if (recordErr != cudaSuccess) throwCudaStatus("orderScalarH2DForKernelStream failed", recordErr);
+  if (recordErr != cudaSuccess) {
+    cudaGetLastError();
+    return false;
+  }
   return true;
 }
 
