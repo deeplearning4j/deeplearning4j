@@ -559,6 +559,21 @@ public class DynamicShapePlan implements Closeable {
             // native pre-capture check; this Java layer must not guess margins.
 
             int deviceSlotStart = assigned;
+            // COUNT-PROPORTIONAL TARGET (parallel to the byte target). Pre-warmup
+            // placement often runs with zero shape-known slots: then avgUnpinnedBytes=0
+            // and both sides of the byte stop condition below are 0, so the byte band
+            // never fills and EVERY slot would land on the first (largest) device —
+            // observed as DevicePlacement{device0=N ops} on the 2-GPU sharding host
+            // (assertUsesEveryCudaDevice failures, proc-034). The comment above
+            // claiming a degrade to "the old count split" was wrong: the old loop
+            // (pre-ecdb405f9e) computed slotsForDevice from a count target and always
+            // opened each device's band. Restore that invariant: when nothing is
+            // byte-known, each device takes its memory-proportional COUNT of the
+            // remaining unpinned slots, so multi-device plans keep multi-device bands.
+            long countTarget = lastDevice
+                    ? remainingSlots
+                    : (long) Math.round((double) cumulativeMem / totalMem * remainingSlots);
+            long bandTarget = avgUnpinnedBytes > 0 ? bytesTarget : countTarget;
             while (assigned < slots.length) {
                 if (pinned[assigned]) {
                     // Skip pinned slots without consuming budget: their device is
@@ -567,11 +582,12 @@ public class DynamicShapePlan implements Closeable {
                     continue;
                 }
                 long slotCost = Math.max(slotBytes[assigned], avgUnpinnedBytes);
-                if (!lastDevice && assignedBytes + slotCost > bytesTarget) {
-                    break; // this device's byte band is full; next device takes over
+                if (!lastDevice && assignedBytes + slotCost > bandTarget) {
+                    break; // this device's band is full; next device takes over
                 }
                 slots[assigned].setTargetDeviceId(deviceId);
                 assignedBytes += slotCost;
+                assignedCount++;
                 assigned++;
             }
             MultiGpuTracer.traceDeviceAssignment(deviceId, assigned - deviceSlotStart, slots.length,
