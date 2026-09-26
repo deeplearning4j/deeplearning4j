@@ -671,6 +671,49 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
                (int)ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas,
                (int)tl_cublasLtDisabled);
 
+      // A rehomed or sharded segment replays against the staging buffers of its
+      // own device, whose addresses the graph baked at capture. The plan-level
+      // sync above staged only the device it ran on, so a segment bound to a
+      // different device refreshes that device's staging here. Replay still
+      // receives the caller's table (MTP contract below).
+      if (numExternalInputs > 0 && !externalInputIsVariable_.empty()) {
+        int segmentDevice = -1;
+        const cudaError_t deviceErr = cudaGetDevice(&segmentDevice);
+        if (deviceErr != cudaSuccess) {
+          cudaGetLastError();
+          return cudaPlanFailure(
+              "CUDA frozen fast-path segment device query failed: seg[%d-%d] "
+              "cudaError=%d (%s)",
+              seg.def.startSlot, seg.def.endSlot, static_cast<int>(deviceErr),
+              cudaGetErrorString(deviceErr));
+        }
+        if (segmentDevice != activeStagingDevice_) {
+          DSP_DIAG(MULTI_DEVICE,
+                   "FROZEN_FAST_PATH: seg[%d-%d] staging device %d->%d before replay",
+                   seg.def.startSlot, seg.def.endSlot, activeStagingDevice_,
+                   segmentDevice);
+          auto* execCtx = static_cast<PlanExecutionContext*>(activeExecCtx_);
+          if (execCtx != nullptr) {
+            execCtx->execTarget = ExecTarget::GRAPH_REPLAY;
+          }
+          DspStagingSyncResult segmentSync = performPreReplaySync(
+              externalInputs, numExternalInputs, stream, "frozen_fast_path_segment");
+          if (!segmentSync.ok() || segmentSync.effectiveExternals == nullptr) {
+            DSP_DIAG(EXECUTE,
+                     "FROZEN_FAST_PATH: seg[%d-%d] device=%d input staging failed "
+                     "status=%d cudaError=%d - aborting",
+                     seg.def.startSlot, seg.def.endSlot, segmentDevice,
+                     static_cast<int>(segmentSync.status), segmentSync.cudaError);
+            return cudaPlanFailure(
+                "CUDA frozen fast-path segment input staging failed: seg[%d-%d] "
+                "device=%d syncStatus=%d, cudaError=%d (%s)",
+                seg.def.startSlot, seg.def.endSlot, segmentDevice,
+                static_cast<int>(segmentSync.status), segmentSync.cudaError,
+                cudaGetErrorString(static_cast<cudaError_t>(segmentSync.cudaError)));
+          }
+        }
+      }
+
       // 2026-09-16 MTP acceptance regression: 136dfc0b44 added a SECOND
       // per-segment performPreReplaySync here and replayed with
       // segmentSync.effectiveExternals instead of the caller's externals.
@@ -678,7 +721,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // between chained predictor calls can hand the graph different effective
       // arrays than the plan-level sync at the entry intended. The Sept-05
       // code (8cb739c8a6, 77% acceptance) used externalInputs directly.
-      // Restored that behavior. performPreReplaySync still runs at plan entry.
+      // Restored that behavior. performPreReplaySync still runs at plan entry,
+      // and again above only when this segment's device differs from the last
+      // staged device.
       auto replayStatus = replayMonolithicGraph(seg, externalInputs, numExternalInputs,
                                                 stream, "frozen_fast_path");
       if (replayStatus == Status::MAYBE) {
@@ -4466,6 +4511,51 @@ void NativeDynamicShapePlan::platformPostSegmentPoolManagement(bool frozen, int 
   sd::memory::CudaMemoryPool::getInstance().getStats(activeDevice, poolUsedPostSegs, poolReservedPostSegs);
   DSP_DIAG(MEMORY, "post-segments: pool used=%zuMB reserved=%zuMB",
            poolUsedPostSegs / (1024*1024), poolReservedPostSegs / (1024*1024));
+
+  // Slot-by-slot warmup ops intentionally enqueue on the execution device's
+  // LaunchContext stream: DataBuffer::asyncTransferStream routes away from the
+  // plan stream while tl_graphExecutionActive/tl_dspReplayActive are both
+  // false (routing warmup H2D to the plan stream historically zeroed K/V
+  // buffers). Nothing else orders that LC work into the plan stream — output
+  // delivery synchronizes only ownedStream_ and platformEndExecution records
+  // its completion event only on the plan stream — so a warmup readback could
+  // observe pre-kernel buffer contents (warmup returning the raw input value
+  // instead of the computed one; deterministic under compute-sanitizer).
+  // Order it once at this single post-segments boundary: record on the LC
+  // stream, make the plan stream wait. No per-op synchronization, and never
+  // inside a capture region (inGraphCapture is the capture authority).
+  if (!frozen) {
+    auto* lcCtx = LaunchContext::defaultContext();
+    auto* lcStreamPtr = lcCtx != nullptr ? lcCtx->getCudaStream() : nullptr;
+    cudaStream_t lcStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
+    cudaStream_t planStream = reinterpret_cast<cudaStream_t>(sd::graph::dspGetExecutionStream());
+    if (lcStream != nullptr && planStream != nullptr && lcStream != planStream &&
+        !DebugHelper::inGraphCapture(&lcStream)) {
+      if (ownedCrossStreamEvent_ == nullptr || ownedCrossStreamEventDeviceId_ != activeDevice) {
+        if (ownedCrossStreamEvent_ != nullptr) {
+          int savedDev = sd::graph::dspGetCurrentDevice();
+          sd::graph::dspSetCurrentDevice(ownedCrossStreamEventDeviceId_);
+          sd::graph::dspDestroyEvent(ownedCrossStreamEvent_);
+          sd::graph::dspSetCurrentDevice(savedDev);
+          ownedCrossStreamEvent_ = nullptr;
+        }
+        ownedCrossStreamEvent_ = sd::graph::dspCreateEvent();
+        if (ownedCrossStreamEvent_ == nullptr) {
+          sd::graph::dspClearLastCudaError();
+          DSP_DIAG(EXECUTE, "post-segments: LC->plan event create failed, skipping ordering (exec=%d)",
+                   execCount);
+        } else {
+          ownedCrossStreamEventDeviceId_ = activeDevice;
+        }
+      }
+      if (ownedCrossStreamEvent_ != nullptr && ownedCrossStreamEventDeviceId_ == activeDevice) {
+        sd::graph::dspEventRecord(ownedCrossStreamEvent_, lcStream);
+        sd::graph::dspStreamWaitEvent(planStream, ownedCrossStreamEvent_);
+        DSP_DIAG(EXECUTE, "post-segments: ordered LC stream %p into plan stream %p (exec=%d)",
+                 (void*)lcStream, (void*)planStream, execCount);
+      }
+    }
+  }
 
   if (frozen) {
     int trimInterval = Environment::getInstance().dspTrimInterval();

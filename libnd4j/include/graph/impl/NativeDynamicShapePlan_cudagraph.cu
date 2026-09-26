@@ -4208,10 +4208,16 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     // to scan all ~1333 non-variable inputs for isPrimaryActual() here.
 
     int copiedCount = 0, skippedNull = 0, skippedEmpty = 0, skippedNullBuf = 0, skippedJniWrite = 0, skippedManaged = 0, reboundCount = 0;
+    int skippedOtherDevice = 0;
     for (int i : cachedVariableExtIndices_) {
       NDArray* ext = externalArrays[i];
       effectiveExternals_[i] = externalArrays[i];  // default passthrough
-      if (!requiredOnDevice[i]) continue;
+      if (!requiredOnDevice[i]) {
+        // No slot on this device reads the input; its consumer device stages it
+        // when that device's segment is bound.
+        skippedOtherDevice++;
+        continue;
+      }
       if (ext == nullptr || ext->isEmpty()) {
         skippedEmpty++;
         continue;
@@ -4454,19 +4460,25 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     }
 
     // Detect silent D2D skip conditions — O(1) counter checks, zero perf impact.
+    // Inputs consumed only on another device are not stale here: they are staged
+    // by that device's pass, so they do not count toward the all-skipped check.
+    const int requiredVariableCount =
+        static_cast<int>(cachedVariableExtIndices_.size()) - skippedOtherDevice;
     if (copiedCount == 0 && skippedManaged == 0 && reboundCount == 0 &&
-        static_cast<int>(cachedVariableExtIndices_.size()) > 0) {
+        requiredVariableCount > 0) {
       DSP_DIAG(EXECUTE,
-               "STAGING_D2D_WARNING: ALL %d variable inputs skipped D2D copy! "
-               "Breakdown: empty=%d nullBuf=%d managed=%d rebound=%d. "
-               "CUDA graph replay will use STALE staging data.",
-               static_cast<int>(cachedVariableExtIndices_.size()),
-               skippedEmpty, skippedNullBuf, skippedManaged, reboundCount);
+               "STAGING_D2D_WARNING: ALL %d variable inputs required on device %d "
+               "skipped D2D copy! Breakdown: empty=%d nullBuf=%d managed=%d "
+               "rebound=%d otherDevice=%d. CUDA graph replay will use STALE "
+               "staging data.",
+               requiredVariableCount, currentDevice, skippedEmpty, skippedNullBuf,
+               skippedManaged, reboundCount, skippedOtherDevice);
     }
-    DSP_DIAG(EXECUTE, "STAGING_D2D: copied=%d skippedEmpty=%d "
-             "skippedNullBuf=%d skippedManaged=%d rebound=%d total=%d",
-             copiedCount, skippedEmpty, skippedNullBuf, skippedManaged,
-             reboundCount, static_cast<int>(cachedVariableExtIndices_.size()));
+    DSP_DIAG(EXECUTE, "STAGING_D2D: device=%d copied=%d skippedEmpty=%d "
+             "skippedNullBuf=%d skippedManaged=%d rebound=%d otherDevice=%d total=%d",
+             currentDevice, copiedCount, skippedEmpty, skippedNullBuf, skippedManaged,
+             reboundCount, skippedOtherDevice,
+             static_cast<int>(cachedVariableExtIndices_.size()));
 
     stagingMaintainedThisExec_ = true;
     return {effectiveExternals_, DspStagingSyncStatus::SUCCESS, 0, true};

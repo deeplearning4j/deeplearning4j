@@ -43,6 +43,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
+import org.nd4j.nativeblas.OpaqueNDArray;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1681,6 +1683,28 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
+    /** Borrowed, non-migrating device storage of a native plan output slot. */
+    private static Pointer planSlotSpecialPointer(NativeOps nativeOps, Pointer planHandle, int outputSlot) {
+        OpaqueNDArray slotArray = nativeOps.getPlanSlotOutputArray(planHandle, outputSlot);
+        assertTrue(slotArray != null && !slotArray.isNull(),
+                "native plan output slot " + outputSlot + " must hold an array");
+        Pointer special = nativeOps.getOpaqueNDArraySpecialBufferNoSync(slotArray);
+        assertTrue(special != null && !special.isNull(),
+                "native plan output slot " + outputSlot + " must have device storage");
+        return special;
+    }
+
+    /** CUDA device that physically owns a borrowed device pointer. */
+    private static int deviceOwningPointer(NativeOps nativeOps, Pointer special, long elements, DataType dataType) {
+        OpaqueDataBuffer probe = nativeOps.dbCreateExternalDataBuffer(elements, dataType.toInt(), null, special);
+        assertNotNull(probe, "non-owning device pointer probe must be created");
+        try {
+            return nativeOps.dbDeviceId(probe);
+        } finally {
+            nativeOps.deleteDataBuffer(probe);
+        }
+    }
+
     /**
      * Capture rehome must stage an in-place producer once and keep its exact
      * output/source wrapper alias through capture, commit, and replay.
@@ -1740,11 +1764,15 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             assertEquals(sourceDevice, nativeOps.dbDeviceId(input.data().opaqueBuffer()),
                     "input must be resident on the initially assigned source device");
 
+            int producerStep = -1;
             int inPlaceStep = -1;
             for (int i = 0; i < plan.getSlots().length; i++) {
                 if ("relu".equals(plan.getSlots()[i].getOpName())) inPlaceStep = i;
+                String[] names = plan.getSlots()[i].getOutputVarNames();
+                if (names != null && Arrays.asList(names).contains("producer")) producerStep = i;
             }
             assertTrue(inPlaceStep >= 0, "test graph must contain a relu slot");
+            assertTrue(producerStep >= 0, "test graph must contain the scalar-add producer slot");
 
             // The first call is the documented initial slot-by-slot warmup.
             // Apply pressure only after the producer has a real source allocation,
@@ -1790,10 +1818,55 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                         "capture/replay tail parity at iteration " + iteration);
             }
 
+            // Native placement and aliasing are read from the plan's own output
+            // slots. The Java result is a detached readback copy whose placement
+            // follows the executor's input-locality contract, so its device alone
+            // proves nothing about where the captured segment executes.
+            Pointer planHandle = DspPlanAssertions.getPlanHandleForQuery(graph);
+            int producerOutputSlot = plan.getSlots()[producerStep].getOutputSlotIndices()[0];
+            int reluOutputSlot = plan.getSlots()[inPlaceStep].getOutputSlotIndices()[0];
+            long replayedStorage = planSlotSpecialPointer(nativeOps, planHandle, reluOutputSlot).address();
+            int replaysBeforeFinal = DspPlanAssertions.getTotalGraphReplays(graph);
+
             Map<String, INDArray> finalOutput = graph.outputDirect(Map.of("x", input), "out");
+            INDArray finalResult = finalOutput.get("out");
+
+            // 1. The committed segment replays on the admitted candidate device.
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > replaysBeforeFinal,
+                    "the final call must replay the committed capture");
+            Pointer producerStorage = planSlotSpecialPointer(nativeOps, planHandle, producerOutputSlot);
+            Pointer reluStorage = planSlotSpecialPointer(nativeOps, planHandle, reluOutputSlot);
             assertEquals(candidateDevice,
-                    nativeOps.dbDeviceId(finalOutput.get("out").data().opaqueBuffer()),
-                    "captured output must be published on the admitted candidate device");
+                    deviceOwningPointer(nativeOps, reluStorage, elements, DataType.FLOAT),
+                    "captured relu storage must live on the admitted candidate device");
+
+            // 2. The exact in-place alias and the captured address survive replay.
+            assertEquals(producerStorage.address(), reluStorage.address(),
+                    "in-place relu must keep writing the producer's exact rehomed storage");
+            assertEquals(replayedStorage, reluStorage.address(),
+                    "replay must reuse the captured output storage");
+            DspPlanAssertions.assertPointersStable(graph, "exact in-place alias capture rehome");
+
+            // 3. Java delivery is a detached copy on the input-locality device,
+            //    and the caller's device affinity is restored.
+            OpaqueDataBuffer resultBuffer = finalResult.data().opaqueBuffer();
+            Pointer resultStorage = nativeOps.dbSpecialBuffer(resultBuffer);
+            assertTrue(resultStorage != null && !resultStorage.isNull(),
+                    "Java output must own device storage");
+            assertNotEquals(reluStorage.address(), resultStorage.address(),
+                    "Java output must be detached from the captured plan storage");
+            assertEquals(sourceDevice, nativeOps.dbDeviceId(resultBuffer),
+                    "Java output must be delivered on the input-locality device");
+            assertEquals(sourceDevice, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
+                    "outputDirect must restore the caller's device affinity");
+
+            // 4. Every element is relu(5 + 1), and the alias never reaches the caller input.
+            assertEquals(6.0f, finalResult.minNumber().floatValue(), 0.0f, "final replay minimum");
+            assertEquals(6.0f, finalResult.maxNumber().floatValue(), 0.0f, "final replay maximum");
+            assertEquals(5.0f, input.minNumber().floatValue(), 0.0f,
+                    "in-place alias must not write the caller input");
+            assertEquals(5.0f, input.maxNumber().floatValue(), 0.0f,
+                    "in-place alias must not write the caller input");
             DspPlanAssertions.assertAllCapturableSegmentsReachedPhase(graph,
                     ExecutionPhase.REPLAYING, "exact in-place alias capture rehome");
             DspPlanAssertions.assertNoCaptureFailures(graph, "exact in-place alias capture rehome");
