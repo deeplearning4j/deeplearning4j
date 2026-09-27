@@ -5762,6 +5762,16 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                        ? std::string(backendError) + islandContext
                        : std::string("Triton island returned without backend detail") +
                              islandContext);
+               // Backend-returned native failures carry their own message. When the
+               // message records a CUDA allocation refusal (out of memory), this island
+               // failed from capacity exactly like a headroom refusal or an instantiate
+               // OOM: entering OOM_RETRY lets the capacity-recovery path split the work
+               // instead of permanently failing a healthy capture stream. Non-OOM backend
+               // errors (capture-invalidating ops, bad inputs) stay fatal by design.
+               if (backendError != nullptr &&
+                   std::string(backendError).find("out of memory") != std::string::npos) {
+                 captureHeadroomLimited = true;
+               }
                releaseMergedHandle("island_fail");
                break;
              }
