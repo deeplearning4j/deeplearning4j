@@ -190,13 +190,25 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
         long originalLimit = Nd4j.getEnvironment().getDeviceLimit(1);
-        final int width = 32 * 1024 * 1024;
         SameDiff graph = null;
         INDArray input = null;
         try {
             SameDiffMemoryUtils.reclaimClosedGraphResources();
             nativeOps.trimMemoryPool(1);
-            assumeTrue(nativeOps.getDeviceFreeMemory(1) > 128L * 1024 * 1024,
+            // Prior tests can leave reusable reservations even after trimming.
+            // Size the transfer above that credit rather than relying on an empty pool.
+            final long quantum = 128L * 1024 * 1024;
+            long transferBytes;
+            try (LongPointer used = new LongPointer(1);
+                 LongPointer reserved = new LongPointer(1)) {
+                nativeOps.getMemoryPoolStats(1, used, reserved);
+                long reusable = Math.max(0L, reserved.get() - used.get());
+                transferBytes = (reusable / quantum + 2) * quantum;
+            }
+            assertTrue(transferBytes <= 1024L * 1024 * 1024,
+                    "unexpected retained pool credit would make this fixture exceed its 1 GiB safety bound");
+            final int width = Math.toIntExact(transferBytes / Float.BYTES);
+            assumeTrue(nativeOps.getDeviceFreeMemory(1) > transferBytes,
                     "physical capacity must not be the reason for rejection");
             InferenceSession.setDynamicShapePlanEnabled(true);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
