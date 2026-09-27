@@ -218,11 +218,41 @@ static mlir::Value emitNativeOrderedReduction(
 
   std::vector<mlir::Value> partials;
   partials.reserve(activeLanes);
-  for (int lane = 0; lane < activeLanes; lane++) {
-    mlir::Value partial = splatIdentity();
-    for (int k = lane; k < reductionSize; k += blockWidth)
-      partial = combine(partial, loadValue(k));
-    partials.push_back(partial);
+  for (int lane = 0; lane < activeLanes; lane++) partials.push_back(splatIdentity());
+  const int fullEnd = (reductionSize / blockWidth) * blockWidth;
+  if (fullEnd > blockWidth) {
+    // Carry the native logical lanes independently. Expanding every k in C++
+    // produced ~48k IR ops for a 2048-wide mean; the loop keeps code size bounded
+    // by blockWidth without reassociating any lane's floating-point operations.
+    auto begin = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+    auto end = builder.create<mlir::arith::ConstantIntOp>(loc, fullEnd, 32);
+    auto step = builder.create<mlir::arith::ConstantIntOp>(loc, blockWidth, 32);
+    auto loop = builder.create<mlir::scf::ForOp>(loc, begin, end, step,
+                                               mlir::ValueRange(partials));
+    builder.setInsertionPointToStart(loop.getBody());
+    std::vector<mlir::Value> updated;
+    updated.reserve(activeLanes);
+    for (int lane = 0; lane < activeLanes; lane++) {
+      auto laneIndex = builder.create<mlir::arith::ConstantIntOp>(loc, lane, 32);
+      auto k = builder.create<mlir::arith::AddIOp>(loc, loop.getInductionVar(), laneIndex);
+      updated.push_back(combine(loop.getRegionIterArgs()[lane], loadValue(k.getResult())));
+    }
+    builder.create<mlir::scf::YieldOp>(loc, updated);
+    builder.setInsertionPointAfter(loop);
+    for (int lane = 0; lane < activeLanes; lane++) partials[lane] = loop.getResult(lane);
+    for (int lane = 0; lane < reductionSize - fullEnd; lane++) {
+      auto k = builder.create<mlir::arith::ConstantIntOp>(loc, fullEnd + lane, 32);
+      partials[lane] = combine(partials[lane], loadValue(k.getResult()));
+    }
+    DSP_DIAG(COMPILE, "Ordered reduction loop: reductionSize=%d lanes=%d rounds=%d tail=%d",
+             reductionSize, activeLanes, fullEnd / blockWidth, reductionSize - fullEnd);
+  } else {
+    for (int lane = 0; lane < activeLanes; lane++) {
+      for (int k = lane; k < reductionSize; k += blockWidth) {
+        auto index = builder.create<mlir::arith::ConstantIntOp>(loc, k, 32);
+        partials[lane] = combine(partials[lane], loadValue(index.getResult()));
+      }
+    }
   }
 
   int floorPow2 = activeLanes;
@@ -334,13 +364,19 @@ struct OrderedReductionLayout {
   int outputLength = 0;
   bool valid = false;
 
-  int reductionOffset(int k) const {
-    int offset = 0;
+  mlir::Value reductionOffset(mlir::OpBuilder& builder, mlir::Location loc,
+                              mlir::Value k, mlir::RankedTensorType tensorType) const {
+    mlir::Value offset = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
     for (size_t i = 0; i < reductionAxes.size(); i++) {
-      const int coord = (k / reductionStrides[i]) % reductionShape[i];
-      offset += coord * inputStrides[reductionAxes[i]];
+      auto stride = builder.create<mlir::arith::ConstantIntOp>(loc, reductionStrides[i], 32);
+      auto size = builder.create<mlir::arith::ConstantIntOp>(loc, reductionShape[i], 32);
+      auto inputStride = builder.create<mlir::arith::ConstantIntOp>(loc, inputStrides[reductionAxes[i]], 32);
+      auto quotient = builder.create<mlir::arith::DivSIOp>(loc, k, stride);
+      auto coord = builder.create<mlir::arith::RemSIOp>(loc, quotient, size);
+      auto contribution = builder.create<mlir::arith::MulIOp>(loc, coord, inputStride);
+      offset = builder.create<mlir::arith::AddIOp>(loc, offset, contribution);
     }
-    return offset;
+    return builder.create<mlir::triton::SplatOp>(loc, tensorType, offset).getResult();
   }
 };
 
@@ -481,7 +517,8 @@ static mlir::Value emitNativeOrderedArgReduction(
   for (int lane = 0; lane < activeLanes; lane++) {
     ValueIndexPair partial{splatValue(identityValue), splatIndex(0)};
     for (int k = lane; k < reductionSize; k += blockWidth) {
-      ValueIndexPair candidate{loadValue(k), splatIndex(k)};
+      auto index = builder.create<mlir::arith::ConstantIntOp>(loc, k, 32);
+      ValueIndexPair candidate{loadValue(index.getResult()), splatIndex(k)};
       partial = combine(partial, candidate);
     }
     partials.push_back(partial);
@@ -552,13 +589,13 @@ static mlir::Value emitOrderedReductionValue(
                                         reductionSize, 1.0f, false, false, true,
                                         loadValue);
     case OrderedReductionKind::NORM1: {
-      auto absLoad = [&](int k) -> mlir::Value {
+      auto absLoad = [&](mlir::Value k) -> mlir::Value {
         return builder.create<mlir::math::AbsFOp>(loc, loadValue(k)).getResult();
       };
       return sumOf(absLoad);
     }
     case OrderedReductionKind::NORM2: {
-      auto squareLoad = [&](int k) -> mlir::Value {
+      auto squareLoad = [&](mlir::Value k) -> mlir::Value {
         auto x = loadValue(k);
         return builder.create<mlir::arith::MulFOp>(loc, x, x).getResult();
       };
@@ -566,7 +603,7 @@ static mlir::Value emitOrderedReductionValue(
       return builder.create<mlir::math::SqrtOp>(loc, acc).getResult();
     }
     case OrderedReductionKind::NORM_MAX: {
-      auto absLoad = [&](int k) -> mlir::Value {
+      auto absLoad = [&](mlir::Value k) -> mlir::Value {
         return builder.create<mlir::math::AbsFOp>(loc, loadValue(k)).getResult();
       };
       // |x| >= 0, so 0 is a safe identity for the max tree.
@@ -581,7 +618,7 @@ static mlir::Value emitOrderedReductionValue(
       mlir::Value sum = sumOf(loadValue);
       mlir::Value mean = builder.create<mlir::arith::DivFOp>(
           loc, sum, splatF32(static_cast<float>(std::max(reductionSize, 1)))).getResult();
-      auto deviationLoad = [&](int k) -> mlir::Value {
+      auto deviationLoad = [&](mlir::Value k) -> mlir::Value {
         auto centered = builder.create<mlir::arith::SubFOp>(loc, loadValue(k), mean);
         return builder.create<mlir::arith::MulFOp>(loc, centered, centered).getResult();
       };
@@ -600,7 +637,7 @@ static mlir::Value emitOrderedReductionValue(
       mlir::Value maxVal = emitNativeOrderedReduction(
           builder, loc, f32TensorType, outputLength, reductionSize, -kFloatMax,
           true, false, false, loadValue);
-      auto shiftedExpLoad = [&](int k) -> mlir::Value {
+      auto shiftedExpLoad = [&](mlir::Value k) -> mlir::Value {
         auto shifted = builder.create<mlir::arith::SubFOp>(loc, loadValue(k), maxVal);
         return builder.create<mlir::math::ExpOp>(loc, shifted).getResult();
       };
@@ -2440,7 +2477,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       auto reductionOutputMask = builder.create<mlir::arith::CmpIOp>(
           loc, mlir::arith::CmpIPredicate::slt, offsets,
           reductionOutputLengthSplat);
-      auto loadValueAtK = [&](int k) -> mlir::Value {
+      auto loadValueAtK = [&](mlir::Value k) -> mlir::Value {
         // Compute the input flat offset for each compact output position and
         // flattened coordinate across every reduced axis.
         mlir::Value inputOffset =
@@ -2467,8 +2504,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
         inputOffset = builder.create<mlir::arith::AddIOp>(
             loc, inputOffset,
-            splatConstantI32(builder, loc, i32TensorType,
-                             reductionLayout.reductionOffset(k)));
+            reductionLayout.reductionOffset(builder, loc, k, i32TensorType));
 
         auto ptrs = builder.create<mlir::triton::AddPtrOp>(
             loc, ptrTensorType, splatPtr, inputOffset);
@@ -2521,7 +2557,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         auto splatPtr2 =
             builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, inputPtrArg);
 
-        auto loadBroadcastValueAtK = [&](int k) -> mlir::Value {
+        auto loadBroadcastValueAtK = [&](mlir::Value k) -> mlir::Value {
           mlir::Value inputOff =
               splatConstantI32(builder, loc, i32TensorType, 0);
           for (int inputDim : reductionLayout.nonReductionAxes) {
@@ -2541,8 +2577,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           }
           inputOff = builder.create<mlir::arith::AddIOp>(
               loc, inputOff,
-              splatConstantI32(builder, loc, i32TensorType,
-                               reductionLayout.reductionOffset(k)));
+              reductionLayout.reductionOffset(builder, loc, k, i32TensorType));
           auto ptrs2 = builder.create<mlir::triton::AddPtrOp>(
               loc, ptrTensorType, splatPtr2, inputOff);
           auto loaded2 = builder.create<mlir::triton::LoadOp>(
@@ -6853,7 +6888,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto reductionOutputMask = builder.create<mlir::arith::CmpIOp>(
                 loc, mlir::arith::CmpIPredicate::slt, offsets,
                 reductionOutputLengthSplat);
-            auto loadValueAtK = [&](int k) -> mlir::Value {
+            auto loadValueAtK = [&](mlir::Value k) -> mlir::Value {
               // Compute the input flat offset from compact output coordinates
               // plus the flattened coordinate over all reduced axes.
               mlir::Value inputOffset =
@@ -6881,8 +6916,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               }
               inputOffset = builder.create<mlir::arith::AddIOp>(
                   loc, inputOffset,
-                  splatConstantI32(builder, loc, i32TensorType,
-                                   reductionLayout.reductionOffset(k)));
+                  reductionLayout.reductionOffset(builder, loc, k, i32TensorType));
 
               auto ptrs = builder.create<mlir::triton::AddPtrOp>(
                   loc, ptrTensorType, splatPtr, inputOffset);
