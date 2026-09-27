@@ -886,8 +886,12 @@ static bool instantiateAndStoreMergedCapture(
 
   bool instOk = nativeHandle->instantiate();
   if (!instOk) {
-    cudaError_t instErr = cudaGetLastError();
-    DSP_DIAG(EXECUTE, "%s: group=%d instantiate FAILED — cudaGetLastError=%d (%s) "
+    // instantiate() clears the sticky error and destroys the rejected graph.
+    // Its saved result, not cudaGetLastError(), is the authoritative cause.
+    const auto instErr = static_cast<cudaError_t>(nativeHandle->getLastInstantiateError());
+    if (instErr == cudaErrorMemoryAllocation && captureHeadroomLimited != nullptr)
+      *captureHeadroomLimited = true;
+    DSP_DIAG(COMPILE, "%s: group=%d instantiate FAILED — instantiateError=%d (%s) "
              "wasOom=%d nodes=%zu",
              diagPrefix, mergedGroupId, (int)instErr, cudaGetErrorString(instErr),
              nativeHandle->wasLastInstantiateOom() ? 1 : 0, nodeCount);
@@ -6053,7 +6057,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 
            size_t gpuFreeAtFail = 0, gpuTotalAtFail = 0;
            cudaMemGetInfo(&gpuFreeAtFail, &gpuTotalAtFail);
-           // Capacity deferral is the only path that may enter OOM_RETRY. A gap
+           // Headroom refusal or an actual instantiation OOM may enter OOM_RETRY. A gap
            // capture invalidation (for example, an allocation performed by a view
            // wrapper constructor) is a deterministic capture-safety defect, not an
            // OOM. Misclassifying every capture error as OOM hid the failing slot and
@@ -6075,6 +6079,17 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              // stateful gaps a second time through the direct-dispatch path.
              seg.exec.executionCount++;
              return Status::OK;
+           } else if (captureHeadroomLimited) {
+             SegmentLifecycle::markFailed(
+                 seg.exec, "composite_capture_capacity_retries_exhausted",
+                 seg.def.startSlot, seg.def.endSlot);
+             DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                           "COMPOSITE_CAPTURE_OOM: seg[%d-%d] capture capacity retries exhausted "
+                           "with gpuFree=%zuMB retries=%d. detail=%s",
+                           seg.def.startSlot, seg.def.endSlot, gpuFreeAtFail / (1024*1024),
+                           seg.exec.captureOomRetries,
+                           compositeCaptureFailureDetail.empty()
+                               ? "unspecified" : compositeCaptureFailureDetail.c_str());
            } else {
              SegmentLifecycle::markFailed(
                  seg.exec, "composite_capture_failed_non_oom",
