@@ -26,14 +26,10 @@ class TritonCompactReductionTest {
         // Exactly representable mixed magnitudes expose reassociation, not just shape errors.
         float[] data = new float[rows * width];
         float[] expected = new float[rows];
+        float[] pattern = {65536f, 0.03125f, -65536f, 0.125f};
         for (int row = 0; row < rows; row++) {
             for (int k = 0; k < width; k++) {
-                data[row * width + k] = switch ((k + row) % 4) {
-                    case 0 -> 65536f;
-                    case 1 -> 0.03125f;
-                    case 2 -> -65536f;
-                    default -> 0.125f;
-                };
+                data[row * width + k] = pattern[(k + row) % pattern.length];
             }
             float[] lanes = new float[256];
             for (int lane = 0; lane < lanes.length; lane++)
