@@ -181,6 +181,62 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
+    /** Physical space on the secondary must not hide a tighter allocation cap. */
+    @Test
+    public void testMigrationCapacityShiftHonorsDeviceLimit() {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two CUDA devices");
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        long originalLimit = Nd4j.getEnvironment().getDeviceLimit(1);
+        final int width = 8 * 1024 * 1024;
+        SameDiff graph = null;
+        INDArray input = null;
+        try {
+            SameDiffMemoryUtils.reclaimClosedGraphResources();
+            nativeOps.trimMemoryPool(1);
+            assumeTrue(nativeOps.getDeviceFreeMemory(1) > 128L * 1024 * 1024,
+                    "physical capacity must not be the reason for rejection");
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+            input = Nd4j.ones(DataType.FLOAT, 1, width);
+            nativeOps.dbSyncToSpecial(input.data().opaqueBuffer());
+            graph = SameDiff.create();
+            SDVariable x = graph.placeHolder("x", DataType.FLOAT, 1, width);
+            x.add("producer", 1.0).sum("out", 1);
+            DynamicShapePlan plan = graph.compileDynamicShapePlan("out");
+            for (var slot : plan.getSlots()) {
+                slot.setTargetDeviceId(Arrays.asList(slot.getOutputVarNames()).contains("out") ? 1 : 0);
+            }
+            graph.compileNativeDynamicShapePlan("out");
+            long limit = Nd4j.getEnvironment().getDeviceCounter(1) + 8L * 1024 * 1024;
+            if (originalLimit > 0) limit = Math.min(limit, originalLimit);
+            Nd4j.getEnvironment().setDeviceLimit(1, limit);
+            for (int iteration = 0; iteration < 4; iteration++) {
+                input.assign(iteration + 1.0);
+                INDArray output = graph.output(Map.of("x", input), "out").get("out");
+                try {
+                    assertEquals((iteration + 2.0) * width, output.getDouble(0), 0.0);
+                    assertTrue(Nd4j.getEnvironment().getDeviceCounter(1) <= limit,
+                            "capacity shift must not increase the configured cap");
+                } finally {
+                    SameDiffMemoryUtils.safeClose(output);
+                }
+            }
+        } finally {
+            try {
+                if (graph != null) graph.close();
+            } finally {
+                SameDiffMemoryUtils.safeClose(input);
+                Nd4j.getEnvironment().setDeviceLimit(1, originalLimit);
+                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+                SameDiffMemoryUtils.reclaimClosedGraphResources();
+            }
+        }
+    }
+
     private static int countAssignedSlots(DynamicShapePlan plan, int deviceId) {
         int count = 0;
         for (var slot : plan.getSlots()) {

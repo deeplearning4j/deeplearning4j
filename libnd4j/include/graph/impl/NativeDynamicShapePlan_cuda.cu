@@ -73,6 +73,7 @@
 #include <helpers/cublasHelper.h>
 #include <cublas_v2.h>
 #include <memory/cuda/CudaMemoryPool.h>
+#include <memory/MemoryCounter.h>
 #include <helpers/AttentionWorkspace.h>
 #include <graph/gpu/NvrtcKernelBuilder.h>
 #include <graph/gpu/NvrtcKernelCache.h>
@@ -1406,7 +1407,10 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   }
 
   int migrated = 0;
-  for (int sourceIdx : neededInputSources) {
+  const std::vector<int> inputSources(neededInputSources.begin(), neededInputSources.end());
+  std::unordered_set<int> attemptedDevices{targetDevice};
+  for (size_t inputIndex = 0; inputIndex < inputSources.size(); ++inputIndex) {
+    const int sourceIdx = inputSources[inputIndex];
     if (seg.exec.captureRehomePending &&
         (rehomedViewParentSlots.count(sourceIdx) > 0 ||
          rehomedInPlaceParentSlots.count(sourceIdx) > 0)) {
@@ -1973,7 +1977,15 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     size_t poolReusable = poolReserved > poolUsed ? poolReserved - poolUsed : 0;
     size_t availableBytes = freeBytes;
     if (poolReusable <= SIZE_MAX - availableBytes) availableBytes += poolReusable;
-    if (!reuseCopy && memInfoErr == cudaSuccess && availableBytes < srcLen) {
+    // Match DataBuffer::allocateSpecial admission, including its credit for
+    // unused pool reservations. Driver capacity alone can exceed the operator's
+    // device limit (e.g. a 2 GiB weight with only 765 MiB of cap remaining).
+    auto& counter = memory::MemoryCounter::getInstance();
+    const size_t growthBytes = srcLen > poolReusable ? srcLen - poolReusable : 0;
+    const bool counterAdmitted = counter.validateDevice(targetDevice, static_cast<LongType>(srcLen)) ||
+        growthBytes == 0 || counter.validateDevice(targetDevice, static_cast<LongType>(growthBytes));
+    if (!reuseCopy && (!counterAdmitted ||
+                      (memInfoErr == cudaSuccess && availableBytes < srcLen))) {
       DSP_DIAG(MEMORY,
                "migrateSlotInputsToTargetDevice: destination capacity rejected slot=%d "
                "sourceDevice=%d targetDevice=%d bytes=%zu free=%zu poolReusable=%zu total=%zu",
@@ -1988,6 +2000,19 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
             slotIdx, sourceDevice, targetDevice, srcLen, freeBytes,
             poolReusable, totalBytes);
       }
+      // Ordinary capacity shifts are only safe before the segment has executed:
+      // warmed outputs and captured addresses require the capture-rehome protocol.
+      if (executeCount_ != 0 || planLifecycle_.isInFrozenOrReplayState() ||
+          !attemptedDevices.insert(sourceDevice).second) {
+        return cudaPlanFailure(
+            "CUDA migration capacity shift unavailable: slot=%d sourceDevice=%d "
+            "targetDevice=%d bytes=%zu counterAdmitted=%d executionCount=%d",
+            slotIdx, sourceDevice, targetDevice, srcLen, (int)counterAdmitted, executeCount_);
+      }
+      // Restore all publications staged on the old device before changing TLS.
+      // Inputs visited earlier must be checked again for the new target, including
+      // inputs skipped because they were already local to the old target.
+      platformCleanupMigratedInputs();
       // POLICY (device-shift react): the segment's device cannot hold this
       // input copy. The compute must move to where the data already lives.
       // Rebind the whole segment to the source device for this invocation and
@@ -2000,13 +2025,18 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       // Rebind THIS segment's stream/workspace TLS to the new device too, so
       // the immediate re-run below and all later invocations land correctly.
       platformRestoreSegmentDevice();
-      platformBindSegmentDevice(mutableSeg);
+      if (!platformBindSegmentDevice(mutableSeg)) {
+        return cudaPlanFailure("CUDA capacity shift could not bind segment [%d-%d] to device %d",
+                               mutableSeg.def.startSlot, mutableSeg.def.endSlot, sourceDevice);
+      }
       DSP_DIAG(EXECUTE,
                "CAPACITY_SHIFT_SEGMENT: seg[%d-%d] rebound from device %d to device %d "
                "(destination full for %zu-byte input; input residency wins over plan hint)",
                mutableSeg.def.startSlot, mutableSeg.def.endSlot,
                targetDevice, sourceDevice, srcLen);
       targetDevice = sourceDevice;
+      migrated = 0;
+      inputIndex = static_cast<size_t>(-1);  // loop increment restarts at the first input
       continue;
     }
 

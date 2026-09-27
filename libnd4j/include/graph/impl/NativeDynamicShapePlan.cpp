@@ -5661,8 +5661,14 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
     }
     auto migrationStatus = platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
     if (migrationStatus != Status::OK) {
+      // ErrorReference is device-context-local. Preserve the target-device cause
+      // before cleanup restores the primary device and hides that reference.
+      const char* message = LaunchContext::defaultContext()->errorReference()->errorMessage();
+      const std::string detail = message != nullptr && message[0] != '\0'
+          ? message : "Segment input migration failed without backend detail";
       platformCleanupMigratedInputs();
       platformRestoreSegmentDevice();
+      recordPlanFailureIfMissing(migrationStatus, detail);
       return migrationStatus;
     }
 
@@ -7566,8 +7572,14 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
     }
     auto migrationStatus = platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
     if (migrationStatus != Status::OK) {
+      // ErrorReference is device-context-local. Preserve the target-device cause
+      // before cleanup restores the primary device and hides that reference.
+      const char* message = LaunchContext::defaultContext()->errorReference()->errorMessage();
+      const std::string detail = message != nullptr && message[0] != '\0'
+          ? message : "Segment input migration failed without backend detail";
       platformCleanupMigratedInputs();
       platformRestoreSegmentDevice();
+      recordPlanFailureIfMissing(migrationStatus, detail);
       return migrationStatus;
     }
 
