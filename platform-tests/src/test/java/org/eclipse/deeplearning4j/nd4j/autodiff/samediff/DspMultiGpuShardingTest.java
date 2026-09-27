@@ -257,6 +257,40 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
+    @Test
+    public void testReusablePoolDoesNotDiscountLiveAllocationCap() {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        int device = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        long originalLimit = Nd4j.getEnvironment().getDeviceLimit(device);
+        NativeOps ops = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        final long bytes = 8L * 1024 * 1024;
+        try {
+            // Return a real allocation to the pool, retaining physical reservation.
+            try (INDArray seed = Nd4j.ones(DataType.FLOAT, 4 * 1024 * 1024)) {
+                ops.dbSyncToSpecial(seed.data().opaqueBuffer());
+                assertEquals(1.0, seed.getDouble(0), 0.0);
+            }
+            long limit = Nd4j.getEnvironment().getDeviceCounter(device) + 1024 * 1024;
+            if (originalLimit > 0) limit = Math.min(limit, originalLimit);
+            Nd4j.getEnvironment().setDeviceLimit(device, limit);
+            try (LongPointer used = new LongPointer(1);
+                 LongPointer reserved = new LongPointer(1)) {
+                ops.getMemoryPoolStats(device, used, reserved);
+                assertTrue(reserved.get() - used.get() >= bytes,
+                        "fixture must have physical pool credit available");
+            }
+            assertThrows(RuntimeException.class, () -> {
+                try (INDArray forbidden = Nd4j.create(DataType.FLOAT, bytes / Float.BYTES)) {
+                    ops.dbSyncToSpecial(forbidden.data().opaqueBuffer());
+                }
+            }, "free pool blocks must not bypass the live-byte device cap");
+            assertTrue(Nd4j.getEnvironment().getDeviceCounter(device) <= limit);
+        } finally {
+            Nd4j.getEnvironment().setDeviceLimit(device, originalLimit);
+            SameDiffMemoryUtils.reclaimClosedGraphResources();
+        }
+    }
+
     private static int countAssignedSlots(DynamicShapePlan plan, int deviceId) {
         int count = 0;
         for (var slot : plan.getSlots()) {

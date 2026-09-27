@@ -941,40 +941,21 @@ void DataBuffer::allocateSpecial() {
 
     if (_workspace == nullptr) {
       bool admitted = memory::MemoryCounter::getInstance().validate(getLenInBytes());
-      // ── Pool-aware admission credit ──────────────────────────────────────
-      // The CUDA async pool retains its reservation after stream-ordered frees
-      // (trim points are explicit barriers: plan teardown, cache Round 3). A
-      // counter-only refusal therefore lies when the pool already holds
-      // reserved-but-unused physical memory that it can serve without growing
-      // the reservation: if counter + size - poolFreeReserved <= limit, this
-      // allocation reuses blocks the pool owns and the effective footprint
-      // stays within the limit. Physical free memory is NOT credited here —
-      // only memory the pool itself has already reserved, so a fresh growth
-      // beyond the limit still refuses.
+      // MemoryCounter charges live logical buffers, not pool reservations.
+      // A reusable physical block does not reduce the new buffer's live charge.
       if (!admitted) {
         size_t poolUsed = 0, poolReserved = 0;
         memory::CudaMemoryPool::getInstance().getStats(deviceId, poolUsed, poolReserved);
         const size_t poolFreeReserved =
             poolReserved > poolUsed ? poolReserved - poolUsed : 0;
-        const LongType effective =
-            static_cast<LongType>(getLenInBytes()) - static_cast<LongType>(poolFreeReserved);
-        if (effective <= 0 ||
-            memory::MemoryCounter::getInstance().validateDevice(deviceId, effective)) {
-          admitted = true;
-          DSP_DIAG(MEMORY,
-                   "ALLOC_POOL_CREDIT: db=%p bytes=%lld dev=%d counterWouldRefuse=1 poolFreeReserved=%zuMB — admitted from pool-owned blocks",
-                   (void*)this, (long long)getLenInBytes(), deviceId,
-                   poolFreeReserved / (1024 * 1024));
-        } else {
           DSP_DIAG(MEMORY,
                    "ALLOC_REFUSED: db=%p bytes=%lld dev=%d counterFree=%lldMB poolFreeReserved=%zuMB — shortfall=%lldMB",
                    (void*)this, (long long)getLenInBytes(), deviceId,
                    (long long)(memory::MemoryCounter::getInstance().deviceLimit(deviceId) -
                                memory::MemoryCounter::getInstance().allocatedDevice(deviceId)) / (1024 * 1024),
                    poolFreeReserved / (1024 * 1024),
-                   (long long)(effective - (memory::MemoryCounter::getInstance().deviceLimit(deviceId) -
+                   (long long)(getLenInBytes() - (memory::MemoryCounter::getInstance().deviceLimit(deviceId) -
                                             memory::MemoryCounter::getInstance().allocatedDevice(deviceId))) / (1024 * 1024));
-        }
       }
       if (!admitted) {
         std::string errorMessage;
@@ -2377,38 +2358,15 @@ void DataBuffer::migrate() {
 
   // Requested-device admission happens before any target allocation. Padding is
   // physical capacity only: MemoryCounter consistently charges logical bytes.
-  // Pool-aware admission credit: a counter refusal is over-conservative when the
-  // async pool already holds reserved-but-unused physical memory on the target
-  // device (trim points are explicit barriers, so the reservation lags frees).
-  // The pool can serve the new block from memory it owns, so the EFFECTIVE
-  // footprint (counter + size - poolFreeReserved) is what must fit the limit.
-  // Fresh growth beyond the limit still refuses — only pool-owned blocks are
-  // credited, never raw cudaMemGetInfo free memory.
+  // Admission and commit must validate the same live charge; pool reservations
+  // are physical reuse capacity, not a discount on MemoryCounter's live bytes.
   if (!counter.transferDeviceAllocation(oldChargeDevice, oldCharge, requestedDevice, bytes, false)) {
-    bool poolCreditAdmitted = false;
-    size_t poolUsed = 0, poolReserved = 0;
-    memory::CudaMemoryPool::getInstance().getStats(requestedDevice, poolUsed, poolReserved);
-    const size_t poolFreeReserved =
-        poolReserved > poolUsed ? poolReserved - poolUsed : 0;
-    const LongType effectiveTarget =
-        static_cast<LongType>(bytes) - static_cast<LongType>(poolFreeReserved);
-    if (effectiveTarget <= 0 ||
-        counter.transferDeviceAllocation(oldChargeDevice, oldCharge, requestedDevice,
-                                         effectiveTarget, false)) {
-      poolCreditAdmitted = true;
-      DSP_DIAG(MEMORY,
-               "MIGRATE_POOL_CREDIT: db=%p bytes=%lld dev=%d poolFreeReserved=%zuMB — counter would refuse, admitted against pool-owned blocks",
-               (void*)this, (long long)bytes, requestedDevice,
-               poolFreeReserved / (1024 * 1024));
-    }
-    if (!poolCreditAdmitted) {
       sd_printf("MIGRATION_ADMISSION_REJECT db=%p oldBuffer=%p physicalSourceDevice=%d oldChargeDevice=%d oldOwner=%d oldCaptureWorkspace=%d host=%d oldCharge=%lld bytes=%lld requestedDevice=%d\n",
                 static_cast<void*>(this), oldBuffer, oldLocation.device, oldChargeDevice,
                 static_cast<int>(oldOwner), static_cast<int>(oldCaptureWorkspace),
                 static_cast<int>(oldLocation.host), static_cast<long long>(oldCharge),
                 static_cast<long long>(bytes), requestedDevice);
       THROW_EXCEPTION("DataBuffer::migrate: requested target exceeds device or DEVICE-group memory limits");
-    }
   }
 
   auto* callerStream = LaunchContext::defaultContext()->getCudaStream();

@@ -1065,7 +1065,14 @@ Status TritonGraphBackend::prepareAliasBindings(CompiledKernel& kernel,
             for (const auto& old : kernel.aliasBindings) if (old.tempPtr == allocation.tempPtr) reused = true;
             if (!reused) freeDeviceBufferAsync(allocation.tempPtr, reinterpret_cast<cudaStream_t>(stream));
           }
-          THROW_EXCEPTION("Triton alias scratch allocation failed");
+          const std::string detail = "Triton alias scratch allocation failed: device=" +
+              std::to_string(device) + " segment=[" + std::to_string(kernel.startSlot_) +
+              "-" + std::to_string(kernel.endSlot_) + "] outputArg=" + std::to_string(o) +
+              " slot=" + std::to_string(kernel.argSlotMapping[o].slotIndex) +
+              " bytes=" + std::to_string(bytes[o]) + " cudaError=" +
+              std::to_string(static_cast<int>(err)) + " (" + cudaGetErrorString(err) + ")";
+          DSP_DIAG(MEMORY, "%s", detail.c_str());
+          THROW_EXCEPTION(detail.c_str());
         }
       }
       next.push_back({static_cast<int>(o), ptrs[o], scratch, bytes[o], kernel.argSlotMapping[o].slotIndex});

@@ -1977,13 +1977,10 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     size_t poolReusable = poolReserved > poolUsed ? poolReserved - poolUsed : 0;
     size_t availableBytes = freeBytes;
     if (poolReusable <= SIZE_MAX - availableBytes) availableBytes += poolReusable;
-    // Match DataBuffer::allocateSpecial admission, including its credit for
-    // unused pool reservations. Driver capacity alone can exceed the operator's
+    // Match DataBuffer::allocateSpecial live-byte admission. Driver capacity can exceed the operator's
     // device limit (e.g. a 2 GiB weight with only 765 MiB of cap remaining).
     auto& counter = memory::MemoryCounter::getInstance();
-    const size_t growthBytes = srcLen > poolReusable ? srcLen - poolReusable : 0;
-    const bool counterAdmitted = counter.validateDevice(targetDevice, static_cast<LongType>(srcLen)) ||
-        growthBytes == 0 || counter.validateDevice(targetDevice, static_cast<LongType>(growthBytes));
+    const bool counterAdmitted = counter.validateDevice(targetDevice, static_cast<LongType>(srcLen));
     if (!reuseCopy && (!counterAdmitted ||
                       (memInfoErr == cudaSuccess && availableBytes < srcLen))) {
       DSP_DIAG(MEMORY,
