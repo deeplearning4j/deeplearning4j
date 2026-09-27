@@ -5011,76 +5011,82 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                      postWarmupDevice, seg.def.startSlot, seg.def.endSlot);
       }
 
+      // Defers capture when the device lacks capacity for capture-only state
+      // (graph metadata, alias scratch). Capture has not begun at either call
+      // site. The pre-capture warmup above has already produced the correct result.
+      const auto deferCaptureForCapacity = [&](const char* site, const std::string& detail) -> Status {
+        const bool retriesRemain =
+            seg.exec.captureOomRetries < GraphSegment::maxOomRetries();
+        const int retryAfter = retriesRemain
+            ? seg.exec.executionCount + GraphSegment::retryInterval()
+            : INT_MAX;
+        SegmentLifecycle::markOomDeferred(seg.exec, retryAfter);
+
+        DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
+                     "%s DEFERRED: %s for seg[%d-%d] "
+                     "retry=%d/%d retryAfter=%d compiledBy=%s — preserving compiled plan",
+                     site, detail.c_str(),
+                     seg.def.startSlot, seg.def.endSlot,
+                     seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
+                     retryAfter, seg.exec.compiledByBackend.c_str());
+
+        // Complete the queued warmup before releasing its pinned host sources,
+        // then tear down only capture-attempt state: retain compiled Triton
+        // kernels, shape key, composite schedule, output buffers, and shared
+        // workspaces for compiled direct execution.
+        cudaError_t warmupSyncErr = cudaStreamSynchronize(ctx.cudaStr);
+        cleanupCaptureTlsState(true, static_cast<void*>(prevCaptureStream));
+        popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
+        restoreCublasWorkspaceAfterCapture(stream);
+        restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
+        seg.exec.replayHandle.reset();
+
+#if HAVE_TRITON
+        tritonOrderedRangeGuard.active = false;
+        TritonGraphBackend::clearOrderedRangeExecutor();
+#endif
+
+        if (warmupSyncErr != cudaSuccess) {
+          DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
+                       "%s DEFER warmup synchronization failed for seg[%d-%d]: "
+                       "cudaError=%d (%s)",
+                       site, seg.def.startSlot, seg.def.endSlot,
+                       static_cast<int>(warmupSyncErr),
+                       cudaGetErrorString(warmupSyncErr));
+          SegmentLifecycle::markFailed(
+              seg.exec, "capture_defer_warmup_sync_failed",
+              seg.def.startSlot, seg.def.endSlot);
+          return setGpuBackendFailureDetail(
+              seg, "deferred capture warmup synchronization failed with CUDA error " +
+                       std::to_string(static_cast<int>(warmupSyncErr)) + " (" +
+                       cudaGetErrorString(warmupSyncErr) + ")");
+        }
+
+        if (willUseCompositeCapture) {
+          // Composite preparation deliberately leaves warmup outputs intact.
+          // Count this logical invocation once and return those correct outputs.
+          seg.exec.executionCount++;
+          return Status::OK;
+        }
+
+        // Monolithic preparation may have batch-zeroed warmup outputs before this
+        // point. Re-execute natively once so callers never observe zeroed data.
+        SyncOverride deferredCaptureSync(*this, "capture_headroom_deferred_sbs");
+        return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+      };
+
       // POST-ALLOCATION MEMORY GATE: workspace + cuBLAS are allocated. CUDA
       // graph metadata is an optional optimization; insufficient metadata headroom
       // must not invalidate a successfully compiled Triton segment or fail inference.
-      // The pre-capture warmup above has already produced the correct result.
       {
         size_t gpuFree = 0, gpuTotal = 0;
         cudaMemGetInfo(&gpuFree, &gpuTotal);
         size_t safetyBytes = Environment::getInstance().dspGraphMetadataSafetyMb() * 1024ULL * 1024ULL;
         if (gpuFree < safetyBytes) {
-          int deviceId = 0;
-          cudaGetDevice(&deviceId);
-
-          const bool retriesRemain =
-              seg.exec.captureOomRetries < GraphSegment::maxOomRetries();
-          const int retryAfter = retriesRemain
-              ? seg.exec.executionCount + GraphSegment::retryInterval()
-              : INT_MAX;
-          SegmentLifecycle::markOomDeferred(seg.exec, retryAfter);
-
-          DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                       "POST-ALLOC GATE DEFERRED: free=%zuMB < safety=%zuMB for seg[%d-%d] "
-                       "retry=%d/%d retryAfter=%d compiledBy=%s — preserving compiled plan",
-                       gpuFree / (1024*1024), safetyBytes / (1024*1024),
-                       seg.def.startSlot, seg.def.endSlot,
-                       seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
-                       retryAfter, seg.exec.compiledByBackend.c_str());
-
-          // Capture has not begun. Complete the queued warmup before releasing
-          // its pinned host sources, then tear down only capture-attempt state:
-          // retain compiled Triton kernels, shape key, composite schedule, output
-          // buffers, and shared workspaces for compiled direct execution.
-          cudaError_t warmupSyncErr = cudaStreamSynchronize(ctx.cudaStr);
-          cleanupCaptureTlsState(true, static_cast<void*>(prevCaptureStream));
-          popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
-          restoreCublasWorkspaceAfterCapture(stream);
-          restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
-          seg.exec.replayHandle.reset();
-
-#if HAVE_TRITON
-          tritonOrderedRangeGuard.active = false;
-          TritonGraphBackend::clearOrderedRangeExecutor();
-#endif
-
-          if (warmupSyncErr != cudaSuccess) {
-            DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
-                         "POST-ALLOC DEFER warmup synchronization failed for seg[%d-%d]: "
-                         "cudaError=%d (%s)",
-                         seg.def.startSlot, seg.def.endSlot,
-                         static_cast<int>(warmupSyncErr),
-                         cudaGetErrorString(warmupSyncErr));
-            SegmentLifecycle::markFailed(
-                seg.exec, "capture_defer_warmup_sync_failed",
-                seg.def.startSlot, seg.def.endSlot);
-            return setGpuBackendFailureDetail(
-                seg, "deferred capture warmup synchronization failed with CUDA error " +
-                         std::to_string(static_cast<int>(warmupSyncErr)) + " (" +
-                         cudaGetErrorString(warmupSyncErr) + ")");
-          }
-
-          if (willUseCompositeCapture) {
-            // Composite preparation deliberately leaves warmup outputs intact.
-            // Count this logical invocation once and return those correct outputs.
-            seg.exec.executionCount++;
-            return Status::OK;
-          }
-
-          // Monolithic preparation may have batch-zeroed warmup outputs before this
-          // gate. Re-execute natively once so callers never observe zeroed data.
-          SyncOverride deferredCaptureSync(*this, "capture_headroom_deferred_sbs");
-          return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+          return deferCaptureForCapacity(
+              "POST-ALLOC GATE",
+              "free=" + std::to_string(gpuFree / (1024*1024)) + "MB < safety=" +
+                  std::to_string(safetyBytes / (1024*1024)) + "MB");
         }
       }
 
@@ -5152,10 +5158,25 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       // launcher. Resolve views against the staged inputs, not their old raw
       // externals, before preparing scratch and immutable H2D source rows.
       if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend)) {
-        if (refreshStaleViewWrappersInSegment(seg, effectiveExternalsForCapture, numExt) < 0)
+        if (refreshStaleViewWrappersInSegment(seg, effectiveExternalsForCapture, numExt) < 0) {
+          abortCapture(seg, true, didPushCtx, tritonCaptureDevice,
+                       prevCaptureStream, savedSlotPhasesTriton, stream);
+          tritonOrderedRangeGuard.active = false;
+          TritonGraphBackend::clearOrderedRangeExecutor();
+          SegmentLifecycle::markFailed(
+              seg.exec, "capture_view_publication_failed",
+              seg.def.startSlot, seg.def.endSlot);
           return setGpuBackendFailureDetail(seg, "Triton capture alias/view publication failed");
-        backend->prepareAliasBindingsForCapture(seg, effectiveExternalsForCapture,
-            numExt, outputSlots_, totalOutputSlots_, stream);
+        }
+        // A non-OK status is only a device-capacity failure for the alias
+        // scratch arena; every other failure throws.
+        if (backend->prepareAliasBindingsForCapture(seg, effectiveExternalsForCapture,
+                numExt, outputSlots_, totalOutputSlots_, stream) != Status::OK) {
+          auto* errorRef = LaunchContext::defaultContext()->errorReference();
+          const std::string scratchDetail = errorRef->errorMessage();  // consumes the error code
+          errorRef->setErrorMessage("");
+          return deferCaptureForCapacity("CAPTURE-PREP ALIAS SCRATCH", scratchDetail);
+        }
       }
 #endif
 
