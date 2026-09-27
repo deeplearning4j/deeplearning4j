@@ -542,6 +542,13 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     // needed before reading the stable device pointer values.
 
     // ── Phase 2: Populate consolidated arg table with post-sync pointers ──
+    // Size the alias arena for every sub-kernel first: growing it inside the
+    // loop would leave earlier published rows on the previous arena.
+    if (!streamCaptureActive) {
+      auto arenaStatus = reserveAliasArena(*compiledSeg, externalInputs, numExternalInputs,
+                                           outputSlots, totalOutputSlots, actualStream);
+      if (arenaStatus != Status::OK) return arenaStatus;
+    }
     for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
       auto& sk = compiledSeg->subKernels[ki];
       if (!sk.useIndirectArgs || !sk.cachedArgTableHostPinned) continue;
@@ -564,7 +571,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         if (!sbuf) return failSegment("argument pointer is null before consolidated publication");
         preparedPointers[ai] = sbuf;
       }
-      auto aliasStatus = prepareAliasBindings(sk, preparedPointers, externalInputs,
+      auto aliasStatus = prepareAliasBindings(*compiledSeg, sk, preparedPointers, externalInputs,
           numExternalInputs, outputSlots, totalOutputSlots, actualStream, streamCaptureActive);
       if (aliasStatus != Status::OK) return aliasStatus;
       publishArgumentPointers(sk, preparedPointers, streamCaptureActive);
@@ -766,6 +773,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           !streamCaptureActive) {
         // Re-populate host-pinned arg table entries for ALL subsequent sub-kernels
         // (gap may have changed slot pointers that are inputs to any of them).
+        auto arenaStatus = reserveAliasArena(*compiledSeg, externalInputs, numExternalInputs,
+                                             outputSlots, totalOutputSlots, actualStream);
+        if (arenaStatus != Status::OK) return arenaStatus;
         for (size_t rki = i; rki < compiledSeg->subKernels.size(); rki++) {
           auto& rsk = compiledSeg->subKernels[rki];
           if (!rsk.useIndirectArgs || !rsk.cachedArgTableHostPinned) continue;
@@ -787,7 +797,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
             if (!sbuf) return failSegment("post-gap argument pointer is null");
             preparedPointers[ai] = sbuf;
           }
-          auto aliasStatus = prepareAliasBindings(rsk, preparedPointers, externalInputs,
+          auto aliasStatus = prepareAliasBindings(*compiledSeg, rsk, preparedPointers, externalInputs,
               numExternalInputs, outputSlots, totalOutputSlots, actualStream, false);
           if (aliasStatus != Status::OK) return aliasStatus;
           publishArgumentPointers(rsk, preparedPointers, false);
@@ -1106,7 +1116,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                              slots, seg.def.endSlot);
       }
 
-      auto status = executeSingleKernel(subKernel, slots,
+      auto status = executeSingleKernel(*compiledSeg, subKernel, slots,
                                          externalInputs, numExternalInputs,
                                          outputSlots, totalOutputSlots,
                                          stream,
@@ -1844,6 +1854,7 @@ void TritonGraphBackend::invalidateCache() {
       segDeviceId = seg.subKernels[0].cachedArgTableDeviceId;
 
     for (auto& kernel : seg.subKernels) releaseAliasBindings(kernel);
+    releaseAliasArena(seg);
     // Free consolidated arg table buffers FIRST (before per-kernel cleanup,
     // because per-kernel pointers are offsets into these buffers).
     if (seg.useConsolidatedArgTable) {
@@ -2034,6 +2045,7 @@ void TritonGraphBackend::invalidateCacheForSegments(
     }
 
     for (auto& kernel : seg.subKernels) releaseAliasBindings(kernel);
+    releaseAliasArena(seg);
     // Free resources (same logic as invalidateCache)
     if (seg.useConsolidatedArgTable) {
       if (seg.consolidatedArgTableDevice != nullptr) {

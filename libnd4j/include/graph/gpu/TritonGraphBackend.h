@@ -139,7 +139,11 @@ class TritonGraphBackend : public GraphBackend {
    */
   void copyConsolidatedArgTableToDevice(GraphSegment& seg, void* stream);
 
-  void prepareAliasBindingsForCapture(GraphSegment& seg, NDArray** externalInputs,
+  // Runs before capture begins. Returns KERNEL_FAILURE only when the alias
+  // scratch arena cannot be allocated (device capacity; the error reference
+  // carries the CUDA "out of memory" detail) so the caller can defer capture.
+  // Every other failure throws.
+  Status prepareAliasBindingsForCapture(GraphSegment& seg, NDArray** externalInputs,
       int numExternalInputs, NDArray** outputSlots, int totalOutputSlots, void* stream);
   // Pre-launch only: MAYBE requests the owning segment's rebuild lifecycle.
   Status preflightAliasBindings(GraphSegment& seg, NDArray** externalInputs,
@@ -152,9 +156,11 @@ class TritonGraphBackend : public GraphBackend {
   // ── ALIAS_PUB probe (diagnostic, BUF_FP_RING=1) ─────────────────────────
   // Snapshot of every sealed alias binding on this segment: the scratch and
   // logical device pointers plus byte length. Pointers are plan-lifetime
-  // stable (scratch pool-owned for the compiled kernel, logical buffer
-  // SEAL_PINned), so the merged-replay owner can fingerprint them before and
-  // after a replay without owning either allocation. Not part of execution.
+  // stable (scratch carved from the compiled segment's alias arena, logical
+  // buffer SEAL_PINned), so the merged-replay owner can fingerprint them
+  // before and after a replay without owning either allocation. The arena is
+  // shared by the segment's sub-kernels, so post-replay scratch bytes hold the
+  // last aliasing kernel's output. Not part of execution.
   struct AliasFingerprint {
     int    slotIdx;
     size_t bytes;
@@ -378,6 +384,17 @@ class TritonGraphBackend : public GraphBackend {
     // cudaEvent_t recorded after async preallocation; stored as void* to keep
     // CUDA types out of this header's non-CUDA translation units.
     void* preallocReadyEvent = nullptr;
+    // Alias scratch arena shared by every sub-kernel of this segment. A kernel
+    // whose output overlaps an input writes through scratch and copies back on
+    // the same stream before the next sub-kernel launches (captured graphs keep
+    // that order), so the arena holds the largest single kernel's need, not the
+    // sum over kernels. Each kernel's scratch offsets are deterministic. When the
+    // arena must grow while a captured graph may still reference it, the old
+    // block is retired and freed only with the cache entry.
+    void* aliasArena = nullptr;
+    size_t aliasArenaBytes = 0;
+    int aliasArenaDeviceId = -1;
+    std::vector<void*> retiredAliasArenas;
 
     /**
      * Returns true if dirty tracking classification was computed at compile time.
@@ -775,9 +792,18 @@ class TritonGraphBackend : public GraphBackend {
                               const TritonCompiledBinary& binary) const;
 
 #ifdef SD_CUDA
-  Status prepareAliasBindings(CompiledKernel& kernel, std::vector<void*>& pointers,
-      NDArray** externalInputs, int numExternalInputs, NDArray** outputSlots,
-      int totalOutputSlots, void* stream, bool capturing);
+  Status prepareAliasBindings(CompiledSegment& owner, CompiledKernel& kernel,
+      std::vector<void*>& pointers, NDArray** externalInputs, int numExternalInputs,
+      NDArray** outputSlots, int totalOutputSlots, void* stream, bool capturing);
+  // Grows the owner's alias arena to at least `bytes` on the current device.
+  // Returns KERNEL_FAILURE only when the device is out of memory; growth while
+  // capturing is an invariant violation and throws.
+  Status ensureAliasArena(CompiledSegment& owner, size_t bytes, void* stream, bool capturing);
+  // Sizes the arena for every unsealed sub-kernel before any of them publishes
+  // a binding, so growth never strands a row that was already published.
+  Status reserveAliasArena(CompiledSegment& owner, NDArray** externalInputs,
+      int numExternalInputs, NDArray** outputSlots, int totalOutputSlots, void* stream);
+  void releaseAliasArena(CompiledSegment& owner);
   bool aliasBindingsMatch(const CompiledKernel& kernel, NDArray** externalInputs,
       int numExternalInputs, NDArray** outputSlots, int totalOutputSlots) const;
   void publishArgumentPointers(CompiledKernel& kernel, const std::vector<void*>& pointers,
@@ -792,7 +818,7 @@ class TritonGraphBackend : public GraphBackend {
 
   // Execute a single compiled sub-kernel.
   // When argTablePreCopied=true, skip per-kernel H2D memcpy (consolidated copy already done).
-  Status executeSingleKernel(CompiledKernel& compiled, NativeSlot* slots,
+  Status executeSingleKernel(CompiledSegment& owner, CompiledKernel& compiled, NativeSlot* slots,
                              NDArray** externalInputs, int numExternalInputs,
                              NDArray** outputSlots, int totalOutputSlots,
                              void* stream, bool argTablePreCopied = false,
