@@ -571,8 +571,10 @@ static mlir::Value emitOrderedReductionValue(
       return sumOf(loadValue);
     case OrderedReductionKind::MEAN: {
       mlir::Value acc = sumOf(loadValue);
+      // arith.divf lowers to approximate div.full.f32 in Triton. Native mean
+      // rounds its FP32 division, observable for non-power-of-two widths.
       if (reductionSize > 0)
-        acc = builder.create<mlir::arith::DivFOp>(
+        acc = builder.create<mlir::triton::PreciseDivFOp>(
             loc, acc, splatF32(static_cast<float>(reductionSize))).getResult();
       return acc;
     }
