@@ -4684,6 +4684,31 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             producedOutputs.insert(slots_[s].wiring.outputSlotIndices[o]);
           }
         }
+        // Snapshot only storage that segment execution can overwrite. Copying
+        // every live-in duplicates immutable cross-segment weights (the LLM
+        // projection alone is ~2 GiB). Compare whole backing allocations, not
+        // logical lengths: strided/offset views may touch a wider byte range.
+        auto mayOverwrite = [&](NDArray* input) {
+          auto* inputBuffer = input->dataBuffer();
+          if (inputBuffer == nullptr || inputBuffer->special() == nullptr) return true;
+          const uintptr_t inputBase = reinterpret_cast<uintptr_t>(inputBuffer->special());
+          const size_t inputBytes = inputBuffer->getLenInBytes();
+          for (int output : producedOutputs) {
+            if (output < 0 || output >= totalOutputSlots_) return true;
+            NDArray* array = outputSlots_[output];
+            if (array == nullptr) return true;  // no warmed storage proof yet
+            if (array->isEmpty()) continue;
+            auto* buffer = array->dataBuffer();
+            if (buffer == nullptr || buffer->special() == nullptr) return true;
+            if (buffer == inputBuffer) return true;
+            const uintptr_t base = reinterpret_cast<uintptr_t>(buffer->special());
+            const size_t bytes = buffer->getLenInBytes();
+            // Difference comparison avoids overflowing an end address.
+            if (base >= inputBase ? base - inputBase < inputBytes
+                                  : inputBase - base < bytes) return true;
+          }
+          return false;
+        };
         ScopedGapStreamOverride liveInputStream(ctx.cudaStr);
         for (int s = seg.def.startSlot; s <= seg.def.endSlot; ++s) {
           for (int i = 0; i < slots_[s].wiring.numInputs; ++i) {
@@ -4691,7 +4716,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             if (source >= 0 && source < totalOutputSlots_ &&
                 producedOutputs.count(source) == 0 && savedInputs.insert(source).second &&
                 outputSlots_[source] != nullptr) {
-              captureLiveInputs.values.emplace_back(source, outputSlots_[source]->dup());
+              const bool snapshot = mayOverwrite(outputSlots_[source]);
+              DSP_DIAG(MEMORY, "CAPTURE_LIVE_INPUT: seg[%d-%d] source=%d bytes=%lld snapshot=%d",
+                       seg.def.startSlot, seg.def.endSlot, source,
+                       (long long)(outputSlots_[source]->lengthOf() * outputSlots_[source]->sizeOfT()),
+                       (int)snapshot);
+              if (snapshot)
+                captureLiveInputs.values.emplace_back(source, outputSlots_[source]->dup());
             }
           }
         }
