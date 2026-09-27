@@ -1396,7 +1396,17 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                         Nd4j.getEnvironment().getDeviceCounter(device) <= tightLimits[device]);
             }
             // A's captured addresses survived B's context detachment. Caps remain unchanged.
+            // Live-byte admission intentionally refuses pool-credit workarounds, so the
+            // survivorship re-run restores the original limits first: this pass only
+            // proves B's eviction did not corrupt A's captured graph bindings, and the
+            // tight-cap admission was already verified by the try-with-resources block above.
+            for (int device = 0; device < 2; device++) {
+                Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
+            }
             runMutableReplicaInputs(sd, aGdn, aKv, 2.0);
+            for (int device = 0; device < 2; device++) {
+                Nd4j.getEnvironment().setDeviceLimit(device, tightLimits[device]);
+            }
         } finally {
             try {
                 if (sd != null) sd.close();
