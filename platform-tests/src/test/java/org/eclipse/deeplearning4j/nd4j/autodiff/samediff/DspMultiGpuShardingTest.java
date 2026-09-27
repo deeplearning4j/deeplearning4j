@@ -190,7 +190,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
         long originalLimit = Nd4j.getEnvironment().getDeviceLimit(1);
-        final int width = 8 * 1024 * 1024;
+        final int width = 32 * 1024 * 1024;
         SameDiff graph = null;
         INDArray input = null;
         try {
@@ -213,6 +213,14 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             long limit = Nd4j.getEnvironment().getDeviceCounter(1) + 8L * 1024 * 1024;
             if (originalLimit > 0) limit = Math.min(limit, originalLimit);
             Nd4j.getEnvironment().setDeviceLimit(1, limit);
+            try (LongPointer used = new LongPointer(1);
+                 LongPointer reserved = new LongPointer(1)) {
+                nativeOps.getMemoryPoolStats(1, used, reserved);
+                long reusable = Math.max(0L, reserved.get() - used.get());
+                assertTrue((long) width * Float.BYTES > reusable
+                                + Math.max(0L, limit - Nd4j.getEnvironment().getDeviceCounter(1)),
+                        "fixture must exceed allocation allowance INCLUDING reusable pool credit");
+            }
             for (int iteration = 0; iteration < 4; iteration++) {
                 input.assign(iteration + 1.0);
                 INDArray output = graph.output(Map.of("x", input), "out").get("out");
