@@ -161,4 +161,22 @@ public interface ModelArchitecture {
         String mode = System.getProperty("nd4j.mtp.prefixSelect");
         return mode == null || !"off".equalsIgnoreCase(mode.trim());
     }
+
+    /**
+     * Opt-in MTP draft-head vocabulary subset: when {@code nd4j.mtp.draftVocabSubset=N}
+     * is positive, the predictor's lm_head scores only token ids {@code [0, N)}.
+     * Lossless (the target verifies with the full vocabulary); it trades draft
+     * coverage of high ids for a cheaper per-draft output projection. 0/unset = off.
+     */
+    public static int mtpDraftVocabSubset() {
+        String value = System.getProperty("nd4j.mtp.draftVocabSubset");
+        if (value == null || value.trim().isEmpty()) {
+            return 0;
+        }
+        int parsed = Integer.parseInt(value.trim());
+        if (parsed < 0) {
+            throw new IllegalArgumentException("nd4j.mtp.draftVocabSubset must be >= 0: " + value);
+        }
+        return parsed;
+    }
 }

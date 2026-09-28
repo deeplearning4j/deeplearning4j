@@ -28,6 +28,7 @@ import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.autodiff.samediff.SDIndex;
 
 import java.util.ArrayList;
@@ -373,8 +374,13 @@ public class LLaMAArchitecture implements ModelArchitecture {
         predictorHidden = sd.identity("mtp_hidden_states", predictorHidden);
         String lmHeadWeightName = weights.containsKey("output.weight")
                 ? "output.weight" : "token_embd.weight";
-        QuantizedLinear.matMulFloatOutput(sd, "mtp_logits", predictorHidden,
-                lmHead, weights, lmHeadWeightName, dtype);
+        int draftVocab = ModelArchitecture.mtpDraftVocabSubset();
+        if (draftVocab > 0) {
+            buildSubsetDraftLogits(sd, predictorHidden, weights, lmHeadWeightName, draftVocab, dtype);
+        } else {
+            QuantizedLinear.matMulFloatOutput(sd, "mtp_logits", predictorHidden,
+                    lmHead, weights, lmHeadWeightName, dtype);
+        }
 
         SDVariable keyStates = sd.getVariable("k_rope_" + layerIdx);
         SDVariable valueStates = sd.getVariable("v_heads_" + layerIdx);
@@ -388,6 +394,49 @@ public class LLaMAArchitecture implements ModelArchitecture {
         outputNames.add("mtp_value_states");
         outputNames.add("mtp_hidden_states");
         outputNames.add("mtp_logits");
+    }
+
+    /**
+     * Draft logits over the first {@code draftVocab} token ids only. The lm_head
+     * (and every per-row quantization companion) is row-major {@code [vocab, hidden]},
+     * so the id prefix is a zero-copy offset-0 view and the draft argmax index is the
+     * token id itself. Verification still runs the full target lm_head, so the emitted
+     * sequence is unchanged; a target token outside the prefix just cannot be drafted.
+     */
+    private static void buildSubsetDraftLogits(SameDiff sd, SDVariable predictorHidden,
+            Map<String, INDArray> weights, String lmHeadWeightName, int draftVocab, DataType dtype) {
+        INDArray full = weights.get(lmHeadWeightName);
+        if (full == null || full.rank() != 2) {
+            throw new IllegalStateException("MTP draft vocab subset requires a rank-2 " + lmHeadWeightName);
+        }
+        if (weights.containsKey(lmHeadWeightName + ".__q__")) {
+            throw new IllegalArgumentException("MTP draft vocab subset does not support GGML block-packed "
+                    + lmHeadWeightName + "; use a ModelOpt or dense lm_head");
+        }
+        long vocab = full.size(0);
+        if (draftVocab >= vocab) {
+            throw new IllegalArgumentException("nd4j.mtp.draftVocabSubset=" + draftVocab
+                    + " must be smaller than the vocabulary (" + vocab + ")");
+        }
+        String subsetName = "mtp.draft_lm_head.weight";
+        Map<String, INDArray> subsetWeights = new HashMap<>();
+        for (String suffix : new String[] {"", QuantizedLinear.MODELOPT_BLOCK_SCALE,
+                QuantizedLinear.MODELOPT_GLOBAL_SCALE, QuantizedLinear.MODELOPT_FP8_SCALE,
+                QuantizedLinear.MODELOPT_INPUT_SCALE}) {
+            INDArray companion = weights.get(lmHeadWeightName + suffix);
+            if (companion == null) {
+                continue;
+            }
+            boolean perRow = companion.rank() >= 1 && companion.size(0) == vocab;
+            subsetWeights.put(subsetName + suffix, perRow
+                    ? (companion.rank() == 1
+                            ? companion.get(NDArrayIndex.interval(0, draftVocab))
+                            : companion.get(NDArrayIndex.interval(0, draftVocab), NDArrayIndex.all()))
+                    : companion);
+        }
+        SDVariable subsetHead = sd.constant(subsetName, subsetWeights.get(subsetName));
+        QuantizedLinear.matMulFloatOutput(sd, "mtp_logits", predictorHidden,
+                subsetHead, subsetWeights, subsetName, dtype);
     }
 
     protected SDVariable buildTransformerBlock(SameDiff sd, SDVariable input, int layerIdx,
