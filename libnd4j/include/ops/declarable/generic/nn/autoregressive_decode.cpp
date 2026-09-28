@@ -345,6 +345,117 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       && (std::strcmp(mrc, "0") == 0 || std::strcmp(mrc, "false") == 0);
   decodeConfig.allowMultiRowCommit = !singleRowRequested;
 
+  // Accepted-prefix state-selection trailer (0x4D545050, AutoregressiveDecode
+  // .withMtpPrefixSelect): its layout is independent of the draft source. With a
+  // bundled MTP plan it follows the MTP trailers; for the n-gram speculator it is the
+  // only trailer and starts at tArg 45.
+  constexpr double PREFIX_SELECT_TRAILER_MARKER = 0x4D545050;
+  auto parsePrefixSelectTrailer = [&](const size_t prefixStart) {
+    const size_t tArgCount = block.getTArguments()->size();
+    REQUIRE_TRUE(prefixStart + 4 <= tArgCount, 0,
+                 "autoregressive_decode: truncated MTP prefix-select trailer");
+    // Validate every numeric word BEFORE integer conversion: finite, integral,
+    // and in the representable integer range.
+    const auto validPrefixWord = [&](size_t i) {
+      double v = T_ARG(i);
+      return std::isfinite(v) && std::floor(v) == v
+          && v >= static_cast<double>(std::numeric_limits<int>::min())
+          && v <= static_cast<double>(std::numeric_limits<int>::max());
+    };
+    REQUIRE_TRUE(validPrefixWord(prefixStart + 1)
+                     && validPrefixWord(prefixStart + 2)
+                     && validPrefixWord(prefixStart + 3),
+                 0, "autoregressive_decode: non-integral prefix-select header word");
+    const int prefixMode = static_cast<int>(T_ARG(prefixStart + 1));
+    const int gdnCount = static_cast<int>(T_ARG(prefixStart + 2));
+    const int convCount = static_cast<int>(T_ARG(prefixStart + 3));
+    REQUIRE_TRUE(prefixMode == 2, 0,
+                 "autoregressive_decode: prefix-select mode %d unsupported (shadow "
+                 "requires an implemented comparison transaction; OFF is no trailer)",
+                 prefixMode);
+    REQUIRE_TRUE(gdnCount >= 0 && convCount >= 0
+                     && gdnCount + convCount > 0
+                     && gdnCount <= helpers::AutoregressiveDecodeConfig::MTP_PREFIX_MAX_LAYERS
+                     && convCount <= helpers::AutoregressiveDecodeConfig::MTP_PREFIX_MAX_LAYERS,
+                 0, "autoregressive_decode: invalid prefix-select layer counts");
+    // Canonical wire layout (Packet 05): 4 + 3*(G+C) words - G inputs, G
+    // ordinary state outputs, C inputs, C ordinary state outputs, G checkpoint
+    // outputs, C checkpoint outputs. Overflow-safe arithmetic; the cursor must
+    // land exactly on tArgCount.
+    const size_t totalLayers = static_cast<size_t>(gdnCount) + static_cast<size_t>(convCount);
+    REQUIRE_TRUE(tArgCount >= prefixStart + 4, 0,
+                 "autoregressive_decode: truncated MTP prefix-select trailer");
+    const size_t remaining = tArgCount - (prefixStart + 4);
+    REQUIRE_TRUE(remaining == 3u * totalLayers, 0,
+                 "autoregressive_decode: prefix-select trailer length mismatch: "
+                 "expected %zu index words, got %zu",
+                 3u * totalLayers, remaining);
+    decodeConfig.mtpPrefixSelectMode = prefixMode;
+    decodeConfig.mtpPrefixGdnLayerCount = gdnCount;
+    decodeConfig.mtpPrefixConvLayerCount = convCount;
+    size_t cursor = prefixStart + 4;
+    for (int i = 0; i < gdnCount; ++i) {
+      REQUIRE_TRUE(validPrefixWord(cursor), 0,
+                   "autoregressive_decode: invalid GDN input index word");
+      decodeConfig.mtpPrefixGdnInputIndices[i] = static_cast<int>(T_ARG(cursor++));
+    }
+    for (int i = 0; i < gdnCount; ++i) {
+      REQUIRE_TRUE(validPrefixWord(cursor), 0,
+                   "autoregressive_decode: invalid GDN ordinary-output index word");
+      decodeConfig.mtpPrefixGdnStateOutputIndices[i] = static_cast<int>(T_ARG(cursor++));
+    }
+    for (int i = 0; i < convCount; ++i) {
+      REQUIRE_TRUE(validPrefixWord(cursor), 0,
+                   "autoregressive_decode: invalid conv input index word");
+      decodeConfig.mtpPrefixConvInputIndices[i] = static_cast<int>(T_ARG(cursor++));
+    }
+    for (int i = 0; i < convCount; ++i) {
+      REQUIRE_TRUE(validPrefixWord(cursor), 0,
+                   "autoregressive_decode: invalid conv ordinary-output index word");
+      decodeConfig.mtpPrefixConvStateOutputIndices[i] = static_cast<int>(T_ARG(cursor++));
+    }
+    for (int i = 0; i < gdnCount; ++i) {
+      REQUIRE_TRUE(validPrefixWord(cursor), 0,
+                   "autoregressive_decode: invalid GDN checkpoint index word");
+      decodeConfig.mtpPrefixGdnOutputIndices[i] = static_cast<int>(T_ARG(cursor++));
+    }
+    for (int i = 0; i < convCount; ++i) {
+      REQUIRE_TRUE(validPrefixWord(cursor), 0,
+                   "autoregressive_decode: invalid conv checkpoint index word");
+      decodeConfig.mtpPrefixConvOutputIndices[i] = static_cast<int>(T_ARG(cursor++));
+    }
+    REQUIRE_TRUE(cursor == tArgCount, 0,
+                 "autoregressive_decode: prefix-select trailer has trailing words");
+    // Validate every field in its actual input/output domain. The iArgs that
+    // carry the plan dimensions are parsed AFTER the tArg trailers (and
+    // iArgCount is declared later still), so read the argument list directly
+    // here; without a declared plan geometry the binding is unusable.
+    const size_t prefixIArgCount = block.getIArguments() != nullptr
+        ? block.getIArguments()->size() : 0;
+    const int prefixPlanExtInputs = (prefixIArgCount > 10) ? INT_ARG(9) : 0;
+    const int prefixPlanOutputs = (prefixIArgCount > 10) ? INT_ARG(10) : 0;
+    REQUIRE_TRUE(prefixPlanExtInputs > 0 && prefixPlanOutputs > 0, 0,
+                 "autoregressive_decode: prefix-select requires a declared plan geometry");
+    for (int i = 0; i < gdnCount; ++i) {
+      REQUIRE_TRUE(decodeConfig.mtpPrefixGdnInputIndices[i] >= 0
+                       && decodeConfig.mtpPrefixGdnInputIndices[i] < prefixPlanExtInputs
+                       && decodeConfig.mtpPrefixGdnStateOutputIndices[i] >= 0
+                       && decodeConfig.mtpPrefixGdnStateOutputIndices[i] < prefixPlanOutputs
+                       && decodeConfig.mtpPrefixGdnOutputIndices[i] >= 0
+                       && decodeConfig.mtpPrefixGdnOutputIndices[i] < prefixPlanOutputs,
+                   0, "autoregressive_decode: GDN prefix binding %d out of range", i);
+    }
+    for (int i = 0; i < convCount; ++i) {
+      REQUIRE_TRUE(decodeConfig.mtpPrefixConvInputIndices[i] >= 0
+                       && decodeConfig.mtpPrefixConvInputIndices[i] < prefixPlanExtInputs
+                       && decodeConfig.mtpPrefixConvStateOutputIndices[i] >= 0
+                       && decodeConfig.mtpPrefixConvStateOutputIndices[i] < prefixPlanOutputs
+                       && decodeConfig.mtpPrefixConvOutputIndices[i] >= 0
+                       && decodeConfig.mtpPrefixConvOutputIndices[i] < prefixPlanOutputs,
+                   0, "autoregressive_decode: conv prefix binding %d out of range", i);
+    }
+  };
+
   if (hasMtpPlan) {
     REQUIRE_TRUE(speculatorType_arg == 2, 0,
                  "autoregressive_decode: MTP inputs require speculatorType=2, got %d",
@@ -565,109 +676,7 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
         trailerEnd = batchRepairStart + 16;
       }
       if (trailerEnd < tArgCount && T_ARG(trailerEnd) == MTP_PREFIX_TRAILER_MARKER) {
-        const size_t prefixStart = trailerEnd;
-        REQUIRE_TRUE(prefixStart + 4 <= tArgCount, 0,
-                     "autoregressive_decode: truncated MTP prefix-select trailer");
-        // Validate every numeric word BEFORE integer conversion: finite, integral,
-        // and in the representable integer range.
-        const auto validPrefixWord = [&](size_t i) {
-          double v = T_ARG(i);
-          return std::isfinite(v) && std::floor(v) == v
-              && v >= static_cast<double>(std::numeric_limits<int>::min())
-              && v <= static_cast<double>(std::numeric_limits<int>::max());
-        };
-        REQUIRE_TRUE(validPrefixWord(prefixStart + 1)
-                         && validPrefixWord(prefixStart + 2)
-                         && validPrefixWord(prefixStart + 3),
-                     0, "autoregressive_decode: non-integral prefix-select header word");
-        const int prefixMode = static_cast<int>(T_ARG(prefixStart + 1));
-        const int gdnCount = static_cast<int>(T_ARG(prefixStart + 2));
-        const int convCount = static_cast<int>(T_ARG(prefixStart + 3));
-        REQUIRE_TRUE(prefixMode == 2, 0,
-                     "autoregressive_decode: prefix-select mode %d unsupported (shadow "
-                     "requires an implemented comparison transaction; OFF is no trailer)",
-                     prefixMode);
-        REQUIRE_TRUE(gdnCount >= 0 && convCount >= 0
-                         && gdnCount + convCount > 0
-                         && gdnCount <= helpers::AutoregressiveDecodeConfig::MTP_PREFIX_MAX_LAYERS
-                         && convCount <= helpers::AutoregressiveDecodeConfig::MTP_PREFIX_MAX_LAYERS,
-                     0, "autoregressive_decode: invalid prefix-select layer counts");
-        // Canonical wire layout (Packet 05): 4 + 3*(G+C) words - G inputs, G
-        // ordinary state outputs, C inputs, C ordinary state outputs, G checkpoint
-        // outputs, C checkpoint outputs. Overflow-safe arithmetic; the cursor must
-        // land exactly on tArgCount.
-        const size_t totalLayers = static_cast<size_t>(gdnCount) + static_cast<size_t>(convCount);
-        REQUIRE_TRUE(tArgCount >= prefixStart + 4, 0,
-                     "autoregressive_decode: truncated MTP prefix-select trailer");
-        const size_t remaining = tArgCount - (prefixStart + 4);
-        REQUIRE_TRUE(remaining == 3u * totalLayers, 0,
-                     "autoregressive_decode: prefix-select trailer length mismatch: "
-                     "expected %zu index words, got %zu",
-                     3u * totalLayers, remaining);
-        decodeConfig.mtpPrefixSelectMode = prefixMode;
-        decodeConfig.mtpPrefixGdnLayerCount = gdnCount;
-        decodeConfig.mtpPrefixConvLayerCount = convCount;
-        size_t cursor = prefixStart + 4;
-        for (int i = 0; i < gdnCount; ++i) {
-          REQUIRE_TRUE(validPrefixWord(cursor), 0,
-                       "autoregressive_decode: invalid GDN input index word");
-          decodeConfig.mtpPrefixGdnInputIndices[i] = static_cast<int>(T_ARG(cursor++));
-        }
-        for (int i = 0; i < gdnCount; ++i) {
-          REQUIRE_TRUE(validPrefixWord(cursor), 0,
-                       "autoregressive_decode: invalid GDN ordinary-output index word");
-          decodeConfig.mtpPrefixGdnStateOutputIndices[i] = static_cast<int>(T_ARG(cursor++));
-        }
-        for (int i = 0; i < convCount; ++i) {
-          REQUIRE_TRUE(validPrefixWord(cursor), 0,
-                       "autoregressive_decode: invalid conv input index word");
-          decodeConfig.mtpPrefixConvInputIndices[i] = static_cast<int>(T_ARG(cursor++));
-        }
-        for (int i = 0; i < convCount; ++i) {
-          REQUIRE_TRUE(validPrefixWord(cursor), 0,
-                       "autoregressive_decode: invalid conv ordinary-output index word");
-          decodeConfig.mtpPrefixConvStateOutputIndices[i] = static_cast<int>(T_ARG(cursor++));
-        }
-        for (int i = 0; i < gdnCount; ++i) {
-          REQUIRE_TRUE(validPrefixWord(cursor), 0,
-                       "autoregressive_decode: invalid GDN checkpoint index word");
-          decodeConfig.mtpPrefixGdnOutputIndices[i] = static_cast<int>(T_ARG(cursor++));
-        }
-        for (int i = 0; i < convCount; ++i) {
-          REQUIRE_TRUE(validPrefixWord(cursor), 0,
-                       "autoregressive_decode: invalid conv checkpoint index word");
-          decodeConfig.mtpPrefixConvOutputIndices[i] = static_cast<int>(T_ARG(cursor++));
-        }
-        REQUIRE_TRUE(cursor == tArgCount, 0,
-                     "autoregressive_decode: prefix-select trailer has trailing words");
-        // Validate every field in its actual input/output domain. The iArgs that
-        // carry the plan dimensions are parsed AFTER the tArg trailers (and
-        // iArgCount is declared later still), so read the argument list directly
-        // here; without a declared plan geometry the binding is unusable.
-        const size_t prefixIArgCount = block.getIArguments() != nullptr
-            ? block.getIArguments()->size() : 0;
-        const int prefixPlanExtInputs = (prefixIArgCount > 10) ? INT_ARG(9) : 0;
-        const int prefixPlanOutputs = (prefixIArgCount > 10) ? INT_ARG(10) : 0;
-        REQUIRE_TRUE(prefixPlanExtInputs > 0 && prefixPlanOutputs > 0, 0,
-                     "autoregressive_decode: prefix-select requires a declared plan geometry");
-        for (int i = 0; i < gdnCount; ++i) {
-          REQUIRE_TRUE(decodeConfig.mtpPrefixGdnInputIndices[i] >= 0
-                           && decodeConfig.mtpPrefixGdnInputIndices[i] < prefixPlanExtInputs
-                           && decodeConfig.mtpPrefixGdnStateOutputIndices[i] >= 0
-                           && decodeConfig.mtpPrefixGdnStateOutputIndices[i] < prefixPlanOutputs
-                           && decodeConfig.mtpPrefixGdnOutputIndices[i] >= 0
-                           && decodeConfig.mtpPrefixGdnOutputIndices[i] < prefixPlanOutputs,
-                       0, "autoregressive_decode: GDN prefix binding %d out of range", i);
-        }
-        for (int i = 0; i < convCount; ++i) {
-          REQUIRE_TRUE(decodeConfig.mtpPrefixConvInputIndices[i] >= 0
-                           && decodeConfig.mtpPrefixConvInputIndices[i] < prefixPlanExtInputs
-                           && decodeConfig.mtpPrefixConvStateOutputIndices[i] >= 0
-                           && decodeConfig.mtpPrefixConvStateOutputIndices[i] < prefixPlanOutputs
-                           && decodeConfig.mtpPrefixConvOutputIndices[i] >= 0
-                           && decodeConfig.mtpPrefixConvOutputIndices[i] < prefixPlanOutputs,
-                       0, "autoregressive_decode: conv prefix binding %d out of range", i);
-        }
+        parsePrefixSelectTrailer(trailerEnd);
       } else {
         REQUIRE_TRUE(trailerEnd == tArgCount, 0,
                      "autoregressive_decode: unexpected trailing MTP metadata");
@@ -1085,8 +1094,11 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     stopTokenIds.push_back(INT_ARG(i));
   }
 
-  REQUIRE_TRUE(block.getTArguments()->size() <= 45 || hasMtpPlan, 0,
-               "autoregressive_decode: scalar target metadata requires MTP");
+  if (!hasMtpPlan && block.getTArguments()->size() > 45) {
+    REQUIRE_TRUE(T_ARG(45) == PREFIX_SELECT_TRAILER_MARKER, 0,
+                 "autoregressive_decode: scalar target and MTP repair metadata require MTP");
+    parsePrefixSelectTrailer(45);
+  }
   if (decodeConfig.scalarPlanHandle != nullptr) {
     auto& c = decodeConfig;
     // P02 adaptive-K (review finding 1): speculativeK==0 is a VALID adaptive

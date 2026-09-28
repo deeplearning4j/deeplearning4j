@@ -177,6 +177,10 @@ public class GenerationPipelineConfig {
     @Builder.Default
     private final int maxSpeculativeTokens = 0;
 
+    /** Draft source for native speculative decoding (see {@link SpeculativeDrafter}). */
+    @Builder.Default
+    private final SpeculativeDrafter speculativeDrafter = SpeculativeDrafter.AUTO;
+
     /** Additional stop token IDs beyond EOS. */
     private final Set<Integer> additionalStopTokenIds;
 

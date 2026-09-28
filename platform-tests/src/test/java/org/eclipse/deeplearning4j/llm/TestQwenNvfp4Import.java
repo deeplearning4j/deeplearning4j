@@ -236,6 +236,9 @@ public class TestQwenNvfp4Import {
                     .kvCacheStrategy(KvCacheStrategy.STATIC)
                     .dspEnabled(true)
                     .maxSpeculativeTokens(greedyOnly ? 0 : Integer.getInteger("qwen.nvfp4.mtpK", 4))
+                    // -Dqwen.nvfp4.drafter=auto|mtp|ngram selects the draft source.
+                    .speculativeDrafter(org.eclipse.deeplearning4j.llm.generation.SpeculativeDrafter.valueOf(
+                            System.getProperty("qwen.nvfp4.drafter", "auto").trim().toUpperCase(java.util.Locale.ROOT)))
                     .samplingConfig(greedyOnly ? SamplingConfig.greedy() : SamplingConfig.speculative())
                     .maxNewTokens(maxTokens).maxPrefillLength(maxPrefill).maxKvCacheLength(contextCap)
                     .build();
