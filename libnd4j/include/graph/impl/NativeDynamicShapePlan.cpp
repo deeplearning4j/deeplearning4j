@@ -2719,7 +2719,9 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
                       f.startSlot, f.endSlot, static_cast<int>(f.type), f.chainLength);
       }
 
-      int applied = FusionPass::applyFusions(plan->slots_, plan->numSlots_, fusions);
+      int applied = FusionPass::applyFusions(plan->slots_, plan->numSlots_, fusions,
+                                             plan->requestedOutputSlotIndices_,
+                                             plan->numRequestedOutputs_);
       DSP_DIAG(FUSION, "applied %d of %d fusion candidates (in-place execution)",
                applied, static_cast<int>(fusions.size()));
 
@@ -5310,10 +5312,13 @@ Status NativeDynamicShapePlan::phaseFreeze() {
   if (numSlots_ > 1) {
     auto fusions = FusionPass::detectFusions(slots_, numSlots_, externalInputRanks_,
                                               requestedOutputSlotIndices_, numRequestedOutputs_);
+    // Rebuilds every slot's fused-chain metadata, also when nothing is detected now:
+    // a chain formed at compile time must not outlive the post-warmup detection.
+    int applied = FusionPass::applyFusions(slots_, numSlots_, fusions,
+                                           requestedOutputSlotIndices_, numRequestedOutputs_);
     if (!fusions.empty()) {
       DSP_DIAG(FUSION, "detected %d fusion candidates (post-warmup)",
                (int)fusions.size());
-      int applied = FusionPass::applyFusions(slots_, numSlots_, fusions);
       DSP_DIAG(FUSION, "applied %d of %d fusion candidates",
                applied, (int)fusions.size());
 
