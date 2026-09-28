@@ -200,6 +200,20 @@ are computed as before (an accepted draft is still counted, only one token is st
 - Trade-off: multi-token throughput per step is disabled by construction while acceptance quality
   work proceeds; the `W=1`-parity invariant of this ADR is restored as a hard guarantee.
 
+### Amendment (29 Sep 2026): session window follows the policy
+
+A retained fixed-buffer state is reused by `startSession` only when its frozen window equals the new
+session's policy window, in addition to equal KV capacity. Previously a greedy session opened after a
+speculative one reused the `W=K+1` plan with `activeWindow=1`, computing W rows per token to keep
+one: Qwen3.6-27B NVFP4 greedy ran 9.94 tok/s that way versus 10.36 on a width-1 plan. A window
+mismatch now tears the state down and re-freezes at the policy's own width, exactly as a capacity
+mismatch does; one-shot `generate()` already re-froze per call.
+
+- This is a re-freeze per policy change between sessions, not per call: consecutive sessions with
+  the same policy still reuse the frozen plan, captured graphs and buffers.
+- Within one session the window stays frozen, so a narrower policy set mid-session still runs as
+  `activeWindow=1` on the wider plan.
+
 ## Open questions / follow-ups
 
 - `B_max` / `W_max` defaults and configuration surface (proposed defaults: `W_max=8`, `B_max=4`).

@@ -5102,7 +5102,15 @@ public class GenerationPipeline implements AutoCloseable {
                 InGraphKvState candidate = cachedFixedBufferState;
                 cachedFixedBufferState = null;
                 long expectedMaxKvLen = resolveFixedBufferMaxKvLen(config, resolvedCapacity);
-                if (fixedBuffers && !candidate.closed && candidate.maxKvLen == expectedMaxKvLen) {
+                // The frozen window is part of the plan shape too. Reusing a W-wide
+                // speculative plan for a scalar policy computes W rows per token to keep
+                // one (27B NVFP4 greedy: 9.94 vs 10.36 tok/s on a width-1 plan), so a
+                // policy whose window differs re-freezes at its own width.
+                int expectedWindow = Math.max(1, activeDecodePolicy().windowMax);
+                boolean windowMatches = candidate.decodeInputIds != null
+                        && candidate.decodeInputIds.size(1) == expectedWindow;
+                if (fixedBuffers && !candidate.closed && candidate.maxKvLen == expectedMaxKvLen
+                        && windowMatches) {
                     reuseState = candidate;
                     log.info("[GenerationSession] reusing fixed-buffer DSP state (maxKvLen={})",
                             expectedMaxKvLen);
@@ -5329,8 +5337,14 @@ public class GenerationPipeline implements AutoCloseable {
                 }
 
                 // outputDirect stays on the frozen plan (plain output() may clear session caches).
+                // Request exactly the frozen target plan's outputs: the plan is keyed on its
+                // requested-output set, so the reduced per-step list would select (and leave
+                // current) a different plan, which the next native decode handoff rejects.
+                List<String> appendOutputs = state.nativeTargetOutputNames != null
+                        && !state.nativeTargetOutputNames.isEmpty()
+                        ? state.nativeTargetOutputNames : state.decodeOutputNames;
                 Map<String, INDArray> outputs = decoder.outputDirect(
-                        decodeInputMap, state.decodeOutputNames.toArray(new String[0]));
+                        decodeInputMap, appendOutputs.toArray(new String[0]));
                 INDArray logits = outputs.get(state.logitsName);
                 if (logits != null) logits.close();   // appended tokens are given, not sampled
                 for (ModelIOConfig.RecurrentStatePair pair : state.recurrentStates) {
@@ -5342,6 +5356,8 @@ public class GenerationPipeline implements AutoCloseable {
                     }
                 }
                 closeGeneratedKvOutputs(outputs, state.kvInputNames);
+                // Other target outputs (accepted-prefix checkpoints) are not consumed by append.
+                for (INDArray unconsumed : outputs.values()) closeOutput(unconsumed);
                 state.cachePosition += 1;
             }
             for (int t : tokens) state.generatedSoFar.add(t);
