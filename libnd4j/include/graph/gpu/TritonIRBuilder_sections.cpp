@@ -2006,6 +2006,14 @@ static constexpr int kPerElementMatmulPrefetch = 64;
 // Bytes of one wide K load: a single integer word per lane carrying several
 // consecutive K steps of a K-contiguous operand.
 static constexpr int kWideLoadBytes = 8;
+// A 16-byte-aligned K-contiguous operand loads two adjacent words per lane as
+// one [block, 2] tile: a 16-byte vector, cp.async's widest copy.
+static constexpr int kWidePairBytes = 16;
+// Buffers of SERIAL_FMA's K loop. Its loads are asynchronous copies into
+// shared memory issued this many chunks minus one ahead of the FMAs, so a lane
+// has several chunks in flight instead of one register-resident chunk (whose
+// DRAM round trip otherwise bounded every chunk: ADR 0122).
+static constexpr int kSerialMatmulStages = 4;
 
 void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Location loc,
                                             mlir::Value pid, int blockSize,
@@ -2220,6 +2228,18 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
   // so it needs no layout conversion. Word loads rely on kWideLoadBytes-aligned
   // rows: established here for the concrete operand and recorded on its kernel
   // argument (requiredAlignment), which every later binding must satisfy.
+  // Every row (and batch) start of the operand is a multiple of `bytes`.
+  auto rowsAligned = [&](NDArray* array, bool transposedK, bool left, int bytes) -> bool {
+    const int elementSize = static_cast<int>(array->sizeOfT());
+    if (reinterpret_cast<uintptr_t>(array->specialBuffer()) % bytes != 0) return false;
+    const int rank = array->rankOf();
+    const int kAxis = rank - (left ? (transposedK ? 2 : 1) : (transposedK ? 1 : 2));
+    for (int d = 0; d < rank; ++d) {
+      if (d == kAxis || array->sizeAt(d) <= 1) continue;
+      if ((array->stridesOf()[d] * static_cast<LongType>(elementSize)) % bytes != 0) return false;
+    }
+    return true;
+  };
   auto wideLanes = [&](NDArray* array, TritonKernelArg* arg, mlir::Type elementType, bool transposedK,
                        bool left, LongType kStride) -> int {
     if (!hasLayout || arg == nullptr || kStride != 1 || !mlir::isa<mlir::FloatType>(elementType)) return 1;
@@ -2227,23 +2247,35 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
     if (elementSize != 2 && elementSize != 4) return 1;
     const int lanes = kWideLoadBytes / elementSize;
     if (K % lanes != 0 || kPerElementMatmulPrefetch % lanes != 0) return 1;
-    if (reinterpret_cast<uintptr_t>(array->specialBuffer()) % kWideLoadBytes != 0) return 1;
-    const int rank = array->rankOf();
-    const int kAxis = rank - (left ? (transposedK ? 2 : 1) : (transposedK ? 1 : 2));
-    for (int d = 0; d < rank; ++d) {
-      if (d == kAxis || array->sizeAt(d) <= 1) continue;
-      if ((array->stridesOf()[d] * static_cast<LongType>(elementSize)) % kWideLoadBytes != 0) return 1;
-    }
+    if (!rowsAligned(array, transposedK, left, kWideLoadBytes)) return 1;
     return lanes;
   };
   const int aLanes = wideLanes(aArray, aArg, aPtrType.getPointeeType(), tx, true, aKStride);
   const int bLanes = wideLanes(bArray, bArg, bPtrType.getPointeeType(), ty, false, bKStride);
-  if (aLanes > 1) aArg->requiredAlignment = std::max(aArg->requiredAlignment, kWideLoadBytes);
-  if (bLanes > 1) bArg->requiredAlignment = std::max(bArg->requiredAlignment, kWideLoadBytes);
-  DSP_DIAG(JIT, "emitPerElementMatmul: M=%d N=%d K=%d serial=%d wideLanes=%d/%d (layout=%d args=%d/%d "
-           "aKStride=%lld bKStride=%lld)",
-           M, N, K, serial ? 1 : 0, aLanes, bLanes, hasLayout ? 1 : 0, aArg != nullptr ? 1 : 0,
-           bArg != nullptr ? 1 : 0, static_cast<long long>(aKStride), static_cast<long long>(bKStride));
+  // Word pairs: a whole number of pairs per chunk and 16-byte rows.
+  auto widePairs = [&](NDArray* array, bool transposedK, bool left, int lanes) -> bool {
+    return lanes > 1 && (kPerElementMatmulPrefetch / lanes) % 2 == 0 &&
+        rowsAligned(array, transposedK, left, kWidePairBytes);
+  };
+  const bool aPairs = widePairs(aArray, tx, true, aLanes);
+  const bool bPairs = widePairs(bArray, ty, false, bLanes);
+  // The alignment is a contract on every later binding (checked at launch), so
+  // it may also be declared to Triton's axis analysis as pointer divisibility
+  // (bytes) on the splatted base pointer, the operand's first tensor value:
+  // kernel pointers usually arrive through the indirect argument table as
+  // int_to_ptr results, which the analysis cannot see through. Without it the
+  // pair loads could not become 16-byte vectors or asynchronous copies.
+  auto requireAlignment = [&](TritonKernelArg* arg, mlir::Operation* splat, int bytes) {
+    arg->requiredAlignment = std::max(arg->requiredAlignment, bytes);
+    splat->setDiscardableAttr("tt.divisibility", builder.getI32IntegerAttr(arg->requiredAlignment));
+  };
+  if (aLanes > 1) requireAlignment(aArg, splatAPtr, aPairs ? kWidePairBytes : kWideLoadBytes);
+  if (bLanes > 1) requireAlignment(bArg, splatBPtr, bPairs ? kWidePairBytes : kWideLoadBytes);
+  DSP_DIAG(JIT, "emitPerElementMatmul: M=%d N=%d K=%d serial=%d wideLanes=%d/%d pairs=%d/%d (layout=%d "
+           "args=%d/%d aKStride=%lld bKStride=%lld)",
+           M, N, K, serial ? 1 : 0, aLanes, bLanes, aPairs ? 1 : 0, bPairs ? 1 : 0, hasLayout ? 1 : 0,
+           aArg != nullptr ? 1 : 0, bArg != nullptr ? 1 : 0, static_cast<long long>(aKStride),
+           static_cast<long long>(bKStride));
 
   auto wordType = builder.getIntegerType(kWideLoadBytes * 8);
   auto wordTensorType = mlir::RankedTensorType::get({blockSize}, wordType);
@@ -2263,11 +2295,14 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
         mlir::RankedTensorType::get({blockSize}, elementType), narrow);
   };
 
-  // Software pipeline: the loop carries the next kPerElementMatmulPrefetch
-  // steps' raw operands (wide words or scalars), loading chunk i + 1 while
-  // chunk i accumulates, so a chunk's memory latency overlaps the previous
-  // chunk's dependent FMAs instead of stalling every iteration. Accumulation
-  // order is unchanged.
+  // Chunked K loop: each iteration loads kPerElementMatmulPrefetch steps' raw
+  // operands (wide words or scalars) and then accumulates them in ascending k.
+  // SERIAL_FMA marks the loop with tt.num_stages, so Triton's software
+  // pipeliner turns the loads into asynchronous copies into a
+  // kSerialMatmulStages-deep shared-memory ring issued ahead of the FMAs. The
+  // legacy branch keeps the register-carried form: its loads are issued one
+  // chunk ahead through the loop's iteration arguments. Accumulation order is
+  // the step-1 loop's either way.
   constexpr int depth = kPerElementMatmulPrefetch;
   const int pipelinedEnd = K - K % depth;
   mlir::Value accumulated = accInit;
@@ -2282,10 +2317,35 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
       mlir::Type elementType;
       LongType kStride;
       int lanes;
+      bool pairs;
     };
     const Operand operands[2] = {
-        {aBasePtrs, aPtrTensorType, aPtrType.getPointeeType(), aKStride, aLanes},
-        {bBasePtrs, bPtrTensorType, bPtrType.getPointeeType(), bKStride, bLanes}};
+        {aBasePtrs, aPtrTensorType, aPtrType.getPointeeType(), aKStride, aLanes, aPairs},
+        {bBasePtrs, bPtrTensorType, bPtrType.getPointeeType(), bKStride, bLanes, bPairs}};
+    // Two adjacent words per lane as one [block, 2] load, split back into the
+    // lane's consecutive words (split returns [..., 0] then [..., 1]).
+    auto loadPair = [&](mlir::Value wordPtrs, mlir::Type wordPtrType, std::vector<mlir::Value>& raws) {
+      auto ptrs2Type = mlir::RankedTensorType::get({blockSize, 2}, wordPtrType);
+      auto column = builder.create<mlir::triton::ExpandDimsOp>(loc, wordPtrs, 1);
+      auto rowPtrs = builder.create<mlir::triton::BroadcastOp>(loc, ptrs2Type, column);
+      auto pairRange = builder.create<mlir::triton::MakeRangeOp>(loc,
+          mlir::RankedTensorType::get({2}, i32Type), 0, 2);
+      auto pairRow = builder.create<mlir::triton::ExpandDimsOp>(loc, pairRange, 0);
+      auto pairOffsets = builder.create<mlir::triton::BroadcastOp>(loc,
+          mlir::RankedTensorType::get({blockSize, 2}, i32Type), pairRow);
+      auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrs2Type, rowPtrs, pairOffsets);
+      mlir::Value pairMask;
+      if (!wholeBlocks) {
+        auto maskColumn = builder.create<mlir::triton::ExpandDimsOp>(loc, mask.getResult(), 1);
+        pairMask = builder.create<mlir::triton::BroadcastOp>(loc,
+            mlir::RankedTensorType::get({blockSize, 2}, builder.getI1Type()), maskColumn);
+      }
+      auto pair = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), pairMask, mlir::Value(),
+          mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false).getResult();
+      auto split = builder.create<mlir::triton::SplitOp>(loc, pair);
+      raws.push_back(split.getOutLHS());
+      raws.push_back(split.getOutRHS());
+    };
     auto loadChunk = [&](mlir::Value k0, std::vector<mlir::Value>& raws) {
       for (const Operand& operand : operands) {
         mlir::Value chunkPtrs = builder.create<mlir::triton::AddPtrOp>(loc, operand.ptrTensorType,
@@ -2294,13 +2354,19 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
                 splatConstantI32(builder, loc, i32TensorType, static_cast<int>(operand.kStride))));
         auto addressSpace = mlir::cast<mlir::triton::PointerType>(
             mlir::cast<mlir::RankedTensorType>(operand.ptrTensorType).getElementType()).getAddressSpace();
-        for (int u = 0; u < depth; u += operand.lanes) {
+        const int stride = operand.pairs ? 2 * operand.lanes : operand.lanes;
+        for (int u = 0; u < depth; u += stride) {
           mlir::Value ptrs = u == 0 ? chunkPtrs
               : builder.create<mlir::triton::AddPtrOp>(loc, operand.ptrTensorType, chunkPtrs,
                     splatConstantI32(builder, loc, i32TensorType, static_cast<int>(u * operand.kStride))).getResult();
+          auto wordPtrType = mlir::triton::PointerType::get(wordType, addressSpace);
           if (operand.lanes > 1)
             ptrs = builder.create<mlir::triton::BitcastOp>(loc, mlir::RankedTensorType::get({blockSize},
-                mlir::triton::PointerType::get(wordType, addressSpace)), ptrs);
+                wordPtrType), ptrs);
+          if (operand.pairs) {
+            loadPair(ptrs, wordPtrType, raws);
+            continue;
+          }
           raws.push_back(builder.create<mlir::triton::LoadOp>(loc, ptrs, wholeBlocks ? mlir::Value() : mask.getResult(),
               mlir::Value(), mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false)
               .getResult());
@@ -2319,24 +2385,52 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
         acc = accumulate(stepValue(aRaws, operands[0], u), stepValue(bRaws, operands[1], u), acc);
       return acc;
     };
-    std::vector<mlir::Value> first;
-    loadChunk(builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32), first);
-    std::vector<mlir::Value> carried{accumulated};
-    carried.insert(carried.end(), first.begin(), first.end());
-    auto forOp = builder.create<mlir::scf::ForOp>(loc,
-        builder.create<mlir::arith::ConstantIntOp>(loc, depth, 32),
-        builder.create<mlir::arith::ConstantIntOp>(loc, pipelinedEnd, 32),
-        builder.create<mlir::arith::ConstantIntOp>(loc, depth, 32), carried);
-    builder.setInsertionPointToStart(forOp.getBody());
-    std::vector<mlir::Value> next;
-    loadChunk(forOp.getInductionVar(), next);  // chunk i + 1
-    auto args = forOp.getRegionIterArgs();
-    mlir::Value running = accumulateChunk(args.drop_front(1), args[0]);  // chunk i
-    std::vector<mlir::Value> yielded{running};
-    yielded.insert(yielded.end(), next.begin(), next.end());
-    builder.create<mlir::scf::YieldOp>(loc, yielded);
-    builder.setInsertionPointAfter(forOp);
-    accumulated = accumulateChunk(forOp.getResults().drop_front(1), forOp.getResult(0));  // last chunk
+    if (serial) {
+      auto forOp = builder.create<mlir::scf::ForOp>(loc,
+          builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32),
+          builder.create<mlir::arith::ConstantIntOp>(loc, pipelinedEnd, 32),
+          builder.create<mlir::arith::ConstantIntOp>(loc, depth, 32), mlir::ValueRange{accumulated});
+      // Each stage buffers one chunk of both operands for every lane. Wide
+      // (prefill) programs hold more lanes, so the ring gets only as many
+      // stages as the device's shared memory fits (counted as a full buffer per
+      // stage, one more than the pipeliner allocates). Under two stages the loop
+      // stays unpipelined: same loads and order, issued synchronously.
+      const LongType stageBytes = static_cast<LongType>(blockSize) * depth *
+          (static_cast<LongType>(aArray->sizeOfT()) + static_cast<LongType>(bArray->sizeOfT()));
+      const LongType fitting = stageBytes > 0 ? queryCudaSharedMemLimitBytes() / stageBytes : 0;
+      const int stages = static_cast<int>(std::min<LongType>(kSerialMatmulStages, fitting));
+      // Read by Triton's latency assignment and software pipeliner
+      // (triton::kNumStagesAttrName); the module default stays at one stage.
+      if (stages >= 2) forOp->setAttr("tt.num_stages", builder.getI32IntegerAttr(stages));
+      DSP_DIAG(JIT, "emitPerElementMatmul: serial K loop stages=%d (stageBytes=%lld block=%d)",
+               stages >= 2 ? stages : 1, static_cast<long long>(stageBytes), blockSize);
+      builder.setInsertionPointToStart(forOp.getBody());
+      std::vector<mlir::Value> raws;
+      loadChunk(forOp.getInductionVar(), raws);
+      mlir::Value running = accumulateChunk(raws, forOp.getRegionIterArgs()[0]);
+      builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{running});
+      builder.setInsertionPointAfter(forOp);
+      accumulated = forOp.getResult(0);
+    } else {
+      std::vector<mlir::Value> first;
+      loadChunk(builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32), first);
+      std::vector<mlir::Value> carried{accumulated};
+      carried.insert(carried.end(), first.begin(), first.end());
+      auto forOp = builder.create<mlir::scf::ForOp>(loc,
+          builder.create<mlir::arith::ConstantIntOp>(loc, depth, 32),
+          builder.create<mlir::arith::ConstantIntOp>(loc, pipelinedEnd, 32),
+          builder.create<mlir::arith::ConstantIntOp>(loc, depth, 32), carried);
+      builder.setInsertionPointToStart(forOp.getBody());
+      std::vector<mlir::Value> next;
+      loadChunk(forOp.getInductionVar(), next);  // chunk i + 1
+      auto args = forOp.getRegionIterArgs();
+      mlir::Value running = accumulateChunk(args.drop_front(1), args[0]);  // chunk i
+      std::vector<mlir::Value> yielded{running};
+      yielded.insert(yielded.end(), next.begin(), next.end());
+      builder.create<mlir::scf::YieldOp>(loc, yielded);
+      builder.setInsertionPointAfter(forOp);
+      accumulated = accumulateChunk(forOp.getResults().drop_front(1), forOp.getResult(0));  // last chunk
+    }
   }
   accumulated = emitKLoop(pipelinedEnd, K, 1, accumulated);
 

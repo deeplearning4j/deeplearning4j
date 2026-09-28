@@ -110,6 +110,8 @@
         <test.nogc>false</test.nogc>
         <test.prefix></test.prefix>
         <nd4j.triton.verbose></nd4j.triton.verbose>
+        <!-- Directory for Triton IR dumps (TTIR per kernel, optimized TTGIR per compile) -->
+        <nd4j.triton.dumpDir></nd4j.triton.dumpDir>
         <!-- oneDNN/dnnl verbose trace: set -Donednn.verbose=1 to enable per-primitive logging -->
         <onednn.verbose></onednn.verbose>
         <nd4j.triton.alwaysCompile></nd4j.triton.alwaysCompile>
@@ -1933,6 +1935,7 @@
                         <ND4J_DEBUG>${nd4j.debug}</ND4J_DEBUG>
                         <ND4J_VERBOSE>${nd4j.verbose}</ND4J_VERBOSE>
                         <ND4J_TRITON_VERBOSE>${nd4j.triton.verbose}</ND4J_TRITON_VERBOSE>
+                        <ND4J_TRITON_DUMP_DIR>${nd4j.triton.dumpDir}</ND4J_TRITON_DUMP_DIR>
                         <ND4J_TRITON_ALWAYS_COMPILE>${nd4j.triton.alwaysCompile}</ND4J_TRITON_ALWAYS_COMPILE>
                         <ND4J_TRITON_CACHE_DIR>${nd4j.environment.tritonCacheDir}</ND4J_TRITON_CACHE_DIR>
                         <ND4J_TRITON_COMPILE_ALL>${nd4j.triton.compileAll}</ND4J_TRITON_COMPILE_ALL>

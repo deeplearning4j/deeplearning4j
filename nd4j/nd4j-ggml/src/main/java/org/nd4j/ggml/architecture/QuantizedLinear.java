@@ -175,7 +175,48 @@ public final class QuantizedLinear {
             return sd.nn().ggmlQMatMul(
                     name, activation, weightVar, quantType, n, k, ggmlOutputDtype);
         }
-        return fp32Mmul(sd, name, activation, weightVar.permute(1, 0), computeDtype, outputDtype);
+        return linearMmul(sd, name, activation, weightVar, computeDtype, outputDtype);
+    }
+
+    /**
+     * Largest output count for which a dense SERIAL_FMA linear keeps its weight
+     * K-contiguous ([N, K], read through transpose-B). Such a matmul has too few outputs to
+     * fill the GPU, so each lane's serial K chain is latency-bound and the compiled kernel
+     * streams the lane's own row with wide, multi-stage asynchronous copies. Wider
+     * projections are bandwidth-bound and go through the permuted view, which constant
+     * folding and SerialMatmulLayoutOptimizations store [K, N] so the lanes of one K step
+     * read one contiguous segment. Qwen3.6-27B on GB10: the N=48 GDN in_proj_a/in_proj_b
+     * pair 99 -> 39 us per layer K-contiguous, while the N>=2560 draft MLP matmuls were
+     * 1.5-3.2x slower that way (ADR 0122).
+     */
+    static final long SERIAL_K_CONTIGUOUS_MAX_OUTPUTS = 1024;
+
+    /**
+     * {@code activation @ weight^T} for a dense {@code [N, K]} weight. A narrow SERIAL_FMA
+     * projection (see {@link #SERIAL_K_CONTIGUOUS_MAX_OUTPUTS}) reads the weight through
+     * the matmul's transpose-B flag rather than a permuted view, so the storage stays
+     * K-contiguous per output and there is no permute for constant folding to materialize
+     * as a [K, N] copy. Values and each output's ascending K order are identical either way.
+     */
+    private static SDVariable linearMmul(SameDiff sd, String name, SDVariable activation, SDVariable weight,
+                                         DataType computeDtype, DataType outputDtype) {
+        boolean serialFma = computeDtype == DataType.HALF || computeDtype == DataType.BFLOAT16;
+        DataType accumulationType = outputDtype == DataType.FLOAT
+                ? outputDtype
+                : GGMLDTypePolicy.accumulationType(computeDtype);
+        long[] weightShape = weight.getShape();
+        if (!serialFma || accumulationType != DataType.FLOAT || weightShape == null || weightShape.length != 2
+                || weightShape[0] <= 0 || weightShape[0] > SERIAL_K_CONTIGUOUS_MAX_OUTPUTS) {
+            return fp32Mmul(sd, name, activation, weight.permute(1, 0), computeDtype, outputDtype);
+        }
+        boolean restoreOutputType = accumulationType != outputDtype;
+        String resultName = restoreOutputType ? name + "_accum" : name;
+        MMulTranspose transposeB = MMulTranspose.builder().transposeB(true).build();
+        SDVariable result = new Mmul(sd, activation, weight, transposeB, Mmul.Arithmetic.SERIAL_FMA, DataType.FLOAT)
+                .outputVariable().rename(resultName);
+        return restoreOutputType
+                ? GGMLDTypePolicy.castTo(result, name, outputDtype)
+                : result;
     }
 
     private static SDVariable modelOptConstant(SameDiff sd, String variableName,

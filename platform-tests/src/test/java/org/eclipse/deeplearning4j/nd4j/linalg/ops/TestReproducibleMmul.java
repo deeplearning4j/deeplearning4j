@@ -723,6 +723,66 @@ public class TestReproducibleMmul extends BaseNd4jTestWithBackends {
         }
     }
 
+    public static Stream<Arguments> serialPipelineConfigs() {
+        // Decode-shaped SERIAL_FMA: K spanning many pipelined chunks (and one with a
+        // scalar tail after the last whole chunk), one and several rows, and output
+        // counts that leave the last program partly masked.
+        List<DataType[]> storage = List.of(
+                new DataType[]{DataType.BFLOAT16, DataType.BFLOAT16},
+                new DataType[]{DataType.HALF, DataType.HALF},
+                new DataType[]{DataType.FLOAT, DataType.FLOAT},
+                new DataType[]{DataType.BFLOAT16, DataType.FLOAT});
+        return configs().flatMap(backend -> storage.stream()
+                .flatMap(types -> Stream.of(512, 5120, 5124)
+                        .flatMap(k -> Stream.of(new int[]{1, 48}, new int[]{5, 40})
+                                .map(rn -> Arguments.of(backend.get()[0], types[0], types[1], k, rn[0], rn[1])))));
+    }
+
+    @ParameterizedTest(name = "SERIAL_FMA pipelined K loop {1}/{2} K={3} rows={4} N={5}")
+    @MethodSource("serialPipelineConfigs")
+    public void serialPipelinedKLoopIsBitIdentical(Nd4jBackend backend, DataType activation, DataType weightType,
+                                                   int k, int rows, int n) {
+        boolean cuda = "CUDA".equalsIgnoreCase(
+                Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend"));
+        try (INDArray input = Nd4j.rand(DataType.FLOAT, rows, k).subi(0.5).castTo(activation);
+             INDArray weights = Nd4j.rand(DataType.FLOAT, n, k).subi(0.5).castTo(weightType)) {
+            INDArray reference;
+            try (SameDiff plain = serialLayoutGraph(0, activation, weights, k)) {
+                reference = plain.output(Map.of("x", input), "out").get("out").dup();
+            }
+            // K-contiguous [N, K] storage read through the transposing view and through the
+            // matmul's transpose-B flag (the wide, pair-loaded path; QuantizedLinear builds
+            // narrow projections this way), and the [K, N] storage of the layout rewrite.
+            for (int form = 0; form < 3; form++) {
+                boolean kn = form == 1;
+                String context = activation + "/" + weightType + " K=" + k + " rows=" + rows + " N=" + n
+                        + (form == 0 ? " [N,K] view" : form == 1 ? " [K,N]" : " [N,K] transposeB");
+                try (SameDiff sd = form == 2 ? serialTransposeBGraph(activation, weights, k)
+                        : serialLayoutGraph(0, activation, weights, k)) {
+                    if (kn) {
+                        assertEquals(cuda, apply(sd, new SerialMatmulLayoutOptimizations.TransposedConstantWeightToKn(),
+                                sd.getVariable("out")), context);
+                    }
+                    if (cuda) {
+                        exerciseCompiledLayout(sd, input, reference, context);
+                    } else {
+                        assertBits(reference, sd.output(Map.of("x", input), "out").get("out"), context);
+                    }
+                }
+            }
+        }
+    }
+
+    private static SameDiff serialTransposeBGraph(DataType activation, INDArray weights, int k) {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", activation, -1, k);
+        SDVariable w = sd.constant("w", weights.dup());
+        new Mmul(sd, x, w, MMulTranspose.builder().transposeB(true).build(), Mmul.Arithmetic.SERIAL_FMA,
+                DataType.FLOAT).outputVariable().rename("out");
+        sd.setOutputs("out");
+        return sd;
+    }
+
     private static SameDiff serialLayoutGraph(int variant, DataType activation, INDArray weights, int k) {
         SameDiff sd = SameDiff.create();
         SDVariable x = sd.placeHolder("x", activation, -1, k);

@@ -1070,6 +1070,17 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     pm.addPass(mlir::createCSEPass());
     pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeAccumulatorInit());
     {
+      // The software pipeliner lowers only loops that carry a schedule, and the
+      // schedule needs op latencies. The module default stays at one stage so no
+      // loop is pipelined implicitly; a loop that requests stages through its own
+      // tt.num_stages attribute (SERIAL_FMA's K loop) gets multi-buffered async
+      // loads.
+      mlir::triton::gpu::TritonGPUAssignLatenciesOptions latencyOpts;
+      latencyOpts.numStages = 1;
+      pm.addPass(mlir::triton::gpu::createTritonGPUAssignLatencies(latencyOpts));
+      pm.addPass(mlir::triton::gpu::createTritonGPUScheduleLoops());
+    }
+    {
       mlir::triton::gpu::TritonGPUPipelineOptions pipeOpts;
       pipeOpts.numStages = numStages;
       pm.addPass(mlir::triton::gpu::createTritonGPUPipeline(pipeOpts));
@@ -1118,6 +1129,21 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
                   compileId, ttirDumpPath.c_str(), static_cast<int>(preDump.size()),
                   capturedDiags.empty() ? "(none)" : capturedDiags.c_str());
         return result;
+      }
+    }
+    // With ND4J_TRITON_DUMP_DIR set, keep the optimized TTGIR: it shows the
+    // layouts, shared-memory allocations and software-pipelined loops that the
+    // PTX alone does not attribute to a pass.
+    const std::string ttgirDumpDir = sd::Environment::getInstance().tritonDumpDir();
+    if (!ttgirDumpDir.empty()) {
+      std::string ttgir;
+      llvm::raw_string_ostream ttgirStream(ttgir);
+      moduleOp->print(ttgirStream);
+      const std::string path = ttgirDumpDir + (ttgirDumpDir.back() == '/' ? "" : "/") + "ttgir_" +
+                               std::to_string(compileId) + ".mlir";
+      if (FILE* ttgirFile = fopen(path.c_str(), "w")) {
+        fprintf(ttgirFile, "%s", ttgir.c_str());
+        fclose(ttgirFile);
       }
     }
 

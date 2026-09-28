@@ -121,8 +121,51 @@ On Qwen3.6-27B (GB10):
   4.3 ms.
 - At 250 tokens, greedy decode is 9.5 tok/s and multi-row MTP is 13.8 tok/s.
 
-With a cold L2, the pair's 5120-step chain is bounded by DRAM latency: a
-hand-written CUDA kernel with the same pipeline also takes about 108 µs.
+With a cold L2, the pair's 5120-step chain was bounded by DRAM latency: with one
+register-resident chunk in flight per lane, every 64-step chunk waited a full
+DRAM round trip (a hand-written CUDA kernel with that pipeline also took about
+108 µs).
+
+#### Pipelined K loop for narrow projections
+
+That bound belonged to the pipeline, not the recurrence. A CUDA probe that
+stages each lane's K-contiguous row through a multi-stage `cp.async` ring
+(16-byte copies, 64-step stages, 4 stages) hides the DRAM latency entirely
+(cold equals warm) and runs the 96-output pair in about 20 µs, bit-identical to
+the serial reference.
+
+The compiled recipe now expresses the same thing:
+- SERIAL_FMA's chunked K loop issues its loads inside the loop body and carries
+  `tt.num_stages = 4`. The TTGIR pipeline runs `AssignLatencies` (module default
+  1 stage, so only loops that request stages are pipelined) and `ScheduleLoops`
+  before `Pipeline`, which turns the per-lane wide loads (≥4 bytes) into
+  asynchronous copies into a shared-memory ring.
+- A 16-byte-aligned K-contiguous operand loads two words per lane as one
+  `[block, 2]` tile split back into consecutive words; the alignment is declared
+  to Triton as `tt.divisibility` on the splatted base pointer (indirect-table
+  pointers are `int_to_ptr` results the axis analysis cannot see through) and is
+  enforced on every binding through `requiredAlignment`. Without Triton's
+  Coalesce pass (skipped for modules above 128 ops) the tile's default layout
+  still splits each lane's pair across two threads, so the copies are 8 bytes.
+- The accumulation order is untouched: bit-identity tests cover K spanning many
+  chunks and a scalar tail, 1 and 5 rows, partly masked programs, and [N,K] view,
+  [N,K] transpose-B and [K,N] storage.
+
+The per-lane path needs K-contiguous storage, while the coalesced [K,N] form is
+better once a matmul is bandwidth-bound. `QuantizedLinear` therefore builds a
+dense SERIAL_FMA projection with at most 1024 outputs as `matmul(x, W,
+transposeB)` over the original [N,K] weight (no permute for constant folding to
+materialize as [K,N]); wider projections keep the permuted view and the [K,N]
+storage above. Measured on Qwen3.6-27B (per call, 4/16-program kernels vs 80+):
+
+| Kernel | [K,N] coalesced | [N,K] pipelined |
+|---|---|---|
+| GDN in_proj_a/b pair, W=1 | 98.7 µs | 39.5 µs |
+| same pair, W=5 | 99.5 µs | 40.6 µs |
+| draft MLP/attention matmuls (80-320 programs) | 0.54-1.97 ms | 0.92-3.35 ms |
+
+Greedy width-1 decode went from 10.36 to 10.70 tok/s and MTP from about 23.3 to
+23.6 tok/s at 250 tokens, with identical greedy tokens and 0/250 MTP deltas.
 
 The initial compiled admission domain is NVIDIA, matching HALF/BFLOAT16/FLOAT/
 DOUBLE storage, nonempty rank>=2 matrices, equal-rank batches and ND/2D or 2D/ND,
