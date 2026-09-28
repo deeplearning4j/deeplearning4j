@@ -20,280 +20,151 @@
 //
 // CUDA implementation of the fused element-wise chain kernel.
 // Processes the entire chain of operations per-element in a single kernel,
-// keeping intermediate values in registers instead of global memory.
+// keeping intermediate values in registers instead of global memory. Each
+// member still rounds to the storage type, as its materialized output would.
+//
+// FLOAT32/DOUBLE: nvcc may contract a multiply and a following add from
+// adjacent members into one FMA, which a materialized intermediate cannot;
+// results can then differ from eager execution in the last bit. HALF and
+// BFLOAT16 members round explicitly, so they match eager exactly.
 //
 
-#include <ops/declarable/helpers/fusedElementwiseChain.h>
+#include <cuda_runtime.h>
 #include <array/NDArray.h>
+#include <execution/cuda/LaunchDims.h>
 #include <helpers/DebugHelper.h>
-#include <math/templatemath.h>
+#include <helpers/shape.h>
+#include <ops/declarable/helpers/fusedElementwiseChain.h>
+#include <ops/declarable/helpers/fusedElementwiseChainMath.h>
 
 #include <type_traits>
-#include <vector>
 
+#if NOT_EXCLUDED(OP_fused_elementwise_chain)
 namespace sd {
 namespace ops {
 namespace helpers {
 
-namespace {
-constexpr int kMaxFusedOps = 8;
-
-struct FusedOpPack {
-    FusedElemOp values[kMaxFusedOps];
+// Codes and secondary operands of one chain, passed to the kernel by value. Shape and stride
+// pointers address device shape info.
+struct FusedChainOperands {
+  int numOps;
+  int codes[FUSED_CHAIN_MAX_OPS];
+  const void* secondary[FUSED_CHAIN_MAX_OPS];  // nullptr for unary members
+  const LongType* secondaryShape[FUSED_CHAIN_MAX_OPS];
+  const LongType* secondaryStrides[FUSED_CHAIN_MAX_OPS];
+  int secondaryRank[FUSED_CHAIN_MAX_OPS];
+  bool secondaryScalar[FUSED_CHAIN_MAX_OPS];
 };
 
-static_assert(std::is_trivially_copyable<FusedOpPack>::value,
-              "FusedOpPack must remain safe to pass as a CUDA kernel argument");
-static_assert(sizeof(FusedOpPack) == kMaxFusedOps * sizeof(FusedElemOp),
-              "FusedOpPack must not contain padding");
-}  // namespace
+static_assert(std::is_trivially_copyable<FusedChainOperands>::value,
+              "FusedChainOperands is passed as a CUDA kernel argument");
 
 template <typename T>
-struct FusedChainAccType {
-    using type = float;
-};
-template <>
-struct FusedChainAccType<double> {
-    using type = double;
-};
+static SD_KERNEL void fusedElementwiseChainCuda(const void* vx, const LongType* xStrides, void* vz,
+                                                const LongType* zShape, const LongType* zStrides, const int rank,
+                                                const LongType length, const bool linear,
+                                                const FusedChainOperands operands, const T clipLow,
+                                                const T clipHigh) {
+  const T* x = reinterpret_cast<const T*>(vx);
+  T* z = reinterpret_cast<T*>(vz);
 
-template <typename AccT>
-SD_DEVICE SD_INLINE AccT fusedChainExp(AccT x) {
-    return sd::math::sd_exp<AccT, AccT>(x);
-}
+  LongType coords[SD_MAX_RANK];
+  for (LongType linearIndex = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; linearIndex < length;
+       linearIndex += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    LongType xOffset = linearIndex;
+    LongType zOffset = linearIndex;
+    if (!linear) {
+      INDEX2COORDS(linearIndex, rank, zShape, coords);
+      COORDS2INDEX(rank, xStrides, coords, xOffset);
+      COORDS2INDEX(rank, zStrides, coords, zOffset);
+    }
 
-template <typename AccT>
-SD_DEVICE SD_INLINE AccT fusedChainTanh(AccT x) {
-    return sd::math::sd_tanh<AccT, AccT>(x);
-}
-template <>
-SD_DEVICE SD_INLINE float fusedChainTanh<float>(float x) {
-    return tanhf(x);
-}
-
-template <typename AccT>
-SD_DEVICE SD_INLINE AccT fusedChainLog(AccT x) {
-    return sd::math::sd_log<AccT, AccT>(x);
-}
-template <>
-SD_DEVICE SD_INLINE float fusedChainLog<float>(float x) {
-    return __logf(x);
-}
-
-template <typename AccT>
-SD_DEVICE SD_INLINE AccT fusedChainSqrt(AccT x) {
-    return sd::math::sd_sqrt<AccT, AccT>(x);
-}
-template <>
-SD_DEVICE SD_INLINE float fusedChainSqrt<float>(float x) {
-    return sqrtf(x);
+    T value = x[xOffset];
+    for (int m = 0; m < operands.numOps; m++) {
+      T operand = static_cast<T>(0);
+      const T* secondary = reinterpret_cast<const T*>(operands.secondary[m]);
+      if (secondary != nullptr) {
+        LongType sOffset = 0;
+        if (!operands.secondaryScalar[m]) {
+          sOffset = linear ? linearIndex
+                           : fusedChainBroadcastOffset(coords, rank, operands.secondaryShape[m],
+                                                       operands.secondaryStrides[m], operands.secondaryRank[m]);
+        }
+        operand = secondary[sOffset];
+      }
+      value = fusedChainStep<T>(operands.codes[m], value, operand, clipLow, clipHigh);
+    }
+    z[zOffset] = value;
+  }
 }
 
 template <typename T>
-SD_DEVICE T deviceApplyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T clipMaxVal) {
-    using AccT = typename FusedChainAccType<T>::type;
-    const AccT x = static_cast<AccT>(val);
+static void fusedElementwiseChain_(LaunchContext* context, NDArray* input, NDArray* output, const FusedElemOp* ops,
+                                   int numOps, NDArray** secondaryInputs, const double* clipMin,
+                                   const double* clipMax) {
+  const LongType length = output->lengthOf();
+  const int rank = output->rankOf();
 
-    switch (op) {
-        // Binary ops
-        case FUSED_ADD:       return val + secondaryVal;
-        case FUSED_SUB:       return val - secondaryVal;
-        case FUSED_MUL:       return val * secondaryVal;
-        case FUSED_DIV:       return secondaryVal != T(0) ? val / secondaryVal : T(0);
+  FusedChainOperands operands{};
+  operands.numOps = numOps;
+  // Linear mode: every operand holds the element of output index i at offset i (or is a scalar).
+  bool linear = isFusedChainDenseC(input) && isFusedChainDenseC(output);
+  for (int m = 0; m < numOps; m++) {
+    operands.codes[m] = static_cast<int>(ops[m]);
+    if (!isBinaryFusedOp(ops[m])) continue;
+    NDArray* operand = secondaryInputs[m];
+    const int operandRank = operand->rankOf();
+    operands.secondary[m] = operand->specialBuffer();
+    operands.secondaryShape[m] = operand->specialShapeInfo() + 1;
+    operands.secondaryStrides[m] = operand->specialShapeInfo() + 1 + operandRank;
+    operands.secondaryRank[m] = operandRank;
+    operands.secondaryScalar[m] = operand->lengthOf() == 1;
+    if (!operands.secondaryScalar[m] && !(operand->isSameShape(output) && isFusedChainDenseC(operand))) linear = false;
+  }
 
-        // Unary ops
-        case FUSED_RELU:      return val > T(0) ? val : T(0);
-        case FUSED_SIGMOID:   return static_cast<T>(AccT(1) / (AccT(1) + fusedChainExp<AccT>(-x)));
-        case FUSED_TANH:      return sd::math::sd_tanh<T, T>(val);
-        case FUSED_GELU: {
-            AccT c = AccT(0.7978845608); // sqrt(2/pi)
-            AccT inner = c * (x + AccT(0.044715) * x * x * x);
-            return static_cast<T>(AccT(0.5) * x * (AccT(1) + fusedChainTanh<AccT>(inner)));
-        }
-        case FUSED_EXP:       return static_cast<T>(fusedChainExp<AccT>(x));
-        case FUSED_LOG:       return x > AccT(0) ? static_cast<T>(fusedChainLog<AccT>(x)) : static_cast<T>(AccT(-1e38));
-        case FUSED_ABS:       return val >= T(0) ? val : -val;
-        case FUSED_NEG:       return -val;
-        case FUSED_SQUARE:    return val * val;
-        case FUSED_SQRT:      return x >= AccT(0) ? static_cast<T>(fusedChainSqrt<AccT>(x)) : T(0);
-        case FUSED_SWISH: {
-            AccT sig = AccT(1) / (AccT(1) + fusedChainExp<AccT>(-x));
-            return static_cast<T>(x * sig);
-        }
-        case FUSED_SILU: {
-            AccT sig = AccT(1) / (AccT(1) + fusedChainExp<AccT>(-x));
-            return static_cast<T>(x * sig);
-        }
-        case FUSED_MISH: {
-            AccT sp = fusedChainLog<AccT>(AccT(1) + fusedChainExp<AccT>(x)); // softplus
-            return static_cast<T>(x * fusedChainTanh<AccT>(sp));
-        }
+  // Same conversion eager clipbyvalue applies to its double bounds.
+  const T clipLow = clipMin != nullptr ? static_cast<T>(*clipMin) : static_cast<T>(0);
+  const T clipHigh = clipMax != nullptr ? static_cast<T>(*clipMax) : static_cast<T>(0);
 
-        // Parameterized ops
-        case FUSED_CLIP:      return val < clipMinVal ? clipMinVal : (val > clipMaxVal ? clipMaxVal : val);
-        case FUSED_LEAKY_RELU: return val >= T(0) ? val : val * secondaryVal;
+  dim3 launchDims = getLaunchDims("fused_elementwise_chain");
+  if (launchDims.x == 0 || launchDims.y == 0 || launchDims.y > 1024) {
+    THROW_EXCEPTION("fused_elementwise_chain: GRID_SIZE_FUSED_ELEMENTWISE_CHAIN must be positive and "
+                    "BLOCK_SIZE_FUSED_ELEMENTWISE_CHAIN within 1..1024");
+  }
+  const LongType threads = launchDims.y;
+  const LongType blocks = sd::math::sd_min<LongType>((length + threads - 1) / threads,
+                                                     static_cast<LongType>(launchDims.x));
 
-        default:              return val;
-    }
+  auto stream = context->getCudaStream();
+  fusedElementwiseChainCuda<T><<<static_cast<unsigned int>(blocks), launchDims.y, launchDims.z, *stream>>>(
+      input->specialBuffer(), input->specialShapeInfo() + 1 + rank, output->specialBuffer(),
+      output->specialShapeInfo() + 1, output->specialShapeInfo() + 1 + rank, rank, length, linear, operands,
+      clipLow, clipHigh);
+  DebugHelper::checkGlobalErrorCode("fusedElementwiseChainCuda failed");
 }
 
-/**
- * CUDA kernel: process the entire chain per-element.
- *
- * Each thread handles one element, applying all ops in sequence.
- * Intermediate values stay in registers — no global memory traffic
- * between ops. This is O(1) global mem reads/writes regardless of
- * chain length, vs O(N) for N separate kernels.
- *
- * Max 8 secondary input pointers are passed via constant args to avoid
- * extra global memory loads. FusedElemOp codes arrive by value in the kernel
- * parameter buffer and are staged in shared memory for fast access.
- */
-template <typename T>
-SD_KERNEL void fusedElemKernel(
-        const T* __restrict__ input,
-        T* __restrict__ output,
-        sd::LongType length,
-        FusedOpPack opPack,
-        int numOps,
-        const T* __restrict__ sec0, sd::LongType secLen0,
-        const T* __restrict__ sec1, sd::LongType secLen1,
-        const T* __restrict__ sec2, sd::LongType secLen2,
-        const T* __restrict__ sec3, sd::LongType secLen3,
-        const T* __restrict__ sec4, sd::LongType secLen4,
-        const T* __restrict__ sec5, sd::LongType secLen5,
-        const T* __restrict__ sec6, sd::LongType secLen6,
-        const T* __restrict__ sec7, sd::LongType secLen7,
-        T clipMinVal, T clipMaxVal) {
+void fusedElementwiseChain(NDArray* input, NDArray* output, const FusedElemOp* ops, int numOps,
+                           NDArray** secondaryInputs, const double* clipMin, const double* clipMax,
+                           LaunchContext* context) {
+  const std::string reason =
+      fusedChainUnsupportedReason(input, output, ops, numOps, secondaryInputs, clipMin, clipMax);
+  if (!reason.empty()) {
+    THROW_EXCEPTION(("fused_elementwise_chain: " + reason).c_str());
+  }
+  if (output->isEmpty()) return;
 
-    // Load op codes into shared memory for fast access
-    __shared__ FusedElemOp sharedOps[kMaxFusedOps];
-    if (threadIdx.x < numOps && threadIdx.x < kMaxFusedOps) {
-        sharedOps[threadIdx.x] = opPack.values[threadIdx.x];
-    }
-    __syncthreads();
+  std::vector<NDArray*> reads = {input};
+  for (int m = 0; m < numOps; m++) {
+    if (isBinaryFusedOp(ops[m])) reads.push_back(secondaryInputs[m]);
+  }
 
-    // Store secondary input pointers and lengths in arrays for indexed access
-    const T* secPtrs[kMaxFusedOps] = {sec0, sec1, sec2, sec3, sec4, sec5, sec6, sec7};
-    sd::LongType secLens[kMaxFusedOps] = {secLen0, secLen1, secLen2, secLen3, secLen4, secLen5, secLen6, secLen7};
-
-    auto idx = static_cast<sd::LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
-    if (idx >= length) return;
-
-    T val = input[idx];
-
-    for (int op = 0; op < numOps; op++) {
-        T secondary = T(0);
-        if (isBinaryFusedOp(sharedOps[op]) && secPtrs[op] != nullptr) {
-            sd::LongType secIdx = secLens[op] == 1 ? 0 : (idx % secLens[op]);
-            secondary = secPtrs[op][secIdx];
-        }
-        val = deviceApplyOp(val, sharedOps[op], secondary, clipMinVal, clipMaxVal);
-    }
-
-    output[idx] = val;
-}
-
-template <typename T>
-static void fusedChainCudaImpl(
-        NDArray* input, NDArray* output,
-        const FusedElemOp* ops, int numOps,
-        NDArray** secondaryInputs,
-        const double* clipMin, const double* clipMax,
-        LaunchContext* context) {
-
-    sd::LongType length = input->lengthOf();
-    if (length == 0) return;
-
-    auto stream = context->getCudaStream();
-
-    // Prepare secondary input pointers (up to kMaxFusedOps)
-    const T* secPtrs[kMaxFusedOps] = {nullptr};
-    sd::LongType secLens[kMaxFusedOps] = {0};
-
-    if (secondaryInputs != nullptr) {
-        for (int i = 0; i < numOps && i < kMaxFusedOps; i++) {
-            if (secondaryInputs[i] != nullptr) {
-                secPtrs[i] = reinterpret_cast<const T*>(secondaryInputs[i]->specialBuffer());
-                secLens[i] = secondaryInputs[i]->lengthOf();
-            }
-        }
-    }
-
-    T clipMinVal = clipMin ? static_cast<T>(*clipMin) : T(0);
-    T clipMaxVal = clipMax ? static_cast<T>(*clipMax) : T(0);
-
-    // Kernel arguments are copied into the launch parameter buffer. Passing this
-    // fixed-size pack by value avoids transient device allocations and H2D copies,
-    // and CUDA graph capture retains the opcode bytes with the kernel node.
-    FusedOpPack opPack{};
-    for (int i = 0; i < numOps; ++i) {
-        opPack.values[i] = ops[i];
-    }
-
-    int blockSize = 256;
-    int gridSize = (length + blockSize - 1) / blockSize;
-
-    fusedElemKernel<T><<<gridSize, blockSize, 0, *stream>>>(
-            reinterpret_cast<const T*>(input->specialBuffer()),
-            reinterpret_cast<T*>(output->specialBuffer()),
-            length, opPack, numOps,
-            secPtrs[0], secLens[0], secPtrs[1], secLens[1],
-            secPtrs[2], secLens[2], secPtrs[3], secLens[3],
-            secPtrs[4], secLens[4], secPtrs[5], secLens[5],
-            secPtrs[6], secLens[6], secPtrs[7], secLens[7],
-            clipMinVal, clipMaxVal);
-}
-
-void fusedElementwiseChain(
-        NDArray* input,
-        NDArray* output,
-        const FusedElemOp* ops,
-        int numOps,
-        NDArray** secondaryInputs,
-        const double* clipMin,
-        const double* clipMax,
-        LaunchContext* context) {
-
-    if (input == nullptr || output == nullptr || ops == nullptr || numOps <= 0) return;
-    // Hard cap: the fused kernel materializes at most 8 ops (the DSP caller caps chains at
-    // MAX_FUSED_CHAIN=8). A longer chain must be split by the caller — fail loudly rather than
-    // silently dropping the tail ops and returning a wrong result.
-    if (numOps > kMaxFusedOps) {
-        THROW_EXCEPTION("fusedElementwiseChain: chain length exceeds the fused-kernel maximum of "
-                        "8 ops; the caller must split the chain into multiple fused calls.");
-    }
-
-    std::vector<NDArray*> inputs;
-    inputs.reserve(static_cast<size_t>(numOps) + 1);
-    inputs.push_back(input);
-    if (secondaryInputs != nullptr) {
-        for (int i = 0; i < numOps; i++) {
-            if (secondaryInputs[i] != nullptr) inputs.push_back(secondaryInputs[i]);
-        }
-    }
-    std::vector<NDArray*> outputs{output};
-    NDArray::prepareSpecialUse(outputs, inputs);
-
-    auto xType = input->dataType();
-
-    // Dispatch based on data type
-    if (xType == DataType::FLOAT32) {
-        fusedChainCudaImpl<float>(input, output, ops, numOps, secondaryInputs, clipMin, clipMax, context);
-    } else if (xType == DataType::DOUBLE) {
-        fusedChainCudaImpl<double>(input, output, ops, numOps, secondaryInputs, clipMin, clipMax, context);
-    } else if (xType == DataType::HALF) {
-        fusedChainCudaImpl<float16>(input, output, ops, numOps, secondaryInputs, clipMin, clipMax, context);
-    } else if (xType == DataType::BFLOAT16) {
-        fusedChainCudaImpl<bfloat16>(input, output, ops, numOps, secondaryInputs, clipMin, clipMax, context);
-    } else {
-        // Unsupported dtype: producing no output would be a silent wrong result — fail loudly.
-        THROW_EXCEPTION("fusedElementwiseChain: unsupported input dtype for fused element-wise chain");
-    }
-
-    NDArray::registerSpecialUse(outputs, inputs);
+  NDArray::prepareSpecialUse({output}, reads);
+  BUILD_SINGLE_SELECTOR(input->dataType(), fusedElementwiseChain_,
+                        (context, input, output, ops, numOps, secondaryInputs, clipMin, clipMax), SD_FLOAT_TYPES);
+  NDArray::registerSpecialUse({output}, reads);
 }
 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

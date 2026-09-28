@@ -37,10 +37,27 @@ namespace ops {
 namespace helpers {
 
 /**
+ * Offset of the element of a secondary input that the output element at coords (outRank
+ * coordinates) reads. The secondary is right-aligned against the output; its size-1 dimensions
+ * repeat. A single-element secondary is read at offset 0 by the callers instead.
+ */
+SD_HOST_DEVICE SD_INLINE LongType fusedChainBroadcastOffset(const LongType* coords, int outRank,
+                                                           const LongType* shape, const LongType* strides,
+                                                           int rank) {
+  const int lead = outRank - rank;
+  LongType offset = 0;
+  for (int d = 0; d < rank; d++) {
+    if (shape[d] != 1) offset += coords[lead + d] * strides[d];
+  }
+  return offset;
+}
+
+/**
  * Apply one chain member to the chain value v. s is the member's other operand (binary codes
  * and FUSED_LEAKY_RELU's alpha); clipMin/clipMax are FUSED_CLIP's bounds, already rounded to T,
  * which gives the same result as eager clipbyvalue comparing against the unrounded bounds.
- * Codes must pass isImplementedFusedOp() on the host before a kernel runs.
+ * Codes must pass isImplementedFusedOp() (fusedElementwiseChain.h) on the host before a kernel
+ * runs; every case here must be listed there.
  */
 template <typename T>
 SD_HOST_DEVICE SD_INLINE T fusedChainStep(int code, T v, T s, T clipMin, T clipMax) {
@@ -101,27 +118,6 @@ SD_HOST_DEVICE SD_INLINE T fusedChainStep(int code, T v, T s, T clipMin, T clipM
     case FUSED_CLIP:        return v > clipMax ? clipMax : (v < clipMin ? clipMin : v);
 
     default:                return v;  // unreachable: codes are validated on the host
-  }
-}
-
-/** Host-side mirror of fusedChainStep's cases. Keep the two lists identical. */
-inline bool isImplementedFusedOp(int code) {
-  switch (code) {
-    case FUSED_ADD: case FUSED_SUB: case FUSED_MUL: case FUSED_DIV:
-    case FUSED_REVERSE_SUB: case FUSED_REVERSE_DIV: case FUSED_SQUARED_SUB:
-    case FUSED_MIN: case FUSED_MAX: case FUSED_MOD: case FUSED_ATAN2: case FUSED_FLOORDIV:
-    case FUSED_POW: case FUSED_MUL_NO_NAN: case FUSED_LEAKY_RELU:
-    case FUSED_RELU: case FUSED_RELU6: case FUSED_ELU:
-    case FUSED_SIGMOID: case FUSED_TANH: case FUSED_GELU: case FUSED_EXP: case FUSED_LOG:
-    case FUSED_ABS: case FUSED_NEG: case FUSED_SQUARE: case FUSED_SQRT: case FUSED_RSQRT:
-    case FUSED_RECIPROCAL: case FUSED_SIGN: case FUSED_ERF: case FUSED_ERFC: case FUSED_LOG1P:
-    case FUSED_CEIL: case FUSED_FLOOR: case FUSED_ROUND: case FUSED_SIN: case FUSED_COS:
-    case FUSED_SELU: case FUSED_SOFTPLUS: case FUSED_SOFTSIGN: case FUSED_HARD_SIGMOID:
-    case FUSED_HARDTANH: case FUSED_SWISH: case FUSED_SILU: case FUSED_MISH:
-    case FUSED_CLIP:
-      return true;
-    default:
-      return false;
   }
 }
 
