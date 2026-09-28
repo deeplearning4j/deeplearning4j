@@ -250,8 +250,14 @@ public class FusedElementwiseChain extends DynamicCustomOp {
         public ChainBuilder silu() { opCodes.add(OP_SILU); return this; }
         public ChainBuilder mish() { opCodes.add(OP_MISH); return this; }
 
-        /** Clamps to [min, max]; a chain carries one bounds pair, shared by all its clip members. */
+        /**
+         * Clamps to [min, max], like clipbyvalue, which also requires min &lt; max. A chain carries
+         * one bounds pair, shared by all its clip members.
+         */
         public ChainBuilder clip(double min, double max) {
+            if (!(min < max)) {
+                throw new IllegalArgumentException("clip needs min < max, got [" + min + ", " + max + "]");
+            }
             if (clipBounds != null && (clipBounds[0] != min || clipBounds[1] != max)) {
                 throw new IllegalStateException("A chain has one clip bounds pair: [" + clipBounds[0] + ", "
                         + clipBounds[1] + "] is already set, got [" + min + ", " + max + "]");

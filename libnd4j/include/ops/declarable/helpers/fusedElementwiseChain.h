@@ -237,6 +237,10 @@ inline std::string fusedChainUnsupportedReason(NDArray* input, NDArray* output, 
       return "op code " + std::to_string(code) + " at member " + std::to_string(m) + " is not implemented";
     if (code == FUSED_CLIP && (clipMin == nullptr || clipMax == nullptr))
       return "FUSED_CLIP at member " + std::to_string(m) + " needs clipMin and clipMax";
+    // clipbyvalue rejects these bounds (NaN included), so a fused clip must too.
+    if (code == FUSED_CLIP && !(*clipMin < *clipMax))
+      return "FUSED_CLIP bounds [" + std::to_string(*clipMin) + ", " + std::to_string(*clipMax) +
+             "] need clipMin < clipMax";
     if (!isBinaryFusedOp(ops[m])) continue;
     NDArray* secondary = secondaryInputs == nullptr ? nullptr : secondaryInputs[m];
     if (secondary == nullptr) return "binary member " + std::to_string(m) + " has no secondary input";
