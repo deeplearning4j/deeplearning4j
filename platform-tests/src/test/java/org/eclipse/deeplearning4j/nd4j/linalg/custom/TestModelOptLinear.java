@@ -1151,6 +1151,16 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
     public void benchDecodeGemvShapes(Nd4jBackend backend) {
         // {nvfp4 ? 1 : 0, N, K}
         int[][] shapes = {{1, 17408, 5120}, {1, 5120, 17408}, {0, 6144, 5120}, {0, 10240, 5120}, {0, 5120, 6144}};
+        // -Dmodelopt.gemvBench.shapes=nv:N:K,... overrides the shape list (nv = 1 for NVFP4, 0 for FP8).
+        String shapeList = System.getProperty("modelopt.gemvBench.shapes");
+        if (shapeList != null && !shapeList.isBlank()) {
+            String[] entries = shapeList.split(",");
+            shapes = new int[entries.length][];
+            for (int i = 0; i < entries.length; i++) {
+                String[] parts = entries[i].trim().split(":");
+                shapes[i] = new int[]{Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2])};
+            }
+        }
         int iterations = Integer.getInteger("modelopt.gemvBench.iterations", 50);
         java.util.Random random = new java.util.Random(7);
         for (int[] shape : shapes) {
