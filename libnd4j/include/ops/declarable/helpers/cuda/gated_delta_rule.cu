@@ -24,6 +24,7 @@
 #include <ops/op_types.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/gated_delta_rule.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 #include <ops/declarable/helpers/reproducible_math.h>
 #include <cstdio>
 #include <cstdlib>
@@ -248,6 +249,179 @@ SD_KERNEL void gatedDeltaRuleSequenceKernel(
     }
 }
 
+// ─── Split-row fast path ───────────────────────────────────────────────────
+//
+// kGdrParts lanes share one state column, each owning a contiguous quarter of
+// its D_k rows. When D_k is a power of two every quarter is a complete subtree
+// of the pairwise dot's balanced tree, so each lane computes its subtree root
+// and a butterfly over the lane group (adjacent pairs, then pairs of pairs)
+// adds them exactly as the tree does: the result is bit-identical to the
+// single-thread gatedDeltaCudaReproducibleDot over all D_k rows, with four
+// times the threads to hide shared-memory and FMA latency. The state update
+// is row-wise, so it partitions without changing any arithmetic.
+static constexpr int kGdrParts = 4;
+// Padding between the parts' row blocks in shared memory: lanes of a group
+// read the same column in different parts, and the skew puts them in
+// distinct banks.
+static constexpr int kGdrPartPad = 8;
+
+template <typename AccT>
+static SD_DEVICE SD_INLINE AccT gatedDeltaCombineParts(AccT partRoot) {
+    for (int offset = 1; offset < kGdrParts; offset <<= 1) {
+        partRoot = reproducible::add<AccT>(partRoot, __shfl_xor_sync(0xffffffff, partRoot, offset));
+    }
+    return partRoot;
+}
+
+// One timestep for the lane owning rows [part * partRows, +partRows) of tile
+// column c; `column` addresses the lane's first row, rows are columnsPerBlock
+// apart. Every lane of the block runs every step (full-warp shuffles).
+template <typename T>
+static SD_DEVICE void gatedDeltaRuleSplitStep(
+    const T* __restrict__ v, const T* __restrict__ betaArr, const T* __restrict__ gateArr,
+    const T* __restrict__ q, const T* __restrict__ k,
+    typename simdOps::AggregateType<T>::type* column, const LongType columnsPerBlock,
+    const LongType partRows, const int part, const LongType dv,
+    typename simdOps::AggregateType<T>::type& expGateShared,
+    typename simdOps::AggregateType<T>::type* __restrict__ kShared,
+    typename simdOps::AggregateType<T>::type* __restrict__ qShared,
+    T* __restrict__ out, T* __restrict__ prefixOut, const LongType prefixW,
+    const LongType b, const LongType h, const LongType B, const LongType H,
+    const LongType D_k, const LongType D_v, const LongType t, const bool updateState,
+    const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
+    const LongType kS0, const LongType kS1, const LongType kS2, const LongType kS3,
+    const LongType vS0, const LongType vS1, const LongType vS2, const LongType vS3,
+    const LongType bS0, const LongType bS1, const LongType bS2,
+    const LongType gS0, const LongType gS1, const LongType gS2,
+    const LongType oS0, const LongType oS1, const LongType oS2, const LongType oS3) {
+    using AccT = typename simdOps::AggregateType<T>::type;
+
+    if (threadIdx.x == 0) {
+        expGateShared = updateState
+            ? reproducible::exp<AccT>(
+                static_cast<AccT>(gateArr[b * gS0 + t * gS1 + h * gS2]))
+            : static_cast<AccT>(1);
+    }
+    const LongType kBase = b * kS0 + t * kS1 + h * kS2;
+    const LongType qBase = b * qS0 + t * qS1 + h * qS2;
+    for (LongType dk = threadIdx.x; dk < D_k; dk += blockDim.x) {
+        if (updateState) kShared[dk] = static_cast<AccT>(k[kBase + dk * kS3]);
+        qShared[dk] = static_cast<AccT>(q[qBase + dk * qS3]);
+    }
+    __syncthreads();
+    const AccT expGate = expGateShared;
+    const LongType firstRow = part * partRows;
+
+    if (updateState) {
+        const AccT betaValue = static_cast<AccT>(betaArr[b * bS0 + t * bS1 + h * bS2]);
+        const AccT prediction = gatedDeltaCombineParts<AccT>(gatedDeltaCudaReproducibleDot<AccT, AccT>(
+            column, columnsPerBlock, kShared + firstRow, 1, partRows));
+        const AccT delta = reproducible::subtract<AccT>(
+            static_cast<AccT>(v[b * vS0 + t * vS1 + h * vS2 + dv * vS3]),
+            reproducible::multiply<AccT>(expGate, prediction));
+        const AccT betaDelta = reproducible::multiply<AccT>(betaValue, delta);
+        // Prefix checkpoint: state AFTER consuming input t, written from the
+        // unrounded working accumulator (never re-fed into later steps).
+        T* prefixColumn = prefixOut != nullptr && t < prefixW
+            ? prefixOut + ((t * B + b) * H + h) * D_k * D_v + firstRow * D_v + dv
+            : nullptr;
+        for (LongType r = 0; r < partRows; ++r) {
+            const AccT updated = reproducible::add<AccT>(
+                reproducible::multiply<AccT>(expGate, column[r * columnsPerBlock]),
+                reproducible::multiply<AccT>(betaDelta, kShared[firstRow + r]));
+            column[r * columnsPerBlock] = updated;
+            if (prefixColumn != nullptr) prefixColumn[r * D_v] = static_cast<T>(updated);
+        }
+    }
+
+    const AccT outputValue = gatedDeltaCombineParts<AccT>(gatedDeltaCudaReproducibleDot<AccT, AccT>(
+        column, columnsPerBlock, qShared + firstRow, 1, partRows));
+    if (part == 0) out[b * oS0 + t * oS1 + h * oS2 + dv * oS3] = static_cast<T>(outputValue);
+    // The next step's staging overwrites expGateShared, kShared and qShared.
+    __syncthreads();
+}
+
+// Same contract as gatedDeltaRuleSequenceKernel, with kGdrParts lanes per state
+// column. Admission (launcher): D_k a power of two >= kGdrParts, D_v a multiple
+// of columnsPerBlock, blockDim == columnsPerBlock * kGdrParts. Shared tile:
+// part-major row blocks of [partRows][columnsPerBlock], kGdrPartPad apart.
+template <typename T>
+SD_KERNEL void gatedDeltaRuleSplitSequenceKernel(
+    const T* __restrict__ q,
+    const T* __restrict__ k,
+    const T* __restrict__ v,
+    const T* __restrict__ betaArr,
+    const T* __restrict__ gateArr,
+    const LongType* __restrict__ actualLen,
+    const T* stateIn,
+    T* stateOut,
+    T* __restrict__ out,
+    T* __restrict__ prefixOut,
+    const LongType prefixW,
+    const LongType B, const LongType L, const LongType H,
+    const LongType D_k, const LongType D_v, const LongType columnsPerBlock,
+    const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
+    const LongType kS0, const LongType kS1, const LongType kS2, const LongType kS3,
+    const LongType vS0, const LongType vS1, const LongType vS2, const LongType vS3,
+    const LongType bS0, const LongType bS1, const LongType bS2,
+    const LongType gS0, const LongType gS1, const LongType gS2,
+    const LongType oS0, const LongType oS1, const LongType oS2, const LongType oS3) {
+
+    using AccT = typename simdOps::AggregateType<T>::type;
+
+    const LongType tiles = D_v / columnsPerBlock;
+    const LongType bh = blockIdx.x / tiles;
+    if (bh >= B * H) return;
+    const LongType dvBegin = (blockIdx.x % tiles) * columnsPerBlock;
+    const LongType b = bh / H;
+    const LongType h = bh % H;
+    const LongType partRows = D_k / kGdrParts;
+    const LongType partStride = partRows * columnsPerBlock + kGdrPartPad;
+
+    extern __shared__ unsigned char gatedDeltaSharedStorage[];
+    AccT* tileState = reinterpret_cast<AccT*>(gatedDeltaSharedStorage);
+    AccT* kShared = tileState + kGdrParts * partStride;  // [D_k]
+    AccT* qShared = kShared + D_k;                       // [D_k]
+    const LongType headOffset = (b * H + h) * D_k * D_v;
+    __shared__ AccT expGateShared;
+
+    const int part = static_cast<int>(threadIdx.x % kGdrParts);
+    const LongType c = threadIdx.x / kGdrParts;
+    const LongType dv = dvBegin + c;
+    const LongType firstRow = part * partRows;
+    AccT* column = tileState + part * partStride + c;
+
+    // stateIn may be stateOut (in place): every lane reads its own rows before
+    // any are written, and lanes own disjoint rows. Loads are batched so each
+    // lane keeps several in flight.
+    for (LongType rBase = 0; rBase < partRows; rBase += kGdrRowBatch) {
+        AccT rows[kGdrRowBatch];
+        for (int r = 0; r < kGdrRowBatch; ++r) {
+            const LongType row = rBase + r;
+            rows[r] = stateIn != nullptr && row < partRows
+                ? static_cast<AccT>(stateIn[headOffset + (firstRow + row) * D_v + dv])
+                : static_cast<AccT>(0);
+        }
+        for (int r = 0; r < kGdrRowBatch; ++r) {
+            if (rBase + r < partRows) column[(rBase + r) * columnsPerBlock] = rows[r];
+        }
+    }
+
+    const LongType effectiveLen = gatedDeltaEffectiveLength(actualLen, L);
+    for (LongType t = 0; t < L; ++t) {
+        gatedDeltaRuleSplitStep<T>(v, betaArr, gateArr, q, k, column, columnsPerBlock, partRows, part, dv,
+                                   expGateShared, kShared, qShared, out, prefixOut, prefixW,
+                                   b, h, B, H, D_k, D_v, t, t < effectiveLen,
+                                   qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3, vS0, vS1, vS2, vS3,
+                                   bS0, bS1, bS2, gS0, gS1, gS2, oS0, oS1, oS2, oS3);
+    }
+
+    // Each lane stores only the rows it owns and wrote.
+    for (LongType r = 0; r < partRows; ++r) {
+        stateOut[headOffset + (firstRow + r) * D_v + dv] = static_cast<T>(column[r * columnsPerBlock]);
+    }
+}
+
 template <typename Source, typename Target>
 SD_KERNEL void convertStateKernel(
     const Source* __restrict__ src,
@@ -282,6 +456,38 @@ static void launchGatedDeltaRule(
                                sd::AffinityManager::currentDeviceId()) != cudaSuccess) {
         THROW_EXCEPTION("gatedDeltaRule: unable to query the shared-memory limit");
     }
+    // Split-row fast path: D_k a power of two (each part is a whole pairwise
+    // subtree), the widest warp-multiple column tile (<= 1024 threads in all)
+    // that divides D_v and fits in shared memory.
+    const bool powerOfTwoDepth = D_k >= kGdrParts && (D_k & (D_k - 1)) == 0;
+    if (powerOfTwoDepth) {
+        auto splitSharedBytes = [&](LongType columns) {
+            const LongType partStride = (D_k / kGdrParts) * columns + kGdrPartPad;
+            return static_cast<size_t>(kGdrParts * partStride + 2 * D_k) * sizeof(AccT);
+        };
+        constexpr LongType kColumnsPerWarp = sd::device::WARP_SIZE / kGdrParts;
+        for (LongType columns = 1024 / kGdrParts; columns >= kColumnsPerWarp; columns -= kColumnsPerWarp) {
+            if (D_v % columns != 0 || splitSharedBytes(columns) > static_cast<size_t>(maxSharedMemory)) continue;
+            const size_t splitBytes = splitSharedBytes(columns);
+            if (cudaFuncSetAttribute(gatedDeltaRuleSplitSequenceKernel<T>,
+                                     cudaFuncAttributeMaxDynamicSharedMemorySize,
+                                     static_cast<int>(splitBytes)) != cudaSuccess) {
+                THROW_EXCEPTION("gatedDeltaRuleSplitSequenceKernel shared-memory opt-in failed");
+            }
+            gatedDeltaRuleSplitSequenceKernel<T><<<static_cast<unsigned int>(B * H * (D_v / columns)),
+                                                   static_cast<unsigned int>(columns * kGdrParts),
+                                                   splitBytes, stream>>>(
+                q, k, v, betaArr, gateArr, actualLen, stateIn, stateOut, out,
+                prefixOut, prefixW,
+                B, L, H, D_k, D_v, columns,
+                qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3,
+                vS0, vS1, vS2, vS3, bS0, bS1, bS2,
+                gS0, gS1, gS2, oS0, oS1, oS2, oS3);
+            DebugHelper::checkGlobalErrorCode("gatedDeltaRuleSplitSequenceKernel failed");
+            return;
+        }
+    }
+
     constexpr LongType kGdrMaxThreads = 256;
     LongType columnsPerBlock = std::min<LongType>(((D_v + 31) / 32) * 32, kGdrMaxThreads);
     // Shared memory: the [D_k, columns] state tile plus the staged step key and query.
