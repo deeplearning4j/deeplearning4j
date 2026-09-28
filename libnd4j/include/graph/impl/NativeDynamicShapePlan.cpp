@@ -283,17 +283,7 @@ static int disableFusedChainsAcrossSegmentBoundaries(
         slots[chainSlot].fusedChain.isFusedChainTail = false;
       }
     }
-    head.fusedChain.isFusedChainHead = false;
-    head.fusedChain.fusedChainLength = 0;
-    std::memset(
-        head.fusedChain.fusedChainOpCodes, 0,
-        sizeof(head.fusedChain.fusedChainOpCodes));
-    std::memset(
-        head.fusedChain.fusedChainSlots, 0,
-        sizeof(head.fusedChain.fusedChainSlots));
-    std::fill(
-        std::begin(head.fusedChain.fusedChainSecondaryInputSources),
-        std::end(head.fusedChain.fusedChainSecondaryInputSources), INT32_MIN);
+    head.fusedChain.clearHead();
     disabled++;
   }
 
@@ -2389,12 +2379,8 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
 
     // Initialize fusion fields (will be set by FusionPass::applyFusions later)
     slot.disableInPlaceFusion();
-    slot.fusedChain.isFusedChainHead = false;
-    slot.fusedChain.fusedChainLength = 0;
+    slot.fusedChain.clearHead();
     slot.fusedChain.isFusedChainTail = false;
-    std::memset(slot.fusedChain.fusedChainOpCodes, 0, sizeof(slot.fusedChain.fusedChainOpCodes));
-    std::memset(slot.fusedChain.fusedChainSlots, 0, sizeof(slot.fusedChain.fusedChainSlots));
-    std::fill(std::begin(slot.fusedChain.fusedChainSecondaryInputSources), std::end(slot.fusedChain.fusedChainSecondaryInputSources), INT32_MIN);
   }
 
   // ═══════════════════════════════════════════════════════════════════════

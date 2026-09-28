@@ -573,12 +573,8 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
 
     slot.disableInPlaceFusion();
-    slot.fusedChain.isFusedChainHead = false;
-    slot.fusedChain.fusedChainLength = 0;
+    slot.fusedChain.clearHead();
     slot.fusedChain.isFusedChainTail = false;
-    std::memset(slot.fusedChain.fusedChainOpCodes, 0, sizeof(slot.fusedChain.fusedChainOpCodes));
-    std::memset(slot.fusedChain.fusedChainSlots, 0, sizeof(slot.fusedChain.fusedChainSlots));
-    std::fill(std::begin(slot.fusedChain.fusedChainSecondaryInputSources), std::end(slot.fusedChain.fusedChainSecondaryInputSources), INT32_MIN);
 
     // Build input wiring from exact paired identities or legacy node IDs.
 

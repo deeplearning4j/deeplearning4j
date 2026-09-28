@@ -30,9 +30,11 @@
 #include <ops/declarable/DeclarableOp.h>
 #include <system/common.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <cassert>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -436,6 +438,20 @@ struct SlotFlags {
   bool isDynamicShape = false;
 };
 
+/**
+ * How a fused chain member's secondary operand relates to the chain value. The
+ * member's eager op decides it: a legacy scalar op reads element 0 only, a
+ * legacy pairwise op needs identical shapes, and a broadcastable declarable
+ * keeps the chain value's shape only while the secondary broadcasts into it.
+ * Replay re-checks the policy against the live arrays and de-fuses on mismatch.
+ */
+enum FusedChainSecondaryPolicy : int8_t {
+  FUSED_SECONDARY_NONE = 0,
+  FUSED_SECONDARY_SCALAR = 1,
+  FUSED_SECONDARY_SAME_SHAPE = 2,
+  FUSED_SECONDARY_BROADCAST = 3,
+};
+
 /** Fused elementwise chain metadata. */
 struct FusedChain {
   bool isFusedChainHead = false;
@@ -443,7 +459,28 @@ struct FusedChain {
   int fusedChainOpCodes[MAX_FUSED_CHAIN] = {};
   int fusedChainSlots[MAX_FUSED_CHAIN] = {};
   int fusedChainSecondaryInputSources[MAX_FUSED_CHAIN] = {};
+  int8_t fusedChainSecondaryPolicy[MAX_FUSED_CHAIN] = {};
+  // clipbyvalue bounds. A chain carries at most one pair; FusionPass refuses
+  // members whose bounds differ from an earlier clip in the same chain.
+  bool fusedChainHasClip = false;
+  double fusedChainClipMin = 0.0;
+  double fusedChainClipMax = 0.0;
   bool isFusedChainTail = false;
+
+  /** Drops this slot's head metadata. Member slots own isFusedChainTail. */
+  void clearHead() {
+    isFusedChainHead = false;
+    fusedChainLength = 0;
+    std::fill(std::begin(fusedChainOpCodes), std::end(fusedChainOpCodes), 0);
+    std::fill(std::begin(fusedChainSlots), std::end(fusedChainSlots), 0);
+    std::fill(std::begin(fusedChainSecondaryInputSources),
+              std::end(fusedChainSecondaryInputSources), INT32_MIN);
+    std::fill(std::begin(fusedChainSecondaryPolicy),
+              std::end(fusedChainSecondaryPolicy), FUSED_SECONDARY_NONE);
+    fusedChainHasClip = false;
+    fusedChainClipMin = 0.0;
+    fusedChainClipMax = 0.0;
+  }
 };
 
 /** Control flow support. */
