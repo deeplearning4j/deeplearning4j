@@ -171,6 +171,7 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
 void DataBuffer::writePrimary() const { _writePrimary = ++_counter; }
 
 void DataBuffer::writeSpecial() const { _writeSpecial = ++_counter; }
+bool DataBuffer::tracksContentWrites() const { return true; }
 
 void DataBuffer::readPrimary() const { _readPrimary = ++_counter; }
 

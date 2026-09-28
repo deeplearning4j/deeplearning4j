@@ -21,6 +21,7 @@
 //
 
 #include <execution/cuda/CudaGraphScheduler.h>
+#include <cuda.h>
 
 #ifdef SD_CUDA
 
@@ -270,6 +271,47 @@ bool CudaGraphHandle::instantiate() {
         std::chrono::high_resolution_clock::now().time_since_epoch()
     ).count();
     _instantiateTimeMs = endTime - startTime;
+
+    // Launch cost follows the node mix, not just the count: summarize it.
+    if (DSP_DIAG_ENABLED(GRAPH_REPLAY)) {
+        size_t numNodes = 0;
+        cudaGraphGetNodes(_graph, nullptr, &numNodes);
+        std::vector<cudaGraphNode_t> nodes(numNodes);
+        if (numNodes > 0) cudaGraphGetNodes(_graph, nodes.data(), &numNodes);
+        size_t counts[32] = {};
+        std::vector<CUfunction> functions;
+        std::vector<CUmodule> modules;
+        for (auto node : nodes) {
+            cudaGraphNodeType type;
+            if (cudaGraphNodeGetType(node, &type) != cudaSuccess) continue;
+            counts[static_cast<int>(type) & 31]++;
+            if (type != cudaGraphNodeTypeKernel) continue;
+            CUDA_KERNEL_NODE_PARAMS params;
+            memset(&params, 0, sizeof(params));
+            if (cuGraphKernelNodeGetParams(reinterpret_cast<CUgraphNode>(node), &params) != CUDA_SUCCESS
+                    || params.func == nullptr) {
+                continue;
+            }
+            functions.push_back(params.func);
+            CUmodule module = nullptr;
+            if (cuFuncGetModule(&module, params.func) == CUDA_SUCCESS) modules.push_back(module);
+        }
+        cudaGetLastError();
+        std::sort(functions.begin(), functions.end());
+        std::sort(modules.begin(), modules.end());
+        DSP_DIAG_DEV(GRAPH_REPLAY, _deviceId,
+                     "GRAPH_NODES total=%zu kernel=%zu memcpy=%zu memset=%zu host=%zu child=%zu empty=%zu "
+                     "eventRecord=%zu eventWait=%zu memAlloc=%zu memFree=%zu distinctFunctions=%zu "
+                     "distinctModules=%zu instantiateMs=%.1f",
+                     numNodes, counts[cudaGraphNodeTypeKernel], counts[cudaGraphNodeTypeMemcpy],
+                     counts[cudaGraphNodeTypeMemset], counts[cudaGraphNodeTypeHost],
+                     counts[cudaGraphNodeTypeGraph], counts[cudaGraphNodeTypeEmpty],
+                     counts[cudaGraphNodeTypeEventRecord], counts[cudaGraphNodeTypeWaitEvent],
+                     counts[cudaGraphNodeTypeMemAlloc], counts[cudaGraphNodeTypeMemFree],
+                     static_cast<size_t>(std::unique(functions.begin(), functions.end()) - functions.begin()),
+                     static_cast<size_t>(std::unique(modules.begin(), modules.end()) - modules.begin()),
+                     _instantiateTimeMs);
+    }
 
     _state = GraphState::INSTANTIATED;
     return true;

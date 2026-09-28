@@ -202,17 +202,20 @@ struct AutoregressiveDecodeConfig {
     int speculatorType = 0;          // 0=none, 1=NGRAM, 2=MTP
 
     // Multi-row commit policy (ADR 0106 Phase 2b review decision).
-    // When true (EXPERIMENTAL), an accepted prefix longer than one token is
-    // committed by re-executing the WINDOW plan at activeWindow=consumedCount.
-    // The W-substrate geometry's row-0 numerics are not yet proven equivalent
-    // to the width-1 greedy geometry (teacher-forced comparison pending), so
-    // this trades token-exact parity for mechanism: measured on the Qwen 27B
-    // NVFP4 real-model gate as emissionDeltas 124/251 (see milestone dbf8340c).
-    // When false (SHIPPED DEFAULT), every speculative step commits exactly one
-    // token through the validated scalar width-1 plan: bit-exact greedy parity
-    // (emissionDeltas 0/251, milestone bc3f5c2a) and acceptance-stats parity
-    // with the pre-review contract.
-    bool allowMultiRowCommit = false;
+    // When true, an accepted prefix longer than one token is committed by
+    // re-executing the WINDOW plan at activeWindow=consumedCount, emitting the
+    // verification rows directly. That is lossless because every window row is
+    // bit-identical to the width-1 computation of its position, and compiled
+    // replay is bit-identical to native slot-by-slot execution (the two decode
+    // modes reach those lifecycle phases at different steps): see
+    // DspDecodeRowInvarianceTest and TestQwenNvfp4Import#windowRowsMatchChainedScalarTarget.
+    // The earlier 124/251 emission deltas on the Qwen 27B NVFP4 gate came from
+    // Triton attention and RMSNorm replay differing from native; with those
+    // exact, the gate measures 0/250 at 14.4 tok/s (vs 9.5 greedy).
+    // Default. When false (SD_MTP_MULTI_ROW_COMMIT=0), every speculative step
+    // commits exactly one token through the scalar width-1 plan (also 0/250,
+    // but ~4 tok/s on that gate).
+    bool allowMultiRowCommit = true;
 
     // ─── Qwen3.5 bundled MTP predictor ─────────────────────────────────────────
     // The predictor is a second plan over the same immutable SameDiff weights. It owns an

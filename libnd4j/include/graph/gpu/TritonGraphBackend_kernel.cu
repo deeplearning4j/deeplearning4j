@@ -24,6 +24,7 @@
 #include <graph/gpu/TritonGraphBackend_internal.h>
 #include <graph/gpu/TritonTargetDispatch.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspSegmentOutputUtils.h>
 #include <execution/LaunchContext.h>
 #include <helpers/DebugHelper.h>
 #include <array/DataBuffer.h>
@@ -206,6 +207,21 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     } else {
       prepareSkippedCount++;
     }
+  }
+  for (int op = compiled.startSlot_; op <= compiled.endSlot_; ++op) {
+    dsp::forEachOpWrittenInput(slots[op], externalInputs, numExternalInputs,
+                              outputSlots, totalOutputSlots,
+        [&](int, int, NDArray* array) {
+          // Mutated inputs remain reads: their original contents are needed.
+          if (std::find(tritonReadList.begin(), tritonReadList.end(), array) == tritonReadList.end()) {
+            tritonReadList.push_back(array);
+            ++prepareReadCount;
+          }
+          if (std::find(tritonWriteList.begin(), tritonWriteList.end(), array) == tritonWriteList.end()) {
+            tritonWriteList.push_back(array);
+            ++prepareWriteCount;
+          }
+        });
   }
   if (!tritonReadList.empty() || !tritonWriteList.empty()) {
     NDArray::prepareSpecialUse(tritonWriteList, tritonReadList);
@@ -745,6 +761,13 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     // cuLaunchKernel expects void** where each entry points to the actual param value.
     // bufferPtrs[i] IS the void* value; &bufferPtrs[i] is the pointer-to-pointer.
     for (int i = 0; i < numBufferArgs; i++) {
+      // Same compiled-alignment contract as publishArgumentPointers.
+      const int alignment = i < static_cast<int>(compiled.argSlotMapping.size())
+          ? compiled.argSlotMapping[i].requiredAlignment : 1;
+      if (alignment > 1 &&
+          reinterpret_cast<uintptr_t>(bufferPtrs[i]) % static_cast<uintptr_t>(alignment) != 0) {
+        return failKernel("argument binding violates the kernel's compiled alignment");
+      }
       kernelArgs.push_back(&bufferPtrs[i]);
     }
     kernelArgs.push_back(&nElem32);
@@ -971,12 +994,11 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
 }
 
 // Publication is completed before H2D; captured copybacks retain their bindings.
-bool TritonGraphBackend::aliasBindingsMatch(const CompiledKernel& kernel,
-    NDArray** externalInputs, int numExternalInputs, NDArray** outputSlots,
-    int totalOutputSlots) const {
+template <typename Resolve>
+bool TritonGraphBackend::aliasBindingsMatchWith(const CompiledKernel& kernel, int device,
+                                                Resolve&& resolve) const {
   if (!kernel.aliasBindingsCaptured) return true;
-  int device = -1;
-  if (cudaGetDevice(&device) != cudaSuccess || device != kernel.aliasDeviceId) return false;
+  if (device != kernel.aliasDeviceId) return false;
   for (const auto& alias : kernel.aliasBindings) {
     if (!alias.origPtr || !alias.tempPtr || !alias.bytes || alias.argIdx < 0 ||
         static_cast<size_t>(alias.argIdx) >= kernel.bindingPointers.size() ||
@@ -989,17 +1011,18 @@ bool TritonGraphBackend::aliasBindingsMatch(const CompiledKernel& kernel,
          static_cast<const int64_t*>(kernel.cachedArgTableHostPinned)[alias.argIdx] !=
              reinterpret_cast<int64_t>(alias.tempPtr))) return false;
   }
-  std::vector<void*> ptrs;
-  std::vector<size_t> bytes;
-  for (const auto& arg : kernel.argSlotMapping) {
-    auto* arr = resolveRangeArray(arg.slotIndex, externalInputs, numExternalInputs,
-                                  outputSlots, totalOutputSlots);
-    ptrs.push_back(arr && !arr->isEmpty() ? arr->specialBuffer() : nullptr);
-    bytes.push_back(arr && !arr->isEmpty() ? arr->lengthOf() * arr->sizeOfT() : 0);
+  const size_t numArgs = kernel.argSlotMapping.size();
+  if (kernel.bindingBytes.size() != numArgs) return false;
+  thread_local std::vector<void*> ptrs;
+  thread_local std::vector<size_t> bytes;
+  ptrs.resize(numArgs);
+  bytes.resize(numArgs);
+  for (size_t i = 0; i < numArgs; ++i) {
+    resolve(kernel.argSlotMapping[i].slotIndex, ptrs[i], bytes[i]);
+    if (bytes[i] != kernel.bindingBytes[i]) return false;
   }
-  if (bytes != kernel.bindingBytes) return false;
   bool changed = false;
-  for (size_t i = 0; i < ptrs.size() && !changed; ++i)
+  for (size_t i = 0; i < numArgs && !changed; ++i)
     changed = bytes[i] && (i >= kernel.bindingPointers.size() || ptrs[i] != kernel.bindingPointers[i]);
   if (!changed) return true;
   // Direct launch arguments and captured copyback destinations are immutable.
@@ -1007,22 +1030,35 @@ bool TritonGraphBackend::aliasBindingsMatch(const CompiledKernel& kernel,
   // using consumption-ordered staging, without changing any captured node.
   if (!kernel.useIndirectArgs) return false;
   for (const auto& alias : kernel.aliasBindings) {
-    if (static_cast<size_t>(alias.argIdx) >= ptrs.size() ||
+    if (static_cast<size_t>(alias.argIdx) >= numArgs ||
         ptrs[alias.argIdx] != alias.origPtr || bytes[alias.argIdx] != alias.bytes) return false;
   }
-  for (size_t o = 0; o < ptrs.size(); ++o) {
+  for (size_t o = 0; o < numArgs; ++o) {
     if (!kernel.argSlotMapping[o].isOutput || !bytes[o]) continue;
     bool hasScratch = false;
     for (const auto& alias : kernel.aliasBindings)
       if (static_cast<size_t>(alias.argIdx) == o) { hasScratch = true; break; }
     if (hasScratch) continue;  // This output remains protected by its captured scratch/copyback.
-    for (size_t i = 0; i < ptrs.size(); ++i) {
+    for (size_t i = 0; i < numArgs; ++i) {
       if (kernel.argSlotMapping[i].isOutput || !bytes[i]) continue;
       uintptr_t out = reinterpret_cast<uintptr_t>(ptrs[o]), in = reinterpret_cast<uintptr_t>(ptrs[i]);
       if (out < in + bytes[i] && in < out + bytes[o]) return false;
     }
   }
   return true;
+}
+
+bool TritonGraphBackend::aliasBindingsMatch(const CompiledKernel& kernel,
+    NDArray** externalInputs, int numExternalInputs, NDArray** outputSlots,
+    int totalOutputSlots) const {
+  if (!kernel.aliasBindingsCaptured) return true;
+  int device = -1;
+  if (cudaGetDevice(&device) != cudaSuccess) return false;
+  return aliasBindingsMatchWith(kernel, device, [&](int slotIndex, void*& pointer, size_t& bytes) {
+    auto* arr = resolveRangeArray(slotIndex, externalInputs, numExternalInputs, outputSlots, totalOutputSlots);
+    pointer = arr && !arr->isEmpty() ? arr->specialBuffer() : nullptr;
+    bytes = arr && !arr->isEmpty() ? arr->lengthOf() * arr->sizeOfT() : 0;
+  });
 }
 
 Status TritonGraphBackend::prepareAliasBindings(CompiledKernel& kernel,
@@ -1098,6 +1134,16 @@ void TritonGraphBackend::publishArgumentPointers(CompiledKernel& kernel,
     const std::vector<void*>& ptrs, bool capturing) {
   auto* table = static_cast<int64_t*>(kernel.cachedArgTableHostPinned);
   if (!table) THROW_EXCEPTION("Triton argument publication has no pinned table");
+  // A kernel compiled with vectorized access to an argument relies on its
+  // address alignment; a binding that breaks it must not reach the kernel.
+  for (size_t i = 0; i < ptrs.size() && i < kernel.argSlotMapping.size(); ++i) {
+    const int alignment = kernel.argSlotMapping[i].requiredAlignment;
+    if (alignment > 1 && reinterpret_cast<uintptr_t>(ptrs[i]) % static_cast<uintptr_t>(alignment) != 0) {
+      DSP_DIAG(EXECUTE, "TRITON_ARG_ALIGNMENT: [%d-%d] arg=%zu slot=%d ptr=%p violates compiled %d-byte alignment",
+               kernel.startSlot_, kernel.endSlot_, i, kernel.argSlotMapping[i].slotIndex, ptrs[i], alignment);
+      THROW_EXCEPTION("Triton argument binding violates the kernel's compiled alignment");
+    }
+  }
   bool changed = kernel.argumentVersion == 0;
   for (size_t i = 0; i < ptrs.size() && !changed; ++i) changed = table[i] != reinterpret_cast<int64_t>(ptrs[i]);
   if (!changed) return;
@@ -1259,13 +1305,41 @@ void TritonGraphBackend::prepareAliasBindingsForCapture(GraphSegment& seg,
 Status TritonGraphBackend::preflightAliasBindings(GraphSegment& seg,
     NDArray** externalInputs, int numExternalInputs, NDArray** outputSlots, int totalOutputSlots) {
   std::lock_guard<std::mutex> lock(cacheMtx_);
+  // One device query and one resolution per argument slot for the whole
+  // schedule: sub-kernels share most slots, and specialBuffer() queries the
+  // current device on every call, which dominated this pre-launch check.
+  int device = -1;
+  if (cudaGetDevice(&device) != cudaSuccess) return Status::MAYBE;
+  const size_t slotCount = static_cast<size_t>(std::max(0, numExternalInputs)) +
+                           static_cast<size_t>(std::max(0, totalOutputSlots));
+  std::vector<void*> slotPointer(slotCount, nullptr);
+  std::vector<size_t> slotBytes(slotCount, 0);
+  std::vector<uint8_t> slotResolved(slotCount, 0);
+  auto resolve = [&](int slotIndex, void*& pointer, size_t& bytes) {
+    const size_t index = slotIndex < 0 ? static_cast<size_t>(-(slotIndex + 1))
+                                       : static_cast<size_t>(numExternalInputs) + static_cast<size_t>(slotIndex);
+    const bool inRange = slotIndex < 0 ? -(slotIndex + 1) < numExternalInputs : slotIndex < totalOutputSlots;
+    if (!inRange) {
+      pointer = nullptr;
+      bytes = 0;
+      return;
+    }
+    if (!slotResolved[index]) {
+      auto* arr = resolveRangeArray(slotIndex, externalInputs, numExternalInputs, outputSlots, totalOutputSlots);
+      slotPointer[index] = arr && !arr->isEmpty() ? arr->specialBuffer() : nullptr;
+      slotBytes[index] = arr && !arr->isEmpty() ? arr->lengthOf() * arr->sizeOfT() : 0;
+      slotResolved[index] = 1;
+    }
+    pointer = slotPointer[index];
+    bytes = slotBytes[index];
+  };
   bool found = false;
   for (const auto& entry : cache_) {
     if (entry.first.segmentInstance != &seg ||
         entry.first.shapeKey != seg.def.shapeKeyState.compiledShapeKey) continue;
     found = true;
     for (const auto& kernel : entry.second.subKernels) {
-      if (!aliasBindingsMatch(kernel, externalInputs, numExternalInputs, outputSlots, totalOutputSlots)) {
+      if (!aliasBindingsMatchWith(kernel, device, resolve)) {
         DSP_DIAG(VERIFY, "TRITON_ALIAS_PREFLIGHT_REBUILD: seg[%d-%d] kernel[%d-%d] before submission",
                  seg.def.startSlot, seg.def.endSlot, kernel.startSlot_, kernel.endSlot_);
         if (DSP_DIAG_ENABLED(VERIFY)) {
@@ -1300,6 +1374,11 @@ Status TritonGraphBackend::preflightAliasBindings(GraphSegment& seg,
 }
 
 void TritonGraphBackend::recordArgumentSubmission(GraphSegment& seg, void* stream) {
+  recordArgumentSubmission(seg, stream, seg.def.startSlot, seg.def.endSlot);
+}
+
+void TritonGraphBackend::recordArgumentSubmission(GraphSegment& seg, void* stream, int startSlot,
+                                                  int endSlot) {
   void* rawStream = stream ? reinterpret_cast<void*>(*static_cast<cudaStream_t*>(stream)) : nullptr;
   std::lock_guard<std::mutex> lock(cacheMtx_);
   for (auto& entry : cache_) {
@@ -1317,11 +1396,16 @@ void TritonGraphBackend::recordArgumentSubmission(GraphSegment& seg, void* strea
     if (capturing == cudaStreamCaptureStatusNone) {
       for (auto& kernel : entry.second.subKernels) {
         if (!kernel.useIndirectArgs && kernel.aliasBindings.empty()) continue;
+        // Only the submitted range's sub-kernels read their argument tables in
+        // this launch; recording the rest (the whole plan, per island replay)
+        // cost ~1100 event records per launch on a 27B decode step.
+        if (kernel.endSlot_ < startSlot || kernel.startSlot_ > endSlot) continue;
         recordKernelArgumentSubmissionAfterCaptureCheck(kernel, rawStream);
       }
     }
-    DSP_DIAG(VERIFY, "TRITON_CAPTURED_ARG_SUBMISSION: seg[%d-%d] kernels=%zu stream=%p",
-             seg.def.startSlot, seg.def.endSlot, entry.second.subKernels.size(), rawStream);
+    DSP_DIAG(VERIFY, "TRITON_CAPTURED_ARG_SUBMISSION: seg[%d-%d] range[%d-%d] kernels=%zu stream=%p",
+             seg.def.startSlot, seg.def.endSlot, startSlot, endSlot, entry.second.subKernels.size(),
+             rawStream);
   }
 }
 
@@ -1682,12 +1766,8 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   return Status::OK;
 }
 
-void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, void* stream) {
+TritonGraphBackend::CompiledSegment* TritonGraphBackend::findCompiledSegmentForReplay(GraphSegment& seg) {
   int currentDevice = getCachedCudaDevice();
-
-  // Dereference void* → cudaStream_t (stream is a pointer-to-cudaStream_t)
-  cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
-
   auto& refreshEnv = Environment::getInstance();
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice,
                       refreshEnv.tritonCompileAll(),
@@ -1695,49 +1775,69 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
                       std::hash<std::string>()(refreshEnv.tritonIncludeTypes()),
                       refreshEnv.tritonGraphCapture(), &seg};
 
-  CompiledSegment* compiledSeg = nullptr;
-  {
-    std::lock_guard<std::mutex> lock(cacheMtx_);
-    // Recover the segInternalDtypeHash via the secondary dtype index since this
-    // function does not receive outputSlots (needed for computeSegInternalDtypeHash).
-    key.segInternalDtypeHash = lookupDtypeHash(seg.def.startSlot, seg.def.endSlot,
-                                                seg.def.shapeKeyState.compiledShapeKey,
-                                                currentDevice, &seg);
-    auto it = cache_.find(key);
-    if (it != cache_.end()) {
-      compiledSeg = &it->second;
-    } else {
-      // Recovered hash may be stale/0 — a silent skip here leaves the device arg table stale.
-      // Fall back to a loose match ignoring the dtype hash before concluding nothing to copy.
-      compiledSeg = findCompiledSegmentAnyDtype(key);
-      if (compiledSeg == nullptr) {
-        compiledSeg = findCompiledSegmentForLiveSegment(key);
-      }
-      if (compiledSeg == nullptr) {
-        // Same cross-device recovery as refreshArgTablesForReplay: an entry for THIS
-        // SEGMENT + compiled shape key published under a different device is a device
-        // mismatch (lookup keyed on the calling thread's cached device), not a missing
-        // kernel. Skipping silently here would leave the device arg table stale.
-        for (auto& entry : cache_) {
-          const auto& k = entry.first;
-          if (k.startSlot == seg.def.startSlot &&
-              k.endSlot == seg.def.endSlot &&
-              k.shapeKey == seg.def.shapeKeyState.compiledShapeKey &&
-              k.segmentInstance == &seg) {
-            DSP_DIAG(EXECUTE, "TritonGraphBackend::copyConsolidatedArgTableToDevice: device mismatch for [%d-%d]: "
-                     "lookup device=%d, published entry deviceId=%d — using published entry",
-                     seg.def.startSlot, seg.def.endSlot, currentDevice, k.deviceId);
-            compiledSeg = &entry.second;
-            break;
-          }
-        }
-      }
-      if (compiledSeg == nullptr) {
-        // No compiled segment - nothing to copy
-        return;
-      }
+  std::lock_guard<std::mutex> lock(cacheMtx_);
+  // Recover the segInternalDtypeHash via the secondary dtype index since the
+  // callers do not receive outputSlots (needed for computeSegInternalDtypeHash).
+  key.segInternalDtypeHash = lookupDtypeHash(seg.def.startSlot, seg.def.endSlot,
+                                              seg.def.shapeKeyState.compiledShapeKey,
+                                              currentDevice, &seg);
+  auto it = cache_.find(key);
+  if (it != cache_.end()) return &it->second;
+  // Recovered hash may be stale/0 — a silent miss would leave the device arg
+  // table stale. Fall back to a loose match ignoring the dtype hash.
+  if (auto* anyDtype = findCompiledSegmentAnyDtype(key)) return anyDtype;
+  if (auto* live = findCompiledSegmentForLiveSegment(key)) return live;
+  // Same cross-device recovery as refreshArgTablesForReplay: an entry for THIS
+  // SEGMENT + compiled shape key published under a different device is a device
+  // mismatch (lookup keyed on the calling thread's cached device), not a missing
+  // kernel.
+  for (auto& entry : cache_) {
+    const auto& k = entry.first;
+    if (k.startSlot == seg.def.startSlot && k.endSlot == seg.def.endSlot &&
+        k.shapeKey == seg.def.shapeKeyState.compiledShapeKey && k.segmentInstance == &seg) {
+      DSP_DIAG(EXECUTE, "TritonGraphBackend::findCompiledSegmentForReplay: device mismatch for [%d-%d]: "
+               "lookup device=%d, published entry deviceId=%d — using published entry",
+               seg.def.startSlot, seg.def.endSlot, currentDevice, k.deviceId);
+      return &entry.second;
     }
   }
+  return nullptr;
+}
+
+bool TritonGraphBackend::bakeConsolidatedArgTableIntoCapture(GraphSegment& seg, void* stream) {
+  CompiledSegment* compiledSeg = findCompiledSegmentForReplay(seg);
+  if (compiledSeg == nullptr || !compiledSeg->useConsolidatedArgTable ||
+      compiledSeg->consolidatedArgTableHostPinned == nullptr ||
+      compiledSeg->consolidatedArgTableDevice == nullptr || compiledSeg->consolidatedArgTableBytes == 0) {
+    return false;
+  }
+  cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  if (!DebugHelper::streamIsCapturing(&cudaStr))
+    THROW_EXCEPTION("bakeConsolidatedArgTableIntoCapture requires an active capture");
+  // Records the copy node and hands the pinned table to the captured graph.
+  copyConsolidatedArgTableToDevice(seg, stream);
+  // Every kernel row is an interior view of that one captured block.
+  for (auto& subKernel : compiledSeg->subKernels)
+    if (subKernel.useIndirectArgs) subKernel.cachedArgTableCaptureOwned = true;
+  compiledSeg->argTableBakedInCapture = true;
+  DSP_DIAG(EXECUTE, "TritonGraphBackend: consolidated arg table baked once into whole-segment capture "
+           "seg[%d-%d] (%zu bytes, %zu kernels without per-kernel copy nodes)",
+           seg.def.startSlot, seg.def.endSlot, compiledSeg->consolidatedArgTableBytes,
+           compiledSeg->subKernels.size());
+  return true;
+}
+
+void TritonGraphBackend::endBakedArgTableCapture(GraphSegment& seg) {
+  if (CompiledSegment* compiledSeg = findCompiledSegmentForReplay(seg))
+    compiledSeg->argTableBakedInCapture = false;
+}
+
+void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, void* stream) {
+  // Dereference void* → cudaStream_t (stream is a pointer-to-cudaStream_t)
+  cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  CompiledSegment* compiledSeg = findCompiledSegmentForReplay(seg);
+  // No compiled segment - nothing to copy
+  if (compiledSeg == nullptr) return;
 
   // Do consolidated H2D copy if available
   if (compiledSeg->useConsolidatedArgTable &&

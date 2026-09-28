@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.optimize.optimizations.LinearFusionOptimizatio
 import org.nd4j.autodiff.samediff.optimize.optimizations.MatMulChainOptimizations;
 import org.nd4j.autodiff.samediff.optimize.optimizations.NormalizationFusionOptimizations;
 import org.nd4j.autodiff.samediff.optimize.optimizations.QuantizationOptimizations;
+import org.nd4j.autodiff.samediff.optimize.optimizations.SerialMatmulLayoutOptimizations;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -679,6 +680,82 @@ public class TestReproducibleMmul extends BaseNd4jTestWithBackends {
                     assertEquals(1, count(sd, "matmul"));
                 }
             }
+        }
+    }
+
+    @ParameterizedTest(name = "SERIAL_FMA [K,N] weight layout {0} {1}/{2}")
+    @MethodSource("mixedStorageConfigs")
+    public void serialWeightLayoutIsBitIdentical(Nd4jBackend backend, DataType activation, DataType weightType) {
+        // K = 64 is a whole number of the compiled kernel's pipelined chunks and of its
+        // wide K words, so on CUDA both layouts also run the wide-load path.
+        final int rows = 3, k = 64, n = 40;
+        boolean cuda = "CUDA".equalsIgnoreCase(
+                Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend"));
+        try (INDArray input = Nd4j.rand(DataType.FLOAT, rows, k).subi(0.5).castTo(activation);
+             INDArray weights = Nd4j.rand(DataType.FLOAT, n, k).subi(0.5).castTo(weightType)) {
+            // 0/1: permute(W, 1, 0) / transpose(W) consumed only by the SERIAL matmul;
+            // 2: W also read elsewhere, so its storage must not change. The layout pass runs
+            // before any execution, as in GraphOptimizer; the reference is an untransformed graph.
+            INDArray reference;
+            try (SameDiff plain = serialLayoutGraph(0, input.dataType(), weights, k)) {
+                reference = plain.output(Map.of("x", input), "out").get("out").dup();
+            }
+            for (int variant = 0; variant < 3; variant++) {
+                String context = activation + "/" + weightType + " variant=" + variant;
+                try (SameDiff sd = serialLayoutGraph(variant, activation, weights, k)) {
+                    boolean applied = apply(sd, new SerialMatmulLayoutOptimizations.TransposedConstantWeightToKn(),
+                            sd.getVariable("out"));
+                    assertEquals(cuda && variant != 2, applied, context);
+                    INDArray stored = sd.getConstantArrays().getArray("w");
+                    assertArrayEquals(applied ? new long[]{k, n} : new long[]{n, k}, stored.shape(), context);
+                    assertEquals(applied ? 0 : 1, count(sd, "permute") + count(sd, "transpose"), context);
+                    if (applied) {
+                        assertEquals('c', stored.ordering(), context);
+                        assertEquals(weights.getDouble(n - 1, 1), stored.getDouble(1, n - 1), 0.0, context);
+                    }
+                    if (cuda && variant != 2) {
+                        exerciseCompiledLayout(sd, input, reference, context);
+                    } else {
+                        assertBits(reference, sd.output(Map.of("x", input), "out").get("out"), context);
+                    }
+                }
+            }
+        }
+    }
+
+    private static SameDiff serialLayoutGraph(int variant, DataType activation, INDArray weights, int k) {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", activation, -1, k);
+        SDVariable w = sd.constant("w", weights.dup());
+        SDVariable view = variant == 1 ? sd.transpose(w) : w.permute(1, 0);
+        new Mmul(sd, x, view, MMulTranspose.allFalse(), Mmul.Arithmetic.SERIAL_FMA, DataType.FLOAT)
+                .outputVariable().rename("out");
+        if (variant == 2) {
+            sd.math().abs(w).rename("other");
+            sd.setOutputs("out", "other");
+        } else {
+            sd.setOutputs("out");
+        }
+        return sd;
+    }
+
+    private static void exerciseCompiledLayout(SameDiff sd, INDArray input, INDArray expected, String context) {
+        assertTrue(Nd4j.getNativeOps().isTritonAvailable(), "CUDA coverage requires a live Triton backend");
+        boolean previousDsp = InferenceSession.isDynamicShapePlanEnabled();
+        boolean previousCompileAll = Nd4j.getEnvironment().tritonCompileAll();
+        try {
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            Nd4j.getEnvironment().setTritonCompileAll(true);
+            sd.setDspAutoCompileEnabled(true);
+            sd.setDspNativeAutoCompileEnabled(true);
+            for (int step = 0; step < 12; step++) {
+                assertBits(expected, sd.output(Map.of("x", input), "out").get("out"),
+                        "DSP " + context + " step=" + step);
+            }
+            assertTritonExecution(sd.dsp(), context);
+        } finally {
+            Nd4j.getEnvironment().setTritonCompileAll(previousCompileAll);
+            InferenceSession.setDynamicShapePlanEnabled(previousDsp);
         }
     }
 

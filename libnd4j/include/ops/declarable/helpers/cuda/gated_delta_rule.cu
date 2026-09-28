@@ -39,11 +39,13 @@ namespace helpers {
 
 static constexpr int GDR_CUDA_MAX_HEAD_DIM = 512;
 static constexpr int GDR_CUDA_PAIRWISE_LEVELS = 10;
+// State rows a thread loads per batch in the sequence kernel.
+static constexpr int kGdrRowBatch = 16;
 
-template <typename AccT, typename T>
+template <typename AccT, typename V>
 static SD_DEVICE SD_INLINE AccT gatedDeltaCudaReproducibleDot(
     const AccT* state, LongType stateStride,
-    const T* vector, LongType vectorStride, LongType length) {
+    const V* vector, LongType vectorStride, LongType length) {
     AccT levels[GDR_CUDA_PAIRWISE_LEVELS];
     for (LongType index = 0; index < length; ++index) {
         AccT value = reproducible::multiply<AccT>(
@@ -70,24 +72,116 @@ static SD_DEVICE SD_INLINE AccT gatedDeltaCudaReproducibleDot(
     return result;
 }
 
-// One block per (batch, head). Threads cover D_v dimension.
-// Sequential over timesteps (recurrent dependency). AggregateType promotes
-// HALF/BFLOAT16 accumulation while preserving wider input types.
+// One timestep of the recurrence for one (batch, head) over the state columns
+// [dvBegin, dvEnd): column dv of the head's [D_k, D_v] state lives at
+// sPtr + (dv - dvBegin) with row stride stateStride, and each column is read
+// and written only by the thread that owns it. expGateShared is the block's
+// broadcast slot for the step's decay. AggregateType promotes HALF/BFLOAT16
+// accumulation while preserving wider input types.
 template <typename T>
-SD_KERNEL void gatedDeltaRuleKernel(
+static SD_DEVICE void gatedDeltaRuleStep(
+    const T* __restrict__ q, const T* __restrict__ k, const T* __restrict__ v,
+    const T* __restrict__ betaArr, const T* __restrict__ gateArr,
+    typename simdOps::AggregateType<T>::type* sPtr, const LongType stateStride,
+    const LongType dvBegin, const LongType dvEnd,
+    typename simdOps::AggregateType<T>::type& expGateShared,
+    typename simdOps::AggregateType<T>::type* __restrict__ kShared,
+    typename simdOps::AggregateType<T>::type* __restrict__ qShared,
+    T* __restrict__ out, T* __restrict__ prefixOut, const LongType prefixW,
+    const LongType b, const LongType h, const LongType B, const LongType H,
+    const LongType D_k, const LongType D_v, const LongType t, const bool updateState,
+    const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
+    const LongType kS0, const LongType kS1, const LongType kS2, const LongType kS3,
+    const LongType vS0, const LongType vS1, const LongType vS2, const LongType vS3,
+    const LongType bS0, const LongType bS1, const LongType bS2,
+    const LongType gS0, const LongType gS1, const LongType gS2,
+    const LongType oS0, const LongType oS1, const LongType oS2, const LongType oS3) {
+    using AccT = typename simdOps::AggregateType<T>::type;
+
+    if (threadIdx.x == 0) {
+        expGateShared = updateState
+            ? reproducible::exp<AccT>(
+                static_cast<AccT>(gateArr[b * gS0 + t * gS1 + h * gS2]))
+            : static_cast<AccT>(1);
+    }
+    // The step's key and query are read by every column: stage them once, in the
+    // accumulator type the arithmetic converts them to anyway.
+    const LongType kBase = b * kS0 + t * kS1 + h * kS2;
+    const LongType qBase = b * qS0 + t * qS1 + h * qS2;
+    for (LongType dk = threadIdx.x; dk < D_k; dk += blockDim.x) {
+        if (updateState) kShared[dk] = static_cast<AccT>(k[kBase + dk * kS3]);
+        qShared[dk] = static_cast<AccT>(q[qBase + dk * qS3]);
+    }
+    __syncthreads();
+    const AccT expGate = expGateShared;
+    const AccT betaValue = updateState
+        ? static_cast<AccT>(betaArr[b * bS0 + t * bS1 + h * bS2])
+        : static_cast<AccT>(0);
+
+    for (LongType dv = dvBegin + threadIdx.x; dv < dvEnd; dv += blockDim.x) {
+        AccT* column = sPtr + (dv - dvBegin);
+        if (updateState) {
+            const AccT prediction = gatedDeltaCudaReproducibleDot<AccT, AccT>(
+                column, stateStride, kShared, 1, D_k);
+
+            const AccT delta = reproducible::subtract<AccT>(
+                static_cast<AccT>(v[b * vS0 + t * vS1 + h * vS2 + dv * vS3]),
+                reproducible::multiply<AccT>(expGate, prediction));
+            const AccT betaDelta = reproducible::multiply<AccT>(betaValue, delta);
+
+            // Prefix checkpoint: state AFTER consuming input t, written from the
+            // unrounded working accumulator (never re-fed into later steps).
+            T* prefixColumn = prefixOut != nullptr && t < prefixW
+                ? prefixOut + ((t * B + b) * H + h) * D_k * D_v + dv
+                : nullptr;
+            for (LongType dk = 0; dk < D_k; ++dk) {
+                const AccT updated = reproducible::add<AccT>(
+                    reproducible::multiply<AccT>(expGate, column[dk * stateStride]),
+                    reproducible::multiply<AccT>(betaDelta, kShared[dk]));
+                column[dk * stateStride] = updated;
+                if (prefixColumn != nullptr) prefixColumn[dk * D_v] = static_cast<T>(updated);
+            }
+        }
+
+        const AccT outputValue = gatedDeltaCudaReproducibleDot<AccT, AccT>(
+            column, stateStride, qShared, 1, D_k);
+        out[b * oS0 + t * oS1 + h * oS2 + dv * oS3] = static_cast<T>(outputValue);
+    }
+    // The next step's thread 0 overwrites expGateShared.
+    __syncthreads();
+}
+
+static SD_DEVICE SD_INLINE LongType gatedDeltaEffectiveLength(const LongType* actualLen, LongType L) {
+    if (actualLen == nullptr) return L;
+    LongType effectiveLen = actualLen[0];
+    if (effectiveLen < 0) effectiveLen = 0;
+    if (effectiveLen > L) effectiveLen = L;
+    return effectiveLen;
+}
+
+// Sequential recurrence over all L timesteps in one launch. Block (b, h, tile)
+// owns the state columns [tile * columnsPerBlock, ...) of head (b, h): columns
+// are independent (each depends only on itself and the step's shared k, q,
+// gate and beta), so the head's state is split into column tiles that fit in
+// shared memory. The tile is loaded from stateIn (or zeroed) in the
+// accumulator type, carried through every step, and stored to stateOut once —
+// no global working state, so the op allocates nothing and is graph-capture
+// safe. Per-column arithmetic is the reference recurrence, unchanged.
+template <typename T>
+SD_KERNEL void gatedDeltaRuleSequenceKernel(
     const T* __restrict__ q,
     const T* __restrict__ k,
     const T* __restrict__ v,
     const T* __restrict__ betaArr,
     const T* __restrict__ gateArr,
     const LongType* __restrict__ actualLen,
-    typename simdOps::AggregateType<T>::type* __restrict__ state,
+    const T* stateIn,
+    T* stateOut,
     T* __restrict__ out,
     T* __restrict__ prefixOut,
     const LongType prefixW,
     const LongType B, const LongType L, const LongType H,
-    const LongType D_k, const LongType D_v,
-    const LongType t,
+    const LongType D_k, const LongType D_v, const LongType columnsPerBlock,
     const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
     const LongType kS0, const LongType kS1, const LongType kS2, const LongType kS3,
     const LongType vS0, const LongType vS1, const LongType vS2, const LongType vS3,
@@ -97,63 +191,60 @@ SD_KERNEL void gatedDeltaRuleKernel(
 
     using AccT = typename simdOps::AggregateType<T>::type;
 
-    const LongType bh = blockIdx.x;
+    const LongType tiles = (D_v + columnsPerBlock - 1) / columnsPerBlock;
+    const LongType bh = blockIdx.x / tiles;
     if (bh >= B * H) return;
+    const LongType dvBegin = (blockIdx.x % tiles) * columnsPerBlock;
+    const LongType dvEnd = dvBegin + columnsPerBlock < D_v ? dvBegin + columnsPerBlock : D_v;
+    const LongType width = dvEnd - dvBegin;
 
     const LongType b = bh / H;
     const LongType h = bh % H;
-
-    LongType effectiveLen = L;
-    if (actualLen != nullptr) {
-        effectiveLen = actualLen[0];
-        if (effectiveLen < 0) effectiveLen = 0;
-        if (effectiveLen > L) effectiveLen = L;
-    }
-    const bool updateState = t < effectiveLen;
+    extern __shared__ unsigned char gatedDeltaSharedStorage[];
+    AccT* tileState = reinterpret_cast<AccT*>(gatedDeltaSharedStorage);  // [D_k][columnsPerBlock]
+    AccT* kShared = tileState + D_k * columnsPerBlock;                     // [D_k]
+    AccT* qShared = kShared + D_k;                                          // [D_k]
+    const LongType headOffset = (b * H + h) * D_k * D_v;
     __shared__ AccT expGateShared;
-    if (threadIdx.x == 0) {
-        expGateShared = updateState
-            ? reproducible::exp<AccT>(
-                static_cast<AccT>(gateArr[b * gS0 + t * gS1 + h * gS2]))
-            : static_cast<AccT>(1);
-    }
-    __syncthreads();
-    const AccT expGate = expGateShared;
-    const AccT betaValue = updateState
-        ? static_cast<AccT>(betaArr[b * bS0 + t * bS1 + h * bS2])
-        : static_cast<AccT>(0);
-    AccT* sPtr = state + (b * H + h) * D_k * D_v;
 
-    for (LongType dv = threadIdx.x; dv < D_v; dv += blockDim.x) {
-        if (updateState) {
-            const LongType kBase = b * kS0 + t * kS1 + h * kS2;
-            const AccT prediction = gatedDeltaCudaReproducibleDot<AccT, T>(
-                sPtr + dv, D_v, k + kBase, kS3, D_k);
-
-            const AccT delta = reproducible::subtract<AccT>(
-                static_cast<AccT>(v[b * vS0 + t * vS1 + h * vS2 + dv * vS3]),
-                reproducible::multiply<AccT>(expGate, prediction));
-            const AccT betaDelta = reproducible::multiply<AccT>(betaValue, delta);
-
-            for (LongType dk = 0; dk < D_k; ++dk) {
-                const AccT kValue = static_cast<AccT>(k[b * kS0 + t * kS1 + h * kS2 + dk * kS3]);
-                sPtr[dk * D_v + dv] = reproducible::add<AccT>(
-                    reproducible::multiply<AccT>(expGate, sPtr[dk * D_v + dv]),
-                    reproducible::multiply<AccT>(betaDelta, kValue));
-
-                // Prefix checkpoint: state AFTER consuming input t, written from the
-                // unrounded working accumulator (never re-fed into later steps).
-                if (prefixOut != nullptr && t < prefixW) {
-                    T* pBase = prefixOut + ((t * B + b) * H + h) * D_k * D_v;
-                    pBase[dk * D_v + dv] = static_cast<T>(sPtr[dk * D_v + dv]);
-                }
+    // Thread c owns tile column c (blockDim == columnsPerBlock): row-major,
+    // coalesced loads and stores. stateIn may be stateOut (in place): every
+    // block reads its own region before writing it, and regions are disjoint.
+    // Rows are moved in fixed-size batches: the batch's loads are independent, so
+    // they are all in flight before the first is consumed (a block holds only
+    // columnsPerBlock threads, too few to hide one-at-a-time memory latency).
+    const LongType column = threadIdx.x;
+    if (column < width) {
+        for (LongType dkBase = 0; dkBase < D_k; dkBase += kGdrRowBatch) {
+            AccT rows[kGdrRowBatch];
+            for (int r = 0; r < kGdrRowBatch; ++r) {
+                const LongType dk = dkBase + r;
+                rows[r] = stateIn != nullptr && dk < D_k
+                    ? static_cast<AccT>(stateIn[headOffset + dk * D_v + dvBegin + column])
+                    : static_cast<AccT>(0);
+            }
+            for (int r = 0; r < kGdrRowBatch; ++r) {
+                if (dkBase + r < D_k) tileState[(dkBase + r) * columnsPerBlock + column] = rows[r];
             }
         }
+    }
+    __syncthreads();
 
-        const LongType qBase = b * qS0 + t * qS1 + h * qS2;
-        const AccT outputValue = gatedDeltaCudaReproducibleDot<AccT, T>(
-            sPtr + dv, D_v, q + qBase, qS3, D_k);
-        out[b * oS0 + t * oS1 + h * oS2 + dv * oS3] = static_cast<T>(outputValue);
+    const LongType effectiveLen = gatedDeltaEffectiveLength(actualLen, L);
+    for (LongType t = 0; t < L; ++t) {
+        gatedDeltaRuleStep<T>(q, k, v, betaArr, gateArr, tileState, columnsPerBlock, dvBegin, dvEnd,
+                              expGateShared, kShared, qShared, out, prefixOut, prefixW, b, h, B, H, D_k, D_v, t,
+                              t < effectiveLen,
+                              qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3, vS0, vS1, vS2, vS3,
+                              bS0, bS1, bS2, gS0, gS1, gS2, oS0, oS1, oS2, oS3);
+    }
+
+    // Each thread stores the column only it wrote; no barrier needed.
+    if (column < width) {
+        for (LongType dk = 0; dk < D_k; ++dk) {
+            stateOut[headOffset + dk * D_v + dvBegin + column] =
+                static_cast<T>(tileState[dk * columnsPerBlock + column]);
+        }
     }
 }
 
@@ -172,7 +263,7 @@ template <typename T>
 static void launchGatedDeltaRule(
     const T* q, const T* k, const T* v,
     const T* betaArr, const T* gateArr, const LongType* actualLen,
-    typename simdOps::AggregateType<T>::type* workingState, T* out,
+    const T* stateIn, T* stateOut, T* out,
     T* prefixOut, LongType prefixW,
     LongType B, LongType L, LongType H, LongType D_k, LongType D_v,
     LongType qS0, LongType qS1, LongType qS2, LongType qS3,
@@ -182,24 +273,42 @@ static void launchGatedDeltaRule(
     LongType gS0, LongType gS1, LongType gS2,
     LongType oS0, LongType oS1, LongType oS2, LongType oS3,
     cudaStream_t stream) {
+    using AccT = typename simdOps::AggregateType<T>::type;
 
-    int numBlocks = B * H;
-    int threadsPerBlock = 256;
-    if (D_v < threadsPerBlock) {
-        threadsPerBlock = ((D_v + 31) / 32) * 32;
-        if (threadsPerBlock < 32) threadsPerBlock = 32;
+    // Widest column tile (a warp multiple, at most one column per thread of a
+    // kGdrMaxThreads block) whose [D_k, columns] state fits in shared memory.
+    int maxSharedMemory = 0;
+    if (cudaDeviceGetAttribute(&maxSharedMemory, cudaDevAttrMaxSharedMemoryPerBlockOptin,
+                               sd::AffinityManager::currentDeviceId()) != cudaSuccess) {
+        THROW_EXCEPTION("gatedDeltaRule: unable to query the shared-memory limit");
     }
-
-    for (LongType t = 0; t < L; ++t) {
-        gatedDeltaRuleKernel<T><<<numBlocks, threadsPerBlock, 0, stream>>>(
-            q, k, v, betaArr, gateArr, actualLen, workingState, out,
-            prefixOut, prefixW,
-            B, L, H, D_k, D_v, t,
-            qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3,
-            vS0, vS1, vS2, vS3, bS0, bS1, bS2,
-            gS0, gS1, gS2, oS0, oS1, oS2, oS3);
+    constexpr LongType kGdrMaxThreads = 256;
+    LongType columnsPerBlock = std::min<LongType>(((D_v + 31) / 32) * 32, kGdrMaxThreads);
+    // Shared memory: the [D_k, columns] state tile plus the staged step key and query.
+    auto sharedBytes = [&](LongType columns) {
+        return static_cast<size_t>(D_k * columns + 2 * D_k) * sizeof(AccT);
+    };
+    while (columnsPerBlock > 32 && sharedBytes(columnsPerBlock) > static_cast<size_t>(maxSharedMemory)) {
+        columnsPerBlock -= 32;
     }
-    DebugHelper::checkGlobalErrorCode("gatedDeltaRuleKernel failed");
+    const size_t tileBytes = sharedBytes(columnsPerBlock);
+    if (tileBytes > static_cast<size_t>(maxSharedMemory)) {
+        THROW_EXCEPTION("gatedDeltaRule: key head dimension exceeds the shared-memory state tile");
+    }
+    const LongType tiles = (D_v + columnsPerBlock - 1) / columnsPerBlock;
+    if (cudaFuncSetAttribute(gatedDeltaRuleSequenceKernel<T>, cudaFuncAttributeMaxDynamicSharedMemorySize,
+                             static_cast<int>(tileBytes)) != cudaSuccess) {
+        THROW_EXCEPTION("gatedDeltaRuleSequenceKernel shared-memory opt-in failed");
+    }
+    gatedDeltaRuleSequenceKernel<T><<<static_cast<unsigned int>(B * H * tiles),
+                                      static_cast<unsigned int>(columnsPerBlock), tileBytes, stream>>>(
+        q, k, v, betaArr, gateArr, actualLen, stateIn, stateOut, out,
+        prefixOut, prefixW,
+        B, L, H, D_k, D_v, columnsPerBlock,
+        qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3,
+        vS0, vS1, vS2, vS3, bS0, bS1, bS2,
+        gS0, gS1, gS2, oS0, oS1, oS2, oS3);
+    DebugHelper::checkGlobalErrorCode("gatedDeltaRuleSequenceKernel failed");
 }
 
 // ============================================================================
@@ -762,30 +871,30 @@ static void gatedDeltaRuleFromArrays(
     const LongType stateElems = B * H * D_k * D_v;
     const size_t stateBytes = stateElems * sizeof(AccT);
     int deviceId = sd::AffinityManager::currentDeviceId();
-    bool directState = false;
-    if constexpr (std::is_same<T, AccT>::value) {
-        const bool denseStateOut = stateOut->ordering() == 'c'
-            && shape::strideDescendingCAscendingF(stateOut->shapeInfo());
-        bool compatibleStateIn = stateIn == nullptr;
-        if (stateIn != nullptr && stateIn->ordering() == 'c'
-                && shape::strideDescendingCAscendingF(stateIn->shapeInfo())) {
-            const auto inStart = reinterpret_cast<std::uintptr_t>(stateIn->specialBuffer());
-            const auto outStart = reinterpret_cast<std::uintptr_t>(stateOut->specialBuffer());
-            const bool overlaps = inStart < outStart + stateBytes
-                && outStart < inStart + stateBytes;
-            compatibleStateIn = !overlaps || inStart == outStart;
-        }
-        // actualLen forces the sequential path. Keep chunked and low-precision
-        // execution on their existing promoted scratch contracts.
-        directState = actualLen != nullptr && denseStateOut && compatibleStateIn;
-    }
-    AccT* workingState = directState
-        ? reinterpret_cast<AccT*>(stateOut->specialBuffer())
-        : reinterpret_cast<AccT*>(
-            sd::memory::CudaMemoryPool::getInstance().allocate(
-                stateBytes, deviceId, *stream));
-    if (workingState == nullptr) {
-        THROW_EXCEPTION("gatedDeltaRule: recurrent state allocation failed");
+
+    // The chunked (WY) prefill needs global scratch for its inter-kernel
+    // quantities and a promoted working state; the sequential path keeps the
+    // state in shared memory and allocates nothing (graph-capture safe).
+    const size_t chunkIntraSharedMemory =
+        (4 * GDN_CHUNK + GDN_CHUNK * (GDN_CHUNK + 1) + 2 * GDN_CHUNK * 36) * sizeof(AccT);
+    const size_t chunkScanSharedMemory =
+        ((LongType)GDN_DV_BLK * (128 + 4) +
+         (LongType)GDN_CHUNK * (GDN_DV_BLK + 4) +
+         2 * GDN_CHUNK +
+         (LongType)GDN_CHUNK * (128 + 4)) * sizeof(AccT);
+    int maxSharedMemory = 0;
+    cudaDeviceGetAttribute(
+        &maxSharedMemory, cudaDevAttrMaxSharedMemoryPerBlockOptin, deviceId);
+    const bool useChunked = (L >= GDN_CHUNK)
+        && (actualLen == nullptr)
+        && (D_v % GDN_DV_BLK == 0)
+        && (D_k <= 128)
+        && (chunkIntraSharedMemory <= static_cast<size_t>(maxSharedMemory))
+        && (chunkScanSharedMemory <= static_cast<size_t>(maxSharedMemory));
+    // Both paths address the recurrent state as dense row-major [B, H, D_k, D_v].
+    if (!shape::isDenseRowMajor(stateOut->shapeInfo()) ||
+        (stateIn != nullptr && !shape::isDenseRowMajor(stateIn->shapeInfo()))) {
+        THROW_EXCEPTION("gatedDeltaRule: stateIn and stateOut must be dense row-major [B, H, D_k, D_v]");
     }
 
     // GDR_PRECHECK: env-gated (ND4J_GDR_POSTCHECK=1 shares the switch). Syncs the
@@ -827,42 +936,14 @@ static void gatedDeltaRuleFromArrays(
                      name, (long long)n, nanC, infC, mn, mx);
             return std::string(buf);
         };
-        fprintf(stderr, "[GDR-PRECHECK] call=%llu L=%lld ws=%p %s %s %s %s %s %s\n",
-                gdrCallId, (long long)L, (void*)workingState,
+        fprintf(stderr, "[GDR-PRECHECK] call=%llu L=%lld sOut=%p %s %s %s %s %s %s\n",
+                gdrCallId, (long long)L, (void*)stateOut->specialBuffer(),
                 scanArr("Q", Q).c_str(), scanArr("K", K).c_str(), scanArr("V", V).c_str(),
                 scanArr("beta", beta).c_str(), scanArr("gate", gate).c_str(),
                 scanArr("sIn", stateIn).c_str());
         fflush(stderr);
         }
     }
-
-    if (stateIn != nullptr) {
-        if (stateIn->specialBuffer() != workingState) {
-            int initBlocks = (stateElems + 255) / 256;
-            convertStateKernel<T, AccT><<<initBlocks, 256, 0, *stream>>>(
-                reinterpret_cast<const T*>(stateIn->specialBuffer()), workingState, stateElems);
-            DebugHelper::checkGlobalErrorCode("gatedDeltaRule state initialization failed");
-        }
-    } else {
-        cudaMemsetAsync(workingState, 0, stateElems * sizeof(AccT), *stream);
-    }
-
-    const size_t chunkIntraSharedMemory =
-        (4 * GDN_CHUNK + GDN_CHUNK * (GDN_CHUNK + 1) + 2 * GDN_CHUNK * 36) * sizeof(AccT);
-    const size_t chunkScanSharedMemory =
-        ((LongType)GDN_DV_BLK * (128 + 4) +
-         (LongType)GDN_CHUNK * (GDN_DV_BLK + 4) +
-         2 * GDN_CHUNK +
-         (LongType)GDN_CHUNK * (128 + 4)) * sizeof(AccT);
-    int maxSharedMemory = 0;
-    cudaDeviceGetAttribute(
-        &maxSharedMemory, cudaDevAttrMaxSharedMemoryPerBlockOptin, deviceId);
-    const bool useChunked = (L >= GDN_CHUNK)
-        && (actualLen == nullptr)
-        && (D_v % GDN_DV_BLK == 0)
-        && (D_k <= 128)
-        && (chunkIntraSharedMemory <= static_cast<size_t>(maxSharedMemory))
-        && (chunkScanSharedMemory <= static_cast<size_t>(maxSharedMemory));
 
     // GDR_LAUNCH_TRACE: host-side only (no sync, no device reads, no value dumps).
     // Enabled via ND4J_GDR_LAUNCH_TRACE=1. Records exactly what device memory the
@@ -874,7 +955,6 @@ static void gatedDeltaRuleFromArrays(
         return e != nullptr && e[0] == '1';
     }();
     if (gdrLaunchTrace) {
-        static void* gdrTraceLastWorkingState = nullptr;
         static void* gdrTraceLastStream = nullptr;
         const LongType lenHost =
             (actualLen != nullptr && actualLen->buffer() != nullptr)
@@ -883,7 +963,7 @@ static void gatedDeltaRuleFromArrays(
         fprintf(stderr,
                 "[GDR-TRACE] call=%llu seq=%d L=%lld B=%lld H=%lld dk=%lld dv=%lld "
                 "Q=%p K=%p V=%p beta=%p gate=%p sIn=%p len=%p lenHost=%lld "
-                "out=%p sOut=%p ws=%p wsPrev=%p stream=%p streamPrev=%p useChunked=%d directState=%d\n",
+                "out=%p sOut=%p stream=%p streamPrev=%p useChunked=%d\n",
                 gdrCallId,
                 actualLen != nullptr ? 1 : 0,
                 (long long)L, (long long)B, (long long)H,
@@ -895,15 +975,26 @@ static void gatedDeltaRuleFromArrays(
                 actualLen != nullptr ? (void*)actualLen->specialBuffer() : nullptr,
                 (long long)lenHost,
                 (void*)output->specialBuffer(), (void*)stateOut->specialBuffer(),
-                (void*)workingState, gdrTraceLastWorkingState,
                 (void*)*stream, gdrTraceLastStream,
-                useChunked ? 1 : 0, directState ? 1 : 0);
+                useChunked ? 1 : 0);
         fflush(stderr);
-        gdrTraceLastWorkingState = (void*)workingState;
         gdrTraceLastStream = (void*)*stream;
     }
 
     if (useChunked) {
+        AccT* workingState = reinterpret_cast<AccT*>(
+            sd::memory::CudaMemoryPool::getInstance().allocate(stateBytes, deviceId, *stream));
+        if (workingState == nullptr) {
+            THROW_EXCEPTION("gatedDeltaRule: recurrent state allocation failed");
+        }
+        if (stateIn != nullptr) {
+            int initBlocks = (stateElems + 255) / 256;
+            convertStateKernel<T, AccT><<<initBlocks, 256, 0, *stream>>>(
+                reinterpret_cast<const T*>(stateIn->specialBuffer()), workingState, stateElems);
+            DebugHelper::checkGlobalErrorCode("gatedDeltaRule state initialization failed");
+        } else {
+            cudaMemsetAsync(workingState, 0, stateBytes, *stream);
+        }
         AccT* workingStateOut = reinterpret_cast<AccT*>(
             sd::memory::CudaMemoryPool::getInstance().allocate(
                 stateElems * sizeof(AccT), deviceId, *stream));
@@ -930,6 +1021,7 @@ static void gatedDeltaRuleFromArrays(
             workingStateOut, reinterpret_cast<T*>(stateOut->specialBuffer()), stateElems);
 
         sd::memory::CudaMemoryPool::getInstance().free(workingStateOut, deviceId, *stream);
+        sd::memory::CudaMemoryPool::getInstance().free(workingState, deviceId, *stream);
     } else {
         launchGatedDeltaRule<T>(
             reinterpret_cast<const T*>(Q->specialBuffer()),
@@ -938,7 +1030,8 @@ static void gatedDeltaRuleFromArrays(
             reinterpret_cast<const T*>(beta->specialBuffer()),
             reinterpret_cast<const T*>(gate->specialBuffer()),
             actualLen ? reinterpret_cast<const LongType*>(actualLen->specialBuffer()) : nullptr,
-            workingState,
+            stateIn != nullptr ? reinterpret_cast<const T*>(stateIn->specialBuffer()) : nullptr,
+            reinterpret_cast<T*>(stateOut->specialBuffer()),
             reinterpret_cast<T*>(output->specialBuffer()),
             prefixOut != nullptr ? reinterpret_cast<T*>(prefixOut->specialBuffer()) : nullptr,
             prefixOut != nullptr ? prefixOut->sizeAt(0) : static_cast<LongType>(0),
@@ -950,16 +1043,6 @@ static void gatedDeltaRuleFromArrays(
             gate->strideAt(0), gate->strideAt(1), gate->strideAt(2),
             output->strideAt(0), output->strideAt(1), output->strideAt(2), output->strideAt(3),
             *stream);
-
-        if (!directState) {
-            int copyBlocks = (stateElems + 255) / 256;
-            convertStateKernel<AccT, T><<<copyBlocks, 256, 0, *stream>>>(
-                workingState, reinterpret_cast<T*>(stateOut->specialBuffer()), stateElems);
-        }
-    }
-
-    if (!directState) {
-        sd::memory::CudaMemoryPool::getInstance().free(workingState, deviceId, *stream);
     }
     DebugHelper::checkGlobalErrorCode("gatedDeltaRule state write-back failed");
 

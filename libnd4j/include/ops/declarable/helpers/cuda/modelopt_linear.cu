@@ -4,8 +4,14 @@
 #if NOT_EXCLUDED(OP_modelopt_nvfp4_linear) || NOT_EXCLUDED(OP_modelopt_fp8_linear)
 #include <ops/declarable/helpers/modelopt_linear.h>
 #include <execution/cuda/LaunchDims.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/DebugHelper.h>
+#include <helpers/MmulHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/WeightOnlyGemm.h>
 #include <helpers/shape.h>
+#include <math/templatemath.h>
+#include <ops/op_types.h>
 #include <ops/declarable/helpers/cuda/device_primitives.cuh>
 #include <cuda_runtime.h>
 #include <mutex>
@@ -15,17 +21,6 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-
-// Per-element scale validation is fused into both compute kernels below: the
-// kernels already read every scale byte, so this predicate is the single
-// on-stream source of truth (captured, replayed, and observed at the caller's
-// stream completion boundary). The CUDA device trap intrinsic remains active in
-// release builds (plain assert() disappears under NDEBUG).
-SD_DEVICE SD_INLINE float modelOptScaleChecked(float value) {
-  if (!modelOptValidScale(value))
-    asm("trap;");
-  return value;
-}
 
 // Runtime tensors cannot be synchronously value-validated during capture. Keep
 // the ordered validation kernel for the empty-output corner, where no compute
@@ -105,179 +100,185 @@ SD_KERNEL static void modelOptLinearKernel(const X* x, const void* w, const void
   }
 }
 
-// ─── Contiguous fast path: warp-per-column dequant GEMV ─────────────────────
+// ─── Contiguous fast path: block-tiled dequant GEMV ─────────────────────────
 //
-// Admitted only after modelOptTiledEligible proves every precondition: all
-// operands dense C-order with exactly the row-major strides their shapes imply
-// (no ews() shortcut), and word-aligned rows. One warp owns one output column
-// n; a lane-strided uint32_t word loop over K reads 4 packed bytes per lane
-// per iteration, so a warp issues one fully coalesced 128-byte transaction
-// instead of the general path's one scattered byte per thread (adjacent
-// threads there read K/2 bytes apart: 1/16 effective bandwidth, the defect
-// measured on the 27B). A uint32 word covers 8 consecutive FP4 lanes, which is
-// exactly half of one 16-lane scale block, so each word resolves a single
-// block scale; the X-dtype storage rounding of modelOptNvfp4Weight is applied
-// per nibble exactly as in the general path. FP8 reads 8 packed e4m3 bytes per
-// iteration. Accumulation is FP32 AccT; warpReduceSum performs the ordered
-// final reduction with a full-warp shuffle mask. The out-of-range column guard
-// is warp-uniform (n derives from tid>>5, identical across a warp's lanes), so
-// an early return leaves the whole warp together: it never splits a shuffle
-// participant set, and the kernel has no block-wide barriers. It MUST retire
-// before any weight/scale pointer arithmetic — trailing warps of the last block
-// would otherwise read past the end of the weight buffer.
+// Admitted only after modelOptTiledEligible proves every operand is dense
+// row-major and the packed weights are word aligned (no ews() shortcut).
+//
+// Work decomposition. A block owns kTiledColumnsPerWarp output columns per
+// warp and walks K in tiles of kTiledTileLength activations. Each tile is
+// staged into shared memory ONCE per block, already in accumulator form (the
+// input converted to AccT; for FP8 also quantized through the ModelOpt
+// activation quantizer), and every warp of the block consumes it for all of
+// its columns. Activation loads and FP8 activation quantization therefore run
+// once per block rather than once per output column, and each weight word is
+// loaded and dequantized once per row pass and applied to all rows of that
+// pass (up to kTiledRowsPerPass register accumulators per column).
+//
+// Numerical contract (pinned bit for bit by
+// TestModelOptLinear#testTiledRowPassesMatchLaneContract). For every output
+// (row, n), lane l accumulates the 8-element words l, l + 32, l + 64, ... in
+// ascending order with one fused multiply-add per element, then the 32 lane
+// partials are folded in ascending-offset order. A tile holds a whole number
+// of 32-word strides, so tiling does not change any lane's word order.
+//
+// Shared-memory layout: [row][element-in-word][word]. Lane l reads word l of
+// each element slot, so a warp's 32 reads hit 32 consecutive floats (no bank
+// conflicts); the transposition happens once, while staging.
+//
+// All loops that contain a barrier are block-uniform and no thread returns
+// early; out-of-range columns are skipped per warp (the guard derives from
+// the warp index, so it is warp-uniform and never splits a shuffle).
+static constexpr int kElementsPerWord = 8;  // one 32-bit word: 8 FP4 nibbles or 8 FP8 bytes
+static constexpr int kTiledRowsPerPass = 8;
+static constexpr int kTiledColumnsPerWarp = 2;
+static constexpr int kTiledTileWords = 128;  // a multiple of the warp size
+static constexpr int kTiledTileLength = kTiledTileWords * kElementsPerWord;
+
 template <typename X>
 SD_KERNEL static void modelOptLinearTiledKernel(
     const X* __restrict__ x, const void* __restrict__ w, const void* __restrict__ scale,
     const float* __restrict__ secondScale, void* __restrict__ z,
     LongType rows, LongType nColumns, LongType kLength, bool nvfp4, bool floatOutput) {
-  const int tid = static_cast<int>(threadIdx.x);
-  const int lane = tid & 31;
-  const LongType words = kLength / 8;  // kLength % 8 == 0 is proven on the host
+  using AccT = typename simdOps::AggregateType<X>::type;
+  using sd::device::WARP_SIZE;
+  static_assert(kTiledTileWords % WARP_SIZE == 0, "a tile must hold whole lane strides");
+  __shared__ AccT activations[kTiledRowsPerPass][kElementsPerWord * kTiledTileWords];
+
+  const int lane = static_cast<int>(threadIdx.x) % WARP_SIZE;
+  const int warp = static_cast<int>(threadIdx.x) / WARP_SIZE;
+  const LongType columnsPerBlock = static_cast<LongType>(blockDim.x / WARP_SIZE) * kTiledColumnsPerWarp;
   const float second = secondScale[0];
   if (blockIdx.x == 0 && threadIdx.x == 0 && !modelOptValidScale(second)) asm("trap;");
-  for (LongType columnBlock = static_cast<LongType>(blockIdx.x) * (blockDim.x / 32);
-       columnBlock < nColumns;
-       columnBlock += static_cast<LongType>(gridDim.x) * (blockDim.x / 32)) {
-    const LongType n = columnBlock + (tid >> 5);
-    if (n >= nColumns) return;  // warp-uniform: see note above
-    const float weightScale = nvfp4 ? 1.0f : modelOptScaleChecked(
-        static_cast<const float*>(scale)[0]);
-    const uint32_t* wWords = nvfp4 ? reinterpret_cast<const uint32_t*>(
-        static_cast<const uint8_t*>(w) + n * (kLength / 2)) : nullptr;
-    const float8* wFp8 = nvfp4 ? nullptr : (static_cast<const float8*>(w) + n * kLength);
-    const float8* sFp8 = nvfp4 ? (static_cast<const float8*>(scale) + n * (kLength / 16)) : nullptr;
-    for (LongType row = 0; row < rows; ++row) {
-      const X* xRow = x + row * kLength;
-      using AccT = float;
-      AccT sum = 0.0f;
-      for (LongType word = lane; word < words; word += 32) {
-        // Direct fmaf chain into the lane accumulator: one rounded add per
-        // element (the general path's operations), no intermediate per-word
-        // partial that would add one extra rounding per word.
-        // NOTE: the lane split itself IS a reassociation of the general
-        // path's ascending-k left fold. The fold of the 32 lane partials
-        // below must stay ordered — see the reduction comment.
-        if (nvfp4) {
-          // 8 consecutive k lanes share one 16-lane scale block (word/2).
-          const float blockScale = modelOptScaleChecked(static_cast<float>(sFp8[word / 2]));
-          const uint32_t packed = wWords[word];
-          sum = fmaf(static_cast<float>(xRow[word * 8 + 0]),
-                     modelOptNvfp4Weight<X>(static_cast<uint8_t>(packed & 15),
-                                            blockScale, second), sum);
-          sum = fmaf(static_cast<float>(xRow[word * 8 + 1]),
-                     modelOptNvfp4Weight<X>(static_cast<uint8_t>((packed >> 4) & 15),
-                                            blockScale, second), sum);
-          sum = fmaf(static_cast<float>(xRow[word * 8 + 2]),
-                     modelOptNvfp4Weight<X>(static_cast<uint8_t>((packed >> 8) & 15),
-                                            blockScale, second), sum);
-          sum = fmaf(static_cast<float>(xRow[word * 8 + 3]),
-                     modelOptNvfp4Weight<X>(static_cast<uint8_t>((packed >> 12) & 15),
-                                            blockScale, second), sum);
-          sum = fmaf(static_cast<float>(xRow[word * 8 + 4]),
-                     modelOptNvfp4Weight<X>(static_cast<uint8_t>((packed >> 16) & 15),
-                                            blockScale, second), sum);
-          sum = fmaf(static_cast<float>(xRow[word * 8 + 5]),
-                     modelOptNvfp4Weight<X>(static_cast<uint8_t>((packed >> 20) & 15),
-                                            blockScale, second), sum);
-          sum = fmaf(static_cast<float>(xRow[word * 8 + 6]),
-                     modelOptNvfp4Weight<X>(static_cast<uint8_t>((packed >> 24) & 15),
-                                            blockScale, second), sum);
-          sum = fmaf(static_cast<float>(xRow[word * 8 + 7]),
-                     modelOptNvfp4Weight<X>(static_cast<uint8_t>((packed >> 28) & 15),
-                                            blockScale, second), sum);
-        } else {
-          const LongType base = word * 8;
-          // Same per-element semantics and ascending-k order as the general
-          // path: a = quant(x)*second, b = fp8(w)*weightScale, then a single
-          // fused multiply-add per element. A plain multiply chain would add a
-          // rounding per element and shift low-precision outputs across
-          // storage rounding boundaries.
-          sum = fmaf(modelOptFp8Activation(static_cast<float>(xRow[base + 0]), second) * second,
-                     static_cast<float>(wFp8[base + 0]) * weightScale, sum);
-          sum = fmaf(modelOptFp8Activation(static_cast<float>(xRow[base + 1]), second) * second,
-                     static_cast<float>(wFp8[base + 1]) * weightScale, sum);
-          sum = fmaf(modelOptFp8Activation(static_cast<float>(xRow[base + 2]), second) * second,
-                     static_cast<float>(wFp8[base + 2]) * weightScale, sum);
-          sum = fmaf(modelOptFp8Activation(static_cast<float>(xRow[base + 3]), second) * second,
-                     static_cast<float>(wFp8[base + 3]) * weightScale, sum);
-          sum = fmaf(modelOptFp8Activation(static_cast<float>(xRow[base + 4]), second) * second,
-                     static_cast<float>(wFp8[base + 4]) * weightScale, sum);
-          sum = fmaf(modelOptFp8Activation(static_cast<float>(xRow[base + 5]), second) * second,
-                     static_cast<float>(wFp8[base + 5]) * weightScale, sum);
-          sum = fmaf(modelOptFp8Activation(static_cast<float>(xRow[base + 6]), second) * second,
-                     static_cast<float>(wFp8[base + 6]) * weightScale, sum);
-          sum = fmaf(modelOptFp8Activation(static_cast<float>(xRow[base + 7]), second) * second,
-                     static_cast<float>(wFp8[base + 7]) * weightScale, sum);
+  const AccT weightScale = nvfp4 ? static_cast<AccT>(1)
+                                 : static_cast<AccT>(modelOptScaleChecked(static_cast<const float*>(scale)[0]));
+  const auto* packedWeights = static_cast<const uint8_t*>(w);
+  const auto* fp8Weights = static_cast<const float8*>(w);
+  const auto* blockScales = static_cast<const float8*>(scale);
+
+  for (LongType blockColumn = static_cast<LongType>(blockIdx.x) * columnsPerBlock; blockColumn < nColumns;
+       blockColumn += static_cast<LongType>(gridDim.x) * columnsPerBlock) {
+    const LongType warpColumn = blockColumn + static_cast<LongType>(warp) * kTiledColumnsPerWarp;
+
+    for (LongType rowBase = 0; rowBase < rows; rowBase += kTiledRowsPerPass) {
+      const int passRows = static_cast<int>(sd::math::sd_min<LongType>(rows - rowBase, kTiledRowsPerPass));
+      AccT sum[kTiledColumnsPerWarp][kTiledRowsPerPass];
+      for (int c = 0; c < kTiledColumnsPerWarp; ++c)
+        for (int r = 0; r < kTiledRowsPerPass; ++r) sum[c][r] = static_cast<AccT>(0);
+
+      for (LongType tileStart = 0; tileStart < kLength; tileStart += kTiledTileLength) {
+        const int tileWords =
+            static_cast<int>(sd::math::sd_min<LongType>(kLength - tileStart, kTiledTileLength)) / kElementsPerWord;
+
+        __syncthreads();  // every warp is done reading the previous tile
+        for (int i = static_cast<int>(threadIdx.x); i < passRows * kElementsPerWord * tileWords;
+             i += static_cast<int>(blockDim.x)) {
+          const int tileWord = i % tileWords;
+          const int element = (i / tileWords) % kElementsPerWord;
+          const int r = i / (tileWords * kElementsPerWord);
+          const AccT value = static_cast<AccT>(
+              x[(rowBase + r) * kLength + tileStart + tileWord * kElementsPerWord + element]);
+          activations[r][element * kTiledTileWords + tileWord] =
+              nvfp4 ? value : static_cast<AccT>(modelOptFp8Activation(value, second) * second);
+        }
+        __syncthreads();
+
+        const LongType tileWordStart = tileStart / kElementsPerWord;
+        for (int tileWord = lane; tileWord < tileWords; tileWord += WARP_SIZE) {
+          const LongType word = tileWordStart + tileWord;
+          for (int c = 0; c < kTiledColumnsPerWarp; ++c) {
+            const LongType n = warpColumn + c;
+            if (n >= nColumns) break;  // warp-uniform
+
+            AccT weights[kElementsPerWord];
+            if (nvfp4) {
+              // A word is half of one 16-element scale block.
+              const float blockScale =
+                  modelOptScaleChecked(static_cast<float>(blockScales[n * (kLength / 16) + word / 2]));
+              const uint32_t packed = reinterpret_cast<const uint32_t*>(packedWeights + n * (kLength / 2))[word];
+              for (int e = 0; e < kElementsPerWord; ++e)
+                weights[e] = static_cast<AccT>(modelOptNvfp4Weight<X>(
+                    static_cast<unsigned char>((packed >> (4 * e)) & 15), blockScale, second));
+            } else {
+              const float8* wordWeights = fp8Weights + n * kLength + word * kElementsPerWord;
+              for (int e = 0; e < kElementsPerWord; ++e)
+                weights[e] = static_cast<AccT>(wordWeights[e]) * weightScale;
+            }
+
+            for (int r = 0; r < kTiledRowsPerPass; ++r) {
+              if (r >= passRows) break;  // warp-uniform
+              for (int e = 0; e < kElementsPerWord; ++e)
+                sum[c][r] = sd::math::sd_fma<AccT>(activations[r][e * kTiledTileWords + tileWord], weights[e],
+                                                   sum[c][r]);
+            }
+          }
         }
       }
-      // Ordered contract reduction. The per-lane fma chains above perform
-      // the general path's per-element operations; the only numerical
-      // difference to the general path is HOW the 32 lane partials are
-      // folded. sd::device::warpReduceSum folds in butterfly order (offset
-      // halving), a reassociation that was observed to flip one-ULP-class
-      // BF16 storage boundaries on TestModelOptLinear (expected -1.2265625
-      // vs -1.234375): lane 15's partial entered the running sum ~2^8
-      // rounds later than in the general path, and a mid-fold rounding
-      // decision differed. Folding in ASCENDING lane order (offset-increasing
-      // shuffles: lane 0 absorbs 1,2,4,8,16, then partials concatenate in
-      // 16/16, 8/24, 4/28... groups) keeps every large partial entering as
-      // late as possible, the same shape as the general path's left fold.
-      // For every K where the 32 partial exponents differ by at most one
-      // f32 quantum (K <= 2048; all correctness fixtures and a 2048-wide
-      // decode layer), each fold addition is EXACT and both folds yield the
-      // identical f32 value, so the BF16 storage cast is bit-identical to
-      // the general path. The residual corner (larger K with partial
-      // exponents spanning multiple quanta) is the same ill-conditioned set
-      // the general path's own chain belongs to.
-      for (int offset = 1; offset < 32; offset <<= 1) {
-        const AccT neighbor = __shfl_down_sync(0xffffffff, sum, offset);
-        if (lane + offset < 32) sum += neighbor;
-      }
-      if (lane == 0) {
-        const LongType zo = row * nColumns + n;
-        if (floatOutput) static_cast<float*>(z)[zo] = sum;
-        else static_cast<X*>(z)[zo] = static_cast<X>(sum);
+
+      // Ordered lane fold. warpReduceSum folds in butterfly (offset-halving)
+      // order, which reassociates the partials and was observed to flip
+      // one-ULP BF16 storage boundaries against the general path's left fold.
+      // Ascending offsets make lane 0 absorb its neighbours first and larger
+      // partials enter last, matching the general path's fold shape.
+      for (int c = 0; c < kTiledColumnsPerWarp; ++c) {
+        const LongType n = warpColumn + c;
+        if (n >= nColumns) break;  // warp-uniform
+        for (int r = 0; r < kTiledRowsPerPass; ++r) {
+          if (r >= passRows) break;  // warp-uniform
+          AccT total = sum[c][r];
+          for (int offset = 1; offset < WARP_SIZE; offset <<= 1) {
+            const AccT neighbor = __shfl_down_sync(0xffffffff, total, offset);
+            if (lane + offset < WARP_SIZE) total += neighbor;
+          }
+          if (lane == 0) {
+            const LongType zOffset = (rowBase + r) * nColumns + n;
+            if (floatOutput)
+              static_cast<float*>(z)[zOffset] = static_cast<float>(total);
+            else
+              static_cast<X*>(z)[zOffset] = static_cast<X>(total);
+          }
+        }
       }
     }
   }
 }
 
-// Host-current checkpoint scales can fail before any launch without a device
-// transfer, so they are validated on the host exactly once per scale buffer.
-// ModelOpt scales are constants loaded with the model and never mutated
-// between calls, so the per-call full host rescans this replaced were pure
-// overhead (measured 24.3 ms/call on the 27B, 3.1 s/token across 129
-// calls/token). Device-current tensors rely on the ordered fused validation
-// inside the compute kernels. Failures are never cached: an invalid buffer
-// re-scans and re-throws on every call.
-static void validateHostScalesOnce(NDArray* scale, NDArray* secondScale, bool nvfp4) {
+// Host-current scales are validated here, before any launch, so invalid input
+// fails with an exception instead of a device trap; the compute kernels also
+// validate every scale they read on the stream.
+//  - Scalar scales (global/input scale, FP8 weight scale) are checked whenever
+//    their host copy is current: one comparison per call.
+//  - NVFP4 block-scale tensors (megabytes for a large model) are scanned when
+//    their host copy is current and the result is recorded as a content stamp
+//    on their DataBuffer, so a model's constant scales are scanned once. The
+//    stamp dies with the buffer and with any write to it; the previous cache,
+//    keyed on host addresses, vouched for new buffers the allocator placed at
+//    a validated buffer's freed address.
+static void validateHostCurrentScales(NDArray* scale, NDArray* secondScale, bool nvfp4) {
   if (secondScale->isActualOnHostSide() && !modelOptValidScale(secondScale->bufferAsT<float>()[0]))
     throw std::invalid_argument("ModelOpt linear: global/input scale must be positive and finite");
-  if (scale->isEmpty() || !scale->isActualOnHostSide()) return;
-  auto* buffer = scale->dataBuffer();
-  if (buffer == nullptr || buffer->primary() == nullptr) return;
-  static std::mutex mutex;
-  static std::unordered_map<uint64_t, bool> validated;
-  std::lock_guard<std::mutex> lock(mutex);
-  // Key on identity AND length so a freed-then-reallocated buffer with a
-  // different size revalidates even if the allocator reuses the address.
-  const uint64_t key = reinterpret_cast<uint64_t>(buffer->primary()) ^
-                       (static_cast<uint64_t>(buffer->getLenInBytes()) << 48);
-  if (validated.count(key) != 0) return;
+  if (scale->isEmpty()) return;
   if (!nvfp4) {
-    if (!modelOptValidScale(scale->bufferAsT<float>()[0]))
+    if (scale->isActualOnHostSide() && !modelOptValidScale(scale->bufferAsT<float>()[0]))
       throw std::invalid_argument("ModelOpt FP8 linear: weight scale must be positive and finite");
-  } else {
-    const auto* data = scale->bufferAsT<float8>();
-    const auto* strides = scale->stridesOf();
-    const LongType rows = scale->sizeAt(0), cols = scale->sizeAt(1);
-    for (LongType row = 0; row < rows; ++row)
-      for (LongType col = 0; col < cols; ++col)
-        if (!modelOptValidScale(static_cast<float>(data[row * strides[0] + col * strides[1]])))
-          throw std::invalid_argument(
-              "ModelOpt NVFP4 linear: every block scale must be positive and finite");
+    return;
   }
-  validated[key] = true;
+  if (!scale->isActualOnHostSide()) return;
+  // A stamp describes the whole buffer, so it is only read or written when the
+  // array covers every byte of it.
+  DataBuffer* buffer = scale->dataBuffer();
+  const bool coversBuffer = buffer != nullptr && scale->offset() == 0 &&
+                            shape::isDenseRowMajor(scale->shapeInfo()) &&
+                            scale->lengthOf() * static_cast<LongType>(scale->sizeOfT()) == buffer->getLenInBytes();
+  if (coversBuffer && buffer->isContentValidated(ContentPredicate::MODELOPT_SCALES_VALID)) return;
+  const auto* data = scale->bufferAsT<float8>();
+  const auto* strides = scale->stridesOf();
+  const LongType rows = scale->sizeAt(0), cols = scale->sizeAt(1);
+  for (LongType row = 0; row < rows; ++row)
+    for (LongType col = 0; col < cols; ++col)
+      if (!modelOptValidScale(static_cast<float>(data[row * strides[0] + col * strides[1]])))
+        throw std::invalid_argument("ModelOpt NVFP4 linear: every block scale must be positive and finite");
+  if (coversBuffer) buffer->stampContentValidated(ContentPredicate::MODELOPT_SCALES_VALID);
 }
 
 // Fast-path proof. Every precondition is explicit; no ews() shortcut. Each
@@ -289,47 +290,19 @@ static void validateHostScalesOnce(NDArray* scale, NDArray* secondScale, bool nv
 static bool modelOptTiledEligible(NDArray* x, NDArray* w, NDArray* scale,
                                  NDArray* z, bool nvfp4) {
   if (x->isEmpty() || w->isEmpty() || scale->isEmpty() || z->isEmpty()) return false;
-  const int rank = x->rankOf();
   const LongType k = x->sizeAt(-1);
   // K must be whole 32-bit words so the lane-strided uint32_t loads stay
   // aligned (this also implies the NVFP4 row length K/2 is a word multiple).
   if (k % 8 != 0) return false;
-  // X must be a dense [rows, K] row-major block (rank-1 is a single K row).
-  if (rank == 1) {
-    if (x->stridesOf()[0] != 1) return false;
-  } else {
-    const sd::LongType* xs = x->stridesOf();
-    const sd::LongType* xd = x->shapeOf();
-    sd::LongType expected = 1;
-    for (int d = rank - 1; d >= 0; --d) {
-      if (xs[d] != expected) return false;
-      expected *= xd[d];
-    }
-    if (x->ordering() != 'c') return false;
-  }
-  // W must be dense [N, K/2] (NVFP4) or [N, K] (FP8) row-major.
-  {
-    const sd::LongType* ws = w->stridesOf();
-    if (w->ordering() != 'c' || ws[0] != (nvfp4 ? k / 2 : k) || ws[1] != 1) return false;
-  }
-  // NVFP4 block scales must be dense [N, K/16] row-major; the FP8 scale is a
-  // rank-0 scalar with no stride to prove.
-  if (nvfp4) {
-    const sd::LongType* ss = scale->stridesOf();
-    if (scale->ordering() != 'c' || ss[0] != k / 16 || ss[1] != 1) return false;
-  }
-  // Z must be dense [rows, N] row-major over the flattened leading dims.
-  {
-    const int zRank = z->rankOf();
-    const sd::LongType* zs = z->stridesOf();
-    const sd::LongType* zd = z->shapeOf();
-    sd::LongType expected = 1;
-    for (int d = zRank - 1; d >= 0; --d) {
-      if (zs[d] != expected) return false;
-      expected *= zd[d];
-    }
-    if (z->ordering() != 'c') return false;
-  }
+  // X must be a dense [rows, K] row-major block (rank-1 is a single K row);
+  // W dense [N, K/2] (NVFP4) or [N, K] (FP8); NVFP4 block scales dense
+  // [N, K/16] (the FP8 scale is a rank-0 scalar with no stride to prove); Z
+  // dense [rows, N] over the flattened leading dims. The kernel addresses
+  // every operand as exactly that packed layout.
+  if (!shape::isDenseRowMajor(x->shapeInfo()) || !shape::isDenseRowMajor(w->shapeInfo()) ||
+      !shape::isDenseRowMajor(z->shapeInfo()))
+    return false;
+  if (nvfp4 && !shape::isDenseRowMajor(scale->shapeInfo())) return false;
   // Word alignment: the shifted view base and every row start must be
   // 4-byte aligned for the reinterpret_cast<uint32_t*> loads.
   const uintptr_t wBase = reinterpret_cast<uintptr_t>(w->specialBuffer());
@@ -367,8 +340,9 @@ static void modelOptLinearTiled_(LaunchContext* context, NDArray* x, NDArray* w,
   const LongType kLength = x->sizeAt(-1);
   const LongType rows = rank == 1 ? 1 : x->lengthOf() / kLength;
   const LongType nColumns = w->sizeAt(0);
-  const int warpsPerBlock = static_cast<int>(dims.y) / 32;
-  const LongType needed = (nColumns + warpsPerBlock - 1) / warpsPerBlock;
+  const LongType columnsPerBlock =
+      static_cast<LongType>(dims.y / sd::device::WARP_SIZE) * kTiledColumnsPerWarp;
+  const LongType needed = (nColumns + columnsPerBlock - 1) / columnsPerBlock;
   unsigned int blocks = needed < dims.x ? static_cast<unsigned int>(needed) : dims.x;
   if (blocks == 0) blocks = 1;
   modelOptLinearTiledKernel<X><<<blocks, dims.y, dims.z, *stream>>>(
@@ -398,19 +372,101 @@ static const cudaDeviceProp& modelOptDeviceProps(LaunchContext* context) {
   return cache.emplace(deviceId, prop).first->second;
 }
 
+// Named launch dimensions are environment-overridable; reject anything the
+// device cannot launch before it reaches a kernel.
+static dim3 modelOptLaunchDims(const char* name, const cudaDeviceProp& prop) {
+  const dim3 dims = getLaunchDims(name);
+  if (dims.x == 0 || dims.y == 0 || dims.x > static_cast<unsigned int>(prop.maxGridSize[0]) ||
+      dims.y > static_cast<unsigned int>(prop.maxThreadsPerBlock) ||
+      dims.y > static_cast<unsigned int>(prop.maxThreadsDim[0]) || dims.z > prop.sharedMemPerBlock)
+    throw std::invalid_argument(std::string("ModelOpt linear: invalid launch dimensions for ") + name);
+  return dims;
+}
+
+// ─── FP8 on tensor cores: quantize once, then one scaled cuBLASLt GEMM ──────
+//
+// Produces the dense row-major E4M3 activation operand q = E4M3(clamp(x /
+// inputScale)) — the quantizer the native kernels apply per element — from an
+// X of any layout. It also carries the on-stream validation of both scalar
+// scales, which the library GEMM cannot perform.
+template <typename X>
+SD_KERNEL static void modelOptFp8QuantizeKernel(const X* x, const LongType* xShapeInfo, float8* quantized,
+                                                LongType length, const float* inputScale,
+                                                const float* weightScale) {
+  const float scale = inputScale[0];
+  if (blockIdx.x == 0 && threadIdx.x == 0) {
+    modelOptScaleChecked(scale);
+    modelOptScaleChecked(weightScale[0]);
+  }
+  const int rank = shape::rank(xShapeInfo);
+  const LongType* xShape = shape::shapeOf(xShapeInfo);
+  const LongType* xStrides = shape::stride(xShapeInfo);
+  for (LongType linearIndex = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; linearIndex < length;
+       linearIndex += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    LongType coords[SD_MAX_RANK];
+    INDEX2COORDS(linearIndex, rank, xShape, coords);
+    LongType xOffset = 0;
+    COORDS2INDEX(rank, xStrides, coords, xOffset);
+    quantized[linearIndex] = modelOptFp8Quantize(static_cast<float>(x[xOffset]), scale);
+  }
+}
+
+template <typename X>
+static void modelOptFp8Quantize_(LaunchContext* context, NDArray* x, float8* quantized, NDArray* scale,
+                                 NDArray* secondScale, dim3 dims) {
+  const LongType length = x->lengthOf();
+  const LongType needed = (length - 1) / dims.y + 1;
+  const unsigned int blocks = needed < dims.x ? static_cast<unsigned int>(needed) : dims.x;
+  modelOptFp8QuantizeKernel<X><<<blocks, dims.y, dims.z, *context->getCudaStream()>>>(
+      static_cast<const X*>(x->specialBuffer()), x->specialShapeInfo(), quantized, length,
+      static_cast<const float*>(secondScale->specialBuffer()), static_cast<const float*>(scale->specialBuffer()));
+}
+
+BUILD_SINGLE_TEMPLATE(void modelOptFp8Quantize_,
+    (LaunchContext* context, NDArray* x, float8* quantized, NDArray* scale, NDArray* secondScale, dim3 dims),
+    SD_MODELOPT_LINEAR_TYPES);
+
+// cuBLASLt FP8 GEMMs need 16-byte aligned operand bases and leading
+// dimensions. W and Z are addressed as dense row-major matrices; X needs no
+// layout proof because the quantizer writes a dense copy.
+static bool modelOptFp8LtEligible(NDArray* x, NDArray* w, NDArray* z) {
+  const LongType depth = x->sizeAt(-1);
+  const LongType columns = w->sizeAt(0);
+  if (depth <= 0 || depth % 16 != 0) return false;
+  if ((columns * static_cast<LongType>(z->sizeOfT())) % 16 != 0) return false;
+  if (!shape::isDenseRowMajor(w->shapeInfo()) || !shape::isDenseRowMajor(z->shapeInfo())) return false;
+  return reinterpret_cast<uintptr_t>(w->specialBuffer()) % 16 == 0 &&
+         reinterpret_cast<uintptr_t>(z->specialBuffer()) % 16 == 0;
+}
+
+// Z = (inputScale * weightScale) * E4M3(X) . E4M3(W)^T: every product is the
+// same exact FP32 product the native kernels form; only the order of the FP32
+// accumulation belongs to the library. Returns false when cuBLASLt has no
+// algorithm for the problem.
+static bool modelOptFp8LinearLt(LaunchContext* context, NDArray* x, NDArray* w, NDArray* scale,
+                                NDArray* secondScale, NDArray* z, const cudaDeviceProp& prop) {
+  const LongType depth = x->sizeAt(-1);
+  const LongType rows = x->lengthOf() / depth;
+  PointersManager manager(context, "modelOptFp8LinearLt");
+  auto* quantized = static_cast<float8*>(manager.allocateDevMem(rows * depth * sizeof(float8)));
+  const dim3 dims = modelOptLaunchDims("modelopt_fp8_quantize", prop);
+  BUILD_SINGLE_SELECTOR(x->dataType(), modelOptFp8Quantize_, (context, x, quantized, scale, secondScale, dims),
+                        SD_MODELOPT_LINEAR_TYPES);
+  return MmulHelper::ltMatmulScaled(context, quantized, w->specialBuffer(), z->specialBuffer(), rows, w->sizeAt(0),
+                                    depth, FLOAT8, z->dataType(),
+                                    static_cast<const float*>(secondScale->specialBuffer()),
+                                    static_cast<const float*>(scale->specialBuffer()));
+}
+
 void modelOptLinear(LaunchContext* context, NDArray* x, NDArray* w, NDArray* scale,
                     NDArray* secondScale, NDArray* z, bool nvfp4, bool floatOutput) {
   auto* stream = context->getCudaStream();
   const bool capturing = DebugHelper::inGraphCapture(stream);
-  if (!capturing) validateHostScalesOnce(scale, secondScale, nvfp4);
+  if (!capturing) validateHostCurrentScales(scale, secondScale, nvfp4);
   const cudaDeviceProp& prop = modelOptDeviceProps(context);
   const bool tiled = modelOptTiledEligible(x, w, scale, z, nvfp4);
-  const dim3 dims = getLaunchDims(tiled ? "modelopt_linear_tiled" : "modelopt_linear");
-  if (dims.x == 0 || dims.y == 0 || dims.x > static_cast<unsigned int>(prop.maxGridSize[0]) ||
-      dims.y > static_cast<unsigned int>(prop.maxThreadsPerBlock) ||
-      dims.y > static_cast<unsigned int>(prop.maxThreadsDim[0]) || dims.z > prop.sharedMemPerBlock)
-    throw std::invalid_argument("ModelOpt linear: invalid launch dimensions");
-  if (tiled && dims.y % 32 != 0)
+  const dim3 dims = modelOptLaunchDims(tiled ? "modelopt_linear_tiled" : "modelopt_linear", prop);
+  if (tiled && dims.y % sd::device::WARP_SIZE != 0)
     throw std::invalid_argument("ModelOpt linear: tiled block size must be a warp multiple");
 
   if (z->isEmpty()) {
@@ -430,12 +486,37 @@ void modelOptLinear(LaunchContext* context, NDArray* x, NDArray* w, NDArray* sca
   }
 
   NDArray::prepareSpecialUse({z}, {x, w, scale, secondScale});
-  if (tiled) {
-    BUILD_SINGLE_SELECTOR(x->dataType(), modelOptLinearTiled_,
-        (context, x, w, scale, secondScale, z, nvfp4, floatOutput, dims), SD_MODELOPT_LINEAR_TYPES);
-  } else {
-    BUILD_SINGLE_SELECTOR(x->dataType(), modelOptLinear_,
-        (context, x, w, scale, secondScale, z, nvfp4, floatOutput, dims), SD_MODELOPT_LINEAR_TYPES);
+  const LongType depth = x->sizeAt(-1);
+  const LongType rows = depth > 0 ? x->lengthOf() / depth : 0;
+  const bool fp8Eligible = !nvfp4 && modelOptFp8LtEligible(x, w, z);
+  const bool fp8OnTensorCores =
+      fp8Eligible && modelOptFp8LinearLt(context, x, w, scale, secondScale, z, prop);
+  if (!nvfp4 && !fp8OnTensorCores) {
+    DSP_DIAG(FALLBACK,
+             "ModelOpt FP8 linear not on cuBLASLt: rows=%lld columns=%lld depth=%lld eligible=%d "
+             "(depth%%16=%lld zRowBytes%%16=%lld wDense=%d zDense=%d wAlign16=%d zAlign16=%d)",
+             static_cast<long long>(rows), static_cast<long long>(w->sizeAt(0)), static_cast<long long>(depth),
+             fp8Eligible ? 1 : 0, static_cast<long long>(depth % 16),
+             static_cast<long long>((w->sizeAt(0) * static_cast<LongType>(z->sizeOfT())) % 16),
+             shape::isDenseRowMajor(w->shapeInfo()) ? 1 : 0, shape::isDenseRowMajor(z->shapeInfo()) ? 1 : 0,
+             reinterpret_cast<uintptr_t>(w->specialBuffer()) % 16 == 0 ? 1 : 0,
+             reinterpret_cast<uintptr_t>(z->specialBuffer()) % 16 == 0 ? 1 : 0);
+  }
+  const bool nvfp4OnTensorCores =
+      nvfp4 && WeightOnlyGemm::isAdmitted(WeightOnlyFormat::MODELOPT_NVFP4, x, w, scale, z);
+  DSP_DIAG(BACKEND, "ModelOpt %s linear path=%s rows=%lld columns=%lld depth=%lld", nvfp4 ? "NVFP4" : "FP8",
+           nvfp4OnTensorCores ? "weight-only-mma" : fp8OnTensorCores ? "cublaslt" : tiled ? "tiled" : "general",
+           static_cast<long long>(rows), static_cast<long long>(w->sizeAt(0)), static_cast<long long>(depth));
+  if (nvfp4OnTensorCores) {
+    WeightOnlyGemm::run(context, WeightOnlyFormat::MODELOPT_NVFP4, x, w, scale, secondScale, z, floatOutput);
+  } else if (!fp8OnTensorCores) {
+    if (tiled) {
+      BUILD_SINGLE_SELECTOR(x->dataType(), modelOptLinearTiled_,
+          (context, x, w, scale, secondScale, z, nvfp4, floatOutput, dims), SD_MODELOPT_LINEAR_TYPES);
+    } else {
+      BUILD_SINGLE_SELECTOR(x->dataType(), modelOptLinear_,
+          (context, x, w, scale, secondScale, z, nvfp4, floatOutput, dims), SD_MODELOPT_LINEAR_TYPES);
+    }
   }
   NDArray::registerSpecialUse({z}, {x, w, scale, secondScale});
   if (!capturing) DebugHelper::checkGlobalErrorCode("ModelOpt linear launch failed");

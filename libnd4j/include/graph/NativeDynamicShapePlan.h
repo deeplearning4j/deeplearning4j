@@ -4075,6 +4075,21 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     bool retained = false;
   };
   std::vector<MigratedInput> migratedInputs_;
+  // Internal sources proven resident on their segment's device, keyed by
+  // source slot. Validating residency costs a device switch and a pointer
+  // attribute query per source per step; the answer is fixed for one array
+  // over one allocation, so it is reused while the array, its device pointer
+  // and the target device are unchanged, and re-validated otherwise.
+  struct ResidentSource {
+    const NDArray* array = nullptr;
+    const void* devicePointer = nullptr;
+    int targetDevice = -1;
+  };
+  std::vector<ResidentSource> residentSources_;          // indexed by output slot
+  std::vector<ResidentSource> residentExternalSources_;  // indexed by external input
+  // Every publication a segment's slots consume (output slots and encoded
+  // external inputs), from its fixed wiring, keyed by the segment's slot range.
+  std::unordered_map<uint64_t, std::vector<int>> segmentInputSources_;
   // Stable input storage baked into captured consumers. Key is device/source
   // publication, not caller address; values are refreshed on every invocation.
   std::unordered_map<uint64_t, NDArray*> migrationBuffers_;

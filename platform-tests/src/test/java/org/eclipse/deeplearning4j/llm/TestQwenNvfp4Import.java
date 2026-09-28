@@ -35,6 +35,8 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -177,6 +180,14 @@ public class TestQwenNvfp4Import {
         int maxTokens = Integer.getInteger("qwen.nvfp4.benchTokens", 250);
         int maxPrefill = Integer.getInteger("qwen.nvfp4.maxPrefillLength", 128);
         int contextCap = Integer.getInteger("qwen.nvfp4.maxKvCacheLength", 448);
+        // Untimed decode tokens per pass before the steady-state window. The
+        // session's first tokens come from startSession's prefill, so a 1-token
+        // warmup never enters the native decode loop; its slot-by-slot warmup,
+        // seal and replay setup then landed inside the timed window. This many
+        // tokens must carry every decode plan through WARMUP COMPLETE.
+        int warmupTokens = Integer.getInteger("qwen.nvfp4.benchWarmupTokens", 16);
+        assertTrue(warmupTokens >= 1 && warmupTokens < maxTokens,
+                "benchWarmupTokens must be in [1, benchTokens)");
         // Multi-sentence diverse prompt: keeps the trunk's distribution sharp
         // (confident argmaxes) far past prefill. Short prompts collapse into
         // near-tie token repetition within ~30 tokens, where speculative
@@ -187,6 +198,9 @@ public class TestQwenNvfp4Import {
                 + "the two energy sources in terms of cost, reliability, and "
                 + "environmental impact.";
 
+        // Model loading is reported as its own phase and never mixed into
+        // throughput: artifact download/verify, import, pipeline creation.
+        long loadStartNs = System.nanoTime();
         File configFile = download("config.json");
         File quantFile = download("hf_quant_config.json");
         File generationFile = download("generation_config.json");
@@ -201,10 +215,13 @@ public class TestQwenNvfp4Import {
         JsonObject tokenizerConfig = json(download("tokenizer_config.json"));
         String template = Files.readString(download("chat_template.jinja").toPath(), StandardCharsets.UTF_8);
         tokenizerConfig.addProperty("chat_template", template);
+        long downloadDoneNs = System.nanoTime();
 
         try (HuggingFaceTokenizer tokenizer = HuggingFaceTokenizer.fromJson(tokenizerJson, GSON.toJson(tokenizerConfig));
              ImportedModel model = ModelOptQwenImporter.importTextOnly(
-                     configFile, quantFile, generationFile, shards, DataType.BFLOAT16, true)) {
+                     configFile, quantFile, generationFile, shards, DataType.BFLOAT16, true,
+                     Boolean.getBoolean("qwen.nvfp4.mtpNvfp4"))) {
+            long importDoneNs = System.nanoTime();
             ModelOptQwenConfig importedConfig = model.getConfig();
             GenerationPipelineConfig pipelineConfig = GenerationPipelineConfig.builder()
                     .decoder(model.getGraph()).tokenizer(tokenizer)
@@ -217,8 +234,14 @@ public class TestQwenNvfp4Import {
                     .samplingConfig(SamplingConfig.speculative())
                     .maxNewTokens(maxTokens).maxPrefillLength(maxPrefill).maxKvCacheLength(contextCap)
                     .build();
+            long pipelineStartNs = System.nanoTime();
             try (GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig)) {
                 if (pipeline.getDecoder() != model.getGraph()) model.close();
+                long pipelineDoneNs = System.nanoTime();
+                log.info("NVFP4-BENCH LOAD downloadVerifyMs={} importMs={} pipelineCreateMs={} totalLoadMs={}",
+                        (downloadDoneNs - loadStartNs) / 1_000_000, (importDoneNs - downloadDoneNs) / 1_000_000,
+                        (pipelineDoneNs - pipelineStartNs) / 1_000_000,
+                        (pipelineDoneNs - loadStartNs) / 1_000_000);
 
                 // -- Pass 1: MTP steady-state decode --
                 pipeline.setSamplingConfig(SamplingConfig.speculative());
@@ -226,17 +249,18 @@ public class TestQwenNvfp4Import {
                 int mtpTokens = 0;
                 int proposed = 0, accepted = 0, steps = 0;
                 int[] mtpAllTokens = new int[0];
+                long sessionStartNs = System.nanoTime();
                 try (GenerationSession session = pipeline.startSession(prompt, maxTokens)) {
                     long t0 = System.nanoTime();
-                    // First session call includes warmup decode; measure it separately
-                    // so the reported rate is the steady-state replay loop. The two
-                    // Java-sampled warmup tokens ARE part of the session sequence, so
-                    // carry them forward: the reported text and the parity check after
-                    // pass 2 must cover every token the session produced, not just the
-                    // timed continuation fragment.
-                    GenerationResult first = session.generate(1);
+                    // Untimed warmup decode: drives the native loop through its
+                    // warmup/seal/replay setup so the timed window is steady state.
+                    // The warmup tokens ARE part of the session sequence, so carry
+                    // them forward: the reported text and the parity check after
+                    // pass 2 must cover every token the session produced, not just
+                    // the timed continuation fragment.
+                    GenerationResult warm = session.generate(warmupTokens);
                     long t1 = System.nanoTime();
-                    GenerationResult rest = session.generate(maxTokens - 1);
+                    GenerationResult rest = session.generate(maxTokens - warmupTokens);
                     long t2 = System.nanoTime();
                     mtpDecodeNs = t2 - t1;
                     mtpTokens = rest.getTokenIds().length;
@@ -244,10 +268,12 @@ public class TestQwenNvfp4Import {
                     accepted = rest.getTotalAcceptedTokens();
                     steps = rest.getSpeculativeSteps();
                     mtpAllTokens = session.getAllTokens();
-                    assertEquals(mtpAllTokens.length, first.getTokenIds().length + mtpTokens,
+                    assertEquals(mtpAllTokens.length, warm.getTokenIds().length + mtpTokens,
                             "Session accounting: allTokens must equal warmup prefix + continuation");
-                    log.info("NVFP4-BENCH MTP warmupMs={} steadyTokens={} steadyMs={} tok/s={}",
-                            (t1 - t0) / 1_000_000, mtpTokens, mtpDecodeNs / 1_000_000,
+                    log.info("NVFP4-BENCH MTP PHASES sessionStartMs={} warmupTokens={} warmupMs={}",
+                            (t0 - sessionStartNs) / 1_000_000, warm.getTokenIds().length, (t1 - t0) / 1_000_000);
+                    log.info("NVFP4-BENCH MTP THROUGHPUT steadyTokens={} steadyMs={} tok/s={}",
+                            mtpTokens, mtpDecodeNs / 1_000_000,
                             mtpTokens * 1e9 / Math.max(1, mtpDecodeNs));
                     log.info("NVFP4-BENCH MTP proposed={} accepted={} steps={} acceptance={} fullTokens={} text={}",
                             proposed, accepted, steps,
@@ -260,14 +286,19 @@ public class TestQwenNvfp4Import {
                 long greedyDecodeNs = 0;
                 int greedyTokens = 0;
                 int[] greedyAllTokens = new int[0];
+                long greedySessionStartNs = System.nanoTime();
                 try (GenerationSession session = pipeline.startSession(prompt, maxTokens)) {
-                    session.generate(1);
+                    long t0 = System.nanoTime();
+                    GenerationResult warm = session.generate(warmupTokens);
                     long t1 = System.nanoTime();
-                    GenerationResult rest = session.generate(maxTokens - 1);
+                    GenerationResult rest = session.generate(maxTokens - warmupTokens);
                     greedyDecodeNs = System.nanoTime() - t1;
                     greedyTokens = rest.getTokenIds().length;
                     greedyAllTokens = session.getAllTokens();
-                    log.info("NVFP4-BENCH greedy steadyTokens={} steadyMs={} tok/s={} fullTokens={} text={}",
+                    log.info("NVFP4-BENCH greedy PHASES sessionStartMs={} warmupTokens={} warmupMs={}",
+                            (t0 - greedySessionStartNs) / 1_000_000, warm.getTokenIds().length,
+                            (t1 - t0) / 1_000_000);
+                    log.info("NVFP4-BENCH greedy THROUGHPUT steadyTokens={} steadyMs={} tok/s={} fullTokens={} text={}",
                             greedyTokens, greedyDecodeNs / 1_000_000,
                             greedyTokens * 1e9 / Math.max(1, greedyDecodeNs),
                             greedyAllTokens.length, session.getFullText());
@@ -337,6 +368,208 @@ public class TestQwenNvfp4Import {
     @EnabledIfSystemProperty(named = "qwen.nvfp4.mtpPrefix", matches = "true")
     void bundledMtpPrefixMatchesGreedy() throws Exception {
         generateWithActualPackedCheckpoint(true, true);
+    }
+
+    /**
+     * Row contract of the target verification window: from the same state, row r of the W-row
+     * target forward must equal the r-th of W chained width-1 forwards bit for bit, because
+     * multi-row speculative commit emits window rows directly. Compares every layer's residual
+     * outputs and the logits, row by row in network order, and reports the first difference.
+     */
+    @Test
+    void windowRowsMatchChainedScalarTarget() throws Exception {
+        final int window = 5, cache = 448, start = 20;
+        File configFile = download("config.json");
+        File quantFile = download("hf_quant_config.json");
+        File generationFile = download("generation_config.json");
+        JsonObject index = json(download("model.safetensors.index.json"));
+        Set<String> shardNames = new TreeSet<>();
+        for (Map.Entry<String, JsonElement> entry : index.getAsJsonObject("weight_map").entrySet()) {
+            shardNames.add(entry.getValue().getAsString());
+        }
+        List<File> shards = new ArrayList<>();
+        for (String shard : shardNames) shards.add(download(shard));
+        String tokenizerJson = Files.readString(download("tokenizer.json").toPath(), StandardCharsets.UTF_8);
+        JsonObject tokenizerConfig = json(download("tokenizer_config.json"));
+        String template = Files.readString(download("chat_template.jinja").toPath(), StandardCharsets.UTF_8);
+        tokenizerConfig.addProperty("chat_template", template);
+        try (HuggingFaceTokenizer tokenizer = HuggingFaceTokenizer.fromJson(tokenizerJson, GSON.toJson(tokenizerConfig));
+             ImportedModel model = ModelOptQwenImporter.importTextOnly(
+                     configFile, quantFile, generationFile, shards, DataType.BFLOAT16, true)) {
+            ModelOptQwenConfig importedConfig = model.getConfig();
+            GenerationPipelineConfig pipelineConfig = GenerationPipelineConfig.builder()
+                    .decoder(model.getGraph()).tokenizer(tokenizer)
+                    .modelMetadata(ModelMetadata.of(importedConfig.getBosTokenId(), importedConfig.getEosTokenId(),
+                            importedConfig.getPadTokenId(), template, importedConfig.getStopTokenIds(),
+                            importedConfig.getStopTokenIds()))
+                    .kvCacheStrategy(KvCacheStrategy.STATIC)
+                    .dspEnabled(true)
+                    .maxSpeculativeTokens(window - 1)
+                    .samplingConfig(SamplingConfig.speculative())
+                    .maxNewTokens(16).maxPrefillLength(128).maxKvCacheLength(cache)
+                    .build();
+            try (GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig)) {
+                if (pipeline.getDecoder() != model.getGraph()) model.close();
+                SameDiff decoder = pipeline.getDecoder();
+                decoder.setDspAutoCompileEnabled(true);
+                decoder.setDspNativeAutoCompileEnabled(true);
+
+                // Recurrent and cache state at `start`: arbitrary but identical for both launches.
+                Nd4j.getRandom().setSeed(20260928L);
+                Map<String, INDArray> pristine = new LinkedHashMap<>();
+                for (String input : decoder.inputs()) {
+                    DataType dtype = decoder.getVariable(input).dataType();
+                    if (input.startsWith("past_key_values.")) {
+                        INDArray kv = Nd4j.zeros(dtype, 1, cache, 4, 256);
+                        kv.get(NDArrayIndex.all(), NDArrayIndex.interval(0, start), NDArrayIndex.all(),
+                                NDArrayIndex.all()).assign(Nd4j.randn(DataType.FLOAT, 1, start, 4, 256).castTo(dtype));
+                        pristine.put(input, kv);
+                    } else if (input.startsWith("past_gdn_state.")) {
+                        pristine.put(input, Nd4j.randn(DataType.FLOAT, 1, 48, 128, 128).muli(0.05).castTo(dtype));
+                    } else if (input.startsWith("past_conv_state.")) {
+                        pristine.put(input, Nd4j.randn(DataType.FLOAT, 1, 10240, 3).castTo(dtype));
+                    }
+                }
+                Map<String, INDArray> state = new LinkedHashMap<>();
+                pristine.forEach((name, array) -> state.put(name, array.dup()));
+
+                int[] prompt = tokenizer.encodePrompt("Explain how solar panels convert sunlight into electricity.")
+                        .getIds();
+                long[] ids = new long[window];
+                for (int i = 0; i < window; i++) ids[i] = prompt[i];
+
+                List<String> names = new ArrayList<>();
+                for (int layer = 0; layer < importedConfig.getArchitecture().getNumLayers(); layer++) {
+                    for (String name : List.of("model.layers." + layer + ".input_layernorm_scaled",
+                            "post_attn_" + layer, "model.layers." + layer + ".post_attention_layernorm_scaled",
+                            "gate_" + layer, "up_" + layer,
+                            "swiglu_" + layer, "down_" + layer, "layer_out_" + layer)) {
+                        if (decoder.hasVariable(name)) names.add(name);
+                    }
+                }
+                names.add("target_hidden_states");
+                names.add("lm_logits");
+
+                // State outputs feed the next width-1 step, as a greedy decode does.
+                Map<String, String> stateOutputs = new LinkedHashMap<>();
+                for (String input : pristine.keySet()) {
+                    if (input.startsWith("past_gdn_state.")) {
+                        stateOutputs.put(input, "gdn_state_out_" + input.substring("past_gdn_state.".length()));
+                    } else if (input.startsWith("past_conv_state.")) {
+                        stateOutputs.put(input, "conv_state_out_" + input.substring("past_conv_state.".length()));
+                    }
+                }
+                List<String> requested = new ArrayList<>(names);
+                requested.addAll(stateOutputs.values());
+
+                // The W-row launch from the pristine state.
+                pristine.forEach((name, array) -> state.get(name).assign(array));
+                Map<String, INDArray> wide = replayed(decoder, targetInputs(state, ids, window, start, cache),
+                        requested, state, snapshot(state));
+
+                // W chained width-1 launches: step r consumes token r at position start + r.
+                pristine.forEach((name, array) -> state.get(name).assign(array));
+                List<Map<String, INDArray>> steps = new ArrayList<>();
+                for (int r = 0; r < window; r++) {
+                    long[] token = {ids[r]};
+                    Map<String, INDArray> step = replayed(decoder, targetInputs(state, token, 1, start + r, cache),
+                            requested, state, snapshot(state));
+                    steps.add(step);
+                    // Advance: KV rows were written in place; recurrent state comes from the outputs.
+                    stateOutputs.forEach((input, output) -> state.get(input).assign(step.get(output)));
+                }
+
+                String firstMismatch = null;
+                for (int r = 0; r < window && firstMismatch == null; r++) {
+                    for (String name : names) {
+                        INDArray w = wide.get(name), s1 = steps.get(r).get(name);
+                        INDArray row = w.get(NDArrayIndex.all(), NDArrayIndex.interval(r, r + 1), NDArrayIndex.all()).dup();
+                        double[] a = row.castTo(DataType.DOUBLE).data().asDouble();
+                        double[] b = s1.castTo(DataType.DOUBLE).dup('c').data().asDouble();
+                        long mismatches = 0;
+                        double maxAbs = 0;
+                        for (int i = 0; i < a.length; i++) {
+                            if (Double.doubleToRawLongBits(a[i]) != Double.doubleToRawLongBits(b[i])) {
+                                mismatches++;
+                                maxAbs = Math.max(maxAbs, Math.abs(a[i] - b[i]));
+                            }
+                        }
+                        if (mismatches > 0) {
+                            log.info("ROW-CONTRACT row={} {} mismatches={} of {} maxAbs={}", r, name, mismatches,
+                                    a.length, maxAbs);
+                            if (firstMismatch == null) firstMismatch = "row " + r + " " + name;
+                        }
+                    }
+                    log.info("ROW-CONTRACT row={} checked {} outputs", r, names.size());
+                }
+                assertEquals(null, firstMismatch,
+                        "Each window row must equal the chained width-1 target forward; first difference at "
+                                + firstMismatch);
+            }
+        }
+    }
+
+    private static Map<String, INDArray> targetInputs(Map<String, INDArray> state, long[] ids, int width,
+                                                      int position, int cache) {
+        INDArray mask = Nd4j.valueArrayOf(new long[]{1, 1, width, cache}, -3.4028235e+38f, DataType.FLOAT);
+        for (int r = 0; r < width; r++) {
+            mask.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.point(r),
+                    NDArrayIndex.interval(0, position + r + 1)).assign(0.0f);
+        }
+        Map<String, INDArray> inputs = new HashMap<>(state);
+        inputs.put("input_ids", Nd4j.createFromArray(Arrays.copyOf(ids, width)).reshape(1, width));
+        inputs.put("position_offset", Nd4j.scalar((long) position));
+        inputs.put("cache_position", Nd4j.scalar((long) position));
+        inputs.put("actual_sequence_length", Nd4j.scalar((long) width));
+        inputs.put("_causal_mask", mask);
+        return inputs;
+    }
+
+    private static Map<String, INDArray> snapshot(Map<String, INDArray> state) {
+        Map<String, INDArray> copy = new HashMap<>();
+        state.forEach((name, array) -> copy.put(name, array.dup()));
+        return copy;
+    }
+
+    /**
+     * Runs one launch until its plan replays (restoring the launch's starting state before each
+     * repetition, since KV rows are written in place) and returns copies of the replayed outputs.
+     */
+    private static Map<String, INDArray> replayed(SameDiff decoder, Map<String, INDArray> inputs,
+                                                  List<String> outputs, Map<String, INDArray> state,
+                                                  Map<String, INDArray> start) {
+        Map<String, INDArray> first = null, result = null;
+        for (int repetition = 0; repetition < 8; repetition++) {
+            start.forEach((name, array) -> state.get(name).assign(array));
+            Map<String, INDArray> produced = decoder.output(inputs, outputs.toArray(new String[0]));
+            result = new HashMap<>();
+            for (String name : outputs) result.put(name, produced.get(name).dup());
+            if (first == null) first = result;
+        }
+        // The first launch runs the plan's native slot-by-slot warmup, the last its
+        // compiled replay: both must give the same bits.
+        String firstMismatch = null;
+        for (String name : outputs) {
+            long mismatches = mismatches(first.get(name), result.get(name));
+            if (mismatches > 0) {
+                log.info("LIFECYCLE-CONTRACT width={} {} mismatches={} of {}", inputs.get("input_ids").size(1),
+                        name, mismatches, first.get(name).length());
+                if (firstMismatch == null) firstMismatch = name;
+            }
+        }
+        assertEquals(null, firstMismatch, "Compiled replay must equal native warmup; first difference at "
+                + firstMismatch);
+        return result;
+    }
+
+    private static long mismatches(INDArray expected, INDArray actual) {
+        double[] a = expected.castTo(DataType.DOUBLE).dup('c').data().asDouble();
+        double[] b = actual.castTo(DataType.DOUBLE).dup('c').data().asDouble();
+        long count = 0;
+        for (int i = 0; i < a.length; i++) {
+            if (Double.doubleToRawLongBits(a[i]) != Double.doubleToRawLongBits(b[i])) count++;
+        }
+        return count;
     }
 
     private void generateWithActualPackedCheckpoint(boolean mtp) throws Exception {

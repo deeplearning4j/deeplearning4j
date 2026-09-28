@@ -1100,9 +1100,10 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         }
         int g = gdnStateInputIndices.length;
         int c = convStateInputIndices.length;
-        if (g < 0 || c < 0 || g + c == 0 || g + c > 64) {
-            throw new IllegalArgumentException("prefix layer count " + (g + c)
-                    + " out of bounds (1..64)");
+        // The native config holds up to 64 layer indices per kind (GDN, conv).
+        if (g + c == 0 || g > 64 || c > 64) {
+            throw new IllegalArgumentException("prefix layer counts gdn=" + g + " conv=" + c
+                    + " out of bounds (each 0..64, at least one layer)");
         }
         if (prefixOutputIndices.length != g + c) {
             throw new IllegalArgumentException("one prefix output index per recurrent layer required: got "

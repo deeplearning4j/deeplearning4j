@@ -26,6 +26,7 @@
 
 #include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
+#include <ops/declarable/helpers/assign.h>
 
 namespace sd {
 namespace ops {
@@ -48,6 +49,23 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
   ArrayOptions::validateSingleDataType(ArrayOptions::extra(castedY->shapeInfo()));
   ArrayOptions::validateSingleDataType(ArrayOptions::extra(z->shapeInfo()));
 
+  // FLOAT8/FLOAT8_E5M2 are deliberately excluded from SD_COMMON_TYPES (see
+  // helpers/cpu/assign.cpp, helpers/cuda/assign.cu) to avoid instantiating every
+  // broadcastable op's PairwiseTransform/BroadcastHelper templates for both FP8
+  // encodings. They are handled via the dedicated helpers::assign() dispatch
+  // instead (already used by the "cast" op for the same reason). A straight,
+  // non-broadcast copy - e.g. dup()/assign() onto a reordered ('f') view, which
+  // has no PairwiseTransform_THRICE<FLOAT8,...> instantiation - must go through
+  // that helper rather than BroadcastHelper::broadcastApply.
+  if (castedX->isSameShape(z) &&
+      (castedX->dataType() == DataType::FLOAT8 || castedX->dataType() == DataType::FLOAT8_E5M2 ||
+       z->dataType() == DataType::FLOAT8 || z->dataType() == DataType::FLOAT8_E5M2)) {
+    helpers::assign(block.launchContext(), z, castedX);
+    if (castedX != x) delete castedX;
+    if (castedY != y) delete castedY;
+    return Status::OK;
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Assign(), castedX, castedY, z);
 
   if (tZ != z) {
@@ -64,10 +82,18 @@ DECLARE_SYN(set, assign);
 DECLARE_SYN(copy, assign);
 
 DECLARE_TYPES(assign) {
+  // ALL_FLOATS deliberately excludes the FP8 storage types (FLOAT8/FLOAT8_E5M2):
+  // most float transforms (sigmoid, tanh, exp, ...) are not meaningful on them.
+  // assign is a plain copy/type-pun though, and both the CPU and CUDA assign
+  // helpers (helpers/cpu/assign.cpp, helpers/cuda/assign.cu) already implement
+  // every FLOAT8/FLOAT8_E5M2 <-> FLOAT8/FLOAT8_E5M2 combination correctly - only
+  // this op-descriptor type gate was rejecting them before the kernel ever ran,
+  // which is what made dup('f')/view layout on FLOAT8 fail on CPU (and would
+  // fail identically on CUDA if it every routed FLOAT8 dup through this op).
   getOpDescriptor()
-      ->setAllowedInputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL})
-      ->setAllowedInputTypes(1, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL})
-      ->setAllowedOutputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL});
+      ->setAllowedInputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL,sd::DataType::FLOAT8,sd::DataType::FLOAT8_E5M2})
+      ->setAllowedInputTypes(1, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL,sd::DataType::FLOAT8,sd::DataType::FLOAT8_E5M2})
+      ->setAllowedOutputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL,sd::DataType::FLOAT8,sd::DataType::FLOAT8_E5M2});
   getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 

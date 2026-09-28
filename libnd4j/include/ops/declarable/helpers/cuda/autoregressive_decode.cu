@@ -135,6 +135,48 @@ static void sampleRawHostValue(const void* valuePtr, void* out) {
     *static_cast<float*>(out) = static_cast<float>(*reinterpret_cast<const T*>(valuePtr));
 }
 
+// ─── EMIT_LOGITS (VERIFY diagnostics) ────────────────────────────────────────
+// Order-independent 64-bit fingerprint of one logits row: the wrapping sum of a
+// mix of every element's bits with its index. Two rows hash equal only if (up to
+// collisions) they are bit-identical, so comparing the per-token fingerprints of
+// two decode modes finds the first position whose numerics differ - not merely
+// the first whose argmax does.
+template <typename T>
+static SD_KERNEL void logitsRowHashKernel(const void* vRow, LongType length, unsigned long long* out) {
+    const T* row = static_cast<const T*>(vRow);
+    unsigned long long local = 0;
+    for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < length;
+         i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+        unsigned long long bits = 0;
+        memcpy(&bits, &row[i], sizeof(T));
+        unsigned long long h = (bits + 1) * 0x9E3779B97F4A7C15ull
+                               ^ static_cast<unsigned long long>(i) * 0xC2B2AE3D27D4EB4Full;
+        h ^= h >> 29;
+        h *= 0xBF58476D1CE4E5B9ull;
+        h ^= h >> 32;
+        local += h;
+    }
+    atomicAdd(out, local);
+}
+
+template <typename T>
+static void logitsRowHashLauncher(cudaStream_t* stream, const void* row, LongType length,
+                                  unsigned long long* deviceScratch) {
+    logitsRowHashKernel<T><<<64, 256, 0, *stream>>>(row, length, deviceScratch);
+}
+
+/** Fingerprint of a dense logits row on the device (host-synchronizing; diagnostics only). */
+static unsigned long long logitsRowHash(cudaStream_t* stream, DataType dtype, const void* row, LongType length) {
+    static thread_local unsigned long long* scratch = nullptr;
+    if (scratch == nullptr && cudaMalloc(&scratch, sizeof(unsigned long long)) != cudaSuccess) return 0;
+    unsigned long long hash = 0;
+    cudaMemsetAsync(scratch, 0, sizeof(unsigned long long), *stream);
+    BUILD_SINGLE_SELECTOR(dtype, logitsRowHashLauncher, (stream, row, length, scratch), SD_FLOAT_TYPES);
+    cudaMemcpyAsync(&hash, scratch, sizeof(hash), cudaMemcpyDeviceToHost, *stream);
+    cudaStreamSynchronize(*stream);
+    return hash;
+}
+
 /**
  * CUDA kernel: update position_ids for the next decode step.
  *
@@ -1119,6 +1161,24 @@ void autoregressiveDecode(
     // we allocate them here internally. The GGUF path (embeddingsExtIdx == -1) cannot
     // use the window substrate without re-freezing with [1,W] input_ids shapes, so it
     // falls back to scalar decode (n-gram table still builds for future use).
+    // This mask tensor is always allocated FLOAT32, but dot_product_attention_v2
+    // casts the additive bias down to the QUERY's compute dtype (HALF for
+    // Qwen3.5's FP16 attention path) before the fused GQA kernel reads it, so
+    // -3.4028235e+38f overflows HALF's finite range (max magnitude 65504) via
+    // __float2half_rn and becomes an actual IEEE -Infinity for a fully masked
+    // row (every rows[w >= activeWindow] entry below, e.g. a K=1 MTP rerun's
+    // inactive/rejected-draft row). That -Infinity is a real, separate defect
+    // (this file already avoids it for HALF/BFLOAT16 in maskCausalRangeLauncher/
+    // refillWindowCausalMaskLauncher via a dtype-safe -65504 fill), but it is
+    // NOT the NaN's root cause: the root cause is that the fused GQA softmax
+    // in FlashAttentionHelper.cu computed (-Infinity) - (-Infinity) = NaN for
+    // such a row instead of treating "no attendable position" as the
+    // well-defined empty-reduction identity (zero output). That kernel is
+    // fixed directly (see fusedGQAAttentionWithScores4DKernel's
+    // `rowHasFiniteMax` guard) so the NaN cannot be produced regardless of
+    // this fill magnitude; the constant is deliberately left unchanged here
+    // to avoid altering shared numerics the Triton attention path also reads
+    // from this same mask tensor.
     constexpr float WINDOW_MASK_FILL = -3.4028235e+38f;
     NDArray* internalWindowGridMask = nullptr;
     NDArray* internalWindowPositionGrid = nullptr;
@@ -3234,6 +3294,10 @@ void autoregressiveDecode(
     // post-verify outputs over them would restore the rejected-suffix state
     // this mode exists to avoid. Reset at every committed step boundary.
     bool selectStateCommittedThisStep = false;
+    // Set when SELECT was admitted for the whole verification window before the
+    // verify pass: the commit will select a checkpoint, so the rerun-only
+    // pre-verification snapshots were not taken this step.
+    bool selectAdmittedPreVerify = false;
 
     // PACKET 07: per-invocation SELECT scratch. Reserved before the step loop so
     // the per-step eligibility probe never allocates, and cleared per step so the
@@ -3242,10 +3306,271 @@ void autoregressiveDecode(
     std::vector<NDArray*> selectScratchSrc;
     std::vector<NDArray*> selectScratchDst;
 
+    // Accepted-prefix SELECT admission (Packet 07): ALL-OR-NOTHING validation of
+    // every GDN/conv layer's checkpoint output (shape, dtype, storage, coverage of
+    // requiredRows rows) and of cross-layer storage overlap. Fills the source and
+    // destination lists on success. Evaluated before verification for the full
+    // window (so the rerun-only snapshots can be skipped) and again at commit
+    // for the consumed prefix.
+    // report: emit SELECT_INELIGIBLE records (commit-time fallbacks only; the
+    // pre-verification probe is silent).
+    auto admitPrefixSelect = [&](int requiredRows, std::vector<NDArray*>& selectPrefixSrc,
+                                 std::vector<NDArray*>& selectStateDst, bool report) -> bool {
+        bool selectEligible = config->mtpPrefixSelectMode == 2
+            && (config->mtpPrefixGdnLayerCount + config->mtpPrefixConvLayerCount) > 0;
+        // Packet 07/09 pre-loop fallback reporting: every rejection BEFORE
+        // the layer loops gets its own reason record.
+        if (!selectEligible) {
+            if (report) DSP_DIAG(KV_CACHE,
+                     "SELECT_INELIGIBLE reason=%s mode=%d gdnLayers=%d convLayers=%d",
+                     config->mtpPrefixSelectMode != 2 ? "mode-not-select" : "empty-layer-mapping",
+                     config->mtpPrefixSelectMode,
+                     config->mtpPrefixGdnLayerCount, config->mtpPrefixConvLayerCount);
+        }
+        selectPrefixSrc.clear();
+        selectStateDst.clear();
+        if (selectEligible) {
+            // The selected row must be a row of THIS verification window.
+            if (requiredRows < 1) {
+                selectEligible = false;
+                if (report) DSP_DIAG(KV_CACHE,
+                         "SELECT_INELIGIBLE reason=invalid-consumed-count consumed=%d mode=%d",
+                         requiredRows, config->mtpPrefixSelectMode);
+            }
+        }
+        if (selectEligible && (config->actualSequenceLengthExtIdx < 0
+                || config->actualSequenceLengthExtIdx >= numExtInputs
+                || extInputs[config->actualSequenceLengthExtIdx] == nullptr)) {
+            selectEligible = false;
+            if (report) DSP_DIAG(KV_CACHE,
+                     "SELECT_INELIGIBLE reason=actual-length-control-unavailable extIdx=%d",
+                     config->actualSequenceLengthExtIdx);
+        }
+        if (selectEligible) {
+            selectPrefixSrc.reserve(config->mtpPrefixGdnLayerCount
+                                    + config->mtpPrefixConvLayerCount);
+            selectStateDst.reserve(config->mtpPrefixGdnLayerCount
+                                   + config->mtpPrefixConvLayerCount);
+            // Genuine dense-contiguity check. ews() alone is NOT proof of
+            // density: for singleton dimensions NDArray::ews() reports 0
+            // (shape.cpp returns 0 when a dim size is 1), yet the storage can
+            // be perfectly contiguous - dstShape=[1,1,2] dstStride=[2,2,1]
+            // is dense. Verify via the C-order stride contract instead:
+            // stride[d] == product of sizes[d+1..rank), plus row-major flag.
+            auto isDenseCOrder = [](NDArray* a) -> bool {
+                if (a == nullptr) return false;
+                if (a->isEmpty()) return false;
+                const int rank = a->rankOf();
+                if (a->ordering() != 'c') return false;
+                if (rank == 0) return true;
+                LongType expected = 1;
+                for (int d = rank - 1; d >= 0; --d) {
+                    if (a->sizeAt(d) != 1 && a->strideAt(d) != expected) {
+                        return false;
+                    }
+                    // Singleton dims may carry any stride; non-singleton dims
+                    // must follow the exact C-order packing.
+                    expected *= a->sizeAt(d);
+                }
+                return true;
+            };
+            // Host-side metadata snapshot helpers for the rejection record.
+            // Built ONLY from declared NDArray APIs (rankOf/sizeAt/strideAt/
+            // ordering/ews/dataType/lengthOf); kept alive through the
+            // DSP_DIAG call below. No tensor values, no readback.
+            auto shapeString = [](NDArray* a) {
+                std::string s = "[";
+                if (a == nullptr) return std::string("null");
+                for (int d = 0; d < a->rankOf(); ++d) {
+                    if (d) s += ",";
+                    s += std::to_string(static_cast<long long>(a->sizeAt(d)));
+                }
+                s += "]";
+                return s;
+            };
+            auto strideString = [](NDArray* a) {
+                std::string s = "[";
+                if (a == nullptr) return std::string("null");
+                for (int d = 0; d < a->rankOf(); ++d) {
+                    if (d) s += ",";
+                    s += std::to_string(static_cast<long long>(a->strideAt(d)));
+                }
+                s += "]";
+                return s;
+            };
+            // Resolves one layer and reports the FIRST failed predicate with
+            // full host-side metadata when it fails. Returns the failure
+            // reason, or nullptr when the layer is admitted.
+            auto resolveLayer = [&](const char* kind, int pairOrdinal,
+                    int stateExtIdx, int prefixOutIdx) -> const char* {
+                NDArray* dst = (stateExtIdx >= 0 && stateExtIdx < numExtInputs)
+                    ? extInputs[stateExtIdx] : nullptr;
+                NDArray* src = (prefixOutIdx >= 0 && prefixOutIdx < numPlanOutputs)
+                    ? planOutputs[prefixOutIdx] : nullptr;
+                const char* reason = nullptr;
+                if (dst == nullptr) {
+                    reason = "missing-destination";
+                } else if (src == nullptr) {
+                    reason = "missing-checkpoint-output";
+                } else if (src->rankOf() != dst->rankOf() + 1) {
+                    reason = "wrong-rank";
+                } else if (src->sizeAt(0) < requiredRows) {
+                    reason = "insufficient-checkpoint-capacity";
+                } else {
+                    for (int d = 0; d < dst->rankOf(); ++d) {
+                        // FULL trailing-dim match including the last state
+                        // dimension: src [W, B, s0, ...] needs src->sizeAt(d+1)
+                        // == dst->sizeAt(d) for every d.
+                        if (src->sizeAt(d + 1) != dst->sizeAt(d)) {
+                            reason = "trailing-dimension-mismatch";
+                            break;
+                        }
+                    }
+                }
+                if (reason == nullptr && src->dataType() != dst->dataType()) {
+                    reason = "dtype-mismatch";
+                }
+                if (reason == nullptr && !isDenseCOrder(src)) {
+                    reason = "source-layout";
+                }
+                if (reason == nullptr && !isDenseCOrder(dst)) {
+                    reason = "destination-layout";
+                }
+                if (reason == nullptr) {
+                    // Overlap over the FULL checkpoint span (all W rows), not
+                    // just the selected row: any overlap between the whole
+                    // prefix storage and the destination disqualifies.
+                    const char* srcB = static_cast<const char*>(src->specialBuffer());
+                    char* dstB = static_cast<char*>(dst->specialBuffer());
+                    const size_t srcBytes = static_cast<size_t>(src->lengthOf())
+                        * static_cast<size_t>(src->sizeOfT());
+                    const size_t dstBytes = static_cast<size_t>(dst->lengthOf())
+                        * static_cast<size_t>(dst->sizeOfT());
+                    if (srcB < dstB + dstBytes && dstB < srcB + srcBytes) {
+                        reason = "overlapping-storage";
+                    }
+                }
+                if (reason != nullptr) {
+                    const std::string dstShape = shapeString(dst);
+                    const std::string srcShape = shapeString(src);
+                    const std::string dstStride = strideString(dst);
+                    const std::string srcStride = strideString(src);
+                    if (report) DSP_DIAG(KV_CACHE,
+                             "SELECT_INELIGIBLE reason=%s layer=%s.%d consumed=%d "
+                             "stateExtIdx=%d prefixOutIdx=%d "
+                             "dstShape=%s srcShape=%s dstStride=%s srcStride=%s "
+                             "dstOrder=%c srcOrder=%c dstEws=%lld srcEws=%lld "
+                             "dstDtype=%d srcDtype=%d "
+                             "dstWrapper=%p dstDevice=%p srcWrapper=%p srcDevice=%p",
+                             reason, kind, pairOrdinal, requiredRows,
+                             stateExtIdx, prefixOutIdx,
+                             dstShape.c_str(), srcShape.c_str(),
+                             dstStride.c_str(), srcStride.c_str(),
+                             dst != nullptr ? dst->ordering() : '?',
+                             src != nullptr ? src->ordering() : '?',
+                             dst != nullptr ? (long long)dst->ews() : -1LL,
+                             src != nullptr ? (long long)src->ews() : -1LL,
+                             dst != nullptr ? (int)dst->dataType() : -1,
+                             src != nullptr ? (int)src->dataType() : -1,
+                             (void*)dst,
+                             dst != nullptr ? dst->specialBuffer() : nullptr,
+                             (void*)src,
+                             src != nullptr ? src->specialBuffer() : nullptr);
+                } else {
+                    // Admitted: record the copy pair. Without this the commit
+                    // block runs with an EMPTY destination list (observed as
+                    // SPEC_STATE_SELECT layers=0, checkpointSelectBytes=0) and
+                    // no state is written at all.
+                    selectPrefixSrc.push_back(src);
+                    selectStateDst.push_back(dst);
+                }
+                return reason;
+            };
+            for (int s = 0; s < config->mtpPrefixGdnLayerCount && selectEligible; s++) {
+                const char* reason = resolveLayer("gdn", s,
+                        config->mtpPrefixGdnInputIndices[s],
+                        config->mtpPrefixGdnOutputIndices[s]);
+                if (reason != nullptr) selectEligible = false;
+            }
+            for (int s = 0; s < config->mtpPrefixConvLayerCount && selectEligible; s++) {
+                const char* reason = resolveLayer("conv", s,
+                        config->mtpPrefixConvInputIndices[s],
+                        config->mtpPrefixConvOutputIndices[s]);
+                if (reason != nullptr) selectEligible = false;
+            }
+        }
+        if (selectEligible) {
+            // ONE selected-state commit. No restore, no rerun, no recovery
+            // forward: ordinary partial acceptance costs ONE verification.
+            //
+            // COMMIT INVARIANT: an internally empty or incomplete copy list
+            // must never count as a SELECT commit. Eligibility above
+            // admitted exactly GDN+conv layers, so the recorded lists must
+            // match that count exactly before any byte is written.
+            const size_t expectedLayers =
+                static_cast<size_t>(config->mtpPrefixGdnLayerCount)
+                + static_cast<size_t>(config->mtpPrefixConvLayerCount);
+            REQUIRE_TRUE(
+                expectedLayers > 0
+                    && selectPrefixSrc.size() == expectedLayers
+                    && selectStateDst.size() == expectedLayers, 0,
+                "autoregressive_decode: SELECT admission produced an incomplete "
+                "copy list (expected %zu layers, got %zu sources / %zu destinations); "
+                "refusing to commit or fall back silently",
+                expectedLayers, selectPrefixSrc.size(), selectStateDst.size());
+            // Cross-layer overlap: no destination may alias ANY checkpoint
+            // source (not only its own) or any other destination. Per-layer
+            // checks already cover own-source and same-kind pairs; add the
+            // remaining cross pairs here, before the first write. Sort all
+            // byte ranges by start and sweep: a range overlaps an earlier one
+            // exactly when it starts before the furthest end seen so far, so
+            // tracking that end per class (any range / destinations only)
+            // finds every destination-involved overlap in O(n log n).
+            struct SelectRange {
+                const char* begin;
+                const char* end;
+                bool destination;
+                size_t layer;
+            };
+            std::vector<SelectRange> selectRanges;
+            selectRanges.reserve(selectStateDst.size() + selectPrefixSrc.size());
+            auto addRange = [&](NDArray* a, bool destination, size_t layer) {
+                const char* b = static_cast<const char*>(a->specialBuffer());
+                const size_t bytes = static_cast<size_t>(a->lengthOf())
+                    * static_cast<size_t>(a->sizeOfT());
+                selectRanges.push_back({b, b + bytes, destination, layer});
+            };
+            for (size_t li = 0; li < selectStateDst.size(); li++) addRange(selectStateDst[li], true, li);
+            for (size_t li = 0; li < selectPrefixSrc.size(); li++) addRange(selectPrefixSrc[li], false, li);
+            std::sort(selectRanges.begin(), selectRanges.end(),
+                      [](const SelectRange& x, const SelectRange& y) { return x.begin < y.begin; });
+            const SelectRange* furthestAny = nullptr;
+            const SelectRange* furthestDst = nullptr;
+            for (const SelectRange& r : selectRanges) {
+                const SelectRange* earlier = r.destination ? furthestAny : furthestDst;
+                if (earlier != nullptr && r.begin < earlier->end) {
+                    const SelectRange& dstRange = r.destination ? r : *earlier;
+                    const SelectRange& other = r.destination ? *earlier : r;
+                    REQUIRE_TRUE(false, 0,
+                        "autoregressive_decode: SELECT destination %zu overlaps %s %zu; "
+                        "refusing to commit",
+                        dstRange.layer, other.destination ? "destination" : "checkpoint source",
+                        other.layer);
+                }
+                if (furthestAny == nullptr || r.end > furthestAny->end) furthestAny = &r;
+                if (r.destination && (furthestDst == nullptr || r.end > furthestDst->end)) furthestDst = &r;
+            }
+        }
+        return selectEligible;
+    };
+
+    // End of the previous speculative step, for the inter-step host gap in SPEC_STEP_PHASES.
+    auto prevSpecStepEnd = std::chrono::high_resolution_clock::time_point{};
     for (int step = 0; step < maxNewTokens; step++) {
         // A rollback snapshot belongs to one commit transaction, not one restore.
         kvRowSnapshotBase = -1;
         selectStateCommittedThisStep = false;
+        selectAdmittedPreVerify = false;
         // Cancellation is observed only at a committed step boundary. This
         // keeps KV/recurrent state coherent for a later continuation.
         if (config->cancelCallback != nullptr &&
@@ -3555,12 +3880,18 @@ void autoregressiveDecode(
             // executed from post-verify state (mtp-fix-gate2 NaN guard, step=1).
             // Called BEFORE prepareScalarTarget and BEFORE the verification plan
             // execution - the snapshot is genuinely pre-verify.
-            capturePreVerificationState();
-            // Snapshot the complete verification write range. The W-wide verify
-            // executes with activeWindow = 1 + proposedCount and therefore writes
-            // the current row plus every draft row; omitting the final correction
-            // row leaves stale K/V visible to a later prefix rerun.
-            capturePreVerificationKvRows(currentPosition, 1 + proposedCount);
+            // With SELECT admitted for every row of this window, the commit selects
+            // a checkpoint and never reruns, so the rerun-only snapshots are skipped.
+            selectAdmittedPreVerify = config->mtpPrefixSelectMode == 2
+                && admitPrefixSelect(1 + proposedCount, selectScratchSrc, selectScratchDst, false);
+            if (!selectAdmittedPreVerify) {
+                capturePreVerificationState();
+                // Snapshot the complete verification write range. The W-wide verify
+                // executes with activeWindow = 1 + proposedCount and therefore writes
+                // the current row plus every draft row; omitting the final correction
+                // row leaves stale K/V visible to a later prefix rerun.
+                capturePreVerificationKvRows(currentPosition, 1 + proposedCount);
+            }
         }
         if (useScalarTarget) prepareScalarTarget();
         // SEAM_WATCH Observation B (TARGET_EXT_READY): queue the post-preparation
@@ -3887,6 +4218,20 @@ void autoregressiveDecode(
                                    specValidityDevice->specialBuffer()),
                                   SD_FLOAT_TYPES);
             NDArray::registerSpecialUse({specArgmaxDevice, specValidityDevice}, {logitsOutput});
+            // EMIT_LOGITS: fingerprints of the verification rows, taken before any
+            // rerun re-executes the plan over the same output buffers.
+            const bool emitLogitsDiag = DSP_DIAG_ENABLED(VERIFY);
+            std::vector<unsigned long long> verifyRowHashes;
+            unsigned long long rerunLogitsHash = 0;
+            bool scalarRerunHashed = false;
+            if (emitLogitsDiag) {
+                for (int r = 0; r < numRows; r++) {
+                    verifyRowHashes.push_back(logitsRowHash(stream, logitsOutput->dataType(),
+                        static_cast<const char*>(logitsOutput->specialBuffer())
+                            + static_cast<size_t>(r) * logitsVocab * logitsOutput->sizeOfT(),
+                        logitsVocab));
+                }
+            }
 
             // D2H: target rows and MTP drafts share the acceptance path's
             // existing synchronization. No predictor-side host boundary is added.
@@ -3940,6 +4285,7 @@ void autoregressiveDecode(
             REQUIRE_TRUE(acceptanceSync == cudaSuccess, 0,
                          "autoregressive_decode: acceptance readback failed: %s",
                          cudaGetErrorString(acceptanceSync));
+            auto tAcceptanceSynced = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
             // SEAM_WATCH Observation C: fill the decision fields now - the
             // acceptance sync completed all queued pinned reads (A + B) too.
             if (seamSlot != nullptr) {
@@ -4244,245 +4590,11 @@ void autoregressiveDecode(
                 // An explicitly requested but unqualified layout takes the legacy
                 // restore/rerun fallback BEFORE any selected-state copy and is
                 // counted in checkpointSelectFallbacks.
-                bool selectEligible = config->mtpPrefixSelectMode == 2
-                    && (config->mtpPrefixGdnLayerCount + config->mtpPrefixConvLayerCount) > 0;
-                // Packet 07/09 pre-loop fallback reporting: every rejection BEFORE
-                // the layer loops gets its own reason record.
-                if (!selectEligible) {
-                    DSP_DIAG(KV_CACHE,
-                             "SELECT_INELIGIBLE reason=%s mode=%d gdnLayers=%d convLayers=%d",
-                             config->mtpPrefixSelectMode != 2 ? "mode-not-select" : "empty-layer-mapping",
-                             config->mtpPrefixSelectMode,
-                             config->mtpPrefixGdnLayerCount, config->mtpPrefixConvLayerCount);
-                }
-                // Per-invocation scratch, allocated once before the step loop and
-                // cleared per step (reviewer packet 07: thread-local vectors retain
-                // pointers across calls; per-invocation ownership stays explicit).
-                selectScratchSrc.clear();
-                selectScratchDst.clear();
+                const auto tSelectStart = std::chrono::high_resolution_clock::now();
+                bool selectEligible = admitPrefixSelect(consumedCount, selectScratchSrc, selectScratchDst, true);
                 std::vector<NDArray*>& selectPrefixSrc = selectScratchSrc;
                 std::vector<NDArray*>& selectStateDst = selectScratchDst;
                 if (selectEligible) {
-                    // consumedCount must address a row of THIS verification window.
-                    if (consumedCount < 1) {
-                        selectEligible = false;
-                        DSP_DIAG(KV_CACHE,
-                                 "SELECT_INELIGIBLE reason=invalid-consumed-count consumed=%d mode=%d",
-                                 consumedCount, config->mtpPrefixSelectMode);
-                    }
-                }
-                if (selectEligible && (config->actualSequenceLengthExtIdx < 0
-                        || config->actualSequenceLengthExtIdx >= numExtInputs
-                        || extInputs[config->actualSequenceLengthExtIdx] == nullptr)) {
-                    selectEligible = false;
-                    DSP_DIAG(KV_CACHE,
-                             "SELECT_INELIGIBLE reason=actual-length-control-unavailable extIdx=%d",
-                             config->actualSequenceLengthExtIdx);
-                }
-                if (selectEligible) {
-                    selectPrefixSrc.reserve(config->mtpPrefixGdnLayerCount
-                                            + config->mtpPrefixConvLayerCount);
-                    selectStateDst.reserve(config->mtpPrefixGdnLayerCount
-                                           + config->mtpPrefixConvLayerCount);
-                    // Genuine dense-contiguity check. ews() alone is NOT proof of
-                    // density: for singleton dimensions NDArray::ews() reports 0
-                    // (shape.cpp returns 0 when a dim size is 1), yet the storage can
-                    // be perfectly contiguous - dstShape=[1,1,2] dstStride=[2,2,1]
-                    // is dense. Verify via the C-order stride contract instead:
-                    // stride[d] == product of sizes[d+1..rank), plus row-major flag.
-                    auto isDenseCOrder = [](NDArray* a) -> bool {
-                        if (a == nullptr) return false;
-                        if (a->isEmpty()) return false;
-                        const int rank = a->rankOf();
-                        if (a->ordering() != 'c') return false;
-                        if (rank == 0) return true;
-                        LongType expected = 1;
-                        for (int d = rank - 1; d >= 0; --d) {
-                            if (a->sizeAt(d) != 1 && a->strideAt(d) != expected) {
-                                return false;
-                            }
-                            // Singleton dims may carry any stride; non-singleton dims
-                            // must follow the exact C-order packing.
-                            expected *= a->sizeAt(d);
-                        }
-                        return true;
-                    };
-                    // Host-side metadata snapshot helpers for the rejection record.
-                    // Built ONLY from declared NDArray APIs (rankOf/sizeAt/strideAt/
-                    // ordering/ews/dataType/lengthOf); kept alive through the
-                    // DSP_DIAG call below. No tensor values, no readback.
-                    auto shapeString = [](NDArray* a) {
-                        std::string s = "[";
-                        if (a == nullptr) return std::string("null");
-                        for (int d = 0; d < a->rankOf(); ++d) {
-                            if (d) s += ",";
-                            s += std::to_string(static_cast<long long>(a->sizeAt(d)));
-                        }
-                        s += "]";
-                        return s;
-                    };
-                    auto strideString = [](NDArray* a) {
-                        std::string s = "[";
-                        if (a == nullptr) return std::string("null");
-                        for (int d = 0; d < a->rankOf(); ++d) {
-                            if (d) s += ",";
-                            s += std::to_string(static_cast<long long>(a->strideAt(d)));
-                        }
-                        s += "]";
-                        return s;
-                    };
-                    // Resolves one layer and reports the FIRST failed predicate with
-                    // full host-side metadata when it fails. Returns the failure
-                    // reason, or nullptr when the layer is admitted.
-                    auto resolveLayer = [&](const char* kind, int pairOrdinal,
-                            int stateExtIdx, int prefixOutIdx) -> const char* {
-                        NDArray* dst = (stateExtIdx >= 0 && stateExtIdx < numExtInputs)
-                            ? extInputs[stateExtIdx] : nullptr;
-                        NDArray* src = (prefixOutIdx >= 0 && prefixOutIdx < numPlanOutputs)
-                            ? planOutputs[prefixOutIdx] : nullptr;
-                        const char* reason = nullptr;
-                        if (dst == nullptr) {
-                            reason = "missing-destination";
-                        } else if (src == nullptr) {
-                            reason = "missing-checkpoint-output";
-                        } else if (src->rankOf() != dst->rankOf() + 1) {
-                            reason = "wrong-rank";
-                        } else if (src->sizeAt(0) < consumedCount) {
-                            reason = "insufficient-checkpoint-capacity";
-                        } else {
-                            for (int d = 0; d < dst->rankOf(); ++d) {
-                                // FULL trailing-dim match including the last state
-                                // dimension: src [W, B, s0, ...] needs src->sizeAt(d+1)
-                                // == dst->sizeAt(d) for every d.
-                                if (src->sizeAt(d + 1) != dst->sizeAt(d)) {
-                                    reason = "trailing-dimension-mismatch";
-                                    break;
-                                }
-                            }
-                        }
-                        if (reason == nullptr && src->dataType() != dst->dataType()) {
-                            reason = "dtype-mismatch";
-                        }
-                        if (reason == nullptr && !isDenseCOrder(src)) {
-                            reason = "source-layout";
-                        }
-                        if (reason == nullptr && !isDenseCOrder(dst)) {
-                            reason = "destination-layout";
-                        }
-                        if (reason == nullptr) {
-                            // Overlap over the FULL checkpoint span (all W rows), not
-                            // just the selected row: any overlap between the whole
-                            // prefix storage and the destination disqualifies.
-                            const char* srcB = static_cast<const char*>(src->specialBuffer());
-                            char* dstB = static_cast<char*>(dst->specialBuffer());
-                            const size_t srcBytes = static_cast<size_t>(src->lengthOf())
-                                * static_cast<size_t>(src->sizeOfT());
-                            const size_t dstBytes = static_cast<size_t>(dst->lengthOf())
-                                * static_cast<size_t>(dst->sizeOfT());
-                            if (srcB < dstB + dstBytes && dstB < srcB + srcBytes) {
-                                reason = "overlapping-storage";
-                            }
-                        }
-                        if (reason != nullptr) {
-                            const std::string dstShape = shapeString(dst);
-                            const std::string srcShape = shapeString(src);
-                            const std::string dstStride = strideString(dst);
-                            const std::string srcStride = strideString(src);
-                            DSP_DIAG(KV_CACHE,
-                                     "SELECT_INELIGIBLE reason=%s layer=%s.%d consumed=%d "
-                                     "stateExtIdx=%d prefixOutIdx=%d "
-                                     "dstShape=%s srcShape=%s dstStride=%s srcStride=%s "
-                                     "dstOrder=%c srcOrder=%c dstEws=%lld srcEws=%lld "
-                                     "dstDtype=%d srcDtype=%d "
-                                     "dstWrapper=%p dstDevice=%p srcWrapper=%p srcDevice=%p",
-                                     reason, kind, pairOrdinal, consumedCount,
-                                     stateExtIdx, prefixOutIdx,
-                                     dstShape.c_str(), srcShape.c_str(),
-                                     dstStride.c_str(), srcStride.c_str(),
-                                     dst != nullptr ? dst->ordering() : '?',
-                                     src != nullptr ? src->ordering() : '?',
-                                     dst != nullptr ? (long long)dst->ews() : -1LL,
-                                     src != nullptr ? (long long)src->ews() : -1LL,
-                                     dst != nullptr ? (int)dst->dataType() : -1,
-                                     src != nullptr ? (int)src->dataType() : -1,
-                                     (void*)dst,
-                                     dst != nullptr ? dst->specialBuffer() : nullptr,
-                                     (void*)src,
-                                     src != nullptr ? src->specialBuffer() : nullptr);
-                        } else {
-                            // Admitted: record the copy pair. Without this the commit
-                            // block runs with an EMPTY destination list (observed as
-                            // SPEC_STATE_SELECT layers=0, checkpointSelectBytes=0) and
-                            // no state is written at all.
-                            selectPrefixSrc.push_back(src);
-                            selectStateDst.push_back(dst);
-                        }
-                        return reason;
-                    };
-                    for (int s = 0; s < config->mtpPrefixGdnLayerCount && selectEligible; s++) {
-                        const char* reason = resolveLayer("gdn", s,
-                                config->mtpPrefixGdnInputIndices[s],
-                                config->mtpPrefixGdnOutputIndices[s]);
-                        if (reason != nullptr) selectEligible = false;
-                    }
-                    for (int s = 0; s < config->mtpPrefixConvLayerCount && selectEligible; s++) {
-                        const char* reason = resolveLayer("conv", s,
-                                config->mtpPrefixConvInputIndices[s],
-                                config->mtpPrefixConvOutputIndices[s]);
-                        if (reason != nullptr) selectEligible = false;
-                    }
-                }
-                if (selectEligible) {
-                    // ONE selected-state commit. No restore, no rerun, no recovery
-                    // forward: ordinary partial acceptance costs ONE verification.
-                    //
-                    // COMMIT INVARIANT: an internally empty or incomplete copy list
-                    // must never count as a SELECT commit. Eligibility above
-                    // admitted exactly GDN+conv layers, so the recorded lists must
-                    // match that count exactly before any byte is written.
-                    const size_t expectedLayers =
-                        static_cast<size_t>(config->mtpPrefixGdnLayerCount)
-                        + static_cast<size_t>(config->mtpPrefixConvLayerCount);
-                    REQUIRE_TRUE(
-                        expectedLayers > 0
-                            && selectPrefixSrc.size() == expectedLayers
-                            && selectStateDst.size() == expectedLayers, 0,
-                        "autoregressive_decode: SELECT admission produced an incomplete "
-                        "copy list (expected %zu layers, got %zu sources / %zu destinations); "
-                        "refusing to commit or fall back silently",
-                        expectedLayers, selectPrefixSrc.size(), selectStateDst.size());
-                    // Cross-layer overlap: no destination may alias ANY checkpoint
-                    // source (not only its own) or any other destination. Per-layer
-                    // checks already cover own-source and same-kind pairs; add the
-                    // remaining cross pairs here, before the first write.
-                    for (size_t a = 0; a < selectStateDst.size(); a++) {
-                        for (size_t b = a + 1; b < selectStateDst.size(); b++) {
-                            const char* aB = static_cast<const char*>(selectStateDst[a]->specialBuffer());
-                            const size_t aBytes = static_cast<size_t>(selectStateDst[a]->lengthOf())
-                                * static_cast<size_t>(selectStateDst[a]->sizeOfT());
-                            const char* bB = static_cast<const char*>(selectStateDst[b]->specialBuffer());
-                            const size_t bBytes = static_cast<size_t>(selectStateDst[b]->lengthOf())
-                                * static_cast<size_t>(selectStateDst[b]->sizeOfT());
-                            if (aB < bB + bBytes && bB < aB + aBytes) {
-                                REQUIRE_TRUE(false, 0,
-                                    "autoregressive_decode: SELECT destinations overlap "
-                                    "(layer %zu vs %zu); refusing to commit",
-                                    a, b);
-                            }
-                            for (size_t k = 0; k < selectPrefixSrc.size(); k++) {
-                                const char* kB = static_cast<const char*>(selectPrefixSrc[k]->specialBuffer());
-                                const size_t kBytes = static_cast<size_t>(selectPrefixSrc[k]->lengthOf())
-                                    * static_cast<size_t>(selectPrefixSrc[k]->sizeOfT());
-                                if ((aB < kB + kBytes && kB < aB + aBytes)
-                                        || (bB < kB + kBytes && kB < bB + bBytes)) {
-                                    REQUIRE_TRUE(false, 0,
-                                        "autoregressive_decode: SELECT destination %zu or %zu "
-                                        "overlaps checkpoint source %zu; refusing to commit",
-                                        a, b, k);
-                                }
-                            }
-                        }
-                    }
                     // Expected selected-state byte total from the admitted
                     // destinations, with checked accumulation.
                     std::uint64_t expectedSelectBytes = 0;
@@ -4499,6 +4611,7 @@ void autoregressiveDecode(
                     REQUIRE_TRUE(expectedSelectBytes > 0, 0,
                         "autoregressive_decode: SELECT state byte total is zero");
                     const LongType selectedRow = static_cast<LongType>(consumedCount) - 1;
+                    const auto tSelectValidated = std::chrono::high_resolution_clock::now();
                     std::uint64_t copiedBytes = 0;
                     for (size_t li = 0; li < selectStateDst.size(); li++) {
                         NDArray* src = selectPrefixSrc[li];
@@ -4539,6 +4652,14 @@ void autoregressiveDecode(
                         static_cast<unsigned long long>(copiedBytes),
                         static_cast<unsigned long long>(expectedSelectBytes));
                     p0.checkpointSelectBytes += copiedBytes;
+                    if (stepTimingEnabled) {
+                        const auto tSelectCopied = std::chrono::high_resolution_clock::now();
+                        DSP_DIAG(TIMING, "SPEC_SELECT_TIMING step=%d validate=%lldus copy=%lldus layers=%zu bytes=%llu",
+                                 step,
+                                 (long long)std::chrono::duration_cast<std::chrono::microseconds>(tSelectValidated - tSelectStart).count(),
+                                 (long long)std::chrono::duration_cast<std::chrono::microseconds>(tSelectCopied - tSelectValidated).count(),
+                                 selectStateDst.size(), (unsigned long long)copiedBytes);
+                    }
                     // Advance actual_sequence_length to the consumed prefix: the
                     // state now reflects exactly those inputs.
                     NDArray* aslArr = extInputs[config->actualSequenceLengthExtIdx];
@@ -4556,6 +4677,12 @@ void autoregressiveDecode(
                              static_cast<int>(selectStateDst.size()));
                 }
                 if (config->mtpPrefixSelectMode == 2 && !selectStateCommittedThisStep) {
+                    // The rerun fallback needs the pre-verification snapshots, which
+                    // are skipped when SELECT was admitted before the verify pass.
+                    REQUIRE_TRUE(!selectAdmittedPreVerify, 0,
+                                 "autoregressive_decode: SELECT admitted before verification "
+                                 "but rejected at commit (step %d, consumed %d); no rerun "
+                                 "snapshot exists", step, consumedCount);
                     // Select was requested but this step could not honour it (incomplete
                     // binding, shape mismatch, or index unresolvable). The legacy
                     // restore/rerun below runs unchanged; the count makes the fallback
@@ -4793,6 +4920,11 @@ void autoregressiveDecode(
                                  rerunLogits != nullptr
                                      ? static_cast<long long>(rerunLogits->rankOf()) : -1LL);
                     LongType rerunVocab = rerunLogits->sizeAt(rerunLogits->rankOf() - 1);
+                    if (emitLogitsDiag && scalarRerun) {
+                        rerunLogitsHash = logitsRowHash(stream, rerunLogits->dataType(),
+                                                        rerunLogits->specialBuffer(), rerunVocab);
+                        scalarRerunHashed = true;
+                    }
                     // SCRATCH DOMAIN (Stage 2): the rerun argmax writes to the
                     // dedicated rerunScratch buffer. specArgmaxDevice holds the
                     // committed token sequence; overwriting its row 0 here made
@@ -4922,6 +5054,7 @@ void autoregressiveDecode(
                 }
                 }   // end if (!selectStateCommittedThisStep)
             }
+            auto tStateCommitted = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
             // -- FINALIZED EMISSION SEQUENCE (review round 2) ---------------------
             // Reconstruct the lossless verify emission, apply the authoritative
             // scalar-refresh winner, count acceptance from the FINALIZED tokens,
@@ -5271,6 +5404,13 @@ void autoregressiveDecode(
             NDArray::prepareSpecialUse({generatedTokenIds}, {specArgmaxDevice});
             for (int i = 0; i < n && tokensGenerated < maxNewTokens; i++) {
                 LongType tok = argmaxDst[i];
+                if (emitLogitsDiag) {
+                    const bool fromRerun = i == 0 && scalarRerunHashed;
+                    DSP_DIAG(VERIFY, "EMIT_LOGITS t=%d token=%lld source=%s row=%d hash=%016llx",
+                             tokensGenerated, (long long)tok, fromRerun ? "scalarRerun" : "verifyRow", i,
+                             fromRerun ? rerunLogitsHash
+                                       : (i < static_cast<int>(verifyRowHashes.size()) ? verifyRowHashes[i] : 0ull));
+                }
                 void* dstPtr = static_cast<char*>(generatedTokenIds->specialBuffer())
                                + tokensGenerated * sizeof(LongType);
                 cudaMemcpyAsync(dstPtr,
@@ -5562,6 +5702,24 @@ void autoregressiveDecode(
                          "DECODE_STEP_TIMING step=%d path=SPECULATIVE total=%lldus plan=%lldus "
                          "proposed=%d accepted=%d",
                          step, totalStepUs, planUs, proposedCount, storedCount);
+                // Host phase ledger: proposals+wire -> plan launch -> acceptance sync ->
+                // state commit -> emission -> next-step input updates, plus the gap
+                // since the previous speculative step ended.
+                auto us = [](auto a, auto b) {
+                    return static_cast<long long>(
+                        std::chrono::duration_cast<std::chrono::microseconds>(b - a).count());
+                };
+                const long long interStepUs = prevSpecStepEnd.time_since_epoch().count() == 0
+                    ? -1LL : us(prevSpecStepEnd, stepStart);
+                DSP_DIAG(TIMING,
+                         "SPEC_STEP_PHASES step=%d total=%lldus interStep=%lldus wire=%lldus "
+                         "plan=%lldus acceptSync=%lldus commit=%lldus emit=%lldus tail=%lldus "
+                         "proposed=%d consumed=%d",
+                         step, us(stepStart, tLoopEnd), interStepUs, us(stepStart, tWireEnd),
+                         us(tWireEnd, tPlanEnd), us(tPlanEnd, tAcceptanceSynced),
+                         us(tAcceptanceSynced, tStateCommitted), us(tStateCommitted, tStopCheck),
+                         us(tStopCheck, tLoopEnd), proposedCount, consumedCount);
+                prevSpecStepEnd = tLoopEnd;
             }
 
             // Balance the prepareSpecialUse({sampledToken}, {logitsOutput}) called above.
@@ -5633,6 +5791,15 @@ void autoregressiveDecode(
         }
 
         NDArray::registerSpecialUse({sampledToken}, {logitsOutput});
+        if (DSP_DIAG_ENABLED(VERIFY)) {
+            LongType emitted = -1;
+            cudaMemcpyAsync(&emitted, sampledToken->specialBuffer(), sizeof(LongType), cudaMemcpyDeviceToHost,
+                            *stream);
+            const unsigned long long hash = logitsRowHash(stream, logitsOutput->dataType(),
+                                                          logitsOutput->specialBuffer(), logitsVocab);
+            DSP_DIAG(VERIFY, "EMIT_LOGITS t=%d token=%lld source=scalar row=0 hash=%016llx",
+                     tokensGenerated, (long long)emitted, hash);
+        }
 
         // -- Tier 1a: Store token via D2D copy (avoids p() hidden H2D + stream 0 sync) --
         // generatedTokenIds->p() does host write -> syncToDevice() -> cudaMemcpyAsync

@@ -720,6 +720,10 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 
 DECLARE_TYPES(dot_product_attention_v2) {
   getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
+  // Cache-form attention mutates K/V inputs even when no cache is requested
+  // as an output. Prefill/bias-only forms do not activate these write groups.
+  getOpDescriptor()->addInputWrites({5, 6}, {{5, 2}, {6, 2}, {7, 0}});
+  getOpDescriptor()->addInputWrites({9, 10}, {{5, 2}, {6, 2}, {7, 0}}, 5, DataType::INT8);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})                  // queries
       ->setAllowedInputTypes(1, {ALL_FLOATS})                  // values

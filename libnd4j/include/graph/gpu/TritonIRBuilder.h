@@ -205,10 +205,13 @@ class TritonIRBuilder {
 
   // ── Analysis (TritonIRBuilder_analysis.cpp) ──
 
-  // Determine optimal tile sizes based on op categories in the segment
+  // Determine optimal tile sizes based on op categories in the segment.
+  // hasSerialMatmul: the segment holds a SERIAL_FMA matmul, whose per-element
+  // recipe parallelizes only over outputs (see the implementation).
   void selectTileConfig(const std::vector<TritonOpCategory>& categories,
                         const std::vector<std::vector<LongType>>& shapes,
-                        int& blockSize, int& numWarps, int& numStages);
+                        int& blockSize, int& numWarps, int& numStages,
+                        bool hasSerialMatmul);
 
  private:
   // ── Type system (TritonIRBuilder_types.cpp) ──
@@ -251,6 +254,10 @@ class TritonIRBuilder {
                                          mlir::Value addend);
   static mlir::Value emitNativeCudaDiv(mlir::OpBuilder& builder, mlir::Location loc,
                                        mlir::Value lhs, mlir::Value rhs);
+  // CUDA __expf (FP32): the libdevice fast exponential, x * log2(e) then the
+  // approximate base-2 exponential, as native attention softmax uses it.
+  static mlir::Value emitNativeCudaFastExp(mlir::OpBuilder& builder, mlir::Location loc,
+                                           mlir::Value input);
 
   // Emit a binary element-wise op (add, sub, mul, div, min, max, activation backward)
   static mlir::Value emitBinaryElementwise(mlir::OpBuilder& builder, mlir::Location loc,
@@ -414,6 +421,24 @@ class TritonIRBuilder {
                                             int blockM, int blockN,
                                             mlir::Value biasPtr,
                                             const std::vector<LongType>& biasShape);
+
+  // One query row of emitGgufDecodeAttentionKernel with the native grouped-query
+  // kernel's exact arithmetic (fusedGQAAttentionWithScores4DKernel), so compiled
+  // replay and native slot-by-slot execution give the same bits: ascending-d FMA
+  // logits, scale then bias, max, __expf, the native 256-thread sum order,
+  // reciprocal normalization and an ascending-key FMA P*V over the attended keys.
+  static void emitNativeOrderedDecodeAttention(mlir::OpBuilder& builder, mlir::Location loc,
+                                               mlir::Value qPtr, mlir::Value qRowBase,
+                                               mlir::Value curKPtr, mlir::Value curVPtr,
+                                               mlir::Value curBase,
+                                               mlir::Value kCachePtr, mlir::Value vCachePtr,
+                                               mlir::Value cacheBase, mlir::Value kvRowStride,
+                                               mlir::Value cachePos, mlir::Value row,
+                                               mlir::Value batchIdx, mlir::Value headIdx,
+                                               mlir::Value outPtr,
+                                               int seqQ, int cacheMaxSeq, int headDim, float scale,
+                                               mlir::Value biasPtr,
+                                               const std::vector<LongType>& biasShape);
 
   // Emit present_key/value writes for compound attention ops.
   // Writes current_key (BSHD/3D) to present_key (BHSD) output buffer at position pastSeq.
@@ -597,7 +622,8 @@ class TritonIRBuilder {
                                    int M, int N, int K,
                                    const NativeSlot* serialSlot = nullptr,
                                    NDArray* aArray = nullptr, NDArray* bArray = nullptr,
-                                   NDArray* cArray = nullptr);
+                                   NDArray* cArray = nullptr,
+                                   TritonKernelArg* aArg = nullptr, TritonKernelArg* bArg = nullptr);
 
   // Convolution: nested spatial loops (scf.for over kH, kW) with accumulation
   static void emitConvolutionSection(mlir::OpBuilder& builder, mlir::Location loc,

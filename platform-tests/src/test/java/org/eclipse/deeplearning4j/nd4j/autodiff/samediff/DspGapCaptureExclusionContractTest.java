@@ -32,20 +32,22 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Guards the gap-capture exclusion contract for attention and GDN ops.
+ * Guards the gap-capture contract for attention and GDN ops.
  *
- * gated_delta_rule allocates per-invocation recurrent/chunk scratch buffers
- * (commit b1e4663d22) and carries OP_TRAIT_EXTERNAL_WORKSPACE. All
- * attention-family ops carry OP_TRAIT_ATTENTION. isGapRangeCaptureSafe
- * (NativeDynamicShapePlan_gpubackend.cu) excludes both from merged CUDA graph
- * capture because capturing pool-recycled scratch pointers or multi-output
- * KV composition as generic gap glue corrupts replay.
+ * All attention-family ops carry OP_TRAIT_ATTENTION, and isGapRangeCaptureSafe
+ * (NativeDynamicShapePlan_gpubackend.cu) keeps them out of merged CUDA graph
+ * capture: capturing their multi-output KV composition as generic gap glue
+ * corrupts replay.
  *
- * These tests pin the CURRENT contract: graphs containing these ops must
- * produce correct results under every DSP execution mode, and (once a JNI
- * schedule query exists) the gap units containing them must stay live.
- * They fail if someone flips a gate or trait without making the underlying
- * allocation/composition capture-safe first.
+ * gated_delta_rule was excluded the same way (OP_TRAIT_EXTERNAL_WORKSPACE,
+ * commit b1e4663d22) while its sequential CUDA path allocated pool scratch per
+ * call. That path now keeps the recurrent state in shared memory and allocates
+ * nothing, and the chunked prefill's pool scratch is served from the capture
+ * workspace under capture, so gated_delta_rule is captured like any other gap op.
+ *
+ * These tests pin the contract: graphs containing these ops must produce
+ * correct results under every DSP execution mode, including with memory pool
+ * churn between replays (the b1e4663d22 failure mode for recycled scratch).
  */
 @Slf4j
 @Tag(TagNames.FULL_CI)
@@ -227,9 +229,10 @@ public class DspGapCaptureExclusionContractTest {
 
     /**
      * Contract: pool churn between replays must not corrupt results.
-     * gated_delta_rule allocates per-invocation scratch (the reason it stays
-     * live). Allocate and free device buffers between replay steps so the
-     * pool reuses memory, then verify outputs still match the reference.
+     * gated_delta_rule is now captured into the merged graph; any scratch it
+     * or its neighbours take from the pool must stay graph-stable. Allocate
+     * and free device buffers between replay steps so the pool reuses memory,
+     * then verify outputs still match the reference.
      * This is the direct regression test for the b1e4663d22 failure mode.
      */
     @Test

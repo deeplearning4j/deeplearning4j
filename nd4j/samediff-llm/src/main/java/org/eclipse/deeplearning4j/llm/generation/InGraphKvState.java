@@ -310,9 +310,10 @@ class InGraphKvState implements AutoCloseable {
     enum PrefixSelectMode { OFF, SHADOW, SELECT }
 
     /**
-     * Resolved prefix-selection mode. Default OFF. Set once at state preparation
-     * from {@code nd4j.mtp.prefixSelect} (off|shadow|select); unknown values and
-     * incomplete checkpoint bindings are preparation errors, never a silent OFF.
+     * Resolved prefix-selection mode. Set once at state preparation from
+     * {@code nd4j.mtp.prefixSelect} (auto|off|shadow|select; auto, the default,
+     * selects whenever every recurrent layer exports a checkpoint). Unknown values
+     * and incomplete bindings under an explicit request are preparation errors.
      */
     PrefixSelectMode prefixSelectMode = PrefixSelectMode.OFF;
 

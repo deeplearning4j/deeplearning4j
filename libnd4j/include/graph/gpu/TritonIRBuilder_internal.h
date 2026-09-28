@@ -253,6 +253,18 @@ inline void resolveStridedSliceParams(const NativeSlot& slot,
 
 // ─── CUDA helpers ───────────────────────────────────────────────────────────
 
+inline int queryCudaMultiProcessorCount() {
+#ifdef SD_CUDA
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  int multiProcessors = 0;
+  cudaDeviceGetAttribute(&multiProcessors, cudaDevAttrMultiProcessorCount, deviceId);
+  return multiProcessors > 0 ? multiProcessors : 1;
+#else
+  return 1;
+#endif
+}
+
 inline int queryCudaSharedMemLimitBytes() {
 #ifdef SD_CUDA
   int deviceId = 0;
@@ -300,6 +312,9 @@ struct AttentionTileChoice {
   int sharedMemLimitBytes;
 };
 
+// Largest query window tiled as decode (one small query tile per head).
+constexpr int kFusedAttentionDecodeRows = 8;
+
 inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int numHeads,
                                                           int seqQ, int seqK,
                                                           int headDim,
@@ -313,9 +328,13 @@ inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int num
   // DECODE OPTIMIZATION: For seqQ=1 (single-token decode), use minimal blockM
   // to avoid wasting compute on masked-out positions. Standard flash attention
   // uses blockM=32-128, but decode only needs blockM=1-8.
-  if (seqQ <= 4) {
-    // Decode or very short prefix: blockM matches actual seqQ, blockN based on seqK
-    choice.blockM = (seqQ <= 1) ? 1 : ((seqQ <= 2) ? 2 : 4);
+  if (seqQ <= kFusedAttentionDecodeRows) {
+    // Decode, speculative windows (MTP verifies K + 1 rows) or a very short
+    // prefix: one query row per program, like the native kernel's one block
+    // per row, so each row's reduction is the same whatever the window width
+    // (the native-ordered decode path relies on it); blockN is based on seqK.
+    // The prefill tiles below pad longer windows to 32 query rows.
+    choice.blockM = 1;
     if (blockNOverride > 0) {
       choice.blockN = blockNOverride;
     } else {
@@ -339,7 +358,7 @@ inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int num
   int chosenBytes = estimateFusedAttentionSharedMemBytes(headDim, choice.blockM, choice.blockN);
   if (chosenBytes > limit) {
     bool found = false;
-    const int minBlockM = seqQ <= 4 ? choice.blockM : 16;
+    const int minBlockM = seqQ <= kFusedAttentionDecodeRows ? choice.blockM : 16;
     for (int n = choice.blockN; n >= 16 && !found; n /= 2) {
       for (int m = choice.blockM; m >= minBlockM; m /= 2) {
         int bytes = estimateFusedAttentionSharedMemBytes(headDim, m, n);

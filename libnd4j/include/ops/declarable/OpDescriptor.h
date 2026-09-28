@@ -36,6 +36,7 @@
 #include <initializer_list>
 #include <string>
 #include <vector>
+#include <utility>
 
 namespace sd {
 namespace ops {
@@ -186,6 +187,15 @@ class SD_LIB_EXPORT OpExecTrace {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT OpDescriptor {
  protected:
+  /** Native-only input-mutation metadata, separate from ordinary outputs. */
+  struct InputWriteGroup {
+    std::vector<int> indices;
+    std::vector<std::pair<int, int>> requiredInputs;  // (input index, minimum rank)
+    int typeInput = -1;
+    DataType requiredType = DataType::UNKNOWN;
+  };
+
+ protected:
   // opType for legacy XYZ ops
   int _opNum = 0;
 
@@ -244,6 +254,8 @@ class SD_LIB_EXPORT OpDescriptor {
   // Unspecified preserves conservative shape-value synchronization for existing ops.
   bool _shapeValueInputsSpecified = false;
   std::vector<int> _shapeValueInputs;
+
+  std::vector<InputWriteGroup> _inputWriteGroups;
 
   bool checkDataTypesMatch(DataType needle, std::vector<DataType>& haystack) const;
 
@@ -355,6 +367,15 @@ class SD_LIB_EXPORT OpDescriptor {
   bool hasAllTraits(uint64_t traits) const;
   bool hasAnyTrait(uint64_t traits) const;
   uint64_t getTraits64() const;
+
+  // A group is active when every required input is present/nonempty, has its
+  // declared minimum rank, and the optional type guard matches.
+  // Missing optional write destinations are skipped.
+  OpDescriptor* addInputWrites(const std::initializer_list<int>& indices,
+                               const std::initializer_list<std::pair<int, int>>& requiredInputs,
+                               int typeInput = -1,
+                               DataType requiredType = DataType::UNKNOWN);
+  const std::vector<InputWriteGroup>& getInputWriteGroups() const;
 #endif
 
   OpDescriptor* setNumberOfStructuralIArgs(int count);

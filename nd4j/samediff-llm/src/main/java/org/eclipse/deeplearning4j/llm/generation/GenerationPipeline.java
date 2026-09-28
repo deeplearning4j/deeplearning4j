@@ -2641,7 +2641,7 @@ public class GenerationPipeline implements AutoCloseable {
         // attachPrefixSelect later resolves the prefix indices against. Prefill
         // requests stay untouched - the checkpoint allocation is bounded to the
         // verification window.
-        InGraphKvState.PrefixSelectMode requestedPrefixMode = requestedPrefixSelectMode();
+        InGraphKvState.PrefixSelectMode requestedPrefixMode = effectivePrefixSelectMode(decoder, recurrentStates);
         if (requestedPrefixMode != InGraphKvState.PrefixSelectMode.OFF) {
             for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
                 String prefixName = pair.prefixOutputName();
@@ -3727,7 +3727,7 @@ public class GenerationPipeline implements AutoCloseable {
         // Packet 04: same checkpoint-request requirement as the main warmup path -
         // the suffix warmup freezes this plan, and attachPrefixSelect resolves the
         // prefix indices against its requested outputs.
-        InGraphKvState.PrefixSelectMode requestedPrefixMode = requestedPrefixSelectMode();
+        InGraphKvState.PrefixSelectMode requestedPrefixMode = effectivePrefixSelectMode(decoder, recurrentStates);
         if (requestedPrefixMode != InGraphKvState.PrefixSelectMode.OFF) {
             for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
                 String prefixName = pair.prefixOutputName();
@@ -9344,16 +9344,46 @@ public class GenerationPipeline implements AutoCloseable {
      * Parse the accepted-prefix selection mode from the {@code nd4j.mtp.prefixSelect}
      * system property. Unknown values are a preparation error - never guessed and
      * never silently resolved to OFF (a silently-OFF SELECT request is not a
-     * fail-closed success).
+     * fail-closed success). The default {@code auto} parses as SELECT; see
+     * {@link #effectivePrefixSelectMode}.
      */
     static InGraphKvState.PrefixSelectMode requestedPrefixSelectMode() {
-        String flag = System.getProperty("nd4j.mtp.prefixSelect", "off");
-        String mode = flag == null ? "off" : flag.trim().toLowerCase(Locale.ROOT);
+        String mode = prefixSelectFlag();
         if ("off".equals(mode)) return InGraphKvState.PrefixSelectMode.OFF;
         if ("shadow".equals(mode)) return InGraphKvState.PrefixSelectMode.SHADOW;
-        if ("select".equals(mode)) return InGraphKvState.PrefixSelectMode.SELECT;
+        if ("select".equals(mode) || "auto".equals(mode)) return InGraphKvState.PrefixSelectMode.SELECT;
         throw new IllegalStateException(
-                "Unknown nd4j.mtp.prefixSelect='" + flag + "': expected off|shadow|select");
+                "Unknown nd4j.mtp.prefixSelect='" + System.getProperty("nd4j.mtp.prefixSelect")
+                + "': expected auto|off|shadow|select");
+    }
+
+    private static String prefixSelectFlag() {
+        String flag = System.getProperty("nd4j.mtp.prefixSelect");
+        return flag == null || flag.isBlank() ? "auto" : flag.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * The prefix-selection mode for this decoder. The default ({@code auto}) selects
+     * accepted-prefix checkpoints whenever the model has recurrent layers and the
+     * graph exports a checkpoint for every one of them, and is OFF otherwise (no
+     * recurrent state, or a graph built without checkpoint outputs). An explicit
+     * {@code select}/{@code shadow} request is returned unchanged, so an incomplete
+     * binding stays a preparation error.
+     */
+    static InGraphKvState.PrefixSelectMode effectivePrefixSelectMode(
+            SameDiff decoder, List<ModelIOConfig.RecurrentStatePair> recurrentStates) {
+        InGraphKvState.PrefixSelectMode requested = requestedPrefixSelectMode();
+        if (!"auto".equals(prefixSelectFlag())) return requested;
+        if (decoder == null || recurrentStates == null || recurrentStates.isEmpty()) {
+            return InGraphKvState.PrefixSelectMode.OFF;
+        }
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            String prefixName = pair.hasPrefixCapture() ? pair.prefixOutputName() : null;
+            if (prefixName == null || !decoder.hasVariable(prefixName)) {
+                return InGraphKvState.PrefixSelectMode.OFF;
+            }
+        }
+        return InGraphKvState.PrefixSelectMode.SELECT;
     }
 
     /**
@@ -9375,7 +9405,7 @@ public class GenerationPipeline implements AutoCloseable {
             InGraphKvState state, SameDiff decoder,
             List<ModelIOConfig.RecurrentStatePair> recurrentStates,
             DynamicShapePlanExecutor executor) {
-        InGraphKvState.PrefixSelectMode resolved = requestedPrefixSelectMode();
+        InGraphKvState.PrefixSelectMode resolved = effectivePrefixSelectMode(decoder, recurrentStates);
         if (resolved == InGraphKvState.PrefixSelectMode.OFF) {
             return InGraphKvState.PrefixSelectMode.OFF;
         }
@@ -9389,6 +9419,9 @@ public class GenerationPipeline implements AutoCloseable {
                     + "comparison transaction is not implemented. Use off or select.");
         }
         String mode = resolved.name().toLowerCase(Locale.ROOT);
+        // The default (auto) uses selection only when the prepared plan can serve
+        // it; an explicit request with an incomplete binding is a preparation error.
+        final boolean explicitRequest = !"auto".equals(prefixSelectFlag());
 
         if (decoder == null || executor == null
                 || recurrentStates == null || recurrentStates.isEmpty()) {
@@ -9402,18 +9435,21 @@ public class GenerationPipeline implements AutoCloseable {
         List<Integer> convPrefix = new ArrayList<>();
         for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
             if (!pair.hasPrefixCapture()) {
+                if (!explicitRequest) return InGraphKvState.PrefixSelectMode.OFF;
                 throw new IllegalStateException(
                         "nd4j.mtp.prefixSelect=" + mode + " requires a checkpoint output for "
                         + pair + ", but the consuming op has no prefix capture");
             }
             String prefixName = pair.prefixOutputName();
             if (prefixName == null || !decoder.hasVariable(prefixName)) {
+                if (!explicitRequest) return InGraphKvState.PrefixSelectMode.OFF;
                 throw new IllegalStateException(
                         "nd4j.mtp.prefixSelect=" + mode + " requires the checkpoint output "
                         + prefixName + " for pair " + pair + ", but the graph does not export it");
             }
             int prefixIdx = resolveOutputIdx(executor, prefixName);
             if (prefixIdx < 0) {
+                if (!explicitRequest) return InGraphKvState.PrefixSelectMode.OFF;
                 throw new IllegalStateException(
                         "nd4j.mtp.prefixSelect=" + mode + " cannot resolve checkpoint output "
                         + prefixName + " in the prepared target plan for pair " + pair);

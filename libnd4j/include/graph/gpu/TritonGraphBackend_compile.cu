@@ -448,7 +448,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     int planningBlockSize = 1024;
     int planningWarps = 4;
     int planningStages = 1;
-    planningBuilder.selectTileConfig(categories, shapes, planningBlockSize, planningWarps, planningStages);
+    planningBuilder.selectTileConfig(categories, shapes, planningBlockSize, planningWarps, planningStages,
+                                     dsp::hasNonLegacyMatmulArithmetic(slots, seg.def.startSlot,
+                                                                       seg.def.endSlot));
     (void) planningWarps;
     (void) planningStages;
 

@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.nd4j.ggml.architecture.ArchitectureConfig;
+import org.nd4j.ggml.architecture.ModelArchitecture;
 
 import java.io.File;
 import java.io.IOException;
@@ -111,7 +112,11 @@ public final class ModelOptQwenConfig {
                 .ropeFreqBase(rope.get("rope_theta").getAsFloat()).ropeDimensionCount(rotaryDims)
                 // HF rotate_half pairs the two halves. Native fusedRoPE type 0 implements this.
                 // Text positions have identical T/H/W coordinates, so interleaved MRoPE reduces to this.
-                .ropeType(0).build();
+                .ropeType(0)
+                // Per-row recurrent checkpoints let an MTP step commit the accepted prefix
+                // without re-running the target (same opt-in as the GGUF architectures).
+                .exportRecurrentStatePrefixes(ModelArchitecture.recurrentStatePrefixesRequested())
+                .build();
     }
 
     private void validateGroups(JsonObject groups) {

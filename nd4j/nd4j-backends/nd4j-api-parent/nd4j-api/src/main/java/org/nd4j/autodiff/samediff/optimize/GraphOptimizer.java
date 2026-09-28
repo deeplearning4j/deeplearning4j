@@ -90,6 +90,7 @@ public class GraphOptimizer {
                 new RematerializationOptimizations(), // Duplicate cheap ops to shorten live ranges (runs after fusion to avoid breaking patterns)
                 new LinearFusionOptimizations(),
                 new QuantizationOptimizations(),     // Remove redundant casts, FP16 quantization
+                new SerialMatmulLayoutOptimizations(), // CUDA: store SERIAL_FMA constant weights [K,N] (bit-identical)
                 new UnusedFunctionOptimizations(),
                 new CuDNNFunctionOptimizations()
         );

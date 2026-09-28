@@ -934,14 +934,27 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
 #define BLOCK_SIZE_MODELOPT_LINEAR getEnvVariable("BLOCK_SIZE_MODELOPT_LINEAR", 128)
 #define SHARED_MEM_SIZE_MODELOPT_LINEAR getEnvVariable("SHARED_MEM_SIZE_MODELOPT_LINEAR", 0)
 
-// ModelOpt packed linear contiguous fast path: one warp per output column.
-// A warp strided over the K dimension reads uint32 words (4 coalesced
-// 32B/warp transactions instead of one scattered byte per thread) and
-// dequantizes 8 nibbles per word with FP32 warp reduction. BLOCK must stay a
-// warp multiple; the launch maps blockDim.x/32 warps per block over gridDim.x.
+// ModelOpt packed linear contiguous fast path: each block stages activation
+// tiles in (static) shared memory and each warp computes a fixed number of
+// output columns from them. BLOCK must stay a warp multiple; GRID caps the
+// number of blocks, which grid-stride over column groups.
 #define GRID_SIZE_MODELOPT_LINEAR_TILED getEnvVariable("GRID_SIZE_MODELOPT_LINEAR_TILED", 512)
 #define BLOCK_SIZE_MODELOPT_LINEAR_TILED getEnvVariable("BLOCK_SIZE_MODELOPT_LINEAR_TILED", 256)
 #define SHARED_MEM_SIZE_MODELOPT_LINEAR_TILED getEnvVariable("SHARED_MEM_SIZE_MODELOPT_LINEAR_TILED", 0)
+
+// Weight-only quantized GEMM on tensor cores (helpers/cuda/WeightOnlyGemm.cu):
+// BLOCK is fixed by the algorithm (8 split-K warps = 256 threads) and is
+// validated at launch; GRID caps the number of blocks, which grid-stride over
+// 8-column groups.
+#define GRID_SIZE_WEIGHT_ONLY_GEMM getEnvVariable("GRID_SIZE_WEIGHT_ONLY_GEMM", 8192)
+#define BLOCK_SIZE_WEIGHT_ONLY_GEMM getEnvVariable("BLOCK_SIZE_WEIGHT_ONLY_GEMM", 256)
+#define SHARED_MEM_SIZE_WEIGHT_ONLY_GEMM getEnvVariable("SHARED_MEM_SIZE_WEIGHT_ONLY_GEMM", 0)
+
+// ModelOpt FP8 activation quantization: one element per thread (grid-stride),
+// writing the E4M3 operand consumed by the cuBLASLt FP8 GEMM.
+#define GRID_SIZE_MODELOPT_FP8_QUANTIZE getEnvVariable("GRID_SIZE_MODELOPT_FP8_QUANTIZE", 256)
+#define BLOCK_SIZE_MODELOPT_FP8_QUANTIZE getEnvVariable("BLOCK_SIZE_MODELOPT_FP8_QUANTIZE", 256)
+#define SHARED_MEM_SIZE_MODELOPT_FP8_QUANTIZE getEnvVariable("SHARED_MEM_SIZE_MODELOPT_FP8_QUANTIZE", 0)
 
 // ggml_qmatmul — runtime quantized matmul (fused dequant-dot kernels).
 // Q8_0: grid=(ceil(N/4), M), block=128 (4 warps, one warp per n element).

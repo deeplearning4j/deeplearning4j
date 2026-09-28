@@ -673,9 +673,16 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                      compiledSeg->consolidatedArgTableHostPinned,
                      seg.def.startSlot, seg.def.endSlot);
       }
-      // Per-kernel H2D via executeSingleKernel (argTablePreCopied=false).
-      DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
-                   "TritonGraphBackend: SKIP consolidated H2D during capture — per-kernel H2D will be used");
+      if (compiledSeg->argTableBakedInCapture) {
+        // A whole-segment capture already recorded one consolidated copy at
+        // its start (bakeConsolidatedArgTableIntoCapture) and no live gap can
+        // change an address before these kernels run: no per-kernel copies.
+        consolidatedArgsCopied = true;
+      } else {
+        // Per-kernel H2D via executeSingleKernel (argTablePreCopied=false).
+        DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
+                     "TritonGraphBackend: SKIP consolidated H2D during capture — per-kernel H2D will be used");
+      }
     }
   }
 

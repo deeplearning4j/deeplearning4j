@@ -151,15 +151,14 @@ public interface ModelArchitecture {
     }
 
     /**
-     * Accepted-prefix checkpoint export is opt-in: it adds one time-leading output
-     * per recurrent (GDN/conv) layer to the built graph. Enabled when bundled-MTP
-     * accepted-prefix state selection is requested via
-     * {@code -Dnd4j.mtp.prefixSelect=shadow|select}. The verification graph must be
-     * built with the companion outputs present; the controller fails closed to the
-     * legacy restore/rerun recovery when they are absent.
+     * Accepted-prefix checkpoint export adds one time-leading output per recurrent
+     * (GDN/conv) layer to the built graph, letting an MTP step commit the accepted
+     * prefix by selecting a checkpoint instead of re-running the target. On by
+     * default ({@code nd4j.mtp.prefixSelect} unset or {@code auto|shadow|select});
+     * {@code -Dnd4j.mtp.prefixSelect=off} builds the graph without the outputs.
      */
-    static boolean recurrentStatePrefixesRequested() {
-        String mode = System.getProperty("nd4j.mtp.prefixSelect", "off");
-        return mode != null && !"off".equalsIgnoreCase(mode.trim());
+    public static boolean recurrentStatePrefixesRequested() {
+        String mode = System.getProperty("nd4j.mtp.prefixSelect");
+        return mode == null || !"off".equalsIgnoreCase(mode.trim());
     }
 }

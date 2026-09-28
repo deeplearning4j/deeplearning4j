@@ -307,6 +307,8 @@ static inline bool sdToCudaDataType(DataType dt, cudaDataType& out) {
     case HALF:      out = CUDA_R_16F;  return true;
     case BFLOAT16:  out = CUDA_R_16BF; return true;
     case INT8:      out = CUDA_R_8I;   return true;
+    case FLOAT8:      out = CUDA_R_8F_E4M3; return true;
+    case FLOAT8_E5M2: out = CUDA_R_8F_E5M2; return true;
     default:        return false;
   }
 }
@@ -411,6 +413,8 @@ struct LtMatmulCacheKey {
   int epilogueType;  // 0=none, 1=bias, 2=bias+relu, 3=bias+gelu
   size_t workspaceSizeHint;
   int graphCaptureEnabled;
+  int scaledOperands = 0;  // 1 when A/B carry cuBLASLt scalar scale pointers
+  int deterministic = 0;   // 1 when selection excluded split-K reductions
 
   bool operator==(const LtMatmulCacheKey& other) const {
     return deviceId == other.deviceId && M == other.M && N == other.N && K == other.K &&
@@ -418,7 +422,8 @@ struct LtMatmulCacheKey {
            transA == other.transA && transB == other.transB &&
            epilogueType == other.epilogueType &&
            workspaceSizeHint == other.workspaceSizeHint &&
-           graphCaptureEnabled == other.graphCaptureEnabled;
+           graphCaptureEnabled == other.graphCaptureEnabled &&
+           scaledOperands == other.scaledOperands && deterministic == other.deterministic;
   }
 };
 
@@ -438,6 +443,8 @@ struct LtMatmulCacheKeyHash {
     h ^= std::hash<int>{}(key.epilogueType) + 0x9e3779b9 + (h << 6) + (h >> 2);
     h ^= std::hash<size_t>{}(key.workspaceSizeHint) + 0x9e3779b9 + (h << 6) + (h >> 2);
     h ^= std::hash<int>{}(key.graphCaptureEnabled) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.scaledOperands) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.deterministic) + 0x9e3779b9 + (h << 6) + (h >> 2);
     return h;
   }
 };
@@ -597,6 +604,140 @@ static NDArray* castWithPersistentCache(CastCacheSide& side, NDArray* source, Da
 }
 
 // cuBLAS Lt matmul for decoder logits projection: [1,K] x [K,N] -> [1,N]
+// ─── Shared cuBLASLt machinery ───────────────────────────────────────────────
+
+// Multi-GPU sharding: the DSP cuBLAS workspace (tl_cublasWorkspacePtr) is a SINGLE buffer on the
+// PRIMARY device (0). On a secondary device it is unusable — and cublasLt fails hard if an algo
+// chosen FOR a workspace is then executed WITHOUT one (CUBLAS_STATUS_EXECUTION_FAILED). So resolve
+// the EFFECTIVE workspace size ONCE and thread it through the algo-cache key, the heuristic
+// preference, and execution: on a device that doesn't own the workspace it is 0, so the heuristic
+// picks a no-workspace algo, the cache is partitioned per regime, and execution passes no
+// workspace — all three stay consistent. Primary device is unchanged.
+static size_t ltUsableWorkspaceSize() {
+  size_t usable = 0;
+  if (tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+    usable = tl_cublasWorkspaceSize;
+    int currentDevice = 0;
+    cudaGetDevice(&currentDevice);
+    cudaPointerAttributes attributes;
+    if (cudaPointerGetAttributes(&attributes, tl_cublasWorkspacePtr) == cudaSuccess &&
+        attributes.type == cudaMemoryTypeDevice && attributes.device != currentDevice) {
+      usable = 0;  // workspace lives on another device — unusable here
+    }
+    cudaGetLastError();
+  }
+  return usable;
+}
+
+// One cuBLASLt problem description: the operation descriptor plus the A, B and
+// C/D layouts. Destroys whatever it created; `valid` is set by the builder once
+// every descriptor and attribute was created successfully.
+struct LtMatmulDescriptors {
+  cublasLtMatmulDesc_t operation = nullptr;
+  cublasLtMatrixLayout_t a = nullptr;
+  cublasLtMatrixLayout_t b = nullptr;
+  cublasLtMatrixLayout_t c = nullptr;
+  bool valid = false;
+
+  ~LtMatmulDescriptors() {
+    if (c != nullptr) cublasLtMatrixLayoutDestroy(c);
+    if (b != nullptr) cublasLtMatrixLayoutDestroy(b);
+    if (a != nullptr) cublasLtMatrixLayoutDestroy(a);
+    if (operation != nullptr) cublasLtMatmulDescDestroy(operation);
+  }
+};
+
+// Returns the algorithm cached for `key`, running the heuristic on a miss.
+// `deterministic` restricts selection to algorithms without a split-K
+// reduction: the chosen kernel is then bit-reproducible from run to run, which
+// is what CUDA graph capture/replay and the DSP deterministic window require.
+static bool ltSelectAlgorithm(cublasLtHandle_t handle, const LtMatmulCacheKey& key,
+                              const LtMatmulDescriptors& descriptors, size_t maxWorkspace,
+                              bool deterministic, LtMatmulAlgoCacheEntry& entry) {
+  auto cached = tl_ltAlgoCache.find(key);
+  if (cached != tl_ltAlgoCache.end()) {
+    entry = cached->second;
+    return true;
+  }
+
+  cublasLtMatmulPreference_t preference = nullptr;
+  if (cublasLtMatmulPreferenceCreate(&preference) != CUBLAS_STATUS_SUCCESS) return false;
+  cublasStatus_t status = cublasLtMatmulPreferenceSetAttribute(
+      preference, CUBLASLT_MATMUL_PREF_MAX_WORKSPACE_BYTES, &maxWorkspace, sizeof(maxWorkspace));
+  if (status == CUBLAS_STATUS_SUCCESS && deterministic) {
+    const uint32_t reductionMask = CUBLASLT_REDUCTION_SCHEME_NONE;
+    status = cublasLtMatmulPreferenceSetAttribute(preference, CUBLASLT_MATMUL_PREF_REDUCTION_SCHEME_MASK,
+                                                  &reductionMask, sizeof(reductionMask));
+  }
+  cublasLtMatmulHeuristicResult_t result;
+  int returned = 0;
+  if (status == CUBLAS_STATUS_SUCCESS) {
+    status = cublasLtMatmulAlgoGetHeuristic(handle, descriptors.operation, descriptors.a, descriptors.b,
+                                            descriptors.c, descriptors.c, preference, 1, &result, &returned);
+  }
+  cublasLtMatmulPreferenceDestroy(preference);
+  if (status != CUBLAS_STATUS_SUCCESS || returned == 0) return false;
+
+  entry = {result.algo, result.workspaceSize};
+  tl_ltAlgoCache[key] = entry;
+  return true;
+}
+
+// Launches D = alpha * op(A) * op(B) + beta * D. The scalars live in the
+// persistent thread-local pinned block (not stack locals) so the host addresses
+// baked into a captured CUDA graph stay valid on replay.
+static bool ltLaunch(cublasLtHandle_t handle, const LtMatmulDescriptors& descriptors,
+                     const LtMatmulAlgoCacheEntry& entry, double alpha, double beta,
+                     const void* a, const void* b, void* d, cudaStream_t stream) {
+  getCublasScalars()->alphaF = static_cast<float>(alpha);
+  getCublasScalars()->betaF = static_cast<float>(beta);
+  // The algorithm was selected against ltUsableWorkspaceSize(), so its size is
+  // 0 on a device that does not own tl_cublasWorkspacePtr.
+  void* workspace = nullptr;
+  size_t workspaceSize = 0;
+  if (entry.workspaceSize > 0 && tl_cublasWorkspacePtr != nullptr && entry.workspaceSize <= tl_cublasWorkspaceSize) {
+    workspace = tl_cublasWorkspacePtr;
+    workspaceSize = entry.workspaceSize;
+  }
+  return cublasLtMatmul(handle, descriptors.operation, &getCublasScalars()->alphaF, a, descriptors.a, b,
+                        descriptors.b, &getCublasScalars()->betaF, d, descriptors.c, d, descriptors.c, &entry.algo,
+                        workspace, workspaceSize, stream) == CUBLAS_STATUS_SUCCESS;
+}
+
+// Row-major C[M,N] = A[M,K] x B[K,N] expressed column-major as C^T = B^T x A^T:
+// B[K,N] row-major is [N,K] column-major (ld N) and A[1,K] row-major is [K,1]
+// column-major (ld K), so both Lt operands stay non-transposed and B is passed
+// first. Optionally fuses a bias(+activation) epilogue.
+static void buildRowMajorLtDescriptors(LtMatmulDescriptors& descriptors, int M, int N, int K,
+                                       cudaDataType aType, cudaDataType bType, cudaDataType cType,
+                                       int epilogueType, const void* biasPtr) {
+  cublasStatus_t status = cublasLtMatmulDescCreate(&descriptors.operation, CUBLAS_COMPUTE_32F, CUDA_R_32F);
+  const cublasOperation_t noTranspose = CUBLAS_OP_N;
+  if (status == CUBLAS_STATUS_SUCCESS)
+    status = cublasLtMatmulDescSetAttribute(descriptors.operation, CUBLASLT_MATMUL_DESC_TRANSA, &noTranspose,
+                                            sizeof(noTranspose));
+  if (status == CUBLAS_STATUS_SUCCESS)
+    status = cublasLtMatmulDescSetAttribute(descriptors.operation, CUBLASLT_MATMUL_DESC_TRANSB, &noTranspose,
+                                            sizeof(noTranspose));
+  if (status == CUBLAS_STATUS_SUCCESS && epilogueType > 0 && biasPtr != nullptr) {
+    cublasLtEpilogue_t epilogue = CUBLASLT_EPILOGUE_DEFAULT;
+    if (epilogueType == 1) epilogue = CUBLASLT_EPILOGUE_BIAS;
+    else if (epilogueType == 2) epilogue = CUBLASLT_EPILOGUE_RELU_BIAS;
+    else if (epilogueType == 3) epilogue = CUBLASLT_EPILOGUE_GELU_BIAS;
+    if (epilogue != CUBLASLT_EPILOGUE_DEFAULT) {
+      status = cublasLtMatmulDescSetAttribute(descriptors.operation, CUBLASLT_MATMUL_DESC_EPILOGUE, &epilogue,
+                                              sizeof(epilogue));
+      if (status == CUBLAS_STATUS_SUCCESS)
+        status = cublasLtMatmulDescSetAttribute(descriptors.operation, CUBLASLT_MATMUL_DESC_BIAS_POINTER,
+                                                &biasPtr, sizeof(biasPtr));
+    }
+  }
+  if (status == CUBLAS_STATUS_SUCCESS) status = cublasLtMatrixLayoutCreate(&descriptors.a, bType, N, K, N);
+  if (status == CUBLAS_STATUS_SUCCESS) status = cublasLtMatrixLayoutCreate(&descriptors.b, aType, K, M, K);
+  if (status == CUBLAS_STATUS_SUCCESS) status = cublasLtMatrixLayoutCreate(&descriptors.c, cType, N, M, N);
+  descriptors.valid = status == CUBLAS_STATUS_SUCCESS;
+}
+
 // Narrow fast path targeting large N (vocab projection) with mixed precision.
 // Returns true if Lt matmul was executed, false to fall back to standard cuBLAS.
 static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double beta,
@@ -606,9 +747,9 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
                        cudaDataType aType, cudaDataType bType, cudaDataType cType,
                        int epilogueType = 0, const void* biasPtr = nullptr, int64_t biasSize = 0) {
   // Skip cublasLt when tl_cublasLtDisabled is set (CUDA_GRAPHS, AUTO capture).
-  // cublasLt may select split-K algorithms whose internal reductions are
-  // non-deterministic when replayed via CUDA graph (threadblock scheduling
-  // order varies between replay iterations).
+  // This path selects algorithms without restricting split-K, whose internal
+  // reductions are non-deterministic when replayed via CUDA graph (threadblock
+  // scheduling order varies between replay iterations).
   if (tl_cublasLtDisabled) return false;
 
   // When epilogue fusion is requested, relax the gating — cublasLt handles general matmul.
@@ -622,32 +763,12 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
     if (transA || !transB) return false;  // Expect row-major [1,K] x [K,N]
   }
 
-  // Get cuBLAS Lt handle
   auto ltHandlePtr = CublasHelper::getInstance().ltHandle();
   if (ltHandlePtr == nullptr) return false;
   auto ltHandle = reinterpret_cast<cublasLtHandle_t*>(ltHandlePtr);
   auto stream = A->getContext()->getCudaStream();
+  const size_t usableWorkspaceSize = ltUsableWorkspaceSize();
 
-  // Multi-GPU sharding: the DSP cuBLAS workspace (tl_cublasWorkspacePtr) is a SINGLE buffer on the
-  // PRIMARY device (0). On a secondary device it is unusable — and cublasLt fails hard if an algo
-  // chosen FOR a workspace is then executed WITHOUT one (CUBLAS_STATUS_EXECUTION_FAILED). So resolve
-  // the EFFECTIVE workspace size ONCE and thread it through the algo-cache key, the heuristic
-  // preference, and execution: on a device that doesn't own the workspace it is 0, so the heuristic
-  // picks a no-workspace algo, the cache is partitioned per regime, and execution passes no
-  // workspace — all three stay consistent. Primary device is unchanged.
-  size_t usableWorkspaceSize = 0;
-  if (tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
-    usableWorkspaceSize = tl_cublasWorkspaceSize;
-    int wsCurDev = 0; cudaGetDevice(&wsCurDev);
-    cudaPointerAttributes wsAttr;
-    if (cudaPointerGetAttributes(&wsAttr, tl_cublasWorkspacePtr) == cudaSuccess &&
-        wsAttr.type == cudaMemoryTypeDevice && wsAttr.device != wsCurDev) {
-      usableWorkspaceSize = 0;  // workspace lives on another device — unusable here
-    }
-    cudaGetLastError();
-  }
-
-  // Build cache key
   LtMatmulCacheKey key;
   key.deviceId = AffinityManager::currentDeviceId();
   key.M = M;
@@ -659,190 +780,119 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
   key.transA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
   key.transB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
   key.epilogueType = epilogueType;
-  // Keep algo cache partitioned by effective workspace regime. This prevents
-  // cross-run reuse of heuristics selected under different workspace settings.
-  // usableWorkspaceSize (not tl_cublasWorkspaceSize) so a secondary device's no-workspace
-  // regime is cached separately from the primary device's with-workspace regime.
+  // Partitioned by effective workspace regime (usableWorkspaceSize, so a secondary device's
+  // no-workspace regime is cached separately) and by graph-capture regime: tests toggle it
+  // between methods and reusing Lt heuristics across regimes can select unstable algos.
   key.workspaceSizeHint = usableWorkspaceSize;
-  // Partition by graph-capture execution regime: tests toggle this between
-  // methods and reusing Lt heuristics across regimes can select unstable algos.
   key.graphCaptureEnabled = Environment::getInstance().tritonGraphCapture() ? 1 : 0;
 
-  // Look up cached algorithm
-  auto cacheIt = tl_ltAlgoCache.find(key);
-  cublasLtMatmulAlgo_t algo;
-  size_t workspaceSize = 0;
+  // During capture only an algorithm cached at warmup may be used; otherwise
+  // fall back to standard cuBLAS.
+  if (tl_graphExecutionActive && tl_ltAlgoCache.find(key) == tl_ltAlgoCache.end()) return false;
 
-  if (cacheIt != tl_ltAlgoCache.end()) {
-    // Use cached algorithm
-    algo = cacheIt->second.algo;
-    workspaceSize = cacheIt->second.workspaceSize;
-  } else if (tl_graphExecutionActive) {
-    // During capture without cached algo: fall back to standard cuBLAS
+  LtMatmulDescriptors descriptors;
+  buildRowMajorLtDescriptors(descriptors, M, N, K, aType, bType, cType, epilogueType, biasPtr);
+  if (!descriptors.valid) return false;
+
+  LtMatmulAlgoCacheEntry entry;
+  if (!ltSelectAlgorithm(*ltHandle, key, descriptors, usableWorkspaceSize, false, entry)) return false;
+  const bool launched = ltLaunch(*ltHandle, descriptors, entry, alpha, beta, pB->specialBuffer(),
+                                 pA->specialBuffer(), pC->specialBuffer(), *stream);
+  DSP_DIAG(BACKEND, "MmulHelper: cuBLASLt row-major matmul M=%d N=%d K=%d epilogue=%d launched=%d", M, N, K,
+           epilogueType, launched ? 1 : 0);
+  return launched;
+}
+
+// Largest row count of the decode class. Every call in the class runs the
+// algorithm selected for exactly this width, so a row's reduction order — and
+// therefore its bits — do not depend on how many rows the call carries.
+// Speculative decoding relies on that: the same token position is computed in
+// calls of different widths and must agree bit for bit with greedy decoding.
+static constexpr LongType kLtDecodeClassRows = 16;
+
+// Row-major z[rows, columns] = x[rows, depth] . w[columns, depth]^T is, column-major,
+// z^T(columns x rows) = op_T(w: depth x columns, ld depth) * (x: depth x rows, ld depth)
+// — the TN form low-precision cuBLASLt kernels require.
+static void buildScaledLtDescriptors(LtMatmulDescriptors& descriptors, LongType rows, LongType columns,
+                                     LongType depth, cudaDataType operandType, cudaDataType outputType,
+                                     const float* xScale, const float* wScale) {
+  cublasStatus_t status = cublasLtMatmulDescCreate(&descriptors.operation, CUBLAS_COMPUTE_32F, CUDA_R_32F);
+  const cublasOperation_t transposeW = CUBLAS_OP_T;
+  const cublasOperation_t noTranspose = CUBLAS_OP_N;
+  if (status == CUBLAS_STATUS_SUCCESS)
+    status = cublasLtMatmulDescSetAttribute(descriptors.operation, CUBLASLT_MATMUL_DESC_TRANSA, &transposeW,
+                                            sizeof(transposeW));
+  if (status == CUBLAS_STATUS_SUCCESS)
+    status = cublasLtMatmulDescSetAttribute(descriptors.operation, CUBLASLT_MATMUL_DESC_TRANSB, &noTranspose,
+                                            sizeof(noTranspose));
+  if (status == CUBLAS_STATUS_SUCCESS && wScale != nullptr)
+    status = cublasLtMatmulDescSetAttribute(descriptors.operation, CUBLASLT_MATMUL_DESC_A_SCALE_POINTER, &wScale,
+                                            sizeof(wScale));
+  if (status == CUBLAS_STATUS_SUCCESS && xScale != nullptr)
+    status = cublasLtMatmulDescSetAttribute(descriptors.operation, CUBLASLT_MATMUL_DESC_B_SCALE_POINTER, &xScale,
+                                            sizeof(xScale));
+  if (status == CUBLAS_STATUS_SUCCESS)
+    status = cublasLtMatrixLayoutCreate(&descriptors.a, operandType, depth, columns, depth);
+  if (status == CUBLAS_STATUS_SUCCESS)
+    status = cublasLtMatrixLayoutCreate(&descriptors.b, operandType, depth, rows, depth);
+  if (status == CUBLAS_STATUS_SUCCESS)
+    status = cublasLtMatrixLayoutCreate(&descriptors.c, outputType, columns, rows, columns);
+  descriptors.valid = status == CUBLAS_STATUS_SUCCESS;
+}
+
+bool MmulHelper::ltMatmulScaled(LaunchContext* context, const void* x, const void* w, void* z,
+                                LongType rows, LongType columns, LongType depth, DataType operandType,
+                                DataType outputType, const float* xScale, const float* wScale) {
+  cudaDataType operandCudaType, outputCudaType;
+  if (!sdToCudaDataType(operandType, operandCudaType) || !sdToCudaDataType(outputType, outputCudaType))
     return false;
+  auto ltHandlePtr = CublasHelper::getInstance().ltHandle();
+  if (ltHandlePtr == nullptr) return false;
+  auto ltHandle = reinterpret_cast<cublasLtHandle_t*>(ltHandlePtr);
+
+  LtMatmulDescriptors launch;
+  buildScaledLtDescriptors(launch, rows, columns, depth, operandCudaType, outputCudaType, xScale, wScale);
+  if (!launch.valid) return false;
+
+  // The algorithm is a pure function of the problem class. Selection uses no
+  // workspace and the key carries no execution-regime state, because workspace
+  // availability and capture mode change between warmup, capture and replay
+  // and between plans; an algorithm that followed them would change the
+  // reduction order, and the bits, of the same computation.
+  const LongType selectionRows = rows <= kLtDecodeClassRows ? kLtDecodeClassRows : rows;
+  LtMatmulCacheKey key;
+  key.deviceId = AffinityManager::currentDeviceId();
+  key.M = static_cast<int>(selectionRows);
+  key.N = static_cast<int>(columns);
+  key.K = static_cast<int>(depth);
+  key.aType = operandCudaType;
+  key.bType = operandCudaType;
+  key.cType = outputCudaType;
+  key.transA = CUBLAS_OP_T;
+  key.transB = CUBLAS_OP_N;
+  key.epilogueType = 0;
+  key.workspaceSizeHint = 0;
+  key.graphCaptureEnabled = 0;
+  key.scaledOperands = 1;
+  key.deterministic = 1;
+
+  LtMatmulAlgoCacheEntry entry;
+  if (selectionRows == rows) {
+    if (!ltSelectAlgorithm(*ltHandle, key, launch, 0, true, entry)) return false;
   } else {
-    // Warmup: get heuristic algorithm
-    cublasLtMatmulDesc_t operationDesc = nullptr;
-    cublasLtMatmulPreference_t preference = nullptr;
-    cublasLtMatrixLayout_t Adesc = nullptr, Bdesc = nullptr, Cdesc = nullptr;
-    int resultsReturned = 0;
-    cublasLtMatmulHeuristicResult_t heuristicResults[1];
-
-    // For row-major C = A * B, use cuBLAS Lt column-major with:
-    // C^T = B^T * A^T, so we swap operands
-    cublasStatus_t status = cublasLtMatmulDescCreate(&operationDesc, CUBLAS_COMPUTE_32F, CUDA_R_32F);
-    if (status == CUBLAS_STATUS_SUCCESS) {
-      // We interpret row-major buffers as column-major transposes:
-      //   B[K,N] row-major -> [N,K] column-major = B^T
-      //   A[1,K] row-major -> [K,1] column-major = A^T
-      // Then C^T = B^T * A^T, so both Lt operands stay non-transposed.
-      cublasOperation_t opTransA = CUBLAS_OP_N;
-      cublasOperation_t opTransB = CUBLAS_OP_N;
-      status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_TRANSA, &opTransA, sizeof(opTransA));
-      if (status == CUBLAS_STATUS_SUCCESS) {
-        status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_TRANSB, &opTransB, sizeof(opTransB));
-      }
-
-      // Set cublasLt epilogue for fused bias+activation
-      if (status == CUBLAS_STATUS_SUCCESS && epilogueType > 0 && biasPtr != nullptr) {
-        cublasLtEpilogue_t epilogue = CUBLASLT_EPILOGUE_DEFAULT;
-        if (epilogueType == 1) epilogue = CUBLASLT_EPILOGUE_BIAS;
-        else if (epilogueType == 2) epilogue = CUBLASLT_EPILOGUE_RELU_BIAS;
-        else if (epilogueType == 3) epilogue = CUBLASLT_EPILOGUE_GELU_BIAS;
-
-        if (epilogue != CUBLASLT_EPILOGUE_DEFAULT) {
-          status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_EPILOGUE,
-                                                   &epilogue, sizeof(epilogue));
-          if (status == CUBLAS_STATUS_SUCCESS) {
-            status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_BIAS_POINTER,
-                                                     &biasPtr, sizeof(biasPtr));
-          }
-        }
-      }
-
-      // Layouts for column-major interpretation of row-major data:
-      // B is [K,N] row-major -> treat as [N,K] column-major with ld=N
-      // A is [1,K] row-major -> treat as [K,1] column-major with ld=K
-      // C is [1,N] row-major -> treat as [N,1] column-major with ld=N
-      if (status == CUBLAS_STATUS_SUCCESS) {
-        status = cublasLtMatrixLayoutCreate(&Bdesc, bType, N, K, (int64_t)N);
-      }
-      if (status == CUBLAS_STATUS_SUCCESS) {
-        status = cublasLtMatrixLayoutCreate(&Adesc, aType, K, M, (int64_t)K);
-        if (status == CUBLAS_STATUS_SUCCESS) {
-          status = cublasLtMatrixLayoutCreate(&Cdesc, cType, N, M, (int64_t)N);
-          if (status == CUBLAS_STATUS_SUCCESS) {
-            status = cublasLtMatmulPreferenceCreate(&preference);
-            if (status == CUBLAS_STATUS_SUCCESS) {
-              size_t maxWorkspace = usableWorkspaceSize;  // 0 on a device that doesn't own the workspace
-              status = cublasLtMatmulPreferenceSetAttribute(preference, CUBLASLT_MATMUL_PREF_MAX_WORKSPACE_BYTES,
-                                                            &maxWorkspace, sizeof(maxWorkspace));
-
-              if (status == CUBLAS_STATUS_SUCCESS) {
-                // Note: B is first operand (as A in col-major), A is second operand (as B in col-major)
-                status = cublasLtMatmulAlgoGetHeuristic(*ltHandle, operationDesc, Bdesc, Adesc, Cdesc, Cdesc,
-                                                        preference, 1, heuristicResults, &resultsReturned);
-              }
-              cublasLtMatmulPreferenceDestroy(preference);
-            }
-            cublasLtMatrixLayoutDestroy(Cdesc);
-          }
-          cublasLtMatrixLayoutDestroy(Adesc);
-        }
-        cublasLtMatrixLayoutDestroy(Bdesc);
-      }
-      cublasLtMatmulDescDestroy(operationDesc);
-    }
-
-    if (status != CUBLAS_STATUS_SUCCESS || resultsReturned == 0) {
-      // Heuristic failed: fall back to standard cuBLAS
-      return false;
-    }
-
-    // Cache the best algorithm
-    algo = heuristicResults[0].algo;
-    workspaceSize = heuristicResults[0].workspaceSize;
-    tl_ltAlgoCache[key] = {algo, workspaceSize};
+    LtMatmulDescriptors selection;
+    buildScaledLtDescriptors(selection, selectionRows, columns, depth, operandCudaType, outputCudaType, xScale,
+                             wScale);
+    if (!selection.valid || !ltSelectAlgorithm(*ltHandle, key, selection, 0, true, entry)) return false;
+    cublasLtMatmulHeuristicResult_t check;
+    if (cublasLtMatmulAlgoCheck(*ltHandle, launch.operation, launch.a, launch.b, launch.c, launch.c, &entry.algo,
+                                &check) != CUBLAS_STATUS_SUCCESS)
+      THROW_EXCEPTION(("MmulHelper::ltMatmulScaled: the decode-class algorithm selected for " +
+                       std::to_string(kLtDecodeClassRows) + " rows rejects " + std::to_string(rows) +
+                       " rows; running it on another path would break bit-parity across decode widths")
+                          .c_str());
   }
-
-  // Execute Lt matmul
-  cublasLtMatmulDesc_t operationDesc = nullptr;
-  cublasLtMatrixLayout_t Adesc = nullptr, Bdesc = nullptr, Cdesc = nullptr;
-  bool success = false;
-
-  cublasStatus_t status = cublasLtMatmulDescCreate(&operationDesc, CUBLAS_COMPUTE_32F, CUDA_R_32F);
-  if (status == CUBLAS_STATUS_SUCCESS) {
-    cublasOperation_t opTransA = CUBLAS_OP_N;
-    cublasOperation_t opTransB = CUBLAS_OP_N;
-    status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_TRANSA, &opTransA, sizeof(opTransA));
-    if (status == CUBLAS_STATUS_SUCCESS) {
-      status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_TRANSB, &opTransB, sizeof(opTransB));
-    }
-
-    // Set cublasLt epilogue for fused bias+activation (execution path)
-    if (status == CUBLAS_STATUS_SUCCESS && epilogueType > 0 && biasPtr != nullptr) {
-      cublasLtEpilogue_t epilogue = CUBLASLT_EPILOGUE_DEFAULT;
-      if (epilogueType == 1) epilogue = CUBLASLT_EPILOGUE_BIAS;
-      else if (epilogueType == 2) epilogue = CUBLASLT_EPILOGUE_RELU_BIAS;
-      else if (epilogueType == 3) epilogue = CUBLASLT_EPILOGUE_GELU_BIAS;
-
-      if (epilogue != CUBLASLT_EPILOGUE_DEFAULT) {
-        status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_EPILOGUE,
-                                                 &epilogue, sizeof(epilogue));
-        if (status == CUBLAS_STATUS_SUCCESS) {
-          status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_BIAS_POINTER,
-                                                   &biasPtr, sizeof(biasPtr));
-        }
-      }
-    }
-
-    if (status == CUBLAS_STATUS_SUCCESS) {
-      status = cublasLtMatrixLayoutCreate(&Bdesc, bType, N, K, (int64_t)N);
-    }
-    if (status == CUBLAS_STATUS_SUCCESS) {
-      status = cublasLtMatrixLayoutCreate(&Adesc, aType, K, M, (int64_t)K);
-      if (status == CUBLAS_STATUS_SUCCESS) {
-        status = cublasLtMatrixLayoutCreate(&Cdesc, cType, N, M, (int64_t)N);
-        if (status == CUBLAS_STATUS_SUCCESS) {
-          // Use persistent thread-local scalars (not stack locals) so that
-          // the host addresses baked into captured CUDA graphs remain valid on replay.
-          getCublasScalars()->alphaF = static_cast<float>(alpha);
-          getCublasScalars()->betaF  = static_cast<float>(beta);
-
-          void* workspace = nullptr;
-          size_t actualWorkspaceSize = 0;
-          // workspaceSize is 0 on any device that doesn't own tl_cublasWorkspacePtr (the algo was
-          // chosen for no workspace via usableWorkspaceSize above), so this correctly passes no
-          // workspace on a secondary device and the primary device's workspace on device 0.
-          if (workspaceSize > 0 && tl_cublasWorkspacePtr != nullptr && workspaceSize <= tl_cublasWorkspaceSize) {
-            workspace = tl_cublasWorkspacePtr;
-            actualWorkspaceSize = workspaceSize;
-          }
-
-          // B first (as A in col-major), A second (as B in col-major)
-          status = cublasLtMatmul(*ltHandle, operationDesc, &getCublasScalars()->alphaF,
-                                  pB->specialBuffer(), Bdesc,
-                                  pA->specialBuffer(), Adesc,
-                                  &getCublasScalars()->betaF,
-                                  pC->specialBuffer(), Cdesc,
-                                  pC->specialBuffer(), Cdesc,
-                                  &algo,
-                                  workspace, actualWorkspaceSize,
-                                  *stream);
-
-          if (status == CUBLAS_STATUS_SUCCESS) {
-            success = true;
-          }
-          cublasLtMatrixLayoutDestroy(Cdesc);
-        }
-        cublasLtMatrixLayoutDestroy(Adesc);
-      }
-      cublasLtMatrixLayoutDestroy(Bdesc);
-    }
-    cublasLtMatmulDescDestroy(operationDesc);
-  }
-
-  return success;
+  return ltLaunch(*ltHandle, launch, entry, 1.0, 0.0, w, x, z, *context->getCudaStream());
 }
 
 //////////////////////////////////////////////////////////////////////////////

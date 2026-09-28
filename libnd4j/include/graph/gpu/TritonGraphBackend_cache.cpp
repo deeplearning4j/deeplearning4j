@@ -113,7 +113,9 @@ std::string TritonGraphBackend::computeDiskCacheHash(const std::string& ttirText
                                                      int numWarps, int numStages) const {
   auto& env = sd::Environment::getInstance();
   uint64_t hash = FNV1A64_OFFSET_BASIS;
-  static constexpr const char* TRITON_DISK_CACHE_ABI = "triton-disk-cache-v2";
+  // v3: libdevice helpers are inlined after linking; v2 PTX carries them as
+  // out-of-line calls and must not be reused.
+  static constexpr const char* TRITON_DISK_CACHE_ABI = "triton-disk-cache-v3";
   mixFNV1a(hash, TRITON_DISK_CACHE_ABI, std::strlen(TRITON_DISK_CACHE_ABI));
   const char* nativeBuildInfo = buildInfo();
   if (nativeBuildInfo != nullptr) {
@@ -378,7 +380,7 @@ void TritonGraphBackend::writeBinaryToDiskCache(int startSlot, int endSlot,
   }
 
   std::ostringstream meta;
-  meta << "cacheAbi=triton-disk-cache-v2\n";
+  meta << "cacheAbi=triton-disk-cache-v3\n";
   const char* nativeBuildInfo = buildInfo();
   uint64_t nativeBuildHash = FNV1A64_OFFSET_BASIS;
   if (nativeBuildInfo != nullptr) {

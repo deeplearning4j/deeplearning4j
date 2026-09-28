@@ -153,6 +153,19 @@ mlir::Value TritonIRBuilder::emitNativeCudaSin(mlir::OpBuilder& builder,
       /*libname=*/"", /*libpath=*/"", symbol, /*pure=*/true).getResult();
 }
 
+mlir::Value TritonIRBuilder::emitNativeCudaFastExp(mlir::OpBuilder& builder,
+                                                    mlir::Location loc,
+                                                    mlir::Value input) {
+  // Native flashExp<float> is CUDA __expf: libdevice __nv_fast_expf, i.e. a
+  // rounded multiply by log2(e) followed by the approximate base-2 exponential
+  // (no flush-to-zero: the build does not enable __CUDA_FTZ). Other widths use
+  // the clamped sd_exp, as native flashExp<double> does.
+  if (!getElementType(input).isF32()) return emitNativeCudaExp(builder, loc, input);
+  return builder.create<mlir::triton::ExternElementwiseOp>(
+      loc, input.getType(), mlir::ValueRange{input},
+      /*libname=*/"", /*libpath=*/"", "__nv_fast_expf", /*pure=*/true).getResult();
+}
+
 mlir::Value TritonIRBuilder::emitNativeCudaMulRn(mlir::OpBuilder& builder,
                                                   mlir::Location loc,
                                                   mlir::Value lhs,
@@ -1286,9 +1299,10 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
     // Generic tt.reduce reassociates freely and differs by 1 ULP (reproduced:
     // prefill rms_norm width 1024, element 12289, row 12 position 1).
     //
-    // The mapping is pinned in VALUES via reshape/transpose/split with
-    // allowReorder=false, so Triton's launch layout (e.g. 16 warps vs native
-    // 8) cannot change the arithmetic. Padded tail rows/lanes are exact
+    // The mapping is pinned in VALUES (exact row extraction, then
+    // reshape/transpose/split with allowReorder=false for the warp trees), so
+    // Triton's launch layout (e.g. 16 warps vs native 8) cannot change the
+    // arithmetic. Padded tail rows/lanes are exact
     // zero no-ops in the fold, matching native threads beyond `cols`.
     int64_t rowLen = tensorTy.getRank() > 0 ? tensorTy.getShape()[tensorTy.getRank() - 1] : 0;
     bool nativeWarpTree = tensorTy.getRank() == 1 && rowLen >= 32 &&
@@ -1306,36 +1320,46 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
             /*libname=*/"", /*libpath=*/"", "__nv_fmaf_rn", /*pure=*/true).getResult();
       };
       // ── Stage 1: stride-256 thread-local left fold (fmad-contracted) ──
+      // Row k of [iters, lanes] (row-major [k][t] = x[t + k*lanes]) is
+      // extracted by summing the column with every other row masked to +0.
+      // A sum of one value and exact zeros is that value under any
+      // association (a -0 input becomes +0, whose square is the same +0), so
+      // the extraction is exact whatever layout Triton assigns, and every
+      // extracted row shares the reduction's slice layout: the fold below is
+      // elementwise, one lane per thread as in the native kernel. (Peeling
+      // rows with reshape/trans/split instead left the rows in a replicated
+      // layout — every thread computed all 256 lanes, ~1.4 ms per 5120 row.)
       int64_t lanes = std::min<int64_t>(rowLen, 256);
       int64_t iters = rowLen / lanes;  // power of two; 1 when rowLen <= 256
-      auto rowPairType = mlir::RankedTensorType::get({iters, lanes}, elemType);
+      auto rowsType = mlir::RankedTensorType::get({iters, lanes}, elemType);
       auto rows2d = builder.create<mlir::triton::ReshapeOp>(
-          loc, rowPairType, input, /*allowReorder=*/false);
-      // Peel rows 0..iters-1 (row-major [k][t] = x[t + k*lanes]) by
-      // recursively splitting the leading axis; 2 goes to the END before
-      // SplitOp (it splits the last dimension).
-      std::vector<mlir::Value> frontier;
-      frontier.push_back(rows2d);
-      int64_t span = iters;
-      while (span > 1) {
-        std::vector<mlir::Value> next;
-        int64_t half = span / 2;
-        for (const auto& v : frontier) {
-          auto shaped = builder.create<mlir::triton::ReshapeOp>(
-              loc, mlir::RankedTensorType::get({2, half, lanes}, elemType), v,
-              /*allowReorder=*/false);
-          auto order = builder.getDenseI32ArrayAttr({1, 2, 0});
-          auto transposed = builder.create<mlir::triton::TransOp>(loc, shaped, order);
-          auto split = builder.create<mlir::triton::SplitOp>(loc, transposed);
-          next.push_back(split.getResult(0));  // lower row block
-          next.push_back(split.getResult(1));  // upper row block
+          loc, rowsType, input, /*allowReorder=*/false);
+      auto i32 = builder.getI32Type();
+      auto rowIndex = builder.create<mlir::triton::MakeRangeOp>(
+          loc, mlir::RankedTensorType::get({iters}, i32), 0, static_cast<int32_t>(iters));
+      auto rowIndexColumn = builder.create<mlir::triton::ExpandDimsOp>(loc, rowIndex, 1);
+      auto rowIndex2d = builder.create<mlir::triton::BroadcastOp>(
+          loc, mlir::RankedTensorType::get({iters, lanes}, i32), rowIndexColumn);
+      auto zeros = builder.create<mlir::triton::SplatOp>(loc, rowsType,
+          builder.create<mlir::arith::ConstantOp>(loc, elemType, builder.getFloatAttr(elemType, 0.0)));
+      auto extractRow = [&](int64_t k) -> mlir::Value {
+        auto kSplat = builder.create<mlir::triton::SplatOp>(loc, rowIndex2d.getType(),
+            builder.create<mlir::arith::ConstantIntOp>(loc, k, 32));
+        auto isRow = builder.create<mlir::arith::CmpIOp>(
+            loc, mlir::arith::CmpIPredicate::eq, rowIndex2d, kSplat);
+        auto selected = builder.create<mlir::arith::SelectOp>(loc, isRow, rows2d, zeros);
+        return makeReduce(selected, 0, addCombiner);
+      };
+      mlir::Value s;
+      if (iters == 1) {
+        s = roundedBinary(input, input, "__nv_fmul_rn");  // input is already [lanes]
+      } else {
+        mlir::Value row = extractRow(0);
+        s = roundedBinary(row, row, "__nv_fmul_rn");
+        for (int64_t k = 1; k < iters; ++k) {
+          row = extractRow(k);
+          s = fusedFma(row, row, s);
         }
-        frontier = std::move(next);
-        span = half;
-      }
-      mlir::Value s = roundedBinary(frontier[0], frontier[0], "__nv_fmul_rn");
-      for (int64_t k = 1; k < iters; ++k) {
-        s = fusedFma(frontier[k], frontier[k], s);
       }
       mlir::Value partials = s;  // [lanes]
       // ── Stage 2: warp-local pairing (shuffle-down 16,8,4,2,1) ──
@@ -1375,7 +1399,9 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
     }
     auto countVal = builder.create<mlir::arith::ConstantOp>(
         loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(reductionSize)));
-    auto meanSquared = builder.create<mlir::arith::DivFOp>(loc, sumSquared, countVal);
+    // Native divides with IEEE rounding (div.rn); FP32 arith.divf lowers to the
+    // approximate division, whose occasional 1-ULP mean moves the whole row.
+    auto meanSquared = emitNativeCudaDiv(builder, loc, sumSquared, countVal);
     auto epsVal = builder.create<mlir::arith::ConstantOp>(
         loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(epsilon)));
     auto meanPlusEps = builder.create<mlir::arith::AddFOp>(loc, meanSquared, epsVal);

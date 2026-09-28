@@ -546,6 +546,9 @@ template <typename T>
 SD_INLINE SD_HOST_DEVICE T p_pow(T value, T power);
 
 template <typename T>
+SD_INLINE SD_HOST_DEVICE T p_fma(T a, T b, T c);
+
+template <typename T>
 SD_INLINE SD_HOST_DEVICE T p_atan2(T val1, T val2);
 
 // Function implementations with SD_PRINT_MATH_FUNC added
@@ -683,6 +686,51 @@ template <typename T>
 SD_INLINE SD_HOST_DEVICE T p_fmod(T value, T power) {
  T result = static_cast<T>(fmodf(static_cast<float>(value), static_cast<float>(power)));
  SD_PRINT_MATH_FUNC("p_fmod<T>", value, result,T);
+ return result;
+}
+
+// p_fma: a * b + c with a single rounding (IEEE fused multiply-add). The
+// fusion is explicit, so it holds independently of compiler contraction flags.
+#ifdef HAS_FLOAT16
+template <>
+SD_INLINE SD_HOST_DEVICE float16 p_fma(float16 a, float16 b, float16 c) {
+ float16 result = static_cast<float16>(fmaf(static_cast<float>(a), static_cast<float>(b), static_cast<float>(c)));
+ SD_PRINT_MATH_FUNC("p_fma<float16>", a, result,float16);
+ return result;
+}
+#endif
+
+#ifdef HAS_BFLOAT16
+template <>
+SD_INLINE SD_HOST_DEVICE bfloat16 p_fma(bfloat16 a, bfloat16 b, bfloat16 c) {
+ bfloat16 result = static_cast<bfloat16>(fmaf(static_cast<float>(a), static_cast<float>(b), static_cast<float>(c)));
+ SD_PRINT_MATH_FUNC("p_fma<bfloat16>", a, result,bfloat16);
+ return result;
+}
+#endif
+
+#ifdef HAS_FLOAT32
+template <>
+SD_INLINE SD_HOST_DEVICE float p_fma(float a, float b, float c) {
+ float result = fmaf(a, b, c);
+ SD_PRINT_MATH_FUNC("p_fma<float>", a, result,float);
+ return result;
+}
+#endif
+
+#ifdef HAS_DOUBLE
+template <>
+SD_INLINE SD_HOST_DEVICE double p_fma(double a, double b, double c) {
+ double result = fma(a, b, c);
+ SD_PRINT_MATH_FUNC("p_fma<double>", a, result,double);
+ return result;
+}
+#endif
+
+template <typename T>
+SD_INLINE SD_HOST_DEVICE T p_fma(T a, T b, T c) {
+ T result = static_cast<T>(fmaf(static_cast<float>(a), static_cast<float>(b), static_cast<float>(c)));
+ SD_PRINT_MATH_FUNC("p_fma<T>", a, result,T);
  return result;
 }
 

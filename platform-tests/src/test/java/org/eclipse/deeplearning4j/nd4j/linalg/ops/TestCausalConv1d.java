@@ -21,6 +21,8 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.ops;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d;
@@ -371,14 +373,17 @@ public class TestCausalConv1d {
                         + stateMaxDiff + ", l1Diff=" + stateL1Diff);
     }
 
-    @Test
-    public void testFrozenFiveTokenBufferActivePrefixExactlyMatchesChainedStepsAtQwenDimensions() {
+    @ParameterizedTest(name = "fixed width={2}, input/state={0}, weight={1}, channels={3}, kernel={4}")
+    @CsvSource({"FLOAT,FLOAT,5,2048,10", "HALF,HALF,2,6144,4",
+            "HALF,FLOAT,2,6144,4", "BFLOAT16,BFLOAT16,2,6144,4"})
+    public void testFrozenFiveTokenBufferActivePrefixExactlyMatchesChainedStepsAtQwenDimensions(
+            DataType dtype, DataType weightType, int L, int D, int K) {
         Nd4j.getRandom().setSeed(67890);
-        int B = 1, L = 5, D = 2048, K = 10;
-        INDArray x = Nd4j.randn(DataType.FLOAT, B, L, D).muli(0.1);
-        INDArray weight = Nd4j.randn(DataType.FLOAT, D, K).muli(0.1);
-        INDArray bias = Nd4j.randn(DataType.FLOAT, D).muli(0.01);
-        INDArray stateIn = Nd4j.randn(DataType.FLOAT, B, D, K - 1).muli(0.1);
+        int B = 1;
+        INDArray x = Nd4j.randn(dtype, B, L, D).muli(0.1);
+        INDArray weight = Nd4j.randn(weightType, D, K).muli(0.1);
+        INDArray bias = Nd4j.randn(dtype, D).muli(0.01);
+        INDArray stateIn = Nd4j.randn(dtype, B, D, K - 1).muli(0.1);
 
         for (int activeLength : new int[]{1, 2}) {
             INDArray[] window = Nd4j.exec(new CausalConv1d(
@@ -386,6 +391,7 @@ public class TestCausalConv1d {
                     Nd4j.scalar(DataType.INT64, activeLength), 1, 0));
 
             INDArray chainedState = stateIn.dup();
+            INDArray chainedFixedState = stateIn.dup();
             for (int t = 0; t < activeLength; t++) {
                 INDArray xScalar = x.get(
                         NDArrayIndex.all(), NDArrayIndex.interval(t, t + 1),
@@ -393,13 +399,26 @@ public class TestCausalConv1d {
                 INDArray[] scalar = Nd4j.exec(new CausalConv1d(
                         xScalar, weight, bias, chainedState,
                         Nd4j.scalar(DataType.INT64, 1L), 1, 0));
+                INDArray fixedInput = x.dup();
+                fixedInput.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 1), NDArrayIndex.all())
+                        .assign(xScalar);
+                INDArray[] fixedScalar = Nd4j.exec(new CausalConv1d(
+                        fixedInput, weight, bias, chainedFixedState,
+                        Nd4j.scalar(DataType.INT64, 1L), 1, 0));
+                INDArray fixedRow = fixedScalar[0].get(
+                        NDArrayIndex.all(), NDArrayIndex.interval(0, 1), NDArrayIndex.all()).dup();
+                assertEquals(0.0, fixedRow.sub(scalar[0]).amaxNumber().doubleValue(), 0.0,
+                        "Fixed-width activeLen=1 output must equal width-one execution for " + dtype);
+                assertEquals(0.0, fixedScalar[1].sub(scalar[1]).amaxNumber().doubleValue(), 0.0,
+                        "Fixed-width activeLen=1 state must equal width-one execution for " + dtype);
+                chainedFixedState = fixedScalar[1];
                 INDArray windowRow = window[0].get(
                         NDArrayIndex.all(), NDArrayIndex.interval(t, t + 1),
                         NDArrayIndex.all()).dup();
                 double maxDiff = windowRow.sub(scalar[0]).amaxNumber().doubleValue();
                 double l1Diff = windowRow.sub(scalar[0]).norm1Number().doubleValue();
                 assertEquals(0.0, maxDiff, 0.0,
-                        "Frozen W=5 causal conv activeLength=" + activeLength + " row=" + t
+                        "Frozen W=" + L + " causal conv activeLength=" + activeLength + " row=" + t
                                 + " differs from chained W=1: maxDiff=" + maxDiff
                                 + ", l1Diff=" + l1Diff);
                 chainedState = scalar[1];
@@ -408,7 +427,7 @@ public class TestCausalConv1d {
             double stateMaxDiff = window[1].sub(chainedState).amaxNumber().doubleValue();
             double stateL1Diff = window[1].sub(chainedState).norm1Number().doubleValue();
             assertEquals(0.0, stateMaxDiff, 0.0,
-                    "Frozen W=5 causal conv activeLength=" + activeLength
+                    "Frozen W=" + L + " causal conv activeLength=" + activeLength
                             + " final state differs from chained W=1: maxDiff="
                             + stateMaxDiff + ", l1Diff=" + stateL1Diff);
         }

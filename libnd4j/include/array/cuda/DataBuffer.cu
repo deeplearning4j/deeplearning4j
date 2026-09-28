@@ -2429,6 +2429,7 @@ void DataBuffer::writeSpecial() const {
 }
 void DataBuffer::readPrimary() const { _readPrimary = ++_counter; }
 void DataBuffer::readSpecial() const { _readSpecial = ++_counter; }
+bool DataBuffer::tracksContentWrites() const { return true; }
 bool DataBuffer::isPrimaryActual() const {
   return (_writePrimary.load() > _writeSpecial.load() || _readPrimary.load() > _writeSpecial.load());
 }

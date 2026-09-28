@@ -1400,8 +1400,11 @@ public class TestMiscOpValidation extends BaseOpValidation {
         int axis = -1;
         SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 5.0, 0.0, INT32);
 
-        // The oneHot op currently returns FLOAT even when INT32 is requested; cast expected to match actual dtype.
-        INDArray exp = Nd4j.create(new float[][]{{5, 0, 0}, {0,0,5}, {0,0,0}, {0, 5, 0}});
+        // Root-cause fix (InferenceSession custom-op output allocation): the output array's dtype
+        // is now forced to match the SDVariable's declared dtype (INT32, as requested above) instead
+        // of silently keeping whatever dtype the native shape-calc guessed (previously FLOAT). See
+        // https://github.com/eclipse/deeplearning4j/issues/6872.
+        INDArray exp = Nd4j.create(new float[][]{{5, 0, 0}, {0,0,5}, {0,0,0}, {0, 5, 0}}).castTo(INT32);
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expected(oneHot, exp)

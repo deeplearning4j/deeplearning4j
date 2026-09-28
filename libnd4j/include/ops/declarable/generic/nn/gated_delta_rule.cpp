@@ -86,10 +86,14 @@ CUSTOM_OP_IMPL(gated_delta_rule, 5, 2, false, 0, 0) {
 }
 
 DECLARE_TYPES(gated_delta_rule) {
-    // CUDA execution allocates per-invocation recurrent/chunk scratch buffers.
-    // Keep this op live between captured Triton islands so graph replay never
-    // retains pointers to scratch storage returned to the memory pool.
-    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_EXTERNAL_WORKSPACE);
+    // Graph-capture safe: the sequential CUDA path (decode, and any call with
+    // actualLen) keeps the recurrent state in shared memory and allocates
+    // nothing; the chunked prefill's scratch comes from CudaMemoryPool, which
+    // serves captured allocations from the capture workspace (stable per graph,
+    // never recycled). Excluding the op from capture (OP_TRAIT_EXTERNAL_WORKSPACE,
+    // when the sequential path used pool scratch) kept every gap touching its
+    // buffers live between islands.
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
         ->setAllowedOutputTypes({ALL_FLOATS});
@@ -183,7 +187,9 @@ CUSTOM_OP_IMPL(gated_delta_rule_with_prefix, 5, 3, false, 0, 0) {
 }
 
 DECLARE_TYPES(gated_delta_rule_with_prefix) {
-    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_EXTERNAL_WORKSPACE);
+    // Same capture contract as gated_delta_rule (prefix capture rides the
+    // allocation-free sequential path).
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
         ->setAllowedOutputTypes({ALL_FLOATS});

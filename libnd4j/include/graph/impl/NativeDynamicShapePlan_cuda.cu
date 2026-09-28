@@ -442,6 +442,13 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
   using Clock = std::chrono::high_resolution_clock;
   auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+  // Per-phase host time of this step (TIMING ledger; stamped only when enabled).
+  auto stamp = [&]() { return executionTimingEnabled_ ? Clock::now() : Clock::time_point{}; };
+  auto elapsedUs = [](Clock::time_point from, Clock::time_point to) {
+    return static_cast<long long>(std::chrono::duration_cast<std::chrono::microseconds>(to - from).count());
+  };
+  Clock::time_point tSynced, tViewsRefreshed, tDriftChecked;
+  long long migrateUs = 0, replayUs = 0;
 
   cudaGetLastError();  // Clear stale CUDA error
 
@@ -472,6 +479,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   }
   // Keep the caller table as the source for every device. effectiveExternals_
   // is rewritten by each device's staging pass and cannot itself be that source.
+  tSynced = stamp();
 
   // -- NO gap-stream guard at this layer (by design - do not re-add) ---------
   // The frozen fast path must NOT install a GapStreamGuard. Gap-stream ownership
@@ -518,6 +526,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   for (size_t ri = 0; ri < segments_.size(); ri++) {
     refreshStaleViewWrappersInSegment(segments_[ri], syncResult.effectiveExternals, numExternalInputs);
   }
+  tViewsRefreshed = stamp();
 
   // -- Slot address drift detection ------------------------------------------
   // The monolithic CUDA graph has native op (cuBLAS) pointer arguments baked
@@ -548,6 +557,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       return Status::MAYBE;
     }
   }
+
+  tDriftChecked = stamp();
 
   // Every soft refresh fallback must be decided before the first replay launch.
   // Returning MAYBE from inside the loop can restart ordered execution at segment
@@ -607,11 +618,14 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     // Frozen replay has the same input/output publication boundary as warmup.
     // In particular, state replicas must be refreshed and written back on every
     // invocation, including the whole-plan fast path.
+    auto tMigrate0 = stamp();
     auto migrationStatus = platformMigrateSegmentInputs(seg, externalInputs, numExternalInputs);
     if (migrationStatus != Status::OK) {
       platformCleanupMigratedInputs();
       return migrationStatus;
     }
+    auto tSegment0 = stamp();
+    if (executionTimingEnabled_) migrateUs += elapsedUs(tMigrate0, tSegment0);
     auto executeSegment = [&]() -> Status {
 
     // Segments with terminal outcomes or non-capturable - no replay handles.
@@ -773,6 +787,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       platformCleanupMigratedInputs();
       throw;
     }
+    if (executionTimingEnabled_) replayUs += elapsedUs(tSegment0, Clock::now());
     platformCleanupMigratedInputs();
     if (segmentStatus != Status::OK) return segmentStatus;
   }
@@ -785,6 +800,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
   // All segments replayed successfully. Deliver detached views without changing
   // any internal producer address captured by those segments.
+  auto tPublish0 = stamp();
   for (int i = 0; i < numRequestedOutputs_; i++) {
     int slotIdx = requestedOutputSlotIndices_[i];
     if (slotIdx < 0 || slotIdx >= totalOutputSlots_ ||
@@ -808,9 +824,13 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
   if (executionTimingEnabled_) {
     auto tDone = Clock::now();
-    auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(tDone - t0).count();
-    DSP_DIAG(TIMING, "DSP timing: frozen_fast_path total=%lldus segs=%d",
-             totalUs, (int)segments_.size());
+    DSP_DIAG(TIMING,
+             "DSP timing: frozen_fast_path total=%lldus segs=%d preReplaySync=%lldus "
+             "viewRefresh=%lldus addrDriftCheck=%lldus migrate=%lldus replay=%lldus "
+             "publish=%lldus",
+             elapsedUs(t0, tDone), (int)segments_.size(), elapsedUs(t0, tSynced),
+             elapsedUs(tSynced, tViewsRefreshed), elapsedUs(tViewsRefreshed, tDriftChecked),
+             migrateUs, replayUs, elapsedUs(tPublish0, tDone));
   }
 
   // -- Frozen fast path output diagnostics ---------------------------------
@@ -1228,31 +1248,64 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
 
   migratedInputs_.clear();
 
-  // Collect every unique input publication consumed by the segment. Internal
-  // publications use their non-negative output-slot index; external inputs keep
-  // their normal negative encoding -(externalIndex + 1).
-  std::unordered_set<int> neededInputSources;
-  for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
-    const NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.wiring.numInputs; i++) {
-      int srcIdx = slot.wiring.inputSourceIndices[i];
-      if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-        if (outputSlots_[srcIdx] != nullptr) {
-          neededInputSources.insert(srcIdx);
-        }
-      } else if (srcIdx < 0 && externalInputs != nullptr) {
-        const int extIdx = -(srcIdx + 1);
-        if (extIdx >= 0 && extIdx < numExternalInputs &&
-            externalInputs[extIdx] != nullptr) {
-          neededInputSources.insert(srcIdx);
+  // Every unique input publication consumed by the segment, from its fixed
+  // wiring (built once per segment). Internal publications use their
+  // non-negative output-slot index; external inputs keep their normal negative
+  // encoding -(externalIndex + 1).
+  const uint64_t segmentKey = (static_cast<uint64_t>(static_cast<uint32_t>(seg.def.startSlot)) << 32) |
+                              static_cast<uint32_t>(seg.def.endSlot);
+  auto cachedSources = segmentInputSources_.find(segmentKey);
+  if (cachedSources == segmentInputSources_.end()) {
+    std::unordered_set<int> unique;
+    std::vector<int> ordered;
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+      const NativeSlot& slot = slots_[s];
+      for (int i = 0; i < slot.wiring.numInputs; i++) {
+        const int srcIdx = slot.wiring.inputSourceIndices[i];
+        if (srcIdx < totalOutputSlots_ && unique.insert(srcIdx).second) ordered.push_back(srcIdx);
+      }
+    }
+    cachedSources = segmentInputSources_.emplace(segmentKey, std::move(ordered)).first;
+  }
+  if (residentSources_.size() != static_cast<size_t>(std::max(0, totalOutputSlots_)))
+    residentSources_.assign(static_cast<size_t>(std::max(0, totalOutputSlots_)), ResidentSource{});
+  if (residentExternalSources_.size() != static_cast<size_t>(std::max(0, numExternalInputs)))
+    residentExternalSources_.assign(static_cast<size_t>(std::max(0, numExternalInputs)), ResidentSource{});
+  auto residentEntry = [&](bool external, int index) -> ResidentSource& {
+    return external ? residentExternalSources_[index] : residentSources_[index];
+  };
+
+  // Producer device of each output slot: that of the first slot (in slot order)
+  // writing it with an assigned device, else -1 (automatic). Built once per call — one pass over the plan — rather than
+  // scanning every slot for each consumed source, which cost ~30 ms per decode
+  // step on a 2400-slot plan.
+  std::vector<int> producerDevice;
+  auto producerDeviceOf = [&](int outputSlotIdx) -> int {
+    if (producerDevice.empty()) {
+      producerDevice.assign(static_cast<size_t>(totalOutputSlots_), -1);
+      for (int s = 0; s < numSlots_; s++) {
+        const NativeSlot& producer = slots_[s];
+        if (producer.targetDeviceId < 0) continue;
+        for (int o = 0; o < producer.wiring.numOutputs; o++) {
+          const int out = producer.wiring.outputSlotIndices[o];
+          if (out < 0 || out >= totalOutputSlots_ || producerDevice[out] >= 0) continue;
+          producerDevice[out] = producer.targetDeviceId;
         }
       }
     }
-  }
+    return producerDevice[outputSlotIdx];
+  };
 
   int migrated = 0;
-  for (int sourceIdx : neededInputSources) {
+  for (int sourceIdx : cachedSources->second) {
     const bool externalSource = sourceIdx < 0;
+    if (externalSource) {
+      const int extIdx = -(sourceIdx + 1);
+      if (externalInputs == nullptr || extIdx >= numExternalInputs || externalInputs[extIdx] == nullptr)
+        continue;
+    } else if (outputSlots_[sourceIdx] == nullptr) {
+      continue;
+    }
     const int slotIdx = externalSource ? -1 : sourceIdx;
     const int externalInputIdx = externalSource ? -(sourceIdx + 1) : -1;
     NDArray* arr = externalSource ? externalInputs[externalInputIdx]
@@ -1396,20 +1449,14 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     // where the special (GPU) buffer lives. If targetDevice differs from where
     // the data was produced, we need to migrate.
     // Find which device produced this output by checking the source slot's targetDeviceId
-    int sourceDevice = externalSource ? db->deviceId() : -1;
-    if (!externalSource) {
-      // Walk backwards to find which slot produced this output.
-      for (int s = 0; s < numSlots_; s++) {
-        const NativeSlot& srcSlot = slots_[s];
-        for (int o = 0; o < srcSlot.wiring.numOutputs; o++) {
-          if (srcSlot.wiring.outputSlotIndices[o] == slotIdx) {
-            sourceDevice = srcSlot.targetDeviceId;
-            break;
-          }
-        }
-        if (sourceDevice >= 0) break;
+    {
+      const ResidentSource& resident = residentEntry(externalSource, externalSource ? externalInputIdx : slotIdx);
+      if (resident.array == arr && resident.devicePointer == db->special() &&
+          resident.targetDevice == targetDevice) {
+        continue;  // Proven same-device resident at this allocation.
       }
     }
+    int sourceDevice = externalSource ? db->deviceId() : producerDeviceOf(slotIdx);
 
     if (sourceDevice < 0) {
       // External or auto - use the current active device, not hardcoded 0
@@ -1546,6 +1593,8 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     }
     if (sourceDevice == targetDevice) {
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      residentEntry(externalSource, externalSource ? externalInputIdx : slotIdx) =
+          ResidentSource{arr, originalDev, targetDevice};
       continue;  // Same device, no migration needed
     }
 

@@ -57,6 +57,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- MTP multi-row commit (SD_MTP_MULTI_ROW_COMMIT); 0 selects single-row commit. -->
+        <nd4j.mtp.multiRowCommit>1</nd4j.mtp.multiRowCommit>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <!-- Kept in sync with the nd4j-cuda artifact family by change-cuda-versions.sh. -->
         <cuda.version>13.1</cuda.version>
@@ -100,6 +102,8 @@
         <!-- Note this will not use the embedded java shell script if forks is set to 0. Uset fork count 0 with address sanitizer only.-->
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
+        <!-- Opt in for cross-class DSP lifecycle/contamination gates. -->
+        <surefire.reuseForks>false</surefire.reuseForks>
         <!-- Test tier group filter. Empty = run all tests. Set by -Psmoke or -Pfull-ci profiles. -->
         <surefire.groups></surefire.groups>
 
@@ -122,13 +126,14 @@
         <nd4j.environment.vulkanPipelineCacheMaxBytes></nd4j.environment.vulkanPipelineCacheMaxBytes>
         <nd4j.environment.vulkanKernelDump></nd4j.environment.vulkanKernelDump>
         <nd4j.triton.includeTypes></nd4j.triton.includeTypes>
-        <!-- Accepted-prefix state selection for bundled MTP (off|shadow|select).
-             Off keeps the legacy restore/rerun recovery; shadow captures the
-             companion checkpoints without selecting them; select commits
-             checkpoint[consumed-1] and skips the recovery forward. Both the graph
-             build (ModelArchitecture) and the controller (GenerationPipeline) read
-             this from the forked JVM, so it must reach surefire explicitly. -->
-        <nd4j.mtp.prefixSelect>off</nd4j.mtp.prefixSelect>
+        <!-- Accepted-prefix state selection for bundled MTP (auto|off|select).
+             auto (default) commits checkpoint[consumed-1] and skips the recovery
+             forward whenever every recurrent layer exports a checkpoint; select
+             requires it (preparation error otherwise); off keeps the legacy
+             restore/rerun recovery. Both the graph build (ModelArchitecture) and
+             the controller (GenerationPipeline) read this from the forked JVM, so
+             it must reach surefire explicitly. -->
+        <nd4j.mtp.prefixSelect>auto</nd4j.mtp.prefixSelect>
         <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
         <test.asan.options></test.asan.options>
@@ -1841,7 +1846,7 @@
                     <groups>${surefire.groups}</groups>
                     <excludedGroups>${excludedTests}</excludedGroups>
                     <trimStackTrace>false</trimStackTrace>
-                    <reuseForks>false</reuseForks>
+                    <reuseForks>${surefire.reuseForks}</reuseForks>
                     <redirectTestOutputToFile>false</redirectTestOutputToFile>
                     <trimStackTrace>false</trimStackTrace>
                     <testFailureIgnore>false</testFailureIgnore>
@@ -1872,8 +1877,8 @@
                         <ND4J_DSP_DIAGNOSTICS_FILE>${nd4j.dsp.diagnostics.file}</ND4J_DSP_DIAGNOSTICS_FILE>
                         <!-- Opt-in native staging fault injection for fail-closed DSP tests. -->
                         <ND4J_DSP_STAGING_FAULT>${nd4j.dsp.stagingFault}</ND4J_DSP_STAGING_FAULT>
-                        <!-- EXPERIMENTAL MTP multi-row commit (breaks token-exact parity;
-                             default OFF). Opt in with -Dnd4j.mtp.multiRowCommit=1. -->
+                        <!-- MTP multi-row commit (lossless; default ON). Select single-row
+                             commit with -Dnd4j.mtp.multiRowCommit=0. -->
                         <SD_MTP_MULTI_ROW_COMMIT>${nd4j.mtp.multiRowCommit}</SD_MTP_MULTI_ROW_COMMIT>
                         <ND4J_DSP_NATIVE_DUMP_OUTPUTS>${nd4j.dsp.native.dumpOutputs}</ND4J_DSP_NATIVE_DUMP_OUTPUTS>
                         <ND4J_DSP_DIAG_EXEC_LIMIT>${nd4j.dsp.diagExecLimit}</ND4J_DSP_DIAG_EXEC_LIMIT>
@@ -1909,6 +1914,7 @@
                         <ND4J_DSP_CAST_SINK_MATMUL>${nd4j.dsp.castSinkMatmul}</ND4J_DSP_CAST_SINK_MATMUL>
                         <ND4J_TRITON_WARMUP_ONLY>${nd4j.triton.warmupOnly}</ND4J_TRITON_WARMUP_ONLY>
                         <ND4J_TRITON_SECTION_FUSION>${nd4j.triton.sectionFusion}</ND4J_TRITON_SECTION_FUSION>
+                        <ND4J_TRITON_CONSOLIDATED_ARG_TABLE>${nd4j.triton.consolidatedArgTable}</ND4J_TRITON_CONSOLIDATED_ARG_TABLE>
                         <ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>${nd4j.triton.fuseAttentionNeighborhoods}</ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>
                         <CUDA_LOG_FILE>${cuda.log.file}</CUDA_LOG_FILE>
                         <ND4J_CUBLAS_CAPTURE_WORKSPACE>${nd4j.cublas.captureWorkspace}</ND4J_CUBLAS_CAPTURE_WORKSPACE>
@@ -2007,7 +2013,7 @@
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>
-                    <reuseForks>false</reuseForks>
+                    <reuseForks>${surefire.reuseForks}</reuseForks>
                     <!-- Do not delete this. This is used to specify a wrapper script allowing us to insert valgrind and other things in to the surefire sub processes.-->
                     <jvm>${project.basedir}/bin/java</jvm>
                 </configuration>

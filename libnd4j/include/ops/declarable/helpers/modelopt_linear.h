@@ -24,34 +24,62 @@ SD_HOST_DEVICE SD_INLINE bool modelOptValidScale(float value) {
   return value > 0.0f && math::sd_isfin<float>(value);
 }
 
+#if defined(__CUDACC__)
+// Per-element scale validation fused into the device kernels that read the
+// scales: the single on-stream source of truth (captured, replayed, and observed
+// at the caller's stream completion boundary). The device trap remains active in
+// release builds (plain assert() disappears under NDEBUG).
+SD_DEVICE SD_INLINE float modelOptScaleChecked(float value) {
+  if (!modelOptValidScale(value))
+    asm("trap;");
+  return value;
+}
+#endif
+
 // ModelOpt NVFP4QTensor.dequantize: FP32(blockScale * globalScale), then
 // FP32(e2m1 * scale), THEN conversion to the original activation dtype.
 // Source: NVIDIA/Model-Optimizer modelopt/torch/quantization/qtensor/nvfp4_tensor.py.
+//
+// E2M1 codes are exact FP32 values, built from bits without branches (this runs
+// once per weight in every NVFP4 kernel): magnitudes 2..7 (1, 1.5, 2, 3, 4, 6)
+// are the FP32 patterns (magnitude << 22) + bits(0.5); 1 is 0.5 and 0 is +0;
+// bit 3 is the sign (so code 8 is -0).
 SD_HOST_DEVICE SD_INLINE float modelOptE2M1(unsigned char nibble) {
-  const unsigned char magnitude = nibble & 7;
-  float value = magnitude < 4 ? 0.5f * magnitude :
-                (magnitude == 4 ? 2.0f : magnitude == 5 ? 3.0f : magnitude == 6 ? 4.0f : 6.0f);
-  return (nibble & 8) ? -value : value;
+  constexpr uint32_t kHalfBits = 0x3F000000u;  // FP32 0.5
+  const uint32_t magnitude = nibble & 7u;
+  const uint32_t magnitudeBits = magnitude >= 2u ? (magnitude << 22) + kHalfBits
+                                                 : (magnitude == 1u ? kHalfBits : 0u);
+  const uint32_t bits = magnitudeBits | (static_cast<uint32_t>(nibble & 8u) << 28);
+  float value;
+  memcpy(&value, &bits, sizeof(value));
+  return value;
+}
+
+// The FP32 weight before the conversion to the activation dtype. Callers that
+// convert with a hardware round-to-nearest-even into an X-equivalent type (the
+// tensor-core element) get the same bits as modelOptNvfp4Weight<X>.
+SD_HOST_DEVICE SD_INLINE float modelOptNvfp4WeightFp32(unsigned char nibble, float blockScale,
+                                                      float globalScale) {
+#if defined(__CUDA_ARCH__)
+  // Keep both roundings explicit even under CUDA fast-math compilation.
+  const float scale = __fmul_rn(blockScale, globalScale);
+  return __fmul_rn(modelOptE2M1(nibble), scale);
+#else
+  const float scale = blockScale * globalScale;
+  return modelOptE2M1(nibble) * scale;
+#endif
 }
 
 template <typename X>
 SD_HOST_DEVICE SD_INLINE float modelOptNvfp4Weight(unsigned char nibble, float blockScale,
                                                    float globalScale) {
-#if defined(__CUDA_ARCH__)
-  // Keep both roundings explicit even under CUDA fast-math compilation.
-  const float scale = __fmul_rn(blockScale, globalScale);
-  const float weight = __fmul_rn(modelOptE2M1(nibble), scale);
-#else
-  const float scale = blockScale * globalScale;
-  const float weight = modelOptE2M1(nibble) * scale;
-#endif
-  return static_cast<float>(static_cast<X>(weight));
+  return static_cast<float>(static_cast<X>(modelOptNvfp4WeightFp32(nibble, blockScale, globalScale)));
 }
 
 // ModelOpt tensor_quant.py _fp8_eager clamps before its E4M3FN cast. Explicit
 // comparisons preserve NaN and saturate infinities (the raw float8 cast does not).
 // inputScale is the exported dequantization scale, NOT amax or its reciprocal.
-SD_HOST_DEVICE SD_INLINE float modelOptFp8Activation(float x, float inputScale) {
+SD_HOST_DEVICE SD_INLINE float8 modelOptFp8Quantize(float x, float inputScale) {
 #if defined(__CUDA_ARCH__)
   float scaled = __fdiv_rn(x, inputScale);
 #else
@@ -59,7 +87,12 @@ SD_HOST_DEVICE SD_INLINE float modelOptFp8Activation(float x, float inputScale) 
 #endif
   if (scaled > 448.0f) scaled = 448.0f;
   if (scaled < -448.0f) scaled = -448.0f;
-  return static_cast<float>(float8(scaled));
+  return float8(scaled);
+}
+
+// The quantized activation re-expanded to FP32 (the E4M3 value, unscaled).
+SD_HOST_DEVICE SD_INLINE float modelOptFp8Activation(float x, float inputScale) {
+  return static_cast<float>(modelOptFp8Quantize(x, inputScale));
 }
 
 }  // namespace helpers

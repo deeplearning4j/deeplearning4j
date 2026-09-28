@@ -76,8 +76,11 @@ float cpu_e4m3_2float(quarter_e4m3 b) {
       fval = static_cast<float>(mantissa) / 8.0f * (1.0f / 64.0f);  // 2^(-6) = 1/64
     }
   } else {
-    // Normal: value = (-1)^sign * 2^(exponent-bias) * (1 + mantissa/8)
-    fval = (1.0f + static_cast<float>(mantissa) / 8.0f) * powf(2.0f, static_cast<float>(exponent) - 7.0f);
+    // Normal: value = (-1)^sign * 2^(exponent-bias) * (1 + mantissa/8). Every E4M3
+    // normal is exactly a float normal, so build its IEEE bits directly (rebias
+    // the exponent, left-align the mantissa) instead of evaluating powf.
+    unsigned bits = ((exponent - 7 + 127) << 23) | (mantissa << 20);
+    memcpy(&fval, &bits, sizeof(float));
   }
 
   return sign ? -fval : fval;
@@ -234,8 +237,11 @@ float cpu_e5m2_2float(quarter_e5m2 b) {
       fval = static_cast<float>(mantissa) / 4.0f * (1.0f / 16384.0f);  // 2^(-14)
     }
   } else {
-    // Normal: value = (-1)^sign * 2^(exponent-15) * (1 + mantissa/4)
-    fval = (1.0f + static_cast<float>(mantissa) / 4.0f) * powf(2.0f, static_cast<float>(exponent) - 15.0f);
+    // Normal: value = (-1)^sign * 2^(exponent-15) * (1 + mantissa/4). Every E5M2
+    // normal is exactly a float normal, so build its IEEE bits directly (rebias
+    // the exponent, left-align the mantissa) instead of evaluating powf.
+    unsigned bits = ((exponent - 15 + 127) << 23) | (mantissa << 21);
+    memcpy(&fval, &bits, sizeof(float));
   }
 
   return sign ? -fval : fval;

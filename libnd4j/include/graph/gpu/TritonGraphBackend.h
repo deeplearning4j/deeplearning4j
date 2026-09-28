@@ -139,6 +139,20 @@ class TritonGraphBackend : public GraphBackend {
    */
   void copyConsolidatedArgTableToDevice(GraphSegment& seg, void* stream);
 
+  /**
+   * Record ONE consolidated arg-table copy at the start of a capture that holds
+   * every island of the segment (a single merged graph with no live gap), and
+   * have the segment's captured kernels read that table instead of recording
+   * one copy node per kernel. Per-kernel copies exist because live gaps between
+   * separately captured islands can change addresses mid-step; with the whole
+   * segment in one graph nothing can, and ~1100 host-sourced copy nodes cost
+   * ~9 ms of cudaGraphLaunch host time per replay. Returns false (and changes
+   * nothing) when the segment has no consolidated table.
+   */
+  bool bakeConsolidatedArgTableIntoCapture(GraphSegment& seg, void* stream);
+  /** Ends the capture scope opened by bakeConsolidatedArgTableIntoCapture. */
+  void endBakedArgTableCapture(GraphSegment& seg);
+
   void prepareAliasBindingsForCapture(GraphSegment& seg, NDArray** externalInputs,
       int numExternalInputs, NDArray** outputSlots, int totalOutputSlots, void* stream);
   // Pre-launch only: MAYBE requests the owning segment's rebuild lifecycle.
@@ -146,7 +160,11 @@ class TritonGraphBackend : public GraphBackend {
       int numExternalInputs, NDArray** outputSlots, int totalOutputSlots);
   // Replay bypasses executeSingleKernel. The execution owner must record the
   // stream's consumption of captured pinned argument sources after submission.
+  // The whole-segment form covers a graph holding every sub-kernel; an island
+  // or merged-group replay submits only the sub-kernels overlapping its slot
+  // range [startSlot, endSlot], and only those consume their arguments.
   void recordArgumentSubmission(GraphSegment& seg, void* stream);
+  void recordArgumentSubmission(GraphSegment& seg, void* stream, int startSlot, int endSlot);
   void awaitArgumentSubmissionsForRetirement(GraphSegment& seg);
 
   // ── ALIAS_PUB probe (diagnostic, BUF_FP_RING=1) ─────────────────────────
@@ -371,6 +389,9 @@ class TritonGraphBackend : public GraphBackend {
     // belongs to the replay handle; pool-freeing it under the live graph
     // SIGSEGVs the next cudaGraphLaunch.
     bool consolidatedArgTableCaptureOwned = false;
+    // Set while a whole-segment capture carries one consolidated copy; the
+    // segment's kernels then launch without per-kernel copy nodes.
+    bool argTableBakedInCapture = false;
     // Per-kernel byte offsets into the consolidated buffer
     std::vector<size_t> consolidatedArgTableOffsets;
     // Per-kernel: whether this kernel has any dynamic (non-constant) args
@@ -559,6 +580,11 @@ class TritonGraphBackend : public GraphBackend {
     }
     return found;
   }
+
+  // The compiled entry a replay-time operation on this live segment addresses:
+  // exact key, then any dtype hash, then the live-segment and cross-device
+  // matches. Null when the segment has no compiled entry.
+  CompiledSegment* findCompiledSegmentForReplay(GraphSegment& seg);
 
   CompiledSegment* findCompiledSegmentAnyDtype(const SegmentCacheKey& partial) {
     return const_cast<CompiledSegment*>(
@@ -780,6 +806,11 @@ class TritonGraphBackend : public GraphBackend {
       int totalOutputSlots, void* stream, bool capturing);
   bool aliasBindingsMatch(const CompiledKernel& kernel, NDArray** externalInputs,
       int numExternalInputs, NDArray** outputSlots, int totalOutputSlots) const;
+  // aliasBindingsMatch for the given current device, resolving an argument slot
+  // to its (device pointer, bytes) through resolve(slotIndex, pointer, bytes).
+  // Defined and instantiated in TritonGraphBackend_kernel.cu only.
+  template <typename Resolve>
+  bool aliasBindingsMatchWith(const CompiledKernel& kernel, int device, Resolve&& resolve) const;
   void publishArgumentPointers(CompiledKernel& kernel, const std::vector<void*>& pointers,
       bool capturing);
   void recordKernelArgumentSubmission(CompiledKernel& kernel, void* stream);

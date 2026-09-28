@@ -41,6 +41,7 @@
 #include <graph/DspVerifyUtils.h>
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/DspSegmentHelpers.h>
+#include <graph/DspSegmentOutputUtils.h>
 #include <helpers/DebugHelper.h>
 #include <ops/declarable/OpDescriptor.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
@@ -2534,6 +2535,14 @@ Status NativeDynamicShapePlan::postReplayFixupRange(
         arr->tickWriteDevice();
       }
     }
+    dsp::forEachOpWrittenInput(slot, externalArrays, numExt, outputSlots_, totalOutputSlots_,
+        [&](int input, int source, NDArray* array) {
+          if (array->dataBuffer() == nullptr || array->dataBuffer()->isClosed()) return;
+          array->tickWriteDevice();
+          if (source >= 0) dirtySlotGenerations_[source] = currentDirtyGeneration_;
+          DSP_DIAG(EXECUTE, "%s: input-write publication slot=%d input=%d source=%d",
+                   diagTag, stepIdx, input, source);
+        });
   }
 
   // Step 2: re-execute ops that have no compute kernel in the captured graph.

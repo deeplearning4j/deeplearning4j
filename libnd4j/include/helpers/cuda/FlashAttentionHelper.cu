@@ -28,10 +28,13 @@
 #include <graph/DspDiagnostics.h>
 #include <helpers/PointersManager.h>
 #include <helpers/FlashAttentionHelper.h>
+#include <helpers/AttentionWorkspace.h>
 #include <array/NDArray.h>
 #include <types/float16.h>
 #include <execution/cuda/LaunchDims.h>
 #include <math/templatemath.h>
+#include <string>
+#include <type_traits>
 
 // Fast exponential for softmax hot paths.
 // __expf has ~4 ULP error (vs ~1 ULP for expf), which is irrelevant for softmax
@@ -467,16 +470,22 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedAttention3DKernel(
    }
    __syncthreads();
 
-   // Step 3: Rescale previous output if max changed
-   if (newMax > globalMax) {
-     AccT rescale = flashExp<AccT>(globalMax - newMax);
+   // Step 3: Rescale previous output if max changed. Every thread reads the
+   // previous max before thread 0 publishes the new one; updating globalMax
+   // while other threads still compare against it is a WAR race that leaves
+   // a scheduling-dependent subset of output dimensions unrescaled.
+   const AccT previousMax = globalMax;
+   const bool maxChanged = newMax > previousMax;
+   const AccT rescale = maxChanged ? flashExp<AccT>(previousMax - newMax) : static_cast<AccT>(1);
+   if (maxChanged) {
      for (int d = threadIdx.x; d < dim; d += blockDim.x) {
        sharedOutput[d] *= rescale;
      }
-     if (threadIdx.x == 0) {
-       globalSum *= rescale;
-       globalMax = newMax;
-     }
+   }
+   __syncthreads();
+   if (threadIdx.x == 0 && maxChanged) {
+     globalSum *= rescale;
+     globalMax = newMax;
    }
    __syncthreads();
 
@@ -812,6 +821,7 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedGQAAttentionWithScores4DKernel(
     T* __restrict__ output,
     T* __restrict__ attentionLogits,
     T* __restrict__ attentionScores,
+    typename FlashAccType<T>::type* __restrict__ accumulatorScratch,
     LongType batch,
     LongType seqQ,
     LongType seqKV,
@@ -871,6 +881,14 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedGQAAttentionWithScores4DKernel(
       + qHead * strides.scores[1]
       + queryIdx * strides.scores[2];
 
+  // Public HALF/BFLOAT16 auxiliary outputs are observations, not computation
+  // scratch. Reloading them quantizes logits and probabilities before P*V.
+  // Keep those intermediates in AccT until the final output stores instead.
+  const LongType scratchRow = (batchIdx * numQHeads + qHead) * seqQ + queryIdx;
+  AccT* logitsAcc = accumulatorScratch != nullptr
+      ? accumulatorScratch + scratchRow * 2 * seqKV : nullptr;
+  AccT* scoresAcc = logitsAcc != nullptr ? logitsAcc + seqKV : nullptr;
+
   __shared__ AccT warpMaxes[32];
   __shared__ AccT warpSums[32];
   __shared__ AccT globalMax;
@@ -910,6 +928,7 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedGQAAttentionWithScores4DKernel(
       }
     }
     logitsRow[kv * strides.logits[3]] = static_cast<T>(logit);
+    if (logitsAcc != nullptr) logitsAcc[kv] = logit;
     threadMax = sd::math::sd_max<AccT>(threadMax, logit);
   }
 
@@ -935,14 +954,26 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedGQAAttentionWithScores4DKernel(
   }
   __syncthreads();
 
+  // Empty-reduction identity (accumulation contract): a row with no
+  // attendable position at all — every kv either beyond maxKV or masked by
+  // an additive bias so negative it saturates to -infinity (e.g. a window
+  // substrate row entirely marked inactive/rejected) — reduces globalMax to
+  // -infinity. flashExp(logit - globalMax) would then evaluate
+  // (-infinity) - (-infinity) = NaN and poison this row's scores/output.
+  // Define that case as zero probability everywhere instead: harmless,
+  // finite, and confined to this row (this block only writes its own
+  // queryIdx's logits/scores/output slices).
+  const bool rowHasFiniteMax = globalMax > -DataTypeUtils::infOrMax<AccT>();
+
   AccT threadSum = static_cast<AccT>(0);
   for (LongType kv = threadIdx.x; kv < seqKV; kv += blockDim.x) {
-    const AccT logit = static_cast<AccT>(
-        logitsRow[kv * strides.logits[3]]);
-    const AccT probability = kv < maxKV
+    const AccT logit = logitsAcc != nullptr ? logitsAcc[kv]
+        : static_cast<AccT>(logitsRow[kv * strides.logits[3]]);
+    const AccT probability = (kv < maxKV && rowHasFiniteMax)
         ? flashExp<AccT>(logit - globalMax)
         : static_cast<AccT>(0);
     scoresRow[kv * strides.scores[3]] = static_cast<T>(probability);
+    if (scoresAcc != nullptr) scoresAcc[kv] = probability;
     threadSum += probability;
   }
 
@@ -966,18 +997,23 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedGQAAttentionWithScores4DKernel(
   const AccT invSum = globalSum > static_cast<AccT>(0)
       ? static_cast<AccT>(1) / globalSum
       : static_cast<AccT>(0);
+  // BFLOAT16 has FLOAT32's exponent range: even two finite V values can
+  // overflow an unnormalized FLOAT32 numerator. Normalize in AccT first.
+  constexpr bool normalizeBeforePv = std::is_same<T, bfloat16>::value;
   for (LongType kv = threadIdx.x; kv < seqKV; kv += blockDim.x) {
     const LongType scoreOffset = kv * strides.scores[3];
     scoresRow[scoreOffset] = static_cast<T>(
-        static_cast<AccT>(scoresRow[scoreOffset]) * invSum);
+        (scoresAcc != nullptr ? scoresAcc[kv]
+                              : static_cast<AccT>(scoresRow[scoreOffset])) * invSum);
+    if (normalizeBeforePv && scoresAcc != nullptr) scoresAcc[kv] *= invSum;
   }
   __syncthreads();
 
   for (LongType d = threadIdx.x; d < headDim; d += blockDim.x) {
     AccT accumulated = static_cast<AccT>(0);
     for (LongType kv = 0; kv < seqKV; kv++) {
-      const AccT probability = static_cast<AccT>(
-          scoresRow[kv * strides.scores[3]]);
+      const AccT probability = scoresAcc != nullptr ? scoresAcc[kv]
+          : static_cast<AccT>(scoresRow[kv * strides.scores[3]]);
       const LongType currentIndex = kv - currentStart;
       const bool useCurrent =
           validCurrentWindow && currentIndex >= 0 && currentIndex < currentSeq;
@@ -988,7 +1024,10 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedGQAAttentionWithScores4DKernel(
           useCurrent ? strides.currentV[3] : strides.v[3];
       accumulated += probability * static_cast<AccT>(vRow[d * vDimStride]);
     }
-    outRow[d * strides.o[3]] = static_cast<T>(accumulated);
+    // HALF's bounded range permits the final reciprocal; BFLOAT16's full
+    // exponent range requires the normalized AccT weights above.
+    outRow[d * strides.o[3]] = static_cast<T>(
+        scoresAcc != nullptr && !normalizeBeforePv ? accumulated * invSum : accumulated);
   }
 }
 
@@ -1006,6 +1045,7 @@ static void fusedGQAAttentionWithScores4DLauncher(
     void* output,
     void* attentionLogits,
     void* attentionScores,
+    void* accumulatorScratch,
     LongType batch,
     LongType seqQ,
     LongType seqKV,
@@ -1032,6 +1072,7 @@ static void fusedGQAAttentionWithScores4DLauncher(
       reinterpret_cast<T*>(output),
       reinterpret_cast<T*>(attentionLogits),
       reinterpret_cast<T*>(attentionScores),
+      reinterpret_cast<typename FlashAccType<T>::type*>(accumulatorScratch),
       batch, seqQ, seqKV, numQHeads, numKvHeads, headDim,
       headsPerKvHead, scale, isCausal, strides);
   DebugHelper::checkGlobalErrorCode("fusedGQAAttentionWithScores4D failed");
@@ -1373,16 +1414,21 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    }
    __syncthreads();
 
-   // Step 3: Rescale previous output accumulator if max changed
-   if (newMax > globalMax) {
-     AccT rescale = flashExp<AccT>(globalMax - newMax);
+   // Step 3: Rescale previous output accumulator if max changed. Every thread
+   // reads the previous max before thread 0 publishes the new one (see the
+   // same WAR hazard note in the 4D kernel above).
+   const AccT previousMax = globalMax;
+   const bool maxChanged = newMax > previousMax;
+   const AccT rescale = maxChanged ? flashExp<AccT>(previousMax - newMax) : static_cast<AccT>(1);
+   if (maxChanged) {
      for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
        sharedOutput[d] *= rescale;
      }
-     if (threadIdx.x == 0) {
-       globalSum *= rescale;
-       globalMax = newMax;
-     }
+   }
+   __syncthreads();
+   if (threadIdx.x == 0 && maxChanged) {
+     globalSum *= rescale;
+     globalMax = newMax;
    }
    __syncthreads();
 
@@ -1785,16 +1831,20 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeQuantisedKernel(
         if (threadIdx.x == 0) newMax = sd::math::sd_max<float>(globalMax, tileMax);
         __syncthreads();
 
-        // Step 3: rescale previous accumulator
-        if (newMax > globalMax) {
-            float rescale = flashExp<float>(globalMax - newMax);
+        // Step 3: rescale previous accumulator. Read the previous max in every
+        // thread before thread 0 publishes the new one (WAR hazard otherwise).
+        const float previousMax = globalMax;
+        const bool maxChanged = newMax > previousMax;
+        const float rescale = maxChanged ? flashExp<float>(previousMax - newMax) : 1.0f;
+        if (maxChanged) {
             for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
                 sharedOutput[d] *= rescale;
             }
-            if (threadIdx.x == 0) {
-                globalSum *= rescale;
-                globalMax = newMax;
-            }
+        }
+        __syncthreads();
+        if (threadIdx.x == 0 && maxChanged) {
+            globalSum *= rescale;
+            globalMax = newMax;
         }
         __syncthreads();
 
@@ -2082,6 +2132,17 @@ void fusedGQAAttentionCudaWithScores(
 
   std::vector<NDArray*> outputs = {
       output, attentionLogits, attentionScores};
+  NDArray* accumulatorScratch = nullptr;
+  if (query->dataType() == DataType::HALF || query->dataType() == DataType::BFLOAT16) {
+    // Reuse the plan/stream-scoped attention workspace. Include the shape in
+    // the key so another attention slot cannot evict storage captured here.
+    const std::string scratchKey = "gqa_with_scores_acc_" + std::to_string(batch)
+        + "_" + std::to_string(numQHeads) + "_" + std::to_string(seqQ)
+        + "_" + std::to_string(seqKV);
+    accumulatorScratch = AttentionWorkspace::getInstance()->getBuffer(
+        scratchKey, {batch, numQHeads, seqQ, 2, seqKV}, DataType::FLOAT32, context);
+    outputs.push_back(accumulatorScratch);
+  }
   NDArray::prepareSpecialUse(outputs, inputs);
 
   BUILD_SINGLE_SELECTOR(
@@ -2098,6 +2159,7 @@ void fusedGQAAttentionCudaWithScores(
        output->specialBuffer(),
        attentionLogits->specialBuffer(),
        attentionScores->specialBuffer(),
+       accumulatorScratch != nullptr ? accumulatorScratch->specialBuffer() : nullptr,
        batch, seqQ, seqKV, numQHeads, numKvHeads, headDim,
        headsPerKvHead, scale, isCausal, strides),
       SD_FLOAT_TYPES);

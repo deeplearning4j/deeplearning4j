@@ -277,6 +277,38 @@ public class TestMtpPrefixBindingContracts {
         }
     }
 
+    @Test
+    void testDefaultModeSelectsOnlyWhenEveryCheckpointIsExported() throws Exception {
+        // The default (auto) commits by checkpoint selection whenever the prepared
+        // plan serves every checkpoint and is OFF otherwise - never a preparation
+        // error (an explicit select with the same plan fails; see
+        // testMissingCheckpointOutputFailsPreparationBeforeDecode).
+        System.clearProperty("nd4j.mtp.prefixSelect");
+        for (boolean exported : new boolean[]{true, false}) {
+            try (MixedPlan p = new MixedPlan(exported)) {
+                p.compile();
+                List<ModelIOConfig.RecurrentStatePair> pairs = ModelIOConfig.findRecurrentStatePairs(
+                        p.graph, ModelIOConfig.discover(p.graph));
+                List<Integer> gdnExt = new ArrayList<>(), gdnOut = new ArrayList<>();
+                List<Integer> convExt = new ArrayList<>(), convOut = new ArrayList<>();
+                GenerationPipeline.resolveRecurrentFeedbackIndices(
+                        p.executor, pairs, gdnExt, gdnOut, convExt, convOut);
+                InGraphKvState state = new InGraphKvState();
+                state.gdnStateExtIndices = gdnExt.stream().mapToInt(Integer::intValue).toArray();
+                state.gdnStateOutputIndices = gdnOut.stream().mapToInt(Integer::intValue).toArray();
+                state.convStateExtIndices = convExt.stream().mapToInt(Integer::intValue).toArray();
+                state.convStateOutputIndices = convOut.stream().mapToInt(Integer::intValue).toArray();
+                assertEquals(exported ? InGraphKvState.PrefixSelectMode.SELECT
+                                : InGraphKvState.PrefixSelectMode.OFF,
+                        GenerationPipeline.attachPrefixSelect(state, p.graph, pairs, p.executor),
+                        "auto with every checkpoint output requested=" + exported);
+                assertEquals(InGraphKvState.PrefixSelectMode.OFF,
+                        GenerationPipeline.effectivePrefixSelectMode(p.graph, new ArrayList<>()),
+                        "auto without recurrent layers");
+            }
+        }
+    }
+
     private static String nameAt(MixedPlan p, int idx) {
         return new ArrayList<>(p.executor.getCurrentPlan().getRequestedOutputs()).get(idx);
     }

@@ -270,6 +270,24 @@ class SD_LIB_EXPORT MmulHelper {
       std::vector<LongType>& newshape_a, std::vector<LongType>& newaxes_a,
       std::vector<LongType>& newshape_b, std::vector<LongType>& newaxes_b);
 
+#if defined(SD_CUDA) && !defined(__JAVACPP_HACK__)
+  /**
+   * Scaled low-precision GEMM on tensor cores through cuBLASLt:
+   *   z[rows, columns] = (xScale * wScale) * x[rows, depth] . w[columns, depth]^T
+   * x, w and z are dense row-major device buffers; x and w share operandType
+   * (e.g. FLOAT8). xScale/wScale are device FP32 scalars (nullptr means 1).
+   * The algorithm is a pure function of the problem class and excludes split-K
+   * reductions, so results are bit-reproducible and the call is valid under
+   * CUDA graph capture/replay. Calls of up to 16 rows share one algorithm: a
+   * row's result does not depend on how many rows the call carries.
+   * Returns false, without launching, when cuBLASLt has no algorithm.
+   */
+  static bool ltMatmulScaled(LaunchContext* context, const void* x, const void* w, void* z,
+                             LongType rows, LongType columns, LongType depth,
+                             DataType operandType, DataType outputType,
+                             const float* xScale, const float* wScale);
+#endif
+
 #ifndef __JAVACPP_HACK__
   static void tensorDot(NDArray* a, NDArray* b, NDArray* c,
                         std::vector<std::vector<LongType>>& modifA,

@@ -25,6 +25,7 @@
 #include <ops/declarable/helpers/autoregressive_decode.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/Context.h>
+#include <cstring>
 
 #include <limits>
 #include <cmath>
@@ -336,11 +337,13 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   decodeConfig.mtpRepairBatchCausalMask = mtpRepairBatchCausalMask;
   decodeConfig.mtpRepairBatchPositionOffset = mtpRepairBatchPositionOffset;
   decodeConfig.mtpRepairBatchCachePosition = mtpRepairBatchCachePosition;
-  // Multi-row commit is EXPERIMENTAL (breaks token-exact parity, see
-  // allowMultiRowCommit docs). Opt in per test run via -D in the pom's
-  // surefire env mapping; production default is OFF.
+  // Multi-row commit (see allowMultiRowCommit docs) is the default; setting
+  // SD_MTP_MULTI_ROW_COMMIT to 0 or false selects single-row commit. Unset or
+  // unresolved (a literal "${...}" from an undefined build property) is the default.
   const char* mrc = std::getenv("SD_MTP_MULTI_ROW_COMMIT");
-  decodeConfig.allowMultiRowCommit = mrc != nullptr && mrc[0] == '1';
+  const bool singleRowRequested = mrc != nullptr
+      && (std::strcmp(mrc, "0") == 0 || std::strcmp(mrc, "false") == 0);
+  decodeConfig.allowMultiRowCommit = !singleRowRequested;
 
   if (hasMtpPlan) {
     REQUIRE_TRUE(speculatorType_arg == 2, 0,
@@ -586,7 +589,8 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
                      prefixMode);
         REQUIRE_TRUE(gdnCount >= 0 && convCount >= 0
                          && gdnCount + convCount > 0
-                         && gdnCount + convCount <= 64,
+                         && gdnCount <= helpers::AutoregressiveDecodeConfig::MTP_PREFIX_MAX_LAYERS
+                         && convCount <= helpers::AutoregressiveDecodeConfig::MTP_PREFIX_MAX_LAYERS,
                      0, "autoregressive_decode: invalid prefix-select layer counts");
         // Canonical wire layout (Packet 05): 4 + 3*(G+C) words - G inputs, G
         // ordinary state outputs, C inputs, C ordinary state outputs, G checkpoint

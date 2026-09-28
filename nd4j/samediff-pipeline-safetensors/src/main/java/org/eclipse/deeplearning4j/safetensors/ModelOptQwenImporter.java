@@ -59,12 +59,30 @@ public final class ModelOptQwenImporter {
 
     public static ImportedModel importTextOnly(File configFile, File quantFile, File generationConfigFile,
             List<File> shards, DataType computeType, boolean lastPositionLogitsOnly) throws IOException {
+        return importTextOnly(configFile, quantFile, generationConfigFile, shards, computeType,
+                lastPositionLogitsOnly, false);
+    }
+
+    /**
+     * As above; {@code quantizeMtpNvfp4} additionally stores the dense MTP predictor projections
+     * (ModelOpt exports exclude mtp* from quantization) as NVFP4 weight-only, with ModelOpt's recipe
+     * ({@link ModelOptNvfp4Quantizer}). The target model and speculative verification are unchanged;
+     * only draft proposals, and so acceptance, can differ.
+     */
+    public static ImportedModel importTextOnly(File configFile, File quantFile, File generationConfigFile,
+            List<File> shards, DataType computeType, boolean lastPositionLogitsOnly, boolean quantizeMtpNvfp4)
+            throws IOException {
         return importTextOnly(ModelOptQwenConfig.read(configFile, quantFile, generationConfigFile),
-                shards, computeType, lastPositionLogitsOnly);
+                shards, computeType, lastPositionLogitsOnly, quantizeMtpNvfp4);
     }
 
     private static ImportedModel importTextOnly(ModelOptQwenConfig config, List<File> shards,
             DataType computeType, boolean lastPositionLogitsOnly) throws IOException {
+        return importTextOnly(config, shards, computeType, lastPositionLogitsOnly, false);
+    }
+
+    private static ImportedModel importTextOnly(ModelOptQwenConfig config, List<File> shards,
+            DataType computeType, boolean lastPositionLogitsOnly, boolean quantizeMtpNvfp4) throws IOException {
         require(computeType == DataType.FLOAT || computeType == DataType.HALF || computeType == DataType.BFLOAT16,
                 "ModelOpt compute requires FLOAT, HALF or BFLOAT16");
         Map<String, TensorSpec> specs = tensorSpecs(config);
@@ -101,6 +119,7 @@ public final class ModelOptQwenImporter {
                     }
                 }
             }
+            if (quantizeMtpNvfp4) quantizeMtpProjections(config.getArchitecture(), weights, owned);
             LLaMAArchitecture architecture = new LLaMAArchitecture() {
                 @Override
                 protected int getGdnKeyHeads(int valueHeads) {
@@ -123,6 +142,31 @@ public final class ModelOptQwenImporter {
             try { graph.close(); } catch (RuntimeException | Error cleanup) { failure.addSuppressed(cleanup); }
             closeArrays(owned, failure);
             throw failure;
+        }
+    }
+
+    /** Replaces each dense MTP projection with NVFP4 packed weights, block scales and global scale. */
+    private static void quantizeMtpProjections(ArchitectureConfig c, Map<String, INDArray> weights,
+            List<INDArray> owned) {
+        require(c.getNumMtpLayers() > 0, "NVFP4 MTP quantization requested for a model without MTP layers");
+        String mtp = "blk." + c.getNumLayers() + ".";
+        for (String projection : List.of("nextn.eh_proj.weight", "attn_q.weight", "attn_k.weight",
+                "attn_v.weight", "attn_output.weight", "ffn_gate.weight", "ffn_up.weight", "ffn_down.weight")) {
+            String name = mtp + projection;
+            INDArray dense = weights.get(name);
+            require(dense != null, "Missing MTP projection " + name);
+            require(!weights.containsKey(name + QuantizedLinear.MODELOPT_BLOCK_SCALE)
+                    && !weights.containsKey(name + QuantizedLinear.MODELOPT_FP8_SCALE),
+                    "MTP projection is already quantized: " + name);
+            ModelOptNvfp4Quantizer.Quantized quantized = ModelOptNvfp4Quantizer.quantize(dense);
+            owned.add(quantized.packed);
+            owned.add(quantized.blockScales);
+            owned.add(quantized.globalScale);
+            weights.put(name, quantized.packed);
+            weights.put(name + QuantizedLinear.MODELOPT_BLOCK_SCALE, quantized.blockScales);
+            weights.put(name + QuantizedLinear.MODELOPT_GLOBAL_SCALE, quantized.globalScale);
+            // The dense source is no longer referenced by the graph; release it now.
+            dense.close();
         }
     }
 

@@ -159,6 +159,9 @@ struct TritonKernelArg {
   bool shapeKnown = false;
   std::vector<LongType> shape;
   std::vector<LongType> strides;
+  // Byte alignment the compiled kernel assumes for this argument's address
+  // (vectorized loads); every pointer bound to it must be a multiple of this.
+  int requiredAlignment = 1;
 
   LongType elementCount() const {
     if (!shapeKnown) return -1;

@@ -32,7 +32,10 @@ import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.ggml.GGMLModelImport;
@@ -56,6 +59,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -204,6 +208,7 @@ public class TestQwen35MtpDecode {
                 reference.verifyAfterPrefill(System.getProperty("mtp.reference.gguf"), state.mtpPrefillInputMap);
             } else {
                 try (var binding = state.mtpExecutor.captureNativeExecutionBinding()) {
+                    reference.verifyAlternatingCaptures(binding);
                     reference.verify(binding);
                 }
             }
@@ -399,7 +404,7 @@ public class TestQwen35MtpDecode {
         final int m = Math.max(8, TOKENS / 3);
         final int t = n + 2 * m;
         log.info("[SEAM-MATRIX] N={} M={} T={} prefixSelect={}",
-                n, m, t, System.getProperty("nd4j.mtp.prefixSelect", "off"));
+                n, m, t, System.getProperty("nd4j.mtp.prefixSelect", "auto"));
 
         // ── Arm A: one-shot reference, fresh pipeline, single call of budget T ──
         int[] a;
@@ -473,12 +478,16 @@ public class TestQwen35MtpDecode {
 
     /** Shared discriminator config: identical sampling/stopping across all arms. */
     private GenerationPipelineConfig baseSeamConfig(int totalBudget) {
+        return baseSeamConfig(totalBudget, 1);
+    }
+
+    private GenerationPipelineConfig baseSeamConfig(int totalBudget, int maxSpeculativeTokens) {
         return GenerationPipelineConfig.builder()
                 .decoder(model)
                 .tokenizer(tokenizer)
                 .samplingConfig(SamplingConfig.speculative().toBuilder().minNewTokens(totalBudget).build())
                 .maxNewTokens(totalBudget)
-                .maxSpeculativeTokens(1)
+                .maxSpeculativeTokens(maxSpeculativeTokens)
                 .maxPrefillLength(64)
                 .maxKvCacheLength(Math.max(256, 2 * totalBudget + 64))
                 .kvCacheStrategy(KvCacheStrategy.STATIC)
@@ -595,8 +604,14 @@ public class TestQwen35MtpDecode {
             cMtpPosOffset = state.mtpPositionOffset == null ? null : state.mtpPositionOffset.dup();
             cMtpCachePosition = state.mtpCachePosition == null ? null : state.mtpCachePosition.dup();
         }
+        List<INDArray> actualBoundaryOwned = new ArrayList<>();
+        Map<String, INDArray> actualBoundaryInputs = null;
+        int actualBoundaryPosition = -1, actualBoundaryPending = -1;
+        int actualBoundaryWidth = -1, actualBoundaryCapacity = -1;
+        DataType actualBoundaryMaskType = null;
+        ModelIOConfig boundaryIo = ModelIOConfig.discover(model);
         try {
-            log.info("[SEAM-BOUNDARY] C-at-leg2-entry: generated[0..19]={} cachePos={} lastTok={} "
+            log.info("[SEAM-BOUNDARY] INDEPENDENT-PREFIX-CONTROL (not continuing C): generated[0..19]={} cachePos={} lastTok={} "
                             + "maskVisible={} gdnSum={} targetKvSum={} predictorKvSum={} "
                             + "mtpInputIds={} mtpHiddenSum={} mtpMaskSum={} mtpPosOffset={} mtpCachePosition={}",
                     Arrays.toString(Arrays.copyOf(cPrefix, Math.min(20, cPrefix.length))),
@@ -607,12 +622,9 @@ public class TestQwen35MtpDecode {
                     cMtpMask == null ? "null" : cMtpMask.sumNumber().doubleValue(),
                     cMtpPosOffset, cMtpCachePosition);
 
-            // ── Arm C continued: run legs 2 and 3 in the SAME session? No - the
-            // leg-1 session was closed to snapshot its state. Run arm C fully
-            // (generate(20), continue(8), continue(8)) in a fresh session; the
-            // leg-2-entry snapshot above came from an identical prefix run, so
-            // the SEAM_WATCH records of this fresh C run attribute to the same
-            // boundaries (globalBegin 20 and 28).
+            // Preserve the independent-prefix control above, but never use its
+            // state as C's continuation state. Copy the ACTUAL C session below;
+            // evaluate the isolated target oracle only after production finishes.
             int[] cTokens;
             try (GenerationPipeline pipelineC = GenerationPipeline.create(baseSeamConfig(t));
                  GenerationSession sessionC = pipelineC.startSession(PROMPT, t)) {
@@ -631,6 +643,30 @@ public class TestQwen35MtpDecode {
                             n, Arrays.toString(Arrays.copyOf(bTokens, n)),
                             Arrays.toString(leg1.getTokenIds()));
                 }
+                InGraphKvState actualBoundary = sessionC.retainedStateForInspection();
+                actualBoundaryPosition = Math.toIntExact(actualBoundary.cachePosition);
+                actualBoundaryPending = actualBoundary.lastGeneratedToken;
+                actualBoundaryWidth = (int) actualBoundary.decodeInputIds.size(1);
+                actualBoundaryCapacity = (int) actualBoundary.maxKvLen;
+                actualBoundaryMaskType = actualBoundary.decodeCausalMask.dataType();
+                assertEquals(leg1.getTokenIds()[n - 1], actualBoundaryPending,
+                        "Actual C must retain its last emitted token as pending");
+                assertEquals(actualBoundary.actualPrefillLen + n - 1, actualBoundaryPosition,
+                        "Actual C pending position must follow the consumed prefix");
+                actualBoundaryInputs = newStableDecodeInputs(boundaryIo, actualBoundaryWidth,
+                        actualBoundaryCapacity, actualBoundaryMaskType,
+                        duplicateArrays(actualBoundary.staticKvBuffers, actualBoundaryOwned),
+                        duplicateArrays(actualBoundary.recurrentStateBuffers, actualBoundaryOwned),
+                        actualBoundaryOwned);
+                setDecodeStep(actualBoundaryInputs, boundaryIo, actualBoundaryPending, 0,
+                        actualBoundaryPosition, 1, actualBoundaryWidth, actualBoundaryCapacity,
+                        actualBoundaryMaskType, actualBoundaryOwned);
+                // Complete the diagnostic copies before continuation can overwrite
+                // their sources on its native execution stream. No generation state
+                // is changed, and the oracle itself runs only after all C tokens exist.
+                Nd4j.getExecutioner().commit();
+                log.info("[SEAM-ACTUAL-C] prefix={} cachePos={} pending={} (independent state copies)",
+                        Arrays.toString(leg1.getTokenIds()), actualBoundaryPosition, actualBoundaryPending);
                 sessionC.setSpeculativeDepth(1);
                 GenerationResult leg2 = sessionC.continueGeneration(Math.max(8, TOKENS / 3));
                 assertEquals(Math.max(8, TOKENS / 3), leg2.getTokenIds().length,
@@ -644,24 +680,115 @@ public class TestQwen35MtpDecode {
             }
             log.info("[SEAM-BOUNDARY] RUN-C-END tokens={}", Arrays.toString(cTokens));
             reportFirstDiff("C vs B", bTokens, cTokens);
+            // A separate graph cannot disturb C's retained executor or weights.
+            // The two controls hold the exact copied history and physical width
+            // fixed; only the live row count/future token differs. Neither arm
+            // replaces production generation, whose tokens are already final.
+            try (SameDiff oracle = model.dup()) {
+                oracle.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+                INDArray[] oracleLogits = new INDArray[2];
+                int[] winners = new int[2];
+                for (int arm = 0; arm < 2; arm++) {
+                    Map<String, INDArray> inputs = duplicateArrays(actualBoundaryInputs, actualBoundaryOwned);
+                    setDecodeStep(inputs, boundaryIo, actualBoundaryPending, actualBoundaryPending,
+                            actualBoundaryPosition, arm + 1, actualBoundaryWidth, actualBoundaryCapacity,
+                            actualBoundaryMaskType, actualBoundaryOwned);
+                    Map<String, INDArray> output = oracle.output(inputs, boundaryIo.getLogitsOutputName());
+                    oracleLogits[arm] = own(actualBoundaryOwned,
+                            output.get(boundaryIo.getLogitsOutputName()).dup());
+                    winners[arm] = argMaxToken(oracleLogits[arm], 0);
+                }
+                double[] causalDiff = difference(queryRow(oracleLogits[0], 0), queryRow(oracleLogits[1], 0));
+                log.info("[SEAM-ACTUAL-C-ORACLE] position={} pending={} nativeAsl1={} nativeAsl2={} "
+                                + "liveContinuation={} uninterrupted={} row0MaxDiff={} row0L1Diff={}",
+                        actualBoundaryPosition, actualBoundaryPending, winners[0], winners[1],
+                        cTokens[n], bTokens[n], causalDiff[0], causalDiff[1]);
+                assertEquals(0.0, causalDiff[0], 0.0, "Actual-C target row0 must be future-row independent");
+                assertEquals(winners[0], cTokens[n],
+                        "Continuation must agree with an independent target forward from its actual retained state");
+            }
             // Complete equality assertion: split-session C must be token-for-token
             // identical to uninterrupted B. This is the requirement under test.
             assertArrayEquals(bTokens, cTokens,
                     "split-session C must match uninterrupted B token-for-token");
 
-            // The decisive early-localization assertion: C's retained state at the
-            // seam must describe the SAME history as B's in-flight state would —
-            // pending token equals generated[19], cachePosition equals P + 20.
-            assertEquals(n, cPrefix.length, "C boundary capture must hold exactly leg-1 output");
-            log.info("[SEAM-BOUNDARY] C pending token at seam = generated[{}]={} (feeding leg 2), "
-                    + "cachePosition={} (expected P+{}={})",
-                    n - 1, cLastTok, cCachePos, n, 17 + n + 1);
+            assertEquals(n, cPrefix.length, "Independent prefix control must emit its full budget");
+            log.info("[SEAM-BOUNDARY] actual C pending generated[{}]={}, cachePosition={}",
+                    n - 1, actualBoundaryPending, actualBoundaryPosition);
         } finally {
             if (cMtpInputIds != null) cMtpInputIds.close();
             if (cMtpHidden != null) cMtpHidden.close();
             if (cMtpMask != null) cMtpMask.close();
             if (cMtpPosOffset != null) cMtpPosOffset.close();
             if (cMtpCachePosition != null) cMtpCachePosition.close();
+            closeOwned(actualBoundaryOwned);
+        }
+    }
+
+    /**
+     * Fresh sessions over the same prompt and budget must end in bit-identical
+     * tokens AND retained state. Token equality alone is too weak: before the
+     * fused-kernel alias fix (ADR 0061, "Phase boundaries inside a merged
+     * sub-kernel") full-attention layers raced inside one Triton launch, so
+     * sessions usually emitted the same tokens while their recurrent and KV state
+     * already differed, and the difference surfaced later as token flips.
+     */
+    @ParameterizedTest(name = "speculative depth K={0}")
+    @ValueSource(ints = {1, 4})
+    public void testFreshSessionsProduceBitIdenticalState(int speculativeDepth) throws Exception {
+        assertEquals("1", System.getenv("SD_MTP_MULTI_ROW_COMMIT"),
+                "This comparison requires multi-row commit. Run with -Dnd4j.mtp.multiRowCommit=1.");
+        final int t = TOKENS + 2 * Math.max(8, TOKENS / 3);
+        final int sessions = 3;
+        int[] referenceTokens = null;
+        Map<String, float[]> referenceState = null;
+        for (int run = 0; run < sessions; run++) {
+            int[] tokens;
+            Map<String, float[]> state = new java.util.TreeMap<>();
+            try (GenerationPipeline pipeline = GenerationPipeline.create(baseSeamConfig(t, speculativeDepth));
+                 GenerationSession session = pipeline.startSession(PROMPT, t)) {
+                session.setSpeculativeDepth(speculativeDepth);
+                GenerationResult result = session.generate(t);
+                assertEquals(t, result.getTokenIds().length, "session " + run + " must emit its full budget");
+                tokens = session.getAllTokens();
+                InGraphKvState retained = session.retainedStateForInspection();
+                copyStateForComparison("recurrent", retained.recurrentStateBuffers, state);
+                copyStateForComparison("kv", retained.staticKvBuffers, state);
+                copyStateForComparison("mtpKv", retained.mtpKvBuffers, state);
+            }
+            assertFalse(state.isEmpty(), "session " + run + " exposed no retained state to compare");
+            if (referenceTokens == null) {
+                referenceTokens = tokens;
+                referenceState = state;
+                continue;
+            }
+            assertArrayEquals(referenceTokens, tokens, "K=" + speculativeDepth + " session " + run + " tokens differ from session 0");
+            assertEquals(referenceState.keySet(), state.keySet(), "session " + run + " state layout differs");
+            for (Map.Entry<String, float[]> entry : referenceState.entrySet()) {
+                float[] actual = state.get(entry.getKey());
+                float[] expected = entry.getValue();
+                int firstDiff = -1;
+                for (int i = 0; i < expected.length; i++) {
+                    if (Float.floatToRawIntBits(expected[i]) != Float.floatToRawIntBits(actual[i])) {
+                        firstDiff = i;
+                        break;
+                    }
+                }
+                assertEquals(-1, firstDiff, "K=" + speculativeDepth + " session " + run + " state '" + entry.getKey()
+                        + "' is not bit-identical to session 0 (first differing element " + firstDiff + ")");
+            }
+        }
+    }
+
+    private static void copyStateForComparison(String prefix, Map<String, INDArray> buffers,
+                                                Map<String, float[]> into) {
+        if (buffers == null) return;
+        for (Map.Entry<String, INDArray> entry : buffers.entrySet()) {
+            INDArray buffer = entry.getValue();
+            if (buffer == null || buffer.isEmpty()) continue;
+            try (INDArray asFloat = buffer.castTo(DataType.FLOAT).dup()) {
+                into.put(prefix + ":" + entry.getKey(), asFloat.data().asFloat());
+            }
         }
     }
 
@@ -701,19 +828,19 @@ public class TestQwen35MtpDecode {
      * continuation state S_C36 against the composed reference S_REF36.</p>
      *
      * <p>The capture uses the production pipeline to run B's leg through the
-     * boundary (warmup → row 159034 → row 271) with the graph's exported K/V
+     * boundary (warmup → row e[18]=314 → row e[19]=264) with the graph's exported K/V
      * rows committed into independent replay storage via
      * {@link #commitKvRows}, so the replay exercises the same graph, weights,
      * and output manifest as the parity oracle.</p>
      *
      * <p>Arms (all W=2 physical, K=1, OFF):
      * <ul>
-     *   <li>R0: [159034,271] asl=2 at pos=35 — must reproduce B's row0 winner
-     *       271 and row1 winner 8160.</li>
-     *   <li>R1a: [159034] asl=1 at pos=35 — row0 winner must equal 271; commit
+     *   <li>R0: [314,264] asl=2 at pos=35 — must reproduce B's row0 winner
+     *       264 and row1 winner 3050.</li>
+     *   <li>R1a: [314] asl=1 at pos=35 — row0 winner must equal 264; commit
      *       through pos 35 → S_REF36.</li>
-     *   <li>R1b: [271] asl=1 at pos=36 from S_REF36 — row0 must equal B's row1
-     *       winner 8160 (sequence-partition equivalence).</li>
+     *   <li>R1b: [264] asl=1 at pos=36 from S_REF36 — row0 must equal B's row1
+     *       winner 3050 (sequence-partition equivalence).</li>
      *   <li>R2 (review-corrected): the ONE production session's TERMINAL
      *       generate(19) state snapshot — qualified first for a matched
      *       19-token consumed history and a KV storage contract equal to the
@@ -721,8 +848,8 @@ public class TestQwen35MtpDecode {
      *       against the replay's S_B35 over KV + recurrent state ONLY. The
      *       layer-11/pos-9 onset observation is retained for investigation
      *       regardless of qualification.</li>
-     *   <li>R3: from fresh copies of S_REF36, [271,X] asl=2 for two different
-     *       future drafts X plus [271] asl=1 — row0 must be identical across
+     *   <li>R3: from fresh copies of S_REF36, [264,X] asl=2 for two different
+     *       future drafts X plus [264] asl=1 — row0 must be identical across
      *       all three (target causality: future draft must not alter row 0).</li>
      * </ul>
      * Requires -Dnd4j.mtp.multiRowCommit=1 for the production config path.</p>
@@ -739,24 +866,28 @@ public class TestQwen35MtpDecode {
         // output array from the production reproducer, NOT reconstructed from
         // prose). N=17 prompt positions (0..16). B's emitted tokens:
         //   e[0]=271  e[1]=248068  e[2]=271  e[3]=248069  e[4]=271
-        //   e[5]=1919 e[6]=11316  e[7]=369  e[8]=264    e[9]=11088
-        //   e[10]=3010 e[11]=314  e[12]=264 e[13]=2972  e[14]=848
-        //   e[15]=1671 e[16]=1340 e[17]=11316 e[18]=159034
-        //   e[19]=271  e[20]=8160 ...
+        //   e[5]=760  e[6]=11316  e[7]=369  e[8]=5222    e[9]=1521
+        //   e[10]=424 e[11]=5529  e[12]=264 e[13]=2972  e[14]=7187
+        //   e[15]=11  e[16]=13769 e[17]=3010 e[18]=314
+        //   e[19]=264  e[20]=3050 ...
+        // Re-recorded after the Triton attention KV-head and fused-kernel alias
+        // fixes: the prior ledger (e[5]=1919 ... e[18]=159034) came from a
+        // corrupted target and no longer matches greedy. This one equals the
+        // greedy trajectory and is identical across uninterrupted/split runs.
         // Warmup consumes e[0] at position 17 (prefillLength=17).
         // Continuation consumes e[i] at target position 17+i for i=1..17.
         // At basePos=35: positions 0..34 consumed, e[0..17] consumed,
-        //   pending = e[18]=159034 (NOT yet consumed).
-        // At basePos=36: e[18] consumed at position 35, pending = e[19]=271,
-        //   next prediction corresponds to e[20]=8160.
+        //   pending = e[18]=314 (NOT yet consumed).
+        // At basePos=36: e[18] consumed at position 35, pending = e[19]=264,
+        //   next prediction corresponds to e[20]=3050.
         final int promptLen = 17;                 // asserted below against tokenizer
         final int[] emitted = {
-                271, 248068, 271, 248069, 271, 1919, 11316, 369, 264, 11088,
-                3010, 314, 264, 2972, 848, 1671, 1340, 11316, 159034,
-                271, 8160};
-        final int tok18 = emitted[18];            // 159034: pending at pos 35
-        final int tok19 = emitted[19];            // 271: consumed at pos 36
-        final int tok20 = emitted[20];            // 8160: prediction at pos 36
+                271, 248068, 271, 248069, 271, 760, 11316, 369, 5222, 1521,
+                424, 5529, 264, 2972, 7187, 11, 13769, 3010, 314,
+                264, 3050};
+        final int tok18 = emitted[18];            // 314: pending at pos 35
+        final int tok19 = emitted[19];            // 264: consumed at pos 36
+        final int tok20 = emitted[20];            // 3050: prediction at pos 36
         final int cDraft = 1057;
         List<INDArray> owned = new ArrayList<>();
         try {
@@ -810,7 +941,7 @@ public class TestQwen35MtpDecode {
 
             // ── Arm C capture: production-matched seam state via generate(19).
             // The pipeline ends exactly at the seam: positions 0..34 consumed
-            // (e[0..17] plus prompt), pending = e[18]=159034. This is a TERMINAL
+            // (e[0..17] plus prompt), pending = e[18]=314. This is a TERMINAL
             // generate(19) snapshot (review round 4, finding 4): it is NOT
             // asserted to equal B's in-flight pre-position-35 state, and this
             // closed session's buffers are anchor prints only — never reused as
@@ -825,7 +956,7 @@ public class TestQwen35MtpDecode {
                         "capture leg must emit 19 tokens (e[0..18])");
                 InGraphKvState s = session.retainedStateForInspection();
                 // Full-prefix terminal-token check (review round 4): the terminal
-                // pending token is e[18]=159034. Prior prose referred to a "623 at
+                // pending token is e[18]=314. Prior prose referred to a "623 at
                 // index 18" divergence — a token-vs-position conflation that the
                 // R2 full-prefix comparison below now measures correctly.
                 if (s.lastGeneratedToken != tok18) {
@@ -1001,7 +1132,7 @@ public class TestQwen35MtpDecode {
                         consumedLedger.lastEntry().getKey(), tok18, pos35);
             }
             // Scalar same-history reconstruction anchor: 18 consumed forwards
-            // (e[0]@17 ... e[17]@34), pending = e[18]=159034 UNCONSUMED at pos 35.
+            // (e[0]@17 ... e[17]@34), pending = e[18]=314 UNCONSUMED at pos 35.
             // NOTE (review round 4): whether this scalar reconstruction equals the
             // native production session state at the same consumed history is
             // decided by the qualified R2 comparison below — the anchor sums are
@@ -1013,8 +1144,8 @@ public class TestQwen35MtpDecode {
             // ── R2 (review round 4, corrected): compare a LIVE generate(19)
             // session's TERMINAL state snapshot against the replay's S_B35.
             // Correction 1 (indexing): the live leg emits e[0..18]; the prior
-            // check compared emitted index 18 (= pending e[18]=159034) against
-            // tok19=271 — that was an indexing error, NOT a divergence. The
+            // check compared emitted index 18 (= pending e[18]) against
+            // tok19 — that was an indexing error, NOT a divergence. The
             // corrected check is a FULL-PREFIX comparison of all 19 emitted
             // tokens against the recorded history.
             // Correction 2 (qualification): a matched-prefix state comparison
@@ -1060,7 +1191,7 @@ public class TestQwen35MtpDecode {
                                 firstIdx >= 0 ? emitted[firstIdx] : -1);
                     }
                     assertEquals(tok18, liveEmitted[18],
-                            "R2 live leg pending token (emitted index 18) must equal e[18]=159034");
+                            "R2 live leg pending token (emitted index 18) must equal e[18]=" + tok18);
 
                     InGraphKvState sLive = sessionLive.retainedStateForInspection();
                     log.info("[SEAM-R2] live terminal snapshot: cachePos={} pending={} "
@@ -1334,7 +1465,7 @@ public class TestQwen35MtpDecode {
                         kvSelfDiffMax, kvSelfCount);
             }
 
-            // ── R0: two-row window from the replay anchor: [159034, 271], asl=2, pos=35.
+            // ── R0: two-row window from the replay anchor: [e[18], e[19]], asl=2, pos=35.
             // Review round 4, finding 3: logits snapshotted before comparison.
             Map<String, INDArray> r0Kv = duplicateArrays(replayKv, owned);
             Map<String, INDArray> r0States = duplicateArrays(replayStates, owned);
@@ -1348,13 +1479,13 @@ public class TestQwen35MtpDecode {
             ownAll(r0Outputs, owned);
             int r0Row0 = argMaxToken(r0LogitsSnapshot, 0);
             int r0Row1 = argMaxToken(r0LogitsSnapshot, 1);
-            log.info("[SEAM-REPLAY] R0 winners: row0={} row1={} (production B: 271 then 8160)",
+            log.info("[SEAM-REPLAY] R0 winners: row0={} row1={} (production B: e[19] then e[20])",
                     r0Row0, r0Row1);
-            assertEquals(tok19, r0Row0, "R0 row0 must reproduce B's row-0 winner 271");
-            assertEquals(tok20, r0Row1, "R0 row1 must reproduce B's row-1 winner 8160");
+            assertEquals(tok19, r0Row0, "R0 row0 must reproduce B's row-0 winner e[19]=" + tok19);
+            assertEquals(tok20, r0Row1, "R0 row1 must reproduce B's row-1 winner e[20]=" + tok20);
 
-            // ── R1a: one-row forward from the replay anchor: [159034], asl=1, pos=35.
-            // Row 0 predicts e[19]=271. Logits snapshotted (independent observation).
+            // ── R1a: one-row forward from the replay anchor: [e[18]], asl=1, pos=35.
+            // Row 0 predicts e[19]. Logits snapshotted (independent observation).
             Map<String, INDArray> r1Kv = duplicateArrays(replayKv, owned);
             Map<String, INDArray> r1States = duplicateArrays(replayStates, owned);
             Map<String, INDArray> r1Inputs = newStableDecodeInputs(
@@ -1366,7 +1497,7 @@ public class TestQwen35MtpDecode {
                     r1aOutputs.get(io.getLogitsOutputName()).dup());
             ownAll(r1aOutputs, owned);
             int r1aRow0 = argMaxToken(r1aLogitsSnapshot, 0);
-            assertEquals(tok19, r1aRow0, "R1a row0 must reproduce 271");
+            assertEquals(tok19, r1aRow0, "R1a row0 must reproduce e[19]=" + tok19);
             // Commit through pos 35 → S_REF36 (outputs read directly for commit,
             // then state copies are dup'd into independent storage).
             commitKvRows(r1Kv, kvNames, r1aOutputs, pos35, 1);
@@ -1376,8 +1507,8 @@ public class TestQwen35MtpDecode {
             final Map<String, INDArray> sRef36Kv = duplicateArrays(r1Kv, owned);
             final Map<String, INDArray> sRef36States = duplicateArrays(r1States, owned);
 
-            // ── R1b: one-row forward from S_REF36: [271], asl=1, pos=36.
-            // Row 0 predicts e[20]=8160.
+            // ── R1b: one-row forward from S_REF36: [e[19]], asl=1, pos=36.
+            // Row 0 predicts e[20].
             Map<String, INDArray> r1bInputs = newStableDecodeInputs(
                     io, window, maxKvLength, maskType, sRef36Kv, sRef36States, owned);
             setDecodeStep(r1bInputs, io, tok19, 0, pos36, 1, window, maxKvLength, maskType, owned);
@@ -1385,9 +1516,9 @@ public class TestQwen35MtpDecode {
                     r1bInputs, replayOutputNames.toArray(new String[0]));
             ownAll(r1bOutputs, owned);
             int r1bRow0 = argMaxToken(r1bOutputs.get(io.getLogitsOutputName()), 0);
-            log.info("[SEAM-REPLAY] R1b winner: row0={} (B's row1 winner: 8160)", r1bRow0);
+            log.info("[SEAM-REPLAY] R1b winner: row0={} (B's row1 winner: e[20])", r1bRow0);
             assertEquals(tok20, r1bRow0,
-                    "R1b (one-row composition second forward) must equal B's row-1 winner 8160");
+                    "R1b (one-row composition second forward) must equal B's row-1 winner e[20]=" + tok20);
             INDArray r1bLogits = own(owned, r1bOutputs.get(io.getLogitsOutputName()).dup());
             INDArray r1bHidden = own(owned, r1bOutputs.get("target_hidden_states").dup());
 
@@ -1400,7 +1531,7 @@ public class TestQwen35MtpDecode {
                             + "max={} l1={}", row1Diff[0], row1Diff[1]);
 
             // ── R3: future-draft causality from fresh copies of S_REF36.
-            // Row 0 at pos 36 consuming [271, X] must be identical for any X.
+            // Row 0 at pos 36 consuming [e[19], X] must be identical for any X.
             int[] futureDrafts = {cDraft, tok18, 0};
             double[][] r3Row0Logits = new double[futureDrafts.length][];
             for (int arm = 0; arm < futureDrafts.length; arm++) {

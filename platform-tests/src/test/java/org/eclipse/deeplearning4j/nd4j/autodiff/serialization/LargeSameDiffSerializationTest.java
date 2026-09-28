@@ -392,6 +392,53 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
     }
 
 
+    /**
+     * Small constants are serialized inline. One-byte float storage (FLOAT8, FLOAT8_E5M2) and
+     * BFLOAT16/HALF scalars must survive dup(), the path GraphOptimizer copies graphs through:
+     * a lost NVFP4 block-scale array otherwise surfaces later as a missing plan input.
+     */
+    @Test
+    public void testInlineLowPrecisionConstantsSurviveDup() {
+        SameDiff sd = SameDiff.create();
+        byte[] storage = new byte[16 * 20];
+        for (int i = 0; i < storage.length; i++) storage[i] = (byte) (i * 37 + 11);
+        Map<String, INDArray> originals = new LinkedHashMap<>();
+        originals.put("e4m3", rawBytes(DataType.FLOAT8, storage, 16, 20));
+        originals.put("e5m2", rawBytes(DataType.FLOAT8_E5M2, storage, 16, 20));
+        originals.put("e4m3_scalar", rawBytes(DataType.FLOAT8, new byte[]{0x3A}));
+        originals.put("bf16_scalar", Nd4j.scalar(DataType.BFLOAT16, 3.140625));
+        originals.put("half_scalar", Nd4j.scalar(DataType.HALF, 1.5));
+        originals.forEach(sd::constant);
+
+        SameDiff copy = sd.dup();
+        for (Map.Entry<String, INDArray> entry : originals.entrySet()) {
+            INDArray expected = entry.getValue();
+            INDArray actual = copy.getArrForVarName(entry.getKey());
+            assertNotNull("array lost in dup(): " + entry.getKey(), actual);
+            assertEquals(entry.getKey(), expected.dataType(), actual.dataType());
+            assertArrayEquals(entry.getKey(), expected.shape(), actual.shape());
+            if (expected.dataType() == DataType.FLOAT8 || expected.dataType() == DataType.FLOAT8_E5M2) {
+                assertArrayEquals(entry.getKey(), storageBytes(expected), storageBytes(actual));
+            } else {
+                assertEquals(entry.getKey(), expected.getDouble(0), actual.getDouble(0), 0.0);
+            }
+        }
+    }
+
+    private static INDArray rawBytes(DataType dtype, byte[] bytes, long... shape) {
+        INDArray array = Nd4j.createUninitialized(dtype, shape, 'c');
+        new org.bytedeco.javacpp.BytePointer(array.data().pointer()).capacity(bytes.length).put(bytes);
+        Nd4j.getAffinityManager().tagLocation(array, org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
+        return array;
+    }
+
+    private static byte[] storageBytes(INDArray array) {
+        Nd4j.getAffinityManager().ensureLocation(array, org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
+        byte[] bytes = new byte[(int) array.length()];
+        new org.bytedeco.javacpp.BytePointer(array.data().pointer()).capacity(bytes.length).get(bytes);
+        return bytes;
+    }
+
     @Test
     public void testMultipleDataTypeSerialization() throws IOException {
         // Parameters for model with multiple data types

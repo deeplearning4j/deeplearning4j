@@ -1089,4 +1089,124 @@ public class TestFusedGQADecodeKernel {
         // Reshape back to [batch, 1, qHidden]
         return output.reshape(batch, 1, qHidden);
     }
+
+    /**
+     * Isolation for the Qwen3.5 K=1 MTP "SPEC RERUN NON-FINITE GUARD" NaN
+     * (autoregressive_decode.cu: fillWindowMaskKernel / WINDOW_MASK_FILL).
+     *
+     * During a speculative-decode rerun after a partial (rejected-draft)
+     * acceptance, the window substrate re-executes the SAME fixed-width
+     * [batch, windowMax, numHeads, headDim] plan with activeWindow reduced
+     * below the physical window width. Rows at or beyond activeWindow are
+     * marked entirely masked (every KV column set to WINDOW_MASK_FILL =
+     * -3.4028235e+38f, a FLOAT32 near-min value) rather than left partially
+     * causal. dot_product_attention_v2 casts that additive bias down to the
+     * query dtype (HALF here, matching Qwen3.5's FP16 attention compute)
+     * before the fused GQA kernel ever sees it. -3.4028235e+38f overflows
+     * HALF's finite range (max magnitude 65504) and becomes an actual IEEE
+     * -Infinity, so the fully-masked row's own softmax reduces
+     * globalMax=-Infinity and every in-range logit computes
+     * (-Infinity) - (-Infinity) = NaN inside fusedGQAAttentionWithScores4DKernel.
+     *
+     * This test runs a physical 2-row window (row 0 = active/committed,
+     * mirroring K=1 MTP's [pending, draft] layout) with row 1 fully masked
+     * exactly as fillWindowMaskKernel produces it, in HALF precision with a
+     * live KV cache. It asserts BOTH that row 0 (the row the NON-FINITE
+     * GUARD inspects) stays finite AND that it is numerically IDENTICAL to
+     * the same row computed with no second row present at all — row 0 must
+     * be provably independent of whatever garbage row 1 produces.
+     */
+    @Test
+    @DisplayName("GQA window - fully-masked inactive row must not poison the active row (HALF, WINDOW_MASK_FILL)")
+    public void testFullyMaskedWindowRowDoesNotPoisonActiveRowHalfPrecision() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(),
+                "requires CUDA native attention path");
+
+        final int batch = 1;
+        final int numQHeads = 8;
+        final int numKvHeads = 2;
+        final int headDim = 16;
+        final int maxKvLength = 16;
+        final int basePosition = 5;
+        // The exact fill value autoregressive_decode.cu's fillWindowMaskKernel uses
+        // for masked/inactive window positions (WINDOW_MASK_FILL).
+        final float windowMaskFill = -3.4028235e+38f;
+
+        Nd4j.getRandom().setSeed(778899L);
+        INDArray queryWindow = Nd4j.rand(DataType.HALF, batch, 2, numQHeads, headDim)
+                .subi(0.5).muli(0.1);
+        INDArray keyWindow = Nd4j.rand(DataType.HALF, batch, 2, numKvHeads, headDim)
+                .subi(0.5).muli(0.1);
+        INDArray valueWindow = Nd4j.rand(DataType.HALF, batch, 2, numKvHeads, headDim)
+                .subi(0.5).muli(0.1);
+        INDArray initialKeyCache = Nd4j.rand(DataType.HALF, batch, maxKvLength, numKvHeads, headDim)
+                .subi(0.5).muli(0.1);
+        INDArray initialValueCache = Nd4j.rand(DataType.HALF, batch, maxKvLength, numKvHeads, headDim)
+                .subi(0.5).muli(0.1);
+
+        // Full 2-row window bias: row 0 causal up to basePosition, row 1 (the
+        // rejected/inactive draft slot) marked ENTIRELY masked regardless of
+        // column — exactly fillWindowMaskKernel's `w >= activeWindow` branch.
+        float[] windowBiasData = new float[2 * maxKvLength];
+        for (int k = 0; k < maxKvLength; k++) {
+            windowBiasData[k] = k <= basePosition ? 0.0f : windowMaskFill;       // row 0
+            windowBiasData[maxKvLength + k] = windowMaskFill;                    // row 1 (inactive)
+        }
+        INDArray windowBias = Nd4j.create(windowBiasData, new long[]{1, 1, 2, maxKvLength});
+
+        INDArray emptyQueryMask = Nd4j.empty(DataType.FLOAT);
+        INDArray emptyValueMask = Nd4j.empty(DataType.FLOAT);
+
+        INDArray windowKeyCache = initialKeyCache.dup();
+        INDArray windowValueCache = initialValueCache.dup();
+        INDArray windowOutput = Nd4j.exec(new DotProductAttentionV2(
+                queryWindow, valueWindow, keyWindow,
+                emptyQueryMask, emptyValueMask, windowKeyCache, windowValueCache,
+                Nd4j.scalar(DataType.INT64, basePosition),
+                windowBias, 0.0, 0.0, true, false))[0];
+
+        INDArray row0 = windowOutput.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+        INDArray row1 = windowOutput.get(NDArrayIndex.all(), NDArrayIndex.interval(1, 2),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+
+        assertFalse(row0.isNaN().any(),
+                "active row 0 (the row the SPEC RERUN NON-FINITE GUARD inspects) must stay finite; got "
+                        + row0.dup().castTo(DataType.FLOAT));
+        assertFalse(row0.isInfinite().any(), "active row 0 must not be infinite; got "
+                + row0.dup().castTo(DataType.FLOAT));
+
+        // Reference: row 0 alone, no second (inactive) row in the physical
+        // window at all. If row 0 is truly independent of row 1's masked
+        // computation, this must match the windowed row 0 EXACTLY.
+        INDArray soloQuery = queryWindow.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+        INDArray soloKey = keyWindow.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+        INDArray soloValue = valueWindow.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+        float[] soloBiasData = new float[maxKvLength];
+        for (int k = 0; k < maxKvLength; k++) soloBiasData[k] = k <= basePosition ? 0.0f : windowMaskFill;
+        INDArray soloBias = Nd4j.create(soloBiasData, new long[]{1, 1, 1, maxKvLength});
+        INDArray soloKeyCache = initialKeyCache.dup();
+        INDArray soloValueCache = initialValueCache.dup();
+        INDArray soloOutput = Nd4j.exec(new DotProductAttentionV2(
+                soloQuery, soloValue, soloKey,
+                emptyQueryMask, emptyValueMask, soloKeyCache, soloValueCache,
+                Nd4j.scalar(DataType.INT64, basePosition),
+                soloBias, 0.0, 0.0, true, false))[0];
+
+        double maxDiff = soloOutput.castTo(DataType.FLOAT).sub(row0.castTo(DataType.FLOAT))
+                .amaxNumber().doubleValue();
+        assertEquals(0.0, maxDiff, 0.0,
+                "row 0 must be numerically independent of the fully-masked row 1: maxDiff=" + maxDiff);
+
+        // Row 1 (the discarded/inactive row) is never committed, but it must
+        // still not manufacture NaN/Inf — a masked-empty softmax row has a
+        // well-defined (harmless) finite result, not NaN.
+        assertFalse(row1.isNaN().any(), "inactive row 1 must not produce NaN even though it is fully masked; got "
+                + row1.dup().castTo(DataType.FLOAT));
+        assertFalse(row1.isInfinite().any(), "inactive row 1 must not produce Infinity; got "
+                + row1.dup().castTo(DataType.FLOAT));
+    }
 }

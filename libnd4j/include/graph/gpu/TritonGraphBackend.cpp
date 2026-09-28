@@ -256,7 +256,12 @@ size_t TritonGraphBackend::computeSegInternalDtypeHash(NativeSlot* slots,
       dsp::fnv1aMixValue(hash, static_cast<uint64_t>(array->rankOf()));
       for (int d = 0; d < array->rankOf(); ++d) {
         dsp::fnv1aMixValue(hash, static_cast<uint64_t>(array->sizeAt(d)));
-        dsp::fnv1aMixValue(hash, static_cast<uint64_t>(array->stridesOf()[d]));
+        // A singleton dimension's coordinate is always 0, so its stride never
+        // reaches an address and differs between equivalent allocations (the
+        // warmup and compile-phase outputs of one segment). Canonicalize it as
+        // computeSegmentShapeKey does, so one segment keeps one cache identity.
+        dsp::fnv1aMixValue(hash, array->sizeAt(d) <= 1 ? uint64_t{0}
+                                                       : static_cast<uint64_t>(array->stridesOf()[d]));
       }
     };
     for (int i = 0; i < slot.wiring.numInputs; ++i) mixLayout(slot.wiring.inputSourceIndices[i]);

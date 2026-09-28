@@ -226,6 +226,10 @@ SD_HOST_DEVICE SD_INLINE Z sd_remainder(X num, Y denom);
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_fmod(X num, Y denom);
 
+// a * b + c with a single rounding in Z (fused multiply-add).
+template <typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_fma(Z a, Z b, Z c);
+
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_erf(T num);
 
@@ -1176,6 +1180,13 @@ template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_fmod(X val, Y val2) {
   Z result = p_fmod<Z>(static_cast<Z>(val), static_cast<Z>(val2));
   SD_PRINT_MATH_FUNC2("sd_fmod", val, val2, result,Z);
+  return result;
+}
+
+template <typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_fma(Z a, Z b, Z c) {
+  Z result = p_fma<Z>(a, b, c);
+  SD_PRINT_MATH_FUNC2("sd_fma", a, b, result,Z);
   return result;
 }
 

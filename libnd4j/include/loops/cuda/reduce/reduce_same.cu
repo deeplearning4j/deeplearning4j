@@ -94,7 +94,9 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::aggregatePartials(
     while (floorPow2 & (floorPow2 - 1)) {
       floorPow2 &= floorPow2 - 1;
     }
-    if (tid >= floorPow2) {
+    // Only threads holding items fold: threads at or beyond numItems would
+    // otherwise write slots other threads are still reading (WAR race).
+    if (tid >= floorPow2 && tid < numItems) {
       sPartials[tid - floorPow2] =
           OpType::updateInter(sPartials[tid - floorPow2], sPartials[tid], extraParams);
     }

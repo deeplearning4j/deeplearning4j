@@ -853,9 +853,18 @@ SegmentKernelPattern TritonIRBuilder::classifySegment(NativeSlot* slots, int sta
 
 // ─── Tile configuration ─────────────────────────────────────────────────────
 
+// SERIAL_FMA decode kernels: resident programs per SM. Each program is one
+// warp whose K recurrence is a long dependent instruction stream; several per
+// SM let the schedulers interleave them instead of stalling on one.
+static constexpr int kSerialMatmulProgramsPerSm = 4;
+// One output per lane: a smaller block leaves lanes of the warp idle (Triton
+// replicates the tensor across them) at no latency benefit.
+static constexpr int kMinSerialMatmulBlock = 32;
+
 void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& categories,
                                        const std::vector<std::vector<LongType>>& shapes,
-                                       int& blockSize, int& numWarps, int& numStages) {
+                                       int& blockSize, int& numWarps, int& numStages,
+                                       bool hasSerialMatmul) {
   bool hasMatmul = false;
   bool hasReduction = false;
   bool hasFusedAttention = false;
@@ -901,7 +910,20 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
       }
     }
 
-    if (approxM <= 16) {
+    if (approxM <= 16 && hasSerialMatmul) {
+      // SERIAL_FMA decode: one strictly ordered K recurrence per output, so the
+      // only parallelism is the output count. A program's time is its K-long
+      // instruction stream whatever its width, so spread the outputs over
+      // kSerialMatmulProgramsPerSm one-warp programs per SM.
+      const LongType outputs = static_cast<LongType>(approxM) * approxN;
+      const LongType perSm = std::max<LongType>(
+          1, outputs / (static_cast<LongType>(queryCudaMultiProcessorCount()) * kSerialMatmulProgramsPerSm));
+      int perProgram = 1;
+      while (static_cast<LongType>(perProgram) * 2 <= perSm) perProgram *= 2;
+      blockSize = std::max(kMinSerialMatmulBlock, std::min(perProgram, 64));
+      numWarps = 1;
+      numStages = 2;
+    } else if (approxM <= 16) {
       // Small M (decode): fewer warps, smaller tiles to reduce overhead
       blockSize = 64;
       numWarps = 2;
@@ -943,8 +965,10 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
     blockSize = p;
   }
 
-  // Clamp to reasonable Triton tile range
-  blockSize = std::max(64, std::min(blockSize, 4096));
+  // Clamp to reasonable Triton tile range (serial decode matmuls chose a
+  // smaller per-SM block above deliberately).
+  const int minBlockSize = hasSerialMatmul && hasMatmul ? kMinSerialMatmulBlock : 64;
+  blockSize = std::max(minBlockSize, std::min(blockSize, 4096));
   numWarps = std::max(1, std::min(numWarps, 16));
 
   DSP_DIAG(JIT, "selectTileConfig: blockSize=%d numWarps=%d numStages=%d "

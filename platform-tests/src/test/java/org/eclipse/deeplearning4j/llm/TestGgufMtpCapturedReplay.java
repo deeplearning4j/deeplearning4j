@@ -4,6 +4,7 @@ package org.eclipse.deeplearning4j.llm;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfigApplier;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.NativeExecutionBinding;
 import org.nd4j.linalg.api.shape.Shape;
@@ -21,6 +22,7 @@ import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -217,6 +219,84 @@ public class TestGgufMtpCapturedReplay {
             }
         }
 
+        /**
+         * Replay two captured input sets in A/B/A/B order on the same prepared-plan
+         * binding. This separates changed-input handling from call-ordinal drift:
+         * A1/A2 and B1/B2 should each be identical, and every result should match
+         * its independent fresh-graph reference. The exact input check is against
+         * the host-side external arrays immediately before replay; it does not
+         * claim to inspect private device staging buffers.
+         */
+        public void verifyAlternatingCaptures(NativeExecutionBinding binding) {
+            Map<String, INDArray> retained = new LinkedHashMap<>();
+            INDArray[] borrowed = binding.getExternalInputsSnapshot();
+            for (String name : DspTensorSnapshot.MTP_INPUTS) {
+                int index = binding.findExternalInputIndex(name);
+                assertTrue(index >= 0, name);
+                retained.put(name, borrowed[index]);
+                binding.getBackendOwner().nativeOps().markPlanExternalInputVariable(binding.getPlanHandle(), index);
+            }
+
+            int[] captureOrder = {0, 1, 0, 1};
+            List<Map<String, float[]>> observed = new ArrayList<>();
+            List<String> failures = new ArrayList<>();
+            for (int call = 0; call < captureOrder.length; call++) {
+                int captureIndex = captureOrder[call];
+                DspTensorSnapshot capture = captures.get(captureIndex);
+                restore(capture, retained);
+                for (String name : DspTensorSnapshot.MTP_INPUTS) {
+                    long inputMismatch = firstRawInputByteMismatch(capture, name, retained.get(name));
+                    log.info("MTP_ALTERNATING_INPUT call={} capture={} tensor={} firstByteMismatch={}",
+                            call + 1, captureIndex == 0 ? "A" : "B", name, inputMismatch);
+                    assertEquals(-1L, inputMismatch,
+                            "Host external input differs from restored capture before replay: " + name);
+                }
+
+                Map<String, float[]> actual = executeBound(binding);
+                for (String name : DspTensorSnapshot.MTP_INPUTS) {
+                    if (name.contains("past_key_values")) actual.put(name, floats(retained.get(name)));
+                }
+                Map<String, float[]> expected = references.get(captureIndex);
+                for (String name : expected.keySet()) {
+                    float[] expectedValues = expected.get(name);
+                    float[] actualValues = actual.get(name);
+                    assertNotNull(actualValues, name);
+                    assertEquals(expectedValues.length, actualValues.length, name);
+                    int first = Arrays.mismatch(expectedValues, actualValues);
+                    double maxAbs = 0;
+                    for (int i = 0; i < expectedValues.length; i++) {
+                        maxAbs = Math.max(maxAbs,
+                                Math.abs((double) expectedValues[i] - actualValues[i]));
+                    }
+                    log.info("MTP_ALTERNATING_REFERENCE call={} capture={} tensor={} firstMismatch={} maxAbs={} expectedHash={} actualHash={}",
+                            call + 1, captureIndex == 0 ? "A" : "B", name, first, maxAbs,
+                            Long.toHexString(fnv1a(expectedValues)), Long.toHexString(fnv1a(actualValues)));
+                    if (first >= 0) {
+                        failures.add("call=" + (call + 1) + "/capture="
+                                + (captureIndex == 0 ? "A" : "B") + "/" + name + " first=" + first);
+                    }
+                }
+
+                if (call >= 2) {
+                    Map<String, float[]> earlier = observed.get(call - 2);
+                    for (String name : earlier.keySet()) {
+                        int first = Arrays.mismatch(earlier.get(name), actual.get(name));
+                        log.info("MTP_ALTERNATING_REPEAT capture={} firstCall={} repeatCall={} tensor={} firstMismatch={} firstHash={} repeatHash={}",
+                                captureIndex == 0 ? "A" : "B", call - 1, call + 1, name, first,
+                                Long.toHexString(fnv1a(earlier.get(name))),
+                                Long.toHexString(fnv1a(actual.get(name))));
+                        if (first >= 0) {
+                            failures.add("same-input repeat capture="
+                                    + (captureIndex == 0 ? "A" : "B") + " calls="
+                                    + (call - 1) + "/" + (call + 1) + "/" + name + " first=" + first);
+                        }
+                    }
+                }
+                observed.add(actual);
+            }
+            assertTrue(failures.isEmpty(), () -> String.join("\n", failures));
+        }
+
         public void verify(NativeExecutionBinding binding) {
             Map<String, INDArray> retained = new LinkedHashMap<>();
             INDArray[] borrowed = binding.getExternalInputsSnapshot();
@@ -287,15 +367,16 @@ public class TestGgufMtpCapturedReplay {
         String prefix = System.getProperty("qwen.mtp.snapshotPrefix");
         assertNotNull(file);
         assertNotNull(prefix);
+        if (Boolean.getBoolean("mtp.reference.optimal")) {
+            log.info("MTP_CONFIG applying OPTIMAL before fresh references and retained replay");
+            BenchmarkConfigApplier.apply(BenchmarkConfig.optimal());
+        }
         List<DspTensorSnapshot> captures = new ArrayList<>();
         List<Map<String, float[]>> references = new ArrayList<>();
         for (int call = 1; call <= 3; call++) {
             DspTensorSnapshot capture = DspTensorSnapshot.read(Path.of(prefix + ".tensor-" + call + ".dspt"));
             captures.add(capture);
             references.add(freshReference(file, capture));
-        }
-        if (Boolean.getBoolean("mtp.reference.optimal")) {
-            BenchmarkConfigApplier.apply(BenchmarkConfig.optimal());
         }
         if (Boolean.getBoolean("mtp.reference.fusionOnly")) {
             Nd4j.getEnvironment().setTritonSectionFusion(true);
@@ -331,15 +412,17 @@ public class TestGgufMtpCapturedReplay {
                 assertSame(retained.get(name), borrowed[index], name);
                 binding.getBackendOwner().nativeOps().markPlanExternalInputVariable(binding.getPlanHandle(), index);
             }
+            boolean repeatFirstCapture = Boolean.getBoolean("mtp.consecutive.repeatFirst");
             for (int call = 0; call < captures.size(); call++) {
-                restore(captures.get(call), retained);
+                int captureIndex = repeatFirstCapture ? 0 : call;
+                restore(captures.get(captureIndex), retained);
                 Map<String, float[]> actual = executeBound(binding);
                 for (String name : DspTensorSnapshot.MTP_INPUTS) {
                     if (name.contains("past_key_values")) actual.put(name, floats(retained.get(name)));
                 }
-                Map<String, float[]> expected = references.get(call);
-                log.info("MTP_CONSECUTIVE call={} freshDraft={} boundDraft={}", call + 1,
-                        argmax(expected.get("mtp_logits")), argmax(actual.get("mtp_logits")));
+                Map<String, float[]> expected = references.get(captureIndex);
+                log.info("MTP_CONSECUTIVE call={} captureIndex={} freshDraft={} boundDraft={}", call + 1,
+                        captureIndex + 1, argmax(expected.get("mtp_logits")), argmax(actual.get("mtp_logits")));
                 for (String name : expected.keySet()) {
                     int first = Arrays.mismatch(expected.get(name), actual.get(name));
                     double maxAbs = 0;
@@ -547,6 +630,28 @@ public class TestGgufMtpCapturedReplay {
             binding.completeNativeUse();
         }
         return copied;
+    }
+
+    private static long firstRawInputByteMismatch(DspTensorSnapshot capture, String name, INDArray actual) {
+        DspTensorSnapshot.Tensor expected = capture.tensors.get(name);
+        assertNotNull(expected, "Missing captured input " + name);
+        assertEquals(expected.dtype, actual.dataType(), name + " dtype");
+        assertArrayEquals(expected.shape, actual.shape(), name + " shape");
+        assertArrayEquals(expected.strides, actual.stride(), name + " strides");
+        BytePointer pointer = new BytePointer(actual.data().pointer())
+                .capacity(Math.multiplyExact(actual.data().length(), expected.width));
+        for (int element = 0; element < expected.raw.length / expected.width; element++) {
+            long storageOffset = Math.addExact(expected.logicalOffset(element), actual.offset());
+            for (int byteIndex = 0; byteIndex < expected.width; byteIndex++) {
+                int payloadByteIndex = capture.payloadOrder == ByteOrder.nativeOrder()
+                        ? byteIndex : expected.width - 1 - byteIndex;
+                byte expectedByte = expected.raw[element * expected.width + payloadByteIndex];
+                long address = Math.addExact(Math.multiplyExact(storageOffset, expected.width), byteIndex);
+                byte actualByte = pointer.position(address).get();
+                if (expectedByte != actualByte) return (long) element * expected.width + byteIndex;
+            }
+        }
+        return -1;
     }
 
     private static void restore(DspTensorSnapshot capture, Map<String, INDArray> inputs) {

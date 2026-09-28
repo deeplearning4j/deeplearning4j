@@ -792,6 +792,23 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool strideDescendingCAscendingF( sd::Lon
   }
 }
 
+// True when the elements are packed in row-major (C) order: every dimension of
+// size > 1 has exactly the stride of a packed C-order array. Size-1 dimensions
+// are ignored — their index is always 0, so their stride never contributes to an
+// address, and ND4J normalizes such strides (a [1,K] row is stored with strides
+// [1,1]). The strides alone decide; the order flag is not consulted.
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isDenseRowMajor(const sd::LongType *shapeInfo) {
+  const sd::LongType rank = shape::rank(shapeInfo);
+  const sd::LongType *strides = shape::stride(shapeInfo);
+  const sd::LongType *dims = shape::shapeOf(shapeInfo);
+  sd::LongType expected = 1;
+  for (sd::LongType d = rank - 1; d >= 0; --d) {
+    if (dims[d] != 1 && strides[d] != expected) return false;
+    expected *= dims[d];
+  }
+  return true;
+}
+
 SD_LIB_EXPORT SD_INLINE SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
                                                       const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
                                                       sd::LongType *memBuff, const sd::LongType *dimsToExclude) {

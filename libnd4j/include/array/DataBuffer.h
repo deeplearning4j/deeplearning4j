@@ -31,6 +31,7 @@
 #include <system/op_boilerplate.h>
 #include <system/PointerValidation.h>
 
+#include <algorithm>
 #include <climits>
 #include <cstring>
 #include <mutex>
@@ -105,6 +106,14 @@ SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState();
 #define tl_compositeCaptureStream dataBufferThreadState().compositeCaptureStream
 #define tl_islandSlotMin          dataBufferThreadState().islandSlotMin
 #define tl_islandSlotMax          dataBufferThreadState().islandSlotMax
+
+// Content predicates recorded by DataBuffer::stampContentValidated. Each value
+// names exactly one validation rule; add a value per rule, never reuse one.
+enum class ContentPredicate : uint16_t {
+  // Every quantization scale is positive and finite (ModelOpt NVFP4 block
+  // scales, see modelopt_linear).
+  MODELOPT_SCALES_VALID = 1,
+};
 #endif  // __JAVACPP_HACK__
 
 class SD_LIB_EXPORT DataBuffer {
@@ -145,6 +154,9 @@ class SD_LIB_EXPORT DataBuffer {
   mutable void* _writeEvent = nullptr;
   mutable std::atomic<int> _writeEventDeviceId{-1};
   mutable std::atomic<bool> _writeEventRecorded{false};
+
+  // (content version << 16) | predicate of the last stampContentValidated; 0 = none.
+  mutable std::atomic<uint64_t> _contentValidationStamp{0};
 
 #if defined(SD_GCC_FUNCTRACE)
   StackTrace *allocationStackTracePrimary = nullptr;
@@ -302,6 +314,39 @@ class SD_LIB_EXPORT DataBuffer {
   void readSpecial() const;
   bool isPrimaryActual() const;
   bool isSpecialActual() const;
+
+#ifndef __JAVACPP_HACK__
+  /**
+   * Content-validation stamp: remembers that `predicate` holds for this buffer's
+   * current content, so callers can skip re-validating an immutable input (for
+   * example a model's quantization scales) on every use. The stamp belongs to
+   * this buffer object and its content version — any later write to either the
+   * host or the device copy invalidates it, and a new buffer has none — so it
+   * cannot vouch for different data the way an address-keyed cache can after
+   * the allocator reuses an address. Backends that do not track writes
+   * (tracksContentWrites() == false) never report a stamp.
+   */
+  void stampContentValidated(ContentPredicate predicate) const {
+    if (tracksContentWrites()) _contentValidationStamp.store(contentStamp(predicate), std::memory_order_release);
+  }
+  bool isContentValidated(ContentPredicate predicate) const {
+    return tracksContentWrites() &&
+           _contentValidationStamp.load(std::memory_order_acquire) == contentStamp(predicate);
+  }
+  // Whether writePrimary()/writeSpecial() record every write (per backend).
+  bool tracksContentWrites() const;
+
+ private:
+  // Every write stores a fresh value of the per-buffer event counter, so the
+  // newest write tick of either side is a version that changes on any write.
+  uint64_t contentStamp(ContentPredicate predicate) const {
+    const LongType version = std::max(_writePrimary.load(std::memory_order_acquire),
+                                      _writeSpecial.load(std::memory_order_acquire));
+    return (static_cast<uint64_t>(version) << 16) | static_cast<uint16_t>(predicate);
+  }
+
+ public:
+#endif
 
   void expand(const uint64_t size);
 

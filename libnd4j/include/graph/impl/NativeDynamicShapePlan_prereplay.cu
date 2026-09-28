@@ -513,11 +513,14 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
           auto* lcStreamPtr = LaunchContext::defaultContext()->getCudaStream();
           cudaStream_t lcStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
           cudaEvent_t stageEvt = reinterpret_cast<cudaEvent_t>(execCtx->crossStreamEvent);
+          // Fault injection for the staging-to-consumer ordering step, whichever
+          // form it takes (event wait, or implicit same-stream order).
+          if (injectedFault != nullptr && std::strcmp(injectedFault, "stream_sync") == 0) {
+            stagingMaintainedThisExec_ = false;
+            return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                    static_cast<int>(cudaErrorUnknown), false};
+          }
           if (lcStream != nullptr && lcStream != cudaStr && cudaStr != nullptr) {
-            if (injectedFault != nullptr && std::strcmp(injectedFault, "stream_sync") == 0) {
-              return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
-                      static_cast<int>(cudaErrorUnknown), false};
-            }
             if (stageEvt != nullptr) {
               cudaError_t recordErr = cudaEventRecord(stageEvt, cudaStr);
               if (recordErr != cudaSuccess) {
@@ -561,30 +564,12 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
                    "(no blocking stream sync)",
                    diagTag, (void*)cudaStr);
         }
-        // Slot-by-slot warmup/replay kernels can resolve their own NDArray context
-        // stream rather than the DSP staging stream.  Complete the staging stream
-        // at this boundary so a consumer on any context stream cannot race the
-        // freshly copied external value.
-        if (target == ExecTarget::GRAPH_REPLAY && cudaStr != nullptr) {
-          if (injectedFault != nullptr && std::strcmp(injectedFault, "stream_sync") == 0) {
-            stagingMaintainedThisExec_ = false;
-            return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
-                    static_cast<int>(cudaErrorUnknown), false};
-          }
-          const auto stagingSyncErr = cudaStreamSynchronize(cudaStr);
-          if (stagingSyncErr != cudaSuccess) {
-            DSP_DIAG(STREAM_SYNC,
-                     "%s: staging stream synchronization failed stream=%p err=%s",
-                     diagTag, (void*)cudaStr, cudaGetErrorString(stagingSyncErr));
-            cudaGetLastError();
-            stagingMaintainedThisExec_ = false;
-            return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
-                    static_cast<int>(stagingSyncErr), false};
-          }
-          DSP_DIAG(STREAM_SYNC,
-                   "%s: staging stream synchronized before slot dispatch stream=%p",
-                   diagTag, (void*)cudaStr);
-        }
+        // Consumers of the staged values are ordered on the device, never by
+        // blocking the host: replay kernels run on cudaStr itself and slot kernels
+        // on the LaunchContext stream, which waits on the staging event above.
+        // A host-blocking stream synchronize here would stall every replay until
+        // all previously queued work (e.g. the preceding plan) finished, leaving
+        // the GPU idle while this plan's host preparation runs.
         DSP_DIAG(EXECUTE, "%s: staging buffers synced for %d ext inputs — "
                  "using staged pointers (effectiveExternals_=%p) execTarget=%s",
                  diagTag, numExt, (void*)staged, execCtx->execTargetName());

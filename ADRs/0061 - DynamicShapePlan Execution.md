@@ -58,6 +58,24 @@ A slot contains:
 | `outputShapeDependsOnInputValues` | True for reshape/gather/tile (shape depends on tensor values) |
 | `targetDeviceId` | Device placement (-1 = default, 0+ = specific GPU) |
 
+#### Conditional input writes
+
+An operation may mutate inputs independently of its ordinary outputs. These
+effects are declared on its `OpDescriptor` via `addInputWrites`, not inferred
+from names or from the fact that an input is variable. A write group names
+its writable input indices, required nonempty inputs with minimum ranks, and an optional dtype
+guard. Missing optional destinations are not writes. Cache-form DPA-v2 declares
+K/V inputs 5/6 (both rank at least two, with nonempty position input 7);
+separate quantized scale inputs 9/10 are writable only for an
+INT8 cache. Empty-cache prefill and bias-only attention activate neither group.
+
+Direct compiled execution includes these inputs in both the NDArray read and
+write lists. CUDA-graph replay publishes the same writes after replay, using
+the capture audit to exclude operations that did not execute. This preserves
+host/device actuality without forcing transfers or dirtying read-only inputs.
+The tiny `testHostRestoredGqaCachePublication` distinguishes correct device
+contents from ordinary caller readback after host restoration; both must agree.
+
 #### Input Wiring Encoding
 
 Each slot's `inputSourceIndices` array encodes where to fetch inputs using a sign convention:
@@ -611,6 +629,73 @@ Segment#0: slots [0..9], capturable=YES, device=0
   Slot#9  [add]           elementwise
 ```
 
+#### Section program ranges
+
+The sections of one launch phase used to share one program range: every
+program ran each section for its own program id, in section order. Now
+sections that share no memory get separate ranges and run concurrently.
+
+- **Dependent sections.** Two sections are dependent when their memory overlaps
+  with at least one write (byte ranges, so views and aliases count), or when one
+  consumes a slot the other produces. A phase may still carry element-aligned
+  flow, meaning a consumer that reads its producer's output at the same
+  indices. That flow is ordered only because the same program runs both
+  sections.
+- **Components.** Dependent sections are unioned into components. Each
+  component keeps one shared program range `[offset, offset + grid)` and keeps
+  its section order within each program.
+- **Independent components.** These get disjoint ranges and run concurrently.
+  The launch grid of a phase is the sum of its component grids.
+- **Local program id.** Section emitters index with `programId - offset`.
+- **Unchanged cases.** Cooperative kernels count the launched programs at their
+  grid barriers, so they keep shared ranges. So does any phase containing fused
+  attention, which reads its own 2D program ids.
+- **Regression test.** `DspTritonSectionRangesTest` covers the aligned-flow case.
+  Giving a producer and its aligned consumer separate ranges races, which showed
+  up only as lost MTP draft acceptance (18/21 → 8/58), with greedy parity intact.
+
+#### Merged capture plan for gaps
+
+Which gap units execute live during replay is decided for the whole schedule
+before capture, by `planMergedCaptureGaps`. A gap is live when any of these
+holds:
+
+- it is not capture-safe;
+- no capture is open when the loop reaches it (a merged capture begins at an
+  island and continues only through islands and merging gaps);
+- it touches memory that a live unit writes (`mergedCaptureGapIsAliasSafe`,
+  the guard added in 7aee83892e).
+
+The live set only grows, so the planner iterates to a fixpoint. Before this,
+the capture loop judged each gap in order and counted every later, undecided
+gap as live, so any recycled block shared with a later gap rejected the merge,
+even when that later gap would merge too. The capture loop follows the plan. A
+planned merge reached without an open capture fails the capture rather than
+running live, because other gaps' decisions assumed it merged.
+
+`gated_delta_rule` is now capture-safe. Its sequential path keeps the recurrent
+state in shared memory and allocates nothing. Its only exclusion reason (pool
+scratch, b1e4663d22) is gone, so `OP_TRAIT_EXTERNAL_WORKSPACE` was dropped. On
+Qwen3.6-27B decode, all 514 gaps merge and the step replays as one graph,
+instead of 353 graphs plus 497 live gap slots. Host time per step fell from
+about 60 ms to about 19 ms. `DspGapCaptureExclusionContractTest` (pool churn)
+covers the recycled-scratch failure mode.
+
+A whole-segment merged capture (no live gap) records one consolidated
+Triton argument-table copy at its start (`bakeConsolidatedArgTableIntoCapture`).
+The segment's kernels then launch without per-kernel copy nodes.
+
+- **Why per-kernel copies existed.** Live gaps between separately captured
+  islands can change addresses mid-step. Inside a single graph nothing can.
+- **Why the single copy is equivalent.** A captured copy from pinned host memory
+  reads that memory when the graph runs, so one copy at the start delivers the
+  same table content as the per-kernel copies did.
+- **Effect on Qwen3.6-27B decode.**
+  - Copy nodes: 1,203 → 97 per step.
+  - `cudaGraphLaunch` host time: 8.9 → 1.6 ms.
+  - Node transitions inside the graph: ~9 → ~0.3 ms, because each copy node
+    had been a serialization point.
+
 #### Stage 1: Section Identification
 
 `TritonIRBuilder.identifySections()` walks the segment and groups consecutive slots by op category. Section breaks occur when:
@@ -692,6 +777,32 @@ CompileAll mode with fusion:
   Sub-kernel 2: Section F [slot 7]            (NORMALIZATION, standalone — needs barrier)
   Sub-kernel 3: Section G [slots 8-9]         (ELEMENTWISE)
 ```
+
+#### Phase boundaries inside a merged sub-kernel
+
+Sections merged into one sub-kernel are grouped into **launch phases**. All
+programs of a phase run concurrently, so a phase may only contain sections whose
+cross-program data flow is program-local. Without cooperative launch (the
+default), each phase is a separate launch of the same kernel with a `phase_id`
+argument; launch order on the stream is the grid-wide barrier. A section starts a
+new phase when:
+
+- it, or the section producing its input, has `needsGlobalBarrier`;
+- it consumes a cross-section intermediate whose element count differs from its
+  own output count (different pid-to-element mapping); or
+- **it accesses device memory that another section of the current phase accesses
+  through a different tensor, and at least one of the two accesses is a write.**
+
+The last rule exists because DSP buffer coloring (ADR 0094) reuses memory between
+tensors whose op-level lifetimes do not overlap. That is correct for op-by-op
+execution but not inside one launch: in Qwen3.5's gated attention output block
+(`sigmoid → multiply → o_proj matmul → cast → residual add`), coloring gave the
+residual add's output the gated product's buffer. With both in the same phase,
+epilogue programs overwrote rows that other programs' matmul K-loops were still
+reading, so full-attention layers produced scheduling-dependent results. The
+check compares the strided byte extents of every section input and non-aliasing
+output at build time (coloring is applied during warmup, before compilation) and
+logs `ALIAS_BARRIER` under the `COMPILE` diagnostic category when it splits a phase.
 
 #### Stage 4: MLIR Code Generation (TritonIRBuilder)
 

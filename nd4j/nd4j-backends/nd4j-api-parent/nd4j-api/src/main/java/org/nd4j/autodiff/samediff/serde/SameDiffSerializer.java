@@ -3307,12 +3307,30 @@ public class SameDiffSerializer {
                             case HALF:
                             case BFLOAT16:
                                 if (bb.remaining() >= 2) {
-                                    scalar = Nd4j.constantScalar(HalfPrecisionUtil.toFloat(bb.getShort()));
+                                    short bits = bb.getShort();
+                                    // BFLOAT16 is the upper half of an FP32; HALF has its own layout.
+                                    // Both values are exact in the scalar's own dtype, which must be kept.
+                                    float value = dataType == DataType.BFLOAT16
+                                            ? Float.intBitsToFloat((bits & 0xFFFF) << 16)
+                                            : HalfPrecisionUtil.toFloat(bits);
+                                    scalar = Nd4j.getDeallocatorService().registerPendingConstant(
+                                            Nd4j.scalar(dataType, value));
                                 } else {
                                     log.error("LOAD_INLINE [{}]: Insufficient bytes for HALF/BFLOAT16 scalar", varName);
                                     return null;
                                 }
                                 break;
+                            case FLOAT8:
+                            case FLOAT8_E5M2: {
+                                // Restore the storage byte verbatim (see the array case).
+                                // Uninitialized: its only byte is written below, and the zero-filling
+                                // scalar factory has no FLOAT8 initializer.
+                                scalar = Nd4j.getDeallocatorService().registerPendingConstant(
+                                        Nd4j.createUninitialized(dataType, new long[0], 'c'));
+                                new BytePointer(scalar.data().pointer()).capacity(1).put(bb.get());
+                                Nd4j.getAffinityManager().tagLocation(scalar, AffinityManager.Location.HOST);
+                                break;
+                            }
                             default:
                                 log.error("LOAD_INLINE [{}]: Unsupported scalar type {} during load", varName, dataType);
                                 return null;
@@ -3440,6 +3458,16 @@ public class SameDiffSerializer {
                             byte[] byteData = new byte[(int) totalElements];
                             bbManual.get(byteData);
                             targetBuffer.setData(byteData);
+                            break;
+                        }
+                        case FLOAT8: case FLOAT8_E5M2: {
+                            // One-byte float storage has no typed setData: restore the serialized
+                            // storage bytes verbatim and mark the host copy current, so the device
+                            // copy is synchronized before use.
+                            byte[] storage = new byte[(int) totalElements];
+                            bbManual.get(storage);
+                            new BytePointer(targetBuffer.pointer()).capacity(storage.length).put(storage);
+                            Nd4j.getAffinityManager().tagLocation(result, AffinityManager.Location.HOST);
                             break;
                         }
                         default:

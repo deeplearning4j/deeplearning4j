@@ -6006,7 +6006,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         DataType dt = sameDiff.getVariable(outNames[i]).dataType();
                         DataType currDT = reqShape.dataType();
                         if (dt != currDT) {
-                            Shape.setExtras(asJava,Shape.extras(asJava));
+                            ArrayOptionsHelper.setDataTypeInShapeInfo(asJava, dt);
                         }
 
                         //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
@@ -6014,7 +6014,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         // Note: the shape buffer created here is OWNED by the output array allocated below
                         // Do NOT close it - the INDArray owns and manages the shape buffer's lifecycle
                         DataBuffer newShapeBuffer = Nd4j.createBuffer(asJava);
-                        INDArray out = mmgr.allocateFromDescriptor(false, newShapeBuffer);
+                        INDArray out = mmgr.allocateFromDescriptor(isOutput, newShapeBuffer);
                         if(Shape.isEmpty(asJava) && !out.isEmpty()) {
                             throw new IllegalStateException("Output shape was empty, but created array was not.");
                         }

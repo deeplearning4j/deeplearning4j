@@ -298,6 +298,8 @@ void DataBuffer::writePrimary() const {}
 void DataBuffer::writeSpecial() const {}
 void DataBuffer::readPrimary() const {}
 void DataBuffer::readSpecial() const {}
+// Host writes are not recorded on this backend, so no content stamp is ever trusted.
+bool DataBuffer::tracksContentWrites() const { return false; }
 bool DataBuffer::isPrimaryActual() const { return true; }
 bool DataBuffer::isSpecialActual() const { return false; }
 void DataBuffer::showBufferLimited() {}

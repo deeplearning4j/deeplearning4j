@@ -32,36 +32,62 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+// HALF/BFLOAT16 are storage types, not intermediate arithmetic types. Transcendental
+// ops (exp/log/sqrt/tanh-based) must accumulate in float and narrow only once when
+// writing back to T, exactly like the non-fused sd_sigmoid/sd_tanh/... kernels and the
+// CUDA fused chain (FusedChainAccType in helpers/cuda/fusedElementwiseChain.cu). Computing
+// these directly in T (as this file previously did) rounds after every intermediate step
+// (exp, +1, division, ...) instead of once, so the fused-chain result silently diverges
+// by ~1 ULP from the unfused reference path for the exact same math.
+template <typename T>
+struct FusedChainAccType {
+    using type = float;
+};
+template <>
+struct FusedChainAccType<double> {
+    using type = double;
+};
+
 template <typename T>
 static T applyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T clipMaxVal) {
+    using AccT = typename FusedChainAccType<T>::type;
+    const AccT x = static_cast<AccT>(val);
+
     switch (op) {
-        // Binary ops
+        // Binary ops - operands already share T's precision, no promotion needed.
         case FUSED_ADD:       return val + secondaryVal;
         case FUSED_SUB:       return val - secondaryVal;
         case FUSED_MUL:       return val * secondaryVal;
         case FUSED_DIV:       return secondaryVal != T(0) ? val / secondaryVal : T(0);
 
-        // Unary ops
+        // Unary ops - accumulate in AccT (float for HALF/BFLOAT16/FLOAT, double for DOUBLE),
+        // narrowing to T exactly once, matching sd_sigmoid/sd_tanh/... semantics.
         case FUSED_RELU:      return val > T(0) ? val : T(0);
-        case FUSED_SIGMOID:   return T(1) / (T(1) + sd::math::sd_exp<T, T>(-val));
-        case FUSED_TANH:      return sd::math::sd_tanh<T, T>(val);
+        case FUSED_SIGMOID:   return static_cast<T>(AccT(1) / (AccT(1) + sd::math::sd_exp<AccT, AccT>(-x)));
+        case FUSED_TANH:      return static_cast<T>(sd::math::sd_tanh<AccT, AccT>(x));
         case FUSED_GELU: {
             // Approximate GELU: 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
-            T c = T(0.7978845608); // sqrt(2/pi)
-            T inner = c * (val + T(0.044715) * val * val * val);
-            return T(0.5) * val * (T(1) + sd::math::sd_tanh<T, T>(inner));
+            AccT c = AccT(0.7978845608); // sqrt(2/pi)
+            AccT inner = c * (x + AccT(0.044715) * x * x * x);
+            return static_cast<T>(AccT(0.5) * x * (AccT(1) + sd::math::sd_tanh<AccT, AccT>(inner)));
         }
-        case FUSED_EXP:       return sd::math::sd_exp<T, T>(val);
-        case FUSED_LOG:       return val > T(0) ? sd::math::sd_log<T, T>(val) : T(-1e38);
+        case FUSED_EXP:       return static_cast<T>(sd::math::sd_exp<AccT, AccT>(x));
+        case FUSED_LOG:       return x > AccT(0) ? static_cast<T>(sd::math::sd_log<AccT, AccT>(x)) : static_cast<T>(AccT(-1e38));
         case FUSED_ABS:       return sd::math::sd_abs<T, T>(val);
         case FUSED_NEG:       return -val;
         case FUSED_SQUARE:    return val * val;
-        case FUSED_SQRT:      return val >= T(0) ? sd::math::sd_sqrt<T, T>(val) : T(0);
-        case FUSED_SWISH:     return val / (T(1) + sd::math::sd_exp<T, T>(-val)); // x * sigmoid(x)
-        case FUSED_SILU:      return val / (T(1) + sd::math::sd_exp<T, T>(-val)); // Same as swish
+        case FUSED_SQRT:      return x >= AccT(0) ? static_cast<T>(sd::math::sd_sqrt<AccT, AccT>(x)) : T(0);
+        case FUSED_SWISH: {
+            AccT sig = AccT(1) / (AccT(1) + sd::math::sd_exp<AccT, AccT>(-x));
+            return static_cast<T>(x * sig);
+        }
+        case FUSED_SILU: {
+            AccT sig = AccT(1) / (AccT(1) + sd::math::sd_exp<AccT, AccT>(-x));
+            return static_cast<T>(x * sig);
+        }
         case FUSED_MISH: {
-            T sp = sd::math::sd_log<T, T>(T(1) + sd::math::sd_exp<T, T>(val)); // softplus
-            return val * sd::math::sd_tanh<T, T>(sp);
+            AccT sp = sd::math::sd_log<AccT, AccT>(AccT(1) + sd::math::sd_exp<AccT, AccT>(x)); // softplus
+            return static_cast<T>(x * sd::math::sd_tanh<AccT, AccT>(sp));
         }
 
         // Parameterized ops

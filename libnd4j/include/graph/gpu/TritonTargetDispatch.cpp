@@ -190,6 +190,8 @@ static bool linkAmdgcnObjectToHsaco(const void* objData, size_t objSize,
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Bitcode/BitcodeReader.h>
+#include <llvm/Transforms/IPO/AlwaysInliner.h>
+#include <unordered_set>
 
 
 // Triton dialect passes — TTIR -> TTGIR -> LLVM
@@ -1371,6 +1373,13 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
           cudaPath + "/nvvm/libdevice/libdevice.10.bc");
     }
 
+    // Functions the Triton lowering defined itself (the kernel entry). Anything
+    // defined after linking came from libdevice.
+    std::unordered_set<std::string> preLinkDefined;
+    for (const auto& fn : *llvmModule) {
+      if (!fn.isDeclaration()) preLinkDefined.insert(fn.getName().str());
+    }
+
     bool linked = false;
     for (const auto& path : libdevicePaths) {
       auto bufOrErr = llvm::MemoryBuffer::getFile(path);
@@ -1401,6 +1410,43 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     if (!linked) {
       DSP_DIAG(JIT, "TritonTargetDispatch::compile: WARNING — libdevice.10.bc not found, "
                 "math intrinsics (__nv_sqrtf etc.) will be unresolved");
+    } else {
+      // libdevice defines every __nv_* helper alwaysinline, but this pipeline
+      // goes straight from linking to codegen with no optimization pipeline,
+      // so without an explicit inliner each use stays an out-of-line .func
+      // ABI call (st.param/call.uni/ld.param). Kernels with thousands of
+      // such calls (e.g. the bit-exact rms_norm fold at hidden=5120: 8447
+      // call sites, 2.9 MB PTX) stall the driver's PTX JIT indefinitely while
+      // it holds the module-load mutex. Upstream Triton gets this inlining
+      // from optimize_module after link_extern_libs. Inlining the pure
+      // __nv_*_rn helpers preserves their explicit rounding exactly.
+      llvm::legacy::PassManager inlinePM;
+      inlinePM.add(llvm::createAlwaysInlinerLegacyPass());
+      inlinePM.run(*llvmModule);
+
+      // The linked definitions keep external linkage, so AlwaysInliner leaves
+      // them in place and codegen would still emit them as .visible .func.
+      // Drop the ones no longer referenced (repeat: erasing one helper can
+      // orphan another that only it called).
+      size_t erased = 0;
+      bool changed = true;
+      while (changed) {
+        changed = false;
+        std::vector<llvm::Function*> deadLibdevice;
+        for (auto& fn : *llvmModule) {
+          if (fn.isDeclaration() || preLinkDefined.count(fn.getName().str())) continue;
+          if (fn.use_empty()) deadLibdevice.push_back(&fn);
+        }
+        for (auto* fn : deadLibdevice) fn->eraseFromParent();
+        erased += deadLibdevice.size();
+        changed = !deadLibdevice.empty();
+      }
+      int stillReferenced = 0;
+      for (const auto& fn : *llvmModule) {
+        if (!fn.isDeclaration() && !preLinkDefined.count(fn.getName().str())) ++stillReferenced;
+      }
+      DSP_DIAG(JIT, "TritonTargetDispatch::compile: inlined libdevice helpers "
+               "(erased=%zu, stillReferenced=%d)", erased, stillReferenced);
     }
   }
 

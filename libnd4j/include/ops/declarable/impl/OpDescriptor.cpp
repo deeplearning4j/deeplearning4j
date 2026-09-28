@@ -20,6 +20,8 @@
 // Created by raver119 on 13.10.2017.
 //
 #include <ops/declarable/OpDescriptor.h>
+#include <stdexcept>
+#include <utility>
 
 namespace sd {
 namespace ops {
@@ -312,6 +314,38 @@ bool OpDescriptor::hasAnyTrait(uint64_t traits) const {
 
 uint64_t OpDescriptor::getTraits64() const {
   return _traits;
+}
+
+OpDescriptor* OpDescriptor::addInputWrites(const std::initializer_list<int>& indices,
+                                          const std::initializer_list<std::pair<int, int>>& requiredInputs,
+                                          int typeInput, DataType requiredType) {
+  if (indices.size() == 0) throw std::invalid_argument("Input write group must contain a destination");
+  for (int index : indices) {
+    if (index < 0) throw std::invalid_argument("Input write indices must be nonnegative");
+  }
+  for (const auto& required : requiredInputs) {
+    if (required.first < 0 || required.second < 0)
+      throw std::invalid_argument("Input write guards must have nonnegative indices and ranks");
+  }
+  if (typeInput < -1 || (typeInput >= 0 && requiredType == DataType::UNKNOWN)) {
+    throw std::invalid_argument("Invalid input write dtype guard");
+  }
+  InputWriteGroup group;
+  group.indices.assign(indices.begin(), indices.end());
+  group.requiredInputs.assign(requiredInputs.begin(), requiredInputs.end());
+  group.typeInput = typeInput;
+  group.requiredType = requiredType;
+  _traits |= OP_TRAIT_STATEFUL;
+  for (const auto& existing : _inputWriteGroups) {
+    if (existing.indices == group.indices && existing.requiredInputs == group.requiredInputs &&
+        existing.typeInput == typeInput && existing.requiredType == requiredType) return this;
+  }
+  _inputWriteGroups.push_back(std::move(group));
+  return this;
+}
+
+const std::vector<OpDescriptor::InputWriteGroup>& OpDescriptor::getInputWriteGroups() const {
+  return _inputWriteGroups;
 }
 
 OpDescriptor* OpDescriptor::setShapeValueInputs(const std::initializer_list<int>& indices) {

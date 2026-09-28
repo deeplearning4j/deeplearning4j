@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
@@ -1947,6 +1948,69 @@ public class DspMixedPrecisionReplayTest {
         }
     }
 
+    @Test
+    @DisplayName("Triton DPA-v2 honors explicit and automatic attention scales")
+    public void testTritonDpaV2AttentionScale() {
+        final int headDim = 2;
+        INDArray queryData = Nd4j.createFromArray(new float[] {1.0f, 0.0f})
+                .reshape(1, 1, 1, headDim);
+        INDArray keyData = Nd4j.createFromArray(new float[] {1.0f, 0.0f, 0.0f, 0.0f})
+                .reshape(1, 2, 1, headDim);
+        INDArray valueData = Nd4j.createFromArray(new float[] {1.0f, 1.0f, 0.0f, 0.0f})
+                .reshape(1, 2, 1, headDim);
+        Map<String, INDArray> placeholders = new LinkedHashMap<>();
+        placeholders.put("query", queryData);
+        placeholders.put("value", valueData);
+        placeholders.put("key", keyData);
+
+        Environment environment = Nd4j.getEnvironment();
+        boolean compileAllBefore = environment.tritonCompileAll();
+        String includeTypesBefore = environment.tritonIncludeTypes();
+        try {
+            environment.setTritonCompileAll(true);
+            environment.setTritonIncludeTypes("ATTENTION");
+
+            for (double scale : new double[] {1.0, 0.5, 0.0}) {
+                try (SameDiff graph = SameDiff.create()) {
+                    SDVariable query = graph.placeHolder(
+                            "query", DataType.FLOAT, 1, 1, 1, headDim);
+                    SDVariable value = graph.placeHolder(
+                            "value", DataType.FLOAT, 1, 2, 1, headDim);
+                    SDVariable key = graph.placeHolder(
+                            "key", DataType.FLOAT, 1, 2, 1, headDim);
+                    SDVariable attention = new DotProductAttentionV2(
+                            graph, query, value, key, null, null,
+                            null, null, null, null, scale, 0.0, false, false).outputVariable();
+                    graph.updateVariableNameAndReference(attention, "attention");
+                    graph.setGraphExecutionMode(GraphExecutionMode.TRITON);
+
+                    double effectiveScale = scale <= 0.0 ? 1.0 / Math.sqrt(headDim) : scale;
+                    float expected = (float) (1.0 / (1.0 + Math.exp(-effectiveScale)));
+                    for (int step = 0; step < 4; step++) {
+                        float[] actual = graph.output(placeholders, "attention")
+                                .get("attention").toFloatVector();
+                        assertEquals(2, actual.length,
+                                "Attention output should contain one head vector at step " + step);
+                        assertEquals(expected, actual[0], 1.0e-5f,
+                                "First output value for scale " + scale + " at step " + step);
+                        assertEquals(expected, actual[1], 1.0e-5f,
+                                "Second output value for scale " + scale + " at step " + step);
+                    }
+                    DspPlanAssertions.assertOpCompiled(graph, "dot_product_attention_v2",
+                            "DPA-v2 attention scale " + scale);
+                    DspPlanAssertions.assertAllSegmentsCompiledWith(graph, "Triton GPU",
+                            "DPA-v2 attention scale " + scale);
+                }
+            }
+        } finally {
+            environment.setTritonCompileAll(compileAllBefore);
+            environment.setTritonIncludeTypes(includeTypesBefore);
+            queryData.close();
+            keyData.close();
+            valueData.close();
+        }
+    }
+
     /**
      * DPA-v2 keeps optional input positions stable when KV-cache placeholders are present:
      * Q, V, K, query mask, value mask, key cache, value cache, cache position, then bias.
@@ -2583,6 +2647,429 @@ public class DspMixedPrecisionReplayTest {
             keyData.close();
             valueData.close();
             biasData.close();
+        }
+    }
+
+    /**
+     * The live-cache GQA path must not change arithmetic when native warmup becomes
+     * compiled execution. HALF logits/probabilities expose rounding hidden by the
+     * FLOAT-only prefill fixtures. Two keys and cancelling values amplify that
+     * difference without a model, recurrent state, pointer replacement or a split call.
+     */
+    @ParameterizedTest(name = "live-cache GQA accumulator {0}")
+    @EnumSource(value = DataType.class, names = {"HALF", "BFLOAT16"})
+    public void testTritonHalfGqaLiveCacheMatchesNativeCuda(DataType dtype) {
+        Environment environment = Nd4j.getEnvironment();
+        boolean compileAllBefore = environment.tritonCompileAll();
+        String includeTypesBefore = environment.tritonIncludeTypes();
+        boolean captureBefore = environment.tritonGraphCapture();
+        try (SameDiff nativeGraph = SameDiff.create();
+             SameDiff tritonGraph = SameDiff.create();
+             INDArray query = Nd4j.zeros(dtype, 1, 1, 8, 256);
+             INDArray key = Nd4j.zeros(dtype, 1, 1, 2, 256);
+             INDArray value = Nd4j.zeros(dtype, 1, 1, 2, 256);
+             INDArray initialKeys = Nd4j.zeros(dtype, 1, 2, 2, 256);
+             INDArray initialValues = Nd4j.zeros(dtype, 1, 2, 2, 256);
+             INDArray nativeKeys = Nd4j.zeros(dtype, 1, 2, 2, 256);
+             INDArray nativeValues = Nd4j.zeros(dtype, 1, 2, 2, 256);
+             INDArray replayKeys = Nd4j.zeros(dtype, 1, 2, 2, 256);
+             INDArray replayValues = Nd4j.zeros(dtype, 1, 2, 2, 256);
+             INDArray position = Nd4j.scalar(DataType.INT64, 1);
+             INDArray bias = Nd4j.zeros(dtype, 1, 1, 1, 2)) {
+            for (int h = 0; h < 8; h++) {
+                query.putScalar(new long[]{0, 0, h, 0}, 1.0);
+            }
+            for (int h = 0; h < 2; h++) {
+                // HALF automatic scale gives logits [-0.693359375, 0].
+                // The oracle below also accounts for BFLOAT16 input rounding.
+                initialKeys.putScalar(new long[]{0, 0, h, 0}, -11.09375);
+            }
+            initialValues.assign(4096.0);
+            value.assign(-2048.0);
+            Map<String, INDArray> inputs = new LinkedHashMap<>();
+            inputs.put("query", query);
+            inputs.put("key", key);
+            inputs.put("value", value);
+            inputs.put("position", position);
+            inputs.put("bias", bias);
+            inputs.put("keys", nativeKeys);
+            inputs.put("values", nativeValues);
+            nativeKeys.assign(initialKeys);
+            nativeValues.assign(initialValues);
+            addHalfGqaLiveCacheGraph(nativeGraph, dtype);
+            // Explicit native CUDA-graph test arm: attention is opt-in for
+            // Triton, so leave it native and verify actual replay below.
+            environment.setTritonCompileAll(false);
+            environment.setTritonIncludeTypes("");
+            nativeGraph.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
+            INDArray nativeOutput = nativeGraph.output(inputs, "attention").get("attention");
+            assertEquals(dtype, nativeOutput.dataType());
+            float[] expected = nativeOutput.data().asFloat();
+            float[] expectedKeys = nativeKeys.data().asFloat();
+            float[] expectedValues = nativeValues.data().asFloat();
+            for (int step = 0; step < 6; step++) {
+                nativeKeys.assign(initialKeys);
+                nativeValues.assign(initialValues);
+                INDArray repeated = nativeGraph.output(inputs, "attention").get("attention");
+                assertArrayEquals(expected, repeated.data().asFloat(), 0.0f,
+                        "native accumulator scratch replay at step " + step);
+            }
+            DspPlanAssertions.assertTotalGraphReplaysAtLeast(nativeGraph, 1,
+                    "native GQA scratch must be exercised under capture/replay");
+            DspPlanAssertions.assertNoCaptureFailures(nativeGraph, "native GQA scratch");
+            assertNotEquals("Triton GPU", Nd4j.getNativeOps().getPlanSegmentCompiledBackend(
+                    DspPlanAssertions.getPlanHandleForQuery(nativeGraph), 0),
+                    "native scratch replay must not substitute the Triton emitter");
+
+            environment.setTritonCompileAll(true);
+            environment.setTritonIncludeTypes("ATTENTION");
+            environment.setTritonGraphCapture(true);
+            addHalfGqaLiveCacheGraph(tritonGraph, dtype);
+            tritonGraph.setGraphExecutionMode(GraphExecutionMode.TRITON);
+            inputs.put("keys", replayKeys);
+            inputs.put("values", replayValues);
+            long mismatches = 0;
+            for (int step = 0; step < 6; step++) {
+                replayKeys.assign(initialKeys);
+                replayValues.assign(initialValues);
+                INDArray output = tritonGraph.output(inputs, "attention").get("attention");
+                assertEquals(dtype, output.dataType());
+                float[] actual = output.data().asFloat();
+                long stepMismatches = 0;
+                double maxAbsDiff = 0.0;
+                for (int i = 0; i < expected.length; i++) {
+                    if (Float.floatToIntBits(expected[i]) != Float.floatToIntBits(actual[i])) {
+                        stepMismatches++;
+                        maxAbsDiff = Math.max(maxAbsDiff, Math.abs((double) expected[i] - actual[i]));
+                    }
+                }
+                assertArrayEquals(expectedKeys, replayKeys.data().asFloat(), 0.0f,
+                        "complete key-cache writeback at step " + step);
+                assertArrayEquals(expectedValues, replayValues.data().asFloat(), 0.0f,
+                        "complete value-cache writeback at step " + step);
+                log.info("HALF_GQA_LIVE_CACHE dtype={} step={} mismatches={}/{} maxAbsDiff={} native={} triton={}",
+                        dtype, step, stepMismatches, expected.length, maxAbsDiff, expected[0], actual[0]);
+                mismatches += stepMismatches;
+            }
+            DspPlanAssertions.assertOpCompiled(tritonGraph, "dot_product_attention_v2",
+                    "HALF live-cache GQA numerical contract");
+            DspPlanAssertions.assertAllSegmentsCompiledWith(tritonGraph, "Triton GPU",
+                    "HALF live-cache GQA numerical contract");
+            double unnormalized = Math.exp(initialKeys.getDouble(0, 0, 0, 0) / 16.0);
+            double oracle = (4096.0 * unnormalized - 2048.0) / (1.0 + unnormalized);
+            assertEquals(oracle, expected[0], dtype == DataType.HALF ? 0.0005 : 0.01,
+                    "Native auxiliary-output rounding must not erase the attention result");
+            assertEquals(0L, mismatches,
+                    "HALF live-cache attention changed arithmetic after native warmup");
+            if (dtype == DataType.BFLOAT16) {
+                // Both values are finite BF16. Summing unnormalized P*V in
+                // FLOAT32 overflows, although their weighted mean is finite.
+                float largeValue = Math.scalb(1.0f, 127);
+                query.assign(0);
+                initialKeys.assign(0);
+                initialValues.assign(largeValue);
+                value.assign(largeValue);
+                inputs.put("keys", nativeKeys);
+                inputs.put("values", nativeValues);
+                nativeKeys.assign(initialKeys);
+                nativeValues.assign(initialValues);
+                float[] largeNative = nativeGraph.output(inputs, "attention")
+                        .get("attention").data().asFloat();
+                inputs.put("keys", replayKeys);
+                inputs.put("values", replayValues);
+                replayKeys.assign(initialKeys);
+                replayValues.assign(initialValues);
+                float[] largeTriton = tritonGraph.output(inputs, "attention")
+                        .get("attention").data().asFloat();
+                for (int i = 0; i < largeNative.length; i++) {
+                    assertEquals(largeValue, largeNative[i], "native BF16 finite weighted mean " + i);
+                    assertEquals(largeValue, largeTriton[i], "Triton BF16 finite weighted mean " + i);
+                }
+            }
+        } finally {
+            environment.setTritonCompileAll(compileAllBefore);
+            environment.setTritonIncludeTypes(includeTypesBefore);
+            environment.setTritonGraphCapture(captureBefore);
+        }
+    }
+
+    /**
+     * A causal bias ending in headDim is not a BHSD past-key tensor. Qwen's
+     * [1,1,W,256] bias used to make Triton infer one KV head for two-head BSHD
+     * caches. Distinct head/row values expose both wrong reads and wrong scatter
+     * strides; a 257-column control separates that shape collision from GQA math.
+     */
+    @ParameterizedTest(name = "GQA bias/cache roles: width={0}, liveCache={1}, capacity={2}")
+    @CsvSource({"1,true,256", "2,true,256", "1,false,256", "2,false,256",
+            "1,true,257", "2,true,257", "1,false,257", "2,false,257"})
+    public void testTritonGqaBiasIsNotPastKey(int width, boolean liveCache, int capacity) {
+        Environment environment = Nd4j.getEnvironment();
+        boolean compileAllBefore = environment.tritonCompileAll();
+        String includeTypesBefore = environment.tritonIncludeTypes();
+        boolean captureBefore = environment.tritonGraphCapture();
+        final int qHeads = 8, kvHeads = 2, headDim = 256;
+        final int positionValue = liveCache ? 1 : 0;
+        float[] keyData = new float[width * kvHeads * headDim];
+        float[] valueData = new float[keyData.length];
+        float[] initialKeyData = new float[capacity * kvHeads * headDim];
+        float[] initialValueData = new float[initialKeyData.length];
+        for (int row = 0; row < capacity; row++) {
+            for (int head = 0; head < kvHeads; head++) {
+                for (int dim = 0; dim < headDim; dim++) {
+                    int index = (row * kvHeads + head) * headDim + dim;
+                    initialKeyData[index] = row == 0 ? 100 + head : -7;
+                    initialValueData[index] = row == 0 ? 2 + 8 * head : -9;
+                }
+            }
+        }
+        for (int row = 0; row < width; row++) {
+            for (int head = 0; head < kvHeads; head++) {
+                for (int dim = 0; dim < headDim; dim++) {
+                    int index = (row * kvHeads + head) * headDim + dim;
+                    keyData[index] = 10 + 2 * row + head;
+                    valueData[index] = 4 + 2 * row + 8 * head;
+                }
+            }
+        }
+        float[] expectedKeys = initialKeyData.clone();
+        float[] expectedValues = initialValueData.clone();
+        System.arraycopy(keyData, 0, expectedKeys, positionValue * kvHeads * headDim, keyData.length);
+        System.arraycopy(valueData, 0, expectedValues, positionValue * kvHeads * headDim, valueData.length);
+        float[] biasData = new float[width * capacity];
+        for (int row = 0; row < width; row++) {
+            for (int col = positionValue + row + 1; col < capacity; col++) {
+                biasData[row * capacity + col] = -1.0e9f;
+            }
+        }
+        float[] expected = new float[width * qHeads * headDim];
+        for (int row = 0; row < width; row++) {
+            for (int head = 0; head < qHeads; head++) {
+                // Q=0 gives uniform weights over the causal prefix. All these
+                // means are exactly representable in HALF: 3/4 or 4/5, plus 8*h.
+                float mean = (liveCache ? 3 : 4) + row + 8 * (head / (qHeads / kvHeads));
+                for (int dim = 0; dim < headDim; dim++) {
+                    expected[(row * qHeads + head) * headDim + dim] = mean;
+                }
+            }
+        }
+        try (SameDiff graph = SameDiff.create();
+             INDArray query = Nd4j.zeros(DataType.HALF, 1, width, qHeads, headDim);
+             INDArray key = Nd4j.create(keyData, new long[]{1, width, kvHeads, headDim},
+                     new long[]{width * kvHeads * headDim, kvHeads * headDim, headDim, 1}, 'c', DataType.HALF);
+             INDArray value = Nd4j.create(valueData, new long[]{1, width, kvHeads, headDim},
+                     new long[]{width * kvHeads * headDim, kvHeads * headDim, headDim, 1}, 'c', DataType.HALF);
+             INDArray initialKeys = Nd4j.create(initialKeyData, new long[]{1, capacity, kvHeads, headDim},
+                     new long[]{capacity * kvHeads * headDim, kvHeads * headDim, headDim, 1}, 'c', DataType.HALF);
+             INDArray initialValues = Nd4j.create(initialValueData, new long[]{1, capacity, kvHeads, headDim},
+                     new long[]{capacity * kvHeads * headDim, kvHeads * headDim, headDim, 1}, 'c', DataType.HALF);
+             INDArray keys = initialKeys.dup();
+             INDArray values = initialValues.dup();
+             INDArray position = Nd4j.scalar(DataType.INT64, positionValue);
+             INDArray emptyKeys = Nd4j.empty(DataType.HALF);
+             INDArray emptyValues = Nd4j.empty(DataType.HALF);
+             INDArray emptyPosition = Nd4j.empty(DataType.INT64);
+             INDArray bias = Nd4j.create(biasData, new long[]{1, 1, width, capacity}, 'c')) {
+            SDVariable q = graph.placeHolder("query", query.dataType(), query.shape());
+            SDVariable k = graph.placeHolder("key", key.dataType(), key.shape());
+            SDVariable v = graph.placeHolder("value", value.dataType(), value.shape());
+            SDVariable b = graph.placeHolder("bias", bias.dataType(), bias.shape());
+            // Match GGUF prefill's nine-input ABI: empty caches preserve bias
+            // at input 8, where the native op slices it to the current key length.
+            SDVariable kc = liveCache ? graph.placeHolder("keys", keys.dataType(), keys.shape())
+                    : graph.constant("empty_keys", emptyKeys);
+            SDVariable vc = liveCache ? graph.placeHolder("values", values.dataType(), values.shape())
+                    : graph.constant("empty_values", emptyValues);
+            SDVariable cp = liveCache ? graph.placeHolder("position", DataType.INT64)
+                    : graph.constant("empty_position", emptyPosition);
+            SDVariable attention = new DotProductAttentionV2(graph, q, v, k, null, null,
+                    kc, vc, cp, b, 0.0, 0.0, false, false).outputVariable();
+            graph.updateVariableNameAndReference(attention, "attention");
+            Map<String, INDArray> inputs = new LinkedHashMap<>();
+            inputs.put("query", query);
+            inputs.put("key", key);
+            inputs.put("value", value);
+            inputs.put("bias", bias);
+            if (liveCache) {
+                inputs.put("keys", keys);
+                inputs.put("values", values);
+                inputs.put("position", position);
+            }
+            environment.setTritonCompileAll(true);
+            environment.setTritonIncludeTypes("ATTENTION");
+            environment.setTritonGraphCapture(true);
+            graph.setGraphExecutionMode(GraphExecutionMode.TRITON);
+            for (int step = 0; step < 6; step++) {
+                keys.assign(initialKeys);
+                values.assign(initialValues);
+                INDArray output = graph.output(inputs, "attention").get("attention");
+                assertArrayEquals(expected, output.data().asFloat(), 0.0f,
+                        "causal grouped-head mean at step " + step);
+                if (liveCache) {
+                    assertArrayEquals(expectedKeys, keys.data().asFloat(), 0.0f,
+                            "full key scatter and untouched sentinels at step " + step);
+                    assertArrayEquals(expectedValues, values.data().asFloat(), 0.0f,
+                            "full value scatter and untouched sentinels at step " + step);
+                }
+            }
+            DspPlanAssertions.assertOpCompiled(graph, "dot_product_attention_v2", "bias/cache role collision");
+            DspPlanAssertions.assertAllSegmentsCompiledWith(graph, "Triton GPU", "bias/cache role collision");
+            DspPlanAssertions.assertTotalGraphReplaysAtLeast(graph, 1, "bias/cache role collision");
+            DspPlanAssertions.assertNoCaptureFailures(graph, "bias/cache role collision");
+        } finally {
+            environment.setTritonCompileAll(compileAllBefore);
+            environment.setTritonIncludeTypes(includeTypesBefore);
+            environment.setTritonGraphCapture(captureBefore);
+        }
+    }
+
+    private static void addHalfGqaLiveCacheGraph(SameDiff graph, DataType dtype) {
+        SDVariable query = graph.placeHolder("query", dtype, 1, 1, 8, 256);
+        SDVariable key = graph.placeHolder("key", dtype, 1, 1, 2, 256);
+        SDVariable value = graph.placeHolder("value", dtype, 1, 1, 2, 256);
+        SDVariable keys = graph.placeHolder("keys", dtype, 1, 2, 2, 256);
+        SDVariable values = graph.placeHolder("values", dtype, 1, 2, 2, 256);
+        SDVariable position = graph.placeHolder("position", DataType.INT64);
+        SDVariable bias = graph.placeHolder("bias", dtype, 1, 1, 1, 2);
+        SDVariable attention = new DotProductAttentionV2(graph, query, value, key, null, null,
+                keys, values, position, bias, 0.0, 0.0, false, false).outputVariable();
+        graph.updateVariableNameAndReference(attention, "attention");
+    }
+
+    /** Compiled attention mutates cache inputs, not only its ordinary outputs. */
+    @ParameterizedTest(name = "KV publication {0}, Triton capture={1}")
+    @CsvSource({"TRITON,true", "TRITON,false", "CUDA_GRAPHS,false"})
+    public void testHostRestoredGqaCachePublication(GraphExecutionMode mode, boolean tritonCapture) {
+        Environment environment = Nd4j.getEnvironment();
+        boolean compileAllBefore = environment.tritonCompileAll();
+        String includeTypesBefore = environment.tritonIncludeTypes();
+        boolean captureBefore = environment.tritonGraphCapture();
+        try (SameDiff graph = SameDiff.create();
+             INDArray query = Nd4j.zeros(DataType.FLOAT, 1, 1, 8, 256);
+             INDArray key = Nd4j.zeros(DataType.FLOAT, 1, 1, 2, 256);
+             INDArray value = Nd4j.zeros(DataType.FLOAT, 1, 1, 2, 256);
+             INDArray keys = Nd4j.zeros(DataType.FLOAT, 1, 2, 2, 256);
+             INDArray values = Nd4j.zeros(DataType.FLOAT, 1, 2, 2, 256);
+             INDArray position = Nd4j.scalar(DataType.INT64, 1);
+             INDArray bias = Nd4j.zeros(DataType.FLOAT, 1, 1, 1, 2)) {
+            environment.setTritonCompileAll(mode == GraphExecutionMode.TRITON);
+            environment.setTritonIncludeTypes(mode == GraphExecutionMode.TRITON ? "ATTENTION" : "");
+            environment.setTritonGraphCapture(tritonCapture);
+            addHalfGqaLiveCacheGraph(graph, DataType.FLOAT);
+            graph.setGraphExecutionMode(mode);
+            Map<String, INDArray> inputs = Map.of("query", query, "key", key, "value", value,
+                    "keys", keys, "values", values, "position", position, "bias", bias);
+            long mismatches = 0;
+            for (int step = 0; step < 6; step++) {
+                key.assign(step + 2.0);
+                value.assign(step + 3.0);
+                // Public host writes mark primary storage newer than special.
+                // No manual sync or device-actual tagging belongs in this test.
+                for (long i = 0; i < keys.length(); i++) {
+                    keys.data().put(i, 0.0f);
+                    values.data().put(i, 1.0f);
+                }
+                float[] output = graph.output(inputs, "attention").get("attention").data().asFloat();
+                for (float element : output) {
+                    assertEquals((step + 4.0f) / 2, element, "uniform two-key attention at step " + step);
+                }
+                float[] deviceKeys = copyGqaDeviceValues(keys);
+                float[] deviceValues = copyGqaDeviceValues(values);
+                float[] observedKeys = keys.data().asFloat();
+                float[] observedValues = values.data().asFloat();
+                long stepMismatches = 0;
+                for (int i = 0; i < observedKeys.length; i++) {
+                    float expectedKey = i < 512 ? 0.0f : step + 2.0f;
+                    float expectedValue = i < 512 ? 1.0f : step + 3.0f;
+                    assertEquals(expectedKey, deviceKeys[i], "actual device key at step " + step + " index " + i);
+                    assertEquals(expectedValue, deviceValues[i], "actual device value at step " + step + " index " + i);
+                    if (observedKeys[i] != expectedKey || observedValues[i] != expectedValue) stepMismatches++;
+                }
+                log.info("GQA_HOST_CACHE_PUBLICATION step={} mismatches={} keyRow1={} valueRow1={} deviceKey={} deviceValue={}",
+                        step, stepMismatches, observedKeys[512], observedValues[512], deviceKeys[512], deviceValues[512]);
+                mismatches += stepMismatches;
+            }
+            if (mode == GraphExecutionMode.TRITON) {
+                DspPlanAssertions.assertOpCompiled(graph, "dot_product_attention_v2", "host-restored KV publication");
+                DspPlanAssertions.assertAllSegmentsCompiledWith(graph, "Triton GPU", "host-restored KV publication");
+                if (tritonCapture) {
+                    DspPlanAssertions.assertTotalGraphReplaysAtLeast(graph, 1, "Triton KV publication replay");
+                }
+            } else {
+                DspPlanAssertions.assertTotalGraphReplaysAtLeast(graph, 1, "native KV publication");
+                assertNotEquals("Triton GPU", Nd4j.getNativeOps().getPlanSegmentCompiledBackend(
+                        DspPlanAssertions.getPlanHandleForQuery(graph), 0), "native CUDA-graph arm");
+            }
+            assertEquals(0L, mismatches, "Compiled attention must publish its caller-owned cache writes");
+        } finally {
+            environment.setTritonCompileAll(compileAllBefore);
+            environment.setTritonIncludeTypes(includeTypesBefore);
+            environment.setTritonGraphCapture(captureBefore);
+        }
+    }
+
+    /** Cache write guards must follow native optional-input rank semantics. */
+    @Test
+    public void testAttentionBiasAndScalarCacheSentinelRemainReadOnly() {
+        Environment environment = Nd4j.getEnvironment();
+        boolean compileAllBefore = environment.tritonCompileAll();
+        String includeTypesBefore = environment.tritonIncludeTypes();
+        try (SameDiff graph = SameDiff.create();
+             INDArray query = Nd4j.zeros(DataType.FLOAT, 1, 1, 2, 2);
+             INDArray key = Nd4j.zeros(DataType.FLOAT, 1, 2, 1, 2);
+             INDArray value = Nd4j.ones(DataType.FLOAT, 1, 2, 1, 2);
+             INDArray bias = Nd4j.zeros(DataType.FLOAT, 1, 2);
+             INDArray sentinel = Nd4j.scalar(DataType.FLOAT, 123.0);
+             INDArray position = Nd4j.scalar(DataType.INT64, 0)) {
+            environment.setTritonCompileAll(false);
+            environment.setTritonIncludeTypes("");
+            SDVariable q = graph.placeHolder("q", DataType.FLOAT, 1, 1, 2, 2);
+            SDVariable k = graph.placeHolder("k", DataType.FLOAT, 1, 2, 1, 2);
+            SDVariable v = graph.placeHolder("v", DataType.FLOAT, 1, 2, 1, 2);
+            SDVariable b = graph.placeHolder("bias_slot5", DataType.FLOAT, 1, 2);
+            SDVariable s = graph.placeHolder("scalar_slot6", DataType.FLOAT);
+            SDVariable p = graph.placeHolder("position_slot7", DataType.INT64);
+            // Native DPA treats rank-0 input 6 as absent: input 5 is bias, not KV.
+            SDVariable attention = new DotProductAttentionV2(graph, q, v, k, null, null,
+                    b, s, p, null, 0.0, 0.0, false, false).outputVariable();
+            graph.updateVariableNameAndReference(attention, "attention");
+            graph.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
+            Map<String, INDArray> inputs = Map.of("q", query, "k", key, "v", value,
+                    "bias_slot5", bias, "scalar_slot6", sentinel, "position_slot7", position);
+            for (int step = 0; step < 7; step++) {
+                sentinel.data().put(0, 123.0f + step);
+                bias.data().put(0, 0.0f);
+                bias.data().put(1, 0.0f);
+                float[] output = graph.output(inputs, "attention").get("attention").data().asFloat();
+                assertNotEquals("DEVICE", Nd4j.getAffinityManager().getActiveLocation(sentinel).name(),
+                        "unwritten scalar sentinel must retain host actuality at step " + step);
+                assertNotEquals("DEVICE", Nd4j.getAffinityManager().getActiveLocation(bias).name(),
+                        "read-only bias must retain host actuality at step " + step);
+                assertEquals(123.0f + step, sentinel.getFloat(0));
+                for (float element : output) assertEquals(1.0f, element);
+            }
+            DspPlanAssertions.assertTotalGraphReplaysAtLeast(graph, 1, "read-only attention inputs");
+            assertNotEquals("Triton GPU", Nd4j.getNativeOps().getPlanSegmentCompiledBackend(
+                    DspPlanAssertions.getPlanHandleForQuery(graph), 0), "native CUDA-graph sentinel arm");
+        } finally {
+            environment.setTritonCompileAll(compileAllBefore);
+            environment.setTritonIncludeTypes(includeTypesBefore);
+        }
+    }
+
+    /** Independent device readback without changing the caller cache's actuality. */
+    private static float[] copyGqaDeviceValues(INDArray array) {
+        var ops = Nd4j.getNativeOps();
+        var pointer = ops.dbSpecialBuffer(array.data().opaqueBuffer());
+        assertNotNull(pointer);
+        assertFalse(pointer.isNull());
+        var borrowed = ops.dbCreateExternalDataBuffer(array.length(), array.dataType().toInt(), null, pointer);
+        assertNotNull(borrowed);
+        try (INDArray copy = Nd4j.createUninitialized(array.dataType(), array.shape(), 'c')) {
+            ops.copyBuffer(copy.data().opaqueBuffer(), array.length(), borrowed, 0, 0);
+            Nd4j.getExecutioner().commit();
+            return copy.data().asFloat();
+        } finally {
+            ops.deleteDataBuffer(borrowed);
         }
     }
 

@@ -44,6 +44,7 @@
 #include <graph/DspVerifyUtils.h>
 #include <graph/DspAnalysisUtils.h>
 #include <graph/DspSegmentLifecycle.h>
+#include <graph/DspSegmentOutputUtils.h>
 #include <graph/gpu/ViewRecipe.h>
 #include <graph/gpu/OpCategoryTable.h>
 #include <graph/gpu/NvrtcGraphBackend.h>
@@ -1526,13 +1527,18 @@ static void mergedCaptureCollectRange(NDArray* arr, std::vector<MergedCaptureDev
 // so ANY overlap touching a gap slot's wired input/output range is treated as
 // disqualifying. Leaving the gap live is always correct: the existing
 // non-merged path executes its slots natively during replay.
+//
+// liveUnits marks the gap units that execute live during replay; see
+// planMergedCaptureGaps, which decides them for the whole schedule before
+// capture so a gap is not judged against later gaps that will themselves merge.
 static bool mergedCaptureGapIsAliasSafe(const ReplaySchedule& sched,
                                         NativeSlot* slots,
                                         NDArray** outputSlots,
                                         int totalOutputSlots,
                                         const ReplayScheduleUnit* candidateUnit,
                                         int gapStartSlot,
-                                        int gapEndSlot) {
+                                        int gapEndSlot,
+                                        const std::vector<char>& liveUnits) {
   if (s_mergedCaptureGapAliasCheckDisabled()) return true;
 
   // An established view/identity alias slot installs ZERO device work: its
@@ -1575,10 +1581,10 @@ static bool mergedCaptureGapIsAliasSafe(const ReplaySchedule& sched,
   //    The candidate unit itself is excluded: it is untagged (mergedGroupId
   //    still -1) at both decision points and would trivially overlap itself.
   std::vector<MergedCaptureDeviceRange> liveRanges;
-  for (const auto& lu : sched.units) {
+  for (size_t unitIdx = 0; unitIdx < sched.units.size(); unitIdx++) {
+    const auto& lu = sched.units[unitIdx];
     if (&lu == candidateUnit) continue;               // candidate itself
-    if (lu.mergedGroupId >= 0) continue;              // merged → replayed by graph
-    if (lu.kind != REPLAY_UNIT_GAP) continue;         // unmerged island → own handle
+    if (!liveUnits[unitIdx]) continue;                // merged → replayed by graph
     for (int s = lu.startSlot; s <= lu.endSlot; s++) {
       if (s < 0) continue;
       const NativeSlot& ls = slots[s];
@@ -1641,6 +1647,52 @@ static bool mergedCaptureGapIsAliasSafe(const ReplaySchedule& sched,
     }
   }
   return true;
+}
+
+static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot, bool mergeViews);
+
+// Decides, for the whole schedule before capture, which gap units execute live
+// during replay (the returned mask; every other gap merges into a capture). A
+// gap is live if it is not capture-safe, if no capture is open when it is
+// reached (a merged capture begins at an island and continues only through
+// islands and merging gaps), or if it touches memory a live unit writes
+// (mergedCaptureGapIsAliasSafe). Live only grows, so iterating to a fixpoint
+// terminates, and each gap is judged against the gaps that really stay live —
+// not against later gaps that will merge, which the in-order capture loop
+// could not yet know.
+static std::vector<char> planMergedCaptureGaps(const ReplaySchedule& sched, NativeSlot* slots,
+                                               NDArray** outputSlots, int totalOutputSlots,
+                                               bool mergeViews) {
+  const size_t n = sched.units.size();
+  std::vector<char> live(n, 0);
+  std::vector<char> captureSafe(n, 0);
+  for (size_t i = 0; i < n; i++) {
+    const auto& unit = sched.units[i];
+    if (unit.kind == REPLAY_UNIT_GAP)
+      captureSafe[i] = isGapRangeCaptureSafe(slots, unit.startSlot, unit.endSlot, mergeViews) ? 1 : 0;
+  }
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    for (size_t i = 0; i < n; i++) {
+      if (sched.units[i].kind != REPLAY_UNIT_GAP || live[i]) continue;
+      const bool captureOpen = i > 0 && (sched.units[i - 1].kind != REPLAY_UNIT_GAP || !live[i - 1]);
+      if (!captureSafe[i] || !captureOpen) {
+        live[i] = 1;
+        changed = true;
+      }
+    }
+    for (size_t i = 0; i < n; i++) {
+      const auto& unit = sched.units[i];
+      if (unit.kind != REPLAY_UNIT_GAP || live[i]) continue;
+      if (!mergedCaptureGapIsAliasSafe(sched, slots, outputSlots, totalOutputSlots, &unit,
+                                       unit.startSlot, unit.endSlot, live)) {
+        live[i] = 1;
+        changed = true;
+      }
+    }
+  }
+  return live;
 }
 
 static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot, bool mergeViews) {
@@ -2030,6 +2082,7 @@ Status NativeDynamicShapePlan::compositeReplay(
                      static_cast<cudaError_t>(syncResult.cudaError)) + ")");
   }
   NDArray** effectiveExternals = syncResult.effectiveExternals;
+  auto tPreSynced = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
   // ── Gap-stream unification ─────────────────────────────────────────────
   // Redirect LaunchContext::getCudaStream() to return cudaStr for the
@@ -2302,6 +2355,7 @@ Status NativeDynamicShapePlan::compositeReplay(
     }
   }
 
+  auto tValidated = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 #if HAVE_TRITON
   // Alias copyback destinations are baked even in unmerged island graphs.
   // Validate the entire schedule before any island, gap or output prezero runs.
@@ -2311,6 +2365,7 @@ Status NativeDynamicShapePlan::compositeReplay(
     if (aliasStatus != Status::OK) return aliasStatus;
   }
 #endif
+  auto tAliasChecked = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
   // LIFECYCLE: address drift with merged CUDA graph handles.
   // Merged graphs have device pointers baked into captured kernel nodes — they
@@ -2369,6 +2424,7 @@ Status NativeDynamicShapePlan::compositeReplay(
 #endif
   cudaGetLastError();  // Clear sticky errors
 
+  auto tArgsReady = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
   // Composite replay mixes two zero-before-write mechanisms:
   //   1. Triton island outputs are zeroed by captured nullify/memset nodes inside
   //      the island graphs themselves.
@@ -2754,8 +2810,13 @@ Status NativeDynamicShapePlan::compositeReplay(
 #endif
       bool launchOk = sched.mergedReplayHandles[mgId]->replay(stream);
 #if HAVE_TRITON
-      if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend))
-        backend->recordArgumentSubmission(seg, stream);
+      if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend)) {
+        // The merged graph holds its whole island+gap group, not just the leader.
+        const bool hasGroupRange = mgId < static_cast<int>(sched.mergedGroupSlotRanges.size());
+        backend->recordArgumentSubmission(
+            seg, stream, hasGroupRange ? sched.mergedGroupSlotRanges[mgId].minSlot : unit.startSlot,
+            hasGroupRange ? sched.mergedGroupSlotRanges[mgId].maxSlot : unit.endSlot);
+      }
 #endif
       checkReplayCudaError("merged-launch", unit.startSlot, unit.endSlot);
       long long mergedUnitUs = 0;  // per-unit ledger (G3): launch + fixup for this leader
@@ -3532,7 +3593,7 @@ Status NativeDynamicShapePlan::compositeReplay(
       bool launchOk = sched.compositeReplayHandles[idx]->replay(stream);
 #if HAVE_TRITON
       if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend))
-        backend->recordArgumentSubmission(seg, stream);
+        backend->recordArgumentSubmission(seg, stream, unit.startSlot, unit.endSlot);
 #endif
       if (executionTimingEnabled_) {
         long long ilUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tIL0).count();
@@ -3561,6 +3622,12 @@ Status NativeDynamicShapePlan::compositeReplay(
             arr->tickWriteDevice();
           }
         }
+        dsp::forEachOpWrittenInput(slot, effectiveExternals, numExt, outputSlots_, totalOutputSlots_,
+            [&](int, int source, NDArray* array) {
+              if (array->dataBuffer() == nullptr || array->dataBuffer()->isClosed()) return;
+              array->tickWriteDevice();
+              if (source >= 0) dirtySlotGenerations_[source] = currentDirtyGeneration_;
+            });
       }
       if (executionTimingEnabled_) {
         tIslandDirtyUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tID0).count();
@@ -3593,6 +3660,14 @@ Status NativeDynamicShapePlan::compositeReplay(
     auto prezeroUs = std::chrono::duration_cast<std::chrono::microseconds>(tPrezero - t0).count();
     auto actTickUs = std::chrono::duration_cast<std::chrono::microseconds>(tActTick - t0).count();
     auto unitsUs = actTickUs - prezeroUs;
+    auto phaseUs = [&](Clock::time_point from, Clock::time_point to) {
+      return static_cast<long long>(std::chrono::duration_cast<std::chrono::microseconds>(to - from).count());
+    };
+    DSP_DIAG(TIMING,
+             "COMPOSITE_REPLAY_PREZERO: preReplaySync=%lldus addrValidate=%lldus aliasPreflight=%lldus "
+             "args=%lldus gapPrezero=%lldus",
+             phaseUs(t0, tPreSynced), phaseUs(tPreSynced, tValidated), phaseUs(tValidated, tAliasChecked),
+             phaseUs(tAliasChecked, tArgsReady), phaseUs(tArgsReady, tPrezero));
     DSP_DIAG(TIMING,
              "COMPOSITE_REPLAY_TIMING: total=%lldus prezero=%lldus units=%lldus "
              "execCount=%d mergedGroups=%d islandsSched=%d islandsLaunched=%d "
@@ -5220,6 +5295,33 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
          // Gap capturability is checked on-demand via isGapRangeCaptureSafe()
          // — no reclassification needed since there's no cached flag.
          bool mergeViewsNow = Environment::getInstance().triton().mergedCaptureThroughViews();
+         // Which gaps stay live is decided for the whole schedule up front
+         // (planMergedCaptureGaps); the capture loop below follows that plan.
+         const std::vector<char> liveGapUnits =
+             planMergedCaptureGaps(sched, slots_, outputSlots_, totalOutputSlots_, mergeViewsNow);
+         // With no live gap the whole segment is one merged graph: nothing can
+         // change a Triton argument address between its start and its kernels,
+         // so it carries one consolidated argument-table copy instead of one
+         // copy node per kernel (bakeConsolidatedArgTableIntoCapture).
+         const bool wholeSegmentMerged =
+             std::none_of(liveGapUnits.begin(), liveGapUnits.end(), [](char live) { return live != 0; });
+         bool argTableBaked = false;
+         struct BakedArgTableScope {
+           TritonGraphBackend* backend;
+           GraphSegment& segment;
+           bool& baked;
+           ~BakedArgTableScope() { if (baked) backend->endBakedArgTableCapture(segment); }
+         } bakedArgTableScope{ctx.tritonBackend, seg, argTableBaked};
+         if (DSP_DIAG_ENABLED(SEGMENT)) {
+           int gaps = 0, live = 0;
+           for (size_t i = 0; i < sched.units.size(); i++) {
+             if (sched.units[i].kind != REPLAY_UNIT_GAP) continue;
+             gaps++;
+             live += liveGapUnits[i] ? 1 : 0;
+           }
+           DSP_DIAG(SEGMENT, "MERGED_CAPTURE_PLAN: seg[%d-%d] gaps=%d merging=%d live=%d",
+                    seg.def.startSlot, seg.def.endSlot, gaps, gaps - live, live);
+         }
 
          bool allIslandsOk = true;
          bool captureHeadroomLimited = false;
@@ -5296,9 +5398,17 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            auto& unit = sched.units[unitIdx];
 
             if (unit.kind == REPLAY_UNIT_GAP) {
-              if (captureActive && isGapRangeCaptureSafe(slots_, unit.startSlot, unit.endSlot, mergeViewsNow) &&
-                  mergedCaptureGapIsAliasSafe(sched, slots_, outputSlots_, totalOutputSlots_,
-                                              &unit, unit.startSlot, unit.endSlot)) {
+              if (!liveGapUnits[unitIdx] && !captureActive) {
+                // The plan merged this gap and judged other gaps assuming it
+                // does not run live; without an open capture that no longer
+                // holds, so fail the capture instead of running it live.
+                setCompositeCaptureFailureDetail(
+                    "planned merged gap [" + std::to_string(unit.startSlot) + "-" +
+                    std::to_string(unit.endSlot) + "] reached without an open capture");
+                allIslandsOk = false;
+                break;
+              }
+              if (captureActive && !liveGapUnits[unitIdx]) {
                 // ── MERGED CAPTURE: gap ops recorded on capture stream ──────
                 // tl_graphExecutionActive is already true from the preceding island.
                 // tl_dspGapStream = ctx.cudaStr makes cuBLAS et al. use capture stream.
@@ -5590,6 +5700,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  enterMergedCaptureTls(effectiveExternalsForCapture, "leader_begin");
                  captureActive = true;
                  mergedCapGuard.activate();
+                 if (wholeSegmentMerged && !argTableBaked && ctx.tritonBackend != nullptr) {
+                   cudaStream_t bakeStream = ctx.cudaStr;
+                   argTableBaked = ctx.tritonBackend->bakeConsolidatedArgTableIntoCapture(seg, &bakeStream);
+                 }
                  // Set capture stream TLS immediately after every activate() call.
                  // CaptureLifecycleGuard::deactivate() (called at end of each merged group)
                  // nulls tl_graphCaptureStream. When a subsequent island leader calls
@@ -5672,10 +5786,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              bool keepCaptureOpen = false;
              if (captureStatus == Status::OK && unitIdx + 1 < sched.units.size()) {
                auto& nextUnit = sched.units[unitIdx + 1];
-               if (nextUnit.kind == REPLAY_UNIT_GAP &&
-                   isGapRangeCaptureSafe(slots_, nextUnit.startSlot, nextUnit.endSlot, mergeViewsNow) &&
-                   mergedCaptureGapIsAliasSafe(sched, slots_, outputSlots_, totalOutputSlots_,
-                                               &nextUnit, nextUnit.startSlot, nextUnit.endSlot)) {
+               if (nextUnit.kind == REPLAY_UNIT_GAP && !liveGapUnits[unitIdx + 1]) {
                  // Next gap can be captured — don't end capture yet
                  keepCaptureOpen = true;
                }
@@ -7360,6 +7471,14 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
               outputSlots_[outputSlot]->tickWriteDevice();
             }
           });
+      for (int op = seg.def.startSlot; op <= seg.def.endSlot; ++op) {
+        dsp::forEachOpWrittenInput(slots_[op], directExternals, numExt, outputSlots_, totalOutputSlots_,
+            [&](int, int source, NDArray* array) {
+              if (array->dataBuffer() == nullptr || array->dataBuffer()->isClosed()) return;
+              array->tickWriteDevice();
+              if (source >= 0) dirtySlotGenerations_[source] = currentDirtyGeneration_;
+            });
+      }
     }
 
     // DSP_DIAG-gated diagnostics for Triton direct execution path.

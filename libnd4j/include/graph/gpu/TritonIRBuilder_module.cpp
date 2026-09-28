@@ -39,11 +39,13 @@
 #include <system/common.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <functional>
 #include <limits>
 #include <map>
+#include <string>
 #include <mutex>
 #include <sstream>
 #include <tuple>
@@ -75,6 +77,24 @@ using namespace ir_builder_internal;
 // Maximum number of direct function arguments before switching to indirect
 // argument passing via a pointer array.
 static constexpr int TRITON_DIRECT_ARG_LIMIT = 200;
+
+static float getFusedAttentionScale(const std::string& opName, int numTArgs,
+                                    const double* tArgs, int headDim) {
+  const float automaticScale =
+      1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(std::max(headDim, 1)));
+  std::string lowerOpName = opName;
+  std::transform(lowerOpName.begin(), lowerOpName.end(), lowerOpName.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  if (lowerOpName.find("dot_product_attention_v2") == std::string::npos) {
+    return automaticScale;
+  }
+
+  // Native DPA-v2 uses T_ARG(0) when positive, defaults to 1.0 when absent,
+  // and selects 1/sqrt(headDim) only when the configured scale is nonpositive.
+  if (numTArgs <= 0 || tArgs == nullptr) return 1.0f;
+  const float scale = static_cast<float>(tArgs[0]);
+  return scale <= 0.0f ? automaticScale : scale;
+}
 
 // MLIR integer types are signless: the NDArray dtype, not i8/i16/i32/i64,
 // determines extension and integer/float conversion semantics for an explicit cast.
@@ -895,7 +915,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
   // Select tile configuration
   int blockSize, numWarps, numStages;
-  selectTileConfig(categories, shapes, blockSize, numWarps, numStages);
+  selectTileConfig(categories, shapes, blockSize, numWarps, numStages,
+                   dsp::hasNonLegacyMatmulArithmetic(slots, startSlot, endSlot));
   result.numWarps = numWarps;
   result.numStages = numStages;
 
@@ -3227,7 +3248,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                 &slot,
                 triton_matmul::resolve(aSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs),
                 triton_matmul::resolve(bSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs),
-                triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs));
+                triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs),
+                slotToArgIdx.count(aSrc) ? &result.args[slotToArgIdx[aSrc]] : nullptr,
+                slotToArgIdx.count(bSrc) ? &result.args[slotToArgIdx[bSrc]] : nullptr);
 
             // Load result back for downstream SSA consumers
             DataType outDtype = FLOAT32;
@@ -3306,7 +3329,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               return result;
             }
 
-            float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
+            float scale = getFusedAttentionScale(
+                slot.ident.opName, slot.args.numTArgs, slot.args.tArgs, headDim);
             auto bpTile = chooseFusedAttentionTileConfig(batchSize, numQHeads, seqQ, seqK, headDim);
             if (!bpTile.fitsSharedMem) {
               std::string msg = "TritonIRBuilder: fused attention backward '" + slot.ident.opName +
@@ -3426,13 +3450,14 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                     (long long)qArr->sizeAt(2), numQHeads, headDim);
         }
 
-        // Detect past_key/past_value by scanning ALL inputs for 4D KV-cache-like shapes.
-        // A past_key tensor is 4D BHSD: [batch, kvHeads, seqK, headDim] where headDim
-        // matches Q's headDim. This distinguishes it from attention masks [B,H,S,S].
+        // Only compound attention uses BHSD past-key discovery. DPA v2 has
+        // explicit BSHD cache inputs 5/6, handled below; its input 8 is a bias,
+        // even when [B,1,Q,cacheCapacity] happens to end in headDim. Scanning
+        // that bias as a cache changes the KV head count and scatter strides.
         bool hasPastKv = false;
         int pastKeySrc = -1, pastValueSrc = -1;
 
-        for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKv; inp++) {
+        for (int inp = 3; !isDpaV2 && inp < slot.wiring.numInputs && !hasPastKv; inp++) {
           int candidateSrc = slot.wiring.inputSourceIndices[inp];
           NDArray* candidateArr = resolveArr(candidateSrc);
           if (candidateArr && candidateArr->rankOf() == 4) {
@@ -3663,7 +3688,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           }
         }
 
-        float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
+        float scale = getFusedAttentionScale(
+            slot.ident.opName, slot.args.numTArgs, slot.args.tArgs, headDim);
         auto attnTile = chooseFusedAttentionTileConfig(
             batchSize, numQHeads, seqQ, seqK, headDim);
         if (!attnTile.fitsSharedMem) {
@@ -5187,6 +5213,90 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     }
   }
 
+  // Memory-aliasing hazards between DIFFERENT tensors. Buffer coloring may place
+  // tensors with disjoint op-level lifetimes in the same device memory (e.g. an
+  // attention-gate product and the residual add that follows its matmul).
+  // Sections in one launch phase run concurrently across programs, so if one
+  // section writes memory that another section of the same phase reads or writes
+  // through a different tensor, programs race: a matmul can read rows another
+  // program's epilogue is overwriting. Such a section must start a new phase.
+  // Same-tensor producer/consumer flow is handled by the element-count rule above.
+  struct SectionAccess {
+    int source;
+    uintptr_t lo;
+    uintptr_t hi;
+    bool write;
+  };
+  auto accessRange = [&](int source, uintptr_t& lo, uintptr_t& hi) -> bool {
+    NDArray* arr = nullptr;
+    if (source < 0) {
+      const int extIdx = -(source + 1);
+      if (externalInputs != nullptr && extIdx < numExternalInputs) arr = externalInputs[extIdx];
+    } else if (outputSlots != nullptr && source < totalOutputSlots) {
+      arr = outputSlots[source];
+    }
+    if (arr == nullptr || arr->isEmpty() || arr->specialBuffer() == nullptr) return false;
+    // Byte extent of the (possibly strided) view: last element offset + 1.
+    LongType lastOffset = 0;
+    for (int d = 0; d < arr->rankOf(); d++) {
+      const LongType size = arr->sizeAt(d);
+      if (size <= 0) return false;
+      lastOffset += (size - 1) * std::abs(arr->strideAt(d));
+    }
+    lo = reinterpret_cast<uintptr_t>(arr->specialBuffer());
+    hi = lo + static_cast<uintptr_t>((lastOffset + 1) * arr->sizeOfT());
+    return hi > lo;
+  };
+  auto collectAccesses = [&](const KernelSection& sec) {
+    std::vector<SectionAccess> accesses;
+    for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+      const auto& slot = slots[si];
+      for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
+        SectionAccess a{slot.wiring.inputSourceIndices[inp], 0, 0, false};
+        if (accessRange(a.source, a.lo, a.hi)) accesses.push_back(a);
+      }
+      // View/alias outputs share their input's storage and perform no write.
+      if (slot.aliasesInput()) continue;
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        SectionAccess a{slot.wiring.outputSlotIndices[o], 0, 0, true};
+        if (accessRange(a.source, a.lo, a.hi)) accesses.push_back(a);
+      }
+    }
+    return accesses;
+  };
+  auto accessesConflict = [](const std::vector<SectionAccess>& lhs, const std::vector<SectionAccess>& rhs) {
+    for (const auto& a : lhs)
+      for (const auto& b : rhs)
+        if ((a.write || b.write) && a.lo < b.hi && b.lo < a.hi) return true;
+    return false;
+  };
+  {
+    std::vector<SectionAccess> phaseAccesses = collectAccesses(sections[0]);
+    for (size_t secIdx = 1; secIdx < sections.size(); secIdx++) {
+      std::vector<SectionAccess> current = collectAccesses(sections[secIdx]);
+      if (!sectionNeedsBarrier[secIdx]) {
+        for (const auto& a : current) {
+          for (const auto& b : phaseAccesses) {
+            if (a.source == b.source || !(a.write || b.write)) continue;
+            if (a.lo < b.hi && b.lo < a.hi) {
+              sectionNeedsBarrier[secIdx] = 1;
+              DSP_DIAG(COMPILE,
+                       "TritonIRBuilder: ALIAS_BARRIER section %d [%d-%d] source=%d(%s) overlaps "
+                       "source=%d(%s) of the current phase in [%d-%d]",
+                       static_cast<int>(secIdx), sections[secIdx].startSlot, sections[secIdx].endSlot,
+                       a.source, a.write ? "write" : "read", b.source, b.write ? "write" : "read",
+                       startSlot, endSlot);
+              break;
+            }
+          }
+          if (sectionNeedsBarrier[secIdx]) break;
+        }
+      }
+      if (sectionNeedsBarrier[secIdx]) phaseAccesses.clear();
+      phaseAccesses.insert(phaseAccesses.end(), current.begin(), current.end());
+    }
+  }
+
   bool needsGridSync = std::any_of(sectionNeedsBarrier.begin(), sectionNeedsBarrier.end(),
                                    [](uint8_t v) { return v != 0; });
 
@@ -5566,7 +5676,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     }
   }
   int blockSize, numWarps, numStages;
-  selectTileConfig(categories, shapes, blockSize, numWarps, numStages);
+  selectTileConfig(categories, shapes, blockSize, numWarps, numStages,
+                   dsp::hasNonLegacyMatmulArithmetic(slots, startSlot, endSlot));
   if (sectionedBlockSizeOverride_ > 0) {
     if (blockSize != sectionedBlockSizeOverride_) {
       sd_debug("TritonIRBuilder::buildSectionedModule: overriding block size %d -> %d\n",
@@ -5662,7 +5773,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
         // Scan optional inputs for a real past_key tensor.
         bool hasPastKvGrid = false;
-        for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKvGrid; inp++) {
+        for (int inp = 3; !isDpaV2Grid && inp < slot.wiring.numInputs && !hasPastKvGrid; inp++) {
           auto candidateShape = resolveShape(slot.wiring.inputSourceIndices[inp]);
           if (candidateShape.size() == 4) {
             int candidateKvHeads = static_cast<int>(candidateShape[1]);
@@ -5781,7 +5892,93 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     }
   }
 
-  unsigned int fixedGridX = static_cast<unsigned int>(std::max(1, maxSectionGrid));
+  // ── Program ranges of independent sections ──
+  // A phase may still carry element-aligned flow between its sections (a
+  // section consuming an earlier one's output at the same indices is ordered
+  // because the same program runs both, in section order). Sections are
+  // therefore grouped into components connected by any shared memory access
+  // with a write (byte ranges, so views and aliases count) or a same-slot
+  // producer/consumer edge. A component keeps one shared program range and
+  // its in-program order; independent components get disjoint ranges
+  // [offset, offset + grid) and run concurrently, instead of every program
+  // walking all of them in turn — small sections (decode GEMVs over a few
+  // hundred outputs) otherwise leave most SMs idle. In-kernel grid barriers
+  // count the launched programs, so cooperative kernels keep shared ranges, as
+  // does any phase holding fused attention (it reads its own 2D program ids).
+  std::vector<int> sectionPidOffset(sections.size(), 0);
+  int concatenatedGrid = std::max(1, maxSectionGrid);
+  if (!needsGridSync) {
+    auto sectionSources = [&](const KernelSection& sec, bool outputs) {
+      std::unordered_set<int> sources;
+      for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+        const auto& slot = slots[si];
+        if (outputs)
+          for (int o = 0; o < slot.wiring.numOutputs; o++) sources.insert(slot.wiring.outputSlotIndices[o]);
+        else
+          for (int i = 0; i < slot.wiring.numInputs; i++) sources.insert(slot.wiring.inputSourceIndices[i]);
+      }
+      return sources;
+    };
+    auto layoutPhase = [&](int first, int last) -> int {
+      int sharedGrid = 1;
+      for (int s = first; s <= last; s++) sharedGrid = std::max(sharedGrid, sections[s].gridRequirement);
+      for (int s = first; s <= last; s++)
+        if (sections[s].type == KernelSectionType::FUSED_ATTENTION) return sharedGrid;
+      const int count = last - first + 1;
+      std::vector<std::vector<SectionAccess>> accesses;
+      std::vector<std::unordered_set<int>> reads, writes;
+      for (int s = first; s <= last; s++) {
+        accesses.push_back(collectAccesses(sections[s]));
+        reads.push_back(sectionSources(sections[s], false));
+        writes.push_back(sectionSources(sections[s], true));
+      }
+      auto sharesSource = [](const std::unordered_set<int>& a, const std::unordered_set<int>& b) {
+        for (int x : a) if (b.count(x)) return true;
+        return false;
+      };
+      // Union-find over dependent section pairs.
+      std::vector<int> component(count);
+      for (int i = 0; i < count; i++) component[i] = i;
+      std::function<int(int)> root = [&](int i) { return component[i] == i ? i : component[i] = root(component[i]); };
+      for (int j = 1; j < count; j++)
+        for (int i = 0; i < j; i++) {
+          const bool dependent = accessesConflict(accesses[i], accesses[j]) ||
+                                 sharesSource(writes[i], reads[j]) || sharesSource(writes[i], writes[j]) ||
+                                 sharesSource(reads[i], writes[j]);
+          if (dependent) component[root(j)] = root(i);
+        }
+      // Components in order of first section; each spans its largest grid.
+      std::unordered_map<int, int> componentOffset, componentGrid;
+      std::vector<int> order;
+      for (int i = 0; i < count; i++) {
+        const int r = root(i);
+        if (!componentGrid.count(r)) order.push_back(r);
+        componentGrid[r] = std::max(componentGrid[r], std::max(1, sections[first + i].gridRequirement));
+      }
+      int offset = 0;
+      for (int r : order) {
+        componentOffset[r] = offset;
+        offset += componentGrid[r];
+      }
+      for (int i = 0; i < count; i++) sectionPidOffset[first + i] = componentOffset[root(i)];
+      DSP_DIAG(COMPILE, "TritonIRBuilder: section program ranges [%d-%d]: %d sections in %d independent "
+               "groups, grid %d (shared layout %d)",
+               sections[first].startSlot, sections[last].endSlot, count, static_cast<int>(order.size()),
+               offset, sharedGrid);
+      return std::max(1, offset);
+    };
+    if (useMultiPhaseLaunch) {
+      concatenatedGrid = 1;
+      for (auto& phase : launchPhases) {
+        phase.gridX = layoutPhase(phase.startSection, phase.endSection);
+        concatenatedGrid = std::max(concatenatedGrid, phase.gridX);
+      }
+    } else if (!sections.empty()) {
+      concatenatedGrid = layoutPhase(0, static_cast<int>(sections.size()) - 1);
+    }
+  }
+
+  unsigned int fixedGridX = static_cast<unsigned int>(concatenatedGrid);
   unsigned int fixedGridY = 1;
   unsigned int fixedGridZ = 1;
   if (sections.size() == 1 && sections[0].type == KernelSectionType::FUSED_ATTENTION) {
@@ -5796,8 +5993,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
   auto i32TensorType = mlir::RankedTensorType::get({blockSize}, i32Type);
 
-  auto pid = builder.create<mlir::triton::GetProgramIdOp>(
+  mlir::Value programId = builder.create<mlir::triton::GetProgramIdOp>(
       loc, i32Type, mlir::triton::ProgramIDDim::X);
+  // Section-local program id: programId minus the section's range offset
+  // (reassigned per section below); every section emitter indexes with it.
+  mlir::Value pid = programId;
 
   // ── Step 5: SSA value map and arg lookup ──
   std::unordered_map<int, mlir::Value> ssaValues;
@@ -5924,14 +6124,19 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       builder.setInsertionPointToStart(&phaseIf.getThenRegion().front());
     }
 
-    // Guard each section by its own grid requirement. Blocks outside this
-    // section's range must no-op.
+    // Guard each section by its program range [offset, offset + grid).
+    // Blocks outside this section's range must no-op.
+    const int secOffset = sectionPidOffset[secIdx];
+    auto secOffsetConst = builder.create<mlir::arith::ConstantIntOp>(loc, secOffset, 32);
+    auto localPid = builder.create<mlir::arith::SubIOp>(loc, programId, secOffsetConst);
     auto secGridConst = builder.create<mlir::arith::ConstantIntOp>(
         loc, std::max(1, sec.gridRequirement), 32);
+    // Unsigned compare: programs below the offset wrap to large values.
     auto secActive = builder.create<mlir::arith::CmpIOp>(
-        loc, mlir::arith::CmpIPredicate::slt, pid, secGridConst);
+        loc, mlir::arith::CmpIPredicate::ult, localPid, secGridConst);
     auto secIf = builder.create<mlir::scf::IfOp>(loc, secActive, /*withElseRegion=*/false);
     builder.setInsertionPointToStart(&secIf.getThenRegion().front());
+    pid = localPid;
 
     // Section bodies are emitted in distinct scf.if regions. Values from one
     // section region do not dominate sibling section regions, so keep this map
@@ -7955,7 +8160,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 &slot,
                 triton_matmul::resolve(aSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs),
                 triton_matmul::resolve(bSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs),
-                triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs));
+                triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs),
+                slotToArgIdx.count(aSrc) ? &result.args[slotToArgIdx[aSrc]] : nullptr,
+                slotToArgIdx.count(bSrc) ? &result.args[slotToArgIdx[bSrc]] : nullptr);
             DataType outDtype = resolveDtype(cSlot);
             auto loaded = loadBlock(cSlot, outDtype);
             if (loaded) {
@@ -7991,8 +8198,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           auto epiI1Type = builder.getI1Type();
           auto epiI32BsType = mlir::RankedTensorType::get({blockSize}, epiI32Type);
           auto epiI1BsType = mlir::RankedTensorType::get({blockSize}, epiI1Type);
-          auto epiPidScalar = builder.create<mlir::triton::GetProgramIdOp>(
-              loc, epiI32Type, mlir::triton::ProgramIDDim::X);
+          mlir::Value epiPidScalar = pid;  // section-local program id
           auto epiBlockSizeConst = builder.create<mlir::arith::ConstantIntOp>(loc, blockSize, 32);
           auto epiBlockOffset = builder.create<mlir::arith::MulIOp>(loc, epiPidScalar, epiBlockSizeConst);
           auto epiRange = builder.create<mlir::triton::MakeRangeOp>(loc, epiI32BsType, 0, blockSize);
@@ -8156,7 +8362,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   result.valid = false;
                   return result;
                 }
-                float scaleBp = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDimBp));
+                float scaleBp = getFusedAttentionScale(
+                    slot.ident.opName, slot.args.numTArgs, slot.args.tArgs, headDimBp);
                 auto bpTileSec = chooseFusedAttentionTileConfig(
                     batchSizeBp, numQHeadsBp, seqQBp, seqKBp, headDimBp);
                 if (!bpTileSec.fitsSharedMem) {
@@ -8252,15 +8459,16 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           // Different attention op types have different input orderings:
           //   ONNX MultiHeadAttention: Q,K,V,bias,key_mask,attn_bias,past_key,past_value
           //   ONNX GroupQueryAttention: Q,K,V,past_key,past_value,seqlen_k,...
-          //   DPA v2: Q,V,K,...
-          // Instead of hardcoding positions, scan ALL inputs for 4D KV-cache-like shapes.
-          // A past_key tensor is 4D BHSD: [batch, kvHeads, seqK, headDim] where headDim
-          // matches Q's headDim. This distinguishes it from attention masks [B,H,S,S].
+          // DPA v2 is different: Q,V,K use BSHD, cache inputs are explicitly
+          // 5/6, and input 8 is an additive bias. Do not run BHSD shape-based
+          // discovery on DPA v2: cacheCapacity == headDim makes its bias look
+          // like a one-head cache and corrupts decode reads and scatter writes.
+          // Its explicit live-cache contract is resolved below.
           bool hasPastKv = false;
           int pastKeySrc = -1, pastValueSrc = -1;
           bool pastKeyIsExternal = false;
 
-          for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKv; inp++) {
+          for (int inp = 3; !isDpaV2Sec && inp < slot.wiring.numInputs && !hasPastKv; inp++) {
             int candidateSrc = slot.wiring.inputSourceIndices[inp];
             auto candidateShape = resolveShape(candidateSrc);
             // Accept 4D KV cache shapes, including empty ones [B,H,0,D] at warmup.
@@ -8599,7 +8807,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
           }
 
-          float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(std::max(headDim, 1)));
+          float scale = getFusedAttentionScale(
+              slot.ident.opName, slot.args.numTArgs, slot.args.tArgs, headDim);
           auto attnTile = chooseFusedAttentionTileConfig(
               batchSize, numQHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes);
           if (!attnTile.fitsSharedMem) {
@@ -9297,6 +9506,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
     // Continue emitting after the section guard.
     builder.setInsertionPointAfter(secIf);
+    pid = programId;
     // Close multi-phase guard if present
     if (useMultiPhaseLaunch) {
       builder.setInsertionPointAfter(phaseIf);

@@ -74,7 +74,9 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::aggregatePartials(SummaryStatsData<X>* 
       floorPow2 &= floorPow2 - 1;
     }
 
-    if (tid >= floorPow2) {
+    // Only threads holding items fold: threads at or beyond numElements would
+    // otherwise write slots other threads are still reading (WAR race).
+    if (tid >= floorPow2 && tid < numElements) {
       SummaryStatsData<X> prev = sPartials[tid - floorPow2];
       SummaryStatsData<X> curr = sPartials[tid];
       sPartials[tid - floorPow2] = update(prev, curr, extraParams);

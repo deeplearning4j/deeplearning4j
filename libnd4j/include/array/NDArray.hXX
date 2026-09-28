@@ -6548,67 +6548,67 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
     switch(scalar->dataType()) {
 #ifdef HAS_FLOAT32
       case FLOAT32:
-        templatedAssign<float>(buffer(),i,scalar->buffer(),0);
+        templatedSet<float, float>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_DOUBLE
       case DOUBLE:
-        templatedAssign<double>(buffer(),i,scalar->buffer(),0);
+        templatedSet<double, double>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_FLOAT16
       case HALF:
-        templatedAssign<float16>(buffer(),i,scalar->buffer(),0);
+        templatedSet<float16, float16>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_BFLOAT16
       case BFLOAT16:
-        templatedAssign<bfloat16>(buffer(),i,scalar->buffer(),0);
+        templatedSet<bfloat16, bfloat16>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_BOOL
       case BOOL:
-        templatedAssign<bool>(buffer(),i,scalar->buffer(),0);
+        templatedSet<bool, bool>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_INT8
       case INT8:
-        templatedAssign<int8_t>(buffer(),i,scalar->buffer(),0);
+        templatedSet<int8_t, int8_t>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_INT16
       case INT16:
-        templatedAssign<int16_t>(buffer(),i,scalar->buffer(),0);
+        templatedSet<int16_t, int16_t>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_INT32
       case INT32:
-        templatedAssign<Int32Type>(buffer(),i,scalar->buffer(),0);
+        templatedSet<Int32Type, Int32Type>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_INT64
       case INT64:
-        templatedAssign<LongType>(buffer(),i,scalar->buffer(),0);
+        templatedSet<LongType, LongType>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_UINT8
       case UINT8:
-        templatedAssign<uint8_t>(buffer(),i,scalar->buffer(),0);
+        templatedSet<uint8_t, uint8_t>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_UINT16
       case UINT16:
-        templatedAssign<uint16_t>(buffer(),i,scalar->buffer(),0);
+        templatedSet<uint16_t, uint16_t>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_UINT32
       case UINT32:
-        templatedAssign<uint32_t>(buffer(),i,scalar->buffer(),0);
+        templatedSet<uint32_t, uint32_t>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_UNSIGNEDLONG
       case UINT64:
-        templatedAssign<UnsignedLong>(buffer(),i,scalar->buffer(),0);
+        templatedSet<UnsignedLong, UnsignedLong>(buffer(), i, dataType(), scalar->buffer());
         break;
 #endif
       default:

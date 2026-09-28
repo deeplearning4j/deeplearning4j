@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /** Independent numerical and native ABI contracts, shared by CPU and CUDA. */
 @NativeTag
@@ -879,6 +880,308 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
         DynamicCustomOp op = new DynamicCustomOp(nv ? "modelopt_nvfp4_linear" : "modelopt_fp8_linear",
                 inputs, output == null ? null : new INDArray[]{output}, Collections.emptyList(), args);
         assertThrows(RuntimeException.class, () -> Nd4j.exec(op));
+    }
+
+    /**
+     * CUDA tiled-kernel arithmetic contract, bit for bit: every output is 32
+     * lane-strided fmaf chains (lane l owns the 8-element words l, l+32, ...,
+     * ascending), then the ascending-offset shuffle fold. The kernel processes
+     * rows in register passes of 8 and dequantizes each weight word once per
+     * pass, so row counts inside, at and across the pass boundary (1, 5, 8, 9,
+     * 17) and a prefill-length input (128) must all reproduce the per-row
+     * contract exactly, for K spanning one to many words per lane.
+     *
+     * Every N here is odd, so no case is admitted to a tensor-core path (FP8
+     * needs N * sizeof(output) to be a multiple of 16 bytes, NVFP4 needs whole
+     * 8-column tiles): all stay on the native tiled kernel. The tensor-core
+     * paths are covered by testFp8TensorCorePathMatchesReference and
+     * testNvfp4TensorCorePathMatchesReference.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTiledRowPassesMatchLaneContract(Nd4jBackend backend) {
+        assumeFalse(Nd4j.getEnvironment().isCPU(), "lane-split fold is the CUDA tiled kernel's contract");
+        int[][] shapes = {{1, 2048, 37}, {5, 5120, 33}, {8, 256, 65}, {9, 512, 17}, {17, 1024, 9}, {128, 256, 11}};
+        java.util.Random random = new java.util.Random(20260927L);
+        for (boolean nv : new boolean[]{true, false}) {
+            for (DataType dtype : ACTIVATION_TYPES) {
+                for (int[] shape : shapes) {
+                    int rows = shape[0], k = shape[1], n = shape[2];
+                    float[] values = new float[rows * k];
+                    for (int i = 0; i < values.length; i++) values[i] = (random.nextInt(4097) - 2048) / 1024.0f;
+                    INDArray x = Nd4j.create(values, new long[]{rows, k}, DataType.FLOAT).castTo(dtype);
+                    // Reference activations are the dtype-rounded values the kernel reads.
+                    float[] xs = x.castTo(DataType.FLOAT).data().asFloat();
+                    byte[] bytes = new byte[n * (nv ? k / 2 : k)];
+                    for (int i = 0; i < bytes.length; i++)
+                        bytes[i] = nv ? (byte) random.nextInt(256)
+                                : (byte) ((random.nextInt(0x60) + 0x10) | (random.nextBoolean() ? 128 : 0));
+                    byte[] blocks = new byte[nv ? n * (k / 16) : 0];
+                    for (int i = 0; i < blocks.length; i++) blocks[i] = (byte) (0x30 + random.nextInt(0x11));
+                    float global = nv ? .1003f : .3f;
+                    float weightScale = .7f;
+                    INDArray w = raw(nv ? DataType.UBYTE : DataType.FLOAT8, bytes, n, nv ? k / 2 : k);
+                    INDArray scale = nv ? raw(DataType.FLOAT8, blocks, n, k / 16) : scalar(weightScale);
+                    float[] a = xs;
+                    if (!nv) {
+                        a = new float[xs.length];
+                        for (int i = 0; i < xs.length; i++) a[i] = quantizeE4m3(xs[i] / global) * global;
+                    }
+                    for (boolean floatOutput : new boolean[]{false, true}) {
+                        INDArray z = nv ? Nd4j.exec(new ModelOptNvfp4Linear(x, w, scale, scalar(global), floatOutput))[0]
+                                : Nd4j.exec(new ModelOptFp8Linear(x, w, scale, scalar(global), floatOutput))[0];
+                        DataType outType = floatOutput ? DataType.FLOAT : dtype;
+                        assertEquals(outType, z.dataType());
+                        float[] actual = z.castTo(DataType.FLOAT).data().asFloat();
+                        for (int row = 0; row < rows; row++) {
+                            for (int col = 0; col < n; col++) {
+                                float[] lanes = new float[32];
+                                for (int lane = 0; lane < 32; lane++) {
+                                    float sum = 0;
+                                    for (int word = lane; word < k / 8; word += 32) {
+                                        for (int j = 0; j < 8; j++) {
+                                            int kk = word * 8 + j;
+                                            float b;
+                                            if (nv) {
+                                                int bits = bytes[col * (k / 2) + kk / 2] & 255;
+                                                float blockScale = decodeE4m3(blocks[col * (k / 16) + kk / 16] & 255) * global;
+                                                b = round(signedNibble((bits >>> (4 * (kk & 1))) & 15) * blockScale, dtype);
+                                            } else {
+                                                b = decodeE4m3(bytes[col * k + kk] & 255) * weightScale;
+                                            }
+                                            sum = Math.fma(a[row * k + kk], b, sum);
+                                        }
+                                    }
+                                    lanes[lane] = sum;
+                                }
+                                for (int offset = 1; offset < 32; offset <<= 1) {
+                                    float[] next = lanes.clone();
+                                    for (int lane = 0; lane + offset < 32; lane++) next[lane] = lanes[lane] + lanes[lane + offset];
+                                    lanes = next;
+                                }
+                                float expected = round(lanes[0], outType);
+                                float got = actual[row * n + col];
+                                assertEquals(Float.floatToIntBits(expected), Float.floatToIntBits(got),
+                                        (nv ? "nvfp4" : "fp8") + "/" + dtype + "/floatOutput=" + floatOutput
+                                                + "/rows=" + rows + "/k=" + k + "/n=" + n
+                                                + " at [" + row + "," + col + "]: expected " + expected + " got " + got);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * FP8 linears whose shapes meet the cuBLASLt alignment rules (K and
+     * N * sizeof(output) multiples of 16 bytes) run as one scaled FP8 GEMM on
+     * tensor cores. Every product equals the native path's exact FP32 product
+     * quant(x) * quant(w); only the FP32 accumulation order belongs to the
+     * library, so the result is checked against an exact double reference with
+     * an accumulation-error bound (K * 2^-24 * sum|terms|) plus the output
+     * dtype's rounding. Covers decode (1, 5) and prefill (128) row counts.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testFp8TensorCorePathMatchesReference(Nd4jBackend backend) {
+        int[][] shapes = {{1, 512, 64}, {5, 5120, 48}, {128, 256, 1040}, {5, 16, 16}};
+        java.util.Random random = new java.util.Random(20260928L);
+        float inputScale = .3f, weightScale = .7f;
+        for (DataType dtype : ACTIVATION_TYPES) {
+            for (int[] shape : shapes) {
+                int rows = shape[0], k = shape[1], n = shape[2];
+                float[] values = new float[rows * k];
+                for (int i = 0; i < values.length; i++) values[i] = (random.nextInt(4097) - 2048) / 1024.0f;
+                INDArray x = Nd4j.create(values, new long[]{rows, k}, DataType.FLOAT).castTo(dtype);
+                float[] xs = x.castTo(DataType.FLOAT).data().asFloat();
+                byte[] bytes = new byte[n * k];
+                for (int i = 0; i < bytes.length; i++)
+                    bytes[i] = (byte) ((random.nextInt(0x60) + 0x10) | (random.nextBoolean() ? 128 : 0));
+                INDArray w = raw(DataType.FLOAT8, bytes, n, k);
+                double[] a = new double[xs.length];
+                for (int i = 0; i < xs.length; i++) a[i] = quantizeE4m3(xs[i] / inputScale) * inputScale;
+                for (boolean floatOutput : new boolean[]{false, true}) {
+                    INDArray z = Nd4j.exec(new ModelOptFp8Linear(x, w, scalar(weightScale), scalar(inputScale),
+                            floatOutput))[0];
+                    DataType outType = floatOutput ? DataType.FLOAT : dtype;
+                    assertEquals(outType, z.dataType());
+                    double outputEpsilon = outType == DataType.FLOAT ? 0 : outType == DataType.HALF ? 0x1p-11 : 0x1p-8;
+                    float[] actual = z.castTo(DataType.FLOAT).data().asFloat();
+                    for (int row = 0; row < rows; row++) {
+                        for (int col = 0; col < n; col++) {
+                            double exact = 0, magnitude = 0;
+                            for (int kk = 0; kk < k; kk++) {
+                                double term = a[row * k + kk] * (decodeE4m3(bytes[col * k + kk] & 255) * weightScale);
+                                exact += term;
+                                magnitude += Math.abs(term);
+                            }
+                            double tolerance = k * 0x1p-24 * magnitude + outputEpsilon * Math.abs(exact) + 1e-30;
+                            double got = actual[row * n + col];
+                            assertTrue(Math.abs(got - exact) <= tolerance,
+                                    dtype + "/floatOutput=" + floatOutput + "/rows=" + rows + "/k=" + k + "/n=" + n
+                                            + " at [" + row + "," + col + "]: exact " + exact + " got " + got
+                                            + " tolerance " + tolerance);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * NVFP4 linears with BF16/HALF activations whose shapes the weight-only
+     * tensor-core GEMM admits (K a multiple of 32, whole 8-column tiles) run on
+     * mma.m16n8k16 with the weights dequantized in registers exactly as the
+     * native kernels do; every product is exact in FP32 and only the FP32
+     * accumulation order differs. Checked against an exact double reference with
+     * an accumulation-error bound (K * 2^-24 * sum|terms|) plus the output
+     * dtype's rounding. FLOAT activations take the native kernels and must meet
+     * the same bound. Covers decode (1, 5), one full MMA tile (16), a partial
+     * second tile (17), prefill (128), and K ranges shorter than, equal to and
+     * longer than one split-K chunk per warp.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNvfp4TensorCorePathMatchesReference(Nd4jBackend backend) {
+        int[][] shapes = {{1, 32, 8}, {5, 5120, 64}, {16, 512, 40}, {17, 1024, 24}, {128, 256, 136}, {5, 17408, 8}};
+        java.util.Random random = new java.util.Random(20260930L);
+        float global = .1003f;
+        for (DataType dtype : ACTIVATION_TYPES) {
+            for (int[] shape : shapes) {
+                int rows = shape[0], k = shape[1], n = shape[2];
+                float[] values = new float[rows * k];
+                for (int i = 0; i < values.length; i++) values[i] = (random.nextInt(4097) - 2048) / 1024.0f;
+                INDArray x = Nd4j.create(values, new long[]{rows, k}, DataType.FLOAT).castTo(dtype);
+                float[] xs = x.castTo(DataType.FLOAT).data().asFloat();
+                byte[] bytes = new byte[n * k / 2];
+                for (int i = 0; i < bytes.length; i++) bytes[i] = (byte) random.nextInt(256);
+                byte[] blocks = new byte[n * (k / 16)];
+                for (int i = 0; i < blocks.length; i++) blocks[i] = (byte) (0x30 + random.nextInt(0x11));
+                INDArray w = raw(DataType.UBYTE, bytes, n, k / 2);
+                INDArray scale = raw(DataType.FLOAT8, blocks, n, k / 16);
+                for (boolean floatOutput : new boolean[]{false, true}) {
+                    INDArray z = Nd4j.exec(new ModelOptNvfp4Linear(x, w, scale, scalar(global), floatOutput))[0];
+                    DataType outType = floatOutput ? DataType.FLOAT : dtype;
+                    assertEquals(outType, z.dataType());
+                    double outputEpsilon = outType == DataType.FLOAT ? 0 : outType == DataType.HALF ? 0x1p-11 : 0x1p-8;
+                    float[] actual = z.castTo(DataType.FLOAT).data().asFloat();
+                    for (int row = 0; row < rows; row++) {
+                        for (int col = 0; col < n; col++) {
+                            double exact = 0, magnitude = 0;
+                            for (int kk = 0; kk < k; kk++) {
+                                int bits = bytes[col * (k / 2) + kk / 2] & 255;
+                                float blockScale = decodeE4m3(blocks[col * (k / 16) + kk / 16] & 255) * global;
+                                double weight = round(signedNibble((bits >>> (4 * (kk & 1))) & 15) * blockScale, dtype);
+                                double term = xs[row * k + kk] * weight;
+                                exact += term;
+                                magnitude += Math.abs(term);
+                            }
+                            double tolerance = k * 0x1p-24 * magnitude + outputEpsilon * Math.abs(exact) + 1e-30;
+                            double got = actual[row * n + col];
+                            assertTrue(Math.abs(got - exact) <= tolerance,
+                                    dtype + "/floatOutput=" + floatOutput + "/rows=" + rows + "/k=" + k + "/n=" + n
+                                            + " at [" + row + "," + col + "]: exact " + exact + " got " + got
+                                            + " tolerance " + tolerance);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Row invariance across decode widths: an output row must be bit-identical
+     * whatever number of rows (up to the decode class, 16) the call carries.
+     * Speculative decoding computes the same token position in calls of
+     * different widths (verify windows, reruns, greedy), and its MTP-vs-greedy
+     * losslessness gate requires identical bits there. Prefill-length calls
+     * form their own class: both decoding modes prefill with the same width.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRowResultsIndependentOfRowCount(Nd4jBackend backend) {
+        java.util.Random random = new java.util.Random(20260929L);
+        int k = 5120;
+        for (boolean nv : new boolean[]{true, false})
+        for (int n : new int[]{64, 6144})
+        for (boolean floatOutput : new boolean[]{true, false}) {
+            byte[] bytes = new byte[n * (nv ? k / 2 : k)];
+            for (int i = 0; i < bytes.length; i++)
+                bytes[i] = nv ? (byte) random.nextInt(256)
+                        : (byte) ((random.nextInt(0x60) + 0x10) | (random.nextBoolean() ? 128 : 0));
+            byte[] blocks = new byte[nv ? n * (k / 16) : 0];
+            for (int i = 0; i < blocks.length; i++) blocks[i] = (byte) (0x30 + random.nextInt(0x11));
+            INDArray w = raw(nv ? DataType.UBYTE : DataType.FLOAT8, bytes, n, nv ? k / 2 : k);
+            INDArray scale = nv ? raw(DataType.FLOAT8, blocks, n, k / 16) : scalar(.7f);
+            INDArray global = scalar(nv ? .1003f : .3f);
+            int widest = 16;
+            float[] values = new float[widest * k];
+            for (int i = 0; i < values.length; i++) values[i] = (random.nextInt(4097) - 2048) / 1024.0f;
+            INDArray all = Nd4j.create(values, new long[]{widest, k}, DataType.FLOAT).castTo(DataType.BFLOAT16);
+            INDArray reference = null;
+            for (int rows : new int[]{1, 2, 3, 5, 8, 16}) {
+                INDArray x = all.get(NDArrayIndex.interval(0, rows), NDArrayIndex.all()).dup('c');
+                INDArray z = nv ? Nd4j.exec(new ModelOptNvfp4Linear(x, w, scale, global, floatOutput))[0]
+                        : Nd4j.exec(new ModelOptFp8Linear(x, w, scale, global, floatOutput))[0];
+                INDArray firstRow = z.getRow(0).castTo(DataType.FLOAT).dup();
+                if (reference == null) {
+                    reference = firstRow;
+                    continue;
+                }
+                for (int col = 0; col < n; col++)
+                    assertEquals(Float.floatToIntBits(reference.getFloat(col)), Float.floatToIntBits(firstRow.getFloat(col)),
+                            (nv ? "nvfp4" : "fp8") + "/n=" + n + "/floatOutput=" + floatOutput + ": row 0 column "
+                                    + col + " differs between 1 and " + rows + " rows: " + reference.getFloat(col)
+                                    + " vs " + firstRow.getFloat(col));
+            }
+        }
+    }
+
+    /**
+     * Throughput probe for the decode GEMVs of Qwen3.5-27B NVFP4 (shapes taken
+     * from the imported graph), run in isolation so kernel work can be measured
+     * in seconds instead of a full model run. Reports microseconds per call and
+     * effective weight bandwidth for the W=1 and W=5 row counts. Opt-in:
+     * -Dmodelopt.gemvBench=true (not a correctness test).
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "modelopt.gemvBench", matches = "true")
+    public void benchDecodeGemvShapes(Nd4jBackend backend) {
+        // {nvfp4 ? 1 : 0, N, K}
+        int[][] shapes = {{1, 17408, 5120}, {1, 5120, 17408}, {0, 6144, 5120}, {0, 10240, 5120}, {0, 5120, 6144}};
+        int iterations = Integer.getInteger("modelopt.gemvBench.iterations", 50);
+        java.util.Random random = new java.util.Random(7);
+        for (int[] shape : shapes) {
+            boolean nv = shape[0] == 1;
+            int n = shape[1], k = shape[2];
+            byte[] bytes = new byte[n * (nv ? k / 2 : k)];
+            for (int i = 0; i < bytes.length; i++)
+                bytes[i] = nv ? (byte) random.nextInt(256)
+                        : (byte) ((random.nextInt(0x60) + 0x10) | (random.nextBoolean() ? 128 : 0));
+            byte[] blocks = new byte[nv ? n * (k / 16) : 0];
+            for (int i = 0; i < blocks.length; i++) blocks[i] = (byte) (0x30 + random.nextInt(0x11));
+            INDArray w = raw(nv ? DataType.UBYTE : DataType.FLOAT8, bytes, n, nv ? k / 2 : k);
+            INDArray scale = nv ? raw(DataType.FLOAT8, blocks, n, k / 16) : scalar(.7f);
+            INDArray global = scalar(nv ? .1003f : .3f);
+            long weightBytes = (long) bytes.length + blocks.length;
+            for (int rows : new int[]{1, 5}) {
+                INDArray x = Nd4j.rand(DataType.FLOAT, rows, k).subi(0.5).castTo(DataType.BFLOAT16);
+                INDArray z = Nd4j.create(DataType.BFLOAT16, rows, n);
+                DynamicCustomOp op = nv ? new ModelOptNvfp4Linear(x, w, scale, global, false)
+                        : new ModelOptFp8Linear(x, w, scale, global, false);
+                op.addOutputArgument(z);
+                for (int i = 0; i < 5; i++) Nd4j.exec(op);
+                Nd4j.getExecutioner().commit();
+                long start = System.nanoTime();
+                for (int i = 0; i < iterations; i++) Nd4j.exec(op);
+                Nd4j.getExecutioner().commit();
+                double usPerCall = (System.nanoTime() - start) / 1e3 / iterations;
+                System.out.printf("GEMV_BENCH %s N=%d K=%d rows=%d: %.1f us/call, %.1f GB/s weights%n",
+                        nv ? "nvfp4" : "fp8", n, k, rows, usPerCall, weightBytes / (usPerCall * 1e3));
+            }
+        }
     }
 
     private static void assertResult(Fixture f, INDArray z, boolean fp32, String context) {

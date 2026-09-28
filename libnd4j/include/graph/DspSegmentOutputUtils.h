@@ -9,6 +9,7 @@
 #define LIBND4J_DSP_SEGMENT_OUTPUT_UTILS_H
 
 #include <algorithm>
+#include <cstdint>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -18,6 +19,50 @@
 namespace sd {
 namespace graph {
 namespace dsp {
+
+/**
+ * Visit actual input arrays an op declares writable. This is the same write
+ * contract for direct compiled execution and replay; no op-name classification
+ * or blanket variable-input dirty marking belongs in either path.
+ * Callback receives (input ordinal, encoded source index, array).
+ */
+template <typename SlotT, typename ArrayT, typename Callback>
+SD_INLINE void forEachOpWrittenInput(const SlotT& slot,
+                                     ArrayT** externalInputs, int numExternalInputs,
+                                     ArrayT** outputSlots, int totalOutputSlots,
+                                     Callback&& callback) {
+  if (slot.ident.op == nullptr || slot.wiring.inputSourceIndices == nullptr) return;
+  const auto* descriptor = slot.ident.op->getOpDescriptor();
+  if (descriptor == nullptr) return;
+  auto resolve = [&](int input) -> ArrayT* {
+    if (input < 0 || input >= slot.wiring.numInputs) return nullptr;
+    const int source = slot.wiring.inputSourceIndices[input];
+    if (source >= 0) {
+      return outputSlots != nullptr && source < totalOutputSlots ? outputSlots[source] : nullptr;
+    }
+    const auto external = -static_cast<int64_t>(source) - 1;
+    return externalInputs != nullptr && external < numExternalInputs ? externalInputs[external] : nullptr;
+  };
+  for (const auto& group : descriptor->getInputWriteGroups()) {
+    bool active = true;
+    for (const auto& required : group.requiredInputs) {
+      auto* input = resolve(required.first);
+      if (input == nullptr || input->isEmpty() || input->lengthOf() == 0 ||
+          input->rankOf() < required.second) { active = false; break; }
+    }
+    if (!active) continue;
+    if (group.typeInput >= 0) {
+      auto* input = resolve(group.typeInput);
+      if (input == nullptr || input->dataType() != group.requiredType) continue;
+    }
+    for (int written : group.indices) {
+      auto* input = resolve(written);
+      if (input != nullptr && !input->isEmpty()) {
+        callback(written, slot.wiring.inputSourceIndices[written], input);
+      }
+    }
+  }
+}
 
 /**
  * Visit the flat output-slot indices produced by an operation range.
