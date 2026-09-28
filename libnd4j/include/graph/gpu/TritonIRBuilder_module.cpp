@@ -342,6 +342,9 @@ static OrderedReductionSpec classifyOrderedReduction(const SlotT& slot) {
   return spec;
 }
 
+// Lanes per program of a standalone ordered reduction (one output per lane).
+static constexpr int kStandaloneReductionLanes = 32;
+
 struct OrderedReductionLayout {
   std::vector<int> reductionAxes;
   std::vector<int> nonReductionAxes;
@@ -1562,6 +1565,16 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       const auto layout = buildOrderedReductionLayout(
           resolveShapeLocal(slots[startSlot].wiring.inputSourceIndices[0]), slots[startSlot]);
       if (layout.valid) {
+        // One warp per program. Each lane's inputs are a separate strided row,
+        // so every warp load touches a cache line per lane and the reduction is
+        // bound by L1 request throughput; a single wide program serializes all
+        // of it on one SM (15 us for 240 x 128 on GB10). Warp-sized programs
+        // spread the same per-lane arithmetic across SMs.
+        if (blockSize > kStandaloneReductionLanes) {
+          blockSize = kStandaloneReductionLanes;
+          result.blockX = blockSize;
+          result.numWarps = 1;
+        }
         result.gridX = static_cast<int>(std::max<int64_t>(1,
             (static_cast<int64_t>(layout.outputLength) + blockSize - 1) / blockSize));
       }

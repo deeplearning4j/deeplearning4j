@@ -970,19 +970,6 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable k = sd.reshape("gdn_k_reshaped_" + layerIdx, kProj, qkHeadShape);
         SDVariable v = sd.reshape("gdn_v_reshaped_" + layerIdx, vProj, vHeadShape);
 
-        if (numKeyHeads != numGdnHeads) {
-            // Repeat each key head consecutively across its value-head group, then fold
-            // [keyHeads, group] into valueHeads. Do not tile the entire head sequence.
-            int groups = numGdnHeads / numKeyHeads;
-            SDVariable groupedShape = sd.stack("gdn_grouped_head_shape_" + layerIdx, 0,
-                    batchDim, seqDim, sd.constant(Nd4j.scalar((long) numGdnHeads)),
-                    sd.constant(Nd4j.scalar((long) headDimQK)));
-            q = sd.reshape("gdn_q_grouped_" + layerIdx,
-                    sd.tile(sd.expandDims(q, 3), 1, 1, 1, groups, 1), groupedShape);
-            k = sd.reshape("gdn_k_grouped_" + layerIdx,
-                    sd.tile(sd.expandDims(k, 3), 1, 1, 1, groups, 1), groupedShape);
-        }
-
         // 5. L2-normalize Q and K (per head vector, matching use_qk_l2norm_in_kernel=True)
         // Upcast to FLOAT32 for squaring to prevent HALF overflow
         SDVariable qAccum = GGMLDTypePolicy.castForAccumulation(q, "gdn_q_accum_" + layerIdx);
@@ -1003,6 +990,21 @@ public class LLaMAArchitecture implements ModelArchitecture {
                 .mul("gdn_q_scaled_" + layerIdx, qScale);
         k = GGMLDTypePolicy.castForAccumulation(k, "gdn_k_compute_" + layerIdx);
         v = GGMLDTypePolicy.castForAccumulation(v, "gdn_v_compute_" + layerIdx);
+
+        // 5c. Repeat each key head consecutively across its value-head group, then fold
+        // [keyHeads, group] into valueHeads. Do not tile the entire head sequence. The
+        // normalization, scaling and casts above act per element or per head vector, so
+        // applying them before the repeat gives the same values on a third of the heads.
+        if (numKeyHeads != numGdnHeads) {
+            int groups = numGdnHeads / numKeyHeads;
+            SDVariable groupedShape = sd.stack("gdn_grouped_head_shape_" + layerIdx, 0,
+                    batchDim, seqDim, sd.constant(Nd4j.scalar((long) numGdnHeads)),
+                    sd.constant(Nd4j.scalar((long) headDimQK)));
+            q = sd.reshape("gdn_q_grouped_" + layerIdx,
+                    sd.tile(sd.expandDims(q, 3), 1, 1, 1, groups, 1), groupedShape);
+            k = sd.reshape("gdn_k_grouped_" + layerIdx,
+                    sd.tile(sd.expandDims(k, 3), 1, 1, 1, groups, 1), groupedShape);
+        }
 
         // 6. Compute beta (update gate): sigmoid(input @ Wbeta^T) -> [B, L, H]
         // Reference: beta = sigmoid(in_proj_b(x))  - NO dt_bias added here
