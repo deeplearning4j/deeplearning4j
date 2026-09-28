@@ -23,14 +23,17 @@
 #include <array/ArrayOptions.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/LegacyOpTypeCodes.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/OpDescriptor.h>
 #include <system/Environment.h>
+#include <system/op_boilerplate.h>
 
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 
 #include <climits>
+#include <cmath>
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
