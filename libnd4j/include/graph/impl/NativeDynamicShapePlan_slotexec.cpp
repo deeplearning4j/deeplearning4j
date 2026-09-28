@@ -3197,98 +3197,106 @@ Status NativeDynamicShapePlan::executeSlot(
   // ── Fused chain head dispatch + frozen context block ───────────────────────
   // Wrapped in do/while(false) so break exits to normalExecution below.
   do {
+#if NOT_EXCLUDED(OP_fused_elementwise_chain)
   if (slot.fusedChain.isFusedChainHead && slot.fusedChain.fusedChainLength >= 2) {
-    // 1. Gather primary input (head slot's first input)
-    NDArray* primaryInput = nullptr;
-    int primarySrcIdx = slot.wiring.inputSourceIndices[0];
-    if (primarySrcIdx >= 0) {
-      primaryInput = outputSlots_[primarySrcIdx];
-    } else {
-      int extIdx = -(primarySrcIdx + 1);
-      if (extIdx < numExt) primaryInput = externalArrays[extIdx];
+    const int chainLength = slot.fusedChain.fusedChainLength;
+    // From here on the head and its tails execute as ordinary slots. Used when
+    // the live operands fall outside what the fused kernel computes exactly
+    // like the members' eager ops.
+    auto defuseChain = [&](const char* reason) {
+      DSP_DIAG(FUSION,
+               "FUSED_CHAIN_DEFUSE step=%d op=%s chainLen=%d reason=%s — executing the members one by one",
+               stepIdx, slot.ident.opName.c_str(), chainLength, reason);
+      for (int ci = 0; ci < chainLength && ci < MAX_FUSED_CHAIN; ci++) {
+        const int chainSlotIdx = slot.fusedChain.fusedChainSlots[ci];
+        if (chainSlotIdx >= 0 && chainSlotIdx < numSlots_) {
+          slots_[chainSlotIdx].fusedChain.isFusedChainTail = false;
+        }
+      }
+      slot.fusedChain.clearHead();
+    };
+    if (chainLength > MAX_FUSED_CHAIN) {
+      defuseChain("chain is longer than the fused kernel runs");
+      break;  // → normalExecution
     }
+
+    // 1. The chain value enters at the head's input 0; FusionPass fuses no
+    //    other head.
+    const int primarySrcIdx = slot.wiring.numInputs > 0 ? slot.wiring.inputSourceIndices[0] : INT32_MIN;
+    NDArray* primaryInput =
+        resolveInputSourceArray(primarySrcIdx, outputSlots_, totalOutputSlots_, externalArrays, numExt);
     if (primaryInput == nullptr) {
       DSP_DIAG_SLOT(EXECUTE, stepIdx, "NULL fused head input for slot %d (%s), primarySrcIdx=%d",
                 stepIdx, slot.ident.opName.c_str(), primarySrcIdx);
       return Status::BAD_INPUT;
     }
 
-    bool headIsBinary = (slot.fusedChain.fusedChainSecondaryInputSources[0] != INT32_MIN);
-    if (headIsBinary && slot.wiring.numInputs == 2) {
-      int secSrc = slot.fusedChain.fusedChainSecondaryInputSources[0];
-      for (int k = 0; k < slot.wiring.numInputs; k++) {
-        if (slot.wiring.inputSourceIndices[k] != secSrc) {
-          int chainSrcIdx = slot.wiring.inputSourceIndices[k];
-          if (chainSrcIdx >= 0) {
-            primaryInput = outputSlots_[chainSrcIdx];
-          } else {
-            int extIdx = -(chainSrcIdx + 1);
-            if (extIdx < numExt) primaryInput = externalArrays[extIdx];
-          }
-          break;
-        }
-      }
-    }
-
-    // 2. Gather secondary inputs
-    sd::ops::helpers::FusedElemOp fusedOps[8];
-    NDArray* secondaryInputs[8] = {};
-
-    for (int ci = 0; ci < slot.fusedChain.fusedChainLength; ci++) {
+    // 2. Each binary member reads its operand from the source FusionPass
+    //    recorded. The operand must leave the member's eager output in the chain
+    //    value's shape, which is the only shape the fused kernel writes.
+    sd::ops::helpers::FusedElemOp fusedOps[MAX_FUSED_CHAIN];
+    NDArray* secondaryInputs[MAX_FUSED_CHAIN] = {};
+    const char* operandViolation = nullptr;
+    for (int ci = 0; ci < chainLength && operandViolation == nullptr; ci++) {
       fusedOps[ci] = static_cast<sd::ops::helpers::FusedElemOp>(slot.fusedChain.fusedChainOpCodes[ci]);
-
-      int secSrc = slot.fusedChain.fusedChainSecondaryInputSources[ci];
-      if (secSrc != INT32_MIN) {
-        if (secSrc >= 0) {
-          secondaryInputs[ci] = outputSlots_[secSrc];
-            } else {
-          int extIdx = -(secSrc + 1);
-          if (extIdx < numExt) secondaryInputs[ci] = externalArrays[extIdx];
-        }
-      }
-      if (ci == 0 && secondaryInputs[ci] == nullptr &&
-          sd::ops::helpers::isBinaryFusedOp(fusedOps[ci]) &&
-          slot.wiring.numInputs == 2 &&
-          slot.wiring.inputSourceIndices[0] == slot.wiring.inputSourceIndices[1]) {
-        secondaryInputs[ci] = primaryInput;
-      }
+      if (!sd::ops::helpers::isBinaryFusedOp(fusedOps[ci])) continue;
+      secondaryInputs[ci] = resolveInputSourceArray(slot.fusedChain.fusedChainSecondaryInputSources[ci],
+                                                    outputSlots_, totalOutputSlots_, externalArrays, numExt);
+      operandViolation = secondaryInputs[ci] == nullptr
+                             ? "binary member operand is not available"
+                             : fusedOperandPolicyViolation(slot.fusedChain.fusedChainSecondaryPolicy[ci],
+                                                           secondaryInputs[ci], primaryInput);
     }
-
-    // 3. Determine output shape considering broadcasting
-    const LongType* outputShapeInfo = primaryInput->shapeInfo();
-    bool needsBroadcast = false;
-    for (int ci = 0; ci < slot.fusedChain.fusedChainLength; ci++) {
-      if (secondaryInputs[ci] != nullptr && sd::ops::helpers::isBinaryFusedOp(fusedOps[ci])) {
-        const LongType* secShape = secondaryInputs[ci]->shapeInfo();
-        if (!shape::equalsSoft(outputShapeInfo, secShape)) {
-          needsBroadcast = true;
-          break;
-        }
-      }
-    }
-
-    if (needsBroadcast) {
-      slot.fusedChain.isFusedChainHead = false;
-      for (int ci = 0; ci < slot.fusedChain.fusedChainLength; ci++) {
-        int chainSlotIdx = slot.fusedChain.fusedChainSlots[ci];
-        if (chainSlotIdx >= 0 && chainSlotIdx < numSlots_) {
-          slots_[chainSlotIdx].fusedChain.isFusedChainTail = false;
-        }
-      }
-      slot.fusedChain.fusedChainLength = 0;
+    if (operandViolation != nullptr) {
+      defuseChain(operandViolation);
       break;  // → normalExecution
     }
+    const double* clipMin = slot.fusedChain.fusedChainHasClip ? &slot.fusedChain.fusedChainClipMin : nullptr;
+    const double* clipMax = slot.fusedChain.fusedChainHasClip ? &slot.fusedChain.fusedChainClipMax : nullptr;
+    {
+      // The output takes the chain value's shape and dtype, so the chain value
+      // stands in for it until the output is resolved.
+      const std::string unsupported = sd::ops::helpers::fusedChainUnsupportedReason(
+          primaryInput, primaryInput, fusedOps, chainLength, secondaryInputs, clipMin, clipMax);
+      if (!unsupported.empty()) {
+        defuseChain(unsupported.c_str());
+        break;  // → normalExecution
+      }
+    }
+
+    // 3. Chain outputs are dense C-order in the chain value's shape and dtype.
+    //    The chain value may be a strided view whose strides do not describe a
+    //    fresh buffer of its length.
+    std::vector<LongType> outputDims(primaryInput->shapeOf(), primaryInput->shapeOf() + primaryInput->rankOf());
+    const bool outputEmpty = primaryInput->isEmpty();
+    LongType* outputShapeInfo =
+        outputEmpty
+            ? ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(primaryInput->dataType(), outputDims)
+            : ConstantShapeHelper::getInstance().createShapeInfo(primaryInput->dataType(), 'c', outputDims);
+    auto matchesChainOutput = [&](NDArray* array) {
+      return array->isEmpty() == outputEmpty && shape::equalsSoft(array->shapeInfo(), outputShapeInfo) &&
+             array->dataType() == primaryInput->dataType();
+    };
 
     // 4. Allocate/reuse output for the LAST chain slot
-    int lastSlotIdx = slot.fusedChain.fusedChainSlots[slot.fusedChain.fusedChainLength - 1];
-    int lastOutputSlotIdx = slots_[lastSlotIdx].wiring.outputSlotIndices[0];
+    const int lastSlotIdx = slot.fusedChain.fusedChainSlots[chainLength - 1];
+    if (lastSlotIdx < 0 || lastSlotIdx >= numSlots_ || slots_[lastSlotIdx].wiring.numOutputs < 1) {
+      DSP_DIAG(EXECUTE, "invalid fused chain tail slot %d for head step=%d", lastSlotIdx, stepIdx);
+      return Status::BAD_INPUT;
+    }
+    const int lastOutputSlotIdx = slots_[lastSlotIdx].wiring.outputSlotIndices[0];
 
     NDArray* output = nullptr;
     if (lastOutputSlotIdx >= 0 && lastOutputSlotIdx < totalOutputSlots_) {
       output = outputSlots_[lastOutputSlotIdx];
+      if (output != nullptr && !output->isEmpty()) {
+        // Same buffer checks as any reused slot output: a closed buffer is a
+        // lifetime bug, and during warmup a buffer left on another segment's
+        // device is replaced.
+        output = validateReusableSlotArray(lastOutputSlotIdx, output, "fused-chain-output");
+      }
         if (output != nullptr) {
-          if (!shape::equalsSoft(output->shapeInfo(), outputShapeInfo) ||
-              ArrayOptions::dataType(output->shapeInfo()) != ArrayOptions::dataType(outputShapeInfo)) {
+          if (!matchesChainOutput(output)) {
             // Transitively check the head slot AND all chain slots for any
             // external input or isDynamicShape upstream. The BFS helper walks
             // the full dependency graph so it catches chains like:
