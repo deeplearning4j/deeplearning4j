@@ -5767,8 +5767,9 @@ public class GenerationPipeline implements AutoCloseable {
     }
 
     /**
-     * Derive GDN state shape [1, H, D_k, D_v] from a GatedDeltaRule op.
-     * Walks Q and V input chains backward through reshapes to find the constant H/D values.
+     * Derive GDN state shape [1, H_v, D_k, D_v] from a GatedDeltaRule op: value heads and
+     * D_v from V, D_k from Q. Walks Q and V input chains backward through reshapes to find
+     * the constant H/D values.
      */
     private static long[] deriveGdnStateShapeFromOp(SameDiff sd, DifferentialFunction op, String stateName) {
         String[] inputNames = sd.getInputsForOp(op);
@@ -5777,7 +5778,9 @@ public class GenerationPipeline implements AutoCloseable {
         long[] qDims = resolveReshapeHeadDims(sd, inputNames[0]);
         long[] vDims = resolveReshapeHeadDims(sd, inputNames[2]);
         if (qDims != null && vDims != null) {
-            return new long[]{1, qDims[0], qDims[1], vDims[1]};
+            // The state has one [D_k, D_v] matrix per VALUE head; Q/K may carry fewer
+            // (grouped) heads, shared by consecutive value heads.
+            return new long[]{1, vDims[0], qDims[1], vDims[1]};
         }
         log.warn("[state-shape] Could not resolve Q/V dims for GDN state '{}'", stateName);
         return null;

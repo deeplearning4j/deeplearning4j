@@ -182,7 +182,7 @@ public class TestQwenNvfp4WindowParity {
             Map<String, String> stages = new LinkedHashMap<>();
             stages.put("input", x.name());
             String[] names = {"block_rms", "gdn_qkv_0", "gdn_conv_0", "gdn_q_0", "gdn_k_0", "gdn_v_0",
-                    "gdn_q_grouped_0", "gdn_k_grouped_0", "gdn_q_normsq_0", "gdn_k_normsq_0",
+                    "gdn_q_normsq_0", "gdn_k_normsq_0",
                     "gdn_q_norm_cast_0", "gdn_k_norm_cast_0", "gdn_q_l2norm_0", "gdn_k_l2norm_0",
                     "gdn_beta_proj_0_accum", "gdn_beta_proj_0", "gdn_beta_0",
                     "gdn_alpha_proj_0_accum", "gdn_alpha_proj_0", "gdn_a_plus_bias_0", "gdn_softplus_0"};

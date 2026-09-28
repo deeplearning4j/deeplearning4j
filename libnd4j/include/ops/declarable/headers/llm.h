@@ -739,9 +739,10 @@ DECLARE_CUSTOM_OP(kv_cache_dequantize, 2, 1, false, 0, 1);
  *   output_t = S_t^T * q_t
  *
  * Input:
- *   0: Q [B, L, H, D_k] - query
- *   1: K [B, L, H, D_k] - key (L2-normalized)
- *   2: V [B, L, H, D_v] - value
+ *   0: Q [B, L, H_qk, D_k] - query
+ *   1: K [B, L, H_qk, D_k] - key (L2-normalized)
+ *   2: V [B, L, H, D_v] - value. H must be a multiple of H_qk: value head h reads
+ *      Q/K head h / (H / H_qk) (grouped heads, as repeat_interleave of Q/K).
  *   3: beta [B, L, H] - per-step learning rate
  *   4: gate [B, L, H] - decay gate (pre-exp)
  *   5: state_in [B, H, D_k, D_v] - previous recurrent state (optional, zeros if absent)

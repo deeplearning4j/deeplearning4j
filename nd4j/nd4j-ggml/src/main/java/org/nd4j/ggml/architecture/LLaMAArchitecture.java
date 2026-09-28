@@ -991,20 +991,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
         k = GGMLDTypePolicy.castForAccumulation(k, "gdn_k_compute_" + layerIdx);
         v = GGMLDTypePolicy.castForAccumulation(v, "gdn_v_compute_" + layerIdx);
 
-        // 5c. Repeat each key head consecutively across its value-head group, then fold
-        // [keyHeads, group] into valueHeads. Do not tile the entire head sequence. The
-        // normalization, scaling and casts above act per element or per head vector, so
-        // applying them before the repeat gives the same values on a third of the heads.
-        if (numKeyHeads != numGdnHeads) {
-            int groups = numGdnHeads / numKeyHeads;
-            SDVariable groupedShape = sd.stack("gdn_grouped_head_shape_" + layerIdx, 0,
-                    batchDim, seqDim, sd.constant(Nd4j.scalar((long) numGdnHeads)),
-                    sd.constant(Nd4j.scalar((long) headDimQK)));
-            q = sd.reshape("gdn_q_grouped_" + layerIdx,
-                    sd.tile(sd.expandDims(q, 3), 1, 1, 1, groups, 1), groupedShape);
-            k = sd.reshape("gdn_k_grouped_" + layerIdx,
-                    sd.tile(sd.expandDims(k, 3), 1, 1, 1, groups, 1), groupedShape);
-        }
+        // 5c. Q/K keep their key-head count: gated_delta_rule reads Q/K head h / group
+        // for value head h (grouped heads), so no repeat is materialized.
 
         // 6. Compute beta (update gate): sigmoid(input @ Wbeta^T) -> [B, L, H]
         // Reference: beta = sigmoid(in_proj_b(x))  - NO dt_bias added here

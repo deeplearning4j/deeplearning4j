@@ -69,7 +69,9 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
 
     const auto B = Q->sizeAt(0);
     const auto L = Q->sizeAt(1);
-    const auto H = Q->sizeAt(2);
+    const auto H = V->sizeAt(2);
+    // Q/K may carry fewer heads, each shared by qkGroup consecutive value heads.
+    const LongType qkGroup = H / Q->sizeAt(2);
     const auto D_k = Q->sizeAt(3);
     const auto D_v = V->sizeAt(3);
     LongType effectiveLen = L;
@@ -142,7 +144,7 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
                     // Pre-load k vector in the promoted aggregate type.
                     // D_k is typically 64-128; GDR_MAX_HEAD_DIM covers all known models.
                     AccT kLocal[GDR_MAX_HEAD_DIM];
-                    const LongType kBase = b * kS0 + t * kS1 + h * kS2;
+                    const LongType kBase = b * kS0 + t * kS1 + (h / qkGroup) * kS2;
                     for (LongType dk = 0; dk < D_k; ++dk)
                         kLocal[dk] = static_cast<AccT>(kBuf[kBase + dk * kS3]);
 
@@ -169,7 +171,7 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
                 }
 
                 AccT qLocal[GDR_MAX_HEAD_DIM];
-                const LongType qBase = b * qS0 + t * qS1 + h * qS2;
+                const LongType qBase = b * qS0 + t * qS1 + (h / qkGroup) * qS2;
                 for (LongType dk = 0; dk < D_k; ++dk)
                     qLocal[dk] = static_cast<AccT>(qBuf[qBase + dk * qS3]);
 
@@ -223,7 +225,9 @@ static void gatedDeltaRuleChunked_(LaunchContext* context, NDArray* Q, NDArray* 
 
     const auto B   = Q->sizeAt(0);
     const auto L   = Q->sizeAt(1);
-    const auto H   = Q->sizeAt(2);
+    const auto H   = V->sizeAt(2);
+    // Q/K may carry fewer heads, each shared by qkGroup consecutive value heads.
+    const LongType qkGroup = H / Q->sizeAt(2);
     const auto D_k = Q->sizeAt(3);
     const auto D_v = V->sizeAt(3);
 
@@ -330,10 +334,10 @@ static void gatedDeltaRuleChunked_(LaunchContext* context, NDArray* Q, NDArray* 
                     }
                 }
                 for (LongType i = 0; i < tt; ++i) {
-                    const LongType kBase_i = b * kS0 + (t0 + i) * kS1 + h * kS2;
-                    const LongType qBase_i = b * qS0 + (t0 + i) * qS1 + h * qS2;
+                    const LongType kBase_i = b * kS0 + (t0 + i) * kS1 + (h / qkGroup) * kS2;
+                    const LongType qBase_i = b * qS0 + (t0 + i) * qS1 + (h / qkGroup) * qS2;
                     for (LongType j = 0; j <= i; ++j) {
-                        const LongType kBase_j = b * kS0 + (t0 + j) * kS1 + h * kS2;
+                        const LongType kBase_j = b * kS0 + (t0 + j) * kS1 + (h / qkGroup) * kS2;
                         AccT dotKK = static_cast<AccT>(0);
                         AccT dotQK = static_cast<AccT>(0);
                         // Match CUDA's staged 32-value tile topology exactly:
@@ -393,7 +397,7 @@ static void gatedDeltaRuleChunked_(LaunchContext* context, NDArray* Q, NDArray* 
                         const AccT x_ij  = A[i * C + j];
                         const AccT bg_j  = bg[j];
                         const AccT bet_j = bet[j];
-                        const LongType kBase_j = b * kS0 + (t0 + j) * kS1 + h * kS2;
+                        const LongType kBase_j = b * kS0 + (t0 + j) * kS1 + (h / qkGroup) * kS2;
                         const LongType vBase_j = b * vS0 + (t0 + j) * vS1 + h * vS2;
                         for (LongType dk = 0; dk < D_k; ++dk) {
                             Kt[i * D_k + dk] = reproducible::add<AccT>(
@@ -431,7 +435,7 @@ static void gatedDeltaRuleChunked_(LaunchContext* context, NDArray* Q, NDArray* 
                         }
                     }
                     if (i < tt) {
-                        const LongType qBase_i = b * qS0 + (t0 + i) * qS1 + h * qS2;
+                        const LongType qBase_i = b * qS0 + (t0 + i) * qS1 + (h / qkGroup) * qS2;
                         for (LongType dk = 0; dk < D_k; ++dk) {
                             Qeff[i * D_k + dk] = reproducible::add<AccT>(
                                 Qeff[i * D_k + dk], reproducible::multiply<AccT>(
@@ -479,7 +483,7 @@ static void gatedDeltaRuleChunked_(LaunchContext* context, NDArray* Q, NDArray* 
                         const AccT r_i = reproducible::exp<AccT>(
                             reproducible::subtract<AccT>(lcg_last, lcg[i]));
                         const AccT u_iv = U[i * D_v + dv];
-                        const LongType kBase_i = b * kS0 + (t0 + i) * kS1 + h * kS2;
+                        const LongType kBase_i = b * kS0 + (t0 + i) * kS1 + (h / qkGroup) * kS2;
                         for (LongType dk = 0; dk < D_k; ++dk) {
                             sRow[dk] = reproducible::add<AccT>(
                                 sRow[dk], reproducible::multiply<AccT>(
@@ -527,7 +531,7 @@ void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, ND
         return a < b + bBytes && b < a + aBytes;
     };
     const size_t stateBytes =
-        static_cast<size_t>(Q->sizeAt(0)) * Q->sizeAt(2) * Q->sizeAt(3) * V->sizeAt(3)
+        static_cast<size_t>(Q->sizeAt(0)) * V->sizeAt(2) * Q->sizeAt(3) * V->sizeAt(3)
             * stateOut->sizeOfT();
     const size_t outputBytes = static_cast<size_t>(output->lengthOf()) * output->sizeOfT();
     // Prefix layout: time-leading flat [W, B, H, D_k, D_v] C-order; slot t is the
@@ -537,7 +541,7 @@ void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, ND
             THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut must have rank 5 [W,B,H,D_k,D_v]");
         }
         const size_t slotBytes = static_cast<size_t>(stateOut->lengthOf()) * stateOut->sizeOfT();
-        if (prefixOut->sizeAt(1) != Q->sizeAt(0) || prefixOut->sizeAt(2) != Q->sizeAt(2)
+        if (prefixOut->sizeAt(1) != Q->sizeAt(0) || prefixOut->sizeAt(2) != V->sizeAt(2)
                 || prefixOut->sizeAt(3) != Q->sizeAt(3) || prefixOut->sizeAt(4) != V->sizeAt(3)
                 || prefixOut->sizeAt(0) < Q->sizeAt(1)
                 || static_cast<size_t>(prefixOut->lengthOf()) * prefixOut->sizeOfT()

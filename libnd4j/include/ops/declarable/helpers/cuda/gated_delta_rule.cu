@@ -91,7 +91,7 @@ static SD_DEVICE void gatedDeltaRuleStep(
     T* __restrict__ out, T* __restrict__ prefixOut, const LongType prefixW,
     const LongType b, const LongType h, const LongType B, const LongType H,
     const LongType D_k, const LongType D_v, const LongType t, const bool updateState,
-    const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
+    const LongType qkGroup, const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
     const LongType kS0, const LongType kS1, const LongType kS2, const LongType kS3,
     const LongType vS0, const LongType vS1, const LongType vS2, const LongType vS3,
     const LongType bS0, const LongType bS1, const LongType bS2,
@@ -107,8 +107,8 @@ static SD_DEVICE void gatedDeltaRuleStep(
     }
     // The step's key and query are read by every column: stage them once, in the
     // accumulator type the arithmetic converts them to anyway.
-    const LongType kBase = b * kS0 + t * kS1 + h * kS2;
-    const LongType qBase = b * qS0 + t * qS1 + h * qS2;
+    const LongType kBase = b * kS0 + t * kS1 + (h / qkGroup) * kS2;
+    const LongType qBase = b * qS0 + t * qS1 + (h / qkGroup) * qS2;
     for (LongType dk = threadIdx.x; dk < D_k; dk += blockDim.x) {
         if (updateState) kShared[dk] = static_cast<AccT>(k[kBase + dk * kS3]);
         qShared[dk] = static_cast<AccT>(q[qBase + dk * qS3]);
@@ -183,7 +183,7 @@ SD_KERNEL void gatedDeltaRuleSequenceKernel(
     const LongType prefixW,
     const LongType B, const LongType L, const LongType H,
     const LongType D_k, const LongType D_v, const LongType columnsPerBlock,
-    const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
+    const LongType qkGroup, const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
     const LongType kS0, const LongType kS1, const LongType kS2, const LongType kS3,
     const LongType vS0, const LongType vS1, const LongType vS2, const LongType vS3,
     const LongType bS0, const LongType bS1, const LongType bS2,
@@ -239,7 +239,7 @@ SD_KERNEL void gatedDeltaRuleSequenceKernel(
                               expGateShared, kShared, qShared, out,
                               t + 1 < effectiveLen ? prefixOut : nullptr, prefixW, b, h, B, H, D_k, D_v, t,
                               t < effectiveLen,
-                              qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3, vS0, vS1, vS2, vS3,
+                              qkGroup, qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3, vS0, vS1, vS2, vS3,
                               bS0, bS1, bS2, gS0, gS1, gS2, oS0, oS1, oS2, oS3);
     }
 
@@ -291,7 +291,7 @@ static SD_DEVICE void gatedDeltaRuleSplitStep(
     T* __restrict__ out, T* __restrict__ prefixOut, const LongType prefixW,
     const LongType b, const LongType h, const LongType B, const LongType H,
     const LongType D_k, const LongType D_v, const LongType t, const bool updateState,
-    const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
+    const LongType qkGroup, const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
     const LongType kS0, const LongType kS1, const LongType kS2, const LongType kS3,
     const LongType vS0, const LongType vS1, const LongType vS2, const LongType vS3,
     const LongType bS0, const LongType bS1, const LongType bS2,
@@ -305,8 +305,8 @@ static SD_DEVICE void gatedDeltaRuleSplitStep(
                 static_cast<AccT>(gateArr[b * gS0 + t * gS1 + h * gS2]))
             : static_cast<AccT>(1);
     }
-    const LongType kBase = b * kS0 + t * kS1 + h * kS2;
-    const LongType qBase = b * qS0 + t * qS1 + h * qS2;
+    const LongType kBase = b * kS0 + t * kS1 + (h / qkGroup) * kS2;
+    const LongType qBase = b * qS0 + t * qS1 + (h / qkGroup) * qS2;
     for (LongType dk = threadIdx.x; dk < D_k; dk += blockDim.x) {
         if (updateState) kShared[dk] = static_cast<AccT>(k[kBase + dk * kS3]);
         qShared[dk] = static_cast<AccT>(q[qBase + dk * qS3]);
@@ -363,7 +363,7 @@ SD_KERNEL void gatedDeltaRuleSplitSequenceKernel(
     const LongType prefixW,
     const LongType B, const LongType L, const LongType H,
     const LongType D_k, const LongType D_v, const LongType columnsPerBlock,
-    const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
+    const LongType qkGroup, const LongType qS0, const LongType qS1, const LongType qS2, const LongType qS3,
     const LongType kS0, const LongType kS1, const LongType kS2, const LongType kS3,
     const LongType vS0, const LongType vS1, const LongType vS2, const LongType vS3,
     const LongType bS0, const LongType bS1, const LongType bS2,
@@ -416,7 +416,7 @@ SD_KERNEL void gatedDeltaRuleSplitSequenceKernel(
                                    expGateShared, kShared, qShared, out,
                                    t + 1 < effectiveLen ? prefixOut : nullptr, prefixW,
                                    b, h, B, H, D_k, D_v, t, t < effectiveLen,
-                                   qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3, vS0, vS1, vS2, vS3,
+                                   qkGroup, qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3, vS0, vS1, vS2, vS3,
                                    bS0, bS1, bS2, gS0, gS1, gS2, oS0, oS1, oS2, oS3);
     }
 
@@ -444,7 +444,7 @@ static void launchGatedDeltaRule(
     const T* stateIn, T* stateOut, T* out,
     T* prefixOut, LongType prefixW,
     LongType B, LongType L, LongType H, LongType D_k, LongType D_v,
-    LongType qS0, LongType qS1, LongType qS2, LongType qS3,
+    LongType qkGroup, LongType qS0, LongType qS1, LongType qS2, LongType qS3,
     LongType kS0, LongType kS1, LongType kS2, LongType kS3,
     LongType vS0, LongType vS1, LongType vS2, LongType vS3,
     LongType bS0, LongType bS1, LongType bS2,
@@ -484,7 +484,7 @@ static void launchGatedDeltaRule(
                 q, k, v, betaArr, gateArr, actualLen, stateIn, stateOut, out,
                 prefixOut, prefixW,
                 B, L, H, D_k, D_v, columns,
-                qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3,
+                qkGroup, qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3,
                 vS0, vS1, vS2, vS3, bS0, bS1, bS2,
                 gS0, gS1, gS2, oS0, oS1, oS2, oS3);
             DebugHelper::checkGlobalErrorCode("gatedDeltaRuleSplitSequenceKernel failed");
@@ -515,7 +515,7 @@ static void launchGatedDeltaRule(
         q, k, v, betaArr, gateArr, actualLen, stateIn, stateOut, out,
         prefixOut, prefixW,
         B, L, H, D_k, D_v, columnsPerBlock,
-        qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3,
+        qkGroup, qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3,
         vS0, vS1, vS2, vS3, bS0, bS1, bS2,
         gS0, gS1, gS2, oS0, oS1, oS2, oS3);
     DebugHelper::checkGlobalErrorCode("gatedDeltaRuleSequenceKernel failed");
@@ -570,7 +570,7 @@ SD_KERNEL void gdnChunkIntraKernel(
     typename simdOps::AggregateType<T>::type* __restrict__ lcgOut,
     LongType B, LongType L, LongType H, LongType Dk, LongType Dv,
     LongType nC,
-    LongType qS0, LongType qS1, LongType qS2, LongType qS3,
+    LongType qkGroup, LongType qS0, LongType qS1, LongType qS2, LongType qS3,
     LongType kS0, LongType kS1, LongType kS2, LongType kS3,
     LongType vS0, LongType vS1, LongType vS2, LongType vS3,
     LongType bS0, LongType bS1, LongType bS2,
@@ -630,8 +630,8 @@ SD_KERNEL void gdnChunkIntraKernel(
     AccT accM[16] = {};
 
     // k/q base pointers for this (b, h)
-    const T* k_bh = k + (LongType)b * kS0 + (LongType)h * kS2;
-    const T* q_bh = q + (LongType)b * qS0 + (LongType)h * qS2;
+    const T* k_bh = k + (LongType)b * kS0 + (LongType)(h / qkGroup) * kS2;
+    const T* q_bh = q + (LongType)b * qS0 + (LongType)(h / qkGroup) * qS2;
 
     for (LongType dt = 0; dt < Dk; dt += 32) {
         const LongType tile_width = min((LongType)32, Dk - dt);
@@ -732,7 +732,7 @@ SD_KERNEL void gdnChunkIntraKernel(
                 for (LongType j = 0; j < (LongType)tt; ++j) {
                     const AccT x_ij = As[(LongType)i * (GDN_CHUNK + 1) + j];
                     const LongType kidx = (LongType)b * kS0 + (LongType)(t0 + (int)j) * kS1
-                                          + (LongType)h * kS2 + d_col * kS3;
+                                          + (LongType)(h / qkGroup) * kS2 + d_col * kS3;
                     aK = reproducible::add<AccT>(
                         aK, reproducible::multiply<AccT>(
                             x_ij, reproducible::multiply<AccT>(
@@ -814,7 +814,7 @@ SD_KERNEL void gdnChunkIntraKernel(
                 AccT qg = static_cast<AccT>(0);
                 if (i < (LongType)tt) {
                     const LongType qidx = (LongType)b * qS0 + (LongType)(t0 + (int)i) * qS1
-                                           + (LongType)h * qS2 + d_col_k * qS3;
+                                           + (LongType)(h / qkGroup) * qS2 + d_col_k * qS3;
                     qg = reproducible::multiply<AccT>(eg_s[i], static_cast<AccT>(q[qidx]));
                 }
                 Qeff[qe_base + i * Dk + d_col_k] =
@@ -840,7 +840,7 @@ SD_KERNEL void gdnChunkScanKernel(
     typename simdOps::AggregateType<T>::type* __restrict__ stateOut,
     T*           __restrict__ y,        // [B,L,H,Dv]
     LongType B, LongType L, LongType H, LongType Dk, LongType Dv,
-    LongType nC,
+    LongType nC, LongType qkGroup,
     LongType kS0, LongType kS1, LongType kS2, LongType kS3,
     LongType yS0, LongType yS1, LongType yS2, LongType yS3)
 {
@@ -935,7 +935,7 @@ SD_KERNEL void gdnChunkScanKernel(
                 AccT keyValue = static_cast<AccT>(0);
                 if (i < tt && (LongType)dd < tile_w) {
                     const LongType kidx = (LongType)b * kS0 + (LongType)(t0 + i) * kS1
-                                         + (LongType)h * kS2 + (dt + dd) * kS3;
+                                         + (LongType)(h / qkGroup) * kS2 + (dt + dd) * kS3;
                     keyValue = static_cast<AccT>(k[kidx]);
                 }
                 kst_s[i * (128 + 4) + dd] = keyValue;
@@ -979,7 +979,7 @@ static void launchGatedDeltaRuleChunked(
     typename simdOps::AggregateType<T>::type* workingStateOut,
     T* out,
     LongType B, LongType L, LongType H, LongType Dk, LongType Dv,
-    LongType qS0, LongType qS1, LongType qS2, LongType qS3,
+    LongType qkGroup, LongType qS0, LongType qS1, LongType qS2, LongType qS3,
     LongType kS0, LongType kS1, LongType kS2, LongType kS3,
     LongType vS0, LongType vS1, LongType vS2, LongType vS3,
     LongType bS0, LongType bS1, LongType bS2,
@@ -1023,7 +1023,7 @@ static void launchGatedDeltaRuleChunked(
         q, k, v, betaArr, gateArr,
         d_Kt, d_U0, d_MU0, d_Qeff, d_lcg,
         B, L, H, Dk, Dv, nC,
-        qS0, qS1, qS2, qS3,
+        qkGroup, qS0, qS1, qS2, qS3,
         kS0, kS1, kS2, kS3,
         vS0, vS1, vS2, vS3,
         bS0, bS1, bS2,
@@ -1049,7 +1049,7 @@ static void launchGatedDeltaRuleChunked(
     gdnChunkScanKernel<T><<<gridB, 256, smemB, stream>>>(
         k, d_Kt, d_U0, d_MU0, d_Qeff, d_lcg,
         workingStateIn, workingStateOut, out,
-        B, L, H, Dk, Dv, nC,
+        B, L, H, Dk, Dv, nC, qkGroup,
         kS0, kS1, kS2, kS3,
         oS0, oS1, oS2, oS3);
     DebugHelper::checkGlobalErrorCode("gdnChunkScanKernel failed");
@@ -1069,9 +1069,12 @@ static void gatedDeltaRuleFromArrays(
                      NDArray* prefixOut) {
     using AccT = typename simdOps::AggregateType<T>::type;
 
+    // H is the value-head count; Q/K may carry fewer (grouped) heads, each shared
+    // by qkGroup consecutive value heads (validated by the op).
     const auto B = Q->sizeAt(0);
     const auto L = Q->sizeAt(1);
-    const auto H = Q->sizeAt(2);
+    const auto H = V->sizeAt(2);
+    const LongType qkGroup = H / Q->sizeAt(2);
     const auto D_k = Q->sizeAt(3);
     const auto D_v = V->sizeAt(3);
 
@@ -1218,7 +1221,7 @@ static void gatedDeltaRuleFromArrays(
             workingState, workingStateOut,
             reinterpret_cast<T*>(output->specialBuffer()),
             B, L, H, D_k, D_v,
-            Q->strideAt(0), Q->strideAt(1), Q->strideAt(2), Q->strideAt(3),
+            qkGroup, Q->strideAt(0), Q->strideAt(1), Q->strideAt(2), Q->strideAt(3),
             K->strideAt(0), K->strideAt(1), K->strideAt(2), K->strideAt(3),
             V->strideAt(0), V->strideAt(1), V->strideAt(2), V->strideAt(3),
             beta->strideAt(0), beta->strideAt(1), beta->strideAt(2),
@@ -1246,7 +1249,7 @@ static void gatedDeltaRuleFromArrays(
             prefixOut != nullptr ? reinterpret_cast<T*>(prefixOut->specialBuffer()) : nullptr,
             prefixOut != nullptr ? prefixOut->sizeAt(0) : static_cast<LongType>(0),
             B, L, H, D_k, D_v,
-            Q->strideAt(0), Q->strideAt(1), Q->strideAt(2), Q->strideAt(3),
+            qkGroup, Q->strideAt(0), Q->strideAt(1), Q->strideAt(2), Q->strideAt(3),
             K->strideAt(0), K->strideAt(1), K->strideAt(2), K->strideAt(3),
             V->strideAt(0), V->strideAt(1), V->strideAt(2), V->strideAt(3),
             beta->strideAt(0), beta->strideAt(1), beta->strideAt(2),

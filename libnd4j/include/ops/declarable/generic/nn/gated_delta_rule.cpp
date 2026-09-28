@@ -71,13 +71,25 @@ CUSTOM_OP_IMPL(gated_delta_rule, 5, 2, false, 0, 0) {
                  0, "gated_delta_rule: Q, K, V, beta, and gate must have the same floating dtype");
     REQUIRE_TRUE(stateIn == nullptr || stateIn->dataType() == dataType, 0,
                  "gated_delta_rule: stateIn dtype must match Q dtype");
+    // Q and K may carry fewer heads than V: each Q/K head is shared by
+    // H_v / H_qk consecutive value heads (grouped heads, as repeat_interleave).
+    REQUIRE_TRUE(Q->rankOf() == 4 && V->rankOf() == 4 && K->isSameShape(Q) &&
+                     V->sizeAt(0) == Q->sizeAt(0) && V->sizeAt(1) == Q->sizeAt(1) &&
+                     Q->sizeAt(2) > 0 && V->sizeAt(2) % Q->sizeAt(2) == 0, 0,
+                 "gated_delta_rule: K must match Q [B,L,H_qk,D_k] and V [B,L,H_v,D_v] needs H_v % H_qk == 0");
+    REQUIRE_TRUE(beta->rankOf() == 3 && gate->rankOf() == 3 &&
+                     beta->sizeAt(2) == V->sizeAt(2) && gate->sizeAt(2) == V->sizeAt(2), 0,
+                 "gated_delta_rule: beta and gate must be [B,L,H_v]");
     REQUIRE_TRUE(stateIn == nullptr ||
                      (stateIn->rankOf() == 4 &&
                       stateIn->sizeAt(0) == Q->sizeAt(0) &&
-                      stateIn->sizeAt(1) == Q->sizeAt(2) &&
+                      stateIn->sizeAt(1) == V->sizeAt(2) &&
                       stateIn->sizeAt(2) == Q->sizeAt(3) &&
                       stateIn->sizeAt(3) == V->sizeAt(3)), 0,
-                 "gated_delta_rule: stateIn must have shape [B,H,D_k,D_v]");
+                 "gated_delta_rule: stateIn must have shape [B,H,D_k,D_v] = [%lld,%lld,%lld,%lld], got %s",
+                 (long long)Q->sizeAt(0), (long long)V->sizeAt(2), (long long)Q->sizeAt(3),
+                 (long long)V->sizeAt(3),
+                 stateIn == nullptr ? "null" : ShapeUtils::shapeAsString(stateIn).c_str());
 
     helpers::gatedDeltaRule(block.launchContext(), Q, K, V, beta, gate, stateIn, actualLen,
                             output, stateOut);
@@ -100,12 +112,12 @@ DECLARE_TYPES(gated_delta_rule) {
 }
 
 DECLARE_SHAPE_FN(gated_delta_rule) {
-    auto qShape = inputShape->at(0);  // [B, L, H, D_k]
+    auto qShape = inputShape->at(0);  // [B, L, H_qk, D_k]
     auto vShape = inputShape->at(2);  // [B, L, H, D_v]
 
     auto B = shape::sizeAt(qShape, 0);
     auto L = shape::sizeAt(qShape, 1);
-    auto H = shape::sizeAt(qShape, 2);
+    auto H = shape::sizeAt(vShape, 2);  // value heads; Q/K heads may be grouped
     auto D_k = shape::sizeAt(qShape, 3);
     auto D_v = shape::sizeAt(vShape, 3);
 
@@ -164,16 +176,28 @@ CUSTOM_OP_IMPL(gated_delta_rule_with_prefix, 5, 3, false, 0, 0) {
                  0, "gated_delta_rule_with_prefix: Q, K, V, beta, and gate must have the same floating dtype");
     REQUIRE_TRUE(stateIn == nullptr || stateIn->dataType() == dataType, 0,
                  "gated_delta_rule_with_prefix: stateIn dtype must match Q dtype");
+    // Q and K may carry fewer heads than V: each Q/K head is shared by
+    // H_v / H_qk consecutive value heads (grouped heads, as repeat_interleave).
+    REQUIRE_TRUE(Q->rankOf() == 4 && V->rankOf() == 4 && K->isSameShape(Q) &&
+                     V->sizeAt(0) == Q->sizeAt(0) && V->sizeAt(1) == Q->sizeAt(1) &&
+                     Q->sizeAt(2) > 0 && V->sizeAt(2) % Q->sizeAt(2) == 0, 0,
+                 "gated_delta_rule_with_prefix: K must match Q [B,L,H_qk,D_k] and V [B,L,H_v,D_v] needs H_v % H_qk == 0");
+    REQUIRE_TRUE(beta->rankOf() == 3 && gate->rankOf() == 3 &&
+                     beta->sizeAt(2) == V->sizeAt(2) && gate->sizeAt(2) == V->sizeAt(2), 0,
+                 "gated_delta_rule_with_prefix: beta and gate must be [B,L,H_v]");
     REQUIRE_TRUE(stateIn == nullptr ||
                      (stateIn->rankOf() == 4 &&
                       stateIn->sizeAt(0) == Q->sizeAt(0) &&
-                      stateIn->sizeAt(1) == Q->sizeAt(2) &&
+                      stateIn->sizeAt(1) == V->sizeAt(2) &&
                       stateIn->sizeAt(2) == Q->sizeAt(3) &&
                       stateIn->sizeAt(3) == V->sizeAt(3)), 0,
-                 "gated_delta_rule_with_prefix: stateIn must have shape [B,H,D_k,D_v]");
+                 "gated_delta_rule_with_prefix: stateIn must have shape [B,H,D_k,D_v] = [%lld,%lld,%lld,%lld], got %s",
+                 (long long)Q->sizeAt(0), (long long)V->sizeAt(2), (long long)Q->sizeAt(3),
+                 (long long)V->sizeAt(3),
+                 stateIn == nullptr ? "null" : ShapeUtils::shapeAsString(stateIn).c_str());
     REQUIRE_TRUE(prefixOut->rankOf() == 5 &&
                      prefixOut->sizeAt(1) == Q->sizeAt(0) &&
-                     prefixOut->sizeAt(2) == Q->sizeAt(2) &&
+                     prefixOut->sizeAt(2) == V->sizeAt(2) &&
                      prefixOut->sizeAt(3) == Q->sizeAt(3) &&
                      prefixOut->sizeAt(4) == V->sizeAt(3), 0,
                  "gated_delta_rule_with_prefix: prefixOut must have shape [W,B,H,D_k,D_v]");
@@ -196,12 +220,12 @@ DECLARE_TYPES(gated_delta_rule_with_prefix) {
 }
 
 DECLARE_SHAPE_FN(gated_delta_rule_with_prefix) {
-    auto qShape = inputShape->at(0);  // [B, L, H, D_k]
+    auto qShape = inputShape->at(0);  // [B, L, H_qk, D_k]
     auto vShape = inputShape->at(2);  // [B, L, H, D_v]
 
     auto B = shape::sizeAt(qShape, 0);
     auto L = shape::sizeAt(qShape, 1);
-    auto H = shape::sizeAt(qShape, 2);
+    auto H = shape::sizeAt(vShape, 2);  // value heads; Q/K heads may be grouped
     auto D_k = shape::sizeAt(qShape, 3);
     auto D_v = shape::sizeAt(vShape, 3);
 
