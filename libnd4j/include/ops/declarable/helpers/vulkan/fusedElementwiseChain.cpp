@@ -30,14 +30,12 @@ void fusedElementwiseChain(NDArray* input, NDArray* output,
                            const FusedElemOp* ops, int numOps,
                            NDArray** secondaryInputs, const double* clipMin,
                            const double* clipMax, LaunchContext* context) {
-  if (input == nullptr || output == nullptr || ops == nullptr || numOps <= 0) {
-    return;
+  const std::string reason = fusedChainUnsupportedReason(
+      input, output, ops, numOps, secondaryInputs, clipMin, clipMax);
+  if (!reason.empty()) {
+    THROW_EXCEPTION(("fused_elementwise_chain: " + reason).c_str());
   }
-  if (numOps > 8) {
-    THROW_EXCEPTION(
-        "fusedElementwiseChain: chain length exceeds the fused-kernel maximum "
-        "of 8 ops; the caller must split the chain into multiple fused calls.");
-  }
+  if (output->isEmpty()) return;
 
   std::vector<NDArray*> inputs;
   inputs.reserve(static_cast<size_t>(numOps) + 1);

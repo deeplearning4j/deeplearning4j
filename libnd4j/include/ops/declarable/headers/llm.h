@@ -531,10 +531,27 @@ DECLARE_CUSTOM_OP(mean_square_bp, 2, 1, false, 0, 0);
  * tArgs[0]: clipMin (required when the chain has FUSED_CLIP=30)
  * tArgs[1]: clipMax (required when the chain has FUSED_CLIP=30)
  *
- * Output shape = input 0 shape.
+ * Output shape = input 0 shape. An empty input 0 gives an empty output; an empty secondary on a
+ * non-empty input 0 fails, since it has no value for any output element.
  */
 #if NOT_EXCLUDED(OP_fused_elementwise_chain)
-DECLARE_CUSTOM_OP(fused_elementwise_chain, 1, 1, false, 0, 1);
+// Expanded from DECLARE_CUSTOM_OP to override emptyHandling() = EMPTY_EXECUTE: the default
+// EMPTY_SKIP returns OK for any empty input without running the op, which would leave a
+// non-empty output unwritten when only a secondary is empty. The op validates its operands and
+// returns early for an empty output.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT fused_elementwise_chain : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+
+ public:
+  fused_elementwise_chain();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(fused_elementwise_chain)
 #endif
 
 /**
