@@ -75,7 +75,6 @@ SD_HOST  SD_INLINE void unsetPropertyBitForFlags(sd::LongType& flagStorage, Long
 }
 
 SD_HOST SD_INLINE const char *ArrayOptions::enumerateSetFlagsForFlags(const LongType flagStorage) {
-  int maxFlags = 24;
   int flagsArray[] = {
       ARRAY_SPARSE,
       ARRAY_COMPRESSED,
@@ -84,6 +83,7 @@ SD_HOST SD_INLINE const char *ArrayOptions::enumerateSetFlagsForFlags(const Long
       ARRAY_CSR,
       ARRAY_CSC,
       ARRAY_COO,
+      ARRAY_FLOAT8,
       ARRAY_COMPLEX,
       ARRAY_QUANTIZED,
       ARRAY_HALF,
@@ -112,6 +112,7 @@ SD_HOST SD_INLINE const char *ArrayOptions::enumerateSetFlagsForFlags(const Long
       "ARRAY_CSR",
       "ARRAY_CSC",
       "ARRAY_COO",
+      "ARRAY_FLOAT8",
       "ARRAY_COMPLEX",
       "ARRAY_QUANTIZED",
       "ARRAY_HALF",
@@ -132,6 +133,7 @@ SD_HOST SD_INLINE const char *ArrayOptions::enumerateSetFlagsForFlags(const Long
       "ARRAY_IS_VIEW"
   };
 
+  const int maxFlags = sizeof(flagsArray) / sizeof(flagsArray[0]);
   std::string flags;
   for (int i = 0; i <  maxFlags; i++) {
     if (hasPropertyBitSetForFlags(flagStorage, flagsArray[i])) {
@@ -447,16 +449,13 @@ SD_HOST SD_INLINE bool ArrayOptions::hasPaddedBuffer(const sd::LongType *shapeIn
 }
 
 SD_HOST SD_INLINE sd::LongType ArrayOptions::propertyWithoutDataTypeValue(sd::LongType extra) {
+  // Clear every flag dataTypeValue() decodes, so a later set can never leave a stale type bit
+  // behind (a leftover ARRAY_FLOAT8 outranks ARRAY_CHAR and friends when decoding).
+  const sd::LongType dataTypeFlags[] = DATA_TYPE_FLAGS;
   sd::LongType property = extra;
-  property = property & (~ARRAY_BOOL);
-  property = property & (~ARRAY_HALF);
-  property = property & (~ARRAY_BHALF);
-  property = property & (~ARRAY_FLOAT);
-  property = property & (~ARRAY_DOUBLE);
-  property = property & (~ARRAY_INT);
-  property = property & (~ARRAY_LONG);
-  property = property & (~ARRAY_CHAR);
-  property = property & (~ARRAY_SHORT);
+  for (auto flag : dataTypeFlags) {
+    property = property & (~flag);
+  }
   property = property & (~ARRAY_UNSIGNED);
   return property;
 }
@@ -619,7 +618,7 @@ SD_HOST SD_INLINE void ArrayOptions::setDataType(sd::LongType *shapeInfo, const 
     errorMessage += "setDataType:  Data type set was not correct one. Expected ";
     errorMessage += DataTypeUtils::asString(dataType);
     errorMessage += " but got ";
-    errorMessage += sd::DataTypeUtils::asString(dataType);
+    errorMessage += sd::DataTypeUtils::asString(ArrayOptions::dataType(shapeInfo));
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
@@ -650,7 +649,7 @@ SD_HOST SD_INLINE sd::LongType ArrayOptions::setDataTypeValue(sd::LongType extra
       ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_FLOAT8);
       break;
     case sd::DataType::FLOAT8_E5M2:
-      ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_FLOAT8);
+      ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_FLOAT8 | ARRAY_UNSIGNED);
       break;
     case sd::DataType::HALF:
       ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_HALF);
