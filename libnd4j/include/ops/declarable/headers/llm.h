@@ -514,13 +514,22 @@ DECLARE_CUSTOM_OP(mean_square_bp, 2, 1, false, 0, 0);
 /**
  * Fused element-wise chain: executes a sequence of element-wise ops in a single kernel.
  *
- * Input 0: primary input tensor
- * Inputs 1..N: secondary inputs for binary ops in the chain (one per binary op)
- * iArgs: op codes from FusedElemOp enum (one per op in the chain)
- *   0=add, 1=sub, 2=mul, 3=div, 10=relu, 11=sigmoid, 12=tanh, 13=gelu,
- *   14=exp, 15=log, 16=abs, 17=neg, 18=square, 19=sqrt, 20=swish, 21=silu, 22=mish
- * tArgs[0]: clipMin (optional, for FUSED_CLIP=30)
- * tArgs[1]: clipMax (optional, for FUSED_CLIP=30)
+ * The result equals running the members one by one: each member applies its eager op in the
+ * input's storage type and rounds to it, with the chain value as the member's first operand.
+ *
+ * Input 0: primary input tensor (HALF, BFLOAT16, FLOAT32 or DOUBLE)
+ * Inputs 1..N: secondary inputs, exactly one per binary op in chain order; same dtype as input 0,
+ *   a single element or a right-aligned broadcast into input 0's shape
+ * iArgs: 1..8 op codes from the FusedElemOp enum (helpers/fusedElementwiseChain.h)
+ *   binary: 0=add, 1=sub, 2=mul, 3=div, 31=leaky_relu (the secondary is alpha), 50=min, 51=max,
+ *     52=mod (x - floor(x / y) * y), 53=atan2, 54=floordiv, 55=reverse div, 56=reverse sub,
+ *     57=squared sub, 58=multiply_no_nan, 59=pow
+ *   unary: 10=relu, 11=sigmoid, 12=tanh, 13=gelu, 14=exp, 15=log, 16=abs, 17=neg, 18=square,
+ *     19=sqrt, 20=swish, 21=silu, 22=mish, 23=rsqrt, 24=reciprocal, 25=sign, 26=erf, 27=erfc,
+ *     28=log1p, 29=ceil, 30=clip, 32=floor, 33=round, 34=sin, 35=cos, 36=elu (alpha 1),
+ *     37=selu, 38=softplus, 39=softsign, 40=hard_sigmoid, 41=hardtanh, 42=relu6
+ * tArgs[0]: clipMin (required when the chain has FUSED_CLIP=30)
+ * tArgs[1]: clipMax (required when the chain has FUSED_CLIP=30)
  *
  * Output shape = input 0 shape.
  */

@@ -37,39 +37,41 @@ CUSTOM_OP_IMPL(fused_elementwise_chain, 1, 1, false, 0, 1) {
     auto output = OUTPUT_VARIABLE(0);
 
     // iArgs contain the FusedElemOp codes for the chain
-    int numOps = block.getIArguments()->size();
-    if (numOps <= 0) {
-        return Status::BAD_ARGUMENTS;
-    }
-    if (numOps > 8) {
-        numOps = 8;  // Match helper limit
-    }
+    const int numOps = static_cast<int>(block.getIArguments()->size());
+    REQUIRE_TRUE(numOps >= 1 && numOps <= helpers::FUSED_CHAIN_MAX_OPS, 0,
+                 "fused_elementwise_chain: chain length %i is outside 1..%i", numOps,
+                 helpers::FUSED_CHAIN_MAX_OPS);
 
-    // Convert iArgs to FusedElemOp array
-    helpers::FusedElemOp ops[8];
+    helpers::FusedElemOp ops[helpers::FUSED_CHAIN_MAX_OPS];
+    int numBinary = 0;
+    bool hasClip = false;
     for (int i = 0; i < numOps; i++) {
-        ops[i] = static_cast<helpers::FusedElemOp>(INT_ARG(i));
+        const LongType code = INT_ARG(i);
+        REQUIRE_TRUE(code >= 0 && code <= 255 && helpers::isImplementedFusedOp(static_cast<int>(code)), 0,
+                     "fused_elementwise_chain: op code %lld at member %i is not implemented",
+                     static_cast<long long>(code), i);
+        ops[i] = static_cast<helpers::FusedElemOp>(code);
+        if (helpers::isBinaryFusedOp(ops[i])) numBinary++;
+        if (ops[i] == helpers::FUSED_CLIP) hasClip = true;
     }
 
-    // Gather secondary inputs for binary ops.
-    // Secondary inputs start at input index 1.
-    // They are matched to binary ops in chain order.
-    NDArray* secondaryInputs[8] = {nullptr};
-    int secondaryIdx = 1;  // First secondary input is at index 1
+    // Secondary inputs follow input 0, one per binary member in chain order.
+    REQUIRE_TRUE(block.width() == static_cast<size_t>(1 + numBinary), 0,
+                 "fused_elementwise_chain: %i binary members need %i inputs, got %i", numBinary, 1 + numBinary,
+                 static_cast<int>(block.width()));
+    NDArray* secondaryInputs[helpers::FUSED_CHAIN_MAX_OPS] = {nullptr};
+    int secondaryIdx = 1;
     for (int i = 0; i < numOps; i++) {
-        if (helpers::isBinaryFusedOp(ops[i])) {
-            if (secondaryIdx < block.width()) {
-                secondaryInputs[i] = INPUT_VARIABLE(secondaryIdx);
-                secondaryIdx++;
-            }
-        }
+        if (helpers::isBinaryFusedOp(ops[i])) secondaryInputs[i] = INPUT_VARIABLE(secondaryIdx++);
     }
 
-    // Optional clip parameters from tArgs
+    // FUSED_CLIP bounds: tArgs [clipMin, clipMax]
     const double* clipMin = nullptr;
     const double* clipMax = nullptr;
     double clipMinVal = 0, clipMaxVal = 0;
-    if (block.getTArguments()->size() >= 2) {
+    if (hasClip) {
+        REQUIRE_TRUE(block.getTArguments()->size() >= 2, 0,
+                     "fused_elementwise_chain: FUSED_CLIP needs tArgs [clipMin, clipMax]");
         clipMinVal = T_ARG(0);
         clipMaxVal = T_ARG(1);
         clipMin = &clipMinVal;

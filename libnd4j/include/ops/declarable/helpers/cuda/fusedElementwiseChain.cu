@@ -132,8 +132,8 @@ static void fusedElementwiseChain_(LaunchContext* context, NDArray* input, NDArr
                     "BLOCK_SIZE_FUSED_ELEMENTWISE_CHAIN within 1..1024");
   }
   const LongType threads = launchDims.y;
-  const LongType blocks = sd::math::sd_min<LongType>((length + threads - 1) / threads,
-                                                     static_cast<LongType>(launchDims.x));
+  LongType blocks = (length + threads - 1) / threads;
+  if (blocks > static_cast<LongType>(launchDims.x)) blocks = launchDims.x;
 
   auto stream = context->getCudaStream();
   fusedElementwiseChainCuda<T><<<static_cast<unsigned int>(blocks), launchDims.y, launchDims.z, *stream>>>(
