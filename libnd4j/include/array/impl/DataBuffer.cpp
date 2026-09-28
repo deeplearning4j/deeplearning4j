@@ -411,6 +411,7 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
 
   allocateBuffers();
   copyBufferFrom(other);
+  renewContentGeneration();
 #if defined(SD_GCC_FUNCTRACE)
   // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
   // - The JVM's memory mappings and signal handlers aren't fully set up yet
@@ -458,6 +459,8 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   _writeSpecial.store(other._writeSpecial.load());
   _readPrimary.store(other._readPrimary.load());
   _readSpecial.store(other._readSpecial.load());
+  // The ticks just came from another object and may be behind this one's.
+  renewContentGeneration();
   _writeEvent = other._writeEvent;
   _writeEventRecorded.store(other._writeEventRecorded.load(std::memory_order_acquire),
                             std::memory_order_release);
@@ -885,6 +888,7 @@ void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
   _isOwnerPrimary = false;  // External buffer - caller manages lifetime (JavaCPP Pointer, workspace, etc.)
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
   _primaryAllocBytes = _lenInBytes;
+  renewContentGeneration();
 }
 
 void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
@@ -900,6 +904,7 @@ void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
   this->setSpecial(buffer, false);
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
   _specialAllocBytes = _lenInBytes;
+  renewContentGeneration();
 }
 
 void DataBuffer::setDataType(DataType dataType) {
@@ -981,5 +986,15 @@ void DataBuffer::resetCounters() {
   _writeSpecial.store(0);
   _readPrimary.store(0);
   _readSpecial.store(0);
+  renewContentGeneration();
+}
+
+uint64_t DataBuffer::nextContentGeneration() {
+  static std::atomic<uint64_t> sequence{0};
+  return sequence.fetch_add(1, std::memory_order_relaxed) + 1;
+}
+
+void DataBuffer::renewContentGeneration() {
+  _contentGeneration.store(nextContentGeneration(), std::memory_order_release);
 }
 }  // namespace sd

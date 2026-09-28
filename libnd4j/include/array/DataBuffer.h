@@ -153,6 +153,15 @@ class SD_LIB_EXPORT DataBuffer {
   mutable std::atomic<LongType> _readPrimary;
   mutable std::atomic<LongType> _readSpecial;
 
+  // Process-unique id of the contents lineage this object holds. Every object
+  // draws a fresh value, and it is redrawn whenever storage is attached or the
+  // sync counters are reset or copied, so it never repeats for different
+  // contents even when the allocator recycles an object or address. Within one
+  // generation the write ticks above only move forward.
+  std::atomic<uint64_t> _contentGeneration{nextContentGeneration()};
+  static uint64_t nextContentGeneration();
+  void renewContentGeneration();
+
   // Backend event tracking the last write to the special (device) buffer.
   // CUDA stores cudaEvent_t; Vulkan stores VulkanExecutionEvent. The opaque
   // field keeps vendor headers out of this shared ABI header.
@@ -316,6 +325,23 @@ class SD_LIB_EXPORT DataBuffer {
   void readSpecial() const;
   bool isPrimaryActual() const;
   bool isSpecialActual() const;
+
+#ifndef __JAVACPP_HACK__
+  /**
+   * Version of the contents this buffer holds. (contentGeneration(),
+   * lastWriteTick()) compares equal only for the same storage lineage with no
+   * write in between on either side, so caches of per-content work key on it
+   * instead of on addresses, which the allocator reuses. Only backends with a
+   * device copy maintain write ticks; on CPU lastWriteTick() never advances and
+   * the generation alone identifies the contents.
+   */
+  uint64_t contentGeneration() const { return _contentGeneration.load(std::memory_order_acquire); }
+  LongType lastWriteTick() const {
+    const LongType primary = _writePrimary.load();
+    const LongType special = _writeSpecial.load();
+    return primary > special ? primary : special;
+  }
+#endif
 
   void expand(const uint64_t size);
 

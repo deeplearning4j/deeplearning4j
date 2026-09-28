@@ -8,7 +8,9 @@
 #include <helpers/shape.h>
 #include <ops/declarable/helpers/cuda/device_primitives.cuh>
 #include <cuda_runtime.h>
+#include <array>
 #include <mutex>
+#include <set>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -243,41 +245,55 @@ SD_KERNEL static void modelOptLinearTiledKernel(
 }
 
 // Host-current checkpoint scales can fail before any launch without a device
-// transfer, so they are validated on the host exactly once per scale buffer.
-// ModelOpt scales are constants loaded with the model and never mutated
-// between calls, so the per-call full host rescans this replaced were pure
-// overhead (measured 24.3 ms/call on the 27B, 3.1 s/token across 129
-// calls/token). Device-current tensors rely on the ordered fused validation
-// inside the compute kernels. Failures are never cached: an invalid buffer
-// re-scans and re-throws on every call.
-static void validateHostScalesOnce(NDArray* scale, NDArray* secondScale, bool nvfp4) {
+// transfer, so they are validated on the host. Scalar scales cost one read and
+// are checked on every call. NVFP4 block scales are constants loaded with the
+// model, and rescanning them per call was pure overhead (measured 24.3 ms/call
+// on the 27B, 3.1 s/token across 129 calls/token), so a scanned view is
+// remembered by the version of its contents, never by address: the allocator
+// reuses addresses, and a released valid scale must not vouch for an invalid
+// one placed in the same storage. The view geometry is part of the key because
+// views of one buffer cover different elements. Device-current tensors rely on
+// the ordered fused validation inside the compute kernels. Failures are never
+// cached: an invalid buffer re-scans and re-throws on every call.
+static void validateHostScales(NDArray* scale, NDArray* secondScale, bool nvfp4) {
   if (secondScale->isActualOnHostSide() && !modelOptValidScale(secondScale->bufferAsT<float>()[0]))
     throw std::invalid_argument("ModelOpt linear: global/input scale must be positive and finite");
   if (scale->isEmpty() || !scale->isActualOnHostSide()) return;
   auto* buffer = scale->dataBuffer();
   if (buffer == nullptr || buffer->primary() == nullptr) return;
-  static std::mutex mutex;
-  static std::unordered_map<uint64_t, bool> validated;
-  std::lock_guard<std::mutex> lock(mutex);
-  // Key on identity AND length so a freed-then-reallocated buffer with a
-  // different size revalidates even if the allocator reuses the address.
-  const uint64_t key = reinterpret_cast<uint64_t>(buffer->primary()) ^
-                       (static_cast<uint64_t>(buffer->getLenInBytes()) << 48);
-  if (validated.count(key) != 0) return;
   if (!nvfp4) {
     if (!modelOptValidScale(scale->bufferAsT<float>()[0]))
       throw std::invalid_argument("ModelOpt FP8 linear: weight scale must be positive and finite");
-  } else {
-    const auto* data = scale->bufferAsT<float8>();
-    const auto* strides = scale->stridesOf();
-    const LongType rows = scale->sizeAt(0), cols = scale->sizeAt(1);
-    for (LongType row = 0; row < rows; ++row)
-      for (LongType col = 0; col < cols; ++col)
-        if (!modelOptValidScale(static_cast<float>(data[row * strides[0] + col * strides[1]])))
-          throw std::invalid_argument(
-              "ModelOpt NVFP4 linear: every block scale must be positive and finite");
+    return;
   }
-  validated[key] = true;
+  const auto* strides = scale->stridesOf();
+  const LongType rows = scale->sizeAt(0), cols = scale->sizeAt(1);
+  using ViewKey = std::array<uint64_t, 7>;
+  const ViewKey key = {buffer->contentGeneration(),
+                       static_cast<uint64_t>(buffer->lastWriteTick()),
+                       static_cast<uint64_t>(scale->offset()),
+                       static_cast<uint64_t>(rows),
+                       static_cast<uint64_t>(cols),
+                       static_cast<uint64_t>(strides[0]),
+                       static_cast<uint64_t>(strides[1])};
+  // Entries of released buffers are never looked up again; the bound keeps
+  // them from accumulating, and overflowing it only costs rescans.
+  static constexpr size_t kMaxValidatedViews = 4096;
+  static std::mutex mutex;
+  static std::set<ViewKey> validated;
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    if (validated.count(key) != 0) return;
+  }
+  const auto* data = scale->bufferAsT<float8>();
+  for (LongType row = 0; row < rows; ++row)
+    for (LongType col = 0; col < cols; ++col)
+      if (!modelOptValidScale(static_cast<float>(data[row * strides[0] + col * strides[1]])))
+        throw std::invalid_argument(
+            "ModelOpt NVFP4 linear: every block scale must be positive and finite");
+  std::lock_guard<std::mutex> lock(mutex);
+  if (validated.size() >= kMaxValidatedViews) validated.clear();
+  validated.insert(key);
 }
 
 // Fast-path proof. Every precondition is explicit; no ews() shortcut. Each
@@ -402,7 +418,7 @@ void modelOptLinear(LaunchContext* context, NDArray* x, NDArray* w, NDArray* sca
                     NDArray* secondScale, NDArray* z, bool nvfp4, bool floatOutput) {
   auto* stream = context->getCudaStream();
   const bool capturing = DebugHelper::inGraphCapture(stream);
-  if (!capturing) validateHostScalesOnce(scale, secondScale, nvfp4);
+  if (!capturing) validateHostScales(scale, secondScale, nvfp4);
   const cudaDeviceProp& prop = modelOptDeviceProps(context);
   const bool tiled = modelOptTiledEligible(x, w, scale, z, nvfp4);
   const dim3 dims = getLaunchDims(tiled ? "modelopt_linear_tiled" : "modelopt_linear");

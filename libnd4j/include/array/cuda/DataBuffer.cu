@@ -1850,6 +1850,7 @@ void DataBuffer::setCountersToZero() {
   _writeSpecial.store(0L);
   _readPrimary.store(0L);
   _readSpecial.store(0L);
+  renewContentGeneration();
 
   // Write events are created lazily by async copy paths. Constructor/reset does
   // not allocate CUDA objects.
@@ -1864,6 +1865,7 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
   _writeSpecial.store(other._readPrimary);
   _readPrimary.store(other._writeSpecial);
   _readSpecial.store(other._writePrimary);
+  renewContentGeneration();
 }
 
 ////////////////////////////////////////////////////////////////////////
