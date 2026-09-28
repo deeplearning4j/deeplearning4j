@@ -1802,6 +1802,21 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
       continue;  // Same device, no migration needed
     }
+    // Without a special allocation the host copy holds the only bytes. A buffer with
+    // neither has nothing to migrate; copying its fresh allocation would hand the
+    // consumer uninitialized memory.
+    if (originalDev == nullptr && !rehomedSegmentOutput &&
+        (db->primary() == nullptr || !db->isPrimaryActual())) {
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: source has no current bytes slot=%d "
+               "external=%d sourceDevice=%d targetDevice=%d",
+               slotIdx, externalInputIdx, sourceDevice, targetDevice);
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return cudaPlanFailure(
+          "CUDA cross-device migration source has no current bytes: slot=%d external=%d "
+          "sourceDevice=%d targetDevice=%d",
+          slotIdx, externalInputIdx, sourceDevice, targetDevice);
+    }
 
     // Complete only this plan's producers, not unrelated captures on its GPU.
     const auto producerReady =
@@ -1984,14 +1999,16 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     const int64_t deviceBudget = Environment::getInstance().maxDeviceMemory();
 #endif
     const bool budgetAdmitted = deviceBudget <= 0 || tl_graphExecutionActive ||
+        !memory::CudaMemoryPool::getInstance().isEnabled() ||
         (poolUsed <= static_cast<size_t>(deviceBudget) &&
          srcLen <= static_cast<size_t>(deviceBudget) - poolUsed);
     const bool deviceAdmitted = counterAdmitted && budgetAdmitted &&
         (memInfoErr != cudaSuccess || availableBytes >= srcLen);
-    // A cached copy that failed over to host memory is replaced once this device can
-    // hold it again; otherwise every later invocation would read it over the bus.
+    // A capture rehome needs a device-local stage, so a cached copy that failed over
+    // to host memory cannot serve it. Elsewhere that copy stays in use like any other
+    // failover allocation rather than being reallocated on every invocation.
     bool previousHostResident = false;
-    if (reusableCopy && deviceAdmitted) {
+    if (reusableCopy && seg.exec.captureRehomePending) {
       void* previousSpecial = previousCopy->dataBuffer()->special();
       cudaPointerAttributes previousAttrs;
       const auto previousAttrErr = previousSpecial != nullptr
