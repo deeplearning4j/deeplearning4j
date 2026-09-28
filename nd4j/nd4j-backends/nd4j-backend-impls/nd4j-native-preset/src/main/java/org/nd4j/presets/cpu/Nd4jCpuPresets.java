@@ -20,12 +20,16 @@
 
 package org.nd4j.presets.cpu;
 
+import org.bytedeco.javacpp.ClassProperties;
+import org.bytedeco.javacpp.LoadEnabled;
+import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.bytedeco.javacpp.annotation.Properties;
 import org.bytedeco.javacpp.tools.*;
 import org.bytedeco.openblas.global.openblas;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.presets.OpExclusionUtils;
+import org.nd4j.presets.SharedCompilerRuntime;
 
 import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
 
@@ -183,11 +187,27 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
 
                 @Platform(extension = {"-onednn", "-onednn-avx512","-onednn-avx2", "-","-avx2","-avx512", "-compat", "-compile", "-compile-avx2", "-compile-avx512", "-compile-nnapi", "-armcompute", "-nnapi"})
         })
-public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
+public class Nd4jCpuPresets implements LoadEnabled, InfoMapper, BuildEnabled {
 
     private Logger logger;
     private java.util.Properties properties;
     private String encoding;
+
+    @Override
+    public void init(ClassProperties properties) {
+        // The CMake shared-runtime manifest lists the DSOs libnd4jcpu needs beyond
+        // the system (LLVM/MLIR, OpenVINO's oneTBB). Preloading them makes JavaCPP
+        // extract them beside the backend, whose RUNPATH starts with $ORIGIN.
+        // Only the load path consumes it: at build time the manifest would take
+        // over the JNI link paths and drop the inherited OpenBLAS ones. Android
+        // installs lib/<abi> from the APK and has no manifest under the bindings root.
+        String platform = properties.getProperty("platform");
+        if (!Loader.isLoadLibraries() || platform == null || platform.startsWith("android")) {
+            return;
+        }
+        SharedCompilerRuntime.configure(properties, Nd4jCpuPresets.class,
+                "org/nd4j/linalg/cpu/nativecpu/bindings/");
+    }
 
     @Override
     public void init(Logger logger, java.util.Properties properties, String encoding) {

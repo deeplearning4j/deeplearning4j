@@ -45,8 +45,8 @@ NDArray *scalarOperandOnCurrentDevice(NDArray *cached, LaunchContext *context) {
   const int device = AffinityManager::currentDeviceId();
   auto *cachedBuffer = cached->dataBuffer();
   const int cachedDevice = cachedBuffer->deviceId();
-  auto *stream = context != nullptr ? context->getCudaStream() : nullptr;
 #ifdef SD_CUDA
+  auto *stream = context != nullptr ? context->getCudaStream() : nullptr;
   const bool capturing = isCudaGraphCaptureActiveForScalarOps(static_cast<void *>(stream));
 #else
   const bool capturing = false;

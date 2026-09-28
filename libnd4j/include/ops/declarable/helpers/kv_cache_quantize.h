@@ -21,6 +21,7 @@
 
 #include <array/NDArray.h>
 #include <execution/LaunchContext.h>
+#include <math/templatemath.h>
 #include <system/common.h>
 
 namespace sd {
@@ -35,19 +36,49 @@ enum class KVQuantFormat : int {
     INT4 = 3
 };
 
+// kvCacheQuantize/kvCacheDequantize quantize rows that run along the LAST dimension. Every operand
+// is addressed through its own shape and strides (any order, any view): row r is TAD r along the
+// last dimension, TADs being enumerated in C order over the leading dimensions, and its FLOAT32
+// scale is the C-order element r of the scales array.
+//   INT8/FP8: quantized has the input's shape, one int8 per element.
+//   INT4:     quantized has the input's shape; element pair (2j, 2j+1) of a row packs into byte j
+//             of the same row (low nibble = even element, value + 8), and bytes
+//             [ceil(rowLen/2), rowLen) are zero. Every row starts at its own logical row, so any
+//             slice of the tensor along the leading dimensions is itself a valid INT4 tensor.
+//   ROW-INLINE (scales == nullptr, INT8/FP8 only): quantized is [leading..., rowLen + 4] with a
+//             unit last-dimension stride; bytes [rowLen, rowLen + 4) of each row hold its scale.
 SD_LIB_HIDDEN void kvCacheQuantize(
-    NDArray* input,       // float KV data [...]
-    NDArray* quantized,   // output quantized data [...]
-    NDArray* scales,      // output per-channel scales [...]
+    NDArray* input,       // float KV data [..., rowLen]
+    NDArray* quantized,   // output quantized data [..., rowLen] or [..., rowLen + 4] row-inline
+    NDArray* scales,      // output FLOAT32 per-row scales, numRows elements; nullptr = row-inline
     int quantFormat,      // KVQuantFormat
     LaunchContext* context = nullptr);
 
 SD_LIB_HIDDEN void kvCacheDequantize(
-    NDArray* quantized,   // quantized data [...]
-    NDArray* scales,      // per-channel scales [...]
-    NDArray* output,      // float output [...]
+    NDArray* quantized,   // quantized data, same shape as output
+    NDArray* scales,      // FLOAT32 per-row scales, numRows elements
+    NDArray* output,      // float output [..., rowLen]
     int quantFormat,
     LaunchContext* context = nullptr);
+
+// Offset of row `row`'s scale: the C-order element `row` of the scales array, through its strides.
+SD_HOST_DEVICE SD_INLINE LongType kvRowScaleOffset(const LongType* scalesShapeInfo, const LongType row) {
+    LongType coords[SD_MAX_RANK];
+    const LongType scalesRank = shape::rank(scalesShapeInfo);
+    INDEX2COORDS(row, scalesRank, shape::shapeOf(scalesShapeInfo), coords);
+    LongType offset;
+    COORDS2INDEX(scalesRank, shape::stride(scalesShapeInfo), coords, offset);
+    return offset;
+}
+
+// INT4 value of an already-scaled element: clamp to the symmetric range [-7, 7] and round half to
+// even, as INT8 quantization does. Shared by the CPU and CUDA kernels so both backends pack the
+// same nibbles.
+template <typename AccT>
+SD_HOST_DEVICE SD_INLINE int kvQuantizeInt4Value(AccT val) {
+    val = sd::math::sd_max<AccT>(static_cast<AccT>(-7), sd::math::sd_min<AccT>(static_cast<AccT>(7), val));
+    return static_cast<int>(sd::math::sd_rint<AccT, AccT>(val));
+}
 
 /**
  * V2 quantised-on-write helper: append one decode-step K or V vector into a fixed-allocation
@@ -58,105 +89,45 @@ SD_LIB_HIDDEN void kvCacheDequantize(
  * read from device-side cachePosPtr at kernel runtime (same pattern as kvInPlaceWriteBSHD).
  *
  * Layout contract (INT8_KV mode):
- *   newKv      : float  [batch, 1,        kvHeads, headDim]  — current-step K or V
- *   quantCache : INT8   [batch, maxKvLen,  kvHeads, headDim]  — fixed pre-allocated cache
- *   scaleCache : float  [batch, maxKvLen,  kvHeads]           — per-token-per-head scale
- *   cachePosPtr: device-resident int64 scalar — the write position
+ *   newKv      : T       [batch, 1,        kvHeads, headDim]  — current-step K or V, any float type
+ *   quantCache : INT8    [batch, maxKvLen, kvHeads, headDim + 4] — row-inline, scale in the last 4 bytes
+ *              | INT8    [batch, maxKvLen, kvHeads, headDim]     — with a separate scaleCache
+ *   scaleCache : FLOAT32 [batch, maxKvLen, kvHeads] or nullptr for row-inline
+ *   cachePosPtr: int64 write position (device-resident on CUDA, host on CPU); an out-of-range
+ *                position writes nothing
  *
- * Per-row (per KV head) absmax reduction + INT8 scatter + scale scatter.
- * No cross-row atomics → capture-safe (warp reduction within each head row).
+ * Per-row (per KV head) absmax in AccT + INT8 scatter + scale scatter. Every operand is
+ * addressed through its own strides. No cross-row atomics → capture-safe.
  */
 SD_LIB_HIDDEN void kvInPlaceWriteQuantisedBSHD(
-    NDArray* quantCache,     // INT8 [batch, maxKvLen, kvHeads, headDim] — modified in-place
-    NDArray* scaleCache,     // float [batch, maxKvLen, kvHeads]          — modified in-place
-    NDArray* newKv,          // float [batch, 1, kvHeads, headDim]        — source (current step)
+    NDArray* quantCache,     // INT8 [batch, maxKvLen, kvHeads, headDim(+4)] — modified in-place
+    NDArray* scaleCache,     // FLOAT32 [batch, maxKvLen, kvHeads] or nullptr — modified in-place
+    NDArray* newKv,          // T [batch, 1, kvHeads, headDim]               — source (current step)
     const void* cachePosPtr, // pointer to int64 write position
     LaunchContext* context);
 
 /**
- * ADR 0107 V2 — Thread-local KV scale buffer registry.
+ * CPU single-token GQA decode over INT8 K/V caches, with the same contract as the CUDA
+ * fusedGQADecodeQuantisedCuda (see FlashAttentionHelper.h): the query, bias, current windows
+ * and output share the model dtype T; each cache row is dequantized with its FLOAT32 scale;
+ * scores and softmax accumulate in AggregateType<T>.
  *
- * The native decode loop calls setKvScaleRegistry() before each plan execution to inject
- * the per-layer scale arrays. dot_product_attention_v2 calls lookupKvScaleByCache() to
- * retrieve the scale arrays for the INT8 KV cache pointer it received.
- *
- * This avoids adding scale variables to the SameDiff model graph and avoids extending the
- * frozen plan's ext input array — scale arrays are passed as a side channel that the decode
- * loop owns and the attention op queries per execution.
- *
- * Thread-safety: each decode thread has its own registry (thread_local).
- * Capture-safety: the registry holds raw NDArray* — stable device pointers, no allocation.
- *
- * Layout contract:
- *   kvQuantBuffers[0..numKvPairs-1]  = INT8 key caches per layer (key)
- *   kvScaleBuffers[0..numKvPairs-1]  = float key scales per layer (value for key lookup)
- *   kvScaleBuffers[numKvPairs..2N-1] = float value scales per layer (value for val lookup)
- * Each value cache uses the same layer index: valScale = kvScaleBuffers[numKvPairs + layerIdx].
+ * quantKeyCache  : INT8    [batch, seqKV, kvHeads, headDim] or [.., headDim + 4] row-inline
+ * keyScaleCache  : FLOAT32 [batch, seqKV, kvHeads] or nullptr (row-inline)
+ * quantValCache  : INT8    [batch, seqKV, kvHeads, headDim] or [.., headDim + 4] row-inline
+ * valScaleCache  : FLOAT32 [batch, seqKV, kvHeads] or nullptr (row-inline)
+ * query          : T       [batch, 1,     qHeads,  headDim]
+ * output         : T       [batch, 1,     qHeads,  headDim]
+ * attentionBias  : T       [batch, 1/qHeads, 1, seqKV] (rank 1-3 broadcast) or nullptr
  */
-// Registry state + accessors are defined INLINE here (not in a backend-specific .cpp)
-// so the definitions link into BOTH the CPU and CUDA .so. The callers span backends —
-// autoregressive_decode.cu (CUDA link) and dot_product_attention_v2.cpp (both) — so a
-// definition living only in helpers/cpu/kv_cache_quantize.cpp left the CUDA link with
-// undefined references. `inline` (+ `inline thread_local`, C++17) gives one merged
-// instance across all translation units.
-struct KvScaleRegistry {
-    NDArray** kvQuantBuffers = nullptr;  // INT8 key caches (lookup keys)
-    NDArray** kvScaleBuffers = nullptr;  // float scales [0..N-1]=key, [N..2N-1]=val
-    int numKvPairs = 0;
-};
-
-inline thread_local KvScaleRegistry tl_kvScaleRegistry;
-
-inline void setKvScaleRegistry(
-    NDArray** kvQuantBuffers,     // INT8 key cache pointers [numKvPairs] — used as lookup keys
-    NDArray** kvScaleBuffers,     // float scale arrays [2*numKvPairs] (key then value)
-    int numKvPairs) {
-    tl_kvScaleRegistry.kvQuantBuffers = kvQuantBuffers;
-    tl_kvScaleRegistry.kvScaleBuffers = kvScaleBuffers;
-    tl_kvScaleRegistry.numKvPairs = numKvPairs;
-}
-
-inline void clearKvScaleRegistry() {
-    tl_kvScaleRegistry.kvQuantBuffers = nullptr;
-    tl_kvScaleRegistry.kvScaleBuffers = nullptr;
-    tl_kvScaleRegistry.numKvPairs = 0;
-}
-
-/**
- * Look up key and value scale arrays by INT8 cache pointer identity.
- * Called from dot_product_attention_v2 when keyCache->dataType() == INT8
- * and keyScaleCache is null (V2 mode but without inputs 9/10 in the graph).
- * Returns false if the registry is empty or the cache pointer is not found.
- */
-inline bool lookupKvScaleByCache(
-    const NDArray* kvCache,       // INT8 key cache pointer (used as key)
-    NDArray** outKeyScale,        // out: float key scale array or nullptr
-    NDArray** outValScale) {      // out: float value scale array or nullptr
-    const KvScaleRegistry& reg = tl_kvScaleRegistry;
-    if (reg.kvQuantBuffers == nullptr || reg.numKvPairs == 0) return false;
-    for (int i = 0; i < reg.numKvPairs; i++) {
-        if (reg.kvQuantBuffers[i] == kvCache) {
-            *outKeyScale = reg.kvScaleBuffers[i];
-            *outValScale = reg.kvScaleBuffers[reg.numKvPairs + i];
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * CPU reference dequantised GQA decode attention.
- * Equivalent to fusedGQADecodeCuda but for CPU: loads INT8 K/V, applies per-token-per-head
- * scale, then runs standard Q@K^T + softmax + attn@V. Used for correctness testing.
- *
- * quantKeyCache  : INT8  [batch, seqKV, kvHeads, headDim]
- * keyScaleCache  : float [batch, seqKV, kvHeads]
- * quantValCache  : INT8  [batch, seqKV, kvHeads, headDim]
- * valScaleCache  : float [batch, seqKV, kvHeads]
- * query          : float [batch, 1,     qHeads,  headDim]
- * output         : float [batch, 1,     qHeads,  headDim]
- * attentionBias  : float [batch, 1/qHeads, 1, seqKV] or nullptr
- */
+// currentKeyWindow/currentValueWindow/currentKvPosition: the pre-quantization current-step K/V
+// rows (T [batch, currentSeq, kvHeads, headDim]) plus their host cache position. When non-null,
+// attention covers only the written prefix [0, currentKvPosition + currentSeq), independent of
+// attentionBias, and the window rows are read directly instead of round-tripping through the INT8
+// cache. nullptr attends over the full seqKV and relies on the bias alone to mask.
+// attentionScores/attentionLogits: optional T [batch, qHeads, 1, seqKV] outputs; null or empty
+// means not requested. Logits are the pre-softmax scores, scores the softmax weights applied to V;
+// rows past the written prefix get the masked logit and a zero score.
 SD_LIB_HIDDEN void fusedGQADecodeQuantisedCpu(
     NDArray* query,
     NDArray* quantKeyCache,
@@ -166,7 +137,12 @@ SD_LIB_HIDDEN void fusedGQADecodeQuantisedCpu(
     NDArray* output,
     double scale,
     NDArray* attentionBias,
-    LaunchContext* context);
+    LaunchContext* context,
+    NDArray* currentKeyWindow = nullptr,
+    NDArray* currentValueWindow = nullptr,
+    const void* currentKvPosition = nullptr,
+    NDArray* attentionScores = nullptr,
+    NDArray* attentionLogits = nullptr);
 
 }  // namespace helpers
 }  // namespace ops

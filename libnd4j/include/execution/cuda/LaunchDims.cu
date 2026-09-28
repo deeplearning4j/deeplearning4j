@@ -193,6 +193,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"modelopt_linear_tiled", {dim3(GRID_SIZE_MODELOPT_LINEAR_TILED, BLOCK_SIZE_MODELOPT_LINEAR_TILED, SHARED_MEM_SIZE_MODELOPT_LINEAR_TILED)}},
     {"ggml_qmatmul", {dim3(GRID_SIZE_GGML_QMATMUL, BLOCK_SIZE_GGML_QMATMUL, SHARED_MEM_SIZE_GGML_QMATMUL)}},
     {"moe_weighted_sum", {dim3(GRID_SIZE_MOE_WEIGHTED_SUM, BLOCK_SIZE_MOE_WEIGHTED_SUM, SHARED_MEM_SIZE_MOE_WEIGHTED_SUM)}},
+    {"kv_cache_quantize", {dim3(GRID_SIZE_KV_CACHE_QUANTIZE, BLOCK_SIZE_KV_CACHE_QUANTIZE, SHARED_MEM_SIZE_KV_CACHE_QUANTIZE)}},
 
 };
 
@@ -387,6 +388,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"modelopt_linear_tiled", {"GRID_SIZE_MODELOPT_LINEAR_TILED", "BLOCK_SIZE_MODELOPT_LINEAR_TILED", "SHARED_MEM_SIZE_MODELOPT_LINEAR_TILED"}},
     {"ggml_qmatmul", {"GRID_SIZE_GGML_QMATMUL", "BLOCK_SIZE_GGML_QMATMUL", "SHARED_MEM_SIZE_GGML_QMATMUL"}},
     {"moe_weighted_sum", {"GRID_SIZE_MOE_WEIGHTED_SUM", "BLOCK_SIZE_MOE_WEIGHTED_SUM", "SHARED_MEM_SIZE_MOE_WEIGHTED_SUM"}},
+    {"kv_cache_quantize", {"GRID_SIZE_KV_CACHE_QUANTIZE", "BLOCK_SIZE_KV_CACHE_QUANTIZE", "SHARED_MEM_SIZE_KV_CACHE_QUANTIZE"}},
 
 };
 
@@ -1324,6 +1326,28 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
   int requestedShared = getEnvVariable("SHARED_MEM_SIZE_FUSED_GQA_DECODE", sharedMem);
   sharedMem = std::max(sharedMem, requestedShared);
 
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
+}
+
+dim3 getKvCacheQuantizeDims(sd::LongType numRows, sd::LongType rowLen) {
+  // Threads stride over one row: 256, or 512/1024 for longer rows, shrunk to the row length in
+  // whole warps. The block max reductions need full warps, so any BLOCK override is clamped to
+  // [32, 1024] and rounded down to a warp multiple before it caps the threads.
+  int threadsPerBlock = rowLen > 512 ? 1024 : rowLen > 256 ? 512 : 256;
+  if (rowLen < threadsPerBlock) {
+    threadsPerBlock = static_cast<int>(((rowLen + 31) / 32) * 32);
+    if (threadsPerBlock < 32) threadsPerBlock = 32;
+  }
+  int maxThreads = BLOCK_SIZE_KV_CACHE_QUANTIZE;
+  maxThreads = std::max(32, std::min(1024, maxThreads));
+  maxThreads = (maxThreads / 32) * 32;
+  threadsPerBlock = std::min(threadsPerBlock, maxThreads);
+
+  // One block per row up to GRID; the block-stride loop covers the remaining rows.
+  const int maxBlocks = std::max(1, static_cast<int>(GRID_SIZE_KV_CACHE_QUANTIZE));
+  const int blocksPerGrid = static_cast<int>(std::min<sd::LongType>(std::max<sd::LongType>(numRows, 1), maxBlocks));
+
+  const int sharedMem = std::max(0, static_cast<int>(SHARED_MEM_SIZE_KV_CACHE_QUANTIZE));
   return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 

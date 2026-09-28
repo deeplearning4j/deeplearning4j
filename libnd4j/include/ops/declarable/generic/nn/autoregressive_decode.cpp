@@ -143,21 +143,15 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     nextInput += 2 * numKvPairs;
   }
 
-  // ADR 0107 V2: collect KV scale buffers (float32, [batch, maxKvLen, kvHeads]).
-  // Bit 7 (128) in optionalMask signals that 2*numKvPairs scale arrays follow the KV buffers.
-  // Layout: scaleBuffers[0..numKvPairs-1] = key scales per layer
-  //         scaleBuffers[numKvPairs..2*numKvPairs-1] = value scales per layer
-  std::vector<NDArray*> kvScaleBuffersVec;
-  bool hasQuantisedKvScales = (optionalMask & 128) != 0;
-  if (hasQuantisedKvScales) {
-    for (int i = 0; i < 2 * numKvPairs; i++) {
-      kvScaleBuffersVec.push_back(INPUT_VARIABLE(nextInput + i));
-    }
-    nextInput += 2 * numKvPairs;
-  }
+  // Bit 7 (128) once appended separate INT8 KV scale arrays. The INT8 caches carry their scales
+  // row-inline (ADR 0107 V2), so nothing reads such inputs; a caller that still sends them would
+  // shift every input after the KV buffers.
+  REQUIRE_TRUE((optionalMask & 128) == 0, 0,
+               "autoregressive_decode: optionalMask bit 128 (separate KV scale inputs) is no longer supported; "
+               "INT8 KV caches carry their scales row-inline");
 
   // Qwen3.5 bundled MTP inputs (bit 8 / 256). These seven stable-address arrays follow
-  // target KV and optional quantised-scale inputs in a fixed order.
+  // the target KV inputs in a fixed order.
   bool hasMtpPlan = (optionalMask & 256) != 0;
   NDArray* mtpInputIds = nullptr;
   NDArray* mtpTargetHidden = nullptr;
@@ -1003,13 +997,6 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     }
 
     stopTokenStartIdx = nextIdx;
-
-    // ADR 0107 V2: wire scale buffers into decodeConfig when bit 7 was set.
-    // kvScaleBuffersVec[0..numKvPairs-1] = key scales, [numKvPairs..2N-1] = value scales.
-    if (hasQuantisedKvScales && !kvScaleBuffersVec.empty()) {
-      decodeConfig.kvScaleBuffers = kvScaleBuffersVec.data();
-      decodeConfig.kvQuantFormat = 1;  // INT8_KV
-    }
 
     // Plan external inputs are read from the extInputContext (OpaqueContext).
     // Plan outputs are allocated locally in the decode helper.

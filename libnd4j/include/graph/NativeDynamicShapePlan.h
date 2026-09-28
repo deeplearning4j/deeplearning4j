@@ -2517,27 +2517,35 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool isDeviceManagedExternalInput(NDArray* input) const;
   bool isDeviceManagedExternalInput(int extIdx, NDArray* input) const;
   bool hasDeviceManagedExternalInputs(NDArray** externalInputs, int numExternalInputs) const;
+  // Address of the array's resident device storage (view offset applied), or
+  // nullptr without a device allocation. Unlike specialBuffer(), never migrates
+  // storage that is resident on another device.
+  static void* residentDeviceAddress(NDArray* array);
 
 #ifdef SD_CUDA
   /**
    * Record, for every external index the segment reads that classifies as
    * device-managed, the device address the just-completed capture baked in.
-   * Called once per segment capture completion so the staging passthrough in
-   * ensureAndSyncStagingBuffers can later verify ADDRESS IDENTITY per replay.
+   * Called once per segment capture completion, on the capture device, so the
+   * staging passthrough in ensureAndSyncStagingBuffers can later verify
+   * ADDRESS IDENTITY per replay on that device.
    */
   void recordManagedExtBakedAddrsForCapture(GraphSegment& seg, NDArray** externalArrays, int numExt);
 
   /**
-   * Address-identity verdict for the staging passthrough skip.
+   * Address-identity verdict for the staging passthrough skip on `device`.
    * Returns the classification result (extIdx >= 0 classification first, then
-   * resident-address lookup). When classified as managed AND the recorded baked
-   * capture address for extIdx exists and differs from the live address, sets
-   * drifted=true and bakedAddr to the captured address: the caller must NOT skip
-   * staging — it must refresh the captured address instead. reboundEvent=true
-   * exactly when the live address changed since the previous call AND drifted
-   * (the REBOUND diagnostic fires once per relocation, not per call).
+   * resident-address lookup). When classified as managed AND the baked capture
+   * address recorded for extIdx on `device` exists and differs from the live
+   * address, sets drifted=true and bakedAddr to the captured address: the caller
+   * must NOT skip staging — it must refresh the captured address instead.
+   * Writable state resident on another device is never drifted here: the
+   * segment's replica migration refreshes and writes back that copy.
+   * reboundEvent=true exactly when the live address changed since the previous
+   * call on `device` AND drifted (the REBOUND diagnostic fires once per
+   * relocation, not per call).
    */
-  bool isDeviceManagedExternalInputIdentityChecked(int extIdx, NDArray* input,
+  bool isDeviceManagedExternalInputIdentityChecked(int device, int extIdx, NDArray* input,
                                                    bool& drifted, void*& bakedAddr,
                                                    bool& reboundEvent) const;
 #endif
@@ -4117,8 +4125,20 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   };
   std::vector<MigratedInput> migratedInputs_;
   // Stable input storage baked into captured consumers. Key is device/source
-  // publication, not caller address; values are refreshed on every invocation.
+  // publication, not caller address; values are refreshed on every invocation
+  // unless frozenMigrationSources_ proves the source unchanged.
   std::unordered_map<uint64_t, NDArray*> migrationBuffers_;
+  // Source identity behind a migrationBuffers_ copy of a frozen constant slot
+  // output (same key). The frozen output is fixed while its producer's
+  // generation, DataBuffer and device address are unchanged, so a copy made
+  // from exactly that source is reused instead of copied again.
+  struct FrozenMigrationSource {
+    NDArray* copy = nullptr;
+    DataBuffer* source = nullptr;
+    void* sourceSpecial = nullptr;
+    uint32_t producerGeneration = 0;
+  };
+  std::unordered_map<uint64_t, FrozenMigrationSource> frozenMigrationSources_;
 
   // Max-allocation mode for KV cache outputs
   // Maps output slot index -> max number of elements to pre-allocate
@@ -4153,12 +4173,17 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // and remains the source of truth. Classification alone is NOT proof that the
   // baked address still matches the live buffer: registerDeviceManagedExternalInput
   // can run AFTER capture with a relocated allocation, and the same captured graph
-  // then reads stale bytes. Record, per external index, the address baked at the
-  // most recent capture so ensureAndSyncStagingBuffers can verify identity per call
-  // and refresh the captured address when the live buffer moved.
-  std::unordered_map<int, void*> managedExtBakedAddrs_;   // ext idx → captured (baked) dev addr
-  // mutable: REBOUND event-gating bookkeeping updated by the const identity check.
-  mutable std::unordered_map<int, void*> managedExtLastLiveAddrs_;  // ext idx → last-seen live dev addr
+  // then reads stale bytes. Record, per device and external index, the address
+  // baked at the most recent capture so ensureAndSyncStagingBuffers can verify
+  // identity per call and refresh the captured address when the live buffer moved.
+  // Keyed by device first: one external index is baked as the caller's buffer on
+  // its owner device and as a stable per-device replica on every other consumer
+  // device, so a single per-plan address would report false drift across devices.
+  // device → (ext idx → captured (baked) dev addr)
+  std::unordered_map<int, std::unordered_map<int, void*>> managedExtBakedAddrs_;
+  // device → (ext idx → last-seen live dev addr). mutable: REBOUND event-gating
+  // bookkeeping updated by the const identity check.
+  mutable std::unordered_map<int, std::unordered_map<int, void*>> managedExtLastLiveAddrs_;
 #endif
   DataType kvScatterDtype_ = DataType::FLOAT32;
   LongType* kvPositionDevice_ = nullptr;  // Device-accessible int64 position scalar (owned)

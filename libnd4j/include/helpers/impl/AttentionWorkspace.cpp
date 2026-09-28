@@ -21,6 +21,7 @@
 
 #include <helpers/AttentionWorkspace.h>
 #include <array/NDArrayFactory.h>
+#include <execution/AffinityManager.h>
 #include <graph/DspDiagnostics.h>
 #include <algorithm>
 
@@ -77,7 +78,9 @@ NDArray* AttentionWorkspace::getBuffer(const std::string& key,
                                         LaunchContext* context) {
   std::lock_guard<std::mutex> lock(mutex_);
   void* scope = getActiveScope();
-  auto& buffers = buffersByScope_[scope];
+  // The new buffer below is allocated on the current device, so it is looked up there too.
+  const int deviceId = AffinityManager::currentDeviceId();
+  auto& buffers = buffersByScope_[ScopeKey{scope, deviceId}];
 
   // Calculate required capacity
   LongType requiredElements = 1;
@@ -163,8 +166,9 @@ NDArray* AttentionWorkspace::getBuffer(const std::string& key,
     }
   }
 
-  // Evict old buffers if needed
+  // Evict old buffers if needed. Eviction can erase this scope's map, so look it up again.
   evictIfNeeded(requiredBytes);
+  auto& target = buffersByScope_[ScopeKey{scope, deviceId}];
 
   // Allocate new buffer - need mutable copy since NDArray constructor takes non-const ref
   std::vector<LongType> mutableShape(shape);
@@ -177,23 +181,23 @@ NDArray* AttentionWorkspace::getBuffer(const std::string& key,
   entry.lastUsed = ++accessCounter_;
 
   currentMemory_ += requiredBytes;
-  buffers[key] = std::move(entry);
+  target[key] = std::move(entry);
 
   if (traceForward4d) {
-    auto* allocated = buffers[key].buffer.get();
+    auto* allocated = target[key].buffer.get();
     DSP_DIAG(MEMORY,
-             "ATTENTION_WORKSPACE event=ALLOC seq=%llu key=%s rank=%zu "
+             "ATTENTION_WORKSPACE event=ALLOC seq=%llu key=%s device=%d rank=%zu "
              "shape=[%lld,%lld,%lld,%lld,%lld] elements=%lld capacity=%lld "
              "array=%p special=%p workspaceBytes=%zu entries=%zu",
-             static_cast<unsigned long long>(accessCounter_), key.c_str(), shape.size(),
+             static_cast<unsigned long long>(accessCounter_), key.c_str(), deviceId, shape.size(),
              static_cast<long long>(requestedDim(0)), static_cast<long long>(requestedDim(1)),
              static_cast<long long>(requestedDim(2)), static_cast<long long>(requestedDim(3)),
              static_cast<long long>(requestedDim(4)), static_cast<long long>(requiredElements),
-             static_cast<long long>(buffers[key].capacity), static_cast<void*>(allocated),
-             rawSpecial(allocated), currentMemory_, buffers.size());
+             static_cast<long long>(target[key].capacity), static_cast<void*>(allocated),
+             rawSpecial(allocated), currentMemory_, target.size());
   }
 
-  return buffers[key].buffer.get();
+  return target[key].buffer.get();
 }
 
 NDArray* AttentionWorkspace::getScratchBuffer(const std::string& key,
@@ -220,42 +224,60 @@ void AttentionWorkspace::clear() {
 
 void AttentionWorkspace::clearScope(void* scope) {
   std::lock_guard<std::mutex> lock(mutex_);
-  auto scopeIt = buffersByScope_.find(scope);
-  if (scopeIt == buffersByScope_.end()) {
+  size_t devices = 0;
+  size_t entries = 0;
+  size_t scopeBytes = 0;
+  for (const auto& scopeBuffers : buffersByScope_) {
+    if (scopeBuffers.first.scope != scope) {
+      continue;
+    }
+    ++devices;
+    entries += scopeBuffers.second.size();
+    for (const auto& pair : scopeBuffers.second) {
+      scopeBytes += pair.second.capacity * DataTypeUtils::sizeOf(pair.second.buffer->dataType());
+    }
+  }
+  if (devices == 0) {
     return;
   }
-
-  size_t scopeBytes = 0;
-  for (const auto& pair : scopeIt->second) {
-    scopeBytes += pair.second.capacity * DataTypeUtils::sizeOf(pair.second.buffer->dataType());
-  }
   DSP_DIAG(MEMORY,
-           "ATTENTION_WORKSPACE event=CLEAR_SCOPE scope=%p entries=%zu scopeBytes=%zu workspaceBytes=%zu",
-           scope, scopeIt->second.size(), scopeBytes, currentMemory_);
+           "ATTENTION_WORKSPACE event=CLEAR_SCOPE scope=%p devices=%zu entries=%zu scopeBytes=%zu "
+           "workspaceBytes=%zu",
+           scope, devices, entries, scopeBytes, currentMemory_);
 
   currentMemory_ = scopeBytes <= currentMemory_ ? currentMemory_ - scopeBytes : 0;
-  buffersByScope_.erase(scopeIt);
+  for (auto scopeIt = buffersByScope_.begin(); scopeIt != buffersByScope_.end();) {
+    if (scopeIt->first.scope == scope) {
+      scopeIt = buffersByScope_.erase(scopeIt);
+    } else {
+      ++scopeIt;
+    }
+  }
 }
 
 void AttentionWorkspace::clearPrefix(const std::string& prefix) {
   std::lock_guard<std::mutex> lock(mutex_);
-  auto scopeIt = buffersByScope_.find(getActiveScope());
-  if (scopeIt == buffersByScope_.end()) {
-    return;
-  }
-
-  auto& buffers = scopeIt->second;
-  auto it = buffers.begin();
-  while (it != buffers.end()) {
-    if (it->first.find(prefix) == 0) {
-      currentMemory_ -= it->second.capacity * DataTypeUtils::sizeOf(it->second.buffer->dataType());
-      it = buffers.erase(it);
-    } else {
-      ++it;
+  void* scope = getActiveScope();
+  for (auto scopeIt = buffersByScope_.begin(); scopeIt != buffersByScope_.end();) {
+    if (scopeIt->first.scope != scope) {
+      ++scopeIt;
+      continue;
     }
-  }
-  if (buffers.empty()) {
-    buffersByScope_.erase(scopeIt);
+    auto& buffers = scopeIt->second;
+    auto it = buffers.begin();
+    while (it != buffers.end()) {
+      if (it->first.find(prefix) == 0) {
+        currentMemory_ -= it->second.capacity * DataTypeUtils::sizeOf(it->second.buffer->dataType());
+        it = buffers.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    if (buffers.empty()) {
+      scopeIt = buffersByScope_.erase(scopeIt);
+    } else {
+      ++scopeIt;
+    }
   }
 }
 
@@ -294,7 +316,7 @@ void AttentionWorkspace::evictIfNeeded(size_t requiredBytes) {
   }
 
   struct EvictionCandidate {
-    void* scope;
+    ScopeKey scope;
     std::string key;
     uint64_t lastUsed;
   };

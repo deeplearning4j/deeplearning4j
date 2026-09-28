@@ -1807,6 +1807,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   retiredRequestedOutputOwnersSet_.clear();
   for (const auto& entry : migrationBuffers_) gatherOwned(entry.second);
   migrationBuffers_.clear();
+  frozenMigrationSources_.clear();
   outputDeliveryBuffers_.clear();
 
   // Classify every live wrapper exactly once before deleting any of them.
@@ -8638,6 +8639,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     }
   }
   migrationBuffers_.clear();
+  frozenMigrationSources_.clear();
 
   // ── Step 4c: Clear ext input pointer caches ─────────────────────────────
   // The NDArray* pointers target Java-owned arrays that become invalid once
@@ -8802,6 +8804,12 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // epoch-boundary reset used at device switch (cudagraph.cu) and on the
   // frozen fast path: the baseline must belong to the current capture epoch.
   prevStagingAddresses_.clear();
+#ifdef SD_CUDA
+  // Captures and staging replicas were released above; baked baselines would
+  // name freed or recycled storage in the next lifetime.
+  managedExtBakedAddrs_.clear();
+  managedExtLastLiveAddrs_.clear();
+#endif
 
   // Clear protected weight buffers so they're rebuilt from the next session's
   // external inputs. Stale DataBuffer pointers from the old session would cause
@@ -8938,6 +8946,14 @@ bool NativeDynamicShapePlan::isDeviceManagedExternalInput(NDArray* input) const 
   return isDeviceManagedExternalInput(-1, input);
 }
 
+void* NativeDynamicShapePlan::residentDeviceAddress(NDArray* array) {
+  auto* db = array != nullptr ? array->dataBuffer() : nullptr;
+  void* base = db != nullptr ? db->special() : nullptr;
+  return base != nullptr
+      ? static_cast<void*>(static_cast<int8_t*>(base) + array->offset() * array->sizeOfT())
+      : nullptr;
+}
+
 bool NativeDynamicShapePlan::isDeviceManagedExternalInput(int extIdx, NDArray* input) const {
   if (extIdx >= 0 && extIdx < static_cast<int>(externalInputIsVariable_.size()) &&
       extIdx < static_cast<int>(externalInputIsPlaceholder_.size()) &&
@@ -8947,21 +8963,14 @@ bool NativeDynamicShapePlan::isDeviceManagedExternalInput(int extIdx, NDArray* i
   if (input == nullptr || input->isEmpty() || input->dataBuffer() == nullptr) return false;
   // Classification must inspect resident addresses without synchronizing or
   // migrating inputs belonging to another segment's device.
-  auto residentAddress = [](NDArray* array) -> void* {
-    auto* db = array != nullptr ? array->dataBuffer() : nullptr;
-    void* base = db != nullptr ? db->special() : nullptr;
-    return base != nullptr
-        ? static_cast<void*>(static_cast<int8_t*>(base) + array->offset() * array->sizeOfT())
-        : nullptr;
-  };
-  void* devAddr = residentAddress(input);
+  void* devAddr = residentDeviceAddress(input);
   if (devAddr == nullptr) return false;
   for (void* existing : deviceManagedExternalInputAddrs_) {
     if (existing == devAddr) return true;
   }
   if (kvScatterConfigured_) {
     for (const auto& entry : kvScatterEntries_) {
-      if (residentAddress(entry.staticBuf) == devAddr) {
+      if (residentDeviceAddress(entry.staticBuf) == devAddr) {
         return true;
       }
     }
@@ -8986,6 +8995,10 @@ void NativeDynamicShapePlan::recordManagedExtBakedAddrsForCapture(
     GraphSegment& seg, NDArray** externalArrays, int numExt) {
   if (externalArrays == nullptr || numExt <= 0) return;
   const int safeNumExt = numExt;
+  // The segment was captured on the bound device; its staging passthrough checks
+  // identity on that same device.
+  const int device = AffinityManager::currentDeviceId();
+  auto& deviceBaked = managedExtBakedAddrs_[device];
   int recorded = 0, updated = 0, cleared = 0;
   for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
     const SlotWiring& w = slots_[s].wiring;
@@ -8995,23 +9008,26 @@ void NativeDynamicShapePlan::recordManagedExtBakedAddrsForCapture(
       if (sourceIndex >= 0) continue;  // prior-slot refs are not external inputs
       const int extIdx = -(sourceIndex + 1);
       if (extIdx < 0 || extIdx >= safeNumExt) continue;
-      auto it = managedExtBakedAddrs_.find(extIdx);
+      auto it = deviceBaked.find(extIdx);
       if (!isDeviceManagedExternalInput(extIdx, externalArrays[extIdx])) {
         // This capture did NOT bake extIdx raw (it staged it). Any stale
-        // baseline from an earlier capture is dead: keeping it would produce
-        // false drift signals and route the slot away from its staging
-        // refresh. Classification flags only change through all-segment
-        // invalidations, so no live capture can still bake this index raw.
-        if (it != managedExtBakedAddrs_.end()) {
-          managedExtBakedAddrs_.erase(it);
+        // baseline from an earlier capture on this device is dead: keeping it
+        // would produce false drift signals and route the slot away from its
+        // staging refresh. Classification flags only change through
+        // all-segment invalidations, so no live capture on this device can
+        // still bake this index raw.
+        if (it != deviceBaked.end()) {
+          deviceBaked.erase(it);
           cleared++;
         }
         continue;
       }
-      void* devAddr = externalArrays[extIdx]->specialBuffer();
+      // The capture baked the resident allocation; specialBuffer() could
+      // migrate a buffer that is resident elsewhere.
+      void* devAddr = residentDeviceAddress(externalArrays[extIdx]);
       if (devAddr == nullptr) continue;
-      if (it == managedExtBakedAddrs_.end()) {
-        managedExtBakedAddrs_[extIdx] = devAddr;
+      if (it == deviceBaked.end()) {
+        deviceBaked[extIdx] = devAddr;
         recorded++;
       } else if (it->second != devAddr) {
         // Re-capture against a NEW address — the new address becomes the baked
@@ -9023,50 +9039,64 @@ void NativeDynamicShapePlan::recordManagedExtBakedAddrsForCapture(
   }
   if (recorded > 0 || updated > 0 || cleared > 0) {
     DSP_DIAG(MEMORY,
-             "MANAGED_EXT_BAKED: seg[%d-%d] recorded=%d updated=%d cleared=%d "
-             "bakedBaselineEntries=%d",
-             seg.def.startSlot, seg.def.endSlot, recorded, updated, cleared,
-             static_cast<int>(managedExtBakedAddrs_.size()));
+             "MANAGED_EXT_BAKED: seg[%d-%d] device=%d recorded=%d updated=%d "
+             "cleared=%d bakedBaselineEntries=%d",
+             seg.def.startSlot, seg.def.endSlot, device, recorded, updated, cleared,
+             static_cast<int>(deviceBaked.size()));
   }
 }
 
 bool NativeDynamicShapePlan::isDeviceManagedExternalInputIdentityChecked(
-    int extIdx, NDArray* input, bool& drifted, void*& bakedAddr,
+    int device, int extIdx, NDArray* input, bool& drifted, void*& bakedAddr,
     bool& reboundEvent) const {
   drifted = false;
   bakedAddr = nullptr;
   reboundEvent = false;
   const bool classified = isDeviceManagedExternalInput(extIdx, input);
-  // Table-driven identity: a baseline entry means the most recent capture of a
-  // segment reading extIdx baked its raw device address. The captured graph
-  // reads that address DIRECTLY, so identity must hold regardless of how the
-  // live input classifies now (classification can lag a relocation that
-  // re-registration has not yet mirrored).
-  const bool hasBaseline = extIdx >= 0 && managedExtBakedAddrs_.count(extIdx) > 0;
-  if (input == nullptr || input->specialBuffer() == nullptr) return classified;
-  if (hasBaseline) {
-    void* baked = managedExtBakedAddrs_.find(extIdx)->second;
-    if (baked != input->specialBuffer()) {
-      drifted = true;
-      bakedAddr = baked;
-    }
-    // REBOUND observability is event-gated: the diagnostic fires only when the
-    // live address changed relative to the previous call (the drift EVENT),
-    // never per call while a drift persists. The refresh copy is the
-    // correctness mechanism and still runs on every drifted call.
-    auto live = managedExtLastLiveAddrs_.find(extIdx);
-    const bool liveChanged = live == managedExtLastLiveAddrs_.end() ||
-                             live->second != input->specialBuffer();
-    if (liveChanged) {
-      if (drifted) reboundEvent = true;
-      managedExtLastLiveAddrs_[extIdx] = input->specialBuffer();
-    }
-    // A baked raw address always routes through the passthrough branch — the
-    // captured graph reads it directly, so the ordinary staging path cannot
-    // refresh it.
-    return true;
+  // Table-driven identity: a baseline entry means the most recent capture on
+  // this device of a segment reading extIdx baked its raw device address. The
+  // captured graph reads that address DIRECTLY, so identity must hold
+  // regardless of how the live input classifies now (classification can lag a
+  // relocation that re-registration has not yet mirrored).
+  if (input == nullptr) return classified;
+  void* live = residentDeviceAddress(input);
+  if (live == nullptr && !input->isEmpty()) {
+    // No device allocation yet: materialize it on this device, as before. A
+    // resident buffer is never migrated by this check.
+    live = input->specialBuffer();
   }
-  return classified;
+  if (live == nullptr || extIdx < 0) return classified;
+  // Writable state resident on another device is served by the segment-bound
+  // replica protocol (platformMigrateSegmentInputs), under this same predicate:
+  // it refreshes the replica this device's captures baked before any launch and
+  // writes it back at cleanup. Plan-level staging runs before that swap, so a
+  // refresh here would repeat the migration's copy on every call.
+  if (isExternalInputVariable(extIdx) && !isExternalInputPlaceholder(extIdx) &&
+      input->dataBuffer()->deviceId() != device) {
+    return classified;
+  }
+  auto deviceBaked = managedExtBakedAddrs_.find(device);
+  if (deviceBaked == managedExtBakedAddrs_.end()) return classified;
+  auto baked = deviceBaked->second.find(extIdx);
+  if (baked == deviceBaked->second.end()) return classified;
+  if (baked->second != live) {
+    drifted = true;
+    bakedAddr = baked->second;
+  }
+  // REBOUND observability is event-gated: the diagnostic fires only when the
+  // live address changed relative to the previous call (the drift EVENT),
+  // never per call while a drift persists. The refresh copy is the
+  // correctness mechanism and still runs on every drifted call.
+  auto& deviceLive = managedExtLastLiveAddrs_[device];
+  auto previous = deviceLive.find(extIdx);
+  if (previous == deviceLive.end() || previous->second != live) {
+    if (drifted) reboundEvent = true;
+    deviceLive[extIdx] = live;
+  }
+  // A baked raw address always routes through the passthrough branch — the
+  // captured graph reads it directly, so the ordinary staging path cannot
+  // refresh it.
+  return true;
 }
 #endif
 

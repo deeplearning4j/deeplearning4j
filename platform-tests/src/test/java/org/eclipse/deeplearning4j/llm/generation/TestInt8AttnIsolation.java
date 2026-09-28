@@ -11,6 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -68,10 +69,11 @@ public class TestInt8AttnIsolation {
     }
 
     /**
-     * ADR 0107 V2 INLINE-SCALE variant: same comparison, but the scales ride in the tail of the
-     * combined INT8 KV DataBuffer (no inputs 9/10) — exactly the layout GenerationPipeline feeds
-     * the frozen decode plan. Exercises KVCacheQuantize inline mode + the null-scale (inline)
-     * derivation in kvInPlaceWriteQuantisedBSHD and fusedGQADecodeQuantisedCuda.
+     * ADR 0107 V2 ROW-INLINE variant: same comparison, but each INT8 cache row of the
+     * [B,S,kvH,hd+4] tensor carries its own FLOAT32 scale in bytes [hd, hd+4), so there are no
+     * scale inputs 9/10 — the layout GenerationPipeline feeds the frozen decode plan. Exercises
+     * KVCacheQuantize inline mode, the row-inline write in kvInPlaceWriteQuantisedBSHD and the
+     * row-inline read in fusedGQADecodeQuantisedCuda/Cpu.
      */
     @Test
     public void testQuantisedDecodeAttnInlineScaleVsFloat() {
@@ -92,11 +94,11 @@ public class TestInt8AttnIsolation {
                 cachePos, scaleFactor, null, null);
         log.info("[FLOAT-inline] out[0,0,0,:]={}", Arrays.toString(sliceHead(refOut)));
 
-        // Combined inline quantize (values ++ f32 scale tail in ONE INT8 buffer) — pipeline recipe.
+        // Row-inline quantize (each row = hd INT8 values ++ that row's f32 scale) — pipeline recipe.
         INDArray keyCacheI8 = quantizeCacheInline(keyCacheF, B, S, kvH, hd);
         INDArray valCacheI8 = quantizeCacheInline(valCacheF, B, S, kvH, hd);
 
-        // Quantised path with NO scale inputs — the op derives scales from the buffer tail.
+        // Quantised path with NO scale inputs — the op reads each row's scale from the row itself.
         INDArray quantOut = execDpaV2(query, valCur, keyCur, keyCacheI8, valCacheI8,
                 cachePos, scaleFactor, null, null);
         log.info("[QUANT-inline] out[0,0,0,:]={}", Arrays.toString(sliceHead(quantOut)));
@@ -143,12 +145,13 @@ public class TestInt8AttnIsolation {
         INDArray mask = Nd4j.zeros(DataType.FLOAT, 1, 1, 1, S);
         for (int p = filled + 1; p < S; p++) mask.putScalar(0, 0, 0, p, -1e9f);
 
-        INDArray refOut = execDpaV2WithBias(query, valCur, keyCur, keyCacheF.dup(), valCacheF.dup(),
+        INDArray[] ref = execDpaV2WithBias(query, valCur, keyCur, keyCacheF.dup(), valCacheF.dup(),
                 cachePos, scaleFactor, mask);
         INDArray keyCacheI8 = quantizeCacheInline(keyCacheF, B, S, kvH, hd);
         INDArray valCacheI8 = quantizeCacheInline(valCacheF, B, S, kvH, hd);
-        INDArray quantOut = execDpaV2WithBias(query, valCur, keyCur, keyCacheI8, valCacheI8,
+        INDArray[] quant = execDpaV2WithBias(query, valCur, keyCur, keyCacheI8, valCacheI8,
                 cachePos, scaleFactor, mask);
+        INDArray refOut = ref[0], quantOut = quant[0];
 
         INDArray diff = refOut.sub(quantOut);
         double maxAbs = Nd4j.getExecutioner().execAndReturn(
@@ -160,9 +163,41 @@ public class TestInt8AttnIsolation {
                 "Model-geometry (GQA 8:2 hd=256) inline quantised attn vs float relErr " + rel
                         + " (>10%). FLOAT=" + Arrays.toString(sliceHead(refOut))
                         + " QUANT=" + Arrays.toString(sliceHead(quantOut)));
+
+        assertScoresAndLogitsMatch(ref, quant, qH, S, filled + 1);
     }
 
-    private INDArray execDpaV2WithBias(INDArray query, INDArray values, INDArray keys,
+    // Outputs 1/2 (scores, logits) are [1, qH, 1, S]. Rows [0, attended) are the written, unmasked
+    // prefix. Past it the float path stores the bias-shifted logit and the INT8 path the masked
+    // one, so only prefix logits are compared; every INT8 score there must be exactly zero.
+    private void assertScoresAndLogitsMatch(INDArray[] ref, INDArray[] quant, int qH, int S, int attended) {
+        float[] refScores = ref[1].dup().data().asFloat();
+        float[] quantScores = quant[1].dup().data().asFloat();
+        float[] refLogits = ref[2].dup().data().asFloat();
+        float[] quantLogits = quant[2].dup().data().asFloat();
+        double maxScoreErr = 0, maxLogitErr = 0, maxLogit = 0;
+        for (int h = 0; h < qH; h++) {
+            double scoreSum = 0;
+            for (int p = 0; p < S; p++) {
+                int i = h * S + p;
+                scoreSum += quantScores[i];
+                maxScoreErr = Math.max(maxScoreErr, Math.abs(refScores[i] - quantScores[i]));
+                if (p < attended) {
+                    maxLogitErr = Math.max(maxLogitErr, Math.abs(refLogits[i] - quantLogits[i]));
+                    maxLogit = Math.max(maxLogit, Math.abs(refLogits[i]));
+                } else {
+                    assertEquals(0f, quantScores[i], "INT8 score of masked row " + p + ", head " + h);
+                }
+            }
+            assertEquals(1.0, scoreSum, 1e-4, "INT8 scores of head " + h + " must sum to 1");
+        }
+        log.info("[ISOLATION-geom] maxScoreErr={} maxLogitErr={} maxLogit={}", maxScoreErr, maxLogitErr, maxLogit);
+        assertTrue(maxScoreErr < 0.05, "INT8 vs float attention scores maxAbsErr " + maxScoreErr);
+        assertTrue(maxLogitErr < 0.05 * maxLogit,
+                "INT8 vs float attention logits maxAbsErr " + maxLogitErr + " (max |logit| " + maxLogit + ")");
+    }
+
+    private INDArray[] execDpaV2WithBias(INDArray query, INDArray values, INDArray keys,
                                        INDArray keyCache, INDArray valueCache, INDArray cachePos,
                                        double scaleFactor, INDArray bias) {
         INDArray empty = Nd4j.empty(DataType.FLOAT);
@@ -171,7 +206,7 @@ public class TestInt8AttnIsolation {
                 .addFloatingPointArguments(scaleFactor, 0.0)
                 .addBooleanArguments(false, false, true)
                 .build();
-        return Nd4j.exec(op)[0];
+        return Nd4j.exec(op);
     }
 
     // ROW-INLINE quantize: [B,S,kvH,hd] float → INT8 [B,S,kvH,hd+4], each row = hd values ++ that

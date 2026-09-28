@@ -363,6 +363,12 @@ class TritonIRBuilder {
   // buffers. When curKPtr is valid, positions [0,pastSeq) read from kPtr (BHSD)
   // and positions [pastSeq,seqK) read from curKPtr (BSHD). When curKPtr is null,
   // all positions read from kPtr (existing single-buffer behavior).
+  //
+  // The attention emitters below read (batch * heads, q tile) from program ids
+  // (x, y). A kernel launched on a 1D grid, such as a multi-section kernel, has
+  // program_id(y) == 0 in every block, so it passes both coordinates decoded
+  // from its linear program id as batchHeadPid/qTilePid instead. Pass both or
+  // neither.
   static void emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::Location loc,
                                         mlir::Value qPtr, mlir::Value kPtr,
                                         mlir::Value vPtr, mlir::Value outPtr,
@@ -377,7 +383,9 @@ class TritonIRBuilder {
                                         mlir::Value curKPtr,
                                         mlir::Value curVPtr,
                                         int pastSeq,
-                                        int seqKVCur);
+                                        int seqKVCur,
+                                        mlir::Value batchHeadPid = mlir::Value(),
+                                        mlir::Value qTilePid = mlir::Value());
 
   // Emit a GGUF in-graph KV-cache decode attention kernel.
   //
@@ -389,7 +397,8 @@ class TritonIRBuilder {
   //   P   = load(cachePosPtr)                       // runtime boundary
   //   W   = seqQ                                     // current window width
   //   1. scatter: cache[b, P+s, kvH, :] = curK[b, s, kvH, :] for s in [0,W)
-  //      (and same for V) — guarded by pid1 == 0 so it runs exactly once
+  //      (and same for V) by the pid1 == 0 program of each (batch, query
+  //      head); the query heads of a GQA group write identical rows
   //   2. attention over [0, P+W):
   //        past  [0,P)   read from cache   (BSHD [B, cacheMaxSeq, kvH, D])
   //        current [P,P+W) read from curK/curV producers (BSHD [B, W, kvH, D])
@@ -413,7 +422,9 @@ class TritonIRBuilder {
                                             int headDim, float scale,
                                             int blockM, int blockN,
                                             mlir::Value biasPtr,
-                                            const std::vector<LongType>& biasShape);
+                                            const std::vector<LongType>& biasShape,
+                                            mlir::Value batchHeadPid = mlir::Value(),
+                                            mlir::Value qTilePid = mlir::Value());
 
   // Emit present_key/value writes for compound attention ops.
   // Writes current_key (BSHD/3D) to present_key (BHSD) output buffer at position pastSeq.
@@ -425,7 +436,9 @@ class TritonIRBuilder {
   static void emitPresentKvWrite(mlir::OpBuilder& builder, mlir::Location loc,
                                   mlir::Value curPtr, mlir::Value presentPtr,
                                   int batchSize, int numQHeads, int numKvHeads,
-                                  int pastSeq, int seqKV, int totalSeq, int headDim);
+                                  int pastSeq, int seqKV, int totalSeq, int headDim,
+                                  mlir::Value batchHeadPid = mlir::Value(),
+                                  mlir::Value qTilePid = mlir::Value());
 
   // Emit a fused Flash Attention backward kernel (Flash Attention 2 backward).
   // Inputs:  dO [BM, HD], Q [BM, HD], K [BN, HD], V [BN, HD], O [BM, HD], L [BM] (log-sum-exp)
@@ -442,7 +455,9 @@ class TritonIRBuilder {
                                                int batchSize, int numQHeads,
                                                int seqQ, int seqK,
                                                int headDim, float scale,
-                                               int blockM, int blockN);
+                                               int blockM, int blockN,
+                                               mlir::Value batchHeadPid = mlir::Value(),
+                                               mlir::Value qTilePid = mlir::Value());
 
  public:
   // ── Section emitters (TritonIRBuilder_sections.cpp) ──
@@ -452,9 +467,19 @@ class TritonIRBuilder {
   static std::vector<KernelSection> identifySections(
       NativeSlot* slots, int startSlot, int endSlot,
       NDArray** outputSlots, int totalOutputSlots,
-      NDArray** externalInputs, int numExternalInputs);
+      NDArray** externalInputs, int numExternalInputs,
+      int totalSlots, const int* requestedOutputSlotIndices, int numRequestedOutputs);
 
  private:
+  // What the fused and GGUF attention emitters compute for the forward attention
+  // op in slots[slotIdx], read from its inputs, args and outputs. Section planning
+  // and module emission both use it, so their attention dimensions agree.
+  static AttentionContract describeAttentionContract(
+      const NativeSlot* slots, int slotIdx, int totalSlots,
+      NDArray** outputSlots, int totalOutputSlots,
+      NDArray** externalInputs, int numExternalInputs,
+      const int* requestedOutputSlotIndices, int numRequestedOutputs);
+
   // Compute the grid requirement for a single section
   static int computeSectionGrid(const KernelSection& section, int blockSize);
 

@@ -971,10 +971,27 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset,
 BUILD_SINGLE_TEMPLATE(SD_LIB_EXPORT void memcpyWithT,
                       (sd::DataBuffer*, sd::DataBuffer*, sd::LongType, sd::LongType, sd::LongType),
                       SD_COMMON_TYPES);
+// FP8 storage is intentionally outside SD_COMMON_TYPES (and has no selective-rendering
+// flag), so dispatch both formats explicitly. The copy is byte-sized from the source
+// element width, which is exact for any fixed-width type; string buffers (offset header
+// plus variable-length payload) stay unsupported.
+template SD_LIB_EXPORT void memcpyWithT<float8>(sd::DataBuffer*, sd::DataBuffer*, sd::LongType,
+                                                sd::LongType, sd::LongType);
+template SD_LIB_EXPORT void memcpyWithT<float8_e5m2>(sd::DataBuffer*, sd::DataBuffer*, sd::LongType,
+                                                     sd::LongType, sd::LongType);
 
 void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
                         sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n) {
-  BUILD_SINGLE_SELECTOR(src->getDataType(), memcpyWithT,
+  const auto dataType = src->getDataType();
+  if (dataType == DataType::FLOAT8) {
+    memcpyWithT<float8>(dst, src, startingOffset, dstOffset, n);
+    return;
+  }
+  if (dataType == DataType::FLOAT8_E5M2) {
+    memcpyWithT<float8_e5m2>(dst, src, startingOffset, dstOffset, n);
+    return;
+  }
+  BUILD_SINGLE_SELECTOR(dataType, memcpyWithT,
                         (dst, src, startingOffset, dstOffset, n), SD_COMMON_TYPES);
 }
 

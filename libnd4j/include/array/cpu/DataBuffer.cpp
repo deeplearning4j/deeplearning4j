@@ -248,8 +248,18 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
 
 void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
                         sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n) {
-  BUILD_SINGLE_SELECTOR(dst->_dataType, memcpyWithT,(dst, src, startingOffset, dstOffset, n),
-                        SD_COMMON_TYPES);
+  // FP8 storage is intentionally outside SD_COMMON_TYPES (and has no selective-rendering
+  // flag), so dispatch both formats explicitly. memcpyWithT uses T only for element-offset
+  // arithmetic, which is exact for any fixed-width type; string buffers (offset header plus
+  // variable-length payload) stay unsupported.
+  if (dst->_dataType == DataType::FLOAT8) {
+    memcpyWithT<float8>(dst, src, startingOffset, dstOffset, n);
+  } else if (dst->_dataType == DataType::FLOAT8_E5M2) {
+    memcpyWithT<float8_e5m2>(dst, src, startingOffset, dstOffset, n);
+  } else {
+    BUILD_SINGLE_SELECTOR(dst->_dataType, memcpyWithT,(dst, src, startingOffset, dstOffset, n),
+                          SD_COMMON_TYPES);
+  }
 
   dst->readPrimary();
 }

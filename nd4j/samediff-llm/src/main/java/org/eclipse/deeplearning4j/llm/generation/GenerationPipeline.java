@@ -2243,15 +2243,11 @@ public class GenerationPipeline implements AutoCloseable {
                 numLayers, kvInputNames.keyNames.size(), isQuantizedKv, kvQuantFormat);
         Map<String, INDArray> staticKvBuffers = reuseState != null && reuseState.staticKvBuffers != null
                 ? reuseState.staticKvBuffers : new LinkedHashMap<>();
-        // QUANTIZED: separate INT8-compressed buffers + scales, sized only to the active
-        // prefill region (maxKvLen float elements → maxKvLen INT8 elements, 4x smaller).
+        // QUANTIZED: separate INT8-compressed buffers, each row carrying its own FLOAT32 scale
+        // (ADR 0107 V2 row-inline), sized only to the active prefill region.
         Map<String, INDArray> quantizedKvBuffers = isQuantizedKv
                 ? (reuseState != null && reuseState.quantizedKvBuffers != null
                         ? reuseState.quantizedKvBuffers : new LinkedHashMap<>())
-                : null;
-        Map<String, INDArray> kvScaleBuffers = isQuantizedKv
-                ? (reuseState != null && reuseState.kvScaleBuffers != null
-                        ? reuseState.kvScaleBuffers : new LinkedHashMap<>())
                 : null;
         for (int i = 0; i < numLayers; i++) {
             String keyName = kvInputNames.keyNames.get(i);
@@ -2271,10 +2267,9 @@ public class GenerationPipeline implements AutoCloseable {
             // wrappers), but the frozen decode plan and its staging buffers remain typed from
             // the placeholder. Allocating static KV from the output dtype makes a later native
             // handoff substitute a wider buffer into a narrower captured external input.
-            DataType keyDtype = decoder.getVariable(keyName).dataType();
-            DataType valDtype = decoder.getVariable(valName).dataType();
-            if (keyDtype == null || keyDtype == DataType.UNKNOWN) keyDtype = kRoped.dataType();
-            if (valDtype == null || valDtype == DataType.UNKNOWN) valDtype = vHeads.dataType();
+            // Quantised KV is the exception: see kvStagingDtype.
+            DataType keyDtype = kvStagingDtype(keyName, kRoped, isQuantizedKv);
+            DataType valDtype = kvStagingDtype(valName, vHeads, isQuantizedKv);
             if (keyDtype != valDtype) {
                 throw new IllegalStateException("KV input dtype mismatch for layer " + layerIdx
                         + ": " + keyName + "=" + keyDtype + ", " + valName + "=" + valDtype);
@@ -2364,8 +2359,6 @@ public class GenerationPipeline implements AutoCloseable {
                 // Reuse or replace existing quantized buffers on reuse path
                 replaceQuantizedBuffer(quantizedKvBuffers, keyQName, keyCacheInt8);
                 replaceQuantizedBuffer(quantizedKvBuffers, valQName, valCacheInt8);
-                // kvScaleBuffers intentionally NOT populated in V2 row-inline mode — the scale
-                // lives inside each KV row, so the native-op scale side-channel is disabled.
 
                 log.info("[GGUF-KV] Layer {} quantized (row-inline scale): keyCache={} ({}x compression vs float)",
                         layerIdx, Arrays.toString(keyCacheInt8.shape()),
@@ -2381,8 +2374,8 @@ public class GenerationPipeline implements AutoCloseable {
 
         // ── V2 QUANTIZED: free float KV after prefill quantize ────────────────────────────────────
         // ADR 0107 §prefill, §Migration Decision 8: after quantizing the full prefill region into
-        // INT8, free the float staticKvBuffers immediately. The quantizedKvBuffers (INT8) + kvScaleBuffers
-        // (float scales) become the ONLY live KV storage for the decode phase.
+        // INT8, free the float staticKvBuffers immediately. The quantizedKvBuffers (INT8 rows with
+        // their scales inline) become the ONLY live KV storage for the decode phase.
         //
         // V2 wiring: re-index quantizedKvBuffers under the ORIGINAL KV variable names
         // (same as staticKvBuffers keys) so the frozen decode plan's ext-input indices remain valid
@@ -2433,8 +2426,6 @@ public class GenerationPipeline implements AutoCloseable {
             }
 
             // Replace quantizedKvBuffers with the original-name-keyed INT8 map.
-            // The _q and _scale entries remain in kvScaleBuffers / quantizedKvBuffers under
-            // original names for scale lookup in the native decode.
             quantizedKvBuffers = int8KvByOrigName;
 
             log.info("[GGUF-KV-V2] V2 quantized path active: float KV freed, {} INT8 buffers live",
@@ -3048,7 +3039,6 @@ public class GenerationPipeline implements AutoCloseable {
         state.recurrentStateBuffers = recurrentStateBuffers;
         // QUANTIZED KV buffers: in V2, this is the INT8 live store under original variable names.
         state.quantizedKvBuffers = quantizedKvBuffers;
-        state.kvScaleBuffers = kvScaleBuffers;
         state.kvQuantFormat = kvQuantFormat;
         state.isQuantizedV2 = isQuantizedV2;
         state.decodeInputIds = decodeInputIds;
@@ -3211,6 +3201,34 @@ public class GenerationPipeline implements AutoCloseable {
                             + configuredFormat);
         }
         return configuredFormat - 1;
+    }
+
+    /**
+     * Dtype of the buffer that receives one layer's prefill K or V.
+     *
+     * <p>A float cache is handed to the frozen decode plan as-is, so it takes the placeholder
+     * dtype. A quantised cache is handed over as its INT8 row-inline encoding, and by prefill time
+     * its placeholder is already declared INT8. The buffer then only holds the values that
+     * encoding is computed from, so it takes the float dtype the placeholder had before the INT8
+     * declaration, the same dtype a STATIC cache would hold. Staging into the INT8 declaration
+     * truncates every prefill value toward zero before quantisation.</p>
+     */
+    private DataType kvStagingDtype(String kvName, INDArray prefillKv, boolean quantizedKv) {
+        return kvStagingDtype(decoder.getVariable(kvName).dataType(),
+                kvPlaceholderOriginalDtypes != null ? kvPlaceholderOriginalDtypes.get(kvName) : null,
+                prefillKv.dataType(), quantizedKv);
+    }
+
+    /**
+     * The staging-dtype decision of {@link #kvStagingDtype(String, INDArray, boolean)}: the declared
+     * placeholder dtype for a float cache, the dtype recorded before the INT8 declaration for a
+     * quantised one, and the prefill output dtype when neither is known. Package-private for the
+     * staging-dtype regression test.
+     */
+    static DataType kvStagingDtype(DataType declaredDtype, DataType preQuantizationDtype,
+                                   DataType prefillDtype, boolean quantizedKv) {
+        DataType dtype = quantizedKv ? preQuantizationDtype : declaredDtype;
+        return dtype == null || dtype == DataType.UNKNOWN ? prefillDtype : dtype;
     }
 
     /**
@@ -3910,7 +3928,6 @@ public class GenerationPipeline implements AutoCloseable {
         state.staticKvBuffers = staticKvBuffers;
         state.recurrentStateBuffers = recurrentStateBuffers;
         state.quantizedKvBuffers = null;
-        state.kvScaleBuffers = null;
         state.kvQuantFormat = 0;
         state.decodeInputIds = decodeInputIds;
         state.decodeCausalMask = decodeCausalMask;
@@ -4396,15 +4413,10 @@ public class GenerationPipeline implements AutoCloseable {
         if (state.decodePositionOffset != null) state.decodePositionOffset.syncToDevice();
         if (state.decodeCachePosition != null) state.decodeCachePosition.syncToDevice();
         if (state.decodeActualSequenceLength != null) state.decodeActualSequenceLength.syncToDevice();
-        // V2 QUANTIZED: sync INT8 live buffers (and their scales); float staticKvBuffers are null.
+        // V2 QUANTIZED: sync INT8 live buffers (scales are inside the rows); float staticKvBuffers are null.
         if (state.isQuantizedV2 && state.quantizedKvBuffers != null) {
             for (INDArray kvBuf : state.quantizedKvBuffers.values()) {
                 if (kvBuf != null && !kvBuf.isEmpty()) kvBuf.syncToDevice();
-            }
-            if (state.kvScaleBuffers != null) {
-                for (INDArray scBuf : state.kvScaleBuffers.values()) {
-                    if (scBuf != null && !scBuf.isEmpty()) scBuf.syncToDevice();
-                }
             }
         } else if (state.staticKvBuffers != null) {
             for (INDArray kvBuf : state.staticKvBuffers.values()) kvBuf.syncToDevice();
@@ -4433,20 +4445,6 @@ public class GenerationPipeline implements AutoCloseable {
             staticKvArray[idx++] = kvLiveMap != null ? kvLiveMap.get(valName) : null;
         }
 
-        // ADR 0107 V2: assemble scale buffer array (key scales then value scales).
-        // Scale arrays are FLOAT32 [batch, maxKvLen, kvHeads] — one float per (token, kv_head).
-        // Null when not in V2 quantized mode.
-        INDArray[] kvScaleArray = null;
-        if (state.isQuantizedV2 && state.kvScaleBuffers != null && !state.kvScaleBuffers.isEmpty()) {
-            kvScaleArray = new INDArray[2 * state.numKvPairs];
-            int si = 0;
-            for (String keyName : state.kvInputNames.keyNames) {
-                kvScaleArray[si++] = state.kvScaleBuffers.get(keyName + "_scale");
-            }
-            for (String valName : state.kvInputNames.valueNames) {
-                kvScaleArray[si++] = state.kvScaleBuffers.get(valName + "_scale");
-            }
-        }
         INDArray[] mtpKvArray = state.mtpKvBuffers != null
                 ? new INDArray[]{
                         state.mtpKvBuffers.get(MTP_KEY_CACHE_NAME),
@@ -4522,8 +4520,6 @@ public class GenerationPipeline implements AutoCloseable {
                             state.sampling.isGreedy() ? 0.0 : state.sampling.getTopP(),
                             state.sampling.getRepetitionPenalty(),
                             state.stopTokenIds);
-                    // ADR 0107 V2: append scale buffers and set bit 7 in optionalMask.
-                    if (kvScaleArray != null) op.withQuantisedKvScales(kvScaleArray);
                     applyNativePolicy(op, decodePolicy, state.sampling, generatedTokenOffset + step,
                             (int) state.decodeInputIds.size(1));
                     // ADR 0106 Phase 2: wire n-gram speculation when the policy uses the window substrate.
@@ -4656,8 +4652,6 @@ public class GenerationPipeline implements AutoCloseable {
                         state.sampling.isGreedy() ? 0.0 : state.sampling.getTopP(),
                         state.sampling.getRepetitionPenalty(),
                         state.stopTokenIds);
-                // ADR 0107 V2: append scale buffers and set bit 7 in optionalMask.
-                if (kvScaleArray != null) op.withQuantisedKvScales(kvScaleArray);
                 int generatedTokenOffset = state.generatedSoFar != null ? state.generatedSoFar.size() : 0;
                 DecodePolicy decodePolicy = resolveDecodePolicy(state.sampling, config);
                 applyNativePolicy(op, decodePolicy, state.sampling, generatedTokenOffset,
@@ -5706,17 +5700,12 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         /**
-         * Total byte count of the KV scale buffers (float32 per-token-per-head scales for V2 INT8).
-         * Returns 0 when not in V2 mode.
+         * Bytes held by KV scale storage outside the KV buffers. Always 0: V2 INT8 rows carry their
+         * FLOAT32 scale inline (ADR 0107), so {@link #getQuantizedKvTotalBytes()} already counts it.
          */
         public long getKvScaleTotalBytes() {
             requireOpen();
-            if (state.kvScaleBuffers == null) return 0L;
-            long total = 0L;
-            for (INDArray a : state.kvScaleBuffers.values()) {
-                if (a != null && !a.wasClosed()) total += a.length() * a.dataType().width();
-            }
-            return total;
+            return 0L;
         }
 
         /**

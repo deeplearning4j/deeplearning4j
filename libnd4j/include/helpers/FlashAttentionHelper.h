@@ -440,21 +440,36 @@ extern void fusedGQADecodeCuda(NDArray* query, NDArray* key, NDArray* value,
                                 NDArray* currentValueWindow = nullptr,
                                 const void* currentKvPosition = nullptr);
 
-// V2 quantised variant: INT8 K/V with per-token-per-head float scales.
-// Inline dequant (float(int8)*scale) inside the GQA kernel — no scratch buffers.
-// K/V layout: INT8 [batch, seqKV, kvHeads, headDim]; scales: float [batch, seqKV, kvHeads].
-// attentionBias: [batch, 1_or_qH, 1, seqKV] substrate mask or nullptr.
-// ADR 0107 §substrate-contract: accepts [B, 1, W, seqK] grid mask (W=1 today).
+// V2 quantised variant: single-token GQA decode over INT8 K/V caches, dequantized inline.
+// The query, bias, current windows and output share the model dtype T (any float type);
+// scores and softmax accumulate in FlashAccType<T>. Each cache row has one FLOAT32 scale, held
+// in separate [batch, seqKV, kvHeads] caches or, when both scale caches are null, inline in
+// bytes [headDim, headDim + 4) of a [batch, seqKV, kvHeads, headDim + 4] row (ADR 0107 V2).
+// attentionBias: [batch, 1_or_qH, 1, seqKV] substrate mask (rank 1-3 broadcast) or nullptr.
+// currentKeyWindow/currentValueWindow/currentKvPosition: same "current window" contract as
+// fusedGQADecodeCuda above — the pre-quantization current-step K/V rows and their
+// device-resident cache position. When supplied, the kernel (a) attends only over the written
+// prefix [0, currentKvPosition + currentSeq), independent of attentionBias content, and (b) reads
+// the window rows directly instead of round-tripping them through the INT8 cache they were just
+// quantized into. nullptr attends over the full seqKV and relies on the bias alone to mask.
+// attentionScores/attentionLogits: optional outputs; null or empty means not requested. Logits are
+// the pre-softmax scores, scores the softmax weights applied to V; rows past the attended prefix
+// get the masked logit and a zero score.
 extern void fusedGQADecodeQuantisedCuda(
-    NDArray* query,         // float  [batch, 1, qHeads, headDim]
-    NDArray* quantKeyCache, // INT8   [batch, seqKV, kvHeads, headDim]
-    NDArray* keyScaleCache, // float  [batch, seqKV, kvHeads]
-    NDArray* quantValCache, // INT8   [batch, seqKV, kvHeads, headDim]
-    NDArray* valScaleCache, // float  [batch, seqKV, kvHeads]
-    NDArray* output,        // float  [batch, 1, qHeads, headDim]
+    NDArray* query,         // T      [batch, 1, qHeads, headDim]
+    NDArray* quantKeyCache, // INT8   [batch, seqKV, kvHeads, headDim] or [.., headDim + 4]
+    NDArray* keyScaleCache, // FLOAT32 [batch, seqKV, kvHeads] or nullptr (row-inline)
+    NDArray* quantValCache, // INT8   [batch, seqKV, kvHeads, headDim] or [.., headDim + 4]
+    NDArray* valScaleCache, // FLOAT32 [batch, seqKV, kvHeads] or nullptr (row-inline)
+    NDArray* output,        // T      [batch, 1, qHeads, headDim]
     double scale,
     LaunchContext* context,
-    NDArray* attentionBias = nullptr);  // float [batch, 1_or_qH, 1, seqKV] or nullptr
+    NDArray* attentionBias = nullptr,   // T [batch, 1_or_qH, 1, seqKV] or nullptr
+    NDArray* currentKeyWindow = nullptr,     // T [batch, currentSeq, kvHeads, headDim] or nullptr
+    NDArray* currentValueWindow = nullptr,   // T [batch, currentSeq, kvHeads, headDim] or nullptr
+    const void* currentKvPosition = nullptr,   // device LongType scalar or nullptr
+    NDArray* attentionScores = nullptr,        // T [batch, qHeads, 1, seqKV] or nullptr
+    NDArray* attentionLogits = nullptr);       // T [batch, qHeads, 1, seqKV] or nullptr
 #else  // CPU build — provide no-op stubs so impl/*.cpp files need no #ifdef SD_CUDA
 static inline void fusedAttentionCuda(NDArray*, NDArray*, NDArray*, NDArray*,
                                       double, bool, LaunchContext*, NDArray* = nullptr) {}
@@ -473,7 +488,10 @@ static inline void fusedGQADecodeCuda(NDArray*, NDArray*, NDArray*, NDArray*,
                                        const void* = nullptr) {}
 static inline void fusedGQADecodeQuantisedCuda(NDArray*, NDArray*, NDArray*,
                                                 NDArray*, NDArray*, NDArray*,
-                                                double, LaunchContext*, NDArray* = nullptr) {}
+                                                double, LaunchContext*, NDArray* = nullptr,
+                                                NDArray* = nullptr, NDArray* = nullptr,
+                                                const void* = nullptr, NDArray* = nullptr,
+                                                NDArray* = nullptr) {}
 #endif
 
 }  // namespace sd

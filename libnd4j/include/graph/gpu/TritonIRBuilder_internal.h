@@ -337,7 +337,8 @@ inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int num
   // configuration (for example M=16,N=32 at headDim=256) and needlessly split
   // a short causal prefix across online-softmax tiles.
   int chosenBytes = estimateFusedAttentionSharedMemBytes(headDim, choice.blockM, choice.blockN);
-  if (chosenBytes > limit) {
+  const bool shrink = chosenBytes > limit;
+  if (shrink) {
     bool found = false;
     const int minBlockM = seqQ <= 4 ? choice.blockM : 16;
     for (int n = choice.blockN; n >= 16 && !found; n /= 2) {
@@ -362,7 +363,7 @@ inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int num
 
   choice.estimatedSharedMemBytes = chosenBytes;
   choice.fitsSharedMem = (chosenBytes <= limit);
-  choice.adjustedForSharedMem = true;  // Always report as adjusted for decode path
+  choice.adjustedForSharedMem = shrink;
   choice.sharedMemLimitBytes = limit;
   return choice;
 }

@@ -959,41 +959,47 @@ function(configure_cpu_linking main_target_name)
     endif()
 
     # OpenVINO (Intel CPU Graph Backend)
+    set(_cpu_openvino_runtimes "")
     if(HAVE_OPENVINO AND DEFINED OPENVINO_LIB)
         target_link_libraries(${main_target_name} PUBLIC ${OPENVINO_LIB})
         target_compile_definitions(${main_target_name} PUBLIC HAVE_OPENVINO=1)
         message(STATUS "🔗 Linking OpenVINO CPU graph backend")
 
-        # Bundle TBB shared library alongside libnd4jcpu.so so JavaCPP packaging
-        # can include it in the native jar. libtbb.so.12 is OpenVINO's threading
-        # runtime — it is always a shared library (no static variant in OpenVINO's build).
-        # The pom.xml copy step globs all *.so / *.so.* from CMAKE_BINARY_DIR into
-        # the jar. Without this step, libtbb.so.12 only exists at the absolute build
-        # path that is baked into RUNPATH; after a clean build that path no longer exists.
+        # OpenVINO's static archives link the shared oneTBB runtime (libtbb.so.12,
+        # libtbbmalloc.so.2); oneTBB has no static variant. Copy it beside
+        # libnd4jcpu.so and hand the copies to the shared-runtime staging at the
+        # end of this function, so the CPU manifest makes JavaCPP extract and
+        # preload oneTBB with the backend. Without that, libtbb.so.12 resolves only
+        # through the build tree's absolute RUNPATH.
         if(NOT WIN32)
-            set(_OV_TBB_SRC_DIR "${CMAKE_BINARY_DIR}/openvino_install/runtime/3rdparty/tbb/lib64")
-            if(EXISTS "${_OV_TBB_SRC_DIR}")
-                # Copy at configure time for the "already built" reuse path
-                file(GLOB _tbb_so_files "${_OV_TBB_SRC_DIR}/libtbb.so*"
-                                        "${_OV_TBB_SRC_DIR}/libtbbmalloc.so*"
-                                        "${_OV_TBB_SRC_DIR}/libtbbmalloc_proxy.so*")
-                foreach(_f ${_tbb_so_files})
-                    get_filename_component(_fname "${_f}" NAME)
-                    if(NOT EXISTS "${CMAKE_BINARY_DIR}/${_fname}")
-                        message(STATUS "  Copying TBB library for bundling: ${_fname}")
-                        execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${_f}" "${CMAKE_BINARY_DIR}/${_fname}")
-                    endif()
-                endforeach()
+            set(_ov_tbb_root "${CMAKE_BINARY_DIR}/openvino_install/runtime/3rdparty/tbb")
+            # Copy at configure time for the "already built" reuse path
+            execute_process(
+                COMMAND ${CMAKE_COMMAND}
+                    "-D_OV_TBB_ROOT=${_ov_tbb_root}"
+                    "-D_DST_DIR=${CMAKE_BINARY_DIR}"
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/copy_tbb_libs.cmake"
+                RESULT_VARIABLE _ov_tbb_copy_result)
+            if(NOT _ov_tbb_copy_result EQUAL 0)
+                message(FATAL_ERROR "Failed to copy OpenVINO oneTBB runtime from ${_ov_tbb_root}")
             endif()
             # Also copy at build time (POST_BUILD) for the case where OpenVINO is
-            # built as part of this cmake invocation (ExternalProject path).
+            # built as part of this cmake invocation (ExternalProject path). This
+            # must stay registered before the shared-runtime staging command below,
+            # which consumes the copies.
             add_custom_command(TARGET ${main_target_name} POST_BUILD
                 COMMAND ${CMAKE_COMMAND}
-                    -D_OV_TBB_SRC_DIR=${CMAKE_BINARY_DIR}/openvino_install/runtime/3rdparty/tbb/lib64
-                    -D_DST_DIR=${CMAKE_BINARY_DIR}
+                    "-D_OV_TBB_ROOT=${_ov_tbb_root}"
+                    "-D_DST_DIR=${CMAKE_BINARY_DIR}"
+                    -D_REQUIRED=ON
                     -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/copy_tbb_libs.cmake"
-                COMMENT "Copying OpenVINO TBB shared libraries to output directory for jar bundling"
-            )
+                COMMENT "Copying OpenVINO oneTBB runtime beside ${main_target_name}"
+                VERBATIM)
+            # The unversioned names are what -ltbb/-ltbbmalloc resolved; staging
+            # records each under its SONAME.
+            set(_cpu_openvino_runtimes
+                "${CMAKE_BINARY_DIR}/libtbb.so"
+                "${CMAKE_BINARY_DIR}/libtbbmalloc.so")
         endif()
     endif()
 
@@ -1112,6 +1118,7 @@ function(configure_cpu_linking main_target_name)
     # still must emit an explicit zero-entry manifest; JavaCPP treats a missing
     # manifest as an invalid native build. MLIR-only consumers also need their
     # LLVM/MLIR and execution-engine DSOs, independently of the Triton compiler.
+    # OpenVINO builds add the oneTBB runtime copied above.
     set(_cpu_shared_runtimes "")
     set(_cpu_compiler_runtime_targets "")
     if(HAVE_MLIR)
@@ -1126,6 +1133,7 @@ function(configure_cpu_linking main_target_name)
         endif()
         list(APPEND _cpu_shared_runtimes "$<TARGET_FILE:${_compiler_runtime_target}>")
     endforeach()
+    list(APPEND _cpu_shared_runtimes ${_cpu_openvino_runtimes})
     list(JOIN _cpu_shared_runtimes "|" _cpu_shared_runtimes_pipe)
     add_custom_command(TARGET ${main_target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND}

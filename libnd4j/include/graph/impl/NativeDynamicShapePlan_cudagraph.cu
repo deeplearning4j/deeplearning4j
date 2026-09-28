@@ -4082,7 +4082,9 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     }
 
     void* bakedDst = bakedTarget->specialBuffer();
-    void* refreshSrc = ext->specialBuffer();
+    // Resident allocation, wherever it lives: the transfer below handles a
+    // source on another device, and specialBuffer() would relocate caller state.
+    void* refreshSrc = residentDeviceAddress(ext);
     const size_t refreshBytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
 
     if (bakedDst == nullptr || refreshSrc == nullptr || refreshBytes == 0) {
@@ -4233,7 +4235,8 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       bool managedDrifted = false;
       void* managedBakedAddr = nullptr;
       bool managedReboundEvent = false;
-      if (isDeviceManagedExternalInputIdentityChecked(i, ext, managedDrifted,
+      if (isDeviceManagedExternalInputIdentityChecked(currentDevice, i, ext,
+                                                      managedDrifted,
                                                       managedBakedAddr,
                                                       managedReboundEvent)) {
         if (!managedDrifted) {
@@ -4242,7 +4245,7 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
           DSP_DIAG(MEMORY,
                    "STAGING_D2D[%d]: SKIPPED — plan-managed device buffer "
                    "(devAddr=%p), passing through directly",
-                   i, ext->specialBuffer());
+                   i, residentDeviceAddress(ext));
           continue;
         }
         // Fires once per relocation (live address changed vs. previous call),
@@ -4251,7 +4254,7 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
           DSP_DIAG(MEMORY,
                    "STAGING_D2D[%d]: REBOUND — devAddr drift %p -> %p, "
                    "refreshing captured address",
-                   i, managedBakedAddr, ext->specialBuffer());
+                   i, managedBakedAddr, residentDeviceAddress(ext));
         }
         bool reboundOk = false;
         DspStagingSyncResult reboundResult =
@@ -4521,14 +4524,15 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     bool managedDrifted = false;
     void* managedBakedAddr = nullptr;
     bool managedReboundEvent = false;
-    if (isDeviceManagedExternalInputIdentityChecked(i, ext, managedDrifted,
+    if (isDeviceManagedExternalInputIdentityChecked(currentDevice, i, ext,
+                                                    managedDrifted,
                                                     managedBakedAddr,
                                                     managedReboundEvent)) {
       if (!managedDrifted) {
         DSP_DIAG(MEMORY,
                  "STAGING_D2D_SLOW[%d]: SKIPPED — plan-managed device buffer "
                  "(devAddr=%p), passing through directly",
-                 i, ext->specialBuffer());
+                 i, residentDeviceAddress(ext));
         effectiveExternals_[i] = externalArrays[i];
         continue;
       }
@@ -4538,7 +4542,7 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
         DSP_DIAG(MEMORY,
                  "STAGING_D2D_SLOW[%d]: REBOUND — devAddr drift %p -> %p, "
                  "refreshing captured address",
-                 i, managedBakedAddr, ext->specialBuffer());
+                 i, managedBakedAddr, residentDeviceAddress(ext));
       }
       bool reboundOk = false;
       DspStagingSyncResult reboundResult =

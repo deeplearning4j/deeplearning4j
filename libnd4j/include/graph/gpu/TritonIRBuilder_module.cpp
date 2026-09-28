@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <exception>
 #include <functional>
 #include <limits>
 #include <map>
@@ -754,6 +755,361 @@ static std::vector<LongType> computeViewStridesFromOp(
   return outputStrides;
 }
 
+// Frees a build's module and context when an exception unwinds out of the
+// build. Returned results own both; compileToGpuBinary frees them.
+struct ModuleUnwindGuard {
+  TritonIRModule& result;
+  int exceptions = std::uncaught_exceptions();
+  ~ModuleUnwindGuard() {
+    if (std::uncaught_exceptions() <= exceptions) return;
+    if (auto* mod = static_cast<mlir::ModuleOp*>(result.mlirModule)) {
+      mod->erase();
+      delete mod;
+    }
+    delete static_cast<mlir::MLIRContext*>(result.mlirContext);
+    result.mlirModule = nullptr;
+    result.mlirContext = nullptr;
+  }
+};
+
+// Host shape info of plan source srcIdx (< 0: external input -(srcIdx + 1)) at
+// compile time: the live array when its shape info is valid, else the producer's
+// cached output shape; nullptr when neither is known.
+static const LongType* attentionSourceShapeInfo(const NativeSlot* slots, int totalSlots, int srcIdx,
+                                                NDArray** outputSlots, int totalOutputSlots,
+                                                NDArray** externalInputs, int numExternalInputs) {
+  if (srcIdx < 0) {
+    const int extIdx = -(srcIdx + 1);
+    NDArray* arr = extIdx < numExternalInputs && externalInputs ? externalInputs[extIdx] : nullptr;
+    return arr && arr->hasValidShapeInfo() ? arr->shapeInfo() : nullptr;
+  }
+  NDArray* arr = srcIdx < totalOutputSlots && outputSlots ? outputSlots[srcIdx] : nullptr;
+  if (arr && arr->hasValidShapeInfo()) return arr->shapeInfo();
+  for (int s = 0; s < totalSlots; s++) {
+    const auto& cached = slots[s].shapeCache.cachedOutputShapes;
+    for (int o = 0; o < slots[s].wiring.numOutputs && o < static_cast<int>(cached.size()); o++) {
+      if (slots[s].wiring.outputSlotIndices[o] == srcIdx && cached[o]) return cached[o];
+    }
+  }
+  return nullptr;
+}
+
+// Mirrors the input decoding of dot_product_attention_v2 and
+// onnx_multi_head_attention. An op the emitters cannot reproduce exactly gets a
+// reason: its range is rejected and the op runs natively.
+AttentionContract TritonIRBuilder::describeAttentionContract(
+    const NativeSlot* slots, int slotIdx, int totalSlots,
+    NDArray** outputSlots, int totalOutputSlots,
+    NDArray** externalInputs, int numExternalInputs,
+    const int* requestedOutputSlotIndices, int numRequestedOutputs) {
+  AttentionContract c;
+  auto reject = [&c](std::string why) {
+    c.reason = std::move(why);
+    return c;
+  };
+  // Each source is resolved once; the checks below read it repeatedly.
+  std::unordered_map<int, const LongType*> shapeInfos;
+  auto shapeInfoOf = [&](int s) -> const LongType* {
+    auto known = shapeInfos.find(s);
+    if (known == shapeInfos.end()) {
+      known = shapeInfos.emplace(s, attentionSourceShapeInfo(slots, totalSlots, s, outputSlots, totalOutputSlots,
+                                                             externalInputs, numExternalInputs)).first;
+    }
+    return known->second;
+  };
+  auto resolveShape = [&](int s) -> std::vector<LongType> {
+    const LongType* info = shapeInfoOf(s);
+    if (!info) return {};
+    const LongType* dims = shape::shapeOf(info);
+    return std::vector<LongType>(dims, dims + shape::rank(info));
+  };
+  // 0 for an empty array, 1 for a scalar, -1 when the source cannot be resolved.
+  auto resolveLength = [&](int s) -> LongType {
+    const LongType* info = shapeInfoOf(s);
+    if (!info) return -1;
+    return shape::isEmptyConst(info) ? 0 : shape::length(info);
+  };
+  auto resolveDtype = [&](int s) -> DataType {
+    const LongType* info = shapeInfoOf(s);
+    return info ? ArrayOptions::dataType(info) : DataType::UNKNOWN;
+  };
+  // Dense C-order (size-1 dims may carry any stride), the layout the emitters index with.
+  auto isDenseCOrder = [&](int s) -> bool {
+    const LongType* info = shapeInfoOf(s);
+    if (!info) return false;
+    LongType expected = 1;
+    for (int d = static_cast<int>(shape::rank(info)) - 1; d >= 0; d--) {
+      const LongType dim = shape::shapeOf(info)[d];
+      if (dim != 1 && shape::stride(info)[d] != expected) return false;
+      expected *= dim;
+    }
+    return true;
+  };
+
+  const NativeSlot& slot = slots[slotIdx];
+  const SlotArgs& args = slot.args;
+  const int n = slot.wiring.numInputs;
+  auto src = [&](int i) { return slot.wiring.inputSourceIndices[i]; };
+  // Absent (i >= n) and empty inputs both have length 0.
+  auto lenOf = [&](int i) -> LongType { return i < n ? resolveLength(src(i)) : 0; };
+  auto dimsOf = [&](int i) { return i < n ? resolveShape(src(i)) : std::vector<LongType>(); };
+  auto rankOf = [&](int i) { return static_cast<int>(dimsOf(i).size()); };
+  auto isFloat = [](DataType t) { return t == FLOAT32 || t == HALF || t == BFLOAT16; };
+  auto addressable = [&](int s) {
+    return resolveLength(s) <= std::numeric_limits<int>::max() && isDenseCOrder(s);
+  };
+  auto dimsStr = [](const std::vector<LongType>& d) {
+    std::string s = "[";
+    for (size_t i = 0; i < d.size(); i++) s += (i ? "," : "") + std::to_string(d[i]);
+    return s + "]";
+  };
+
+  std::string opLower = slot.ident.opName;
+  std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
+  if (opLower.size() > 2 && opLower.compare(opLower.size() - 2, 2, "bp") == 0) {
+    return reject("backward attention: the backward emitter's (dO, Q, K, V, O, L) BHSD inputs "
+                  "match no native backward op");
+  }
+  const bool dpa = opLower == "dot_product_attention_v2" || opLower == "dotproductattentionv2";
+  const bool onnx = opLower == "onnx_multi_head_attention" || opLower == "onnxmultiheadattention";
+  if (!dpa && !onnx) return reject("no emitter contract for this attention op");
+  if (n < 3 || slot.wiring.numOutputs < 1) return reject("needs Q, K, V and an output");
+  for (int i = 0; i < n; i++) {
+    if (lenOf(i) < 0) return reject("input " + std::to_string(i) + " has no shape");
+  }
+
+  // DPA v2 inputs are (Q, V, K, ...); ONNX MHA inputs are (Q, K, V, ...).
+  const int kIn = dpa ? 2 : 1;
+  const int vIn = dpa ? 1 : 2;
+  c.qSrc = src(0);
+  c.kSrc = src(kIn);
+  c.vSrc = src(vIn);
+  c.outSlot = slot.wiring.outputSlotIndices[0];
+  if (lenOf(0) == 0 || lenOf(kIn) == 0 || lenOf(vIn) == 0) return reject("Q, K or V is empty");
+  const DataType qType = resolveDtype(c.qSrc);
+  if (!isFloat(qType)) return reject("Q dtype " + DataTypeUtils::asString(qType) + " is not a float type");
+  const auto qDims = dimsOf(0);
+  auto kDims = dimsOf(kIn);
+  auto vDims = dimsOf(vIn);
+  LongType batch = 0, qHeads = 1, kvHeads = 1, seqQ = 0, seqK = 0, headDim = 0;
+  LongType pastSeq = 0, curSeq = 0;
+  double scale = 0.0;
+  std::vector<int> operands = {c.kSrc, c.vSrc};  // share Q's dtype
+
+  // Bias [.., seqQ, cols]. Rank 4 is [batch, 1 or qHeads, seqQ, C]; lower ranks
+  // carry no batch or head index, which the emitters support only for batch 1.
+  // allowWider: native slices a wider bias to its first cols columns, and the
+  // emitters read those columns with the bias's own row pitch.
+  auto takeBias = [&](int i, LongType cols, bool allowWider) -> std::string {
+    const auto b = dimsOf(i);
+    const int r = static_cast<int>(b.size());
+    const std::string what = "bias input " + std::to_string(i) + " " + dimsStr(b);
+    if (r < 2 || r > 4) return what + " is not rank 2-4";
+    if (!isFloat(resolveDtype(src(i)))) return what + " is not a float type";
+    if (b[r - 2] != seqQ || (allowWider ? b[r - 1] < cols : b[r - 1] != cols)) {
+      return what + " does not match [.., " + std::to_string(seqQ) + ", " + std::to_string(cols) + "]";
+    }
+    const bool indexable = r == 4 ? b[0] == batch && (b[1] == 1 || b[1] == qHeads)
+                                  : batch == 1 && (r == 2 || b[0] == 1);
+    if (!indexable) return what + " cannot be indexed for batch " + std::to_string(batch);
+    if (!addressable(src(i))) return what + " is not dense C-order within int32 offsets";
+    c.hasBias = true;
+    c.biasSrc = src(i);
+    c.biasShape = b;
+    return {};
+  };
+
+  if (dpa) {
+    if (n > 11) return reject("more than 11 inputs");
+    if (args.numTArgs > 1 && args.tArgs && args.tArgs[1] != 0.0) return reject("dropout");
+    // Native ignores empty and rank-0 masks.
+    if ((lenOf(3) > 0 && rankOf(3) > 0) || (lenOf(4) > 0 && rankOf(4) > 0)) {
+      return reject("query/value mask");
+    }
+    if (lenOf(9) > 0 || lenOf(10) > 0) return reject("INT8 KV scale caches");
+    if (lenOf(5) > 0 && rankOf(5) >= 2 && resolveDtype(src(5)) == INT8) return reject("INT8 KV cache");
+    c.causal = args.numBArgs > 0 && args.bArgs && args.bArgs[0];
+    scale = args.numTArgs > 0 && args.tArgs ? args.tArgs[0] : 1.0;
+
+    if (qDims.size() == 3) {
+      // [B, S, D]: one head.
+      if (kDims.size() != 3 || kDims != vDims) return reject("rank-3 Q needs rank-3 K and V of one shape");
+      batch = qDims[0];
+      seqQ = qDims[1];
+      headDim = qDims[2];
+      if (kDims[0] != batch || kDims[2] != headDim) {
+        return reject("K/V " + dimsStr(kDims) + " do not match Q " + dimsStr(qDims));
+      }
+    } else if (qDims.size() == 4) {
+      // BSHD [B, S, H, D]; native promotes a rank-3 K/V [B, S, kvH * D].
+      batch = qDims[0];
+      seqQ = qDims[1];
+      qHeads = qDims[2];
+      headDim = qDims[3];
+      for (auto* d : {&kDims, &vDims}) {
+        if (d->size() == 3 && (*d)[2] % headDim == 0) {
+          *d = {(*d)[0], (*d)[1], (*d)[2] / headDim, headDim};
+        }
+      }
+      if (kDims.size() != 4 || kDims != vDims) return reject("K and V are not [B, S, kvH, D] of one shape");
+      kvHeads = kDims[2];
+      if (kDims[0] != batch || kDims[3] != headDim || kvHeads <= 0 || qHeads % kvHeads != 0) {
+        return reject("K/V " + dimsStr(kDims) + " do not match Q " + dimsStr(qDims));
+      }
+    } else {
+      return reject("Q rank " + std::to_string(qDims.size()) + " (the emitters take rank 3 or 4)");
+    }
+    seqK = kDims[1];
+
+    // Inputs 5 and 6 are the key and value caches when both are present. With
+    // a cache position (input 7) the op writes the current K/V into them and
+    // attends over them; without one native ignores them.
+    const bool caches = lenOf(5) > 0 && rankOf(5) >= 2 && lenOf(6) > 0 && rankOf(6) >= 2;
+    if (caches && lenOf(7) > 0) {
+      const auto kc = dimsOf(5);
+      const auto vc = dimsOf(6);
+      if (qDims.size() != 4) return reject("KV-cache attention with rank-3 Q");
+      if (kc.size() != 4 || kc != vc || kc[0] != batch || kc[2] != kvHeads || kc[3] != headDim) {
+        return reject("KV caches " + dimsStr(kc) + " / " + dimsStr(vc) + " are not [B, C, kvH, D]");
+      }
+      if (lenOf(7) != 1 || resolveDtype(src(7)) != INT64) return reject("cache position is not one INT64");
+      if (seqK != seqQ) return reject("current K/V window differs from the query rows");
+      // The GGUF emitter attends keys [0, P + seqQ) for every query row. Native
+      // masks causally per row, which is the same key range when seqQ == 1, and
+      // otherwise scans all C cache rows and leaves rows past P + seqQ to the
+      // bias, which must mask them.
+      if (c.causal && seqQ != 1) {
+        return reject("causal KV-cache attention over " + std::to_string(seqQ) + " query rows");
+      }
+      if (!c.causal && lenOf(8) <= 0) return reject("non-causal KV-cache attention without a bias");
+      c.gguf = true;
+      c.keyCacheSrc = src(5);
+      c.valueCacheSrc = src(6);
+      c.cachePosSrc = src(7);
+      seqK = kc[1];
+      operands.push_back(c.keyCacheSrc);
+      operands.push_back(c.valueCacheSrc);
+      if (lenOf(8) > 0) {
+        const std::string why = takeBias(8, seqK, false);
+        if (!why.empty()) return reject(why);
+      }
+    } else {
+      // Input 5 is a bias when input 6 is absent and it is [.., tq, tv].
+      if (!(lenOf(6) > 0 && rankOf(6) >= 2) && lenOf(5) > 0 && rankOf(5) >= 2) {
+        const auto b = dimsOf(5);
+        const LongType rows = b[b.size() - 2], cols = b.back();
+        if (rows == seqQ && cols == seqK) {
+          const std::string why = takeBias(5, seqK, false);
+          if (!why.empty()) return reject(why);
+        } else if (rows == seqK && cols == seqQ) {
+          return reject("bias input 5 is [.., tv, tq], which native applies untransposed");
+        }
+      }
+      // Otherwise input 8, sliced to the key count when wider. Native ignores a
+      // narrower one.
+      if (!c.hasBias && lenOf(8) > 0 && rankOf(8) >= 2 && dimsOf(8).back() >= seqK) {
+        const std::string why = takeBias(8, seqK, true);
+        if (!why.empty()) return reject(why);
+      }
+    }
+  } else {
+    if (n > 7) return reject("more than 7 inputs");
+    if (lenOf(6) > 0) return reject("in-place KV cache (cache position input 6)");
+    if (args.numIArgs < 2 || !args.iArgs || args.iArgs[0] <= 0) return reject("head count or causal arg missing");
+    if (qDims.size() != 3 || kDims.size() != 3 || kDims != vDims || kDims[0] != qDims[0]) {
+      return reject("Q " + dimsStr(qDims) + " / K " + dimsStr(kDims) + " / V " + dimsStr(vDims) +
+                    " are not rank 3 with K and V of one shape");
+    }
+    batch = qDims[0];
+    seqQ = qDims[1];
+    qHeads = args.iArgs[0];
+    headDim = qDims[2] / qHeads;
+    if (qDims[2] % qHeads != 0 || kDims[2] % headDim != 0) return reject("hidden sizes do not split into heads");
+    kvHeads = kDims[2] / headDim;
+    if (qHeads % kvHeads != 0) {
+      return reject(std::to_string(qHeads) + " query heads do not group over " + std::to_string(kvHeads) +
+                    " KV heads");
+    }
+    c.causal = args.iArgs[1] != 0;
+    scale = args.numTArgs > 0 && args.tArgs ? args.tArgs[0] : 0.0;
+    curSeq = kDims[1];
+    // Past K/V [B, kvH, pastSeq, D] (BHSD) precede the current keys. Native
+    // ignores empty, rank-0 and single-element placeholders.
+    const bool pastK = lenOf(4) > 1 && rankOf(4) > 0;
+    const bool pastV = lenOf(5) > 1 && rankOf(5) > 0;
+    if (pastK != pastV) return reject("only one of past K/V is set");
+    if (pastK) {
+      const auto pk = dimsOf(4);
+      const auto pv = dimsOf(5);
+      if (pk.size() != 4 || pk != pv || pk[0] != batch || pk[1] != kvHeads || pk[3] != headDim) {
+        return reject("past K/V " + dimsStr(pk) + " / " + dimsStr(pv) + " are not [B, kvH, S, D]");
+      }
+      c.dualBuffer = true;
+      c.kIsBSHD = false;
+      c.pastKSrc = src(4);
+      c.pastVSrc = src(5);
+      pastSeq = pk[2];
+      operands.push_back(c.pastKSrc);
+      operands.push_back(c.pastVSrc);
+    }
+    seqK = pastSeq + curSeq;
+    if (lenOf(3) > 1 && rankOf(3) > 0) {
+      const std::string why = takeBias(3, seqK, false);
+      if (!why.empty()) return reject(why);
+    }
+  }
+
+  // The emitters tile with int dimensions and index with int32 offsets.
+  for (LongType d : {batch, qHeads, kvHeads, seqQ, seqK, headDim, pastSeq, curSeq}) {
+    if (d < 0 || d > std::numeric_limits<int>::max()) return reject("a dimension exceeds int");
+  }
+  if (c.outSlot < 0) return reject("output 0 is not materialized");
+  const auto outDims = resolveShape(c.outSlot);
+  const DataType outType = resolveDtype(c.outSlot);
+  if (outDims != qDims || outType != qType) {
+    return reject("output " + dimsStr(outDims) + " " + DataTypeUtils::asString(outType) + " differs from Q " +
+                  dimsStr(qDims) + " " + DataTypeUtils::asString(qType));
+  }
+  for (int s : operands) {
+    if (resolveDtype(s) != qType) {
+      return reject("K/V/cache dtype " + DataTypeUtils::asString(resolveDtype(s)) + " differs from Q");
+    }
+  }
+  operands.push_back(c.qSrc);
+  operands.push_back(c.outSlot);
+  for (int s : operands) {
+    if (!addressable(s)) return reject("buffer " + std::to_string(s) + " is not dense C-order within int32 offsets");
+  }
+  // The emitters write output 0 only, so present K/V (ONNX) and scores/logits
+  // (DPA) must not be read.
+  for (int o = 1; o < slot.wiring.numOutputs; o++) {
+    const int aux = slot.wiring.outputSlotIndices[o];
+    if (aux < 0) continue;
+    bool read = false;
+    for (int r = 0; r < numRequestedOutputs && requestedOutputSlotIndices && !read; r++) {
+      read = requestedOutputSlotIndices[r] == aux;
+    }
+    for (int p = 0; p < totalSlots && !read; p++) {
+      for (int i = 0; i < slots[p].wiring.numInputs && !read; i++) {
+        read = slots[p].wiring.inputSourceIndices[i] == aux;
+      }
+    }
+    if (read) return reject("output " + std::to_string(o) + " is read; the emitters write only output 0");
+  }
+
+  c.batch = static_cast<int>(batch);
+  c.qHeads = static_cast<int>(qHeads);
+  c.kvHeads = static_cast<int>(kvHeads);
+  c.seqQ = static_cast<int>(seqQ);
+  c.seqK = static_cast<int>(seqK);
+  c.headDim = static_cast<int>(headDim);
+  c.pastSeq = static_cast<int>(pastSeq);
+  c.curSeq = static_cast<int>(curSeq);
+  c.cacheMaxSeq = c.gguf ? c.seqK : 0;
+  c.scale = static_cast<float>(scale > 0.0 ? scale : 1.0 / std::sqrt(static_cast<double>(headDim)));
+  return c;
+}
+
 TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, int endSlot,
                                             int totalSlots,
                                             NDArray** externalInputs, int numExternalInputs,
@@ -940,12 +1296,17 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
   // Create MLIR context and register dialects (thread-safe)
   auto mlirContext = createMlirContextWithDialects();
+  // The result owns the context and module from here on, so every early return
+  // and every exception frees them.
+  result.mlirContext = mlirContext;
+  ModuleUnwindGuard moduleGuard{result};
 
   mlir::OpBuilder builder(mlirContext);
   auto loc = builder.getUnknownLoc();
 
   // Create module
   auto moduleOp = mlir::ModuleOp::create(loc);
+  result.mlirModule = new mlir::ModuleOp(moduleOp);
   builder.setInsertionPointToEnd(moduleOp.getBody());
 
   // ── Collect unique buffer references ──
@@ -1221,7 +1582,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       DSP_DIAG(FALLBACK, "TritonIRBuilder: frozen constant output slot %d has no live array "
                "and no cached shape — cannot generate tt.load input arg. Failing module build.",
                outIdx);
-      return TritonIRModule();  // valid = false
+      return result;  // valid = false; frees the owned context
     }
     TritonKernelArg arg;
     arg.slotIndex = outIdx;
@@ -2070,7 +2431,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: frozen slot %d (%s) has missing SSA values — "
                     "compilation BUG (frozen constant not in inputArgs). Failing module build.",
                     si, slot.ident.opName.c_str());
-      return TritonIRModule();  // valid = false
+      return result;  // valid = false; frees the owned context
     }
 
     if (cat == TritonOpCategory::BINARY_ELEMENTWISE) {
@@ -3296,654 +3657,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
 
     } else if (cat == TritonOpCategory::FUSED_ATTENTION) {
-      // ─── FUSED ATTENTION BACKWARD: Flash Attention 2 backward pass ─────────
-      // Backward ops are identified by the _bp suffix. Input layout (BHSD):
-      //   input[0] = dO [B, H, seqQ, HD]  — upstream gradient of output
-      //   input[1] = Q  [B, H, seqQ, HD]
-      //   input[2] = K  [B, H, seqK,  HD]
-      //   input[3] = V  [B, H, seqK,  HD]
-      //   input[4] = O  [B, H, seqQ, HD]  — forward output
-      //   input[5] = L  [B, H, seqQ]      — log-sum-exp from forward softmax
-      //   output[0] = dQ [B, H, seqQ, HD]
-      //   output[1] = dK [B, H, seqK,  HD]
-      //   output[2] = dV [B, H, seqK,  HD]
-      {
-        std::string opLowerBp = slot.ident.opName;
-        std::transform(opLowerBp.begin(), opLowerBp.end(), opLowerBp.begin(), ::tolower);
-        bool isBackward = (opLowerBp.find("_bp") != std::string::npos);
-        if (isBackward) {
-          // Need 6 inputs (dO, Q, K, V, O, L) and 3 outputs (dQ, dK, dV)
-          if (slot.wiring.numInputs >= 6 && slot.wiring.numOutputs >= 3) {
-            int doSrc  = slot.wiring.inputSourceIndices[0];  // dO
-            int qSrc   = slot.wiring.inputSourceIndices[1];  // Q
-            int kSrc   = slot.wiring.inputSourceIndices[2];  // K
-            int vSrc   = slot.wiring.inputSourceIndices[3];  // V
-            int oSrc   = slot.wiring.inputSourceIndices[4];  // O (forward output)
-            int lseSrc = slot.wiring.inputSourceIndices[5];  // L (log-sum-exp)
-            int dqSlot = slot.wiring.outputSlotIndices[0];   // dQ
-            int dkSlot = slot.wiring.outputSlotIndices[1];   // dK
-            int dvSlot = slot.wiring.outputSlotIndices[2];   // dV
-
-            NDArray* qArr = resolveArr(qSrc);
-            NDArray* kArr = resolveArr(kSrc);
-            int batchSize = 1, numQHeads = 1, seqQ = 1, seqK = 1, headDim = 64;
-            if (qArr && qArr->rankOf() >= 4) {
-              // BHSD: [batch, heads, seqQ, headDim]
-              batchSize = static_cast<int>(qArr->sizeAt(0));
-              numQHeads = static_cast<int>(qArr->sizeAt(1));
-              seqQ      = static_cast<int>(qArr->sizeAt(2));
-              headDim   = static_cast<int>(qArr->sizeAt(3));
-            }
-            if (kArr && kArr->rankOf() >= 4) {
-              seqK = static_cast<int>(kArr->sizeAt(2));
-            }
-            if (seqQ <= 0 || seqK <= 0 || headDim <= 0) {
-              DSP_DIAG(COMPILE, "FUSED_ATTENTION_BP at slot %d: invalid dims "
-                        "seqQ=%d seqK=%d headDim=%d — deferring to C++ native", si, seqQ, seqK, headDim);
-              return result;
-            }
-
-            float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
-            auto bpTile = chooseFusedAttentionTileConfig(batchSize, numQHeads, seqQ, seqK, headDim);
-            if (!bpTile.fitsSharedMem) {
-              std::string msg = "TritonIRBuilder: fused attention backward '" + slot.ident.opName +
-                  "' at slot " + std::to_string(si) + " cannot fit shared memory";
-              THROW_EXCEPTION(msg.c_str());
-            }
-            int blockM = bpTile.blockM;
-            int blockN = bpTile.blockN;
-
-            auto dOPtrV  = getSlotArgPtr(doSrc);
-            auto qPtrV   = getSlotArgPtr(qSrc);
-            auto kPtrV   = getSlotArgPtr(kSrc);
-            auto vPtrV   = getSlotArgPtr(vSrc);
-            auto oPtrV   = getSlotArgPtr(oSrc);
-            auto lsePtrV = getSlotArgPtr(lseSrc);
-            auto dQPtrV  = getSlotArgPtr(dqSlot);
-            auto dKPtrV  = getSlotArgPtr(dkSlot);
-            auto dVPtrV  = getSlotArgPtr(dvSlot);
-
-            if (dOPtrV && qPtrV && kPtrV && vPtrV && oPtrV && lsePtrV &&
-                dQPtrV && dKPtrV && dVPtrV) {
-              emitFusedAttentionBackwardKernel(
-                  builder, loc,
-                  dOPtrV, qPtrV, kPtrV, vPtrV, oPtrV, lsePtrV,
-                  dQPtrV, dKPtrV, dVPtrV,
-                  batchSize, numQHeads, seqQ, seqK, headDim, scale, blockM, blockN);
-
-              // Load results back into SSA value table so downstream consumers
-              // can reference them (the backward writes to output slot buffers directly)
-              for (int outIdx = 0; outIdx < slot.wiring.numOutputs; outIdx++) {
-                int outSlotIdx = slot.wiring.outputSlotIndices[outIdx];
-                NDArray* outArr = resolveArr(outSlotIdx);
-                DataType outDtype = FLOAT32;
-                if (outArr) outDtype = outArr->dataType();
-                auto loaded = loadBackFromBuffer(outSlotIdx, outDtype);
-                if (loaded) ssaValues[outSlotIdx] = loaded;
-              }
-            } else {
-              std::string msg = "TritonIRBuilder: fused attention backward '" +
-                  slot.ident.opName + "' at slot " + std::to_string(si) +
-                  " — missing kernel arg ptrs. Cannot compile.";
-              THROW_EXCEPTION(msg.c_str());
-            }
-          } else {
-            DSP_DIAG(COMPILE, "FUSED_ATTENTION_BP at slot %d: needs >=6 inputs and >=3 outputs, "
-                      "has %d/%d — deferring to C++ native", si,
-                      slot.wiring.numInputs, slot.wiring.numOutputs);
-            return result;  // result.valid = false → C++ fallback
-          }
-          goto next_slot;  // skip the forward attention handler below
-        }
-      }
-
-      // ─── FUSED ATTENTION (forward): Q@K^T + scale + softmax + @V ───────────
-      // Handles past_key/past_value (inputs 4-5) and BSHD (3D) vs BHSD (4D) layout.
-      if (slot.wiring.numInputs >= 3 && slot.wiring.numOutputs >= 1) {
-        int qSrc = slot.wiring.inputSourceIndices[0];
-        // dot_product_attention_v2 input order: (Q=0, V=1, K=2)
-        // onnx_multi_head_attention input order: (Q=0, K=1, V=2)
-        // Detect op name to swap K/V source indices for DPA v2.
-        std::string opLowerKV = slot.ident.opName;
-        std::transform(opLowerKV.begin(), opLowerKV.end(), opLowerKV.begin(), ::tolower);
-        bool isDpaV2 = (opLowerKV.find("dot_product_attention") != std::string::npos);
-        bool isOnnxMha = (opLowerKV.find("onnx_multi_head_attention") != std::string::npos);
-        bool useCausalMask = isOnnxMha && slot.args.numIArgs > 1 && slot.args.iArgs
-            && slot.args.iArgs[1] != 0;
-
-        int kSrc = isDpaV2 ? slot.wiring.inputSourceIndices[2] : slot.wiring.inputSourceIndices[1];
-        int vSrc = isDpaV2 ? slot.wiring.inputSourceIndices[1] : slot.wiring.inputSourceIndices[2];
-        int outSlot = slot.wiring.outputSlotIndices[0];
-
-        // onnx_multi_head_attention is a compound op: it takes 3D Q/K/V [B,S,H*D],
-        // internally reshapes to 4D, concatenates past_key/past_value with current K/V,
-        // runs attention, then reshapes output back to 3D. When this op appears as a
-        // single-slot segment, we handle the 3D→4D reshape via dual-buffer mode:
-        // the Triton kernel reads past_key/past_value (4D BHSD) as the main K/V buffers
-        // and the current 3D K/V as secondary buffers with implicit reshape.
-        NDArray* qArr = resolveArr(qSrc);
-        bool qIs3D = (qArr && qArr->rankOf() == 3);
-
-        // Extract attention dimensions
-        int batchSize = 1, numQHeads = 1, numKvHeads = 0, seqQ = 1, seqK = 1, headDim = 64;
-        bool qIsBSHD = false;
-
-        // Detect BSHD vs BHSD layout from op name.
-        // dot_product_attention_v2 uses BSHD: [batch, seq, heads, headDim]
-        bool opUsesBSHD = isDpaV2;
-
-        if (qArr && qArr->rankOf() >= 4) {
-          batchSize = static_cast<int>(qArr->sizeAt(0));
-          if (opUsesBSHD) {
-            // BSHD: [batch, seq, heads, headDim]
-            seqQ = static_cast<int>(qArr->sizeAt(1));
-            numQHeads = static_cast<int>(qArr->sizeAt(2));
-            headDim = static_cast<int>(qArr->sizeAt(3));
-            qIsBSHD = true;
-          } else {
-            // BHSD: [batch, heads, seq, headDim]
-            numQHeads = static_cast<int>(qArr->sizeAt(1));
-            seqQ = static_cast<int>(qArr->sizeAt(2));
-            headDim = static_cast<int>(qArr->sizeAt(3));
-          }
-        } else if (qIs3D) {
-          // 3D Q: [B, seqQ, H*D] — compound attention (onnx_multi_head_attention)
-          batchSize = static_cast<int>(qArr->sizeAt(0));
-          seqQ = static_cast<int>(qArr->sizeAt(1));
-          int hidden = static_cast<int>(qArr->sizeAt(2));
-          // numQHeads from iArgs[0] (INT_ARG(0) in onnx_multi_head_attention)
-          numQHeads = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
-          if (numQHeads <= 0) numQHeads = 1;
-          headDim = hidden / numQHeads;
-          qIsBSHD = true;
-          DSP_DIAG(JIT, "TritonIRBuilder: fused attention '%s' at slot %d has 3D Q [%lld,%lld,%lld] "
-                    "— compound op, numQHeads=%d (from iArgs[0]), headDim=%d, using dual-buffer mode",
-                    slot.ident.opName, si,
-                    (long long)qArr->sizeAt(0), (long long)qArr->sizeAt(1),
-                    (long long)qArr->sizeAt(2), numQHeads, headDim);
-        }
-
-        // Detect past_key/past_value by scanning ALL inputs for 4D KV-cache-like shapes.
-        // A past_key tensor is 4D BHSD: [batch, kvHeads, seqK, headDim] where headDim
-        // matches Q's headDim. This distinguishes it from attention masks [B,H,S,S].
-        bool hasPastKv = false;
-        int pastKeySrc = -1, pastValueSrc = -1;
-
-        for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKv; inp++) {
-          int candidateSrc = slot.wiring.inputSourceIndices[inp];
-          NDArray* candidateArr = resolveArr(candidateSrc);
-          if (candidateArr && candidateArr->rankOf() == 4) {
-            int candidateHD = static_cast<int>(candidateArr->sizeAt(3));
-            int candidateKvH = static_cast<int>(candidateArr->sizeAt(1));
-            // GQA constraint: KV heads must divide Q heads evenly and be <= numQHeads
-            if (candidateHD == headDim && candidateKvH > 0 &&
-                candidateKvH <= numQHeads && numQHeads % candidateKvH == 0) {
-              pastKeySrc = candidateSrc;
-              hasPastKv = true;
-              DSP_DIAG(JIT, "ATTN slot=%d found past_key at input[%d] src=%d shape=[%lld,%lld,%lld,%lld] headDim=%d",
-                        si, inp, candidateSrc,
-                        (long long)candidateArr->sizeAt(0), (long long)candidateArr->sizeAt(1),
-                        (long long)candidateArr->sizeAt(2), (long long)candidateArr->sizeAt(3), headDim);
-              if (inp + 1 < slot.wiring.numInputs) {
-                int pvCandidate = slot.wiring.inputSourceIndices[inp + 1];
-                NDArray* pvArr = resolveArr(pvCandidate);
-                if (pvArr && pvArr->rankOf() == 4 && static_cast<int>(pvArr->sizeAt(3)) == headDim) {
-                  pastValueSrc = pvCandidate;
-                }
-              }
-            }
-          }
-        }
-
-        if (!hasPastKv) {
-          DSP_DIAG(JIT, "ATTN slot=%d no past_key found (headDim=%d) in %d inputs",
-                    si, headDim, slot.wiring.numInputs);
-        }
-
-        // Determine if we need dual-buffer mode (3D Q with past_key)
-        bool useDualBuffer = (qIs3D && hasPastKv);
-        int pastSeqLen = 0, seqKVCur = 0;
-
-        // Canonicalized ONNX MHA with cache_position mutates the live BHSD cache and
-        // uses that device scalar as the logical prefix length. The current Triton
-        // dual-buffer emitter models neither the write-back nor the dynamic boundary;
-        // compiling it would replay cacheless/full-capacity attention. Keep this slot
-        // native (and capture it as a gap) until that contract has an explicit lowering.
-        if (slot.wiring.numInputs > 6
-            && slot.ident.opName.find("onnx_multi_head_attention") != std::string::npos) {
-          DSP_DIAG(JIT, "ATTN slot=%d: seven-input ONNX MHA has plan-owned KV side effects; "
-                    "deferring to capture-safe C++ native", si);
-          result.valid = false;
-          return result;
-        }
-
-        // GGUF in-graph KV-cache contract (dot_product_attention_v2 with a LIVE
-        // keyCache at input[5], valueCache at input[6], cache_position device
-        // scalar at input[7], additive bias at input[8]): the op writes current
-        // K/V into the cache at the device-read position and attends
-        // past+current. Rank-4 BSHD decode is now handled by the dedicated
-        // GGUF decode emitter (runtime boundary from the position scalar +
-        // in-kernel scatter + dual read from cache/producers). The legacy
-        // constant-boundary dual-buffer mode remains for 3D-Q ONNX MHA.
-        bool ggufDecodeKv = false;
-        int keyCacheSrc = -1, valueCacheSrc = -1, cachePosSrc = -1;
-        if (!useDualBuffer && isDpaV2 && slot.wiring.numInputs > 7) {
-          NDArray* kcArr = resolveArr(slot.wiring.inputSourceIndices[5]);
-          NDArray* vcArr = resolveArr(slot.wiring.inputSourceIndices[6]);
-          NDArray* cpArr = resolveArr(slot.wiring.inputSourceIndices[7]);
-          bool liveKv = (kcArr != nullptr && !kcArr->isEmpty() && kcArr->lengthOf() > 0)
-                      && (vcArr != nullptr && !vcArr->isEmpty() && vcArr->lengthOf() > 0)
-                      && (cpArr != nullptr && !cpArr->isEmpty() && cpArr->lengthOf() > 0);
-          // The dedicated emitter needs the BSHD cache rank-4 layout and an
-          // INT64 position scalar (the native kvInPlaceWriteBSHD contract).
-          bool cacheShapeOk = liveKv && kcArr->rankOf() == 4
-              && static_cast<int>(kcArr->sizeAt(3)) == headDim
-              && cpArr->dataType() == INT64;
-          if (liveKv && cacheShapeOk) {
-            ggufDecodeKv = true;
-            keyCacheSrc = slot.wiring.inputSourceIndices[5];
-            valueCacheSrc = slot.wiring.inputSourceIndices[6];
-            cachePosSrc = slot.wiring.inputSourceIndices[7];
-            DSP_DIAG(JIT, "ATTN slot=%d: GGUF decode KV contract detected "
-                      "(keyCache src=%d [%lld,%lld,%lld,%lld], pos src=%d) — using "
-                      "emitGgufDecodeAttentionKernel (runtime boundary + scatter)",
-                      si, keyCacheSrc,
-                      (long long)kcArr->sizeAt(0), (long long)kcArr->sizeAt(1),
-                      (long long)kcArr->sizeAt(2), (long long)kcArr->sizeAt(3), cachePosSrc);
-          } else if (liveKv) {
-            // Live cache but a layout the dedicated emitter cannot express —
-            // keep the historical native fallback (correctness first).
-            DSP_DIAG(JIT, "ATTN slot=%d: live KV cache at input[5] (rank=%d dt=%d) not "
-                      "expressible by the GGUF decode emitter — native fallback",
-                      si, kcArr ? kcArr->rankOf() : -1,
-                      cpArr ? (int)cpArr->dataType() : -1);
-            result.valid = false;
-            return result;
-          }
-        }
-
-        // Use past_key as effective K source when available
-        int effectiveKSrc = hasPastKv ? pastKeySrc : kSrc;
-        int effectiveVSrc = (hasPastKv && pastValueSrc >= 0) ? pastValueSrc : vSrc;
-
-        NDArray* effectiveKArr = resolveArr(effectiveKSrc);
-
-        // Extract KV head count from effective K shape (4D BHSD: [B, KvHeads, seqK, HD])
-        if (effectiveKArr && effectiveKArr->rankOf() == 4) {
-          if (hasPastKv) {
-            numKvHeads = static_cast<int>(effectiveKArr->sizeAt(1));
-            headDim = static_cast<int>(effectiveKArr->sizeAt(3));
-          } else {
-            // No past KV — K shape is same layout as Q (BHSD or BSHD)
-            if (qIsBSHD) {
-              numKvHeads = static_cast<int>(effectiveKArr->sizeAt(2));
-            } else {
-              numKvHeads = static_cast<int>(effectiveKArr->sizeAt(1));
-            }
-          }
-        } else if (effectiveKArr && effectiveKArr->rankOf() == 3) {
-          // ONNX MHA K/V stay 3D for GQA: [B, seqK, kvHeads * headDim].
-          // Infer KV heads from kvHidden instead of assuming numQHeads.
-          int kvHidden = static_cast<int>(effectiveKArr->sizeAt(2));
-          if (headDim > 0 && kvHidden > 0 && kvHidden % headDim == 0) {
-            int inferredKvHeads = kvHidden / headDim;
-            if (inferredKvHeads > 0 &&
-                inferredKvHeads <= numQHeads &&
-                numQHeads % inferredKvHeads == 0) {
-              numKvHeads = inferredKvHeads;
-            }
-          }
-        }
-        if (numKvHeads <= 0) numKvHeads = numQHeads;
-
-        if (useDualBuffer) {
-          // past_key shape is 4D BHSD: [B, kvH, pastSeq, D]
-          if (effectiveKArr && effectiveKArr->rankOf() == 4) {
-            pastSeqLen = static_cast<int>(effectiveKArr->sizeAt(2));
-          }
-          NDArray* curKArr = resolveArr(kSrc);
-          seqKVCur = (curKArr && curKArr->rankOf() == 3) ? static_cast<int>(curKArr->sizeAt(1)) : 1;
-          seqK = pastSeqLen + seqKVCur;
-          DSP_DIAG(JIT, "ATTN slot=%d dual-buffer: pastSeqLen=%d seqKVCur=%d seqK=%d numKvHeads=%d",
-                    si, pastSeqLen, seqKVCur, seqK, numKvHeads);
-        } else {
-          // seqK from effective K source
-          if (effectiveKArr && effectiveKArr->rankOf() >= 4) {
-            if (opUsesBSHD && !hasPastKv) {
-              // BSHD K/V: [batch, seqK, heads, headDim]
-              seqK = static_cast<int>(effectiveKArr->sizeAt(1));
-            } else {
-              // BHSD K/V: [batch, heads, seqK, headDim]
-              seqK = static_cast<int>(effectiveKArr->sizeAt(2));
-            }
-          } else if (effectiveKArr && effectiveKArr->rankOf() == 3) {
-            seqK = static_cast<int>(effectiveKArr->sizeAt(1));
-          }
-        }
-
-        // past_key is always 4D BHSD; current key follows Q layout
-        bool kIsBSHD = hasPastKv ? false : qIsBSHD;
-
-        // seqK=0 means shapes are stale (cached from warmup).
-        // Try deriving seqK from actual external inputs (same strategies as sectioned path).
-        bool seqKDerivedFromExternalJit = false;
-        if (seqK <= 0) {
-          int derivedSeqK = 0;
-          int derivedKvHeads = 0;
-
-          // Strategy 1: Walk back from K source to find KV cache external inputs.
-          if (kSrc >= 0) {
-            bool kProducerFoundJit = false;
-            for (int s = startSlot; s <= endSlot && !kProducerFoundJit; s++) {
-              for (int o = 0; o < slots[s].wiring.numOutputs && !kProducerFoundJit; o++) {
-                if (slots[s].wiring.outputSlotIndices[o] == kSrc) {
-                  for (int pi = 0; pi < slots[s].wiring.numInputs; pi++) {
-                    int psrc = slots[s].wiring.inputSourceIndices[pi];
-                    if (psrc < 0) {
-                      int extIdx = -(psrc + 1);
-                      if (extIdx < numExternalInputs && externalInputs && externalInputs[extIdx]) {
-                        auto& ext = *externalInputs[extIdx];
-                        if (ext.rankOf() == 4 && !ext.isEmpty() &&
-                            (ext.dataType() == FLOAT32 || ext.dataType() == HALF || ext.dataType() == BFLOAT16)) {
-                          int extSeqK = static_cast<int>(ext.sizeAt(2));
-                          int extHD = static_cast<int>(ext.sizeAt(3));
-                          int extKvH = static_cast<int>(ext.sizeAt(1));
-                          if (extHD == headDim && extSeqK > derivedSeqK &&
-                              extKvH > 0 && extKvH <= numQHeads && numQHeads % extKvH == 0) {
-                            derivedSeqK = extSeqK;
-                            derivedKvHeads = extKvH;
-                          }
-                        }
-                      }
-                    }
-                  }
-                  kProducerFoundJit = true;
-                }
-              }
-            }
-          }
-
-          // Strategy 2: Scan ALL external inputs for 4D KV cache pattern.
-          if (derivedSeqK == 0 && externalInputs) {
-            for (int ei = 0; ei < numExternalInputs; ei++) {
-              if (!externalInputs[ei]) continue;
-              auto& ext = *externalInputs[ei];
-              if (ext.rankOf() != 4 || ext.isEmpty()) continue;
-              if (ext.dataType() != FLOAT32 && ext.dataType() != HALF && ext.dataType() != BFLOAT16) continue;
-              int extBatch = static_cast<int>(ext.sizeAt(0));
-              int extHD = static_cast<int>(ext.sizeAt(3));
-              int extSeqK = static_cast<int>(ext.sizeAt(2));
-              if (extBatch == batchSize && extHD == headDim && extSeqK > 0) {
-                int extHeads = static_cast<int>(ext.sizeAt(1));
-                if (extHeads > 0 && extHeads <= numQHeads && numQHeads % extHeads == 0 && extSeqK > derivedSeqK) {
-                  derivedSeqK = extSeqK;
-                  derivedKvHeads = extHeads;
-                }
-              }
-            }
-          }
-
-          if (derivedSeqK > 0) {
-            seqK = derivedSeqK + seqQ;
-            seqKDerivedFromExternalJit = true;
-            if (derivedKvHeads > 0 && derivedKvHeads != numKvHeads) {
-              DSP_DIAG(JIT, "ATTN slot=%d (JIT) correcting numKvHeads from %d to %d",
-                        si, numKvHeads, derivedKvHeads);
-              numKvHeads = derivedKvHeads;
-            }
-            DSP_DIAG(JIT, "ATTN slot=%d (JIT) derived seqK=%d from external inputs (pastSeqK=%d + seqQ=%d)",
-                      si, seqK, derivedSeqK, seqQ);
-          } else {
-            DSP_DIAG(COMPILE, "FUSED_ATTENTION at slot %d: seqK=%d — "
-                      "deferring to C++ native (shapes not yet resolved)", si, seqK);
-            return result;  // result.valid = false → C++ fallback
-          }
-        }
-
-        float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
-        auto attnTile = chooseFusedAttentionTileConfig(
-            batchSize, numQHeads, seqQ, seqK, headDim);
-        if (!attnTile.fitsSharedMem) {
-          std::string msg = "TritonIRBuilder: fused attention '" + slot.ident.opName + "' at slot " +
-                            std::to_string(si) + " cannot fit shared memory (headDim=" +
-                            std::to_string(headDim) + ", BM=" + std::to_string(attnTile.blockM) +
-                            ", BN=" + std::to_string(attnTile.blockN) + ", estimated=" +
-                            std::to_string(attnTile.estimatedSharedMemBytes) + ", limit=" +
-                            std::to_string(attnTile.sharedMemLimitBytes) + ")";
-          THROW_EXCEPTION(msg.c_str());
-        }
-        int blockM = attnTile.blockM;
-        int blockN = attnTile.blockN;
-
-        auto qPtr = getSlotArgPtr(qSrc);
-        auto outPtr = getSlotArgPtr(outSlot);
-
-        // For dual-buffer: kPtr/vPtr = past_key/past_value (BHSD), curKPtr/curVPtr = current key/value (BSHD)
-        mlir::Value kPtr, vPtr, curKPtr, curVPtr;
-        if (useDualBuffer) {
-          // past_key/value are the main K/V buffers (BHSD layout)
-          kPtr = getSlotArgPtr(pastKeySrc);
-          vPtr = getSlotArgPtr(pastValueSrc);
-          // current key/value are the secondary buffers (3D BSHD layout)
-          curKPtr = getSlotArgPtr(kSrc);
-          curVPtr = getSlotArgPtr(vSrc);
-        } else {
-          kPtr = getSlotArgPtr(effectiveKSrc);
-          vPtr = getSlotArgPtr(effectiveVSrc);
-        }
-
-        // Resolve the additive attention bias according to the op's input contract.
-        // DPA-v2 keeps optional SameDiff inputs positionally stable:
-        //   cache form: Q,V,K,qMask,vMask,keyCache,valueCache,cachePosition,bias (input 8)
-        //   bias only: Q,V,K,qMask,vMask,bias (input 5)
-        // Legacy filtered-input construction may place a lone bias at input 3.
-        // Other attention ops retain their historical input-3 bias contract.
-        int biasInputIdx = -1;
-        if (isDpaV2) {
-          if (slot.wiring.numInputs >= 9) biasInputIdx = 8;
-          else if (slot.wiring.numInputs == 6) biasInputIdx = 5;
-          else if (slot.wiring.numInputs == 4) biasInputIdx = 3;
-        } else if (slot.wiring.numInputs > 3) {
-          biasInputIdx = 3;
-        }
-
-        mlir::Value biasPtr;
-        std::vector<LongType> biasShape;
-        if (biasInputIdx >= 0) {
-          int biasSrc = slot.wiring.inputSourceIndices[biasInputIdx];
-          NDArray* biasArr = resolveArr(biasSrc);
-          // Only use bias if it's a real tensor (not empty/scalar placeholder)
-          if (biasArr && !biasArr->isEmpty() && biasArr->rankOf() >= 2 && biasArr->lengthOf() > 1) {
-            biasPtr = getSlotArgPtr(biasSrc);
-            for (int d = 0; d < biasArr->rankOf(); d++) {
-              biasShape.push_back(biasArr->sizeAt(d));
-            }
-            DSP_DIAG(JIT, "TritonIRBuilder: fused attention bias: input=%d slot=%d rank=%d len=%lld",
-                      biasInputIdx, biasSrc, biasArr->rankOf(),
-                      (long long)biasArr->lengthOf());
-          }
-        }
-
-        // Validate K buffer is non-empty when seqK > 0.
-        // When K buffer is empty, the kernel would read from empty buffers causing
-        // illegal memory access (CUDA error 700). Always fall back to C++.
-        //
-        // For dual-buffer mode (static KV cache), the past_key buffer is pre-allocated
-        // to max sequence length and reused across decode steps. In this case, we check
-        // the buffer shape/capacity rather than content length, since the buffer may
-        // contain stale data from previous steps but is still valid for attention.
-        bool kBufferValidJit = true;
-        {
-          NDArray* effKArr = resolveArr(effectiveKSrc);
-          if (!effKArr && seqK > 0) {
-            kBufferValidJit = false;
-            DSP_DIAG(JIT, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d (JIT path) — "
-                      "effective K buffer (src=%d) is null but seqK=%d%s",
-                      si, effectiveKSrc, seqK,
-                      seqKDerivedFromExternalJit ? " (seqK derived from external inputs)" : "");
-          } else if (effKArr && seqK > 0) {
-            // For dual-buffer mode (static KV cache), check shape capacity not content
-            if (useDualBuffer) {
-              // past_key is 4D BHSD: [B, KvHeads, maxSeqLen, headDim]
-              // Valid if rank == 4 and seq dimension (dim 2) > 0
-              bool shapeValid = (effKArr->rankOf() == 4 && effKArr->sizeAt(2) > 0);
-              if (!shapeValid) {
-                kBufferValidJit = false;
-                DSP_DIAG(JIT, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d (JIT path) — "
-                          "past_key buffer (src=%d) has invalid shape: rank=%d, seqDim=%d (expected 4D BHSD with seqDim>0)",
-                          si, effectiveKSrc, effKArr->rankOf(),
-                          effKArr->rankOf() >= 3 ? static_cast<int>(effKArr->sizeAt(2)) : -1);
-              }
-            } else {
-              // Non-dual-buffer: check content length (original behavior)
-              if (effKArr->isEmpty() || effKArr->lengthOf() == 0) {
-                kBufferValidJit = false;
-                DSP_DIAG(JIT, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d (JIT path) — "
-                          "effective K buffer (src=%d) is empty but seqK=%d%s",
-                          si, effectiveKSrc, seqK,
-                          seqKDerivedFromExternalJit ? " (seqK derived from external inputs)" : "");
-              }
-            }
-          }
-        }
-
-        if (!kBufferValidJit) {
-          DSP_DIAG(JIT, "ATTN slot=%d: K buffer invalid (JIT path), returning as non-compilable", si);
-          return result;  // result.valid = false → C++ fallback
-        }
-
-        if (ggufDecodeKv && qPtr && outPtr) {
-          // GGUF decode contract: bind the cache/valueCache/position buffers and
-          // emit the runtime-boundary kernel. The current K/V (producer tensors)
-          // bind through kSrc/vSrc — these are the pre-scatter inputs (Q,V,K order).
-          auto kCachePtrV = getSlotArgPtr(keyCacheSrc);
-          auto vCachePtrV = getSlotArgPtr(valueCacheSrc);
-          auto cachePosPtrV = getSlotArgPtr(cachePosSrc);
-          auto curKPtrV = getSlotArgPtr(kSrc);
-          auto curVPtrV = getSlotArgPtr(vSrc);
-          if (kCachePtrV && vCachePtrV && cachePosPtrV && curKPtrV && curVPtrV) {
-            NDArray* kcArrForMax = resolveArr(keyCacheSrc);
-            int cacheMaxSeq = (kcArrForMax && kcArrForMax->rankOf() == 4)
-                ? static_cast<int>(kcArrForMax->sizeAt(1)) : 0;
-            emitGgufDecodeAttentionKernel(builder, loc, qPtr,
-                                          curKPtrV, curVPtrV,
-                                          kCachePtrV, vCachePtrV, cachePosPtrV,
-                                          outPtr,
-                                          batchSize, numQHeads, numKvHeads,
-                                          seqQ, cacheMaxSeq, headDim, scale,
-                                          blockM, blockN,
-                                          biasPtr, biasShape);
-            // output[0] = attention result
-            DataType outDtype = FLOAT32;
-            NDArray* outArr = resolveArr(outSlot);
-            if (outArr) outDtype = outArr->dataType();
-            auto loaded = loadBackFromBuffer(outSlot, outDtype);
-            if (loaded) ssaValues[outSlot] = loaded;
-          } else {
-            DSP_DIAG(JIT, "ATTN slot=%d: GGUF decode binding failed "
-                      "(kCache=%d vCache=%d pos=%d curK=%d curV=%d) — native fallback",
-                      si, kCachePtrV ? 1 : 0, vCachePtrV ? 1 : 0, cachePosPtrV ? 1 : 0,
-                      curKPtrV ? 1 : 0, curVPtrV ? 1 : 0);
-            result.valid = false;
-            return result;
-          }
-        } else if (qPtr && kPtr && vPtr && outPtr) {
-          emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
-                                   batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
-                                   scale, blockM, blockN, qIsBSHD, kIsBSHD,
-                                   useCausalMask,
-                                   biasPtr, biasShape,
-                                   curKPtr, curVPtr, pastSeqLen, seqKVCur);
-
-          // output[0] = attention result
-          DataType outDtype = FLOAT32;
-          NDArray* outArr = resolveArr(outSlot);
-          if (outArr) outDtype = outArr->dataType();
-          auto loaded = loadBackFromBuffer(outSlot, outDtype);
-          if (loaded) ssaValues[outSlot] = loaded;
-
-          // output[1] = present_key, output[2] = present_value
-          if (useDualBuffer && slot.wiring.numOutputs >= 2) {
-            // Dual-buffer: present_key/value output may need write of current K/V
-            // at pastSeqLen offset. Check if the output buffer can hold it.
-            int presentKeySlot = slot.wiring.outputSlotIndices[1];
-            NDArray* pkOutArr = resolveArr(presentKeySlot);
-            int pkSeqCapacity = (pkOutArr && pkOutArr->rankOf() == 4) ? static_cast<int>(pkOutArr->sizeAt(2)) : 0;
-            int requiredSeq = pastSeqLen + seqKVCur;
-            bool pkFits = (pkSeqCapacity >= requiredSeq);
-            if (!pkFits) {
-              DSP_DIAG(JIT, "TritonIRBuilder: skipping present_key/value write at slot %d — "
-                        "output buffer seqDim=%d < required=%d (pastSeqLen=%d + seqKVCur=%d). "
-                        "Static KV cache detected; caller handles cache updates.",
-                        si, pkSeqCapacity, requiredSeq, pastSeqLen, seqKVCur);
-            }
-            if (pkFits) {
-              auto presentKeyPtr = getSlotArgPtr(presentKeySlot);
-              if (presentKeyPtr && curKPtr) {
-                int totalSeq = pastSeqLen + seqKVCur;
-                emitPresentKvWrite(builder, loc, curKPtr, presentKeyPtr,
-                                   batchSize, numQHeads, numKvHeads,
-                                   pastSeqLen, seqKVCur, totalSeq, headDim);
-                DataType pkDtype = FLOAT32;
-                NDArray* pkArr = resolveArr(presentKeySlot);
-                if (pkArr) pkDtype = pkArr->dataType();
-                auto pkLoaded = loadBackFromBuffer(presentKeySlot, pkDtype);
-                if (pkLoaded) ssaValues[presentKeySlot] = pkLoaded;
-              }
-            }
-            if (slot.wiring.numOutputs >= 3 && pkFits) {
-              int presentValSlot = slot.wiring.outputSlotIndices[2];
-              auto presentValPtr = getSlotArgPtr(presentValSlot);
-              if (presentValPtr && curVPtr) {
-                int totalSeq = pastSeqLen + seqKVCur;
-                emitPresentKvWrite(builder, loc, curVPtr, presentValPtr,
-                                   batchSize, numQHeads, numKvHeads,
-                                   pastSeqLen, seqKVCur, totalSeq, headDim);
-                DataType pvDtype = FLOAT32;
-                NDArray* pvArr = resolveArr(presentValSlot);
-                if (pvArr) pvDtype = pvArr->dataType();
-                auto pvLoaded = loadBackFromBuffer(presentValSlot, pvDtype);
-                if (pvLoaded) ssaValues[presentValSlot] = pvLoaded;
-              }
-            }
-          } else {
-            // Non-dual-buffer: pass-through effective key/value SSA
-            // output[1] = present_key (pass-through effective key)
-            if (slot.wiring.numOutputs >= 2) {
-              if (ssaValues.count(effectiveKSrc)) {
-                ssaValues[slot.wiring.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
-              } else {
-                DataType kDtype = FLOAT32;
-                NDArray* kArr2 = resolveArr(effectiveKSrc);
-                if (kArr2) kDtype = kArr2->dataType();
-                auto kLoaded = loadBackFromBuffer(effectiveKSrc, kDtype);
-                if (kLoaded) ssaValues[slot.wiring.outputSlotIndices[1]] = kLoaded;
-              }
-            }
-            // output[2] = present_value (pass-through effective value)
-            if (slot.wiring.numOutputs >= 3) {
-              if (ssaValues.count(effectiveVSrc)) {
-                ssaValues[slot.wiring.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
-              } else {
-                DataType vDtype = FLOAT32;
-                NDArray* vArr2 = resolveArr(effectiveVSrc);
-                if (vArr2) vDtype = vArr2->dataType();
-                auto vLoaded = loadBackFromBuffer(effectiveVSrc, vDtype);
-                if (vLoaded) ssaValues[slot.wiring.outputSlotIndices[2]] = vLoaded;
-              }
-            }
-          }
-        } else {
-          std::string msg = "TritonIRBuilder: fused attention '" + slot.ident.opName + "' at slot " + std::to_string(si) +
-              " — missing kernel arg ptrs. Cannot compile.";
-          THROW_EXCEPTION(msg.c_str());
-        }
-      } else {
-        std::string msg = "TritonIRBuilder: fused attention '" + slot.ident.opName + "' at slot " + std::to_string(si) +
-            " — needs >=3 inputs and >=1 output, has " + std::to_string(slot.wiring.numInputs) + "/" +
-            std::to_string(slot.wiring.numOutputs) + ". Cannot compile.";
-        THROW_EXCEPTION(msg.c_str());
-      }
+      // Unreachable: buildModule sends every range holding attention to
+      // buildSectionedModule, whose describeAttention decides what the emitters take.
+      std::string msg = "TritonIRBuilder::buildModule: attention '" + slot.ident.opName + "' at slot " +
+          std::to_string(si) + " reached the non-sectioned path; attention is built by buildSectionedModule";
+      THROW_EXCEPTION(msg.c_str());
 
     } else if (cat == TritonOpCategory::SHAPE_MANIPULATION) {
       // ─── SHAPE MANIPULATION ───
@@ -4884,8 +4602,6 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   // Return
   builder.create<mlir::triton::ReturnOp>(loc);
 
-  result.mlirModule = new mlir::ModuleOp(moduleOp);
-  result.mlirContext = mlirContext;  // Store for proper cleanup
   // If any output slot had no SSA value and its store was skipped, the compiled
   // kernel would leave that output buffer with stale data (NaN propagation).
   // Mark the module invalid so the caller falls back to slot-by-slot execution.
@@ -5003,7 +4719,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   // ── Step 1: Identify sections ──
   auto sections = identifySections(slots, startSlot, endSlot,
                                     outputSlots, totalOutputSlots,
-                                    externalInputs, numExternalInputs);
+                                    externalInputs, numExternalInputs,
+                                    totalSlots, requestedOutputSlotIndices, numRequestedOutputs);
   if (sections.empty()) {
     sd_debug("TritonIRBuilder::buildSectionedModule: no sections identified for seg [%d-%d]\n",
               startSlot, endSlot);
@@ -5116,6 +4833,25 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     LongType len = 1;
     for (auto d : s) len *= d;
     return len;
+  };
+
+  // Helper: element count for a source index (same priority as resolveShape).
+  // 0 for an empty array, 1 for a scalar, -1 when the source cannot be resolved.
+  auto resolveLength = [&](int srcIdx) -> LongType {
+    NDArray* arr = nullptr;
+    if (srcIdx < 0) {
+      int extIdx = -(srcIdx + 1);
+      if (extIdx < numExternalInputs && externalInputs) arr = externalInputs[extIdx];
+      if (!arr) return -1;
+    } else if (srcIdx < totalOutputSlots && outputSlots) {
+      arr = outputSlots[srcIdx];
+    }
+    if (arr) return arr->isEmpty() ? 0 : arr->lengthOf();
+    auto cit = cachedShapeInfoMap.find(srcIdx);
+    if (cit != cachedShapeInfoMap.end() && cit->second) {
+      return shape::isEmptyConst(cit->second) ? 0 : shape::length(cit->second);
+    }
+    return -1;
   };
 
   // ── Step 2: Collect kernel args ──
@@ -5408,8 +5144,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     }
   }
 
-  // NOTE: K/V projection external output forcing removed — attention ops now run via
-  // cuBLAS fallback (isFallbackSection) and handle their own present_key/present_value outputs.
+  // Attention kernels write only output 0. describeAttention rejects an attention
+  // op whose present-K/V, scores or logits outputs are read, so it runs natively.
 
   // Build set of input buffer addresses for aliasing detection
   auto inputBufferAddrsSectioned = dsp::buildInputBufferAddressSet(
@@ -5503,10 +5239,15 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   // ── Step 3: Create MLIR module and function ──
   // Use thread-safe factory (loadDialect touches global DialectRegistry)
   auto* mlirContext = createMlirContextWithDialects();
+  // The result owns the context and module from here on, so every early return
+  // and every exception frees them.
+  result.mlirContext = mlirContext;
+  ModuleUnwindGuard moduleGuard{result};
 
   mlir::OpBuilder builder(mlirContext);
   auto loc = builder.getUnknownLoc();
   auto moduleOp = mlir::ModuleOp::create(loc);
+  result.mlirModule = new mlir::ModuleOp(moduleOp);
   builder.setInsertionPointToEnd(moduleOp.getBody());
 
   // Function signature: buffer args + n_elements (i32) + sync_counter_ptr (ptr<i32>)
@@ -5612,6 +5353,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     blockSize = sectionedBlockSizeOverride_;
   }
   const int attentionSharedMemLimitBytes = queryCudaSharedMemLimitBytes();
+  // Largest shared-memory estimate of an emitted attention tile, for result.estimatedSharedMemBytes.
+  int emittedAttentionSmemBytes = 0;
 
   auto sectionMaxElements = [&](const KernelSection& sec) -> LongType {
     LongType maxElements = 0;
@@ -5637,6 +5380,18 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     return maxElements;
   };
 
+  // Each attention slot's contract, as identifySections also read it.
+  std::unordered_map<int, AttentionContract> attentionContracts;
+  auto describeAttention = [&](int slotIdx) -> const AttentionContract& {
+    auto known = attentionContracts.find(slotIdx);
+    if (known == attentionContracts.end()) {
+      known = attentionContracts.emplace(slotIdx, describeAttentionContract(
+          slots, slotIdx, totalSlots, outputSlots, totalOutputSlots, externalInputs, numExternalInputs,
+          requestedOutputSlotIndices, numRequestedOutputs)).first;
+    }
+    return known->second;
+  };
+
   auto deriveAttentionGrid = [&](const KernelSection& sec) -> std::pair<int, int> {
     int batchSize = std::max(1, sec.batchSize);
     int numHeads = std::max(1, sec.numHeads);
@@ -5644,91 +5399,17 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     int seqK = std::max(1, sec.seqK);
     int headDim = std::max(1, sec.headDim);
 
-    // Fused attention launch geometry depends on the op's tensor layout.
-    // Prefer the actual Q/K input shapes over section metadata: the section
-    // scanner records generic dimensions, and DPA v2 uses BSHD
-    // [batch, seq, heads, dim] instead of BHSD. Trusting that metadata launched
-    // DPA v2 vision attention as grid=1024x1 for batch=1,heads=12, which lets
-    // program_id(0)=12 map to batchIdx=1 and read past the Q/K/V buffers.
+    // The emit pass tiles with the contract's dimensions, so the grid uses them
+    // too. An unsupported op keeps the section defaults; its emit rejects the range.
     for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-      auto& slot = slots[si];
-      if (getOpCategory(slot.ident.opName) != TritonOpCategory::FUSED_ATTENTION ||
-          slot.wiring.numInputs < 1) {
-        continue;
-      }
-      // Detect DPA v2 (input order Q,V,K) vs standard (Q,K,V)
-      std::string opLowerGrid = slot.ident.opName;
-      std::transform(opLowerGrid.begin(), opLowerGrid.end(), opLowerGrid.begin(), ::tolower);
-      bool isDpaV2Grid = (opLowerGrid.find("dot_product_attention") != std::string::npos);
-      bool opUsesBSHDGrid = isDpaV2Grid;
-      // For DPA v2: input[1]=V, input[2]=K; resolve K for seqK
-      int kInputIdx = isDpaV2Grid ? 2 : 1;
-
-      auto qShape = resolveShape(slot.wiring.inputSourceIndices[0]);
-      if (qShape.size() >= 4) {
-        batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
-        if (opUsesBSHDGrid) {
-          // BSHD: [batch, seqQ, numHeads, headDim]
-          seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
-          numHeads = static_cast<int>(std::max<LongType>(1, qShape[2]));
-        } else {
-          // BHSD: [batch, numHeads, seqQ, headDim]
-          numHeads = static_cast<int>(std::max<LongType>(1, qShape[1]));
-          seqQ = static_cast<int>(std::max<LongType>(1, qShape[2]));
-        }
-        headDim = static_cast<int>(std::max<LongType>(1, qShape[3]));
-        if (slot.wiring.numInputs > kInputIdx) {
-          auto kShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
-          if (kShape.size() >= 3) {
-            // seqK is at dim[1] for BSHD, dim[2] for BHSD
-            int seqKDim = opUsesBSHDGrid ? 1 : 2;
-            if (static_cast<int>(kShape.size()) > seqKDim) {
-              seqK = static_cast<int>(std::max<LongType>(1, kShape[seqKDim]));
-            }
-          }
-        }
-      } else if (qShape.size() == 3) {
-        // 3D Q: [B, seqQ, H*D] — compound attention (onnx_multi_head_attention)
-        batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
-        seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
-        int hidden = static_cast<int>(std::max<LongType>(1, qShape[2]));
-        // numHeads from iArgs[0] (INT_ARG(0) in onnx_multi_head_attention)
-        numHeads = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
-        if (numHeads <= 0) numHeads = 1;
-        headDim = hidden / numHeads;
-
-        // Scan optional inputs for a real past_key tensor.
-        bool hasPastKvGrid = false;
-        for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKvGrid; inp++) {
-          auto candidateShape = resolveShape(slot.wiring.inputSourceIndices[inp]);
-          if (candidateShape.size() == 4) {
-            int candidateKvHeads = static_cast<int>(candidateShape[1]);
-            int candidatePastSeq = static_cast<int>(candidateShape[2]);
-            int candidateHeadDim = static_cast<int>(candidateShape[3]);
-            if (candidateShape[0] > 0 &&
-                candidatePastSeq > 0 &&
-                candidateHeadDim == headDim &&
-                candidateKvHeads > 0 &&
-                candidateKvHeads <= numHeads &&
-                numHeads % candidateKvHeads == 0) {
-              hasPastKvGrid = true;
-              int seqKV = 1;
-              if (slot.wiring.numInputs > kInputIdx) {
-                auto curKShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
-                if (curKShape.size() == 3) {
-                  seqKV = static_cast<int>(std::max<LongType>(1, curKShape[1]));
-                }
-              }
-              seqK = candidatePastSeq + seqKV;  // total sequence for attention
-            }
-          }
-        }
-        if (!hasPastKvGrid && slot.wiring.numInputs > kInputIdx) {
-          auto kShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
-          if (kShape.size() >= 2) {
-            seqK = static_cast<int>(std::max<LongType>(1, kShape[1]));
-          }
-        }
+      if (getOpCategory(slots[si].ident.opName) != TritonOpCategory::FUSED_ATTENTION) continue;
+      const AttentionContract& attn = describeAttention(si);
+      if (attn.supported()) {
+        batchSize = attn.batch;
+        numHeads = attn.qHeads;
+        seqQ = attn.seqQ;
+        seqK = attn.seqK;
+        headDim = attn.headDim;
       }
       break;
     }
@@ -5821,7 +5502,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   unsigned int fixedGridX = static_cast<unsigned int>(std::max(1, maxSectionGrid));
   unsigned int fixedGridY = 1;
   unsigned int fixedGridZ = 1;
-  if (sections.size() == 1 && sections[0].type == KernelSectionType::FUSED_ATTENTION) {
+  // Only a lone attention section gets the 2D (batch * heads, q tile) grid.
+  // Every other sectioned kernel launches 1D, sized to its largest section.
+  const bool attentionOwnsGrid =
+      sections.size() == 1 && sections[0].type == KernelSectionType::FUSED_ATTENTION;
+  if (attentionOwnsGrid) {
     auto attnGrid = deriveAttentionGrid(sections[0]);
     fixedGridX = static_cast<unsigned int>(std::max(1, attnGrid.first));
     fixedGridY = static_cast<unsigned int>(std::max(1, attnGrid.second));
@@ -5835,6 +5520,38 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
   auto pid = builder.create<mlir::triton::GetProgramIdOp>(
       loc, i32Type, mlir::triton::ProgramIDDim::X);
+
+  // Program coordinates for an attention emitter, which reads (batch * heads,
+  // q tile) from program ids (x, y). Under the 1D launch program_id(y) is 0, so
+  // both are decoded from the linear pid; without that, every block past the
+  // first batchHeads indexes batch = pid / numQHeads out of range. Rejects the
+  // build when the launch does not cover every tile the emitter needs.
+  auto attentionProgramIds = [&](const KernelSection& sec, int slotIdx, int batchSize,
+                                 int numQHeads, int seqQ, int blockM)
+      -> std::pair<mlir::Value, mlir::Value> {
+    const LongType batchHeads = static_cast<LongType>(batchSize) * numQHeads;
+    const LongType qTiles = (static_cast<LongType>(seqQ) + blockM - 1) / blockM;
+    const LongType launchedBatchHeads = attentionOwnsGrid ? static_cast<LongType>(fixedGridX)
+                                                          : static_cast<LongType>(sec.gridRequirement);
+    const LongType launchedQTiles = attentionOwnsGrid ? static_cast<LongType>(fixedGridY) : 1;
+    const bool covered = attentionOwnsGrid
+        ? (batchHeads == launchedBatchHeads && qTiles <= launchedQTiles)
+        : (batchHeads * qTiles <= launchedBatchHeads);
+    if (!covered) {
+      std::string msg = "TritonIRBuilder::buildSectionedModule: attention at slot " +
+                        std::to_string(slotIdx) + " needs " + std::to_string(batchHeads) +
+                        " batch-heads x " + std::to_string(qTiles) + " q tiles (BM=" +
+                        std::to_string(blockM) + ") but launches " +
+                        std::to_string(launchedBatchHeads) + " x " + std::to_string(launchedQTiles);
+      THROW_EXCEPTION(msg.c_str());
+    }
+    if (attentionOwnsGrid) return {mlir::Value(), mlir::Value()};
+    auto batchHeadsConst = builder.create<mlir::arith::ConstantIntOp>(
+        loc, static_cast<int>(batchHeads), 32);
+    mlir::Value batchHeadPid = builder.create<mlir::arith::RemSIOp>(loc, pid, batchHeadsConst);
+    mlir::Value qTilePid = builder.create<mlir::arith::DivSIOp>(loc, pid, batchHeadsConst);
+    return {batchHeadPid, qTilePid};
+  };
 
   // ── Step 5: SSA value map and arg lookup ──
   std::unordered_map<int, mlir::Value> ssaValues;
@@ -8148,755 +7865,169 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       }
 
       case KernelSectionType::FUSED_ATTENTION: {
-        // ── Attention section: emit fused attention kernel ──
-        // Handles past_key/past_value (inputs 4-5) and BSHD (3D) vs BHSD (4D) layout.
-        // Also handles backward (_bp) ops via emitFusedAttentionBackwardKernel.
+        // ── Attention section: one forward attention op that the fused or GGUF
+        // emitter reproduces exactly (describeAttention). Anything else fails the
+        // range, so the op runs natively.
         bool loggedAttnTileAdjust = false;
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
-          if (getOpCategory(slot.ident.opName) != TritonOpCategory::FUSED_ATTENTION) continue;
-
-          // ── Flash Attention Backward: _bp suffix ops ─────────────────────────
-          {
-            std::string opLowerBpSec = slot.ident.opName;
-            std::transform(opLowerBpSec.begin(), opLowerBpSec.end(), opLowerBpSec.begin(), ::tolower);
-            if (opLowerBpSec.find("_bp") != std::string::npos) {
-              // Backward: needs 6 inputs (dO, Q, K, V, O, L) and 3 outputs (dQ, dK, dV)
-              if (slot.wiring.numInputs >= 6 && slot.wiring.numOutputs >= 3) {
-                int doSrcSec  = slot.wiring.inputSourceIndices[0];  // dO
-                int qSrcSec   = slot.wiring.inputSourceIndices[1];  // Q
-                int kSrcSec   = slot.wiring.inputSourceIndices[2];  // K
-                int vSrcSec   = slot.wiring.inputSourceIndices[3];  // V
-                int oSrcSec   = slot.wiring.inputSourceIndices[4];  // O
-                int lseSrcSec = slot.wiring.inputSourceIndices[5];  // L (log-sum-exp)
-                int dqSlotSec = slot.wiring.outputSlotIndices[0];   // dQ
-                int dkSlotSec = slot.wiring.outputSlotIndices[1];   // dK
-                int dvSlotSec = slot.wiring.outputSlotIndices[2];   // dV
-
-                auto qShapeSec2 = resolveShape(qSrcSec);
-                auto kShapeSec2 = resolveShape(kSrcSec);
-                int batchSizeBp = 1, numQHeadsBp = 1, seqQBp = 1, seqKBp = 1, headDimBp = 64;
-                if (qShapeSec2.size() >= 4) {
-                  batchSizeBp = static_cast<int>(qShapeSec2[0]);
-                  numQHeadsBp = static_cast<int>(qShapeSec2[1]);
-                  seqQBp      = static_cast<int>(qShapeSec2[2]);
-                  headDimBp   = static_cast<int>(qShapeSec2[3]);
-                }
-                if (kShapeSec2.size() >= 4) {
-                  seqKBp = static_cast<int>(kShapeSec2[2]);
-                }
-                if (seqQBp <= 0 || seqKBp <= 0 || headDimBp <= 0) {
-                  DSP_DIAG(COMPILE, "FUSED_ATTENTION_BP sectioned at slot %d: invalid dims "
-                            "seqQ=%d seqK=%d headDim=%d — deferring to C++ native",
-                            si, seqQBp, seqKBp, headDimBp);
-                  result.valid = false;
-                  return result;
-                }
-                float scaleBp = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDimBp));
-                auto bpTileSec = chooseFusedAttentionTileConfig(
-                    batchSizeBp, numQHeadsBp, seqQBp, seqKBp, headDimBp);
-                if (!bpTileSec.fitsSharedMem) {
-                  std::string bpMsg = "TritonIRBuilder::buildSectionedModule: fused attention backward '"
-                      + slot.ident.opName + "' at slot " + std::to_string(si) + " cannot fit shared memory";
-                  THROW_EXCEPTION(bpMsg.c_str());
-                }
-                auto dOPtrSec  = getSlotArgPtr(doSrcSec);
-                auto qPtrSec   = getSlotArgPtr(qSrcSec);
-                auto kPtrSec   = getSlotArgPtr(kSrcSec);
-                auto vPtrSec   = getSlotArgPtr(vSrcSec);
-                auto oPtrSec   = getSlotArgPtr(oSrcSec);
-                auto lsePtrSec = getSlotArgPtr(lseSrcSec);
-                auto dQPtrSec  = getSlotArgPtr(dqSlotSec);
-                auto dKPtrSec  = getSlotArgPtr(dkSlotSec);
-                auto dVPtrSec  = getSlotArgPtr(dvSlotSec);
-                if (dOPtrSec && qPtrSec && kPtrSec && vPtrSec && oPtrSec && lsePtrSec &&
-                    dQPtrSec && dKPtrSec && dVPtrSec) {
-                  emitFusedAttentionBackwardKernel(
-                      builder, loc,
-                      dOPtrSec, qPtrSec, kPtrSec, vPtrSec, oPtrSec, lsePtrSec,
-                      dQPtrSec, dKPtrSec, dVPtrSec,
-                      batchSizeBp, numQHeadsBp, seqQBp, seqKBp, headDimBp,
-                      scaleBp, bpTileSec.blockM, bpTileSec.blockN);
-                  for (int outIdx2 = 0; outIdx2 < slot.wiring.numOutputs; outIdx2++) {
-                    int outSlotIdx2 = slot.wiring.outputSlotIndices[outIdx2];
-                    auto loaded2 = loadBlock(outSlotIdx2, resolveDtype(outSlotIdx2));
-                    if (loaded2) ssaValues[outSlotIdx2] = loaded2;
-                  }
-                } else {
-                  std::string bpMsg2 = "TritonIRBuilder::buildSectionedModule: fused attention backward '"
-                      + slot.ident.opName + "' at slot " + std::to_string(si) +
-                      " — missing kernel arg ptrs. Cannot compile.";
-                  THROW_EXCEPTION(bpMsg2.c_str());
-                }
-              } else {
-                DSP_DIAG(COMPILE, "FUSED_ATTENTION_BP sectioned at slot %d: needs >=6 inputs and "
-                          ">=3 outputs, has %d/%d — deferring to C++ native", si,
-                          slot.wiring.numInputs, slot.wiring.numOutputs);
-                result.valid = false;
-                return result;
-              }
-              continue;  // skip forward attention handler below
-            }
+          if (getOpCategory(slot.ident.opName) != TritonOpCategory::FUSED_ATTENTION) {
+            std::string msg = "TritonIRBuilder::buildSectionedModule: attention section [" +
+                std::to_string(sec.startSlot) + "-" + std::to_string(sec.endSlot) +
+                "] holds non-attention op '" + slot.ident.opName + "' at slot " + std::to_string(si);
+            THROW_EXCEPTION(msg.c_str());
           }
+          const AttentionContract& attn = describeAttention(si);
 
-          if (slot.wiring.numInputs < 3 || slot.wiring.numOutputs < 1) continue;
-
-          int qSrc = slot.wiring.inputSourceIndices[0];
-          // Detect DPA v2 (input order Q,V,K) vs standard (Q,K,V)
-          std::string opLowerSec = slot.ident.opName;
-          std::transform(opLowerSec.begin(), opLowerSec.end(), opLowerSec.begin(), ::tolower);
-          bool isDpaV2Sec = (opLowerSec.find("dot_product_attention") != std::string::npos);
-          bool isOnnxMhaSec = (opLowerSec.find("onnx_multi_head_attention") != std::string::npos);
-          bool useCausalMaskSec = isOnnxMhaSec && slot.args.numIArgs > 1 && slot.args.iArgs
-              && slot.args.iArgs[1] != 0;
-
-          // 3D Q: compound attention (onnx_multi_head_attention) — handled via dual-buffer kernel
-          auto qShapeSec = resolveShape(qSrc);
-
-          int kSrc = isDpaV2Sec ? slot.wiring.inputSourceIndices[2] : slot.wiring.inputSourceIndices[1];
-          int vSrc = isDpaV2Sec ? slot.wiring.inputSourceIndices[1] : slot.wiring.inputSourceIndices[2];
-          int outSlot = slot.wiring.outputSlotIndices[0];
-
-          // ── Step 1: Extract Q shape to get headDim (needed for past_key detection) ──
-          auto qShape = resolveShape(qSrc);
-          int batchSize = 1, numQHeads = 1, numKvHeads = 0, seqQ = 1, seqK = 1, headDim = 1;
-          bool isBSHD = false;
-          bool opUsesBSHDSec = isDpaV2Sec;
-
-          if (qShape.size() >= 4) {
-            batchSize = static_cast<int>(qShape[0]);
-            if (opUsesBSHDSec) {
-              seqQ = static_cast<int>(qShape[1]);
-              numQHeads = static_cast<int>(qShape[2]);
-              isBSHD = true;
-            } else {
-              numQHeads = static_cast<int>(qShape[1]);
-              seqQ = static_cast<int>(qShape[2]);
-            }
-            headDim = static_cast<int>(qShape[3]);
-          } else if (qShape.size() == 3) {
-            batchSize = static_cast<int>(qShape[0]);
-            seqQ = static_cast<int>(qShape[1]);
-            int hidden = static_cast<int>(qShape[2]);
-            numQHeads = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
-            if (numQHeads <= 0) numQHeads = 1;
-            headDim = hidden / numQHeads;
-            isBSHD = true;
-          }
-
-          // ── Step 2: Detect past_key/past_value inputs ──
-          // Different attention op types have different input orderings:
-          //   ONNX MultiHeadAttention: Q,K,V,bias,key_mask,attn_bias,past_key,past_value
-          //   ONNX GroupQueryAttention: Q,K,V,past_key,past_value,seqlen_k,...
-          //   DPA v2: Q,V,K,...
-          // Instead of hardcoding positions, scan ALL inputs for 4D KV-cache-like shapes.
-          // A past_key tensor is 4D BHSD: [batch, kvHeads, seqK, headDim] where headDim
-          // matches Q's headDim. This distinguishes it from attention masks [B,H,S,S].
-          bool hasPastKv = false;
-          int pastKeySrc = -1, pastValueSrc = -1;
-          bool pastKeyIsExternal = false;
-
-          for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKv; inp++) {
-            int candidateSrc = slot.wiring.inputSourceIndices[inp];
-            auto candidateShape = resolveShape(candidateSrc);
-            // Accept 4D KV cache shapes, including empty ones [B,H,0,D] at warmup.
-            // GQA constraint: KV heads must divide Q heads evenly and be <= numQHeads.
-            if (candidateShape.size() == 4) {
-              int candidateHD = static_cast<int>(candidateShape[3]);
-              int candidateKvH = static_cast<int>(candidateShape[1]);
-              if (candidateHD == headDim && candidateKvH > 0 &&
-                  candidateKvH <= numQHeads && numQHeads % candidateKvH == 0) {
-                pastKeySrc = candidateSrc;
-                pastKeyIsExternal = (pastKeySrc < 0);
-                hasPastKv = true;
-                DSP_DIAG(COMPILE, "ATTN slot=%d found past_key at input[%d] src=%d shape=[%lld,%lld,%lld,%lld] headDim=%d",
-                          si, inp, candidateSrc,
-                          (long long)candidateShape[0], (long long)candidateShape[1],
-                          (long long)candidateShape[2], (long long)candidateShape[3], headDim);
-                if (inp + 1 < slot.wiring.numInputs) {
-                  int pvCandidate = slot.wiring.inputSourceIndices[inp + 1];
-                  auto pvShape = resolveShape(pvCandidate);
-                  if (pvShape.size() == 4 && static_cast<int>(pvShape[3]) == headDim) {
-                    pastValueSrc = pvCandidate;
-                  }
-                }
-              }
-            }
-          }
-
-          if (!hasPastKv) {
-            DSP_DIAG(COMPILE, "ATTN slot=%d no past_key found (headDim=%d) in %d inputs",
-                      si, headDim, slot.wiring.numInputs);
-          }
-
-          // Use past_key as effective K source when available
-          int effectiveKSrc = hasPastKv ? pastKeySrc : kSrc;
-          int effectiveVSrc = (hasPastKv && pastValueSrc >= 0) ? pastValueSrc : vSrc;
-
-          auto effectiveKShape = resolveShape(effectiveKSrc);
-
-          // ── Comprehensive attention compilation diagnostics ──
           if (DSP_DIAG_ENABLED(COMPILE)) {
             auto fmtShape = [](const std::vector<LongType>& s) -> std::string {
-              std::string r; for (size_t i = 0; i < s.size(); i++) { if (i) r += ","; r += std::to_string(s[i]); } return r.empty() ? "empty" : r;
+              std::string r;
+              for (size_t i = 0; i < s.size(); i++) {
+                if (i) r += ",";
+                r += std::to_string(s[i]);
+              }
+              return r.empty() ? "empty" : r;
             };
-
-            // Summary line
-            DSP_DIAG(COMPILE, "ATTN slot=%d op='%s' qSrc=%d kSrc=%d vSrc=%d effectiveKSrc=%d effectiveVSrc=%d "
-                      "outSlot=%d hasPastKv=%d pastKeySrc=%d pastValueSrc=%d numInputs=%d numOutputs=%d",
-                      si, slot.ident.opName.c_str(), qSrc, kSrc, vSrc, effectiveKSrc, effectiveVSrc,
-                      outSlot, hasPastKv, pastKeySrc, pastValueSrc,
-                      slot.wiring.numInputs, slot.wiring.numOutputs);
-
-            // Shapes: Q, K (raw), K (effective), V
-            auto kShapeDbg = resolveShape(kSrc);
-            auto vShapeDbg = resolveShape(vSrc);
-            DSP_DIAG(COMPILE, "ATTN slot=%d shapes: Q=[%s] K=[%s] effK=[%s] V=[%s]",
-                      si, fmtShape(qShape).c_str(), fmtShape(kShapeDbg).c_str(),
-                      fmtShape(effectiveKShape).c_str(), fmtShape(vShapeDbg).c_str());
-
-            // Every input: source index, shape, op name, whether slot array exists and its length
+            DSP_DIAG(COMPILE, "ATTN slot=%d op='%s' batch=%d heads=%d/%d seqQ=%d seqK=%d headDim=%d "
+                     "scale=%.6g causal=%d qBSHD=%d kBSHD=%d dualBuffer=%d pastSeq=%d gguf=%d "
+                     "cacheMaxSeq=%d bias=%d biasShape=[%s] numInputs=%d numOutputs=%d",
+                     si, slot.ident.opName.c_str(), attn.batch, attn.qHeads, attn.kvHeads,
+                     attn.seqQ, attn.seqK, attn.headDim, attn.scale, attn.causal ? 1 : 0,
+                     attn.qIsBSHD ? 1 : 0, attn.kIsBSHD ? 1 : 0, attn.dualBuffer ? 1 : 0,
+                     attn.pastSeq, attn.gguf ? 1 : 0, attn.cacheMaxSeq, attn.hasBias ? 1 : 0,
+                     fmtShape(attn.biasShape).c_str(), slot.wiring.numInputs, slot.wiring.numOutputs);
             for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
-              int srcIdx = slot.wiring.inputSourceIndices[inp];
-              auto srcShape = resolveShape(srcIdx);
-              const char* srcOp = "EXT";
-              if (srcIdx >= 0 && srcIdx < totalSlots) srcOp = slots[srcIdx].ident.opName.c_str();
-              bool slotExists = false;
-              LongType slotLen = -1;
-              if (srcIdx >= 0 && srcIdx < totalOutputSlots && outputSlots && outputSlots[srcIdx]) {
-                slotExists = true;
-                slotLen = outputSlots[srcIdx]->lengthOf();
-              } else if (srcIdx < 0) {
-                int ei = -(srcIdx + 1);
-                if (ei < numExternalInputs && externalInputs && externalInputs[ei]) {
-                  slotExists = true;
-                  slotLen = externalInputs[ei]->lengthOf();
+              const int srcIdx = slot.wiring.inputSourceIndices[inp];
+              // srcIdx is an output-slot index, not an op index: find the producing op.
+              std::string producer = srcIdx < 0 ? "EXT" : "?";
+              for (int p = 0; srcIdx >= 0 && producer == "?" && p < totalSlots; p++) {
+                for (int o = 0; o < slots[p].wiring.numOutputs; o++) {
+                  if (slots[p].wiring.outputSlotIndices[o] == srcIdx) {
+                    producer = slots[p].ident.opName;
+                    break;
+                  }
                 }
               }
-              // Check cachedShapeInfoMap for this source
-              std::string cachedShapeStr = "none";
+              std::string cached = "none";
               auto cit = cachedShapeInfoMap.find(srcIdx);
               if (cit != cachedShapeInfoMap.end() && cit->second) {
-                LongType cRank = shape::rank(cit->second);
-                cachedShapeStr = "[";
-                for (int d = 0; d < cRank; d++) {
-                  if (d) cachedShapeStr += ",";
-                  cachedShapeStr += std::to_string(shape::shapeOf(cit->second)[d]);
-                }
-                cachedShapeStr += "]";
+                const LongType* dims = shape::shapeOf(cit->second);
+                cached = fmtShape(std::vector<LongType>(dims, dims + shape::rank(cit->second)));
               }
-              DSP_DIAG(COMPILE, "ATTN slot=%d   input[%d] src=%d op='%s' shape=[%s] exists=%d len=%lld cached=%s",
-                        si, inp, srcIdx, srcOp, fmtShape(srcShape).c_str(),
-                        slotExists, (long long)slotLen, cachedShapeStr.c_str());
+              DSP_DIAG(COMPILE, "ATTN slot=%d   input[%d] src=%d producer='%s' shape=[%s] len=%lld "
+                       "dtype=%s cached=[%s]",
+                       si, inp, srcIdx, producer.c_str(), fmtShape(resolveShape(srcIdx)).c_str(),
+                       static_cast<long long>(resolveLength(srcIdx)),
+                       DataTypeUtils::asString(resolveDtype(srcIdx)).c_str(), cached.c_str());
             }
-
-            // Every output slot
             for (int outp = 0; outp < slot.wiring.numOutputs; outp++) {
-              int outIdx = slot.wiring.outputSlotIndices[outp];
-              auto outShape = resolveShape(outIdx);
+              const int outIdx = slot.wiring.outputSlotIndices[outp];
               DSP_DIAG(COMPILE, "ATTN slot=%d   output[%d] slot=%d shape=[%s]",
-                        si, outp, outIdx, fmtShape(outShape).c_str());
+                       si, outp, outIdx, fmtShape(resolveShape(outIdx)).c_str());
             }
-
-            // iArgs and tArgs
-            if (slot.args.numIArgs > 0) {
-              std::string iStr;
-              for (int a = 0; a < slot.args.numIArgs && a < 16; a++) {
-                if (a) iStr += ",";
-                iStr += std::to_string(slot.args.iArgs[a]);
-              }
-              DSP_DIAG(COMPILE, "ATTN slot=%d   iArgs=[%s] (%d total)", si, iStr.c_str(), slot.args.numIArgs);
+            std::string argStr;
+            for (int a = 0; a < slot.args.numIArgs && a < 16; a++) {
+              argStr += (a ? "," : "") + std::to_string(slot.args.iArgs[a]);
             }
-            if (slot.args.numTArgs > 0) {
-              char tBuf[256] = {0};
-              int toff = 0;
-              for (int a = 0; a < slot.args.numTArgs && a < 8 && toff < 240; a++) {
-                toff += snprintf(tBuf + toff, sizeof(tBuf) - toff, "%s%.6g", a > 0 ? "," : "", slot.args.tArgs[a]);
-              }
-              DSP_DIAG(COMPILE, "ATTN slot=%d   tArgs=[%s] (%d total)", si, tBuf, slot.args.numTArgs);
+            argStr += "] tArgs=[";
+            for (int a = 0; a < slot.args.numTArgs && a < 8; a++) {
+              char tBuf[32];
+              snprintf(tBuf, sizeof(tBuf), "%s%.6g", a ? "," : "", slot.args.tArgs[a]);
+              argStr += tBuf;
             }
+            argStr += "] bArgs=[";
+            for (int a = 0; a < slot.args.numBArgs; a++) {
+              argStr += std::string(a ? "," : "") + (slot.args.bArgs[a] ? "1" : "0");
+            }
+            DSP_DIAG(COMPILE, "ATTN slot=%d   iArgs=[%s]", si, argStr.c_str());
           }
-          // Extract KV head count from effective K shape (4D BHSD: [B,KvHeads,seqK,HD])
-          if (effectiveKShape.size() == 4) {
-            if (hasPastKv) {
-              numKvHeads = static_cast<int>(effectiveKShape[1]);
-              headDim = static_cast<int>(effectiveKShape[3]);
-            } else {
-              // No past KV — K shape is same layout as Q (BHSD or BSHD)
-              if (isBSHD) {
-                // BSHD: [B, seqK, heads, HD]
-                numKvHeads = static_cast<int>(effectiveKShape[2]);
-              } else {
-                // BHSD: [B, heads, seqK, HD]
-                numKvHeads = static_cast<int>(effectiveKShape[1]);
-              }
-            }
-          } else if (effectiveKShape.size() == 3) {
-            // ONNX MHA K/V stay 3D for GQA: [B, seqK, kvHeads * headDim].
-            // Infer KV heads from kvHidden instead of assuming numQHeads.
-            int kvHidden = static_cast<int>(effectiveKShape[2]);
-            if (headDim > 0 && kvHidden > 0 && kvHidden % headDim == 0) {
-              int inferredKvHeads = kvHidden / headDim;
-              if (inferredKvHeads > 0 &&
-                  inferredKvHeads <= numQHeads &&
-                  numQHeads % inferredKvHeads == 0) {
-                numKvHeads = inferredKvHeads;
-              }
-            }
-          }
-          // Default: MHA (KV heads = Q heads)
-          if (numKvHeads <= 0) numKvHeads = numQHeads;
 
-          // Determine if we need dual-buffer mode (3D Q with past_key)
-          bool useDualBuffer = (qShape.size() == 3 && hasPastKv);
-          int pastSeqLen = 0, seqKVCur = 0;
-
-          if (slot.wiring.numInputs > 6
-              && slot.ident.opName.find("onnx_multi_head_attention") != std::string::npos) {
-            DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): seven-input ONNX MHA requires "
-                      "native side-effect/dynamic-prefix execution", si);
+          if (!attn.supported()) {
+            DSP_DIAG(COMPILE, "ATTN slot=%d op='%s' runs natively: %s",
+                     si, slot.ident.opName.c_str(), attn.reason.c_str());
             result.valid = false;
             return result;
           }
 
-          // GGUF in-graph KV-cache contract with rank-4 Q: now expressible by the
-          // dedicated GGUF decode emitter (runtime boundary from the device
-          // position scalar + in-kernel scatter + dual cache/producer read).
-          // Keep the native fallback for any live-cache layout that emitter
-          // cannot express (non-rank-4 cache, mismatched headDim, non-INT64 pos).
-          bool ggufDecodeKvSec = false;
-          int keyCacheSrcSec = -1, valueCacheSrcSec = -1, cachePosSrcSec = -1;
-          if (!useDualBuffer && isDpaV2Sec && slot.wiring.numInputs > 7) {
-            NDArray* kcSec = resolveArr(slot.wiring.inputSourceIndices[5]);
-            NDArray* vcSec = resolveArr(slot.wiring.inputSourceIndices[6]);
-            NDArray* cpSec = resolveArr(slot.wiring.inputSourceIndices[7]);
-            bool liveKvSec = (kcSec != nullptr && !kcSec->isEmpty() && kcSec->lengthOf() > 0)
-                           && (vcSec != nullptr && !vcSec->isEmpty() && vcSec->lengthOf() > 0)
-                           && (cpSec != nullptr && !cpSec->isEmpty() && cpSec->lengthOf() > 0);
-            bool cacheShapeOkSec = liveKvSec && kcSec->rankOf() == 4
-                && static_cast<int>(kcSec->sizeAt(3)) == headDim
-                && cpSec->dataType() == INT64;
-            if (cacheShapeOkSec) {
-              ggufDecodeKvSec = true;
-              keyCacheSrcSec = slot.wiring.inputSourceIndices[5];
-              valueCacheSrcSec = slot.wiring.inputSourceIndices[6];
-              cachePosSrcSec = slot.wiring.inputSourceIndices[7];
-              DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): GGUF decode KV contract — "
-                        "using emitGgufDecodeAttentionKernel (runtime boundary + scatter)", si);
-            } else if (liveKvSec) {
-              DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): live KV cache not expressible "
-                        "by the GGUF decode emitter — deferring to C++ native", si);
-              result.valid = false;
-              return result;
-            }
-          }
-
-          if (useDualBuffer) {
-            // past_key shape is 4D BHSD: [B, kvH, pastSeq, D]
-            pastSeqLen = static_cast<int>(effectiveKShape[2]);
-            auto curKShape = resolveShape(kSrc);
-            seqKVCur = (curKShape.size() == 3) ? static_cast<int>(curKShape[1]) : 1;
-            seqK = pastSeqLen + seqKVCur;
-          } else {
-            // seqK from effective K source
-            if (effectiveKShape.size() >= 4) {
-              int seqKDim = (opUsesBSHDSec && !hasPastKv) ? 1 : 2;
-              seqK = static_cast<int>(effectiveKShape[seqKDim]);
-            } else if (effectiveKShape.size() == 3) {
-              seqK = static_cast<int>(effectiveKShape[1]);
-            }
-          }
-
-          // past_key is always 4D BHSD; current key follows Q layout
-          bool kIsBSHD = hasPastKv ? false : isBSHD;
-
-          // seqK=0 means slot output shapes are stale (cached from warmup before
-          // KV cache was populated).  Try deriving seqK from actual external inputs
-          // which Java passes with correct shapes.
-          bool seqKDerivedFromExternal = false;
-          if (seqK <= 0) {
-            int derivedSeqK = 0;
-            int derivedKvHeads = 0;
-            std::string derivedSource;
-
-            // Strategy 1: Walk back from K source to find KV cache external inputs.
-            // The K input often comes from a Concat(past_key, current_key) op.
-            // Find that concat's past_key external input and use its seqK.
-            if (kSrc >= 0) {
-              bool kProducerFound = false;
-              for (int s = 0; s < totalSlots && !kProducerFound; s++) {
-                for (int o = 0; o < slots[s].wiring.numOutputs && !kProducerFound; o++) {
-                  if (slots[s].wiring.outputSlotIndices[o] == kSrc) {
-                    // Found the producer of K. Check its inputs for external KV cache.
-                    for (int pi = 0; pi < slots[s].wiring.numInputs; pi++) {
-                      int psrc = slots[s].wiring.inputSourceIndices[pi];
-                      if (psrc < 0) {
-                        // External input — check if it looks like a KV cache
-                        int extIdx = -(psrc + 1);
-                        if (extIdx < numExternalInputs && externalInputs && externalInputs[extIdx]) {
-                          auto& ext = *externalInputs[extIdx];
-                          if (ext.rankOf() == 4 && !ext.isEmpty() &&
-                              (ext.dataType() == FLOAT32 || ext.dataType() == HALF || ext.dataType() == BFLOAT16)) {
-                            int extSeqK = static_cast<int>(ext.sizeAt(2));
-                            int extHD = static_cast<int>(ext.sizeAt(3));
-                            int extKvH = static_cast<int>(ext.sizeAt(1));
-                            // GQA constraint: KV heads must divide Q heads evenly
-                            if (extHD == headDim && extSeqK > derivedSeqK &&
-                                extKvH > 0 && extKvH <= numQHeads && numQHeads % extKvH == 0) {
-                              derivedSeqK = extSeqK;
-                              derivedKvHeads = extKvH;
-                              derivedSource = "K-producer-ext[" + std::to_string(extIdx) + "]";
-                            }
-                          }
-                        }
-                      } else {
-                        // Slot output — check resolved shape for 4D KV cache
-                        auto pshape = resolveShape(psrc);
-                        int candidateKvH = (pshape.size() == 4) ? static_cast<int>(pshape[1]) : 0;
-                        // GQA constraint: KV heads must divide Q heads evenly
-                        if (pshape.size() == 4 && pshape[3] == headDim && pshape[2] > 0 &&
-                            candidateKvH > 0 && candidateKvH <= numQHeads && numQHeads % candidateKvH == 0) {
-                          int candidateSeqK = static_cast<int>(pshape[2]);
-                          if (candidateSeqK > derivedSeqK) {
-                            derivedSeqK = candidateSeqK;
-                            derivedKvHeads = candidateKvH;
-                            derivedSource = "K-producer-slot[" + std::to_string(psrc) + "]";
-                          }
-                        }
-                      }
-                    }
-                    kProducerFound = true;
-                  }
-                }
-              }
-            }
-
-            // Strategy 2: Scan ALL attention op inputs for 4D KV cache shapes.
-            // Covers cases where past_key is a direct input to the attention op.
-            if (derivedSeqK == 0) {
-              for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
-                int src = slot.wiring.inputSourceIndices[inp];
-                auto shape = resolveShape(src);
-                int candidateKvH = (shape.size() == 4) ? static_cast<int>(shape[1]) : 0;
-                // GQA constraint: KV heads must divide Q heads evenly
-                if (shape.size() == 4 && shape[3] == headDim && shape[2] > 0 &&
-                    candidateKvH > 0 && candidateKvH <= numQHeads && numQHeads % candidateKvH == 0) {
-                  int candidateSeqK = static_cast<int>(shape[2]);
-                  if (candidateSeqK > derivedSeqK) {
-                    derivedSeqK = candidateSeqK;
-                    derivedKvHeads = candidateKvH;
-                    derivedSource = "attn-input[" + std::to_string(inp) + "]";
-                  }
-                }
-              }
-            }
-
-            // Strategy 3: Broad scan of ALL external inputs for 4D FP arrays
-            // matching KV cache pattern [batch, heads, seqK, headDim].
-            if (derivedSeqK == 0 && externalInputs) {
-              for (int ei = 0; ei < numExternalInputs; ei++) {
-                if (!externalInputs[ei]) continue;
-                auto& ext = *externalInputs[ei];
-                if (ext.rankOf() != 4 || ext.isEmpty()) continue;
-                if (ext.dataType() != FLOAT32 && ext.dataType() != HALF && ext.dataType() != BFLOAT16) continue;
-                int extBatch = static_cast<int>(ext.sizeAt(0));
-                int extHD = static_cast<int>(ext.sizeAt(3));
-                int extSeqK = static_cast<int>(ext.sizeAt(2));
-                // Match: same batch, same headDim, non-zero seqK, heads divides Q heads
-                if (extBatch == batchSize && extHD == headDim && extSeqK > 0) {
-                  int extHeads = static_cast<int>(ext.sizeAt(1));
-                  if (extHeads > 0 && extHeads <= numQHeads && numQHeads % extHeads == 0 && extSeqK > derivedSeqK) {
-                    derivedSeqK = extSeqK;
-                    derivedKvHeads = extHeads;
-                    derivedSource = "ext-scan[" + std::to_string(ei) + "]";
-                  }
-                }
-              }
-            }
-
-            if (derivedSeqK > 0) {
-              // For concat-based K (K source is a slot that concatenates past+current),
-              // the attention's total seqK = past_seqK + seqQ
-              seqK = derivedSeqK + seqQ;
-              seqKDerivedFromExternal = true;
-              // Also correct numKvHeads if we got it from a 4D KV cache shape
-              if (derivedKvHeads > 0 && derivedKvHeads != numKvHeads) {
-                DSP_DIAG(COMPILE, "ATTN slot=%d correcting numKvHeads from %d to %d (from %s)",
-                          si, numKvHeads, derivedKvHeads, derivedSource.c_str());
-                numKvHeads = derivedKvHeads;
-              }
-              DSP_DIAG(COMPILE, "ATTN slot=%d derived seqK=%d from %s (pastSeqK=%d + seqQ=%d, headDim=%d, numKvHeads=%d)",
-                        si, seqK, derivedSource.c_str(), derivedSeqK, seqQ, headDim, numKvHeads);
-            } else {
-              // Truly unresolvable — fall back to C++
-              DSP_DIAG(COMPILE, "ATTN slot=%d seqK=0 and no KV cache shapes found — deferring to C++ native", si);
-              result.valid = false;
-              return result;
-            }
-          }
-
-          float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(std::max(headDim, 1)));
-          auto attnTile = chooseFusedAttentionTileConfig(
-              batchSize, numQHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes);
+          // deriveAttentionGrid sized the launch with these same arguments.
+          auto attnTile = chooseFusedAttentionTileConfig(attn.batch, attn.qHeads, attn.seqQ, attn.seqK,
+                                                         attn.headDim, attentionSharedMemLimitBytes);
           if (!attnTile.fitsSharedMem) {
             std::string msg = "TritonIRBuilder::buildSectionedModule: attention at slot " +
                               std::to_string(si) + " cannot fit shared memory (headDim=" +
-                              std::to_string(headDim) + ", BM=" + std::to_string(attnTile.blockM) +
+                              std::to_string(attn.headDim) + ", BM=" + std::to_string(attnTile.blockM) +
                               ", BN=" + std::to_string(attnTile.blockN) + ", estimated=" +
                               std::to_string(attnTile.estimatedSharedMemBytes) + ", limit=" +
                               std::to_string(attnTile.sharedMemLimitBytes) + ")";
             THROW_EXCEPTION(msg.c_str());
           }
-          int blockM = attnTile.blockM;
-          int blockN = attnTile.blockN;
+          emittedAttentionSmemBytes = std::max(emittedAttentionSmemBytes, attnTile.estimatedSharedMemBytes);
           if (attnTile.adjustedForSharedMem && !loggedAttnTileAdjust) {
             DSP_DIAG(COMPILE, "TritonIRBuilder::buildSectionedModule: adjusted attention tiles for section [%d-%d] "
                       "to BM=%d BN=%d (headDim=%d, seqQ=%d, seqK=%d, estimatedSmem=%d, limit=%d) "
-                      "(hasPastKv=%d, numQHeads=%d, numKvHeads=%d, isBSHD=%d, dualBuffer=%d)",
-                      sec.startSlot, sec.endSlot,
-                      blockM, blockN, headDim, seqQ, seqK,
-                      attnTile.estimatedSharedMemBytes, attnTile.sharedMemLimitBytes,
-                      hasPastKv ? 1 : 0, numQHeads, numKvHeads, isBSHD ? 1 : 0,
-                      useDualBuffer ? 1 : 0);
+                      "(numQHeads=%d, numKvHeads=%d, dualBuffer=%d, gguf=%d)",
+                      sec.startSlot, sec.endSlot, attnTile.blockM, attnTile.blockN, attn.headDim,
+                      attn.seqQ, attn.seqK, attnTile.estimatedSharedMemBytes, attnTile.sharedMemLimitBytes,
+                      attn.qHeads, attn.kvHeads, attn.dualBuffer ? 1 : 0, attn.gguf ? 1 : 0);
             loggedAttnTileAdjust = true;
           }
+          const auto attnPids = attentionProgramIds(sec, si, attn.batch, attn.qHeads, attn.seqQ,
+                                                    attnTile.blockM);
 
-          auto qPtr = getSlotArgPtr(qSrc);
-          auto outPtr = getSlotArgPtr(outSlot);
-
-          // For dual-buffer: kPtr/vPtr = past_key/past_value (BHSD), curKPtr/curVPtr = current key/value (BSHD)
-          mlir::Value kPtr, vPtr, curKPtr, curVPtr;
-          if (useDualBuffer) {
-            // past_key/value are the main K/V buffers (BHSD layout)
-            kPtr = getSlotArgPtr(pastKeySrc);
-            vPtr = getSlotArgPtr(pastValueSrc);
-            // current key/value are the secondary buffers (3D BSHD layout)
-            curKPtr = getSlotArgPtr(kSrc);
-            curVPtr = getSlotArgPtr(vSrc);
-          } else {
-            kPtr = getSlotArgPtr(effectiveKSrc);
-            vPtr = getSlotArgPtr(effectiveVSrc);
+          // Fused: K/V are the full key range, or in dual-buffer mode the ONNX past
+          // (keys [0, pastSeq)) with the current K/V as the second buffer.
+          // GGUF: current K/V window plus the KV cache it writes in place.
+          auto qPtr = getSlotArgPtr(attn.qSrc);
+          auto outPtr = getSlotArgPtr(attn.outSlot);
+          mlir::Value kPtr, vPtr, curKPtr, curVPtr, kCachePtr, vCachePtr, cachePosPtr, biasPtr;
+          if (attn.dualBuffer) {
+            kPtr = getSlotArgPtr(attn.pastKSrc);
+            vPtr = getSlotArgPtr(attn.pastVSrc);
+          } else if (!attn.gguf) {
+            kPtr = getSlotArgPtr(attn.kSrc);
+            vPtr = getSlotArgPtr(attn.vSrc);
           }
-
-          // Resolve the additive bias from the op-specific input position. DPA-v2
-          // cache-form graphs carry it at input 8; bias-only graphs carry it at input 5.
-          int biasInputIdxSec = -1;
-          if (isDpaV2Sec) {
-            if (slot.wiring.numInputs >= 9) biasInputIdxSec = 8;
-            else if (slot.wiring.numInputs == 6) biasInputIdxSec = 5;
-            else if (slot.wiring.numInputs == 4) biasInputIdxSec = 3;
-          } else if (slot.wiring.numInputs > 3) {
-            biasInputIdxSec = 3;
+          if (attn.dualBuffer || attn.gguf) {
+            curKPtr = getSlotArgPtr(attn.kSrc);
+            curVPtr = getSlotArgPtr(attn.vSrc);
           }
-
-          mlir::Value attnBiasPtr;
-          std::vector<LongType> attnBiasShape;
-          {
-            auto fmtShp = [](const std::vector<LongType>& v) -> std::string {
-              std::string r; for (size_t i = 0; i < v.size(); i++) { if (i) r += ","; r += std::to_string(v[i]); } return r.empty() ? "empty" : r;
-            };
-            std::string idxStr;
-            for (int i = 0; i < slot.wiring.numInputs; i++) { if (i) idxStr += ","; idxStr += std::to_string(slot.wiring.inputSourceIndices[i]); }
-            DSP_DIAG(COMPILE, "TritonIRBuilder: attention slot=%d op=%s numInputs=%d numOutputs=%d "
-                      "seqQ=%d seqK=%d heads=%d/%d hd=%d hasPastKv=%d dualBuf=%d "
-                      "pastKeySrc=%d qShape=[%s] kShape=[%s] effectiveKShape=[%s] inputSrcs=[%s]",
-                      si, slot.ident.opName.c_str(), slot.wiring.numInputs, slot.wiring.numOutputs,
-                      seqQ, seqK, numQHeads, numKvHeads, headDim,
-                      hasPastKv ? 1 : 0, useDualBuffer ? 1 : 0,
-                      pastKeySrc,
-                      fmtShp(qShape).c_str(), fmtShp(resolveShape(kSrc)).c_str(),
-                      fmtShp(effectiveKShape).c_str(), idxStr.c_str());
+          if (attn.gguf) {
+            kCachePtr = getSlotArgPtr(attn.keyCacheSrc);
+            vCachePtr = getSlotArgPtr(attn.valueCacheSrc);
+            cachePosPtr = getSlotArgPtr(attn.cachePosSrc);
           }
-          if (biasInputIdxSec >= 0) {
-            int biasSrc = slot.wiring.inputSourceIndices[biasInputIdxSec];
-            auto bShape = resolveShape(biasSrc);
-            // Accept bias if rank >= 2 and non-scalar (rank 2 = [B, seqK] padding mask)
-            if (bShape.size() >= 2 && shapeLength(bShape) > 1) {
-              // Verify the bias buffer's seqK dimension matches the kernel's seqK.
-              // The bias shape may be stale from warmup (cached slot output) while
-              // seqK was derived from external inputs with current shapes.
-              // If biasSeqK < seqK, the kernel would read past the bias buffer → crash.
-              int biasSeqKDim = static_cast<int>(bShape[bShape.size() - 1]);
-              if (biasSeqKDim >= seqK) {
-                attnBiasPtr = getSlotArgPtr(biasSrc);
-                attnBiasShape = bShape;
-                DSP_DIAG(COMPILE, "TritonIRBuilder: attention bias input=%d slot=%d shapeRank=%zu",
-                          biasInputIdxSec, biasSrc, bShape.size());
-              } else {
-                DSP_DIAG(COMPILE, "TritonIRBuilder: skipping attention bias at slot %d — "
-                          "bias seqK=%d < kernel seqK=%d (stale shape from warmup)",
-                          si, biasSeqKDim, seqK);
-              }
-            }
-          }
+          if (attn.hasBias) biasPtr = getSlotArgPtr(attn.biasSrc);
 
-          // Validate: the effective K buffer must have enough elements for the derived seqK.
-          // When the K buffer is empty (stale from warmup or genuinely empty), the kernel
-          // would read from empty buffers causing illegal memory access (CUDA error 700).
-          // Always fall back to C++ native execution in this case — even if seqK was derived
-          // from external inputs, the actual K/V slot data may still be empty at execution time.
-          //
-          // For dual-buffer mode (static KV cache), the past_key buffer is pre-allocated
-          // to max sequence length and reused across decode steps. In this case, we check
-          // the buffer shape/capacity rather than total length, since the buffer may
-          // contain stale data from previous steps but is still valid for attention.
-          bool kBufferValid = true;
-          {
-            auto effKShape = resolveShape(effectiveKSrc);
-            if (effKShape.empty() && seqK > 0) {
-              kBufferValid = false;
-              DSP_DIAG(COMPILE, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d — "
-                        "effective K buffer (src=%d) shape is empty but seqK=%d%s. "
-                        "Falling back to C++ native.",
-                        si, effectiveKSrc, seqK,
-                        seqKDerivedFromExternal ? " (seqK derived from external inputs)" : "");
-            } else if (!effKShape.empty() && seqK > 0) {
-              // For dual-buffer mode (static KV cache), check shape capacity not total length
-              if (useDualBuffer) {
-                // past_key is 4D BHSD: [B, KvHeads, maxSeqLen, headDim]
-                // Valid if rank == 4 and seq dimension (dim 2) > 0
-                bool shapeValid = (effKShape.size() == 4 && effKShape[2] > 0);
-                if (!shapeValid) {
-                  kBufferValid = false;
-                  DSP_DIAG(COMPILE, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d — "
-                            "past_key buffer (src=%d) has invalid shape: rank=%zu, seqDim=%d (expected 4D BHSD with seqDim>0)",
-                            si, effectiveKSrc, effKShape.size(),
-                            effKShape.size() >= 3 ? static_cast<int>(effKShape[2]) : -1);
-                }
-              } else {
-                // Non-dual-buffer: check total length (original behavior)
-                LongType effKLen = 1;
-                for (auto d : effKShape) effKLen *= d;
-                if (effKLen == 0) {
-                  kBufferValid = false;
-                  DSP_DIAG(COMPILE, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d — "
-                            "effective K buffer (src=%d) is empty but seqK=%d%s. "
-                            "Falling back to C++ native.",
-                            si, effectiveKSrc, seqK,
-                            seqKDerivedFromExternal ? " (seqK derived from external inputs)" : "");
-                }
-              }
-            }
-          }
-
-          if (!kBufferValid) {
-            DSP_DIAG(COMPILE, "ATTN slot=%d: K buffer invalid, returning section as non-compilable", si);
-            result.valid = false;
-            return result;
-          }
-
-          if (ggufDecodeKvSec && qPtr && outPtr) {
-            auto kCachePtrSec = getSlotArgPtr(keyCacheSrcSec);
-            auto vCachePtrSec = getSlotArgPtr(valueCacheSrcSec);
-            auto cachePosPtrSec = getSlotArgPtr(cachePosSrcSec);
-            auto curKPtrSec = getSlotArgPtr(kSrc);
-            auto curVPtrSec = getSlotArgPtr(vSrc);
-            if (kCachePtrSec && vCachePtrSec && cachePosPtrSec && curKPtrSec && curVPtrSec) {
-              NDArray* kcSecMax = resolveArr(keyCacheSrcSec);
-              int cacheMaxSeqSec = (kcSecMax && kcSecMax->rankOf() == 4)
-                  ? static_cast<int>(kcSecMax->sizeAt(1)) : 0;
-              emitGgufDecodeAttentionKernel(builder, loc, qPtr,
-                                            curKPtrSec, curVPtrSec,
-                                            kCachePtrSec, vCachePtrSec, cachePosPtrSec,
-                                            outPtr,
-                                            batchSize, numQHeads, numKvHeads,
-                                            seqQ, cacheMaxSeqSec, headDim, scale,
-                                            blockM, blockN,
-                                            attnBiasPtr, attnBiasShape);
-              // output[0] = attention result (loaded from output buffer)
-              DataType outDtype = resolveDtype(outSlot);
-              auto loaded = loadBlock(outSlot, outDtype);
-              if (loaded) ssaValues[outSlot] = loaded;
-            } else {
-              DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): GGUF decode binding failed — "
-                        "native fallback", si);
-              result.valid = false;
-              return result;
-            }
-          } else if (qPtr && kPtr && vPtr && outPtr) {
-            emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
-                                     batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
-                                     scale, blockM, blockN, isBSHD, kIsBSHD,
-                                     useCausalMaskSec,
-                                     attnBiasPtr, attnBiasShape,
-                                     curKPtr, curVPtr, pastSeqLen, seqKVCur);
-            // output[0] = attention result (loaded from output buffer)
-            DataType outDtype = resolveDtype(outSlot);
-            auto loaded = loadBlock(outSlot, outDtype);
-            if (loaded) ssaValues[outSlot] = loaded;
-
-            // output[1] = present_key, output[2] = present_value
-            if (useDualBuffer && slot.wiring.numOutputs >= 2) {
-              // Dual-buffer: write current K/V to present_key/value output at position pastSeq.
-              // Guard: verify the present_key output buffer can hold pastSeqLen + seqKVCur positions.
-              // For static KV caches, the past_key buffer is pre-allocated to maxKvLen but the
-              // present_key output was allocated during warmup with a much smaller shape.
-              // Writing at pastSeqLen offset would be out-of-bounds. In static KV cache mode,
-              // the caller handles cache updates — skip the write.
-              int presentKeySlot = slot.wiring.outputSlotIndices[1];
-              auto pkOutShape = resolveShape(presentKeySlot);
-              int pkSeqCapacity = (pkOutShape.size() == 4) ? static_cast<int>(pkOutShape[2]) : 0;
-              int requiredSeq = pastSeqLen + seqKVCur;
-              bool pkFits = (pkSeqCapacity >= requiredSeq);
-              if (!pkFits) {
-                DSP_DIAG(COMPILE, "TritonIRBuilder: skipping present_key/value write at slot %d — "
-                          "output buffer seqDim=%d < required=%d (pastSeqLen=%d + seqKVCur=%d). "
-                          "Static KV cache detected; caller handles cache updates.",
-                          si, pkSeqCapacity, requiredSeq, pastSeqLen, seqKVCur);
-              }
-              if (pkFits) {
-                auto presentKeyPtr = getSlotArgPtr(presentKeySlot);
-                if (presentKeyPtr && curKPtr) {
-                  int totalSeq = pastSeqLen + seqKVCur;
-                  emitPresentKvWrite(builder, loc, curKPtr, presentKeyPtr,
-                                     batchSize, numQHeads, numKvHeads,
-                                     pastSeqLen, seqKVCur, totalSeq, headDim);
-                  auto pkLoaded = loadBlock(presentKeySlot, resolveDtype(presentKeySlot));
-                  if (pkLoaded) ssaValues[presentKeySlot] = pkLoaded;
-                }
-              }
-              if (slot.wiring.numOutputs >= 3 && pkFits) {
-                int presentValSlot = slot.wiring.outputSlotIndices[2];
-                auto presentValPtr = getSlotArgPtr(presentValSlot);
-                if (presentValPtr && curVPtr) {
-                  int totalSeq = pastSeqLen + seqKVCur;
-                  emitPresentKvWrite(builder, loc, curVPtr, presentValPtr,
-                                     batchSize, numQHeads, numKvHeads,
-                                     pastSeqLen, seqKVCur, totalSeq, headDim);
-                  auto pvLoaded = loadBlock(presentValSlot, resolveDtype(presentValSlot));
-                  if (pvLoaded) ssaValues[presentValSlot] = pvLoaded;
-                }
-              }
-            } else {
-              // Non-dual-buffer: pass-through effective key/value SSA
-              if (slot.wiring.numOutputs >= 2) {
-                if (ssaValues.count(effectiveKSrc)) {
-                  ssaValues[slot.wiring.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
-                } else {
-                  auto kLoaded = loadBlock(effectiveKSrc, resolveDtype(effectiveKSrc));
-                  if (kLoaded) ssaValues[slot.wiring.outputSlotIndices[1]] = kLoaded;
-                }
-              }
-              if (slot.wiring.numOutputs >= 3) {
-                if (ssaValues.count(effectiveVSrc)) {
-                  ssaValues[slot.wiring.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
-                } else {
-                  auto vLoaded = loadBlock(effectiveVSrc, resolveDtype(effectiveVSrc));
-                  if (vLoaded) ssaValues[slot.wiring.outputSlotIndices[2]] = vLoaded;
-                }
-              }
-            }
-          } else {
+          const bool bound = qPtr && outPtr && (!attn.hasBias || biasPtr) &&
+              (attn.gguf ? (curKPtr && curVPtr && kCachePtr && vCachePtr && cachePosPtr)
+                         : (kPtr && vPtr && (!attn.dualBuffer || (curKPtr && curVPtr))));
+          if (!bound) {
+            auto ok = [](const mlir::Value& v) { return v ? "OK" : "NULL"; };
             std::string msg = "TritonIRBuilder::buildSectionedModule: attention at slot " + std::to_string(si) +
-                " — missing args."
-                " qSrc=" + std::to_string(qSrc) + "(ptr=" + (qPtr ? "OK" : "NULL") + ")" +
-                " kSrc=" + std::to_string(kSrc) + " vSrc=" + std::to_string(vSrc) +
-                " outSlot=" + std::to_string(outSlot) + "(ptr=" + (outPtr ? "OK" : "NULL") + ")" +
-                " kPtr=" + (kPtr ? "OK" : "NULL") + " vPtr=" + (vPtr ? "OK" : "NULL") +
-                " hasPastKv=" + std::to_string(hasPastKv) + " dualBuf=" + std::to_string(useDualBuffer) +
-                " numArgs=" + std::to_string(result.args.size()) +
-                ". Cannot compile.";
+                " — missing args. qSrc=" + std::to_string(attn.qSrc) + "(" + ok(qPtr) + ")" +
+                " kSrc=" + std::to_string(attn.kSrc) + " vSrc=" + std::to_string(attn.vSrc) +
+                " outSlot=" + std::to_string(attn.outSlot) + "(" + ok(outPtr) + ")" +
+                " k=" + ok(kPtr) + " v=" + ok(vPtr) + " curK=" + ok(curKPtr) + " curV=" + ok(curVPtr) +
+                " kCache=" + ok(kCachePtr) + " vCache=" + ok(vCachePtr) + " cachePos=" + ok(cachePosPtr) +
+                " bias=" + (attn.hasBias ? ok(biasPtr) : "none") +
+                " dualBuffer=" + std::to_string(attn.dualBuffer) + " gguf=" + std::to_string(attn.gguf) +
+                " numArgs=" + std::to_string(result.args.size()) + ". Cannot compile.";
             THROW_EXCEPTION(msg.c_str());
+          }
+
+          if (attn.gguf) {
+            emitGgufDecodeAttentionKernel(builder, loc, qPtr, curKPtr, curVPtr, kCachePtr, vCachePtr,
+                                          cachePosPtr, outPtr, attn.batch, attn.qHeads, attn.kvHeads,
+                                          attn.seqQ, attn.cacheMaxSeq, attn.headDim, attn.scale,
+                                          attnTile.blockM, attnTile.blockN, biasPtr, attn.biasShape,
+                                          attnPids.first, attnPids.second);
+          } else {
+            emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr, attn.batch, attn.qHeads,
+                                     attn.kvHeads, attn.seqQ, attn.seqK, attn.headDim, attn.scale,
+                                     attnTile.blockM, attnTile.blockN, attn.qIsBSHD, attn.kIsBSHD,
+                                     attn.causal, biasPtr, attn.biasShape, curKPtr, curVPtr,
+                                     attn.pastSeq, attn.dualBuffer ? attn.curSeq : 0,
+                                     attnPids.first, attnPids.second);
           }
         }
         break;
@@ -9396,17 +8527,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           secSmem = (bm * bk + bk * bn) * 2 * numStages;
           break;
         }
-        case KernelSectionType::FUSED_ATTENTION: {
-          // Flash attention: use the same estimator as the tile selection code
-          // which accounts for Q[BM,HD] + K[BN,HD] + V[BN,HD] + overhead.
-          int hd = std::max(1, sec.headDim);
-          int sq = std::max(1, sec.seqQ);
-          int sk = std::max(1, sec.seqK);
-          auto attnTile = chooseFusedAttentionTileConfig(
-              sec.batchSize, sec.numHeads, sq, sk, hd);
-          secSmem = attnTile.estimatedSharedMemBytes;
+        case KernelSectionType::FUSED_ATTENTION:
+          // The tile the attention case emitted, from the op's own contract.
+          secSmem = emittedAttentionSmemBytes;
           break;
-        }
         case KernelSectionType::REDUCTION: {
           // Triton tt.reduce: tree reduction using shared memory shuffle.
           // AllocateSharedMemoryPass allocates BLOCK_SIZE * elemSize for the
@@ -9463,8 +8587,6 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
   dumpSectionBreakdown(sections, startSlot, endSlot, maxSectionGrid, needsGridSync);
 
-  result.mlirModule = new mlir::ModuleOp(moduleOp);
-  result.mlirContext = mlirContext;
   result.valid = true;
 
   // Dump TTIR module for diagnostics
@@ -9666,14 +8788,18 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
   result.numWarps = numWarps;
   result.numStages = numStages;
 
-  // Create MLIR context and register dialects (thread-safe)
+  // Create MLIR context and register dialects (thread-safe). The result owns the
+  // context and module from here on; the guard frees them if the build throws.
   auto mlirContext = createMlirContextWithDialects();
+  result.mlirContext = mlirContext;
+  ModuleUnwindGuard moduleGuard{result};
 
   mlir::OpBuilder builder(mlirContext);
   auto loc = builder.getUnknownLoc();
 
   // Create module
   auto moduleOp = mlir::ModuleOp::create(loc);
+  result.mlirModule = new mlir::ModuleOp(moduleOp);
   builder.setInsertionPointToEnd(moduleOp.getBody());
 
   // ── Collect unique buffer references (same logic as buildModule) ──
@@ -9952,8 +9078,7 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
   if (aArgIdx < 0 || bArgIdx < 0 || cArgIdx < 0) {
     DSP_DIAG(FALLBACK, "TritonIRBuilder::buildMatmulModule: could not map matmul A/B/C to kernel args "
               "(aArgIdx=%d, bArgIdx=%d, cArgIdx=%d)", aArgIdx, bArgIdx, cArgIdx);
-    delete mlirContext;
-    return result;
+    return result;  // invalid: compileToGpuBinary frees the module and context
   }
 
   auto aPtr = getBufferArg(aArgIdx);
@@ -10053,8 +9178,6 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
   result.blockY = 1;
   result.blockZ = 1;
 
-  result.mlirModule = new mlir::ModuleOp(moduleOp);
-  result.mlirContext = mlirContext;  // Store for proper cleanup
   result.valid = true;
   result.useIndirectArgs = useIndirectArgs;
 

@@ -19,7 +19,6 @@
 #include <ops/declarable/helpers/autoregressive_decode.h>
 #include <ops/declarable/helpers/token_sample.h>
 #include <ops/declarable/helpers/kv_scatter.h>
-#include <ops/declarable/helpers/kv_cache_quantize.h>
 #include <execution/LaunchContext.h>
 #include <graph/Context.h>
 #include <graph/NativeDynamicShapePlan.h>
@@ -1067,21 +1066,6 @@ void autoregressiveDecode(
         // ── Step 2: Execute plan ──
         // On CPU, use execute() instead of executeSteadyState() (which is CUDA-only).
 
-        // ADR 0107 V2: inject scale buffers into the thread-local registry so that
-        // dot_product_attention_v2 can look them up by INT8 KV cache pointer identity.
-        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr
-            && config->kvInputExtIndices != nullptr) {
-            static thread_local std::vector<NDArray*> tl_kvQuantPtrs;
-            int N = numKvPairs;
-            tl_kvQuantPtrs.resize(N);
-            for (int ki = 0; ki < N; ki++) {
-                int extIdx = config->kvInputExtIndices[ki];
-                tl_kvQuantPtrs[ki] = (extIdx >= 0 && extIdx < numExtInputs)
-                    ? extInputs[extIdx] : nullptr;
-            }
-            setKvScaleRegistry(tl_kvQuantPtrs.data(), config->kvScaleBuffers, N);
-        }
-
         if (useSpeculative_cpu && proposedCount_cpu > 0) {
             // DEEP pre-verification snapshot (CPU mirror of the CUDA scalar-binding
             // aliasing fix): copy the recurrent state ext inputs into DEDICATED owned
@@ -1103,10 +1087,6 @@ void autoregressiveDecode(
             extInputs, numExtInputs,
             planOutputs, numPlanOutputs,
             nullptr);
-
-        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
-            clearKvScaleRegistry();
-        }
 
         std::string planFailureDetail;
         if (planStatus != Status::OK) planFailureDetail = nestedPlanFailureDetail();
@@ -1300,17 +1280,6 @@ void autoregressiveDecode(
                          "SPEC_STATE_RERUN step=%d proposed=%d accepted=%d — re-executing "
                          "with actual_sequence_length=%d for accepted-prefix state commit",
                          step, proposedCount_cpu, specAccepted_cpu, specConsumed_cpu);
-                if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr
-                    && config->kvInputExtIndices != nullptr) {
-                    static thread_local std::vector<NDArray*> tl_kvQuantPtrsRerun;
-                    tl_kvQuantPtrsRerun.resize(numKvPairs);
-                    for (int ki = 0; ki < numKvPairs; ki++) {
-                        int extIdx = config->kvInputExtIndices[ki];
-                        tl_kvQuantPtrsRerun[ki] = (extIdx >= 0 && extIdx < numExtInputs)
-                            ? extInputs[extIdx] : nullptr;
-                    }
-                    setKvScaleRegistry(tl_kvQuantPtrsRerun.data(), config->kvScaleBuffers, numKvPairs);
-                }
                 // PLAN SELECTION (review round 2, CUDA mirror): the width-one
                 // scalar plan can only serve a single-row commit. A multi-row
                 // accepted-prefix commit MUST route through the window plan,
@@ -1349,9 +1318,6 @@ void autoregressiveDecode(
                     extInputs, numExtInputs,
                     planOutputs, numPlanOutputs,
                     nullptr);
-                if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
-                    clearKvScaleRegistry();
-                }
                 std::string rerunFailureDetail;
                 if (rerunStatus != Status::OK) rerunFailureDetail = nestedPlanFailureDetail();
                 REQUIRE_TRUE(rerunStatus == Status::OK, 0,
@@ -1667,9 +1633,6 @@ void autoregressiveDecode(
                             ? executeScalarTarget()
                             : plan->execute(extInputs, numExtInputs,
                                             planOutputs, numPlanOutputs, nullptr);
-                        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
-                            clearKvScaleRegistry();
-                        }
                         std::string shortenFailureDetail;
                         if (shortenStatus != Status::OK)
                             shortenFailureDetail = nestedPlanFailureDetail();

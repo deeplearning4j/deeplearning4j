@@ -139,22 +139,6 @@ struct AutoregressiveDecodeConfig {
     int* convStateOutputIndices = nullptr; // plan output indices for conv_state_out_{layer}
     int numConvStatePairs = 0;
 
-    // ─── ADR 0107 V2: Quantised KV cache side-channel ────────────────────────
-    //
-    // When kvQuantFormat > 0 (INT8_KV mode), the KV buffers in planExternalInputs
-    // (at indices kvInputExtIndices[i]) are INT8 arrays. The corresponding float
-    // per-token-per-head scale arrays are passed here as a side channel — they are
-    // NOT registered as plan ext inputs (the SameDiff model graph has no scale vars),
-    // but are passed directly to the attention helper (kvInPlaceWriteQuantisedBSHD /
-    // fusedGQADecodeQuantisedCuda) by the native decode op.
-    //
-    // Layout: kvScaleBuffers[0..numKvPairs-1] = key scales per layer
-    //         kvScaleBuffers[numKvPairs..2*numKvPairs-1] = value scales per layer
-    // Shape of each: [batch, maxKvLen, kvHeads] float32.
-    // Null when kvQuantFormat == 0 (standard float KV path).
-    NDArray** kvScaleBuffers = nullptr;    // 2*numKvPairs scale arrays (null = float KV)
-    int kvQuantFormat = 0;                 // 0=float, 1=INT8_KV, 5=FP16K_INT8V
-
     // ─── ADR 0106 Phase 1: fixed W_max window substrate ──────────────────────
     //
     // When activeWindow > 1, the per-step forward runs over a fixed [1,1,W_max,past+W_max]

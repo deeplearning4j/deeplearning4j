@@ -711,6 +711,13 @@ elseif(SD_SANITIZE)
     message(STATUS "ℹ️  Skipping --no-undefined for sanitizer build (sanitizer runtime symbols resolved at runtime)")
 endif()
 
+# oneDNN's static libdnnl.a carries the ITT marker object ittptmark64.S.o without a
+# .note.GNU-stack section, which makes the linker mark libnd4jcpu.so's stack executable and
+# the JVM warn when it loads the library. Nothing in libnd4j needs an executable stack.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,noexecstack")
+endif()
+
 # Keep hosted-build logs compact unless verbose output was explicitly requested.
 # Full CUDA command lines can exhaust GitHub Actions' retained log budget before
 # the actual compiler failure is emitted.

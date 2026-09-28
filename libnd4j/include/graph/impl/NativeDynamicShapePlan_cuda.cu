@@ -375,6 +375,61 @@ struct SegmentDeviceSavedState {
   decltype(tl_cublasWorkspaceSize) wsSize = 0;
 };
 static thread_local SegmentDeviceSavedState tl_segDevSaved;
+
+// Streams that can hold this execution's writes on the plan's primary device.
+// Ordered execution runs on the plan-owned stream, but the frozen fast path
+// replays on the caller's stream. Per-buffer write events are suppressed during
+// DSP execution, so a cross-device reader must complete the stream a producer
+// actually ran on. While a secondary segment is bound, tl_segDevSaved holds them.
+struct PrimaryProducerStreams {
+  int device = -1;
+  cudaStream_t execution = nullptr;
+  cudaStream_t gap = nullptr;
+};
+
+PrimaryProducerStreams primaryProducerStreams() {
+  PrimaryProducerStreams streams;
+  if (tl_segDevSaved.active) {
+    streams.device = tl_segDevSaved.primaryDevice;
+    streams.execution = reinterpret_cast<cudaStream_t>(tl_segDevSaved.execStream);
+    streams.gap = tl_segDevSaved.gapStream;
+  } else if (cudaGetDevice(&streams.device) == cudaSuccess) {
+    streams.execution = reinterpret_cast<cudaStream_t>(tl_dspExecutionStream);
+    streams.gap = tl_dspGapStream;
+  } else {
+    cudaGetLastError();
+    streams.device = -1;
+  }
+  return streams;
+}
+
+// Host-completes every stream that can hold a producer on sourceDevice, which
+// must be current: the plan-owned stream when it lives there (else the per-thread
+// stream a secondary segment runs on), plus the primary execution and gap
+// streams. Never drain the whole device: another plan may be capturing on it.
+cudaError_t completeSourceProducers(int sourceDevice, const PrimaryProducerStreams& primary,
+                                    const cudaStream_t* ownedStream, int ownedStreamDevice) {
+  cudaStream_t streams[3];
+  int count = 0;
+  auto add = [&](cudaStream_t stream) {
+    for (int i = 0; i < count; i++) {
+      if (streams[i] == stream) return;
+    }
+    streams[count++] = stream;
+  };
+  add(ownedStream != nullptr && ownedStreamDevice == sourceDevice ? *ownedStream : cudaStreamPerThread);
+  if (sourceDevice == primary.device) {
+    if (primary.execution != nullptr) add(primary.execution);
+    if (primary.gap != nullptr) add(primary.gap);
+  }
+  for (int i = 0; i < count; i++) {
+    DSP_DIAG(STREAM_SYNC, "SOURCE_PRODUCER_SYNC: device=%d stream=%p (%d/%d)",
+             sourceDevice, static_cast<void*>(streams[i]), i + 1, count);
+    const cudaError_t error = cudaStreamSynchronize(streams[i]);
+    if (error != cudaSuccess) return error;
+  }
+  return cudaSuccess;
+}
 }  // namespace
 
 }  // namespace
@@ -1245,6 +1300,18 @@ bool NativeDynamicShapePlan::platformBindSegmentDevice(const GraphSegment& segme
 // segment starts from the plan's primary-device state.
 void NativeDynamicShapePlan::platformRestoreSegmentDevice() {
   if (!tl_segDevSaved.active) return;
+  // ErrorReference is per device context. A failure recorded while this
+  // secondary segment was bound must reach the primary context the caller
+  // reads, and must not stay behind to fail a later op on this device.
+  auto* segmentErrors = LaunchContext::defaultContext()->errorReference();
+  const int pendingCode = segmentErrors->errorCode();
+  const char* pending = segmentErrors->errorMessage();  // consumes the code
+  const std::string pendingMessage =
+      pendingCode != 0 && pending != nullptr ? pending : "";
+  if (pendingCode != 0 || (pending != nullptr && pending[0] != '\0')) {
+    segmentErrors->setErrorCode(0);
+    segmentErrors->setErrorMessage("");
+  }
   tl_dspGapStream = tl_segDevSaved.gapStream;
   tl_dspExecutionStream = tl_segDevSaved.execStream;
   tl_cublasGapStreamReady = tl_segDevSaved.gapReady;
@@ -1252,6 +1319,16 @@ void NativeDynamicShapePlan::platformRestoreSegmentDevice() {
   tl_cublasWorkspaceSize = tl_segDevSaved.wsSize;
   cudaSetDevice(tl_segDevSaved.primaryDevice);
   tl_segDevSaved.active = false;
+  if (pendingCode != 0) {
+    auto* primaryErrors = LaunchContext::defaultContext()->errorReference();
+    if (primaryErrors->errorCode() == 0) {
+      primaryErrors->setErrorMessage(
+          pendingMessage.empty()
+              ? "DSP secondary-device segment failed without backend detail"
+              : pendingMessage);
+      primaryErrors->setErrorCode(pendingCode);
+    }
+  }
 }
 
 // ===============================================================================
@@ -1271,6 +1348,8 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     if (err != cudaSuccess)
       return cudaPlanFailure("CUDA automatic segment device query failed: %s", cudaGetErrorString(err));
   }
+  // Read before any source-device switch below.
+  const PrimaryProducerStreams primaryProducers = primaryProducerStreams();
 
   migratedInputs_.clear();
 
@@ -1467,18 +1546,18 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
           static_cast<int>(attrError), static_cast<int>(peerError), canAccess);
     }
 
-    // Writable externals need a stable, bidirectional replica, not a disposable
-    // input copy. Reuse the existing per-device staging owners (including their
-    // release/accounting lifecycle), but keep these state inputs out of ordinary
-    // input-only staging. A same-device replacement must refresh an existing owner.
-    // Device-managed inputs (shared KV/state/weights registered via
-    // registerDeviceManagedExternalInput) bypass staging entirely — their live
-    // device buffer is the source of truth (NativeDynamicShapePlan.h:2484) — so
-    // they must NOT enter this migration path (the generic DataBuffer::memcpy
-    // here also lacks FLOAT8 handling for quantized storage).
+    // Writable externals whose storage lives on another device need a stable,
+    // bidirectional replica, not a disposable input copy: the replica keeps the
+    // caller's storage size, layout and offset, so cleanup writes it back over the
+    // same bytes, and the copy is event-ordered instead of host-staged. Reuse the
+    // existing per-device staging owners (including their release/accounting
+    // lifecycle), but keep these state inputs out of ordinary input-only staging.
+    // Every writable external is device-managed: on its own device the live buffer
+    // is the source of truth (NativeDynamicShapePlan.h:2484) and is consumed in
+    // place, so only a consumer on another device replicates it.
     if (externalSource && externalInputIsVariable_[externalInputIdx] &&
         !externalInputIsPlaceholder_[externalInputIdx] &&
-        !isDeviceManagedExternalInput(externalInputIdx, arr)) {
+        db->deviceId() != targetDevice) {
       NDArray** stateBuffers = nullptr;
       if (targetDevice == 0) {
         stateBuffers = placeholderStagingBuffers_;
@@ -1487,113 +1566,102 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
         if (it != deviceStagingBuffers_.end()) stateBuffers = it->second.data();
       }
       NDArray* state = stateBuffers != nullptr ? stateBuffers[externalInputIdx] : nullptr;
-      if (state != nullptr || db->deviceId() != targetDevice) {
-        int savedDevice = -1;
-        cudaGetDevice(&savedDevice);
-        try {
-          // Publish the producer stream's writes, including any earlier transfer
-          // into the caller buffer. Per-op events are suppressed inside DSP, so
-          // this cross-device boundary owns the event explicitly. Primary
-          // segments use the plan stream; secondary segments use per-thread streams.
-          const int sourceDevice = db->deviceId();
-          auto* execution = static_cast<PlanExecutionContext*>(activeExecutionContext());
-          if (sourceDevice < 0 || execution == nullptr)
-            throw std::runtime_error("writable external has no producer device/context");
-          auto producerErr = cudaSetDevice(sourceDevice);
-          if (producerErr != cudaSuccess) throw std::runtime_error(cudaGetErrorString(producerErr));
-          cudaStream_t producerStream = sourceDevice == execution->deviceId
-              ? reinterpret_cast<cudaStream_t>(execution->dspStream) : cudaStreamPerThread;
-          if (producerStream == nullptr || DebugHelper::inGraphCapture(&producerStream))
-            throw std::runtime_error("writable external migration requires an uncaptured producer stream");
-          {
-            DspStreamGuard publishScope(nullptr);
-            db->waitForSpecialWriteEvent(producerStream);
-            db->recordSpecialWriteEvent(producerStream);
-          }
-          auto err = cudaSetDevice(targetDevice);
-          if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
-          if (stateBuffers == nullptr) {
-            if (targetDevice == 0) {
-              placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
-              stateBuffers = placeholderStagingBuffers_;
-            } else {
-              auto& buffers = deviceStagingBuffers_[targetDevice];
-              buffers.resize(numExternalInputs_, nullptr);
-              stateBuffers = buffers.data();
-            }
-          }
-          if (state == nullptr) {
-            // Preserve the backing layout and offset, not just the logical shape:
-            // offset views and quantized caches can have storage outside lengthOf().
-            std::vector<LongType> dimensions(arr->shapeOf(), arr->shapeOf() + arr->rankOf());
-            auto* storage = new DataBuffer(db->getLenInBytes(), arr->dataType(), nullptr, false);
-            try {
-              state = new NDArray(storage, arr->ordering(), dimensions, arr->dataType(),
-                                  LaunchContext::defaultContext(), true, false, arr->offset());
-              state->setShapeInfo(arr->shapeInfo());
-            } catch (...) {
-              if (state != nullptr) delete state;
-              else delete storage;
-              throw;
-            }
-            stateBuffers[externalInputIdx] = state;
-          }
-          if (state->dataBuffer()->getLenInBytes() != db->getLenInBytes() ||
-              state->offset() != arr->offset() || !shape::equalsStrict(state->shapeInfo(), arr->shapeInfo())) {
-            throw std::runtime_error("writable external changed storage contract within a plan lease");
-          }
-          // DataBuffer::memcpy handles peer/non-peer transfers and publishes a
-          // destination write event; no source migration or host round trip here.
-          {
-            // This is a cross-stream transfer boundary, not an op on the DSP
-            // stream. Allow DataBuffer to publish its normal completion event.
-            DspStreamGuard transferScope(nullptr);
-            DataBuffer::memcpy(state->dataBuffer(), db, 0, 0, db->getNumElements());
-          }
-          state->dataBuffer()->waitForSpecialWriteEvent(dspGetExecutionStream());
-          auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
-          if (lcStream != nullptr) state->dataBuffer()->waitForSpecialWriteEvent(*lcStream);
-          MigratedInput mi;
-          mi.outputSlotIdx = -1;
-          mi.original = arr;
-          mi.migrated = state;
-          mi.targetDevice = targetDevice;
-          mi.externalInputTable = externalInputs;
-          mi.externalInputIdx = externalInputIdx;
-          migratedInputs_.push_back(mi);
-          externalInputs[externalInputIdx] = state;
-          // Pre-replay sync can reuse its already-synchronized table on this
-          // device. Managed state bypasses ordinary staging, so publish the
-          // same replica there rather than letting dedup restore caller storage.
-          if (effectiveExternals_ != nullptr) effectiveExternals_[externalInputIdx] = state;
-        } catch (const std::exception& error) {
-          if (savedDevice >= 0) cudaSetDevice(savedDevice);
-          const char* extName = externalInputIdx < static_cast<int>(externalInputNames_.size())
-                                    ? externalInputNames_[externalInputIdx].c_str() : "?";
-          return cudaPlanFailure("CUDA writable external migration failed: ext=%d '%s' "
-                                 "isVariable=%d isPlaceholder=%d targetDevice=%d: %s",
-                                 externalInputIdx, extName,
-                                 externalInputIdx < static_cast<int>(externalInputIsVariable_.size())
-                                     ? static_cast<int>(externalInputIsVariable_[externalInputIdx]) : -1,
-                                 externalInputIdx < static_cast<int>(externalInputIsPlaceholder_.size())
-                                     ? static_cast<int>(externalInputIsPlaceholder_[externalInputIdx]) : -1,
-                                 targetDevice, error.what());
-        }
-        if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        continue;
-      }
-      // Same-device storage can still carry an asynchronous writeback from a
-      // previous segment. Acquire that publication on this consumer's stream;
-      // special-actual means current contents, not cross-stream readiness.
+      int savedDevice = -1;
+      cudaGetDevice(&savedDevice);
       try {
-        auto consumerStream = reinterpret_cast<cudaStream_t>(dspGetExecutionStream());
-        if (consumerStream == nullptr || DebugHelper::inGraphCapture(&consumerStream))
-          throw std::runtime_error("writable external consumption requires an uncaptured segment stream");
-        db->waitForSpecialWriteEvent(consumerStream);
+        // Publish the producer stream's writes, including any earlier transfer
+        // into the caller buffer. Per-op events are suppressed inside DSP, so
+        // this cross-device boundary owns the event explicitly. Primary
+        // segments use the bound execution stream (the caller's stream on the
+        // frozen fast path, not dspStream); secondary segments use per-thread streams.
+        const int sourceDevice = db->deviceId();
+        auto* execution = static_cast<PlanExecutionContext*>(activeExecutionContext());
+        if (sourceDevice < 0 || execution == nullptr)
+          throw std::runtime_error("writable external has no producer device/context");
+        auto producerErr = cudaSetDevice(sourceDevice);
+        if (producerErr != cudaSuccess) throw std::runtime_error(cudaGetErrorString(producerErr));
+        cudaStream_t producerStream = cudaStreamPerThread;
+        if (sourceDevice == execution->deviceId) {
+          producerStream = sourceDevice == primaryProducers.device && primaryProducers.execution != nullptr
+              ? primaryProducers.execution : reinterpret_cast<cudaStream_t>(execution->dspStream);
+        }
+        if (producerStream == nullptr || DebugHelper::inGraphCapture(&producerStream))
+          throw std::runtime_error("writable external migration requires an uncaptured producer stream");
+        {
+          DspStreamGuard publishScope(nullptr);
+          db->waitForSpecialWriteEvent(producerStream);
+          db->recordSpecialWriteEvent(producerStream);
+        }
+        auto err = cudaSetDevice(targetDevice);
+        if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
+        if (stateBuffers == nullptr) {
+          if (targetDevice == 0) {
+            placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
+            stateBuffers = placeholderStagingBuffers_;
+          } else {
+            auto& buffers = deviceStagingBuffers_[targetDevice];
+            buffers.resize(numExternalInputs_, nullptr);
+            stateBuffers = buffers.data();
+          }
+        }
+        if (state == nullptr) {
+          // Preserve the backing layout and offset, not just the logical shape:
+          // offset views and quantized caches can have storage outside lengthOf().
+          std::vector<LongType> dimensions(arr->shapeOf(), arr->shapeOf() + arr->rankOf());
+          auto* storage = new DataBuffer(db->getLenInBytes(), arr->dataType(), nullptr, false);
+          try {
+            state = new NDArray(storage, arr->ordering(), dimensions, arr->dataType(),
+                                LaunchContext::defaultContext(), true, false, arr->offset());
+            state->setShapeInfo(arr->shapeInfo());
+          } catch (...) {
+            if (state != nullptr) delete state;
+            else delete storage;
+            throw;
+          }
+          stateBuffers[externalInputIdx] = state;
+        }
+        if (state->dataBuffer()->getLenInBytes() != db->getLenInBytes() ||
+            state->offset() != arr->offset() || !shape::equalsStrict(state->shapeInfo(), arr->shapeInfo())) {
+          throw std::runtime_error("writable external changed storage contract within a plan lease");
+        }
+        // DataBuffer::memcpy handles peer/non-peer transfers and publishes a
+        // destination write event; no source migration or host round trip here.
+        {
+          // This is a cross-stream transfer boundary, not an op on the DSP
+          // stream. Allow DataBuffer to publish its normal completion event.
+          DspStreamGuard transferScope(nullptr);
+          DataBuffer::memcpy(state->dataBuffer(), db, 0, 0, db->getNumElements());
+        }
+        state->dataBuffer()->waitForSpecialWriteEvent(dspGetExecutionStream());
+        auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
+        if (lcStream != nullptr) state->dataBuffer()->waitForSpecialWriteEvent(*lcStream);
+        MigratedInput mi;
+        mi.outputSlotIdx = -1;
+        mi.original = arr;
+        mi.migrated = state;
+        mi.targetDevice = targetDevice;
+        mi.externalInputTable = externalInputs;
+        mi.externalInputIdx = externalInputIdx;
+        migratedInputs_.push_back(mi);
+        externalInputs[externalInputIdx] = state;
+        // Pre-replay sync can reuse its already-synchronized table on this
+        // device. Managed state bypasses ordinary staging, so publish the
+        // same replica there rather than letting dedup restore caller storage.
+        if (effectiveExternals_ != nullptr) effectiveExternals_[externalInputIdx] = state;
       } catch (const std::exception& error) {
-        return cudaPlanFailure("CUDA writable external consumer wait failed: ext=%d device=%d: %s",
-                               externalInputIdx, targetDevice, error.what());
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        const char* extName = externalInputIdx < static_cast<int>(externalInputNames_.size())
+                                  ? externalInputNames_[externalInputIdx].c_str() : "?";
+        return cudaPlanFailure("CUDA writable external migration failed: ext=%d '%s' "
+                               "isVariable=%d isPlaceholder=%d targetDevice=%d: %s",
+                               externalInputIdx, extName,
+                               externalInputIdx < static_cast<int>(externalInputIsVariable_.size())
+                                   ? static_cast<int>(externalInputIsVariable_[externalInputIdx]) : -1,
+                               externalInputIdx < static_cast<int>(externalInputIsPlaceholder_.size())
+                                   ? static_cast<int>(externalInputIsPlaceholder_[externalInputIdx]) : -1,
+                               targetDevice, error.what());
       }
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
       continue;
     }
 
@@ -1602,6 +1670,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     // the data was produced, we need to migrate.
     // Find which device produced this output by checking the source slot's targetDeviceId
     int sourceDevice = externalSource ? db->deviceId() : -1;
+    int producerStep = -1;
     if (!externalSource) {
       // Walk backwards to find which slot produced this output.
       for (int s = 0; s < numSlots_; s++) {
@@ -1609,6 +1678,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
         for (int o = 0; o < srcSlot.wiring.numOutputs; o++) {
           if (srcSlot.wiring.outputSlotIndices[o] == slotIdx) {
             sourceDevice = srcSlot.targetDeviceId;
+            if (producerStep < 0) producerStep = s;
             break;
           }
         }
@@ -1621,6 +1691,48 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       int activeDev = 0;
       cudaGetDevice(&activeDev);
       sourceDevice = activeDev;
+    }
+
+    // A frozen constant output never changes while its producer's generation,
+    // DataBuffer and device address are unchanged (in-place fusion over it is
+    // disabled), so the copy made from exactly that source is still current.
+    // Publish it without another cross-device transfer.
+    const bool frozenSource = !externalSource && !seg.exec.captureRehomePending &&
+        producerStep >= 0 && slots_[producerStep].frozenConstantSlot() &&
+        !arr->isView() && arr->offset() == 0;
+    if (frozenSource) {
+      const uint64_t frozenKey = (static_cast<uint64_t>(targetDevice) << 32) |
+                                 static_cast<uint32_t>(sourceIdx);
+      auto record = frozenMigrationSources_.find(frozenKey);
+      auto cached = migrationBuffers_.find(frozenKey);
+      NDArray* copy = cached != migrationBuffers_.end() ? cached->second : nullptr;
+      const size_t sourceBytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
+      if (record != frozenMigrationSources_.end() && copy != nullptr &&
+          record->second.copy == copy && record->second.source == db &&
+          record->second.sourceSpecial != nullptr &&
+          record->second.sourceSpecial == db->special() &&
+          record->second.producerGeneration == slots_[producerStep].generation() &&
+          copy->dataBuffer() != nullptr && copy->dataBuffer()->isValid() &&
+          !copy->dataBuffer()->isClosed() && copy->dataBuffer()->deviceId() == targetDevice &&
+          copy->dataType() == arr->dataType() && copy->ordering() == arr->ordering() &&
+          copy->offset() == 0 && copy->dataBuffer()->getLenInBytes() >= sourceBytes &&
+          shape::strideDescendingCAscendingF(copy->shapeInfo()) &&
+          shape::equalsSoft(copy->shapeInfo(), arr->shapeInfo())) {
+        DSP_DIAG(MULTI_DEVICE,
+                 "migrateSlotInputsToTargetDevice: reused frozen slot=%d producer=%d "
+                 "dev%d->dev%d bytes=%zu",
+                 slotIdx, producerStep, sourceDevice, targetDevice, sourceBytes);
+        MigratedInput mi;
+        mi.outputSlotIdx = slotIdx;
+        mi.original = arr;
+        mi.migrated = copy;
+        mi.retained = true;
+        mi.targetDevice = targetDevice;
+        migratedInputs_.push_back(mi);
+        outputSlots_[slotIdx] = copy;
+        migrated++;
+        continue;
+      }
     }
 
     int savedDevice = -1;
@@ -1759,10 +1871,9 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       continue;  // Same device, no migration needed
     }
 
-    // Complete only this plan's producer, not unrelated captures on its GPU.
-    cudaStream_t sourceProducerStream = ownedStream_ != nullptr && ownedStreamDeviceId_ == sourceDevice
-        ? *ownedStream_ : cudaStreamPerThread;
-    const auto producerReady = cudaStreamSynchronize(sourceProducerStream);
+    // Complete only this plan's producers, not unrelated captures on its GPU.
+    const auto producerReady =
+        completeSourceProducers(sourceDevice, primaryProducers, ownedStream_, ownedStreamDeviceId_);
     if (producerReady != cudaSuccess) {
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
       return cudaPlanFailure("CUDA migration producer completion failed: slot=%d device=%d: %s",
@@ -2184,6 +2295,12 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
         deferredSlotDeletes_.push_back(previousCopy);
       }
     }
+    if (frozenSource && srcMat == nullptr) {
+      frozenMigrationSources_[migrationKey] =
+          FrozenMigrationSource{copy, db, srcDev, slots_[producerStep].generation()};
+    } else {
+      frozenMigrationSources_.erase(migrationKey);
+    }
 
     // Restore the caller's device. Leaving the thread on the secondary device
     // makes the next plan/request allocate on the wrong GPU and amplifies pool
@@ -2571,8 +2688,10 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
           if (current == mi.migrated) {
             // The exact staged wrapper is now the output publication, so
             // transfer it from the migration cache to normal slot ownership.
-            if (cached != migrationBuffers_.end() && cached->second == mi.migrated)
+            if (cached != migrationBuffers_.end() && cached->second == mi.migrated) {
               migrationBuffers_.erase(cached);
+              frozenMigrationSources_.erase(key);
+            }
             planOwnedArrays_.insert(mi.migrated);
           } else if (cached == migrationBuffers_.end() ||
                      cached->second != mi.migrated) {
@@ -2620,8 +2739,10 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
       const uint64_t key = (static_cast<uint64_t>(mi.targetDevice) << 32) |
                            static_cast<uint32_t>(mi.outputSlotIdx);
       auto cached = migrationBuffers_.find(key);
-      if (cached != migrationBuffers_.end() && cached->second == mi.migrated)
+      if (cached != migrationBuffers_.end() && cached->second == mi.migrated) {
         migrationBuffers_.erase(cached);
+        frozenMigrationSources_.erase(key);
+      }
       planOwnedArrays_.erase(mi.migrated);
       deferredSlotDeletes_.push_back(mi.migrated);
       DSP_DIAG(MEMORY,
@@ -2752,19 +2873,17 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   // DSP/gap stream across those switches. The producer completion boundary
   // below orders its writes before the delivery stream gathers a requested view.
   // The per-thread stream token resolves on each bound device; restore on exit.
+  const PrimaryProducerStreams primaryProducers = primaryProducerStreams();
   DspThreadState deliveryStreams(cudaStreamPerThread, cudaStreamPerThread,
                                  tl_graphExecutionActive, tl_dspReplayActive);
 
   // -- Async copy from sourceDevice to device-0 --------------------------------
-  // 1. Switch to sourceDevice and ensure its stream has committed the write.
-  checkCuda(cudaSetDevice(sourceDevice), "bind producer device");
-  // Primary segments use the plan-owned stream; secondary-device segments use
-  // this execution thread's per-thread stream (platformBindSegmentDevice).
+  // 1. Switch to sourceDevice and ensure its producers have committed the write.
   // Never drain the whole device here: another plan may be capturing on it,
   // and cudaDeviceSynchronize both fails and invalidates that peer capture.
-  cudaStream_t producerStream = ownedStream_ != nullptr && ownedStreamDeviceId_ == sourceDevice
-      ? *ownedStream_ : cudaStreamPerThread;
-  checkCuda(cudaStreamSynchronize(producerStream), "complete producer stream");
+  checkCuda(cudaSetDevice(sourceDevice), "bind producer device");
+  checkCuda(completeSourceProducers(sourceDevice, primaryProducers, ownedStream_, ownedStreamDeviceId_),
+            "complete producer stream");
   {
     std::vector<NDArray*> reads{arr};
     NDArray::prepareSpecialUse({}, reads);
@@ -4489,9 +4608,11 @@ void NativeDynamicShapePlan::platformDumpExternalInputDiagnostics(NDArray** ext,
     if (arr == nullptr || arr->dataType() != FLOAT32 || arr->lengthOf() <= 0) continue;
     auto* db = arr->dataBuffer();
     const char* nm = (dbgI < (int)externalInputNames_.size()) ? externalInputNames_[dbgI].c_str() : "?";
+    // Resident address only: specialBuffer() would move caller state that
+    // lives on another device.
     DSP_DIAG(EXECUTE, "EXT_ENTRY execCount=%d ext[%d]='%s' arr=%p sbuf=%p len=%lld "
              "pAct=%d sAct=%d",
-             execCount, dbgI, nm, (void*)arr, arr->specialBuffer(),
+             execCount, dbgI, nm, (void*)arr, residentSpecialPointer(arr),
              (long long)arr->lengthOf(),
              db ? (db->isPrimaryActual() ? 1 : 0) : -1,
              db ? (db->isSpecialActual() ? 1 : 0) : -1);
@@ -4503,12 +4624,22 @@ void NativeDynamicShapePlan::platformDumpExtInputGpuValues(NDArray* arr, int ext
   // Fingerprint raw device bytes for every dtype, including partial words for
   // scalar FLOAT/HALF/BOOL and INT64 control inputs such as actual_sequence_length.
   // This remains fully asynchronous and
-  // does not materialize values on the host.
-  if (arr->specialBuffer() != nullptr && arr->lengthOf() > 0) {
+  // does not materialize values on the host. It observes the resident
+  // allocation only and never relocates it.
+  void* sbuf = residentSpecialPointer(arr);
+  if (sbuf != nullptr && arr->lengthOf() > 0) {
     DSP_DIAG(VERIFY, "EXT_INPUT_START: exec=%d extIdx=%d len=%lld dtype=%d sbuf=%p "
                      "(async path: value dump skipped)",
              execCount, extIdx, (long long)arr->lengthOf(),
-             static_cast<int>(arr->dataType()), arr->specialBuffer());
+             static_cast<int>(arr->dataType()), sbuf);
+    int currentDevice = -1;
+    cudaGetDevice(&currentDevice);
+    if (arr->dataBuffer()->deviceId() != currentDevice) {
+      DSP_DIAG(VERIFY, "EXT_INPUT_START: extIdx=%d resident on device %d, current %d "
+                       "(fingerprint skipped)",
+               extIdx, arr->dataBuffer()->deviceId(), currentDevice);
+      return;
+    }
     if (fpRingEnabled_) {
       if (fpLabels_[BUF_FP_TRACE_TRACK].tag[0] == '\0') {
         snprintf(fpLabels_[BUF_FP_TRACE_TRACK].tag,
@@ -4522,7 +4653,7 @@ void NativeDynamicShapePlan::platformDumpExtInputGpuValues(NDArray* arr, int ext
           ? *static_cast<cudaStream_t*>(stream) : nullptr;
       size_t fpBytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
       recordBufFingerprintPublic(cudaStr, execCount, BUF_FP_TRACE_TRACK,
-                                 arr->specialBuffer(), fpBytes);
+                                 sbuf, fpBytes);
     }
   }
 }

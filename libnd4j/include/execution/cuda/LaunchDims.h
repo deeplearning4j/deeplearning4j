@@ -928,6 +928,16 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
 #define BLOCK_SIZE_FUSED_GQA_DECODE getEnvVariable("BLOCK_SIZE_FUSED_GQA_DECODE", 256)
 #define SHARED_MEM_SIZE_FUSED_GQA_DECODE getEnvVariable("SHARED_MEM_SIZE_FUSED_GQA_DECODE", 8192)
 
+// kv_cache_quantize / kv_cache_dequantize: a block walks rows along the last dimension with a
+// block-stride loop and its threads stride over the row. GRID caps the row blocks, BLOCK caps the
+// threads per row (a warp multiple: the block max reductions need full warps). The kernels use
+// static shared memory only, so the dynamic shared memory defaults to 0.
+#define GRID_SIZE_KV_CACHE_QUANTIZE getEnvVariable("GRID_SIZE_KV_CACHE_QUANTIZE", 65535)
+#define BLOCK_SIZE_KV_CACHE_QUANTIZE getEnvVariable("BLOCK_SIZE_KV_CACHE_QUANTIZE", 1024)
+#define SHARED_MEM_SIZE_KV_CACHE_QUANTIZE getEnvVariable("SHARED_MEM_SIZE_KV_CACHE_QUANTIZE", 0)
+
+dim3 getKvCacheQuantizeDims(sd::LongType numRows, sd::LongType rowLen);
+
 // ModelOpt packed linear general path: one thread per output, view-safe
 // INDEX2COORDS/COORDS2INDEX addressing, no scratch or weight materialization.
 #define GRID_SIZE_MODELOPT_LINEAR getEnvVariable("GRID_SIZE_MODELOPT_LINEAR", 256)
