@@ -1590,8 +1590,9 @@ public final class DspPlanAssertions {
     }
 
     /**
-     * Assert no slot in the plan has the FUSED_CHAIN_TAIL flag without a
-     * corresponding FUSED_CHAIN_HEAD. This catches dangling tail regressions.
+     * Assert the fused-chain flags are consistent: no FUSED_CHAIN_TAIL slot precedes every
+     * FUSED_CHAIN_HEAD, and every head is followed by at least one tail. Runs may interleave
+     * and the flags do not name a tail's head, so this cannot attribute tails to heads.
      */
     public static void assertNoFusionDanglingTails(SameDiff sd) {
         assertNoFusionDanglingTails(sd, null);
@@ -1600,26 +1601,38 @@ public final class DspPlanAssertions {
     public static void assertNoFusionDanglingTails(SameDiff sd, String context) {
         var handle = getPlanHandle(sd);
         var ops = getNativeOps();
-        int slotCount = ops.getTotalPlanOutputSlots(handle);
-        boolean headSeen = false;
+        int slotCount = ops.getPlanNumSlots(handle);
+        int heads = 0;
+        int tails = 0;
+        int lastHead = -1;
+        int lastTail = -1;
         List<String> danglingTails = new ArrayList<>();
         for (int i = 0; i < slotCount; i++) {
             int flags = ops.getPlanSlotFlags(handle, i);
+            if (flags < 0) continue;
             if ((flags & (1 << FLAG_FUSED_CHAIN_HEAD)) != 0) {
-                headSeen = true;
+                heads++;
+                lastHead = i;
             }
             if ((flags & (1 << FLAG_FUSED_CHAIN_TAIL)) != 0) {
-                if (!headSeen) {
-                    String opName = ops.getPlanSlotOpName(handle, i);
-                    danglingTails.add("slot[" + i + "] op=" + opName);
+                tails++;
+                lastTail = i;
+                if (heads == 0) {
+                    danglingTails.add("slot[" + i + "] op=" + ops.getPlanSlotOpName(handle, i));
                 }
-                headSeen = false;
             }
         }
         if (!danglingTails.isEmpty()) {
             fail("assertNoFusionDanglingTails", context,
                     danglingTails.size() + " FUSED_CHAIN_TAIL slot(s) without HEAD: "
                             + danglingTails,
+                    null);
+        }
+        if (heads > 0 && (tails < heads || lastTail < lastHead)) {
+            fail("assertNoFusionDanglingTails", context,
+                    heads + " FUSED_CHAIN_HEAD slot(s), " + tails + " FUSED_CHAIN_TAIL slot(s), last head slot["
+                            + lastHead + "] op=" + ops.getPlanSlotOpName(handle, lastHead) + ", last tail slot["
+                            + lastTail + "]: every run needs at least one tail after its head",
                     null);
         }
     }
