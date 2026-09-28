@@ -981,167 +981,9 @@ void autoregressiveDecode(
     }
     // Snapshot BEFORE the window forward. Private recurrent inputs protect the prefix even
     // when a verifier op mutates its input. KV rows are shared and overwritten at the same slot.
-    auto prepareScalarTarget = [&]() {
-        for (int i = 0; i < config->scalarNumPlanExternalInputs; ++i) {
-            NDArray* dst = scalarInputs[i];
-            NDArray* src = extInputs[config->scalarInputToTarget[i]];
-            if (dst->dataBuffer() == src->dataBuffer()) continue;
-            bool geometry = i == config->scalarInputIdsExtIdx || i == config->scalarCausalMaskExtIdx
-                || i == config->scalarPositionOffsetExtIdx || i == config->scalarCachePositionExtIdx
-                || i == config->scalarActualSequenceLengthExtIdx;
-            // Recurrent decision in the TARGET index domain (CPU-mirror): scalar
-            // input i maps to target index ti; recurrent iff ti equals a target-
-            // domain GDN/conv state index. Never re-map gdn/conv indices through
-            // the scalar-indexed vector.
-            const int ti = config->scalarInputToTarget[i];
-            bool recurrent = false;
-            for (int s = 0; s < config->numGdnStatePairs && !recurrent; ++s) {
-                recurrent = config->gdnStateExtIndices != nullptr
-                    && ti == config->gdnStateExtIndices[s];
-            }
-            for (int s = 0; s < config->numConvStatePairs && !recurrent; ++s) {
-                recurrent = config->convStateExtIndices != nullptr
-                    && ti == config->convStateExtIndices[s];
-            }
-            // Geometry and recurrent snapshots are refreshed from the window plan each
-            // call. Shared KV is buffer-identical (skipped above). Everything else -
-            // graph weights and derived plan-internal inputs - keeps the CAPTURED value:
-            // weights are immutable and derived inputs are width-specific.
-            if (!geometry && !recurrent) continue;
-            REQUIRE_TRUE(dst->lengthOf() <= src->lengthOf(), 0,
-                         "autoregressive_decode: scalar source is smaller than captured input");
-            NDArray::prepareSpecialUse({dst}, {src});
-            auto error = cudaMemcpyAsync(dst->specialBuffer(), src->specialBuffer(),
-                dst->lengthOf() * dst->sizeOfT(), cudaMemcpyDeviceToDevice, *stream);
-            REQUIRE_TRUE(error == cudaSuccess, 0, "autoregressive_decode: scalar input copy failed: %s",
-                         cudaGetErrorString(error));
-            NDArray::registerSpecialUse({dst}, {src});
-        }
-        NDArray* active = scalarInputs[config->scalarActualSequenceLengthExtIdx];
-        NDArray::prepareSpecialUse({active}, {});
-        updatePositionIdsKernel<<<1, 1, 0, *stream>>>(active->specialBuffer(), 1);
-        NDArray::registerSpecialUse({active}, {});
-    };
-    auto executeScalarTarget = [&]() {
-        // Call-scoped invocation counter for the bounded full-scan audit below.
-        static LongType scalarTargetAuditCall = 0;
-        const LongType auditCall = scalarTargetAuditCall++;
-        DSP_DIAG(KV_CACHE, "SCALAR_TARGET_SELECTED plan=%p idsWidth=1 maskRows=1 position=%lld inputs=%d outputs=%d",
-                 config->scalarPlanHandle, static_cast<long long>(currentPosition),
-                 config->scalarNumPlanExternalInputs, config->scalarNumPlanOutputs);
-        // SCALAR-INPUT FINITENESS AUDIT (gates 4-6 discriminator): probe the
-        // PRIVATE scalar arrays executeScalarTarget consumes. Earlier probes
-        // covered only the first 8 of 550 inputs; gate-6 proved the poison is
-        // NOT in shared KV rows (restore had no effect). The remaining
-        // unprobed layer is the DERIVED (non-geometry, non-recurrent) inputs
-        // that prepareScalarTarget deliberately does NOT refresh - if any of
-        // them shares storage with a W-plan buffer the verify pass mutates,
-        // the scalar rerun reads post-verify garbage. Scan ALL float inputs
-        // (bounded: first 16 bytes each, names+indices reported for the first
-        // NaN). Cost is bounded at ~550 small D2H probes on a FAILING run
-        // only - but that is still too many per-step syncs, so: scan on the
-        // step AFTER the first speculative step only (the failing boundary),
-        // and stop at the first hit. Invocation counter: this lambda is built
-        // before the step loop; use a call-scoped monotonic counter so the
-        // scan runs only from the second scalar-target invocation onward.
-        if (DSP_DIAG_ENABLED(KV_CACHE) && auditCall >= 1) {
-            bool scalarInNan = false;
-            int poisonIdx = -1;
-            int probedCount = 0;
-            for (int i = 0;
-                 i < config->scalarNumPlanExternalInputs && !scalarInNan; ++i) {
-                NDArray* arr = scalarInputs[i];
-                if (arr == nullptr || arr->dataType() != DataType::FLOAT32
-                        || arr->lengthOf() < 4) continue;
-                ++probedCount;
-                NDArray::prepareSpecialUse({}, {arr});
-                float probe[4] = {};
-                cudaMemcpyAsync(probe, arr->specialBuffer(),
-                                sizeof(probe), cudaMemcpyDeviceToHost, *stream);
-                cudaError_t probeSync = cudaStreamSynchronize(*stream);
-                REQUIRE_TRUE(probeSync == cudaSuccess, 0,
-                             "autoregressive_decode: scalar-input probe sync failed: %s",
-                             cudaGetErrorString(probeSync));
-                NDArray::registerSpecialUse({}, {arr});
-                for (int j = 0; j < 4; ++j) {
-                    if (std::isnan(probe[j])) {
-                        scalarInNan = true;
-                        poisonIdx = i;
-                        break;
-                    }
-                }
-            }
-            DSP_DIAG(KV_CACHE,
-                     "SCALAR_INPUT_AUDIT pos=%lld inNaN=%d idx=%d probed=%d total=%d",
-                     static_cast<long long>(currentPosition),
-                     scalarInNan ? 1 : 0, poisonIdx, probedCount,
-                     config->scalarNumPlanExternalInputs);
-        }
-        Status status = config->scalarPlanHandle->executeSteadyState(
-            scalarInputs.data(), config->scalarNumPlanExternalInputs,
-            scalarOutputs.data(), config->scalarNumPlanOutputs,
-            reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
-        if (status == Status::OK) {
-            for (int i = 0; i < numPlanOutputs; ++i) {
-                planOutputs[i] = scalarOutputs[config->targetOutputToScalar[i]];
-                REQUIRE_TRUE(planOutputs[i] != nullptr, 0,
-                             "autoregressive_decode: scalar target returned a null requested output");
-            }
-            auto* logits = scalarOutputs[config->scalarLogitsOutputIdx];
-            REQUIRE_TRUE(logits->rankOf() >= 2 && logits->rankOf() <= 3
-                             && logits->sizeAt(0) == 1
-                             && (logits->rankOf() == 2 || logits->sizeAt(1) == 1), 0,
-                         "autoregressive_decode: scalar target returned non-scalar logits geometry");
-            // RETRY DISCRIMINATOR: on all-NaN logits from the scalar plan, run
-            // the SAME plan a second time on the SAME inputs. finite retry =>
-            // stale/uninitialized internal staging (first replay consumed it,
-            // second is clean); NaN retry => deterministically poisoned capture
-            // (captured weights/KV pointers read garbage independent of staging
-            // age). One extra execution only inside a failing diagnostic run.
-            if (DSP_DIAG_ENABLED(KV_CACHE) && logits->dataType() == DataType::FLOAT32
-                    && logits->lengthOf() >= 8) {
-                NDArray::prepareSpecialUse({}, {logits});
-                float pre[8] = {};
-                cudaMemcpyAsync(pre, logits->specialBuffer(),
-                                sizeof(pre), cudaMemcpyDeviceToHost, *stream);
-                cudaStreamSynchronize(*stream);
-                NDArray::registerSpecialUse({}, {logits});
-                bool firstNan = false;
-                for (int j = 0; j < 8; j++) firstNan = firstNan || std::isnan(pre[j]);
-                if (firstNan) {
-                    DSP_DIAG(KV_CACHE,
-                             "SCALAR_RETRY pos=%lld firstPass=NaN - re-executing "
-                             "the same scalar plan on identical inputs",
-                             static_cast<long long>(currentPosition));
-                    Status retryStatus = config->scalarPlanHandle->executeSteadyState(
-                        scalarInputs.data(), config->scalarNumPlanExternalInputs,
-                        scalarOutputs.data(), config->scalarNumPlanOutputs,
-                        reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
-                    if (retryStatus == Status::OK) {
-                        for (int i = 0; i < numPlanOutputs; ++i) {
-                            planOutputs[i] = scalarOutputs[config->targetOutputToScalar[i]];
-                        }
-                        logits = scalarOutputs[config->scalarLogitsOutputIdx];
-                        NDArray::prepareSpecialUse({}, {logits});
-                        float post[8] = {};
-                        cudaMemcpyAsync(post, logits->specialBuffer(),
-                                        sizeof(post), cudaMemcpyDeviceToHost, *stream);
-                        cudaStreamSynchronize(*stream);
-                        NDArray::registerSpecialUse({}, {logits});
-                        bool retryNan = false;
-                        for (int j = 0; j < 8; j++) retryNan = retryNan || std::isnan(post[j]);
-                        DSP_DIAG(KV_CACHE,
-                                 "SCALAR_RETRY pos=%lld retry=%s first8=[%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f]",
-                                 static_cast<long long>(currentPosition),
-                                 retryNan ? "NaN" : "finite",
-                                 post[0], post[1], post[2], post[3],
-                                 post[4], post[5], post[6], post[7]);
-                    }
-                }
-            }
-        }
-        return status;
-    };
+    // The width-1 scalar plan is prepared by the pipeline but never executed here:
+    // accepted-prefix reruns re-execute the window plan (see the rerun block), and
+    // SELECT commits need no rerun. Its private inputs are therefore not refreshed.
 
     REQUIRE_TRUE(extCtx != nullptr || config->planExternalInputs != nullptr, 0,
                  "autoregressive_decode: no external input source. "
@@ -3893,7 +3735,6 @@ void autoregressiveDecode(
                 capturePreVerificationKvRows(currentPosition, 1 + proposedCount);
             }
         }
-        if (useScalarTarget) prepareScalarTarget();
         // SEAM_WATCH Observation B (TARGET_EXT_READY): queue the post-preparation
         // ext-input reads immediately before the REAL target execution, after all
         // preparation (mask refill, ASL update, prepareScalarTarget) is complete.
@@ -4819,14 +4660,6 @@ void autoregressiveDecode(
                 // captured scalar graph reads the W=1 rows it expects - the
                 // deterministic-NaN source identified by SCALAR_RETRY (gate 5).
                 restorePreVerificationKvRows();
-                if (useScalarTarget) {
-                    // Scalar-geometry re-stage from the restored live ext
-                    // inputs: recurrent to the pre-verification state, geometry
-                    // to the rerun's asl=1 - so the executeScalarTarget staging
-                    // below cannot replay stale post-verify state left by an
-                    // earlier different-width run.
-                    prepareScalarTarget();
-                }
                 // RERUN-INPUT FINITENESS AUDIT (gate-3 discriminator): after the
                 // deep-snapshot restore + scalar re-stage, immediately BEFORE
                 // executing the rerun, sample the first bytes of every
