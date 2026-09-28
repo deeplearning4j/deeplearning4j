@@ -277,6 +277,38 @@ static NDArray* resolveInputSourceArray(int srcIdx,
   return dsp::resolveInputSourceArray(srcIdx, outputSlots, totalOutputSlots, externalArrays, numExt);
 }
 
+#if NOT_EXCLUDED(OP_fused_elementwise_chain)
+// Why a live binary-member operand cannot take the fused path, or nullptr.
+// The fused kernel writes the chain value's shape, so the member's eager op
+// must produce exactly that shape from this operand.
+static const char* fusedOperandPolicyViolation(int8_t policy, NDArray* secondary, NDArray* chainValue) {
+  switch (policy) {
+    case FUSED_SECONDARY_SCALAR:
+      return !secondary->isEmpty() && secondary->lengthOf() == 1 ? nullptr
+                                                                 : "scalar operand is not a single element";
+    case FUSED_SECONDARY_SAME_SHAPE:
+      return secondary->isEmpty() == chainValue->isEmpty() &&
+                     shape::shapeEquals(secondary->shapeInfo(), chainValue->shapeInfo())
+                 ? nullptr
+                 : "pairwise operand shape differs from the chain value";
+    case FUSED_SECONDARY_BROADCAST: {
+      // No length-1 exemption: a higher-rank operand raises the eager output's rank.
+      const int secondaryRank = secondary->rankOf();
+      const int chainRank = chainValue->rankOf();
+      if (secondaryRank > chainRank) return "broadcast operand has a higher rank than the chain value";
+      for (int d = 1; d <= secondaryRank; d++) {
+        const LongType dim = secondary->sizeAt(secondaryRank - d);
+        if (dim != 1 && dim != chainValue->sizeAt(chainRank - d))
+          return "broadcast operand does not broadcast into the chain value";
+      }
+      return nullptr;
+    }
+    default:
+      return "binary member has no operand policy";
+  }
+}
+#endif
+
 static bool outputWrapperMatchesExpectedShape(NDArray* array, const LongType* expectedShape) {
   if (array == nullptr || expectedShape == nullptr) {
     return false;
@@ -3200,6 +3232,18 @@ Status NativeDynamicShapePlan::executeSlot(
 #if NOT_EXCLUDED(OP_fused_elementwise_chain)
   if (slot.fusedChain.isFusedChainHead && slot.fusedChain.fusedChainLength >= 2) {
     const int chainLength = slot.fusedChain.fusedChainLength;
+    if (chainLength > MAX_FUSED_CHAIN) {
+      DSP_DIAG(EXECUTE, "fused chain at head step=%d has %d members; chain metadata holds at most %d",
+               stepIdx, chainLength, MAX_FUSED_CHAIN);
+      return Status::BAD_INPUT;
+    }
+    for (int ci = 0; ci < chainLength; ci++) {
+      const int chainSlotIdx = slot.fusedChain.fusedChainSlots[ci];
+      if (chainSlotIdx < 0 || chainSlotIdx >= numSlots_ || slots_[chainSlotIdx].wiring.numOutputs < 1) {
+        DSP_DIAG(EXECUTE, "invalid fused chain slot %d at member %d for head step=%d", chainSlotIdx, ci, stepIdx);
+        return Status::BAD_INPUT;
+      }
+    }
     // From here on the head and its tails execute as ordinary slots. Used when
     // the live operands fall outside what the fused kernel computes exactly
     // like the members' eager ops.
@@ -3207,18 +3251,11 @@ Status NativeDynamicShapePlan::executeSlot(
       DSP_DIAG(FUSION,
                "FUSED_CHAIN_DEFUSE step=%d op=%s chainLen=%d reason=%s — executing the members one by one",
                stepIdx, slot.ident.opName.c_str(), chainLength, reason);
-      for (int ci = 0; ci < chainLength && ci < MAX_FUSED_CHAIN; ci++) {
-        const int chainSlotIdx = slot.fusedChain.fusedChainSlots[ci];
-        if (chainSlotIdx >= 0 && chainSlotIdx < numSlots_) {
-          slots_[chainSlotIdx].fusedChain.isFusedChainTail = false;
-        }
+      for (int ci = 0; ci < chainLength; ci++) {
+        slots_[slot.fusedChain.fusedChainSlots[ci]].fusedChain.isFusedChainTail = false;
       }
       slot.fusedChain.clearHead();
     };
-    if (chainLength > MAX_FUSED_CHAIN) {
-      defuseChain("chain is longer than the fused kernel runs");
-      break;  // → normalExecution
-    }
 
     // 1. The chain value enters at the head's input 0; FusionPass fuses no
     //    other head.
@@ -3274,96 +3311,84 @@ Status NativeDynamicShapePlan::executeSlot(
             ? ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(primaryInput->dataType(), outputDims)
             : ConstantShapeHelper::getInstance().createShapeInfo(primaryInput->dataType(), 'c', outputDims);
     auto matchesChainOutput = [&](NDArray* array) {
-      return array->isEmpty() == outputEmpty && shape::equalsSoft(array->shapeInfo(), outputShapeInfo) &&
+      return array->isEmpty() == outputEmpty && shape::shapeEquals(array->shapeInfo(), outputShapeInfo) &&
              array->dataType() == primaryInput->dataType();
     };
 
     // 4. Allocate/reuse output for the LAST chain slot
     const int lastSlotIdx = slot.fusedChain.fusedChainSlots[chainLength - 1];
-    if (lastSlotIdx < 0 || lastSlotIdx >= numSlots_ || slots_[lastSlotIdx].wiring.numOutputs < 1) {
-      DSP_DIAG(EXECUTE, "invalid fused chain tail slot %d for head step=%d", lastSlotIdx, stepIdx);
-      return Status::BAD_INPUT;
-    }
     const int lastOutputSlotIdx = slots_[lastSlotIdx].wiring.outputSlotIndices[0];
-
-    NDArray* output = nullptr;
-    if (lastOutputSlotIdx >= 0 && lastOutputSlotIdx < totalOutputSlots_) {
-      output = outputSlots_[lastOutputSlotIdx];
-      if (output != nullptr && !output->isEmpty()) {
-        // Same buffer checks as any reused slot output: a closed buffer is a
-        // lifetime bug, and during warmup a buffer left on another segment's
-        // device is replaced.
-        output = validateReusableSlotArray(lastOutputSlotIdx, output, "fused-chain-output");
-      }
-        if (output != nullptr) {
-          if (!matchesChainOutput(output)) {
-            // Transitively check the head slot AND all chain slots for any
-            // external input or isDynamicShape upstream. The BFS helper walks
-            // the full dependency graph so it catches chains like:
-            //   fused_head <- intermediate <- ext[N]
-            bool hasDynamicUpstream = hasTransitiveDynamicUpstream(
-                slots_, numSlots_, stepIdx);
-            if (!hasDynamicUpstream) {
-              for (int ci = 0; ci < slot.fusedChain.fusedChainLength && !hasDynamicUpstream; ci++) {
-                int chainSlotIdx = slot.fusedChain.fusedChainSlots[ci];
-                if (chainSlotIdx >= 0 && chainSlotIdx < numSlots_) {
-                  hasDynamicUpstream = hasTransitiveDynamicUpstream(
-                      slots_, numSlots_, chainSlotIdx);
-                }
-              }
-            }
-
-            if (executeCount_ <= 1 || hasDynamicUpstream || inShapeChangeWarmup_) {
-              // Warmup (execCount 0 = prefill, 1 = first decode) or dynamic
-              // upstream: shape drift expected. Reassign.
-              DSP_DIAG_SLOT(SHAPE, lastSlotIdx,
-                  "fused-chain-reassign: slot %d shape changed "
-                  "(execCount=%d dynamicUpstream=%d shapeChangeWarmup=%d) — replacing",
-                  lastSlotIdx, executeCount_, hasDynamicUpstream ? 1 : 0,
-                  inShapeChangeWarmup_ ? 1 : 0);
-              // Must use discardCachedSlotArray to erase from planOwnedArrays_
-              // before deleting — raw delete leaves a ghost pointer that causes
-              // heap corruption when malloc reuses the freed chunk.
-              // Plan-managed replacement: retire the stale snapshot address.
-              invalidateSnapshotForSlot(lastOutputSlotIdx);
-              discardCachedSlotArray(lastOutputSlotIdx, outputSlots_[lastOutputSlotIdx], "fused-chain-reassign");
-              output = nullptr;
-              if (sd::Environment::getInstance().isDebug()) {
-                char fcDelLabel[256];
-                snprintf(fcDelLabel, sizeof(fcDelLabel),
-                         "AFTER_fusedChainDelete_slot%d", lastOutputSlotIdx);
-                scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
-                    fcDelLabel, executeCount_);
-              }
-              auto& lastSlot = slots_[lastSlotIdx];
-              lastSlot.slotPhase.reset();  // PRIMARY
-              lastSlot.shapeCache.cachedOutputShapes.clear();
-              // Only mark as permanently dynamic if genuinely dynamic upstream.
-              if (hasDynamicUpstream) {
-                const bool tailPromoted = lastSlot.markDynamicShape();
-                const bool headPromoted = slot.markDynamicShape();
-                if (tailPromoted || headPromoted) {
-                  refreshDynamicSegmentBoundaryAnalysis();
-                }
-              }
-            } else {
-              DSP_THROW(SHAPE,
-                       "NativeDynamicShapePlan: fused-chain slot reassignment on shape drift "
-                       "is forbidden post-warmup at slot %d (%s) — output shape changed but "
-                       "chain has no dynamic upstream (execCount=%d hasDynamicUpstream=%d). "
-                       "This indicates heap corruption or a missing isDynamicShape flag.",
-                       lastSlotIdx, slot.ident.opName.c_str(), executeCount_,
-                       hasDynamicUpstream ? 1 : 0);
-            }
-          }
-        }
-      if (output == nullptr) {
-        output = new NDArray(const_cast<LongType*>(outputShapeInfo), true, LaunchContext::defaultContext());
-        outputSlots_[lastOutputSlotIdx] = output;
-      }
-    } else {
+    if (lastOutputSlotIdx < 0 || lastOutputSlotIdx >= totalOutputSlots_) {
       DSP_DIAG(EXECUTE, "invalid output slot index for fused chain tail slot %d", lastSlotIdx);
       return Status::BAD_INPUT;
+    }
+
+    NDArray* output = outputSlots_[lastOutputSlotIdx];
+    if (output != nullptr && !output->isEmpty()) {
+      // Same buffer checks as any reused slot output: a closed buffer is a
+      // lifetime bug, and during warmup a buffer left on another segment's
+      // device is replaced.
+      output = validateReusableSlotArray(lastOutputSlotIdx, output, "fused-chain-output");
+    }
+    if (output != nullptr && !matchesChainOutput(output)) {
+      // Transitively check the head slot AND all chain slots for any
+      // external input or isDynamicShape upstream. The BFS helper walks
+      // the full dependency graph so it catches chains like:
+      //   fused_head <- intermediate <- ext[N]
+      bool hasDynamicUpstream = hasTransitiveDynamicUpstream(
+          slots_, numSlots_, stepIdx);
+      for (int ci = 0; ci < chainLength && !hasDynamicUpstream; ci++) {
+        hasDynamicUpstream = hasTransitiveDynamicUpstream(
+            slots_, numSlots_, slot.fusedChain.fusedChainSlots[ci]);
+      }
+
+      if (executeCount_ <= 1 || hasDynamicUpstream || inShapeChangeWarmup_) {
+        // Warmup (execCount 0 = prefill, 1 = first decode) or dynamic
+        // upstream: shape drift expected. Reassign.
+        DSP_DIAG_SLOT(SHAPE, lastSlotIdx,
+            "fused-chain-reassign: slot %d shape changed "
+            "(execCount=%d dynamicUpstream=%d shapeChangeWarmup=%d) — replacing",
+            lastSlotIdx, executeCount_, hasDynamicUpstream ? 1 : 0,
+            inShapeChangeWarmup_ ? 1 : 0);
+        // Must use discardCachedSlotArray to erase from planOwnedArrays_
+        // before deleting — raw delete leaves a ghost pointer that causes
+        // heap corruption when malloc reuses the freed chunk.
+        // Plan-managed replacement: retire the stale snapshot address.
+        invalidateSnapshotForSlot(lastOutputSlotIdx);
+        discardCachedSlotArray(lastOutputSlotIdx, output, "fused-chain-reassign");
+        output = nullptr;
+        if (sd::Environment::getInstance().isDebug()) {
+          char fcDelLabel[256];
+          snprintf(fcDelLabel, sizeof(fcDelLabel),
+                   "AFTER_fusedChainDelete_slot%d", lastOutputSlotIdx);
+          scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
+              fcDelLabel, executeCount_);
+        }
+        auto& lastSlot = slots_[lastSlotIdx];
+        lastSlot.slotPhase.reset();  // PRIMARY
+        lastSlot.shapeCache.cachedOutputShapes.clear();
+        // Only mark as permanently dynamic if genuinely dynamic upstream.
+        if (hasDynamicUpstream) {
+          const bool tailPromoted = lastSlot.markDynamicShape();
+          const bool headPromoted = slot.markDynamicShape();
+          if (tailPromoted || headPromoted) {
+            refreshDynamicSegmentBoundaryAnalysis();
+          }
+        }
+      } else {
+        DSP_THROW(SHAPE,
+                 "NativeDynamicShapePlan: fused-chain slot reassignment on shape drift "
+                 "is forbidden post-warmup at slot %d (%s) — output shape changed but "
+                 "chain has no dynamic upstream (execCount=%d hasDynamicUpstream=%d). "
+                 "This indicates heap corruption or a missing isDynamicShape flag.",
+                 lastSlotIdx, slot.ident.opName.c_str(), executeCount_,
+                 hasDynamicUpstream ? 1 : 0);
+      }
+    }
+    if (output == nullptr) {
+      // Published through writeOutputSlot so the plan owns (and later frees) it.
+      output = new NDArray(outputShapeInfo, true, LaunchContext::defaultContext());
+      writeOutputSlot(lastOutputSlotIdx, output, "fused-chain-output-alloc");
     }
 
     // 5. Call fused kernel
@@ -3377,8 +3402,7 @@ Status NativeDynamicShapePlan::executeSlot(
     }
     LaunchContext* lc = LaunchContext::defaultContext();
     sd::ops::helpers::fusedElementwiseChain(
-        primaryInput, output, fusedOps, slot.fusedChain.fusedChainLength,
-        secondaryInputs, nullptr, nullptr, lc);
+        primaryInput, output, fusedOps, chainLength, secondaryInputs, clipMin, clipMax, lc);
 
 
     // 6. Register result at all chain slots' output indices
@@ -3395,14 +3419,26 @@ Status NativeDynamicShapePlan::executeSlot(
     // NDArray, OV writes the intermediate result (e.g., add-only) on top of the
     // final result (add+relu), corrupting it. Each slot needs its own buffer so
     // the backend writes don't interfere.
-    for (int ci = 0; ci < slot.fusedChain.fusedChainLength - 1; ci++) {
-      int chainSlotIdx = slot.fusedChain.fusedChainSlots[ci];
-      int chainOutputSlotIdx = slots_[chainSlotIdx].wiring.outputSlotIndices[0];
+    for (int ci = 0; ci < chainLength - 1; ci++) {
+      const int chainSlotIdx = slot.fusedChain.fusedChainSlots[ci];
+      const int chainOutputSlotIdx = slots_[chainSlotIdx].wiring.outputSlotIndices[0];
       if (chainOutputSlotIdx >= 0 && chainOutputSlotIdx < totalOutputSlots_) {
         NDArray* memberOut = outputSlots_[chainOutputSlotIdx];
+        if (memberOut != nullptr && !memberOut->isEmpty()) {
+          memberOut = validateReusableSlotArray(chainOutputSlotIdx, memberOut, "fused-chain-member");
+        }
+        if (memberOut != nullptr && !matchesChainOutput(memberOut)) {
+          // Left by an earlier run of this member as an ordinary slot, in its
+          // eager output shape. The chain value's shape replaces it.
+          invalidateSnapshotForSlot(chainOutputSlotIdx);
+          discardCachedSlotArray(chainOutputSlotIdx, memberOut, "fused-chain-member-reassign");
+          slots_[chainSlotIdx].slotPhase.reset();
+          slots_[chainSlotIdx].shapeCache.cachedOutputShapes.clear();
+          memberOut = nullptr;
+        }
         if (memberOut == nullptr) {
           // Allocate a separate array for this intermediate slot
-          memberOut = new NDArray(const_cast<LongType*>(outputShapeInfo), true, LaunchContext::defaultContext());
+          memberOut = new NDArray(outputShapeInfo, true, LaunchContext::defaultContext());
           writeOutputSlot(chainOutputSlotIdx, memberOut, "fused-chain-member-alloc");
         }
         // Shape-only prepass can install an existing wrapper without device
@@ -3425,10 +3461,10 @@ Status NativeDynamicShapePlan::executeSlot(
                             outIndices, 1);
     }
 
-    // Slot-write site: fused chain. The fused kernel has finished writing
-    // `output` and all chain-member slot indices have been pointed at it.
-    // Bump the head slot AND every chain-member slot so the generation
-    // counter reflects that their outputs are now freshly written.
+    // Slot-write site: fused chain. The fused kernel has written `output`;
+    // the intermediate members keep their own buffers, which it does not
+    // write and nothing outside the chain reads. Bump the head slot AND every
+    // chain-member slot so the whole chain reads as executed.
     slot.bumpGeneration();
     for (int ci = 0; ci < slot.fusedChain.fusedChainLength; ci++) {
       int chainSlotIdx = slot.fusedChain.fusedChainSlots[ci];
@@ -3507,6 +3543,7 @@ Status NativeDynamicShapePlan::executeSlot(
 
     return Status::OK;
   }
+#endif  // NOT_EXCLUDED(OP_fused_elementwise_chain)
 
   // ── Fast path: frozen context ────────────────────────────────────────────
   // Dynamic-shape slots normally bypass this path because their cached

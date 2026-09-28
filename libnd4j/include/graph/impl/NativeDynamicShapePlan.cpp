@@ -4151,13 +4151,13 @@ Status NativeDynamicShapePlan::execute(
         }
       }
 
-      // Fused elementwise chains install the LAST chain slot's output buffer
-      // into every chain-member output slot (see fused-chain-member writes in
-      // slotexec). Those member output slots are logical aliases, not stable
-      // storage. Snapshotting them as independent frozen outputs creates false
-      // positives when warmup/unfused aliases are replaced by the fused chain's
-      // shared output buffer on later executions. Keep lifecycle validation on
-      // the canonical tail output slot and prune the member aliases.
+      // A fused elementwise chain writes only the LAST chain slot's output.
+      // Earlier members keep private buffers the fused kernel never writes
+      // (see fused-chain-member in slotexec), and the fused path replaces one
+      // an unfused run left in its eager shape. They are not stable storage:
+      // snapshotting them as frozen outputs reports that replacement as drift.
+      // Keep lifecycle validation on the canonical tail output slot and prune
+      // the member outputs.
       std::vector<bool> fusedChainAliasOutputSlot(totalOutputSlots_, false);
       for (int s = 0; s < numSlots_; s++) {
         const auto& slot = slots_[s];
