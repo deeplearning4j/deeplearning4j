@@ -38,8 +38,10 @@ import java.util.List;
  * actualLen scalar and additionally produces:
  *
  *   output 2: prefix [W, B, H, D_k, D_v] time-leading C-order, where slot t holds
- *   the recurrent state AFTER consuming input rows 0..t. Slot t is a snapshot of
- *   the unrounded working state at that boundary; later timesteps never re-read it.
+ *   the recurrent state AFTER consuming input rows 0..t, for t &lt; actualLen - 1.
+ *   Slot t is a snapshot of the unrounded working state at that boundary; later
+ *   timesteps never re-read it. The state after the last consumed row is output 1,
+ *   and its slot is not written: a commit of every consumed row never selects it.
  *
  * This is the capture primitive for accepted-prefix state selection in bundled MTP
  * speculative decoding: a partially accepted verification window commits

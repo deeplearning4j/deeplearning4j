@@ -233,8 +233,11 @@ SD_KERNEL void gatedDeltaRuleSequenceKernel(
 
     const LongType effectiveLen = gatedDeltaEffectiveLength(actualLen, L);
     for (LongType t = 0; t < L; ++t) {
+        // The state after the last consumed input is stateOut; its checkpoint slot
+        // is not written (a commit of every consumed row never selects it).
         gatedDeltaRuleStep<T>(q, k, v, betaArr, gateArr, tileState, columnsPerBlock, dvBegin, dvEnd,
-                              expGateShared, kShared, qShared, out, prefixOut, prefixW, b, h, B, H, D_k, D_v, t,
+                              expGateShared, kShared, qShared, out,
+                              t + 1 < effectiveLen ? prefixOut : nullptr, prefixW, b, h, B, H, D_k, D_v, t,
                               t < effectiveLen,
                               qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3, vS0, vS1, vS2, vS3,
                               bS0, bS1, bS2, gS0, gS1, gS2, oS0, oS1, oS2, oS3);
@@ -410,7 +413,8 @@ SD_KERNEL void gatedDeltaRuleSplitSequenceKernel(
     const LongType effectiveLen = gatedDeltaEffectiveLength(actualLen, L);
     for (LongType t = 0; t < L; ++t) {
         gatedDeltaRuleSplitStep<T>(v, betaArr, gateArr, q, k, column, columnsPerBlock, partRows, part, dv,
-                                   expGateShared, kShared, qShared, out, prefixOut, prefixW,
+                                   expGateShared, kShared, qShared, out,
+                                   t + 1 < effectiveLen ? prefixOut : nullptr, prefixW,
                                    b, h, B, H, D_k, D_v, t, t < effectiveLen,
                                    qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3, vS0, vS1, vS2, vS3,
                                    bS0, bS1, bS2, gS0, gS1, gS2, oS0, oS1, oS2, oS3);

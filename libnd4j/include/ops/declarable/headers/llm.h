@@ -764,7 +764,8 @@ DECLARE_CUSTOM_OP(gated_delta_rule, 5, 2, false, 0, 0);
  *   0: output [B, L, H, D_v] - attention output (identical to gated_delta_rule)
  *   1: state_out [B, H, D_k, D_v] - final recurrent state (identical)
  *   2: prefix [L, B, H, D_k, D_v] - time-leading C-order; slot t is the state AFTER
- *      consuming input rows 0..t (t < actualLen written; inactive slots deterministic)
+ *      consuming input rows 0..t, written for t < actualLen - 1. The state after the
+ *      last consumed row is state_out; its slot and inactive slots are not written.
  */
 #if NOT_EXCLUDED(OP_gated_delta_rule_with_prefix)
 DECLARE_CUSTOM_OP(gated_delta_rule_with_prefix, 5, 3, false, 0, 0);

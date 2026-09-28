@@ -124,7 +124,8 @@ public class TestGdnPrefixStates {
 
             // Every prefix slot m-1 equals a legacy execution at actualLen=m from
             // the same initial state.
-            for (int m = 1; m <= w; m++) {
+            // Slots before the last consumed row; the state after it is stateOut (checked separately).
+            for (int m = 1; m < w; m++) {
                 INDArray[] legacy = runLegacy(q, k, v, beta, gate, stateInBackup, m);
                 INDArray slot = prefix.get(
                         org.nd4j.linalg.indexing.NDArrayIndex.point(m - 1),
@@ -242,16 +243,8 @@ public class TestGdnPrefixStates {
                 "ordinary state output shape");
         assertArrayEquals(new long[]{l, B, H, DK, DV}, prefixOut.shape(),
                 "checkpoint output shape [W,B,H,Dk,Dv]");
-        // The final checkpoint slot equals the ordinary final state: both are the
-        // state after consuming all l rows.
-        INDArray lastSlot = prefixOut.get(
-                org.nd4j.linalg.indexing.NDArrayIndex.point(l - 1),
-                org.nd4j.linalg.indexing.NDArrayIndex.all(),
-                org.nd4j.linalg.indexing.NDArrayIndex.all(),
-                org.nd4j.linalg.indexing.NDArrayIndex.all(),
-                org.nd4j.linalg.indexing.NDArrayIndex.all());
-        assertEquals(0.0, stateOut.sub(lastSlot).amaxNumber().doubleValue(), EPS,
-                "prefix[l-1] must equal the ordinary final state");
+        // The state after all l rows is carried by the ordinary state output; the
+        // final checkpoint slot is not written (no commit selects it).
         for (INDArray result : results.values()) result.close();
     }
 
@@ -279,7 +272,8 @@ public class TestGdnPrefixStates {
         Nd4j.getExecutioner().commit();
 
         INDArray[] legacy = runLegacy(q, k, v, beta, gate, stateInBackup, active);
-        for (int m = 1; m <= active; m++) {
+        // Slots before the last consumed row; the state after it is stateOut (checked separately).
+        for (int m = 1; m < active; m++) {
             INDArray[] legacyM = runLegacy(q, k, v, beta, gate, stateInBackup, m);
             INDArray slot = prefix.get(
                     org.nd4j.linalg.indexing.NDArrayIndex.point(m - 1),
@@ -378,7 +372,8 @@ public class TestGdnPrefixStates {
 
         // Independent reference from the ORIGINAL state with the NEW inputs.
         INDArray[] legacy2 = runLegacy(q, k2, v2, beta, gate2, stateInBackup, w);
-        for (int m = 1; m <= w; m++) {
+        // Slots before the last consumed row; the state after it is stateOut (checked separately).
+        for (int m = 1; m < w; m++) {
             INDArray[] legacyM = runLegacy(q, k2, v2, beta, gate2, stateInBackup, m);
             INDArray slot = prefix.get(
                     org.nd4j.linalg.indexing.NDArrayIndex.point(m - 1),
@@ -424,7 +419,11 @@ public class TestGdnPrefixStates {
             Nd4j.getExecutioner().exec(op);
             Nd4j.getExecutioner().commit();
 
-            for (int m = 1; m <= active; m++) {
+            INDArray[] legacyActive = runLegacy(q, k, v, beta, gate, stateInBackup, active);
+            assertEquals(0.0, stateOut.sub(legacyActive[1]).amaxNumber().doubleValue(), EPS,
+                    "active=" + active + " final state differs from legacy");
+            // Slots before the last consumed row; the state after it is stateOut (checked separately).
+            for (int m = 1; m < active; m++) {
                 INDArray[] legacyM = runLegacy(q, k, v, beta, gate, stateInBackup, m);
                 INDArray slot = prefix.get(
                         org.nd4j.linalg.indexing.NDArrayIndex.point(m - 1),

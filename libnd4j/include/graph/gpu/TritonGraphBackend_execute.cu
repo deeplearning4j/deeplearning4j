@@ -1938,6 +1938,8 @@ void TritonGraphBackend::invalidateCache() {
     }
   }
   cache_.clear();
+  noteBindingsChanged();
+  aliasPreflightPassed_.clear();
   failedCache_.clear();
   dtypeIndex_.clear();
   lastCompilationAudit_.clear();
@@ -1978,6 +1980,7 @@ bool TritonGraphBackend::rollbackCaptureOwnershipForSegments(
       }
     }
 #endif
+    noteBindingsChanged();
     for (auto& kernel : compiledSegment.subKernels) {
       kernel.aliasBindingsCaptured = false;
       kernel.argumentVersion = 0;
@@ -2112,6 +2115,8 @@ void TritonGraphBackend::invalidateCacheForSegments(
                                       k.deviceId, k.segmentInstance});
     }
     freedEntries++;
+    aliasPreflightPassed_.erase(it->first.segmentInstance);
+    noteBindingsChanged();
     it = cache_.erase(it);
   }
 

@@ -465,7 +465,10 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
   auto aliasStatus = prepareAliasBindings(compiled, bufferPtrs, externalInputs,
       numExternalInputs, outputSlots, totalOutputSlots, actualStream, streamIsCapturing);
   if (aliasStatus != Status::OK) return aliasStatus;
-  if (streamIsCapturing) compiled.aliasBindingsCaptured = true;
+  if (streamIsCapturing) {
+    compiled.aliasBindingsCaptured = true;
+    noteBindingsChanged();
+  }
   const auto& aliasedOutputs = compiled.aliasBindings;
 
   // Log ALL resolved buffer pointers for every sub-kernel
@@ -1118,6 +1121,7 @@ Status TritonGraphBackend::prepareAliasBindings(CompiledKernel& kernel,
     kernel.aliasBindings = std::move(next);
     kernel.bindingPointers = ptrs;
     kernel.bindingBytes = bytes;
+    noteBindingsChanged();
     if (cudaGetDevice(&kernel.aliasDeviceId) != cudaSuccess) THROW_EXCEPTION("Triton alias device query failed");
     // executeSingleKernel seals the bindings only for kernels actually captured.
   }
@@ -1132,6 +1136,7 @@ Status TritonGraphBackend::prepareAliasBindings(CompiledKernel& kernel,
 
 void TritonGraphBackend::publishArgumentPointers(CompiledKernel& kernel,
     const std::vector<void*>& ptrs, bool capturing) {
+  noteBindingsChanged();
   auto* table = static_cast<int64_t*>(kernel.cachedArgTableHostPinned);
   if (!table) THROW_EXCEPTION("Triton argument publication has no pinned table");
   // A kernel compiled with vectorized access to an argument relies on its
@@ -1303,8 +1308,16 @@ void TritonGraphBackend::prepareAliasBindingsForCapture(GraphSegment& seg,
 }
 
 Status TritonGraphBackend::preflightAliasBindings(GraphSegment& seg,
-    NDArray** externalInputs, int numExternalInputs, NDArray** outputSlots, int totalOutputSlots) {
+    NDArray** externalInputs, int numExternalInputs, NDArray** outputSlots, int totalOutputSlots,
+    bool addressesUnchanged) {
   std::lock_guard<std::mutex> lock(cacheMtx_);
+  // Every input to the check below is either a live buffer address (unchanged
+  // when addressesUnchanged) or binding state covered by bindingGeneration_.
+  const uint64_t generation = bindingGeneration_.load(std::memory_order_relaxed);
+  if (addressesUnchanged) {
+    auto passed = aliasPreflightPassed_.find(&seg);
+    if (passed != aliasPreflightPassed_.end() && passed->second == generation) return Status::OK;
+  }
   // One device query and one resolution per argument slot for the whole
   // schedule: sub-kernels share most slots, and specialBuffer() queries the
   // current device on every call, which dominated this pre-launch check.
@@ -1370,7 +1383,12 @@ Status TritonGraphBackend::preflightAliasBindings(GraphSegment& seg,
     }
   }
   // A cache eviction removed the binding owner. Never launch its old graphs.
-  return found ? Status::OK : Status::MAYBE;
+  if (!found) {
+    aliasPreflightPassed_.erase(&seg);
+    return Status::MAYBE;
+  }
+  aliasPreflightPassed_[&seg] = generation;
+  return Status::OK;
 }
 
 void TritonGraphBackend::recordArgumentSubmission(GraphSegment& seg, void* stream) {
@@ -1423,6 +1441,7 @@ void TritonGraphBackend::awaitArgumentSubmissionsForRetirement(GraphSegment& seg
 }
 
 void TritonGraphBackend::releaseAliasBindings(CompiledKernel& kernel) {
+  noteBindingsChanged();
   if (kernel.argumentSubmissionPending &&
       cudaEventSynchronize(reinterpret_cast<cudaEvent_t>(kernel.argumentConsumedEvent)) != cudaSuccess)
     THROW_EXCEPTION("Triton argument retirement failed");

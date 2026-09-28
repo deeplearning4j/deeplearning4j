@@ -173,8 +173,10 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
                 for (LongType dk = 0; dk < D_k; ++dk)
                     qLocal[dk] = static_cast<AccT>(qBuf[qBase + dk * qS3]);
 
-                if (prefixBuf != nullptr && t < prefixW && t < effectiveLen) {
-                    // Checkpoint the unrounded working state AFTER consuming input t.
+                // Checkpoint the unrounded working state AFTER consuming input t. The
+                // state after the last consumed input is stateOut, so its slot is
+                // not written (a commit of every consumed row never selects it).
+                if (prefixBuf != nullptr && t < prefixW && t + 1 < effectiveLen) {
                     // stateBuf is transposed [B,H,D_v,D_k]; prefixOut is [W,B,H,D_k,D_v].
                     T* pBase = prefixBuf + ((t * B + b) * H + h) * D_k * D_v;
                     for (LongType dk = 0; dk < D_k; ++dk)

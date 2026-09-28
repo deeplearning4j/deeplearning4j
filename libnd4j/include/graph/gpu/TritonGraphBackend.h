@@ -156,8 +156,13 @@ class TritonGraphBackend : public GraphBackend {
   void prepareAliasBindingsForCapture(GraphSegment& seg, NDArray** externalInputs,
       int numExternalInputs, NDArray** outputSlots, int totalOutputSlots, void* stream);
   // Pre-launch only: MAYBE requests the owning segment's rebuild lifecycle.
+  // addressesUnchanged: the caller's address-drift checks establish that no
+  // external input or output slot moved since the previous replay; together
+  // with an unchanged binding generation, a segment that already passed is
+  // passed again without re-resolving every argument.
   Status preflightAliasBindings(GraphSegment& seg, NDArray** externalInputs,
-      int numExternalInputs, NDArray** outputSlots, int totalOutputSlots);
+      int numExternalInputs, NDArray** outputSlots, int totalOutputSlots,
+      bool addressesUnchanged = false);
   // Replay bypasses executeSingleKernel. The execution owner must record the
   // stream's consumption of captured pinned argument sources after submission.
   // The whole-segment form covers a graph holding every sub-kernel; an island
@@ -514,6 +519,13 @@ class TritonGraphBackend : public GraphBackend {
   // This avoids repeating expensive compile attempts for known-bad shapes on a given device.
   std::unordered_set<SegmentCacheKey, SegmentCacheHash> failedCache_;
   mutable std::mutex cacheMtx_;
+  // Bumped whenever any compiled kernel's argument bindings, published argument
+  // table or alias scratch change, or cache entries are added or removed.
+  std::atomic<uint64_t> bindingGeneration_{1};
+  void noteBindingsChanged() { bindingGeneration_.fetch_add(1, std::memory_order_relaxed); }
+  // Binding generation at which each segment last passed preflightAliasBindings
+  // (guarded by cacheMtx_).
+  std::unordered_map<const GraphSegment*, uint64_t> aliasPreflightPassed_;
   // ROW_AUDIT diagnostic (level=full): start slots already audited once, so the
   // full row dump is emitted exactly once per compiled sub-kernel.
   std::unordered_set<int> firstRowAuditSlots_;

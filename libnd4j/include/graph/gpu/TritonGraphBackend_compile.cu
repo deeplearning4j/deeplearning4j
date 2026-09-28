@@ -942,6 +942,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       std::lock_guard<std::mutex> lock(cacheMtx_);
       failedCache_.erase(key);
       cache_[key] = std::move(compiledSeg);
+      noteBindingsChanged();
       // Populate secondary dtype index so lookup sites without outputSlots can
       // find the right dtype hash for this live segment instance.
       dtypeIndex_[DtypeIndexKey{seg.def.startSlot, seg.def.endSlot, shapeKey,
@@ -1837,6 +1838,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     }
     failedCache_.erase(key);
     cache_[key] = std::move(compiledSeg);
+    noteBindingsChanged();
     installedSeg = &cache_[key];
     // Populate secondary dtype index so lookup sites without outputSlots can
     // find the right dtype hash for this live segment instance.

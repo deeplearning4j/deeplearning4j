@@ -2217,6 +2217,12 @@ Status NativeDynamicShapePlan::compositeReplay(
   static constexpr int kAddrStableSkipThreshold = 3;
   static constexpr int kAddrRecheckInterval = 64;
   bool driftDetected = false;
+  // Established below: the external-input address key and the output-slot
+  // address hash each either matched the captured value or were skipped under
+  // the stable-address policy. slotHashComputed: the slot hash was recomputed.
+  bool inputAddressesVerified = false;
+  bool slotAddressesVerified = false;
+  bool slotHashComputed = false;
   const bool mergedAddressValidationRequired =
       !sched.mergedReplayHandles.empty() && seg.exec.needsArgRefresh();
   if ((!seg.exec.needsArgRefresh() || mergedAddressValidationRequired) &&
@@ -2229,6 +2235,7 @@ Status NativeDynamicShapePlan::compositeReplay(
                          ((seg.exec.executionCount % kAddrRecheckInterval) != 0);
     if (skipAddrCheck) {
       seg.exec.addrKeyStableCount++;
+      inputAddressesVerified = true;
     } else {
     LongType currentAddrKey = computeSegmentInputAddrKey(seg, effectiveExternals, numExt);
     if (currentAddrKey != seg.exec.capturedInputAddrKey) {
@@ -2270,6 +2277,7 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
     } else {
       seg.exec.addrKeyStableCount++;
+      inputAddressesVerified = true;
     }
     } // end !skipAddrCheck
   }
@@ -2285,7 +2293,9 @@ Status NativeDynamicShapePlan::compositeReplay(
                          ((seg.exec.executionCount % kAddrRecheckInterval) != 0);
     if (skipSlotCheck) {
       seg.exec.slotAddrStableCount++;
+      slotAddressesVerified = true;
     } else {
+    slotHashComputed = true;
     LongType currentSlotHash = computeSlotAddrHash(
         slots_, numSlots_, outputSlots_, seg.def.startSlot, seg.def.endSlot,
         totalOutputSlots_);
@@ -2314,6 +2324,7 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
     } else {
       seg.exec.slotAddrStableCount++;
+      slotAddressesVerified = true;
     }
     } // end !skipSlotCheck
   }
@@ -2325,7 +2336,9 @@ Status NativeDynamicShapePlan::compositeReplay(
   // letting fast replay proceed against never-rechecked baked addresses.
   // Fail closed: a visited-slot count of zero over a non-empty op range means we
   // have NO drift information, so force a refresh instead of trusting the hash.
-  if (!driftDetected &&
+  // The tripwire checks that the slot hash covered the segment's output slots.
+  // It depends only on the static wiring, so it runs when the hash was computed.
+  if (!driftDetected && slotHashComputed &&
       (!seg.exec.needsArgRefresh() || mergedAddressValidationRequired) &&
       seg.exec.capturedSlotAddrHash != 0) {
     int visitedSlots = 0;
@@ -2360,8 +2373,10 @@ Status NativeDynamicShapePlan::compositeReplay(
   // Alias copyback destinations are baked even in unmerged island graphs.
   // Validate the entire schedule before any island, gap or output prezero runs.
   if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend)) {
+    const bool addressesUnchanged = !driftDetected && !seg.exec.needsArgRefresh() &&
+                                    inputAddressesVerified && slotAddressesVerified;
     auto aliasStatus = backend->preflightAliasBindings(
-        seg, effectiveExternals, numExt, outputSlots_, totalOutputSlots_);
+        seg, effectiveExternals, numExt, outputSlots_, totalOutputSlots_, addressesUnchanged);
     if (aliasStatus != Status::OK) return aliasStatus;
   }
 #endif
