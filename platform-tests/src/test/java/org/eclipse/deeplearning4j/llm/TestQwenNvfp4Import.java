@@ -186,6 +186,11 @@ public class TestQwenNvfp4Import {
         // seal and replay setup then landed inside the timed window. This many
         // tokens must carry every decode plan through WARMUP COMPLETE.
         int warmupTokens = Integer.getInteger("qwen.nvfp4.benchWarmupTokens", 16);
+        // -Dqwen.nvfp4.greedyOnly=true measures plain greedy decoding: a pipeline built
+        // without speculation (width-1 decode plan) instead of greedy sampling through
+        // the MTP pipeline's verification-window plan. Its tokens are logged for
+        // comparison with the greedy leg of a normal run (row invariance makes them equal).
+        final boolean greedyOnly = Boolean.getBoolean("qwen.nvfp4.greedyOnly");
         assertTrue(warmupTokens >= 1 && warmupTokens < maxTokens,
                 "benchWarmupTokens must be in [1, benchTokens)");
         // Multi-sentence diverse prompt: keeps the trunk's distribution sharp
@@ -230,8 +235,8 @@ public class TestQwenNvfp4Import {
                             importedConfig.getStopTokenIds()))
                     .kvCacheStrategy(KvCacheStrategy.STATIC)
                     .dspEnabled(true)
-                    .maxSpeculativeTokens(Integer.getInteger("qwen.nvfp4.mtpK", 4))
-                    .samplingConfig(SamplingConfig.speculative())
+                    .maxSpeculativeTokens(greedyOnly ? 0 : Integer.getInteger("qwen.nvfp4.mtpK", 4))
+                    .samplingConfig(greedyOnly ? SamplingConfig.greedy() : SamplingConfig.speculative())
                     .maxNewTokens(maxTokens).maxPrefillLength(maxPrefill).maxKvCacheLength(contextCap)
                     .build();
             long pipelineStartNs = System.nanoTime();
@@ -244,11 +249,12 @@ public class TestQwenNvfp4Import {
                         (pipelineDoneNs - loadStartNs) / 1_000_000);
 
                 // -- Pass 1: MTP steady-state decode --
-                pipeline.setSamplingConfig(SamplingConfig.speculative());
                 long mtpDecodeNs = 0;
                 int mtpTokens = 0;
                 int proposed = 0, accepted = 0, steps = 0;
                 int[] mtpAllTokens = new int[0];
+                if (!greedyOnly) {
+                pipeline.setSamplingConfig(SamplingConfig.speculative());
                 long sessionStartNs = System.nanoTime();
                 try (GenerationSession session = pipeline.startSession(prompt, maxTokens)) {
                     long t0 = System.nanoTime();
@@ -280,6 +286,7 @@ public class TestQwenNvfp4Import {
                             proposed > 0 ? (double) accepted / proposed : 0.0,
                             mtpAllTokens.length, session.getFullText());
                 }
+                }
 
                 // -- Pass 2: greedy steady-state decode (fresh session; rebuild is setup, not measured) --
                 pipeline.setSamplingConfig(SamplingConfig.greedy());
@@ -303,6 +310,9 @@ public class TestQwenNvfp4Import {
                             greedyTokens * 1e9 / Math.max(1, greedyDecodeNs),
                             greedyAllTokens.length, session.getFullText());
                 }
+                log.info("NVFP4-BENCH greedy TOKENS hash={} tokens={}",
+                        java.util.Arrays.hashCode(greedyAllTokens), java.util.Arrays.toString(greedyAllTokens));
+                if (greedyOnly) return;
                 log.info("NVFP4-BENCH SUMMARY mtpTok/s={} greedyTok/s={} speedup={} acceptance={}/{}",
                         mtpTokens * 1e9 / Math.max(1, mtpDecodeNs),
                         greedyTokens * 1e9 / Math.max(1, greedyDecodeNs),
