@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.cache.ArrayDescriptor;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.vulkan.VulkanAffinityManager;
@@ -55,11 +56,13 @@ import org.nd4j.nativeblas.OpaqueShapeList;
 import org.nd4j.nativeblas.OpaqueTadPack;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Vulkan execution service.
@@ -76,6 +79,25 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
     private final VulkanDataBufferFactory dataBufferFactory;
     private volatile Map<String, CustomOpDescriptor> customOps;
     private volatile Map<Long, CustomOpDescriptor> customOpsByHash;
+
+    /**
+     * Java wrappers for native TAD packs, keyed by pack address. tadOnlyShapeInfo registers every pack
+     * it returns in the native g_tadPackRegistry and nothing releases them (deleteTadPack and
+     * clearTadPackRegistry have no callers), so an address names one immutable pack for the life of the
+     * process. Clearing the TAD cache keeps every registered pack, so a repeated request returns the same
+     * pack. The wrappers are constant and never freed, so wrapping each pack once keeps them bounded by
+     * the number of distinct TADs instead of growing with every lookup. If packs ever become releasable,
+     * their wrappers must be evicted here first.
+     */
+    private final Map<Long, TadPack> tadPacks = new ConcurrentHashMap<>();
+
+    /**
+     * Shape info buffers handed out by this executioner, per device and exact content. They are constant
+     * and never freed, so one per distinct shape bounds them where one per call grew with every inferred
+     * output shape and every array copy. They are built from Vulkan's own services, not ND4J's primary
+     * backend, and are Java-owned copies rather than views of the native shape cache, which can be cleared.
+     */
+    private final Map<Integer, Map<ArrayDescriptor, DataBuffer>> shapeInfos = new ConcurrentHashMap<>();
 
     public VulkanExecutioner() {
         this(VulkanRuntime.getInstance().nativeOps(),
@@ -1039,9 +1061,7 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
                 int length = Shape.shapeInfoLength(Math.toIntExact(pointer.get(0)));
                 long[] shapeInfo = new long[length];
                 pointer.capacity(length).get(shapeInfo, 0, length);
-                DataBuffer shapeBuffer = dataBufferFactory.createLong(shapeInfo);
-                shapeBuffer.setConstant(true);
-                result.add(shapeBuffer);
+                result.add(internShapeInfo(shapeInfo));
             }
             return result;
         } finally {
@@ -1090,54 +1110,89 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
     public DataBuffer createShapeInfo(
             long[] shape, long[] stride, long elementWiseStride, char order,
             DataType dataType, long extras) {
-        OpaqueConstantShapeBuffer shapeBuffer = nativeOps.shapeBufferEx(
-                shape.length,
-                new LongPointer(shape),
-                new LongPointer(stride),
-                dataType.toInt(),
-                order,
-                elementWiseStride,
-                extras);
+        OpaqueConstantShapeBuffer shapeBuffer;
+        // shapeBufferEx builds its descriptor from copies of shape and stride
+        try (LongPointer shapePointer = new LongPointer(shape);
+             LongPointer stridePointer = new LongPointer(stride)) {
+            shapeBuffer = nativeOps.shapeBufferEx(
+                    shape.length,
+                    shapePointer,
+                    stridePointer,
+                    dataType.toInt(),
+                    order,
+                    elementWiseStride,
+                    extras);
+        }
         checkNativeError();
-        shapeBuffer.retainReference();
+        if (shapeBuffer == null || shapeBuffer.isNull()) {
+            throw new IllegalStateException("shapeBufferEx returned no shape buffer for shape "
+                    + Arrays.toString(shape));
+        }
 
-        Pointer primary = nativeOps.getConstantShapeBufferPrimary(shapeBuffer);
-        Pointer special = nativeOps.getConstantShapeBufferSpecial(shapeBuffer);
-        VulkanDataBuffer result = new VulkanDataBuffer(
-                DataType.INT64, primary, special, null, Shape.shapeInfoLength(shape.length));
-        result.setConstant(true);
-        return result;
+        // The native buffer is only the source of the content: the native shape cache can be cleared.
+        int length = Shape.shapeInfoLength(shape.length);
+        long[] shapeInfo = new long[length];
+        new LongPointer(nativeOps.getConstantShapeBufferPrimary(shapeBuffer))
+                .capacity(length).get(shapeInfo, 0, length);
+        return internShapeInfo(shapeInfo);
+    }
+
+    /**
+     * Returns the current device's constant buffer holding exactly {@code shapeInfo}, creating it on the
+     * first request for that content.
+     *
+     * @param shapeInfo complete shape info; must not be modified after this call, since a new entry is
+     *                  keyed by it
+     */
+    private DataBuffer internShapeInfo(long[] shapeInfo) {
+        Map<ArrayDescriptor, DataBuffer> deviceShapeInfos = shapeInfos.computeIfAbsent(
+                affinityManager.getDeviceForCurrentThread(), device -> new ConcurrentHashMap<>());
+        ArrayDescriptor key = new ArrayDescriptor(shapeInfo, DataType.INT64);
+        DataBuffer cached = deviceShapeInfos.get(key);
+        return cached != null ? cached : deviceShapeInfos.computeIfAbsent(key, content -> {
+            DataBuffer buffer = dataBufferFactory.createLong(shapeInfo);
+            buffer.setConstant(true);
+            return buffer;
+        });
     }
 
     @Override
     public TadPack tadShapeInfoAndOffsets(INDArray array, long[] dimensions) {
         checkNativeError();
-        OpaqueTadPack nativePack = nativeOps.tadOnlyShapeInfo(
-                array.shapeInfoDataBuffer().opaqueBuffer(),
-                new LongPointer(ArrayUtil.toLongArray(dimensions)),
-                dimensions.length).retainReference();
+        OpaqueTadPack nativePack;
+        // tadForDimensions copies the axes, so the pointer can be freed right after the call
+        try (LongPointer dims = new LongPointer(ArrayUtil.toLongArray(dimensions))) {
+            nativePack = nativeOps.tadOnlyShapeInfo(
+                    array.shapeInfoDataBuffer().opaqueBuffer(), dims, dimensions.length);
+        }
         checkNativeError();
+        if (nativePack == null || nativePack.isNull()) {
+            throw new IllegalStateException("tadOnlyShapeInfo returned no TAD pack for dimensions "
+                    + Arrays.toString(dimensions));
+        }
 
-        LongPointer primaryShape = nativeOps.getPrimaryShapeInfo(nativePack).retainReference();
-        LongPointer specialShape = nativeOps.getSpecialShapeInfo(nativePack).retainReference();
-        LongPointer primaryOffsets = nativeOps.getPrimaryOffsets(nativePack).retainReference();
-        LongPointer specialOffsets = nativeOps.getSpecialOffsets(nativePack).retainReference();
+        return tadPacks.computeIfAbsent(nativePack.address(), address -> {
+            LongPointer primaryShape = nativeOps.getPrimaryShapeInfo(nativePack).retainReference();
+            LongPointer specialShape = nativeOps.getSpecialShapeInfo(nativePack).retainReference();
+            LongPointer primaryOffsets = nativeOps.getPrimaryOffsets(nativePack).retainReference();
+            LongPointer specialOffsets = nativeOps.getSpecialOffsets(nativePack).retainReference();
 
-        VulkanDataBuffer shapeInfo = new VulkanDataBuffer(
-                DataType.INT64,
-                primaryShape,
-                specialShape,
-                null,
-                nativeOps.getShapeInfoLength(nativePack));
-        VulkanDataBuffer offsets = new VulkanDataBuffer(
-                DataType.INT64,
-                primaryOffsets,
-                specialOffsets,
-                null,
-                nativeOps.getNumberOfTads(nativePack));
-        shapeInfo.setConstant(true);
-        offsets.setConstant(true);
-        return new TadPack(shapeInfo, offsets);
+            VulkanDataBuffer shapeInfo = new VulkanDataBuffer(
+                    DataType.INT64,
+                    primaryShape,
+                    specialShape,
+                    null,
+                    nativeOps.getShapeInfoLength(nativePack));
+            VulkanDataBuffer offsets = new VulkanDataBuffer(
+                    DataType.INT64,
+                    primaryOffsets,
+                    specialOffsets,
+                    null,
+                    nativeOps.getNumberOfTads(nativePack));
+            shapeInfo.setConstant(true);
+            offsets.setConstant(true);
+            return new TadPack(shapeInfo, offsets);
+        });
     }
 
     @Override

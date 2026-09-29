@@ -58,6 +58,25 @@ public class ArrayDescriptor {
         this.dtype = dtype;
     }
 
+    /**
+     * Returns a descriptor over a private copy of this descriptor's array. A cache must key its entries
+     * by such a copy: a key over the caller's array changes when the caller later modifies the array,
+     * and can then match lookups for the new content while still mapping to a buffer of the old content.
+     */
+    public ArrayDescriptor copy() {
+        if (boolArray != null)
+            return new ArrayDescriptor(boolArray.clone(), dtype);
+        if (intArray != null)
+            return new ArrayDescriptor(intArray.clone(), dtype);
+        if (floatArray != null)
+            return new ArrayDescriptor(floatArray.clone(), dtype);
+        if (doubleArray != null)
+            return new ArrayDescriptor(doubleArray.clone(), dtype);
+        if (longArray != null)
+            return new ArrayDescriptor(longArray.clone(), dtype);
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -73,7 +92,7 @@ public class ArrayDescriptor {
         if (intArray != null && that.intArray != null) {
             return Arrays.equals(intArray, that.intArray);
         } else if (boolArray != null && that.boolArray != null) {
-            return Arrays.equals(intArray, that.intArray);
+            return Arrays.equals(boolArray, that.boolArray);
         } else if (floatArray != null && that.floatArray != null) {
             return Arrays.equals(floatArray, that.floatArray);
         } else if (doubleArray != null && that.doubleArray != null) {

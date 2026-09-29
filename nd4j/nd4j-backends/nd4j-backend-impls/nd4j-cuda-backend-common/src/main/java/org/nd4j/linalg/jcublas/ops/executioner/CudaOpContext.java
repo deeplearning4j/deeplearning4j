@@ -286,13 +286,20 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
         shapeInfo.get(convert, 0, shapeInfoLength);
         DataBuffer shapeInfoBuffer = Nd4j.createBuffer(convert);
         OpaqueDataBuffer buffer = nativeOps.intermediateResultDataAt(index,context);
-        long numElements = nativeOps.dbBufferLength(buffer);
-        Pointer primaryPointer = buffer.primaryBuffer();
-        Pointer specialPointer = buffer.specialBuffer();
-        primaryPointer.capacity(numElements);
-        specialPointer.capacity(numElements);
-        DataBuffer firstBuffer = Nd4j.createBuffer(primaryPointer, specialPointer,
-                Shape.length(convert), Shape.dataType(convert));
+        DataBuffer firstBuffer;
+        try {
+            long numElements = nativeOps.dbBufferLength(buffer);
+            Pointer primaryPointer = buffer.primaryBuffer();
+            Pointer specialPointer = buffer.specialBuffer();
+            primaryPointer.capacity(numElements);
+            specialPointer.capacity(numElements);
+            firstBuffer = Nd4j.createBuffer(primaryPointer, specialPointer,
+                    Shape.length(convert), Shape.dataType(convert));
+        } finally {
+            // Each call returns a new native wrapper over the context's own data; the data
+            // outlives it, but nothing else frees the wrapper
+            nativeOps.deleteDataBuffer(buffer);
+        }
         INDArray result = Nd4j.createArrayFromShapeBuffer(firstBuffer,shapeInfoBuffer);
         return result;
     }

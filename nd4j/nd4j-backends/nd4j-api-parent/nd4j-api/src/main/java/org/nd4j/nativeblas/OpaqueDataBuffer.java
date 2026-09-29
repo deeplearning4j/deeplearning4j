@@ -336,8 +336,9 @@ public class OpaqueDataBuffer extends Pointer {
     }
 
     /**
-     * Creates a workspace-backed data buffer that does NOT register with DeallocatorService.
-     * The workspace owns the memory lifecycle; the buffer must not outlive the workspace scope.
+     * Creates a workspace-backed data buffer. The workspace owns the memory lifecycle; the
+     * buffer must not outlive the workspace scope. The native wrapper does not own that memory,
+     * so its DeallocatorService registration frees only the wrapper.
      */
     public static OpaqueDataBuffer workspaceDataBuffer(long numElements, @NonNull DataType dataType,
                                                        Pointer primary, Pointer special) {
@@ -363,7 +364,14 @@ public class OpaqueDataBuffer extends Pointer {
         if (ops.isFuncTrace()) {
             ret.captureTrace();
         }
-        // Do NOT register with DeallocatorService - workspace owns this memory.
+        // No allocation size: the workspace accounts for its memory, and the cleanup action
+        // only frees the native wrapper once this buffer is unreachable
+        try {
+            registerWithDeallocatorService(ret, false, 0L);
+        } catch (RuntimeException e) {
+            ops.deleteDataBuffer(ret);
+            throw e;
+        }
         return ret;
     }
 
@@ -939,10 +947,10 @@ public class OpaqueDataBuffer extends Pointer {
             explicitlyClosed = true;
         }
 
-        // Use tryMarkForDeallocation() directly to coordinate with any GC-based deallocator.
-        // This is the atomic flag that prevents double-free. Explicit close uses this public
-        // facade while the PhantomReference cleanup action uses a detached raw-address facade;
-        // both ultimately meet the native InteropDataBuffer tryClose guard.
+        // Explicit close, backend deallocators and the PhantomReference cleanup action all claim
+        // the release through tryMarkForDeallocation(), so the data is freed exactly once. The
+        // native wrapper stays allocated: this facade may still be referenced, and the cleanup
+        // action frees the wrapper once it is unreachable.
         if (!this.isNull() && tryMarkForDeallocation()) {
             try {
                 printAllocationTraceIfNeeded();
@@ -961,9 +969,6 @@ public class OpaqueDataBuffer extends Pointer {
                 dbCloseSuccess.incrementAndGet();
                 this.setNull();
 
-                if (deallocator != null) {
-                    deallocator.markDeallocated();
-                }
                 if (allocationBytes > 0 && deallocationDevice != null) {
                     requireBackendOwner().recordDeallocation(deallocationDevice, allocationBytes);
                 }
@@ -985,8 +990,13 @@ public class OpaqueDataBuffer extends Pointer {
      *         false if the buffer was already marked (another deallocator claimed it)
      */
     public boolean tryMarkForDeallocation() {
-        // Guard against null - can happen if JavaCPP creates instances
-        // via Pointer(Pointer) without running field initializers
+        // A registered buffer claims through its deallocator, which the cleanup action shares.
+        // JavaCPP creates facades for pointers returned from native code without running field
+        // initializers, which leaves markedForDeallocation null
+        OpaqueDataBufferDeallocator registered = deallocator;
+        if (registered != null) {
+            return registered.claimRelease();
+        }
         if (markedForDeallocation == null) {
             return true; // treat as first claim so caller proceeds with cleanup
         }
@@ -1007,6 +1017,10 @@ public class OpaqueDataBuffer extends Pointer {
         // Check explicitlyClosed first — this is correctly set during closeBuffer()
         // even for JavaCPP-created instances where markedForDeallocation may be null.
         if (explicitlyClosed) {
+            return true;
+        }
+        OpaqueDataBufferDeallocator registered = deallocator;
+        if (registered != null && registered.isReleaseClaimed()) {
             return true;
         }
         if (markedForDeallocation == null) {
@@ -1102,52 +1116,97 @@ public class OpaqueDataBuffer extends Pointer {
         final DeallocatorService deallocatorService = Nd4j.getDeallocatorService();
         final DeviceMemoryManager deviceMemoryManager = DeviceMemoryManager.getInstance();
 
-        return new NativeBufferOwner() {
-            @Override
-            public NativeOps nativeOps() {
-                return nativeOps;
+        // Owners are compared by identity (OpaqueNDArrayArr requires every array to share one
+        // owner), so all buffers of the same primary backend must report the same instance
+        PrimaryBackendOwner owner = cachedPrimaryOwner;
+        if (owner == null || !owner.wraps(nativeOps, affinityManager, executioner,
+                deallocatorService, deviceMemoryManager)) {
+            synchronized (PrimaryBackendOwner.class) {
+                owner = cachedPrimaryOwner;
+                if (owner == null || !owner.wraps(nativeOps, affinityManager, executioner,
+                        deallocatorService, deviceMemoryManager)) {
+                    owner = new PrimaryBackendOwner(nativeOps, affinityManager, executioner,
+                            deallocatorService, deviceMemoryManager);
+                    cachedPrimaryOwner = owner;
+                }
             }
+        }
+        return owner;
+    }
 
-            @Override
-            public DeallocatorService deallocatorService() {
-                return deallocatorService;
-            }
+    private static volatile PrimaryBackendOwner cachedPrimaryOwner;
 
-            @Override
-            public int currentDevice() {
-                return affinityManager.getDeviceForCurrentThread();
-            }
+    private static final class PrimaryBackendOwner implements NativeBufferOwner {
+        private final NativeOps nativeOps;
+        private final AffinityManager affinityManager;
+        private final OpExecutioner executioner;
+        private final DeallocatorService deallocatorService;
+        private final DeviceMemoryManager deviceMemoryManager;
 
-            @Override
-            public int deviceCount() {
-                return affinityManager.getNumberOfDevices();
-            }
+        private PrimaryBackendOwner(NativeOps nativeOps, AffinityManager affinityManager,
+                                    OpExecutioner executioner, DeallocatorService deallocatorService,
+                                    DeviceMemoryManager deviceMemoryManager) {
+            this.nativeOps = nativeOps;
+            this.affinityManager = affinityManager;
+            this.executioner = executioner;
+            this.deallocatorService = deallocatorService;
+            this.deviceMemoryManager = deviceMemoryManager;
+        }
 
-            @Override
-            public void setDevice(int deviceId) {
-                affinityManager.setDeviceForCurrentThread(deviceId);
-            }
+        private boolean wraps(NativeOps nativeOps, AffinityManager affinityManager,
+                              OpExecutioner executioner, DeallocatorService deallocatorService,
+                              DeviceMemoryManager deviceMemoryManager) {
+            return this.nativeOps == nativeOps
+                    && this.affinityManager == affinityManager
+                    && this.executioner == executioner
+                    && this.deallocatorService == deallocatorService
+                    && this.deviceMemoryManager == deviceMemoryManager;
+        }
 
-            @Override
-            public void commit() {
-                executioner.commit();
-            }
+        @Override
+        public NativeOps nativeOps() {
+            return nativeOps;
+        }
 
-            @Override
-            public DeviceDescriptor deviceDescriptor(int deviceId) {
-                return affinityManager.getDeviceDescriptor(deviceId);
-            }
+        @Override
+        public DeallocatorService deallocatorService() {
+            return deallocatorService;
+        }
 
-            @Override
-            public void recordAllocation(DeviceDescriptor device, long bytes) {
-                deviceMemoryManager.recordAllocation(device, bytes);
-            }
+        @Override
+        public int currentDevice() {
+            return affinityManager.getDeviceForCurrentThread();
+        }
 
-            @Override
-            public void recordDeallocation(DeviceDescriptor device, long bytes) {
-                deviceMemoryManager.recordDeallocation(device, bytes);
-            }
-        };
+        @Override
+        public int deviceCount() {
+            return affinityManager.getNumberOfDevices();
+        }
+
+        @Override
+        public void setDevice(int deviceId) {
+            affinityManager.setDeviceForCurrentThread(deviceId);
+        }
+
+        @Override
+        public void commit() {
+            executioner.commit();
+        }
+
+        @Override
+        public DeviceDescriptor deviceDescriptor(int deviceId) {
+            return affinityManager.getDeviceDescriptor(deviceId);
+        }
+
+        @Override
+        public void recordAllocation(DeviceDescriptor device, long bytes) {
+            deviceMemoryManager.recordAllocation(device, bytes);
+        }
+
+        @Override
+        public void recordDeallocation(DeviceDescriptor device, long bytes) {
+            deviceMemoryManager.recordDeallocation(device, bytes);
+        }
     }
 
     private static DeviceDescriptor selectDeviceForAllocation(long bytes, DeviceMemoryManager memoryManager) {

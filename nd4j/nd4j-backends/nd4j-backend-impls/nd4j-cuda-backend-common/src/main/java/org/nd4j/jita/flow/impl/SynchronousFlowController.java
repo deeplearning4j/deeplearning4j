@@ -35,6 +35,7 @@ import org.nd4j.jita.flow.FlowController;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.ShapeInfoInterner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -141,7 +142,8 @@ public class SynchronousFlowController implements FlowController {
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                ((JCublasNDArray) result).setShapeInfoDataBuffer(Nd4j.getExecutioner().createShapeInfo(result.shape(), result.stride(), result.elementWiseStride(), result.ordering(), result.dataType(), result.isEmpty()));
+                // Same content (all flags kept), homed on this device; interned so repeated calls share one buffer
+                ((JCublasNDArray) result).setShapeInfoDataBuffer(ShapeInfoInterner.intern(result.shapeInfoJava()));
                 context = allocator.getDeviceContext();
             }
 
@@ -169,7 +171,8 @@ public class SynchronousFlowController implements FlowController {
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                ((JCublasNDArray) operand).setShapeInfoDataBuffer(Nd4j.getExecutioner().createShapeInfo(operand.shape(), operand.stride(), operand.elementWiseStride(), operand.ordering(), operand.dataType(), operand.isEmpty()));
+                // Same content (all flags kept), homed on this device; interned so repeated calls share one buffer
+                ((JCublasNDArray) operand).setShapeInfoDataBuffer(ShapeInfoInterner.intern(operand.shapeInfoJava()));
                 context = allocator.getDeviceContext();
             }
 

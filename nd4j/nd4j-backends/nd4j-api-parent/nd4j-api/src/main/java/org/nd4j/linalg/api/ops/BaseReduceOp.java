@@ -324,23 +324,10 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
         if(properties.containsKey("dimensionz")) {
             INDArray array = (INDArray) properties.get("dimensionz");
-            this.dimensionz = array;
-            if (this.dimensionz != null) {
-                // If loaded array has null data buffer, treat as "reduce all" (null)
-                // NOTE: Do NOT use Nd4j.createFromArray(-1L) here. The -1 sentinel
-                // conflicts with NumPy convention where -1 means "last axis".
-                if (this.dimensionz.data() == null || this.dimensionz.isEmpty()) {
-                    this.dimensionz = null;
-                }
-                // Mark dimension arrays as constant to prevent GC from freeing them
-                if (this.dimensionz.data() != null) {
-                    this.dimensionz.data().setConstant(true);
-                }
-                if (this.dimensionz.shapeInfoDataBuffer() != null) {
-                    this.dimensionz.shapeInfoDataBuffer().setConstant(true);
-                }
-                this.dimensionz.setCloseable(false);
-            }
+            // If loaded array has null data buffer, treat as "reduce all" (null)
+            // NOTE: Do NOT use Nd4j.createFromArray(-1L) here. The -1 sentinel
+            // conflicts with NumPy convention where -1 means "last axis".
+            this.dimensionz = array == null || array.data() == null || array.isEmpty() ? null : array;
         }
 
         if(properties.containsKey("dimensionVariable") && properties.get("dimensionVariable") != null) {

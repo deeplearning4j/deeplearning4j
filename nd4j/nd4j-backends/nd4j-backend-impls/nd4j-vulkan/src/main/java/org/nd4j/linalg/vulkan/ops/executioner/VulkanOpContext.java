@@ -346,21 +346,28 @@ public final class VulkanOpContext extends BaseOpContext implements OpContext, D
         DataBuffer shapeBuffer = dataBufferFactory.createLong(javaShapeInfo);
 
         OpaqueDataBuffer opaqueBuffer = nativeOps.intermediateResultDataAt(index, context);
-        int resultDevice = nativeOps.dbDeviceId(opaqueBuffer);
-        opaqueBuffer.attachOwner(
-                runtime, resultDevice >= 0 ? runtime.deviceDescriptor(resultDevice) : null);
-        long length = nativeOps.dbBufferLength(opaqueBuffer);
-        Pointer primary = opaqueBuffer.primaryBuffer();
-        Pointer special = opaqueBuffer.specialBuffer();
-        if (primary != null && !primary.isNull()) {
-            primary.capacity(length);
-        }
-        if (special != null && !special.isNull()) {
-            special.capacity(length);
-        }
+        DataBuffer data;
+        try {
+            int resultDevice = nativeOps.dbDeviceId(opaqueBuffer);
+            opaqueBuffer.attachOwner(
+                    runtime, resultDevice >= 0 ? runtime.deviceDescriptor(resultDevice) : null);
+            long length = nativeOps.dbBufferLength(opaqueBuffer);
+            Pointer primary = opaqueBuffer.primaryBuffer();
+            Pointer special = opaqueBuffer.specialBuffer();
+            if (primary != null && !primary.isNull()) {
+                primary.capacity(length);
+            }
+            if (special != null && !special.isNull()) {
+                special.capacity(length);
+            }
 
-        DataBuffer data = dataBufferFactory.create(
-                primary, special, Shape.dataType(javaShapeInfo), Shape.length(javaShapeInfo), null);
+            data = dataBufferFactory.create(
+                    primary, special, Shape.dataType(javaShapeInfo), Shape.length(javaShapeInfo), null);
+        } finally {
+            // Each call returns a new native wrapper over the context's own data; the data
+            // outlives it, but nothing else frees the wrapper
+            nativeOps.deleteDataBuffer(opaqueBuffer);
+        }
         VulkanNDArray result = new VulkanNDArray();
         result.setShapeInfoDataBuffer(shapeBuffer);
         result.setData(data);

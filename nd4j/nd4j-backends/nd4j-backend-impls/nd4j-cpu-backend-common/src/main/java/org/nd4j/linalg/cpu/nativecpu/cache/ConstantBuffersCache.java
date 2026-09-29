@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 public class ConstantBuffersCache extends BasicConstantHandler {
     protected Map<ArrayDescriptor, DataBuffer> buffersCache = new ConcurrentHashMap<>();
@@ -45,106 +46,65 @@ public class ConstantBuffersCache extends BasicConstantHandler {
     @Override
     public void purgeConstants() {
         buffersCache = new ConcurrentHashMap<>();
+        // The entry limit applies to the new, empty cache; without the reset, a cache purged after
+        // MAX_ENTRIES insertions in total would never cache again
+        counter.set(0);
+        AllocationsTracker.getInstance().markReleased(AllocationKind.CONSTANT, 0, bytes.getAndSet(0));
     }
 
     @Override
     public DataBuffer getConstantBuffer(int[] array, DataType dataType) {
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
-
-        if (!buffersCache.containsKey(descriptor)) {
-            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, dataType);
-
-            if (counter.get() < MAX_ENTRIES) {
-                counter.incrementAndGet();
-                buffersCache.put(descriptor, buffer);
-
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
-                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
-            }
-            return buffer;
-        }
-
-        return buffersCache.get(descriptor);
+        return cached(new ArrayDescriptor(array, dataType), array.length, dataType,
+                () -> Nd4j.createTypedBufferDetached(array, dataType));
     }
 
     @Override
     public DataBuffer getConstantBuffer(boolean[] array, DataType dataType) {
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
-
-        if (!buffersCache.containsKey(descriptor)) {
-            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, dataType);
-
-            if (counter.get() < MAX_ENTRIES) {
-                counter.incrementAndGet();
-                buffersCache.put(descriptor, buffer);
-
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
-                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
-            }
-            return buffer;
-        }
-
-        return buffersCache.get(descriptor);
+        return cached(new ArrayDescriptor(array, dataType), array.length, dataType,
+                () -> Nd4j.createTypedBufferDetached(array, dataType));
     }
 
     @Override
     public DataBuffer getConstantBuffer(double[] array, DataType dataType) {
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
-
-        if (!buffersCache.containsKey(descriptor)) {
-            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, dataType);
-
-            if (counter.get() < MAX_ENTRIES) {
-                counter.incrementAndGet();
-                buffersCache.put(descriptor, buffer);
-
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
-                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
-            }
-            return buffer;
-        }
-
-        return buffersCache.get(descriptor);
+        return cached(new ArrayDescriptor(array, dataType), array.length, dataType,
+                () -> Nd4j.createTypedBufferDetached(array, dataType));
     }
 
     @Override
     public DataBuffer getConstantBuffer(float[] array, DataType dataType) {
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
-
-        if (!buffersCache.containsKey(descriptor)) {
-            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, dataType);
-
-            if (counter.get() < MAX_ENTRIES) {
-                counter.incrementAndGet();
-                buffersCache.put(descriptor, buffer);
-
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
-                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
-            }
-            return buffer;
-        }
-
-        return buffersCache.get(descriptor);
+        return cached(new ArrayDescriptor(array, dataType), array.length, dataType,
+                () -> Nd4j.createTypedBufferDetached(array, dataType));
     }
 
     @Override
     public DataBuffer getConstantBuffer(long[] array, DataType dataType) {
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
+        return cached(new ArrayDescriptor(array, dataType), array.length, dataType,
+                () -> Nd4j.createTypedBufferDetached(array, dataType));
+    }
 
-        if (!buffersCache.containsKey(descriptor)) {
-            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, dataType);
+    /**
+     * Returns the cached buffer for this content, or creates one and caches it while the cache has room.
+     * A new entry is keyed by a copy of the descriptor: the descriptor wraps the caller's array, and a key
+     * over it changed whenever the caller later modified the array, after which it could match lookups for
+     * the modified content and return the buffer holding the original values.
+     */
+    private DataBuffer cached(ArrayDescriptor descriptor, int length, DataType dataType, Supplier<DataBuffer> create) {
+        DataBuffer cached = buffersCache.get(descriptor);
+        if (cached != null)
+            return cached;
 
-            if (counter.get() < MAX_ENTRIES) {
-                counter.incrementAndGet();
-                buffersCache.put(descriptor, buffer);
+        DataBuffer buffer = create.get();
+        if (counter.get() < MAX_ENTRIES) {
+            DataBuffer existing = buffersCache.putIfAbsent(descriptor.copy(), buffer);
+            if (existing != null)
+                return existing;
 
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
-                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
-            }
-            return buffer;
+            counter.incrementAndGet();
+            long size = (long) length * Nd4j.sizeOfDataType(dataType);
+            bytes.addAndGet(size);
+            AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, size);
         }
-
-        return buffersCache.get(descriptor);
+        return buffer;
     }
 
     @Override

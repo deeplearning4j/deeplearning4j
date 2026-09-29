@@ -673,6 +673,22 @@ public class VulkanDataBuffer extends BaseDataBuffer implements Deallocatable, H
         return deallocator;
     }
 
+    /**
+     * Frees the data through the release claim it shares with the cleanup registration. The base
+     * implementation has no deallocator to run here and drops the registration, which left both the
+     * data and the native wrapper allocated. The registration stays, so its cleanup action frees the
+     * native wrapper once this buffer is unreachable.
+     */
+    @Override
+    protected void release() {
+        if (!released.get()) {
+            if (ptrDataBuffer != null) {
+                ptrDataBuffer.closeBuffer();
+            }
+            released.set(true);
+        }
+    }
+
     @Override
     public int targetDevice() {
         if (ptrDataBuffer == null) {

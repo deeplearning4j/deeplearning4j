@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * Created by raver on 08.06.2016.
@@ -52,7 +53,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
     protected Map<Integer, AtomicLong> constantOffsets = new HashMap<>();
     protected Map<Integer, Semaphore> deviceLocks = new ConcurrentHashMap<>();
 
-    protected Map<Integer, Map<ArrayDescriptor, DataBuffer>> buffersCache = new HashMap<>();
+    protected Map<Integer, Map<ArrayDescriptor, DataBuffer>> buffersCache = new ConcurrentHashMap<>();
     protected Map<Integer, Pointer> deviceAddresses = new HashMap<>();
     protected AtomicLong bytes = new AtomicLong(0);
     protected FlowController flowController;
@@ -72,12 +73,13 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
     private ProtectedCudaConstantHandler() {}
 
     /**
-     * This method removes all cached constants
+     * Resets the constant space. The buffers cached by content stay: each wraps an entry of the native
+     * constant cache, which keeps every entry for the life of the process, and each is constant, so its
+     * native wrapper is never freed. Dropping them here would leak every wrapper and create it again on
+     * the next request.
      */
     @Override
     public void purgeConstants() {
-        buffersCache = new HashMap<>();
-
         protector.purgeProtector();
 
         resetHappened = true;
@@ -85,7 +87,6 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         for (Integer device : constantOffsets.keySet()) {
             constantOffsets.get(device).set(0);
-            buffersCache.put(device, new ConcurrentHashMap<>());
         }
     }
 
@@ -96,7 +97,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
      */
     protected int amountOfEntries(int deviceId) {
         ensureMaps(deviceId);
-        return buffersCache.get(0).size();
+        return buffersCache.get(deviceId).size();
     }
 
     /**
@@ -164,7 +165,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
      */
     @Override
     public DataBuffer getConstantBuffer(int[] array, DataType type) {
-        return Nd4j.getExecutioner().createConstantBuffer(array, type);
+        return cachedConstant(new ArrayDescriptor(array, type), () -> Nd4j.getExecutioner().createConstantBuffer(array, type));
     }
 
     /**
@@ -177,7 +178,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
      */
     @Override
     public DataBuffer getConstantBuffer(float[] array, DataType type) {
-        return Nd4j.getExecutioner().createConstantBuffer(array, type);
+        return cachedConstant(new ArrayDescriptor(array, type), () -> Nd4j.getExecutioner().createConstantBuffer(array, type));
     }
 
     /**
@@ -190,12 +191,29 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
      */
     @Override
     public DataBuffer getConstantBuffer(double[] array, DataType type) {
-        return Nd4j.getExecutioner().createConstantBuffer(array, type);
+        return cachedConstant(new ArrayDescriptor(array, type), () -> Nd4j.getExecutioner().createConstantBuffer(array, type));
     }
 
     @Override
     public DataBuffer getConstantBuffer(long[] array, DataType type) {
-        return Nd4j.getExecutioner().createConstantBuffer(array, type);
+        return cachedConstant(new ArrayDescriptor(array, type), () -> Nd4j.getExecutioner().createConstantBuffer(array, type));
+    }
+
+    /**
+     * Returns the constant buffer for this content and type on the current device, creating it once.
+     * The native constant cache keeps each content for the life of the process, but every Java buffer
+     * wrapping it is constant and never released, so wrapping it again on each call leaked one buffer
+     * per call (for example, one per op instance with extra arguments).
+     *
+     * @param descriptor descriptor over the caller's array; a new entry is keyed by a copy of it
+     * @param create     creates the buffer on the first request for this content
+     */
+    private DataBuffer cachedConstant(ArrayDescriptor descriptor, Supplier<DataBuffer> create) {
+        Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
+        ensureMaps(deviceId);
+        Map<ArrayDescriptor, DataBuffer> cache = buffersCache.computeIfAbsent(deviceId, d -> new ConcurrentHashMap<>());
+        DataBuffer cached = cache.get(descriptor);
+        return cached != null ? cached : cache.computeIfAbsent(descriptor.copy(), key -> create.get());
     }
 
     @Override

@@ -156,8 +156,6 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
                 this.dimensionz = null;
                 return null;
             }
-            // Mark as constant to prevent GC from collecting the buffer
-            markDimensionzConstant();
         } else if(dimensionz == null && y != null) {
             // When using y as dimensions, validate it has data
             if (y.data() == null || y.isEmpty()) {
@@ -166,8 +164,6 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
             } else {
                 this.dimensionz = y;
             }
-            // Mark as constant when used as dimensions
-            markDimensionzConstant();
         }
         // Safety check: if dimensionz has null data, treat as "reduce all"
         if (dimensionz != null && dimensionz.data() == null) {
@@ -175,22 +171,6 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
             return null;
         }
         return dimensionz;
-    }
-
-    /**
-     * Mark the dimension array as constant to prevent GC from collecting its buffer.
-     * Dimension arrays are internal configuration data that must persist for the op's lifetime.
-     */
-    private void markDimensionzConstant() {
-        if (this.dimensionz != null) {
-            if (this.dimensionz.data() != null) {
-                this.dimensionz.data().setConstant(true);
-            }
-            if (this.dimensionz.shapeInfoDataBuffer() != null) {
-                this.dimensionz.shapeInfoDataBuffer().setConstant(true);
-            }
-            this.dimensionz.setCloseable(false);
-        }
     }
 
     @Override

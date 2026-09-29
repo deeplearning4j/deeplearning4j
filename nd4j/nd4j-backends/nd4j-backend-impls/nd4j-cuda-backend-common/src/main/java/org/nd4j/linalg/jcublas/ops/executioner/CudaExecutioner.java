@@ -72,6 +72,7 @@ import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.nativeblas.*;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.bytedeco.cuda.global.cudart.*;
 import org.nd4j.linalg.jcublas.JCublasNDArray;
@@ -92,6 +93,18 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Getter
     protected static TADManager tadManager = new DeviceTADManager();
+
+    /**
+     * Java wrappers for native TAD packs, keyed by pack address. tadOnlyShapeInfo registers every pack
+     * it returns in the native g_tadPackRegistry and nothing releases them (deleteTadPack and
+     * clearTadPackRegistry have no callers), so an address names one immutable pack for the life of the
+     * process. Clearing the TAD cache keeps every registered pack, so a repeated request returns the same
+     * pack. The wrappers are constant and never freed, so wrapping each pack once keeps them bounded by
+     * the number of distinct TADs instead of growing with every lookup. If packs ever become releasable,
+     * their wrappers must be evicted here first.
+     */
+    private final Map<Long, TadPack> tadPacks = new ConcurrentHashMap<>();
+
     protected ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
     protected volatile transient Properties properties;
 
@@ -2568,22 +2581,30 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        OpaqueTadPack pack = Nd4j.getNativeOps().tadOnlyShapeInfo( array.shapeInfoDataBuffer().opaqueBuffer(), new LongPointer(ArrayUtil.toLongArray(dimension)), dimension.length).retainReference();
+        OpaqueTadPack pack;
+        // tadForDimensions copies the axes, so the pointer can be freed right after the call
+        try (LongPointer dims = new LongPointer(ArrayUtil.toLongArray(dimension))) {
+            pack = Nd4j.getNativeOps().tadOnlyShapeInfo(array.shapeInfoDataBuffer().opaqueBuffer(), dims, dimension.length);
+        }
 
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+        if (pack == null || pack.isNull())
+            throw new IllegalStateException("tadOnlyShapeInfo returned no TAD pack for dimensions " + Arrays.toString(dimension));
 
-        LongPointer primaryShapeInfo = Nd4j.getNativeOps().getPrimaryShapeInfo(pack).retainReference();
-        LongPointer specialShapeInfo = Nd4j.getNativeOps().getSpecialShapeInfo(pack).retainReference();
-        long shapeInfoLength =  Nd4j.getNativeOps().getShapeInfoLength(pack);
-        LongPointer primaryOffsets = Nd4j.getNativeOps().getPrimaryOffsets(pack).retainReference();
-        LongPointer specialOffsets =  Nd4j.getNativeOps().getSpecialOffsets(pack).retainReference();
-        long numTads = Nd4j.getNativeOps().getNumberOfTads(pack);
+        return tadPacks.computeIfAbsent(pack.address(), address -> {
+            LongPointer primaryShapeInfo = Nd4j.getNativeOps().getPrimaryShapeInfo(pack).retainReference();
+            LongPointer specialShapeInfo = Nd4j.getNativeOps().getSpecialShapeInfo(pack).retainReference();
+            long shapeInfoLength =  Nd4j.getNativeOps().getShapeInfoLength(pack);
+            LongPointer primaryOffsets = Nd4j.getNativeOps().getPrimaryOffsets(pack).retainReference();
+            LongPointer specialOffsets =  Nd4j.getNativeOps().getSpecialOffsets(pack).retainReference();
+            long numTads = Nd4j.getNativeOps().getNumberOfTads(pack);
 
-        val tadShape = new CudaLongDataBuffer(primaryShapeInfo, specialShapeInfo, shapeInfoLength, true);
-        val tadOffsets = new CudaLongDataBuffer(primaryOffsets, specialOffsets, numTads, true);
+            val tadShape = new CudaLongDataBuffer(primaryShapeInfo, specialShapeInfo, shapeInfoLength, true);
+            val tadOffsets = new CudaLongDataBuffer(primaryOffsets, specialOffsets, numTads, true);
 
-        return new TadPack(tadShape, tadOffsets);
+            return new TadPack(tadShape, tadOffsets);
+        });
     }
 
     @Override

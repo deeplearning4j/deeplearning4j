@@ -2172,11 +2172,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             dealloc.setConstant(reallyConstant);
         }
 
-        // Now safe to set Java-side flags
+        // Now safe to set Java-side flags. The cleanup registration stays: its action skips
+        // the buffer while it is constant, and frees it if the flag is later cleared.
         this.constant = reallyConstant;
-        if (reallyConstant) {
-            Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
-        }
     }
 
     @Override
@@ -2262,13 +2260,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * {@code wasClosed() == true} so they skip it. Without this, a second close()
      * re-enters the deallocator for already-freed native memory — glibc reports
      * "double free or corruption" and aborts the process.
+     * <p>
+     * The cleanup registration stays: the caller claimed the release before freeing the
+     * storage, so the cleanup action only frees the native wrapper.
      */
     @Override
     public void markReleased() {
         this.released.set(true);
         this.indexer = null;
         this.pointer = null;
-        Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
     }
 
     protected void release() {

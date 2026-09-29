@@ -155,11 +155,18 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
         DataBuffer shapeInfoBuffer = Nd4j.createBuffer(shapeInfo, shapeInfo.capacity(),DataType.LONG);
         long[] convert = shapeInfoBuffer.asLong();
         OpaqueDataBuffer buffer = nativeOps.intermediateResultDataAt(index,context);
-        long numElements = nativeOps.dbBufferLength(buffer);
-        Pointer pointer = buffer.primaryBuffer();
-        pointer.capacity(numElements);
-        DataBuffer firstBuffer = Nd4j.createBuffer(pointer,null,
-                Shape.length(convert), Shape.dataType(convert));
+        DataBuffer firstBuffer;
+        try {
+            long numElements = nativeOps.dbBufferLength(buffer);
+            Pointer pointer = buffer.primaryBuffer();
+            pointer.capacity(numElements);
+            firstBuffer = Nd4j.createBuffer(pointer,null,
+                    Shape.length(convert), Shape.dataType(convert));
+        } finally {
+            // Each call returns a new native wrapper over the context's own data; the data
+            // outlives it, but nothing else frees the wrapper
+            nativeOps.deleteDataBuffer(buffer);
+        }
         INDArray result = Nd4j.createArrayFromShapeBuffer(firstBuffer,shapeInfoBuffer);
         return result;
     }

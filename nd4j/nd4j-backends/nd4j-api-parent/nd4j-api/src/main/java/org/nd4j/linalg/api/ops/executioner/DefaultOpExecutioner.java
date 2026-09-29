@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.ShapeInfoInterner;
 import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -1248,15 +1249,14 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         ptr.capacity(len);
         ptr.get(shapeInfo, 0, len);
 
-        // Create a Java-owned DataBuffer from the shape info values.
+        // Use a Java-owned DataBuffer holding the shape info values.
         // We do NOT wrap the ConstantShapeHelper's native pointer because that pointer
         // is permanently cached in C++ and must never be freed. Wrapping it with
         // Nd4j.createBuffer(Pointer,...) registers a deallocator that will free the
         // cache memory on GC, causing double-free/corruption when the same cached
         // shape is returned by a subsequent calculateOutputShape call.
-        DataBuffer buffer = Nd4j.createBuffer(shapeInfo);
-        buffer.setConstant(true);
-        return buffer;
+        // The buffer is interned: a fresh constant buffer per call is never freed.
+        return ShapeInfoInterner.intern(shapeInfo);
     }
 
 

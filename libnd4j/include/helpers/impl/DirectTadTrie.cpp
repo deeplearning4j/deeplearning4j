@@ -345,72 +345,77 @@ const TadTrieNode* DirectTadTrie::findChild(const TadTrieNode* node, LongType va
   return nullptr;
 }
 
-// Helper function to recursively delete TadPacks from a node and its children
-// This ensures TadPack destructors are called, which triggers recordDeallocation()
-static void deleteTadPacksRecursive(TadTrieNode* node, int& deletedCount) {
-  if (!node) return;
+namespace {
 
-  // First, recursively delete from all children
-  const auto& children = node->children();
-  for (const auto& child : children) {
-    deleteTadPacksRecursive(child.get(), deletedCount);
+// The key of one trie node under its parent: enough to find or re-create it.
+struct TadTrieStep {
+  LongType value;
+  int level;
+  bool isDimension;
+  int shapeRank;
+};
+
+// A pack that something outside the trie still holds, with the path from its stripe root.
+struct HeldTadPack {
+  std::vector<TadTrieStep> path;
+  std::shared_ptr<TadPack> pack;
+};
+
+// Drops the trie's reference to every pack under node. A pack nothing else holds is destroyed here,
+// which runs its destructor (and its lifecycle-tracking deallocation record). A pack that something
+// else still holds is returned in held, with its path.
+void takeTadPacks(TadTrieNode* node, std::vector<TadTrieStep>& path, std::vector<HeldTadPack>& held) {
+  for (const auto& child : node->children()) {
+    path.push_back({child->value(), child->level(), child->isDimension(), child->shapeRank()});
+    takeTadPacks(child.get(), path, held);
+    path.pop_back();
   }
 
-  // Then delete this node's TadPack if it exists
-  // shared_ptr will handle deletion automatically when we reset it
-  auto pack = node->pack();
-  if (pack) {
-    deletedCount++;
-    // Clear the shared_ptr to trigger TadPack destructor
-    // The destructor will call TADCacheLifecycleTracker::recordDeallocation()
-    // if SD_GCC_FUNCTRACE is defined during compilation
-    node->setPack(nullptr);
-  }
+  std::shared_ptr<TadPack> pack = node->pack();
+  if (!pack) return;
+  node->setPack(nullptr);
+  if (pack.use_count() > 1) held.push_back({path, std::move(pack)});
 }
+
+}  // namespace
 
 void DirectTadTrie::clear() {
   if (_shutdownInProgress.load(std::memory_order_acquire)) {
     return;  // Let the OS reclaim memory at exit - this is safe
   }
 
-  // Clear all stripes
-  // NOTE: Removed #ifndef __JAVACPP_HACK__ guard to fix TAD cache memory leak
-  // The guard was preventing cache cleanup when JavaCPP is used (production mode)
-  // This caused indefinite accumulation of TADPack objects despite clearTADCache() calls
-
-  int totalDeleted = 0;
+  // Frees every pack only the trie holds, and keeps the packs something else still holds: callers
+  // holding the pack they were given, and the registry that pins every pack NativeOps hands to Java.
+  // Dropping a held pack freed nothing, and the next request for the same TAD then built and pinned a
+  // duplicate, so each clear (after every inference, and every N ops on CPU) grew native memory, and
+  // the Java wrappers keyed by pack address, without bound.
+  LongType entries = 0;
+  LongType bytes = 0;
   for (size_t i = 0; i < NUM_STRIPES; i++) {
-    // Use exclusive lock for write operation (clearing the cache)
     EXCLUSIVE_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[i]);
 
-    // This ensures TadPack destructors are called, which invokes recordDeallocation()
-    // for proper lifecycle tracking.
-    //
-    // IMPORTANT: We CANNOT rely on unique_ptr cascade deletion because:
-    // 1. TadTrieNode destructor deletes _tadPack only if SD_GCC_FUNCTRACE is defined
-    // 2. Functrace may be auto-disabled during build, causing guards to evaluate false
-    // 3. Even if guards pass, destructor might not run if roots are replaced before going out of scope
-    //
-    // By explicitly calling deleteTadPacksRecursive() BEFORE replacing roots,
-    // we guarantee that:
-    // - All TadPack objects are explicitly deleted via delete operator
-    // - Their destructors run and call recordDeallocation() (if tracking enabled)
-    // - Pointers are cleared to nullptr to prevent double-delete in node destructors
-    int deletedCount = 0;
-    deleteTadPacksRecursive(_roots[i].get(), deletedCount);
-    totalDeleted += deletedCount;
+    std::vector<TadTrieStep> path;
+    std::vector<HeldTadPack> held;
+    takeTadPacks(_roots[i].get(), path, held);
 
-    // Recreate the root node - this will delete the old tree structure
-    // (nodes are already cleaned of TadPacks above via deleteTadPacksRecursive)
-    // The old root's unique_ptr goes out of scope here, triggering node destructor cascade
-    // But TadPacks are already deleted and nulled out, so no double-delete occurs
+    // The old nodes no longer hold packs, so replacing the root only frees the nodes
     _roots[i] = std::make_unique<TadTrieNode>(0, 0, false);
     _stripeCounts[i].store(0);
+
+    // A held pack goes back to the same path in the same stripe, so lookups find it again
+    for (auto& entry : held) {
+      TadTrieNode* node = _roots[i].get();
+      for (const auto& step : entry.path) {
+        node = node->findOrCreateChild(step.value, step.level, step.isDimension, step.shapeRank);
+      }
+      node->setPack(std::move(entry.pack));
+    }
+    countEntriesAndBytes(_roots[i].get(), entries, bytes);
   }
 
-  // Reset current counters (but preserve peak values for diagnostics)
-  _current_entries.store(0);
-  _current_bytes.store(0);
+  // Peak values are kept for diagnostics
+  _current_entries.store(entries);
+  _current_bytes.store(bytes);
 }
 
 void DirectTadTrie::countEntriesAndBytes(const TadTrieNode* node, LongType& entries, LongType& bytes) const {

@@ -137,6 +137,9 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
 
         startLatch.countDown();
         doneLatch.await();
+        // Workers are done with the shared model; its per-thread sessions and plans are
+        // released only by an explicit close.
+        sd.close();
 
         if (failed.get()) {
             Throwable error = firstError.get();
@@ -168,24 +171,25 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                 try {
                     startLatch.await();
 
-                    SameDiff sd = SameDiff.create();
-                    SDVariable inputIds = sd.placeHolder("input_ids", DataType.LONG, -1, -1);
-                    SDVariable inputIdsInt32 = inputIds.castTo("input_ids_int32", DataType.INT);
+                    try (SameDiff sd = SameDiff.create()) {
+                        SDVariable inputIds = sd.placeHolder("input_ids", DataType.LONG, -1, -1);
+                        SDVariable inputIdsInt32 = inputIds.castTo("input_ids_int32", DataType.INT);
 
-                    for (int iter = 0; iter < 20; iter++) {
-                        int batchSize = (iter % 4) + 1;
-                        INDArray input = Nd4j.zeros(DataType.LONG, batchSize, seqLength);
-                        input.putScalar(0, 0, 101 + threadId);
+                        for (int iter = 0; iter < 20; iter++) {
+                            int batchSize = (iter % 4) + 1;
+                            INDArray input = Nd4j.zeros(DataType.LONG, batchSize, seqLength);
+                            input.putScalar(0, 0, 101 + threadId);
 
-                        Map<String, INDArray> outputs = sd.output(
-                            Collections.singletonMap("input_ids", input), "input_ids_int32");
+                            Map<String, INDArray> outputs = sd.output(
+                                Collections.singletonMap("input_ids", input), "input_ids_int32");
 
-                        INDArray result = outputs.get("input_ids_int32");
-                        assertEquals(DataType.INT, result.dataType());
-                        assertEquals(101 + threadId, result.getInt(0, 0));
+                            INDArray result = outputs.get("input_ids_int32");
+                            assertEquals(DataType.INT, result.dataType());
+                            assertEquals(101 + threadId, result.getInt(0, 0));
 
-                        result.close();
-                        input.close();
+                            result.close();
+                            input.close();
+                        }
                     }
                 } catch (Throwable e) {
                     failed.set(true);
@@ -226,6 +230,7 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
         File tempFile = File.createTempFile("mt_cast_model", ".fb");
         tempFile.deleteOnExit();
         original.asFlatFile(tempFile);
+        original.close();
 
         SameDiff loaded = SameDiff.fromFlatFile(tempFile);
 
@@ -282,6 +287,7 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
 
         startLatch.countDown();
         doneLatch.await();
+        loaded.close();
 
         if (failed.get()) {
             throw new RuntimeException("Loaded model multi-threaded test failed", firstError.get());
@@ -340,6 +346,7 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
             f.get();
         }
         executor.shutdown();
+        sd.close();
 
         assertFalse(failed.get(), "Rapid fire test had failures");
         assertEquals(nThreads * nIterationsPerThread, successCount.get(),
@@ -375,6 +382,7 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
         File tempFile = File.createTempFile("concurrent_load_test", ".fb");
         tempFile.deleteOnExit();
         original.asFlatFile(tempFile);
+        original.close();
 
         log.info("Created model with scalars, saving to: {}", tempFile.getAbsolutePath());
 
@@ -391,23 +399,23 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                     startLatch.await();
 
                     for (int i = 0; i < nLoadsPerThread; i++) {
-                        SameDiff loaded = SameDiff.fromFlatFile(tempFile);
+                        try (SameDiff loaded = SameDiff.fromFlatFile(tempFile)) {
+                            assertNotNull(loaded, "Loaded model should not be null");
+                            assertNotNull(loaded.getVariable("scale"), "Scale constant should exist");
+                            assertNotNull(loaded.getVariable("bias"), "Bias constant should exist");
+                            assertNotNull(loaded.getVariable("epsilon"), "Epsilon constant should exist");
 
-                        assertNotNull(loaded, "Loaded model should not be null");
-                        assertNotNull(loaded.getVariable("scale"), "Scale constant should exist");
-                        assertNotNull(loaded.getVariable("bias"), "Bias constant should exist");
-                        assertNotNull(loaded.getVariable("epsilon"), "Epsilon constant should exist");
+                            INDArray inputData = Nd4j.randn(DataType.FLOAT, 2, 128);
 
-                        INDArray inputData = Nd4j.randn(DataType.FLOAT, 2, 128);
+                            Map<String, INDArray> placeholders = new HashMap<>();
+                            placeholders.put("input", inputData);
 
-                        Map<String, INDArray> placeholders = new HashMap<>();
-                        placeholders.put("input", inputData);
+                            Map<String, INDArray> outputs = loaded.output(placeholders, "output");
+                            assertNotNull(outputs.get("output"), "Output should not be null");
 
-                        Map<String, INDArray> outputs = loaded.output(placeholders, "output");
-                        assertNotNull(outputs.get("output"), "Output should not be null");
-
-                        outputs.get("output").close();
-                        inputData.close();
+                            outputs.get("output").close();
+                            inputData.close();
+                        }
 
                         successCount.incrementAndGet();
 
@@ -475,6 +483,7 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
         File tempFile = File.createTempFile("concurrent_load_sdz_test", ".sdz");
         tempFile.deleteOnExit();
         original.save(tempFile, true);
+        original.close();
 
         log.info("Created SDZ model with scalars, saving to: {}", tempFile.getAbsolutePath());
 
@@ -491,24 +500,24 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                     startLatch.await();
 
                     for (int i = 0; i < nLoadsPerThread; i++) {
-                        SameDiff loaded = SameDiff.load(tempFile, true);
+                        try (SameDiff loaded = SameDiff.load(tempFile, true)) {
+                            assertNotNull(loaded.getVariable("dim_0"), "dim_0 should exist");
+                            assertNotNull(loaded.getVariable("dim_1"), "dim_1 should exist");
+                            assertNotNull(loaded.getVariable("ln_eps"), "ln_eps should exist");
+                            assertNotNull(loaded.getVariable("matmul_dim0"), "matmul_dim0 should exist");
+                            assertNotNull(loaded.getVariable("matmul_dim1"), "matmul_dim1 should exist");
 
-                        assertNotNull(loaded.getVariable("dim_0"), "dim_0 should exist");
-                        assertNotNull(loaded.getVariable("dim_1"), "dim_1 should exist");
-                        assertNotNull(loaded.getVariable("ln_eps"), "ln_eps should exist");
-                        assertNotNull(loaded.getVariable("matmul_dim0"), "matmul_dim0 should exist");
-                        assertNotNull(loaded.getVariable("matmul_dim1"), "matmul_dim1 should exist");
+                            INDArray inputData = Nd4j.randn(DataType.FLOAT, 2, 768);
+                            Map<String, INDArray> placeholders = new HashMap<>();
+                            placeholders.put("input", inputData);
 
-                        INDArray inputData = Nd4j.randn(DataType.FLOAT, 2, 768);
-                        Map<String, INDArray> placeholders = new HashMap<>();
-                        placeholders.put("input", inputData);
+                            Map<String, INDArray> outputs = loaded.output(placeholders, "output");
+                            assertNotNull(outputs.get("output"));
+                            assertEquals(DataType.FLOAT, outputs.get("output").dataType());
 
-                        Map<String, INDArray> outputs = loaded.output(placeholders, "output");
-                        assertNotNull(outputs.get("output"));
-                        assertEquals(DataType.FLOAT, outputs.get("output").dataType());
-
-                        outputs.get("output").close();
-                        inputData.close();
+                            outputs.get("output").close();
+                            inputData.close();
+                        }
 
                         successCount.incrementAndGet();
                     }
@@ -639,6 +648,7 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
         File tempFile = File.createTempFile("dealloc_stress_test", ".fb");
         tempFile.deleteOnExit();
         original.asFlatFile(tempFile);
+        original.close();
 
         log.info("Created model with many arrays for deallocation stress test");
 
@@ -655,17 +665,17 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                     startLatch.await();
 
                     for (int i = 0; i < nLoadsPerThread; i++) {
-                        SameDiff loaded = SameDiff.fromFlatFile(tempFile);
+                        try (SameDiff loaded = SameDiff.fromFlatFile(tempFile)) {
+                            INDArray inputData = Nd4j.randn(DataType.FLOAT, 4, 256);
+                            Map<String, INDArray> placeholders = new HashMap<>();
+                            placeholders.put("input", inputData);
 
-                        INDArray inputData = Nd4j.randn(DataType.FLOAT, 4, 256);
-                        Map<String, INDArray> placeholders = new HashMap<>();
-                        placeholders.put("input", inputData);
+                            Map<String, INDArray> outputs = loaded.output(placeholders, "output");
+                            assertNotNull(outputs.get("output"));
 
-                        Map<String, INDArray> outputs = loaded.output(placeholders, "output");
-                        assertNotNull(outputs.get("output"));
-
-                        outputs.get("output").close();
-                        inputData.close();
+                            outputs.get("output").close();
+                            inputData.close();
+                        }
 
                         if (i % 3 == 0) {
                             Nd4j.getMemoryManager().invokeGc();
@@ -720,25 +730,24 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                     startLatch.await();
 
                     for (int i = 0; i < nModelsPerThread; i++) {
-                        SameDiff sd = SameDiff.create();
-                        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 64);
-                        SDVariable w = sd.var("w", Nd4j.randn(DataType.FLOAT, 64, 32).mul(0.1));
-                        SDVariable b = sd.var("b", Nd4j.zeros(DataType.FLOAT, 32));
+                        try (SameDiff sd = SameDiff.create()) {
+                            SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 64);
+                            SDVariable w = sd.var("w", Nd4j.randn(DataType.FLOAT, 64, 32).mul(0.1));
+                            SDVariable b = sd.var("b", Nd4j.zeros(DataType.FLOAT, 32));
 
-                        sd.constant("s1", Nd4j.scalar(DataType.INT, threadId));
-                        sd.constant("s2", Nd4j.scalar(DataType.FLOAT, (float) i));
+                            sd.constant("s1", Nd4j.scalar(DataType.INT, threadId));
+                            sd.constant("s2", Nd4j.scalar(DataType.FLOAT, (float) i));
 
-                        SDVariable output = sd.nn.softmax("output", input.mmul(w).add(b), -1);
+                            SDVariable output = sd.nn.softmax("output", input.mmul(w).add(b), -1);
 
-                        INDArray inputData = Nd4j.randn(DataType.FLOAT, 2, 64);
-                        Map<String, INDArray> outputs = sd.output(
-                            Collections.singletonMap("input", inputData), "output");
+                            INDArray inputData = Nd4j.randn(DataType.FLOAT, 2, 64);
+                            Map<String, INDArray> outputs = sd.output(
+                                Collections.singletonMap("input", inputData), "output");
 
-                        assertNotNull(outputs.get("output"));
-                        outputs.get("output").close();
-                        inputData.close();
-
-                        sd = null;
+                            assertNotNull(outputs.get("output"));
+                            outputs.get("output").close();
+                            inputData.close();
+                        }
 
                         successCount.incrementAndGet();
                     }
@@ -1091,6 +1100,26 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
     public void testOpaqueDataBufferPhantomCleanup(Nd4jBackend backend) throws Exception {
         DeallocatorService service = Nd4j.getDeallocatorService();
 
+        long explicitId = closeWhileRegistered(service);
+        awaitRegistrationRetired(service, explicitId,
+                "An explicitly closed buffer's cleanup action must free its native wrapper "
+                        + "once the buffer is unreachable");
+
+        AtomicLong phantomId = new AtomicLong(-1L);
+        Thread allocator = new Thread(() -> {
+            OpaqueDataBuffer unclosed =
+                    OpaqueDataBuffer.allocateDataBuffer(4096, DataType.FLOAT, true);
+            phantomId.set(unclosed.getDeallocator().getUniqueId());
+        }, "OpaqueDataBuffer-Phantom-Allocator");
+        allocator.start();
+        allocator.join();
+
+        awaitRegistrationRetired(service, phantomId.get(),
+                "GC-only OpaqueDataBuffer cleanup must not be retained by its cleanup action");
+    }
+
+    /** Closes a buffer explicitly and checks its registration outlives the close. */
+    private static long closeWhileRegistered(DeallocatorService service) {
         OpaqueDataBuffer explicitlyClosed =
                 OpaqueDataBuffer.allocateDataBuffer(4096, DataType.FLOAT, true);
         long explicitId = explicitlyClosed.getDeallocator().getUniqueId();
@@ -1102,27 +1131,25 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
         assertTrue(service.getReferenceMap().containsKey(explicitId),
                 "Collected-only flush must preserve a live buffer registration");
         explicitlyClosed.closeBuffer();
-        assertFalse(service.getReferenceMap().containsKey(explicitId),
-                "Explicit close must retire its phantom registration immediately");
+        assertTrue(explicitlyClosed.getDeallocator().isReleaseClaimed(),
+                "Explicit close must claim the release it shares with the cleanup action");
+        assertTrue(explicitlyClosed.isMarkedForDeallocation());
+        assertTrue(service.getReferenceMap().containsKey(explicitId),
+                "Explicit close must keep the registration that frees the native wrapper");
+        java.lang.ref.Reference.reachabilityFence(explicitlyClosed);
+        return explicitId;
+    }
 
-        AtomicLong phantomId = new AtomicLong(-1L);
-        Thread allocator = new Thread(() -> {
-            OpaqueDataBuffer unclosed =
-                    OpaqueDataBuffer.allocateDataBuffer(4096, DataType.FLOAT, true);
-            phantomId.set(unclosed.getDeallocator().getUniqueId());
-        }, "OpaqueDataBuffer-Phantom-Allocator");
-        allocator.start();
-        allocator.join();
-
+    private static void awaitRegistrationRetired(DeallocatorService service, long uniqueId,
+                                                 String message) throws InterruptedException {
         for (int attempt = 0;
-             attempt < 40 && service.getReferenceMap().containsKey(phantomId.get());
+             attempt < 40 && service.getReferenceMap().containsKey(uniqueId);
              attempt++) {
             System.gc();
             Thread.sleep(25L);
             service.flushCollectedReferences();
         }
-        assertFalse(service.getReferenceMap().containsKey(phantomId.get()),
-                "GC-only OpaqueDataBuffer cleanup must not be retained by its cleanup action");
+        assertFalse(service.getReferenceMap().containsKey(uniqueId), message);
     }
 
     /**
@@ -1223,13 +1250,15 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
             sd.output(placeholders, "output");
 
             sd.save(tempFile, true);
+            sd.close();
 
             for (int i = 0; i < 10; i++) {
-                SameDiff loaded = SameDiff.load(tempFile, true);
-                INDArray result = loaded.output(placeholders, "output").get("output");
-                assertNotNull(result);
-                assertEquals(16, result.shape()[0]);
-                assertEquals(64, result.shape()[1]);
+                try (SameDiff loaded = SameDiff.load(tempFile, true)) {
+                    INDArray result = loaded.output(placeholders, "output").get("output");
+                    assertNotNull(result);
+                    assertEquals(16, result.shape()[0]);
+                    assertEquals(64, result.shape()[1]);
+                }
 
                 if (i % 3 == 0) {
                     System.gc();
@@ -1255,6 +1284,7 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
             SDVariable out = sd.nn().relu("output", input.mmul(weight), 0);
 
             sd.save(tempFile, true);
+            sd.close();
 
             int numThreads = 4;
             int loadsPerThread = 5;
@@ -1266,11 +1296,12 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                 threads[t] = new Thread(() -> {
                     try {
                         for (int i = 0; i < loadsPerThread; i++) {
-                            SameDiff loaded = SameDiff.load(tempFile, true);
-                            Map<String, INDArray> ph = new HashMap<>();
-                            ph.put("input", Nd4j.randn(DataType.FLOAT, 8, 64));
-                            INDArray result = loaded.output(ph, "output").get("output");
-                            assertNotNull(result);
+                            try (SameDiff loaded = SameDiff.load(tempFile, true)) {
+                                Map<String, INDArray> ph = new HashMap<>();
+                                ph.put("input", Nd4j.randn(DataType.FLOAT, 8, 64));
+                                INDArray result = loaded.output(ph, "output").get("output");
+                                assertNotNull(result);
+                            }
                         }
                     } catch (Exception e) {
                         errors[threadId] = e;
@@ -1424,6 +1455,7 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
         boolean completed = doneLatch.await(300, TimeUnit.SECONDS);
 
         assertTrue(completed, "All threads should complete within timeout");
+        sharedModel.close();
 
         if (failed.get()) {
             throw new RuntimeException("Concurrent BGE inference test failed", firstError.get());
@@ -1476,8 +1508,7 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
             for (INDArray output : outputs.values()) {
                 output.close();
             }
-            model = null;
-            Nd4j.getMemoryManager().invokeGc();
+            model.close();
         }
 
         int nThreads = 2;
@@ -1527,9 +1558,7 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                             output.close();
                         }
 
-                        model = null;
-
-                        Nd4j.getMemoryManager().invokeGc();
+                        model.close();
 
                         successCount.incrementAndGet();
                         log.info("Thread {} completed load {}/{}", threadId, i + 1, nLoadsPerThread);
@@ -1599,16 +1628,17 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                                 break;
                             }
                             case 2: {
-                                SameDiff sd = SameDiff.create();
-                                SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 64);
-                                SDVariable w = sd.var("w", Nd4j.randn(DataType.FLOAT, 64, 32));
-                                SDVariable out = sd.mmul("out", in, w);
-                                INDArray input = Nd4j.randn(DataType.FLOAT, 4, 64);
-                                Map<String, INDArray> ph = new HashMap<>();
-                                ph.put("in", input);
-                                INDArray result = sd.output(ph, "out").get("out");
-                                result.close();
-                                input.close();
+                                try (SameDiff sd = SameDiff.create()) {
+                                    SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 64);
+                                    SDVariable w = sd.var("w", Nd4j.randn(DataType.FLOAT, 64, 32));
+                                    SDVariable out = sd.mmul("out", in, w);
+                                    INDArray input = Nd4j.randn(DataType.FLOAT, 4, 64);
+                                    Map<String, INDArray> ph = new HashMap<>();
+                                    ph.put("in", input);
+                                    INDArray result = sd.output(ph, "out").get("out");
+                                    result.close();
+                                    input.close();
+                                }
                                 break;
                             }
                             case 3: {

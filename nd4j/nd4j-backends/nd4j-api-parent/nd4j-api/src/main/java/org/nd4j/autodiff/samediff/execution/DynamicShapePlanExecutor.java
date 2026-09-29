@@ -51,7 +51,6 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.nativeblas.OpaqueLaunchContext;
-import org.nd4j.linalg.api.memory.deallocation.OpaqueDataBufferDeallocator;
 import org.nd4j.nativeblas.OpaqueContext;
 import org.nd4j.nativeblas.OpaqueNDArray;
 import org.bytedeco.javacpp.BytePointer;
@@ -171,12 +170,6 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /** Pending DataBuffers to close. Used by closeSlotArrayCache for cleanup. */
     private ArrayList<DataBuffer> pendingClose = new ArrayList<>();
-
-    /** Persistent dedup sets for buffer cleanup.
-     *  Identity dedup prevents processing the same DataBuffer object twice.
-     *  ODB dedup prevents double-close of the same native OpaqueDataBuffer. */
-    private Set<DataBuffer> seenIdentity;
-    private HashSet<Long> closedOdbAddresses;
 
     /** Buffers deferred from a flush because their GPU address was still
      *  used by a live slot (view of parent). */
@@ -3543,8 +3536,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /**
      * Core buffer freeing logic shared by flushPendingClose() and closePendingBuffers().
-     * Uses persistent dedup sets (seenIdentity, closedOdbAddresses)
-     * that span all flushes within one execute() call.
+     * Each buffer is freed only if its release claim is won here.
      *
      * Frees GPU memory on the execution stream (not stream 0) so the pool can reuse
      * freed memory for subsequent allocations on the same stream without cross-stream sync.
@@ -3605,19 +3597,17 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
 
-            // Layer 1: Java identity dedup (persistent across flushes)
-            if (!seenIdentity.add(buf)) continue;
-
-            // Layer 2: OpaqueDataBuffer address dedup (persistent across flushes)
-            long odbAddr = odb.address();
-            if (odbAddr != 0 && !closedOdbAddresses.add(odbAddr)) continue;
-
-            // Layer 3: GPU address dedup for OWNER ODBs only (per-batch).
+            // GPU address dedup for OWNER ODBs only (per-batch).
             // Only owner ODBs will actually free GPU memory in C++. Non-owner views
             // (isOwner=false) skip this check so the actual owner can be freed later.
             // This prevents: (a) non-owner views blocking owner frees (the old leak bug),
             // and (b) two different owner ODBs double-freeing the same GPU address.
             if (isOwner && gpuAddr != 0 && !batchGpuAddresses.add(gpuAddr)) continue;
+
+            // Claim the release shared with explicit close and the GC cleanup action, so a
+            // buffer reached again (the same buffer queued twice, or already freed through
+            // another path) is skipped.
+            if (!odb.tryMarkForDeallocation()) continue;
 
             try {
                 long bufBytes = buf.length() * buf.getElementSize();
@@ -3634,13 +3624,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                     nativeOps.dbFreeBuffersOnly(odb);
                 }
 
-                // Sync Java-side lifecycle with the native close that just happened.
-                odb.tryMarkForDeallocation();
+                // The registration stays: its cleanup action frees the native wrapper once
+                // this facade is unreachable.
                 odb.setNull();
-                OpaqueDataBufferDeallocator deallocator = odb.getDeallocator();
-                if (deallocator != null) {
-                    deallocator.markDeallocated();
-                }
                 // Mark the Java buffer released so later cleanup passes (SameDiff.close(),
                 // session reset walking constantArrays/variablesArrays/eagerArrays) observe
                 // wasClosed()==true and skip it. Without this, the shutdown path re-enters
@@ -3682,7 +3668,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /**
      * Free GPU memory held by cached arrays in the slot cache. Routes buffers through
-     * freePendingBuffers() to get full dedup protection (identity, ODB address, GPU address
+     * freePendingBuffers() to get full dedup protection (release claim, GPU address
      * owner-only). Without dedup, views sharing GPU memory with their parent cause double-free
      * heap corruption. Called during close() to prevent GPU memory leaks between
      * execute() calls (e.g., between vision encoder chunks).
@@ -3711,8 +3697,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
 
         // Collect eligible buffers from the cache into pendingClose.
-        // The persistent dedup sets (seenIdentity, closedOdbAddresses) from the previous
-        // execute() call will correctly skip buffers already freed during execution.
+        // freePendingBuffers skips buffers whose release was already claimed.
         int collected = 0;
         int protectedOutputCount = 0;
         for (int i = 0; i < slotArrayCache.length; i++) {
@@ -5959,26 +5944,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         } finally {
             restoreCallerDeviceAfterTeardown(callerDevice);
             nativeExecLock.unlock();
-        }
-    }
-
-    /**
-     * Safely close a DataBuffer using dbFreeBuffersOnStream to avoid calling glibc free()
-     * on potentially corrupted heap metadata. Falls back to buf.close() if stream unavailable.
-     */
-    private void safeCloseBuffer(DataBuffer buf, NativeOps nativeOps, Pointer stream) {
-        if (buf == null || buf.wasClosed() || buf.isConstant()) return;
-        OpaqueDataBuffer odb = buf.opaqueBuffer();
-        if (odb != null && !odb.isNull() && stream != null) {
-            try {
-                nativeOps.dbFreeBuffersOnStream(odb, stream);
-                odb.tryMarkForDeallocation();
-                odb.setNull();
-                OpaqueDataBufferDeallocator deallocator = odb.getDeallocator();
-                if (deallocator != null) deallocator.markDeallocated();
-            } catch (Exception ignored) {}
-        } else {
-            try { buf.close(); } catch (Exception ignored) {}
         }
     }
 }

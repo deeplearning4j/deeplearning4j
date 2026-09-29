@@ -68,12 +68,24 @@ import org.nd4j.nativeblas.OpaqueNDArray;
 import org.nd4j.nativeblas.OpaqueTadPack;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class NativeOpExecutioner extends DefaultOpExecutioner {
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
     @Getter
     private CpuTADManager tadManager = new CpuTADManager();
+
+    /**
+     * Java wrappers for native TAD packs, keyed by pack address. tadOnlyShapeInfo registers every pack
+     * it returns in the native g_tadPackRegistry and nothing releases them (deleteTadPack and
+     * clearTadPackRegistry have no callers), so an address names one immutable pack for the life of the
+     * process. Clearing the TAD cache keeps every registered pack, so a repeated request returns the same
+     * pack. The wrappers are constant and never freed, so wrapping each pack once keeps them bounded by
+     * the number of distinct TADs instead of growing with every lookup. If packs ever become releasable,
+     * their wrappers must be evicted here first.
+     */
+    private final Map<Long, TadPack> tadPacks = new ConcurrentHashMap<>();
 
     protected Map<String, CustomOpDescriptor> customOps = null;
 
@@ -1501,18 +1513,26 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         try {
             getNativeOps().clearLastError();
-            OpaqueTadPack pack = getNativeOps().tadOnlyShapeInfo(array.shapeInfoDataBuffer().opaqueBuffer(), new LongPointer(inputDimensions), dimension.length);
+            OpaqueTadPack pack;
+            // tadForDimensions copies the axes, so the pointer can be freed right after the call
+            try (LongPointer dims = new LongPointer(inputDimensions)) {
+                pack = getNativeOps().tadOnlyShapeInfo(array.shapeInfoDataBuffer().opaqueBuffer(), dims, dimension.length);
+            }
 
             if (getNativeOps().lastErrorCode() != 0)
                 throw new RuntimeException(getNativeOps().lastErrorMessage());
+            if (pack == null || pack.isNull())
+                throw new IllegalStateException("tadOnlyShapeInfo returned no TAD pack for dimensions " + Arrays.toString(dimension));
 
-            val tadShape = new LongBuffer(getNativeOps().getPrimaryShapeInfo(pack), getNativeOps().getShapeInfoLength(pack));
-            val tadOffsets = new LongBuffer(getNativeOps().getPrimaryOffsets(pack), getNativeOps().getNumberOfTads(pack));
+            return tadPacks.computeIfAbsent(pack.address(), address -> {
+                val tadShape = new LongBuffer(getNativeOps().getPrimaryShapeInfo(pack), getNativeOps().getShapeInfoLength(pack));
+                val tadOffsets = new LongBuffer(getNativeOps().getPrimaryOffsets(pack), getNativeOps().getNumberOfTads(pack));
 
-            tadShape.setConstant(true);
-            tadOffsets.setConstant(true);
+                tadShape.setConstant(true);
+                tadOffsets.setConstant(true);
 
-            return new TadPack(tadShape, tadOffsets);
+                return new TadPack(tadShape, tadOffsets);
+            });
         }catch(Exception e) {
             throw new RuntimeException(e);
         }

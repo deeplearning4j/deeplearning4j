@@ -21,8 +21,6 @@
 package org.nd4j.linalg.api.shape;
 
 
-import org.bytedeco.javacpp.LongPointer;
-import org.nd4j.nativeblas.OpaqueConstantShapeBuffer;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
@@ -3652,7 +3650,6 @@ public class Shape {
      * @return Dimensions as an INDArray
      */
     public static INDArray ndArrayDimFromLong(long... dimensions) {
-        INDArray result;
         if (dimensions == null || dimensions.length == 0) {
             // Empty dimensions = "reduce all". Return null.
             // NOTE: Do NOT use Nd4j.createFromArray(-1L) here. The -1 sentinel
@@ -3660,21 +3657,10 @@ public class Shape {
             // normalizeAxis() would convert -1 to rank-1, causing reduce ops
             // to only reduce along the last axis instead of all dimensions.
             return null;
-        } else {
-            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                result = Nd4j.createFromArray(dimensions);
-            }
         }
-        if (result != null) {
-            if (result.data() != null) {
-                result.data().setConstant(true);
-            }
-            if (result.shapeInfoDataBuffer() != null) {
-                result.shapeInfoDataBuffer().setConstant(true);
-            }
-            result.setCloseable(false);
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            return Nd4j.createFromArray(dimensions);
         }
-        return result;
     }
 
     /**
@@ -3772,11 +3758,6 @@ public class Shape {
      * @return the created shape information buffer
      */
     public static DataBuffer createShapeInformation(LongShapeDescriptor descriptor) {
-        OpaqueConstantShapeBuffer opaqueConstantShapeBuffer = Nd4j.getNativeOps().cacheAndStoreShapeBuffer(descriptor.toShapeInfo());
-        LongPointer longPointer = new LongPointer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(opaqueConstantShapeBuffer));
-        longPointer.capacity(Shape.shapeInfoLength(descriptor.rank()));
-        DataBuffer ret = Nd4j.createBuffer(longPointer,Shape.shapeInfoLength(descriptor.rank()),DataType.INT64);
-        ret.setConstant(true);
-        return  ret;
+        return ShapeInfoInterner.intern(descriptor.toShapeInfo());
     }
 }

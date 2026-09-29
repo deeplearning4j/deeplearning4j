@@ -126,8 +126,28 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
     }
 
     /**
-     * Marks this deallocator as having completed deallocation.
-     * Called by OpaqueDataBuffer.closeBuffer() after it performs dbClose directly.
+     * Claims the release of this buffer's native data. Every path that frees the data (an
+     * explicit close, a backend deallocator, the phantom cleanup action) must win this claim
+     * first, so the data is freed exactly once however many of those paths race.
+     *
+     * @return true if the caller now owns the release of the native data
+     */
+    public boolean claimRelease() {
+        return innerDeallocator.claimRelease();
+    }
+
+    /**
+     * @return true once some path has claimed the release of the native data
+     */
+    public boolean isReleaseClaimed() {
+        return innerDeallocator.isReleaseClaimed();
+    }
+
+    /**
+     * Retires this registration without running the cleanup action. Only for paths that end
+     * the native wrapper's life themselves, such as JVM shutdown. An explicit close frees only
+     * the data and keeps the registration, so that the cleanup action frees the native wrapper
+     * once the public buffer is unreachable.
      */
     public void markDeallocated() {
         innerDeallocator.markDeallocated();
@@ -159,6 +179,9 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
         private final DeviceDescriptor allocationDevice;
         private final DeallocatorService service;
         private final AtomicBoolean deallocated = new AtomicBoolean(false);
+        // Shared with the public buffer, whose own fields are not initialized when JavaCPP
+        // creates it for a pointer returned from native code
+        private final AtomicBoolean released = new AtomicBoolean(false);
         private volatile boolean constant = false;
 
         BufferDeallocator(OpaqueDataBuffer buffer, long uniqueId, long allocationBytes,
@@ -181,7 +204,7 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
             // process-primary backend. The owning backend remains authoritative.
             if (DeallocatorService.getShutdownInProgress().get()) {
                 try {
-                    if (buffer != null && !buffer.isNull() && buffer.tryMarkForDeallocation()) {
+                    if (buffer != null && !buffer.isNull() && claimRelease()) {
                         owner.nativeOps().dbFreeBuffersOnly(buffer);
                         buffer.setNull();
                     }
@@ -200,55 +223,63 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
 
                 try {
                     if (buffer != null && !buffer.isNull()) {
-                        if (!buffer.tryMarkForDeallocation()) {
-                            // Another deallocator (e.g. explicit closeBuffer) already claimed this buffer.
-                            return;
+                        if (claimRelease()) {
+                            releaseDataAndWrapper();
+                        } else {
+                            // An explicit close or a backend deallocator already freed the data,
+                            // which leaves the native wrapper allocated. The public buffer is now
+                            // unreachable, so nothing can use the wrapper again. Freeing it only
+                            // needs the native close guard, which skips the already closed data.
+                            owner.nativeOps().deleteDataBuffer(buffer);
                         }
-
-                        boolean deviceBacked = allocationDevice != null
-                                && allocationDevice.getDeviceType().isAccelerator();
-                        int currentDevice = -1;
-                        boolean switchedDevice = false;
-                        if (deviceBacked) {
-                            int bufferDevice = allocationDevice.getDeviceIndex();
-                            int deviceCount = owner.deviceCount();
-                            if (bufferDevice < 0 || bufferDevice >= deviceCount) {
-                                throw new IllegalStateException(
-                                        "Invalid allocation device " + bufferDevice
-                                                + " for owning backend with " + deviceCount + " devices");
-                            }
-
-                            currentDevice = owner.currentDevice();
-                            if (currentDevice != bufferDevice) {
-                                owner.setDevice(bufferDevice);
-                                switchedDevice = true;
-                            }
-                        }
-
-                        try {
-                            owner.commit();
-                            // Narrow the race window between the initial shutdown check
-                            // and the shutdown hook setting the flag.
-                            if (DeallocatorService.getShutdownInProgress().get()) {
-                                owner.nativeOps().dbFreeBuffersOnly(buffer);
-                            } else {
-                                owner.nativeOps().dbClose(buffer);
-                            }
-                            buffer.setNull();
-
-                            if (allocationBytes > 0 && allocationDevice != null) {
-                                owner.recordDeallocation(allocationDevice, allocationBytes);
-                            }
-                        } finally {
-                            if (switchedDevice) {
-                                owner.setDevice(currentDevice);
-                            }
-                        }
+                        buffer.setNull();
                     }
                 } catch (Exception e) {
                     log.error("Error deallocating OpaqueDataBuffer with uniqueId: " + uniqueId, e);
                 } finally {
                     markDeallocated();
+                }
+            }
+        }
+
+        /** Frees the native data on its allocation device, then the native wrapper. */
+        private void releaseDataAndWrapper() {
+            boolean deviceBacked = allocationDevice != null
+                    && allocationDevice.getDeviceType().isAccelerator();
+            int currentDevice = -1;
+            boolean switchedDevice = false;
+            if (deviceBacked) {
+                int bufferDevice = allocationDevice.getDeviceIndex();
+                int deviceCount = owner.deviceCount();
+                if (bufferDevice < 0 || bufferDevice >= deviceCount) {
+                    throw new IllegalStateException(
+                            "Invalid allocation device " + bufferDevice
+                                    + " for owning backend with " + deviceCount + " devices");
+                }
+
+                currentDevice = owner.currentDevice();
+                if (currentDevice != bufferDevice) {
+                    owner.setDevice(bufferDevice);
+                    switchedDevice = true;
+                }
+            }
+
+            try {
+                owner.commit();
+                // Narrow the race window between the initial shutdown check
+                // and the shutdown hook setting the flag.
+                if (DeallocatorService.getShutdownInProgress().get()) {
+                    owner.nativeOps().dbFreeBuffersOnly(buffer);
+                } else {
+                    owner.nativeOps().deleteDataBuffer(buffer);
+                }
+
+                if (allocationBytes > 0 && allocationDevice != null) {
+                    owner.recordDeallocation(allocationDevice, allocationBytes);
+                }
+            } finally {
+                if (switchedDevice) {
+                    owner.setDevice(currentDevice);
                 }
             }
         }
@@ -265,6 +296,14 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
 
         boolean isDeallocated() {
             return deallocated.get();
+        }
+
+        boolean claimRelease() {
+            return released.compareAndSet(false, true);
+        }
+
+        boolean isReleaseClaimed() {
+            return released.get();
         }
 
         OpaqueDataBuffer getBuffer() {

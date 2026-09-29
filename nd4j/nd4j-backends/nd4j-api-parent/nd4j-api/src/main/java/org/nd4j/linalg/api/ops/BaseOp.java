@@ -578,15 +578,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 case REDUCE_SAME:
                     // For reduce ops, second argument might be dimensions
                     if (!arr.isEmpty()) {
+                        // The axis array belongs to the SameDiff variable; the op only references it.
                         this.dimensionz = arr;
                         this.dimensions = arr.toLongVector();
-                        if (this.dimensionz.data() != null) {
-                            this.dimensionz.data().setConstant(true);
-                        }
-                        if (this.dimensionz.shapeInfoDataBuffer() != null) {
-                            this.dimensionz.shapeInfoDataBuffer().setConstant(true);
-                        }
-                        this.dimensionz.setCloseable(false);
                     } else {
                         this.dimensions = new long[0];
                     }
@@ -831,12 +825,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                         ", array isEmpty: " + this.dimensionz.isEmpty() +
                         ", array rank: " + this.dimensionz.rank());
             }
-
-            this.dimensionz.data().setConstant(true);
-            if (this.dimensionz.shapeInfoDataBuffer() != null) {
-                this.dimensionz.shapeInfoDataBuffer().setConstant(true);
-            }
-            this.dimensionz.setCloseable(false);
+            // Not marked constant: the op's reference keeps the array alive, native execution
+            // reads the axes synchronously (every OpaqueNDArray retains its DataBuffers), and a
+            // constant mark would leak one dimension array per op instance.
         } finally {
             if (opName != null) {
                 Nd4j.getNativeOps().clearAllocationContext();
@@ -854,21 +845,11 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     /**
      * Set the dimension array directly. This is used during deserialization.
-     * The array is marked as constant to prevent GC from collecting the buffer.
+     * The op's reference keeps the array alive for the op's lifetime.
      * @param dimensionz The dimension array to set
      */
     public void setDimensionz(INDArray dimensionz) {
         this.dimensionz = dimensionz;
-        // Mark dimension arrays as constant to prevent GC from collecting their buffers
-        if (this.dimensionz != null) {
-            if (this.dimensionz.data() != null) {
-                this.dimensionz.data().setConstant(true);
-            }
-            if (this.dimensionz.shapeInfoDataBuffer() != null) {
-                this.dimensionz.shapeInfoDataBuffer().setConstant(true);
-            }
-            this.dimensionz.setCloseable(false);
-        }
     }
 
     public Number getFinalResult() {
