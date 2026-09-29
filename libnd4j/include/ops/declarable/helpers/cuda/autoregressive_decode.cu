@@ -178,6 +178,39 @@ static unsigned long long logitsRowHash(cudaStream_t* stream, DataType dtype, co
     return hash;
 }
 
+// A step's recurrent-state commit as one launch: every (src, dst, bytes) pair of
+// the batch is a byte-exact device copy. gridDim.y selects the pair, gridDim.x
+// blocks stride over its 16-byte words (the unaligned tail, if any, byte-wise).
+// Replaces one cudaMemcpyAsync per state pair (96 per MTP step on Qwen3.6-27B),
+// whose host issue cost left the GPU idle between the copies.
+static constexpr int kStateCommitCopyMax = 128;
+struct StateCommitCopyBatch {
+    int count;
+    const void* src[kStateCommitCopyMax];
+    void* dst[kStateCommitCopyMax];
+    unsigned long long bytes[kStateCommitCopyMax];
+};
+
+static SD_KERNEL void stateCommitCopyKernel(const StateCommitCopyBatch batch) {
+    const int pair = static_cast<int>(blockIdx.y);
+    if (pair >= batch.count) return;
+    const auto* src = static_cast<const unsigned char*>(batch.src[pair]);
+    auto* dst = static_cast<unsigned char*>(batch.dst[pair]);
+    const unsigned long long bytes = batch.bytes[pair];
+    const unsigned long long stride = static_cast<unsigned long long>(gridDim.x) * blockDim.x;
+    const unsigned long long first = static_cast<unsigned long long>(blockIdx.x) * blockDim.x + threadIdx.x;
+    const bool aligned = ((reinterpret_cast<uintptr_t>(src) | reinterpret_cast<uintptr_t>(dst)) & 15) == 0;
+    unsigned long long vectorBytes = 0;
+    if (aligned) {
+        const unsigned long long words = bytes / 16;
+        const auto* srcWords = reinterpret_cast<const uint4*>(src);
+        auto* dstWords = reinterpret_cast<uint4*>(dst);
+        for (unsigned long long w = first; w < words; w += stride) dstWords[w] = srcWords[w];
+        vectorBytes = words * 16;
+    }
+    for (unsigned long long b = vectorBytes + first; b < bytes; b += stride) dst[b] = src[b];
+}
+
 /**
  * CUDA kernel: update position_ids for the next decode step.
  *
@@ -3943,6 +3976,35 @@ void autoregressiveDecode(
         // Both plan outputs and ext inputs are always C-contiguous [B,H,D_k,D_v]
         // with same type/length (guaranteed by gated_delta_rule op shape function),
         // so raw memcpy is safe and avoids the stream mismatch entirely.
+        // One launch for the step's state copies (stream-ordered like the copies it
+        // replaces; byte-exact).
+        auto launchStateCommitCopies = [&](const std::vector<NDArray*>& dsts,
+                                           const std::vector<NDArray*>& srcs) {
+            if (dsts.empty()) return;
+            NDArray::prepareSpecialUse(dsts, srcs);
+            const dim3 dims = getLaunchDims("state_commit_copy");
+            for (size_t begin = 0; begin < dsts.size(); begin += kStateCommitCopyMax) {
+                StateCommitCopyBatch batch{};
+                batch.count = static_cast<int>(std::min<size_t>(kStateCommitCopyMax, dsts.size() - begin));
+                for (int i = 0; i < batch.count; i++) {
+                    NDArray* src = srcs[begin + i];
+                    NDArray* dst = dsts[begin + i];
+                    batch.src[i] = src->specialBuffer();
+                    batch.dst[i] = dst->specialBuffer();
+                    batch.bytes[i] = static_cast<unsigned long long>(src->lengthOf()) * src->sizeOfT();
+                    p0.stateCommitBytes += static_cast<std::uint64_t>(batch.bytes[i]);
+                }
+                stateCommitCopyKernel<<<dim3(dims.x, batch.count), dims.y, 0, *stream>>>(batch);
+                // Launch errors only: the commit stays asynchronous (the host waits for the
+                // token, not for these copies; stream order completes them before the next replay).
+                const cudaError_t launchErr = cudaGetLastError();
+                if (launchErr != cudaSuccess) {
+                    THROW_EXCEPTION((std::string("stateCommitCopyKernel launch failed: ")
+                                     + cudaGetErrorString(launchErr)).c_str());
+                }
+            }
+            NDArray::registerSpecialUse(dsts, srcs);
+        };
         auto commitRecurrentState = [&]() {
             if (selectStateCommittedThisStep) {
                 // PACKET 4: the selected-state commit already wrote the live
@@ -3953,6 +4015,8 @@ void autoregressiveDecode(
                 // as checkpointSelectBytes.
                 return;
             }
+            std::vector<NDArray*> commitSrc;
+            std::vector<NDArray*> commitDst;
             // In place: the GDN ops already wrote their state inputs this step.
             if (!inPlaceRecurrentCommit && config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr
                 && config->gdnStateOutputIndices != nullptr) {
@@ -3964,12 +4028,8 @@ void autoregressiveDecode(
                         NDArray* src = planOutputs[outIdx];
                         NDArray* dst = extInputs[extIdx];
                         if (src->lengthOf() == dst->lengthOf() && src->dataType() == dst->dataType()) {
-                            size_t bytes = src->lengthOf() * src->sizeOfT();
-                            NDArray::prepareSpecialUse({dst}, {src});
-                            cudaMemcpyAsync(dst->specialBuffer(), src->specialBuffer(),
-                                            bytes, cudaMemcpyDeviceToDevice, *stream);
-                            p0.stateCommitBytes += static_cast<std::uint64_t>(bytes);
-                            NDArray::registerSpecialUse({dst}, {src});
+                            commitSrc.push_back(src);
+                            commitDst.push_back(dst);
                         }
                     }
                 }
@@ -3984,16 +4044,13 @@ void autoregressiveDecode(
                         NDArray* src = planOutputs[outIdx];
                         NDArray* dst = extInputs[extIdx];
                         if (src->lengthOf() == dst->lengthOf() && src->dataType() == dst->dataType()) {
-                            size_t bytes = src->lengthOf() * src->sizeOfT();
-                            NDArray::prepareSpecialUse({dst}, {src});
-                            cudaMemcpyAsync(dst->specialBuffer(), src->specialBuffer(),
-                                            bytes, cudaMemcpyDeviceToDevice, *stream);
-                            p0.stateCommitBytes += static_cast<std::uint64_t>(bytes);
-                            NDArray::registerSpecialUse({dst}, {src});
+                            commitSrc.push_back(src);
+                            commitDst.push_back(dst);
                         }
                     }
                 }
             }
+            launchStateCommitCopies(commitDst, commitSrc);
         };
         // ADR 0106 Phase 2 (accepted-prefix state commit): on proposing steps the
         // verification forward advanced recurrent state through ALL proposed rows

@@ -953,6 +953,10 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
 #define GRID_SIZE_WEIGHT_ONLY_GEMM getEnvVariable("GRID_SIZE_WEIGHT_ONLY_GEMM", 8192)
 #define BLOCK_SIZE_WEIGHT_ONLY_GEMM getEnvVariable("BLOCK_SIZE_WEIGHT_ONLY_GEMM", 256)
 #define SHARED_MEM_SIZE_WEIGHT_ONLY_GEMM getEnvVariable("SHARED_MEM_SIZE_WEIGHT_ONLY_GEMM", 0)
+// Batched recurrent-state commit copies: gridDim.x blocks per copy (gridDim.y = copies).
+#define GRID_SIZE_STATE_COMMIT_COPY getEnvVariable("GRID_SIZE_STATE_COMMIT_COPY", 64)
+#define BLOCK_SIZE_STATE_COMMIT_COPY getEnvVariable("BLOCK_SIZE_STATE_COMMIT_COPY", 256)
+#define SHARED_MEM_SIZE_STATE_COMMIT_COPY getEnvVariable("SHARED_MEM_SIZE_STATE_COMMIT_COPY", 0)
 
 // ModelOpt FP8 activation quantization: one element per thread (grid-stride),
 // writing the E4M3 operand consumed by the cuBLASLt FP8 GEMM.
