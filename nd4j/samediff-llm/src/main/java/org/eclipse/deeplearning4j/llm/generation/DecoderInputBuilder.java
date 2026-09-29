@@ -583,6 +583,11 @@ public class DecoderInputBuilder {
                 }
             }
         }
+        // Scoring never commits state in place: the commit flag input is 0.
+        if (decoder.hasVariable(ModelIOConfig.RECURRENT_STATE_COMMIT_NAME)
+                && !inputs.containsKey(ModelIOConfig.RECURRENT_STATE_COMMIT_NAME)) {
+            inputs.put(ModelIOConfig.RECURRENT_STATE_COMMIT_NAME, Nd4j.scalar(DataType.INT, 0));
+        }
 
         return inputs;
     }

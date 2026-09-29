@@ -25,10 +25,17 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+/**
+ * commitFlag (optional): a device-resident INT32 scalar read at run time. When it is
+ * nonzero the final state is committed IN PLACE into stateIn and stateOut is left
+ * unspecified; when zero (or absent) stateOut receives it and stateIn is only read.
+ * Being data, not a launch parameter, the same captured graph serves both modes.
+ */
 SD_LIB_HIDDEN void gatedDeltaRule(LaunchContext* context,
                                    NDArray* Q, NDArray* K, NDArray* V,
                                    NDArray* beta, NDArray* gate, NDArray* stateIn,
-                                   NDArray* actualLen, NDArray* output, NDArray* stateOut);
+                                   NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                                   NDArray* commitFlag = nullptr);
 
 /**
  * Same recurrence as gatedDeltaRule, additionally capturing the state AFTER
@@ -41,7 +48,7 @@ SD_LIB_HIDDEN void gatedDeltaRuleWithPrefix(LaunchContext* context,
                                             NDArray* Q, NDArray* K, NDArray* V,
                                             NDArray* beta, NDArray* gate, NDArray* stateIn,
                                             NDArray* actualLen, NDArray* output, NDArray* stateOut,
-                                            NDArray* prefixOut);
+                                            NDArray* prefixOut, NDArray* commitFlag = nullptr);
 
 }  // namespace helpers
 }  // namespace ops

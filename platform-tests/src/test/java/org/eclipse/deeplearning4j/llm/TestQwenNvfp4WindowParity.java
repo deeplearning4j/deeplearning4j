@@ -6,6 +6,7 @@
  */
 package org.eclipse.deeplearning4j.llm;
 
+import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
@@ -730,7 +731,7 @@ public class TestQwenNvfp4WindowParity {
                 // restoration between full verification and the accepted-prefix pass.
                 // Reuse the SAME buffers and graph; change only actual length.
                 length.assign(input.size(1));
-                sd.output(feeds, outputs);
+                sd.output(ModelIOConfig.withRecurrentCommitFlag(sd, feeds), outputs);
                 List<String> unchanged = new ArrayList<>();
                 for (int layer = 0; layer < 2; layer++) {
                     for (String kind : new String[]{"gdn", "conv"}) {
@@ -746,7 +747,7 @@ public class TestQwenNvfp4WindowParity {
                         input.size(1), actualLength);
             }
             logConnectedLifecycle(sd, "before", input.size(1));
-            Map<String, INDArray> result = sd.output(feeds, outputs);
+            Map<String, INDArray> result = sd.output(ModelIOConfig.withRecurrentCommitFlag(sd, feeds), outputs);
             logConnectedLifecycle(sd, "after", input.size(1));
             Map<String, Snapshot> snapshots = new LinkedHashMap<>();
             for (String output : outputs) {
@@ -1028,7 +1029,7 @@ public class TestQwenNvfp4WindowParity {
             feeds.put("x", x); feeds.put("keys", k); feeds.put("values", v);
             feeds.put("position_offset", position); feeds.put("cache_position", cachePosition);
             feeds.put("_causal_mask", mask);
-            Map<String, INDArray> result = sd.output(feeds, outputs);
+            Map<String, INDArray> result = sd.output(ModelIOConfig.withRecurrentCommitFlag(sd, feeds), outputs);
             Map<String, Snapshot> snapshots = new LinkedHashMap<>();
             for (String name : outputs) {
                 INDArray array = result.get(name);
@@ -1098,7 +1099,7 @@ public class TestQwenNvfp4WindowParity {
             feeds.put("state", stateInput);
             feeds.put("conv", convInput);
             feeds.put("actual_sequence_length", length);
-            Map<String, INDArray> result = sd.output(feeds, outputs);
+            Map<String, INDArray> result = sd.output(ModelIOConfig.withRecurrentCommitFlag(sd, feeds), outputs);
             Map<String, Snapshot> snapshots = new LinkedHashMap<>();
             for (Map.Entry<String, String> stage : stages.entrySet()) {
                 INDArray value = result.get(stage.getValue());

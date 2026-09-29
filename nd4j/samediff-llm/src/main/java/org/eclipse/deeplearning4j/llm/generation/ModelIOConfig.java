@@ -63,6 +63,27 @@ import java.util.HashSet;
 @Builder
 public class ModelIOConfig {
 
+    /**
+     * Placeholder of the in-place recurrent state commit flag (INT32 scalar) that GGUF /
+     * ModelOpt Qwen graphs give their gated-delta-rule layers; the same name as
+     * {@code org.nd4j.ggml.architecture.ModelArchitecture#RECURRENT_STATE_COMMIT_NAME}
+     * (samediff-llm does not depend on nd4j-ggml at compile scope).
+     */
+    public static final String RECURRENT_STATE_COMMIT_NAME = "recurrent_state_commit";
+
+    /**
+     * Adds the in-place recurrent commit flag input, 0 (commit through the state outputs),
+     * to an input map for a graph that declares it and does not already have it. Callers
+     * that execute such a graph directly (outside GenerationPipeline) use this so the
+     * flag, a required placeholder, is always fed.
+     */
+    public static Map<String, INDArray> withRecurrentCommitFlag(SameDiff sd, Map<String, INDArray> inputs) {
+        if (sd.hasVariable(RECURRENT_STATE_COMMIT_NAME) && !inputs.containsKey(RECURRENT_STATE_COMMIT_NAME)) {
+            inputs.put(RECURRENT_STATE_COMMIT_NAME, Nd4j.scalar(DataType.INT, 0));
+        }
+        return inputs;
+    }
+
     /** Mask fill value — use -65504 (torch.finfo(torch.float16).min) to avoid
      *  float16 overflow in SDPA kernels. The old value (-3.4e38, float32 min) overflowed
      *  to -inf in float16 and caused numerical instability with large padded sequences. */
@@ -157,6 +178,9 @@ public class ModelIOConfig {
         if (ioConfig.getActualSequenceLengthName() != null) {
             knownInputs.add(ioConfig.getActualSequenceLengthName());
         }
+        // The in-place commit flag is a control input shared by every GDN layer, not a
+        // recurrent state (its name contains "state").
+        knownInputs.add(RECURRENT_STATE_COMMIT_NAME);
 
         for (String inputName : sd.inputs()) {
             if (knownInputs.contains(inputName)) continue;

@@ -26,6 +26,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRuleWithPrefix;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -1093,7 +1095,25 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // 8. Gated delta rule: [B, L, H, D] -> [B, L, H, D]
         SDVariable[] gdrResult;
-        if (config.isExportRecurrentStatePrefixes()) {
+        if (config.isInPlaceRecurrentStateCommit() && gdnStateIn != null) {
+            // One flag placeholder shared by every layer (see ArchitectureConfig).
+            SDVariable commitFlag = sd.hasVariable(ModelArchitecture.RECURRENT_STATE_COMMIT_NAME)
+                    ? sd.getVariable(ModelArchitecture.RECURRENT_STATE_COMMIT_NAME)
+                    : sd.placeHolder(ModelArchitecture.RECURRENT_STATE_COMMIT_NAME, DataType.INT);
+            String[] names = config.isExportRecurrentStatePrefixes()
+                    ? new String[]{"gdn_out_" + layerIdx, "gdn_state_out_" + layerIdx,
+                                   "gdn_state_prefix_" + layerIdx}
+                    : new String[]{"gdn_out_" + layerIdx, "gdn_state_out_" + layerIdx};
+            SDVariable[] outputs = config.isExportRecurrentStatePrefixes()
+                    ? new GatedDeltaRuleWithPrefix(sd, q, k, v, beta, gateDecay, gdnStateIn,
+                            actualSequenceLength, commitFlag).outputVariables()
+                    : new GatedDeltaRule(sd, q, k, v, beta, gateDecay, gdnStateIn,
+                            actualSequenceLength, commitFlag).outputVariables();
+            gdrResult = new SDVariable[outputs.length];
+            for (int i = 0; i < outputs.length; i++) {
+                gdrResult[i] = sd.updateVariableNameAndReference(outputs[i], names[i]);
+            }
+        } else if (config.isExportRecurrentStatePrefixes()) {
             // Accepted-prefix capture: emit per-timestep state checkpoints from the
             // companion op. Ordinary outputs (activation + final state) are identical
             // to the legacy op; the extra third output is the prefix tensor.

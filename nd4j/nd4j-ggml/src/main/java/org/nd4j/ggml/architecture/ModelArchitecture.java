@@ -147,7 +147,20 @@ public interface ModelArchitecture {
                 .fullAttentionInterval(metadata.getFullAttentionInterval())
                 .ropeType(metadata.getRopeType())
                 .exportRecurrentStatePrefixes(recurrentStatePrefixesRequested())
+                .inPlaceRecurrentStateCommit(inPlaceRecurrentStateCommitRequested())
                 .build();
+    }
+
+    /** Placeholder carrying the in-place recurrent state commit flag (INT32 scalar). */
+    public static final String RECURRENT_STATE_COMMIT_NAME = "recurrent_state_commit";
+
+    /**
+     * In-place recurrent state commit (see {@link ArchitectureConfig#isInPlaceRecurrentStateCommit()}):
+     * on unless {@code -Dnd4j.decode.inPlaceRecurrentCommit=false}.
+     */
+    public static boolean inPlaceRecurrentStateCommitRequested() {
+        String value = System.getProperty("nd4j.decode.inPlaceRecurrentCommit");
+        return value == null || !"false".equalsIgnoreCase(value.trim());
     }
 
     /**

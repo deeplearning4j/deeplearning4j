@@ -740,6 +740,7 @@ bool loadTextGenerationMetadata(
                   &metadata.actualSequenceLength, error) ||
       !readString(*io, "logits", true, &metadata.logits, error) ||
       !readString(*io, "prefillLogits", false, &metadata.prefillLogits, error) ||
+      !readString(*io, "recurrentCommitFlag", false, &metadata.recurrentCommitFlag, error) ||
       !readStringArray(*io, "kvKeyInputs", &metadata.kvKeyInputs, error) ||
       !readStringArray(*io, "kvValueInputs", &metadata.kvValueInputs, error) ||
       !readOptionalKvShapeTemplates(*io, "kvKeyShapes", &metadata.kvKeyShapes, error) ||

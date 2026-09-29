@@ -506,15 +506,16 @@ static void gatedDeltaRuleChunked_(LaunchContext* context, NDArray* Q, NDArray* 
 
 void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                      NDArray* beta, NDArray* gate, NDArray* stateIn,
-                     NDArray* actualLen, NDArray* output, NDArray* stateOut) {
+                     NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                     NDArray* commitFlag) {
     gatedDeltaRuleWithPrefix(context, Q, K, V, beta, gate, stateIn, actualLen,
-                             output, stateOut, nullptr);
+                             output, stateOut, nullptr, commitFlag);
 }
 
 void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                               NDArray* beta, NDArray* gate, NDArray* stateIn,
                               NDArray* actualLen, NDArray* output, NDArray* stateOut,
-                              NDArray* prefixOut) {
+                              NDArray* prefixOut, NDArray* commitFlag) {
     if (Q->sizeAt(3) > GDR_MAX_HEAD_DIM) {
         THROW_EXCEPTION("gatedDeltaRule: key head dimension exceeds supported maximum");
     }
@@ -592,6 +593,12 @@ void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, ND
     NDArray::registerPrimaryUse({output, stateOut}, {Q, K, V, beta, gate, actualLen});
     if (stateIn != nullptr) NDArray::registerPrimaryUse({}, {stateIn});
     if (prefixOut != nullptr) NDArray::registerPrimaryUse({prefixOut}, {});
+
+    // In-place commit (see gated_delta_rule.h): stateIn receives the final state.
+    // The CPU path keeps stateOut valid as well; it has no copy to save.
+    if (commitFlag != nullptr && stateIn != nullptr && commitFlag->e<int>(0) != 0) {
+        stateIn->assign(stateOut);
+    }
 }
 
 }  // namespace helpers

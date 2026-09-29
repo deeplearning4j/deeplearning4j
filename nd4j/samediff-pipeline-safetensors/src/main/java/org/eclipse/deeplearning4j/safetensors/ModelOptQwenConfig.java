@@ -116,6 +116,7 @@ public final class ModelOptQwenConfig {
                 // Per-row recurrent checkpoints let an MTP step commit the accepted prefix
                 // without re-running the target (same opt-in as the GGUF architectures).
                 .exportRecurrentStatePrefixes(ModelArchitecture.recurrentStatePrefixesRequested())
+                .inPlaceRecurrentStateCommit(ModelArchitecture.inPlaceRecurrentStateCommitRequested())
                 .build();
     }
 

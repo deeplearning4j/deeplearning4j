@@ -199,6 +199,17 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
                  "autoregressive_decode: batched MTP repair inputs require the MTP plan bit");
   }
 
+  // In-place recurrent commit flag (bit 11 / 2048): always the LAST input.
+  const bool hasRecurrentCommitFlag = (optionalMask & 2048) != 0;
+  NDArray* recurrentCommitFlag = nullptr;
+  if (hasRecurrentCommitFlag) {
+    REQUIRE_TRUE(block.width() > nextInput, 0,
+                 "autoregressive_decode: recurrent commit flag bit is set but no input remains");
+    recurrentCommitFlag = INPUT_VARIABLE(block.width() - 1);
+    REQUIRE_TRUE(recurrentCommitFlag->rankOf() == 0 && recurrentCommitFlag->dataType() == DataType::INT32, 0,
+                 "autoregressive_decode: the recurrent commit flag must be the last input, an INT32 scalar");
+  }
+
   // Collect additional stop token IDs (always includes eosTokenId)
   std::vector<int> stopTokenIds;
   stopTokenIds.push_back(eosTokenId);
@@ -932,6 +943,9 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
         decodeConfig.convStateOutputIndices = convStateOutputIndicesVec.data();
       }
     }
+    REQUIRE_TRUE(recurrentCommitFlag == nullptr || decodeConfig.numGdnStatePairs > 0, 0,
+                 "autoregressive_decode: the recurrent commit flag requires GDN state pairs");
+    decodeConfig.recurrentCommitFlag = recurrentCommitFlag;
 
     // Packet 06: exact tuple coverage against the declared ordinary GDN/conv
     // feedback mappings - this runs only AFTER the ordinary arrays are parsed

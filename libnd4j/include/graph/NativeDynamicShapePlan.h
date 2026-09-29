@@ -1721,6 +1721,22 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       NDArray** requestedOutputs, int numRequestedOutputs,
       void* stream);
 
+  /**
+   * True when the next executeSteadyState() takes its steady fast path: one
+   * replay of the captured work, each operation applied exactly once, with no
+   * ordered execute(), compiled-vs-native verification or op-sanity rerun. A
+   * caller whose inputs must not be applied twice (an in-place recurrent state
+   * commit) enables it only under this guarantee. executeSteadyState() gates on
+   * the same predicates.
+   */
+  bool steadyStateFastPathReady();
+
+ private:
+  bool steadyStateDelegatesToOrderedExecute(const GraphBackendExecutionPolicy& policy) const;
+  bool steadyStateReplayEligible(const GraphBackendExecutionPolicy& policy) const;
+
+ public:
+
   // ─── Phase execution containers ─────────────────────────────────────────
   // The monolithic execute() is decomposed into these clearly-scoped methods.
   // Each encapsulates all work for its phase — no scattered logic.

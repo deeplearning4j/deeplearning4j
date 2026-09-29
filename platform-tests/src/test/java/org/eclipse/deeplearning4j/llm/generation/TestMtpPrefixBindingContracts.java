@@ -156,13 +156,13 @@ public class TestMtpPrefixBindingContracts {
                     stepInputs.put(entry.getKey(), entry.getValue());
                 }
             }
-            return graph.output(stepInputs, outputs.toArray(new String[0]));
+            return graph.output(ModelIOConfig.withRecurrentCommitFlag(graph, stepInputs), outputs.toArray(new String[0]));
         }
 
         private void compile() {
             graph.setDspAutoCompileEnabled(true);
             graph.setDspNativeAutoCompileEnabled(true);
-            for (int i = 0; i < 8; i++) graph.output(inputs, outputs.toArray(new String[0]));
+            for (int i = 0; i < 8; i++) graph.output(ModelIOConfig.withRecurrentCommitFlag(graph, inputs), outputs.toArray(new String[0]));
             executor = graph.getOrCreateSession().getDynamicShapePlanExecutor();
             assertNotNull(executor);
             assertNotNull(executor.getNativePlanHandle());
@@ -435,7 +435,7 @@ public class TestMtpPrefixBindingContracts {
         private void compile() {
             graph.setDspAutoCompileEnabled(true);
             graph.setDspNativeAutoCompileEnabled(true);
-            for (int i = 0; i < 8; i++) graph.output(inputs, outputs.toArray(new String[0]));
+            for (int i = 0; i < 8; i++) graph.output(ModelIOConfig.withRecurrentCommitFlag(graph, inputs), outputs.toArray(new String[0]));
             executor = graph.getOrCreateSession().getDynamicShapePlanExecutor();
             assertNotNull(executor);
             assertNotNull(executor.getNativePlanHandle());
@@ -803,7 +803,7 @@ public class TestMtpPrefixBindingContracts {
         private void compile() {
             graph.setDspAutoCompileEnabled(true);
             graph.setDspNativeAutoCompileEnabled(true);
-            for (int i = 0; i < 8; i++) graph.output(inputs, outputs.toArray(new String[0]));
+            for (int i = 0; i < 8; i++) graph.output(ModelIOConfig.withRecurrentCommitFlag(graph, inputs), outputs.toArray(new String[0]));
             executor = graph.getOrCreateSession().getDynamicShapePlanExecutor();
             assertNotNull(executor);
             assertNotNull(executor.getNativePlanHandle());

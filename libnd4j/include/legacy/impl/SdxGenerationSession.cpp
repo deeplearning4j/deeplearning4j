@@ -1088,6 +1088,15 @@ bool addDecodeInputs(
       return false;
     }
   }
+  // The graph's in-place recurrent commit flag: SDX commits recurrent state through
+  // its outputs, so the flag stays 0 (the flagless behavior).
+  if (!metadata.recurrentCommitFlag.empty() &&
+      !addNamed(&session->decodeOwned, metadata.recurrentCommitFlag,
+                std::unique_ptr<NDArray>(NDArrayFactory::create<int32_t>(
+                    0, sd::LaunchContext::defaultContext())),
+                error)) {
+    return false;
+  }
   return true;
 }
 

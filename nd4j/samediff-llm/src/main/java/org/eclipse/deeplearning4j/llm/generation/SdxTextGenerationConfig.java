@@ -91,6 +91,9 @@ public final class SdxTextGenerationConfig {
         io.put("positionOffset", positionOffset);
         io.put("cachePosition", cachePosition);
         io.put("actualSequenceLength", actualSequenceLength);
+        if (graph.hasVariable(ModelIOConfig.RECURRENT_STATE_COMMIT_NAME)) {
+            io.put("recurrentCommitFlag", ModelIOConfig.RECURRENT_STATE_COMMIT_NAME);
+        }
 
         LogitsContract logits = deriveLogitsContract(graph, ioConfig);
         io.put("logits", logits.decode);

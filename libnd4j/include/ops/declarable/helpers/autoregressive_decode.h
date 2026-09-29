@@ -139,6 +139,14 @@ struct AutoregressiveDecodeConfig {
     int* convStateOutputIndices = nullptr; // plan output indices for conv_state_out_{layer}
     int numConvStatePairs = 0;
 
+    // In-place GDN state commit flag (optionalMask bit 11 / 2048): the INT32 scalar
+    // the target graph's gated_delta_rule ops read at run time (see
+    // helpers/gated_delta_rule.h), the same array bound as the plan's external
+    // input. When the loop sets it for a single-replay step, each GDN op writes its
+    // new state into its state input and the D2D state commit is skipped. Null =
+    // the graph has no flag; the loop commits by copy.
+    NDArray* recurrentCommitFlag = nullptr;
+
     // ─── ADR 0107 V2: Quantised KV cache side-channel ────────────────────────
     //
     // When kvQuantFormat > 0 (INT8_KV mode), the KV buffers in planExternalInputs

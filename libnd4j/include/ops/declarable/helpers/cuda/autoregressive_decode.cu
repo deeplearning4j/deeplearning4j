@@ -183,6 +183,11 @@ static unsigned long long logitsRowHash(cudaStream_t* stream, DataType dtype, co
  *
  * Sets positionIds[0] = newPosition.
  */
+// Sets DecodeConfig::recurrentCommitFlag in stream order around one target replay.
+static SD_KERNEL void setRecurrentCommitFlagKernel(int32_t* flag, int32_t value) {
+    *flag = value;
+}
+
 static SD_KERNEL void updatePositionIdsKernel(void* vPositionIds,
                                                 LongType newPosition) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
@@ -1029,6 +1034,32 @@ void autoregressiveDecode(
         // Same reasoning as embeddings/mask/posIds above.
         if (config->maskExtIdx >= 0) plan->markExternalInputVariable(config->maskExtIdx);
         if (config->posIdsExtIdx >= 0) plan->markExternalInputVariable(config->posIdsExtIdx);
+    }
+
+    // In-place GDN state commit (DecodeConfig::recurrentCommitFlag). The flag must be
+    // the target plan's own external input: its GDN ops read that device buffer. It is
+    // device-written by this loop (VARIABLE) and stays 0 except around a single-replay
+    // scalar step, so every other execution of the graph (warmup, preparation,
+    // verification, reruns, Java paths) writes stateOut as before.
+    NDArray* recurrentCommitFlag = config->recurrentCommitFlag;
+    auto setRecurrentCommitFlag = [&](int32_t value) {
+        NDArray::prepareSpecialUse({recurrentCommitFlag}, {});
+        setRecurrentCommitFlagKernel<<<1, 1, 0, *stream>>>(
+            reinterpret_cast<int32_t*>(recurrentCommitFlag->specialBuffer()), value);
+        NDArray::registerSpecialUse({recurrentCommitFlag}, {});
+    };
+    if (recurrentCommitFlag != nullptr) {
+        int flagExtIdx = -1;
+        for (int i = 0; i < numExtInputs && flagExtIdx < 0; ++i) {
+            if (extInputs[i] != nullptr && extInputs[i]->specialBuffer() == recurrentCommitFlag->specialBuffer()) {
+                flagExtIdx = i;
+            }
+        }
+        REQUIRE_TRUE(flagExtIdx >= 0, 0,
+                     "autoregressive_decode: the recurrent commit flag is not an external input "
+                     "of the target plan");
+        plan->markExternalInputVariable(flagExtIdx);
+        setRecurrentCommitFlag(0);
     }
 
     // Tier 1c: Pinned memory for D2H token readback - enables true async DMA
@@ -3759,11 +3790,20 @@ void autoregressiveDecode(
             }
         }
         if (proposedCount > 0) p0.targetVerificationForwards++;
+        // A scalar step whose replay applies each op exactly once commits the GDN
+        // states in place (the ops write their state inputs); anything else keeps the
+        // stateOut + copy commit. Committed-state sampling (diagnostics) keeps the copy.
+        const bool inPlaceRecurrentCommit = recurrentCommitFlag != nullptr
+            && !(useSpeculative && proposedCount > 0)
+            && pinnedCommittedStateSamples == nullptr
+            && plan->steadyStateFastPathReady();
+        if (inPlaceRecurrentCommit) setRecurrentCommitFlag(1);
         const auto targetPhaseBefore = plan->getPlanPhase();
         Status planStatus = plan->executeSteadyState(
             extInputs, numExtInputs,
             planOutputs, numPlanOutputs,
             reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+        if (inPlaceRecurrentCommit) setRecurrentCommitFlag(0);
         const auto targetPhaseAfter = plan->getPlanPhase();
         if (targetPhaseBefore != targetPhaseAfter) p0.planPhaseTransitions++;
         if (targetPhaseAfter == graph::PlanPhase::REPLAYING) p0.planReplayForwards++;
@@ -3913,7 +3953,8 @@ void autoregressiveDecode(
                 // as checkpointSelectBytes.
                 return;
             }
-            if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr
+            // In place: the GDN ops already wrote their state inputs this step.
+            if (!inPlaceRecurrentCommit && config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr
                 && config->gdnStateOutputIndices != nullptr) {
                 for (int s = 0; s < config->numGdnStatePairs; s++) {
                     int outIdx = config->gdnStateOutputIndices[s];

@@ -866,8 +866,7 @@ public class TestFixedBufferDecodeReuse {
             boolean sawTriton = false;
 
             for (int step = 0; step < 4; step++) {
-                Map<String, INDArray> outputs = model.output(
-                        prefillInputs, outputNames.toArray(new String[0]));
+                Map<String, INDArray> outputs = model.output(ModelIOConfig.withRecurrentCommitFlag(model, prefillInputs), outputNames.toArray(new String[0]));
 
                 int phase = DspPlanAssertions.getPlanPhase(model);
                 int segmentCount = model.dsp().numSegments();

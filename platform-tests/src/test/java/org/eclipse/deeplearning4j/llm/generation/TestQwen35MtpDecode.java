@@ -693,7 +693,7 @@ public class TestQwen35MtpDecode {
                     setDecodeStep(inputs, boundaryIo, actualBoundaryPending, actualBoundaryPending,
                             actualBoundaryPosition, arm + 1, actualBoundaryWidth, actualBoundaryCapacity,
                             actualBoundaryMaskType, actualBoundaryOwned);
-                    Map<String, INDArray> output = oracle.output(inputs, boundaryIo.getLogitsOutputName());
+                    Map<String, INDArray> output = oracle.output(ModelIOConfig.withRecurrentCommitFlag(oracle, inputs), boundaryIo.getLogitsOutputName());
                     oracleLogits[arm] = own(actualBoundaryOwned,
                             output.get(boundaryIo.getLogitsOutputName()).dup());
                     winners[arm] = argMaxToken(oracleLogits[arm], 0);
@@ -1025,7 +1025,7 @@ public class TestQwen35MtpDecode {
             }
             java.util.LinkedHashSet<String> stateNameSet = new java.util.LinkedHashSet<>(stateOutputNames);
             Map<String, INDArray> prefillOutputs = model.output(
-                    prefillInputs, prefillOutputNames.toArray(new String[0]));
+                    ModelIOConfig.withRecurrentCommitFlag(model, prefillInputs), prefillOutputNames.toArray(new String[0]));
             ownAll(prefillOutputs, owned);
 
             // ── PREFILL STABILITY PROBE (3x, EARLY): moved before the scalar
@@ -1037,12 +1037,12 @@ public class TestQwen35MtpDecode {
             // same-graph zero-state control, NOT a before-any-session control.
             {
                 Map<String, INDArray> run2Out = model.output(
-                        duplicateArrays(prefillInputs, owned),
+                        ModelIOConfig.withRecurrentCommitFlag(model, duplicateArrays(prefillInputs, owned)),
                         prefillOutputNames.toArray(new String[0]));
                 Map<String, INDArray> run2Kv = snapshotOutputs(run2Out, prefillKvProbeNames, owned);
                 Map<String, INDArray> run2States = snapshotOutputs(run2Out, stateNameSet, owned);
                 Map<String, INDArray> run3Out = model.output(
-                        duplicateArrays(prefillInputs, owned),
+                        ModelIOConfig.withRecurrentCommitFlag(model, duplicateArrays(prefillInputs, owned)),
                         prefillOutputNames.toArray(new String[0]));
                 Map<String, INDArray> run3Kv = snapshotOutputs(run3Out, prefillKvProbeNames, owned);
                 Map<String, INDArray> run3States = snapshotOutputs(run3Out, stateNameSet, owned);
@@ -1102,7 +1102,7 @@ public class TestQwen35MtpDecode {
                         stepOutputs.add("v_heads_" + layer);
                     }
                     stepOutputs.addAll(stateOutputNames);
-                    Map<String, INDArray> out = model.output(stepInputs, stepOutputs.toArray(new String[0]));
+                    Map<String, INDArray> out = model.output(ModelIOConfig.withRecurrentCommitFlag(model, stepInputs), stepOutputs.toArray(new String[0]));
                     ownAll(out, owned);
                     int freeRunToken = argMaxToken(out.get(io.getLogitsOutputName()), 0);
                     if (freeRunToken != emitted[i + 1]) {
@@ -1417,7 +1417,7 @@ public class TestQwen35MtpDecode {
                         io, window, maxKvLength, maskType, r4aKv, r4aStates, owned);
                 setDecodeStep(r4aInputs, io, tok18, 0, pos35, 1, window, maxKvLength, maskType, owned);
                 Map<String, INDArray> r4aOut = model.output(
-                        r4aInputs, replayOutputNames.toArray(new String[0]));
+                        ModelIOConfig.withRecurrentCommitFlag(model, r4aInputs), replayOutputNames.toArray(new String[0]));
                 INDArray r4aLogitsSnapshot = own(owned,
                         r4aOut.get(io.getLogitsOutputName()).dup());
 
@@ -1427,7 +1427,7 @@ public class TestQwen35MtpDecode {
                         io, window, maxKvLength, maskType, r4bKv, r4bStates, owned);
                 setDecodeStep(r4bInputs, io, tok18, 0, pos35, 1, window, maxKvLength, maskType, owned);
                 Map<String, INDArray> r4bOut = model.output(
-                        r4bInputs, replayOutputNames.toArray(new String[0]));
+                        ModelIOConfig.withRecurrentCommitFlag(model, r4bInputs), replayOutputNames.toArray(new String[0]));
                 INDArray r4bLogitsSnapshot = own(owned,
                         r4bOut.get(io.getLogitsOutputName()).dup());
                 ownAll(r4aOut, owned);
@@ -1473,7 +1473,7 @@ public class TestQwen35MtpDecode {
                     io, window, maxKvLength, maskType, r0Kv, r0States, owned);
             setDecodeStep(r0Inputs, io, tok18, tok19, pos35, 2, window, maxKvLength, maskType, owned);
             Map<String, INDArray> r0Outputs = model.output(
-                    r0Inputs, replayOutputNames.toArray(new String[0]));
+                    ModelIOConfig.withRecurrentCommitFlag(model, r0Inputs), replayOutputNames.toArray(new String[0]));
             INDArray r0LogitsSnapshot = own(owned,
                     r0Outputs.get(io.getLogitsOutputName()).dup());
             ownAll(r0Outputs, owned);
@@ -1492,7 +1492,7 @@ public class TestQwen35MtpDecode {
                     io, window, maxKvLength, maskType, r1Kv, r1States, owned);
             setDecodeStep(r1Inputs, io, tok18, 0, pos35, 1, window, maxKvLength, maskType, owned);
             Map<String, INDArray> r1aOutputs = model.output(
-                    r1Inputs, replayOutputNames.toArray(new String[0]));
+                    ModelIOConfig.withRecurrentCommitFlag(model, r1Inputs), replayOutputNames.toArray(new String[0]));
             INDArray r1aLogitsSnapshot = own(owned,
                     r1aOutputs.get(io.getLogitsOutputName()).dup());
             ownAll(r1aOutputs, owned);
@@ -1513,7 +1513,7 @@ public class TestQwen35MtpDecode {
                     io, window, maxKvLength, maskType, sRef36Kv, sRef36States, owned);
             setDecodeStep(r1bInputs, io, tok19, 0, pos36, 1, window, maxKvLength, maskType, owned);
             Map<String, INDArray> r1bOutputs = model.output(
-                    r1bInputs, replayOutputNames.toArray(new String[0]));
+                    ModelIOConfig.withRecurrentCommitFlag(model, r1bInputs), replayOutputNames.toArray(new String[0]));
             ownAll(r1bOutputs, owned);
             int r1bRow0 = argMaxToken(r1bOutputs.get(io.getLogitsOutputName()), 0);
             log.info("[SEAM-REPLAY] R1b winner: row0={} (B's row1 winner: e[20])", r1bRow0);
@@ -1543,7 +1543,7 @@ public class TestQwen35MtpDecode {
                 setDecodeStep(r3Inputs, io, tok19, futureDrafts[arm], pos36, asl,
                         window, maxKvLength, maskType, owned);
                 Map<String, INDArray> r3Out = model.output(
-                        r3Inputs, replayOutputNames.toArray(new String[0]));
+                        ModelIOConfig.withRecurrentCommitFlag(model, r3Inputs), replayOutputNames.toArray(new String[0]));
                 ownAll(r3Out, owned);
                 INDArray lg = r3Out.get(io.getLogitsOutputName());
                 r3Row0Logits[arm] = new double[(int) lg.size(2)];
@@ -1889,7 +1889,7 @@ public class TestQwen35MtpDecode {
             }
 
             Map<String, INDArray> prefillOutputs = model.output(
-                    prefillInputs, prefillOutputNames.toArray(new String[0]));
+                    ModelIOConfig.withRecurrentCommitFlag(model, prefillInputs), prefillOutputNames.toArray(new String[0]));
             ownAll(prefillOutputs, owned);
             INDArray prefillLogits = prefillOutputs.get(io.getLogitsOutputName());
             int firstToken = argMaxToken(prefillLogits, prefillLength - 1);
@@ -1944,7 +1944,7 @@ public class TestQwen35MtpDecode {
                 warmupOutputNames.add(pair.outputName);
             }
             Map<String, INDArray> warmupOutputs = model.output(
-                    warmupInputs, warmupOutputNames.toArray(new String[0]));
+                    ModelIOConfig.withRecurrentCommitFlag(model, warmupInputs), warmupOutputNames.toArray(new String[0]));
             ownAll(warmupOutputs, owned);
             int secondToken = argMaxToken(warmupOutputs.get(io.getLogitsOutputName()), 0);
             log.info("[MTP-TARGET-PARITY] JAVA-TRUTH tokens: firstToken={} secondToken={} "
@@ -2056,7 +2056,7 @@ public class TestQwen35MtpDecode {
                 restoreArrays(stableStates, postWarmupStates);
                 setDecodeStep(stableInputs, io, secondToken, 0, prefillLength + 1,
                         1, window, maxKvLength, maskType, owned);
-                Map<String, INDArray> priming = model.output(stableInputs, requested);
+                Map<String, INDArray> priming = model.output(ModelIOConfig.withRecurrentCommitFlag(model, stableInputs), requested);
                 argMaxToken(priming.get(io.getLogitsOutputName()), 0);
                 if (pass == 0) {
                     model.getOrCreateSession().getDynamicShapePlanExecutor().setShapesFrozen(true);
@@ -2109,7 +2109,7 @@ public class TestQwen35MtpDecode {
             }
             INDArray windowMaskSnapshot = own(owned,
                     stableInputs.get(io.getCausalMaskName()).dup());
-            Map<String, INDArray> windowOutputs = model.output(stableInputs, requested);
+            Map<String, INDArray> windowOutputs = model.output(ModelIOConfig.withRecurrentCommitFlag(model, stableInputs), requested);
             ownAll(windowOutputs, owned);
             // Generic SameDiff staging does not expose input side effects to caller arrays.
             // Export and commit K/V rows explicitly so this direct oracle matches native decode state.
@@ -2141,7 +2141,7 @@ public class TestQwen35MtpDecode {
                     1, window, maxKvLength, maskType, owned);
             INDArray scalarFirstMaskSnapshot = own(owned,
                     stableInputs.get(io.getCausalMaskName()).dup());
-            Map<String, INDArray> scalarFirstOutputs = model.output(stableInputs, requested);
+            Map<String, INDArray> scalarFirstOutputs = model.output(ModelIOConfig.withRecurrentCommitFlag(model, stableInputs), requested);
             ownAll(scalarFirstOutputs, owned);
             // Consume the token, then commit the exported row before the chained scalar call.
             argMaxToken(scalarFirstOutputs.get(io.getLogitsOutputName()), 0);
@@ -2163,7 +2163,7 @@ public class TestQwen35MtpDecode {
                     1, window, maxKvLength, maskType, owned);
             INDArray scalarSecondMaskSnapshot = own(owned,
                     stableInputs.get(io.getCausalMaskName()).dup());
-            Map<String, INDArray> scalarSecondOutputs = model.output(stableInputs, requested);
+            Map<String, INDArray> scalarSecondOutputs = model.output(ModelIOConfig.withRecurrentCommitFlag(model, stableInputs), requested);
             ownAll(scalarSecondOutputs, owned);
             argMaxToken(scalarSecondOutputs.get(io.getLogitsOutputName()), 0);
             commitKvRows(stableKv, kvNames, scalarSecondOutputs, prefillLength + 2, 1);
@@ -2215,12 +2215,12 @@ public class TestQwen35MtpDecode {
             restoreArrays(stableStates, postWarmupStates);
             setDecodeStep(stableInputs, io, secondToken, draftToken, prefillLength + 1,
                     2, window, maxKvLength, maskType, owned);
-            Map<String, INDArray> acceptedZeroWindowOutputs = model.output(stableInputs, requested);
+            Map<String, INDArray> acceptedZeroWindowOutputs = model.output(ModelIOConfig.withRecurrentCommitFlag(model, stableInputs), requested);
             ownAll(acceptedZeroWindowOutputs, owned);
             argMaxToken(acceptedZeroWindowOutputs.get(io.getLogitsOutputName()), 1);
             commitKvRows(stableKv, kvNames, acceptedZeroWindowOutputs, prefillLength + 1, 2);
             stableInputs.get("actual_sequence_length").putScalar(new long[]{}, 1L);
-            Map<String, INDArray> acceptedZeroRerunOutputs = model.output(stableInputs, requested);
+            Map<String, INDArray> acceptedZeroRerunOutputs = model.output(ModelIOConfig.withRecurrentCommitFlag(model, stableInputs), requested);
             ownAll(acceptedZeroRerunOutputs, owned);
             argMaxToken(acceptedZeroRerunOutputs.get(io.getLogitsOutputName()), 0);
             Map<String, INDArray> acceptedZeroRerunStateSnapshot = snapshotOutputs(
@@ -2260,12 +2260,12 @@ public class TestQwen35MtpDecode {
             INDArray partialIds = stableInputs.get(io.getInputIdsName());
             partialIds.putScalar(0, 2, draftToken2);
             partialIds.putScalar(0, 3, draftToken3);
-            Map<String, INDArray> partialWindowOutputs = model.output(stableInputs, requested);
+            Map<String, INDArray> partialWindowOutputs = model.output(ModelIOConfig.withRecurrentCommitFlag(model, stableInputs), requested);
             ownAll(partialWindowOutputs, owned);
             argMaxToken(partialWindowOutputs.get(io.getLogitsOutputName()), 3);
             commitKvRows(stableKv, kvNames, partialWindowOutputs, prefillLength + 1, 4);
             stableInputs.get("actual_sequence_length").putScalar(new long[]{}, 2L);
-            Map<String, INDArray> partialRerunOutputs = model.output(stableInputs, requested);
+            Map<String, INDArray> partialRerunOutputs = model.output(ModelIOConfig.withRecurrentCommitFlag(model, stableInputs), requested);
             ownAll(partialRerunOutputs, owned);
             argMaxToken(partialRerunOutputs.get(io.getLogitsOutputName()), 1);
             Map<String, INDArray> partialRerunStateSnapshot = snapshotOutputs(

@@ -168,6 +168,15 @@ static SD_DEVICE SD_INLINE LongType gatedDeltaEffectiveLength(const LongType* ac
 // accumulator type, carried through every step, and stored to stateOut once —
 // no global working state, so the op allocates nothing and is graph-capture
 // safe. Per-column arithmetic is the reference recurrence, unchanged.
+// Destination of the final recurrent state: stateIn itself when the in-place
+// commit flag is set (see helpers/gated_delta_rule.h), stateOut otherwise. The
+// flag is device data so one captured graph serves both modes; every kernel
+// reads stateIn completely before it stores, lanes owning disjoint rows.
+template <typename T>
+static SD_DEVICE SD_INLINE T* gatedDeltaStateTarget(const T* stateIn, T* stateOut, const int32_t* commitFlag) {
+    return commitFlag != nullptr && stateIn != nullptr && *commitFlag != 0 ? const_cast<T*>(stateIn) : stateOut;
+}
+
 template <typename T>
 SD_KERNEL void gatedDeltaRuleSequenceKernel(
     const T* __restrict__ q,
@@ -178,6 +187,7 @@ SD_KERNEL void gatedDeltaRuleSequenceKernel(
     const LongType* __restrict__ actualLen,
     const T* stateIn,
     T* stateOut,
+    const int32_t* commitFlag,
     T* __restrict__ out,
     T* __restrict__ prefixOut,
     const LongType prefixW,
@@ -244,9 +254,10 @@ SD_KERNEL void gatedDeltaRuleSequenceKernel(
     }
 
     // Each thread stores the column only it wrote; no barrier needed.
+    T* stateTarget = gatedDeltaStateTarget(stateIn, stateOut, commitFlag);
     if (column < width) {
         for (LongType dk = 0; dk < D_k; ++dk) {
-            stateOut[headOffset + dk * D_v + dvBegin + column] =
+            stateTarget[headOffset + dk * D_v + dvBegin + column] =
                 static_cast<T>(tileState[dk * columnsPerBlock + column]);
         }
     }
@@ -358,6 +369,7 @@ SD_KERNEL void gatedDeltaRuleSplitSequenceKernel(
     const LongType* __restrict__ actualLen,
     const T* stateIn,
     T* stateOut,
+    const int32_t* commitFlag,
     T* __restrict__ out,
     T* __restrict__ prefixOut,
     const LongType prefixW,
@@ -421,8 +433,9 @@ SD_KERNEL void gatedDeltaRuleSplitSequenceKernel(
     }
 
     // Each lane stores only the rows it owns and wrote.
+    T* stateTarget = gatedDeltaStateTarget(stateIn, stateOut, commitFlag);
     for (LongType r = 0; r < partRows; ++r) {
-        stateOut[headOffset + (firstRow + r) * D_v + dv] = static_cast<T>(column[r * columnsPerBlock]);
+        stateTarget[headOffset + (firstRow + r) * D_v + dv] = static_cast<T>(column[r * columnsPerBlock]);
     }
 }
 
@@ -437,11 +450,26 @@ SD_KERNEL void convertStateKernel(
     }
 }
 
+// Final-state store of the chunked path, with the same in-place commit rule.
+template <typename Source, typename Target>
+SD_KERNEL void storeStateKernel(
+    const Source* __restrict__ src,
+    const Target* stateIn,
+    Target* stateOut,
+    const int32_t* commitFlag,
+    const LongType total) {
+    Target* dst = gatedDeltaStateTarget(stateIn, stateOut, commitFlag);
+    for (LongType idx = blockIdx.x * static_cast<LongType>(blockDim.x) + threadIdx.x; idx < total;
+         idx += static_cast<LongType>(gridDim.x) * blockDim.x) {
+        dst[idx] = static_cast<Target>(src[idx]);
+    }
+}
+
 template <typename T>
 static void launchGatedDeltaRule(
     const T* q, const T* k, const T* v,
     const T* betaArr, const T* gateArr, const LongType* actualLen,
-    const T* stateIn, T* stateOut, T* out,
+    const T* stateIn, T* stateOut, const int32_t* commitFlag, T* out,
     T* prefixOut, LongType prefixW,
     LongType B, LongType L, LongType H, LongType D_k, LongType D_v,
     LongType qkGroup, LongType qS0, LongType qS1, LongType qS2, LongType qS3,
@@ -481,7 +509,7 @@ static void launchGatedDeltaRule(
             gatedDeltaRuleSplitSequenceKernel<T><<<static_cast<unsigned int>(B * H * (D_v / columns)),
                                                    static_cast<unsigned int>(columns * kGdrParts),
                                                    splitBytes, stream>>>(
-                q, k, v, betaArr, gateArr, actualLen, stateIn, stateOut, out,
+                q, k, v, betaArr, gateArr, actualLen, stateIn, stateOut, commitFlag, out,
                 prefixOut, prefixW,
                 B, L, H, D_k, D_v, columns,
                 qkGroup, qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3,
@@ -512,7 +540,7 @@ static void launchGatedDeltaRule(
     }
     gatedDeltaRuleSequenceKernel<T><<<static_cast<unsigned int>(B * H * tiles),
                                       static_cast<unsigned int>(columnsPerBlock), tileBytes, stream>>>(
-        q, k, v, betaArr, gateArr, actualLen, stateIn, stateOut, out,
+        q, k, v, betaArr, gateArr, actualLen, stateIn, stateOut, commitFlag, out,
         prefixOut, prefixW,
         B, L, H, D_k, D_v, columnsPerBlock,
         qkGroup, qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3,
@@ -1066,8 +1094,10 @@ static void gatedDeltaRuleFromArrays(
                      LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                      NDArray* beta, NDArray* gate, NDArray* stateIn,
                      NDArray* actualLen, NDArray* output, NDArray* stateOut,
-                     NDArray* prefixOut) {
+                     NDArray* prefixOut, NDArray* commitFlag) {
     using AccT = typename simdOps::AggregateType<T>::type;
+    const auto* commitFlagDevice =
+        commitFlag != nullptr ? reinterpret_cast<const int32_t*>(commitFlag->specialBuffer()) : nullptr;
 
     // H is the value-head count; Q/K may carry fewer (grouped) heads, each shared
     // by qkGroup consecutive value heads (validated by the op).
@@ -1230,8 +1260,9 @@ static void gatedDeltaRuleFromArrays(
             *stream);
 
         int copyBlocks = (stateElems + 255) / 256;
-        convertStateKernel<AccT, T><<<copyBlocks, 256, 0, *stream>>>(
-            workingStateOut, reinterpret_cast<T*>(stateOut->specialBuffer()), stateElems);
+        storeStateKernel<AccT, T><<<copyBlocks, 256, 0, *stream>>>(
+            workingStateOut, stateIn != nullptr ? reinterpret_cast<const T*>(stateIn->specialBuffer()) : nullptr,
+            reinterpret_cast<T*>(stateOut->specialBuffer()), commitFlagDevice, stateElems);
 
         sd::memory::CudaMemoryPool::getInstance().free(workingStateOut, deviceId, *stream);
         sd::memory::CudaMemoryPool::getInstance().free(workingState, deviceId, *stream);
@@ -1245,6 +1276,7 @@ static void gatedDeltaRuleFromArrays(
             actualLen ? reinterpret_cast<const LongType*>(actualLen->specialBuffer()) : nullptr,
             stateIn != nullptr ? reinterpret_cast<const T*>(stateIn->specialBuffer()) : nullptr,
             reinterpret_cast<T*>(stateOut->specialBuffer()),
+            commitFlagDevice,
             reinterpret_cast<T*>(output->specialBuffer()),
             prefixOut != nullptr ? reinterpret_cast<T*>(prefixOut->specialBuffer()) : nullptr,
             prefixOut != nullptr ? prefixOut->sizeAt(0) : static_cast<LongType>(0),
@@ -1312,15 +1344,16 @@ static void gatedDeltaRuleFromArrays(
 
 void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                      NDArray* beta, NDArray* gate, NDArray* stateIn,
-                     NDArray* actualLen, NDArray* output, NDArray* stateOut) {
+                     NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                     NDArray* commitFlag) {
     gatedDeltaRuleWithPrefix(context, Q, K, V, beta, gate, stateIn, actualLen,
-                             output, stateOut, nullptr);
+                             output, stateOut, nullptr, commitFlag);
 }
 
 void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                               NDArray* beta, NDArray* gate, NDArray* stateIn,
                               NDArray* actualLen, NDArray* output, NDArray* stateOut,
-                              NDArray* prefixOut) {
+                              NDArray* prefixOut, NDArray* commitFlag) {
     if (Q->sizeAt(3) > GDR_CUDA_MAX_HEAD_DIM) {
         THROW_EXCEPTION("gatedDeltaRule: key head dimension exceeds supported CUDA maximum");
     }
@@ -1361,16 +1394,20 @@ void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, ND
         }
     }
     NDArray::prepareSpecialUse({output, stateOut}, {Q, K, V, beta, gate, actualLen});
-    if (stateIn != nullptr) NDArray::prepareSpecialUse({}, {stateIn});
+    // With a commit flag stateIn may be written on the device (the flag's value
+    // decides at run time), so it is registered as a written array.
+    if (stateIn != nullptr && commitFlag != nullptr) NDArray::prepareSpecialUse({stateIn}, {commitFlag});
+    else if (stateIn != nullptr) NDArray::prepareSpecialUse({}, {stateIn});
     if (prefixOut != nullptr) NDArray::prepareSpecialUse({prefixOut}, {});
 
     BUILD_SINGLE_SELECTOR(
         Q->dataType(), gatedDeltaRuleFromArrays,
-        (context, Q, K, V, beta, gate, stateIn, actualLen, output, stateOut, prefixOut),
+        (context, Q, K, V, beta, gate, stateIn, actualLen, output, stateOut, prefixOut, commitFlag),
         SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({output, stateOut}, {Q, K, V, beta, gate, actualLen});
-    if (stateIn != nullptr) NDArray::registerSpecialUse({}, {stateIn});
+    if (stateIn != nullptr && commitFlag != nullptr) NDArray::registerSpecialUse({stateIn}, {commitFlag});
+    else if (stateIn != nullptr) NDArray::registerSpecialUse({}, {stateIn});
     if (prefixOut != nullptr) NDArray::registerSpecialUse({prefixOut}, {});
 }
 

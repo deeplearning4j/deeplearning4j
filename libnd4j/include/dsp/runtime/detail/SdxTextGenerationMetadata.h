@@ -68,6 +68,8 @@ struct TextGenerationMetadata {
   std::string positionOffset;
   std::string cachePosition;
   std::string actualSequenceLength;
+  // Optional in-place recurrent commit flag input (INT32 scalar); empty = none.
+  std::string recurrentCommitFlag;
   std::string logits;
   std::string prefillLogits;
   std::vector<std::string> kvKeyInputs;

@@ -342,6 +342,46 @@ Together with removing the host-blocking stream synchronize after DSP input
 staging (consumers are ordered by events), the 27B reaches 22.5 tok/s at 250
 tokens (acceptance 0.56, 0/250 emission deltas vs greedy 9.6 tok/s).
 
+## In-place recurrent state commit
+
+Every scalar decode step copied each GDN layer's `gdn_state_out` into its
+`past_gdn_state` input (48 x 3 MB on Qwen3.6-27B, ~1.4 ms of D2D copies per
+token). Committing in place removes the copy, but a recurrent update is not
+idempotent: warmup, preparation, verification, reruns and Java-side executions
+of the same graph must not advance the state, and a captured graph cannot
+change its output pointers per call.
+
+Decision: the commit mode is data, not graph structure.
+- `gated_delta_rule` / `gated_delta_rule_with_prefix` take an optional INT32
+  scalar commit flag as their last input (iArg 0 = 1), declared as an input
+  write of the state input (dtype-guarded, so DSP publishes the state input as
+  device-written only when a flag is present). The flag is read on the device:
+  nonzero stores the final state into `stateIn` (every kernel reads its state
+  rows before storing; lanes own disjoint rows) and leaves `stateOut`
+  unspecified; zero is exactly the flagless op. CPU keeps `stateOut` valid and
+  also assigns `stateIn`.
+- Graph builders (`ArchitectureConfig.inPlaceRecurrentStateCommit`, on unless
+  `-Dnd4j.decode.inPlaceRecurrentCommit=false`) give all GDN layers one shared
+  placeholder `recurrent_state_commit`. Every caller feeds it 0 (the pipeline's
+  single flag array, `DecoderInputBuilder` scoring maps, and SDX sessions via
+  the optional `io.recurrentCommitFlag` metadata field); a caller that forgets
+  it fails with a missing-placeholder error rather than silently committing.
+- The native decode loop receives that same array (optionalMask bit 11, last
+  input), finds it among the target plan's external inputs by device buffer,
+  marks it VARIABLE, and sets it to 1 only around a scalar (non-verifying) step
+  when `NativeDynamicShapePlan::steadyStateFastPathReady()` guarantees a single
+  replay (the predicate `executeSteadyState` itself gates on; ordered
+  execution, compiled-vs-native verification and op-sanity reruns keep the copy
+  commit). It clears the flag in stream order right after the replay, then skips
+  the GDN copies for that step. Conv states (61 KB per layer) still commit by
+  copy.
+
+Validation: `GatedDeltaRuleInPlaceCommitTest` (flag 0 bit-identical to the
+flagless op with `stateIn` untouched; flag 1 commits the identical state for
+decode, window, chunked-prefill and BFLOAT16 paths, activation and written
+checkpoints unchanged); Qwen3.6-27B greedy tokens unchanged, inter-token GPU gap
+~1.6 -> ~0.86 ms.
+
 ## Optional NVFP4 MTP predictor
 
 ModelOpt exports leave the MTP predictor dense (BF16). Its SERIAL_FMA projections

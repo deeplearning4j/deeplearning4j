@@ -241,4 +241,15 @@ public class ArchitectureConfig {
      */
     @Builder.Default
     private boolean exportRecurrentStatePrefixes = false;
+
+    /**
+     * Give every gated-delta-rule layer the shared INT32 scalar placeholder
+     * {@link ModelArchitecture#RECURRENT_STATE_COMMIT_NAME}: while it is nonzero the
+     * layers write their new state into their state inputs instead of their
+     * {@code gdn_state_out} outputs. Callers feed 0 (identical to the flagless graph);
+     * the native decode loop sets it around steps that commit, which removes the
+     * per-token state copy. Off keeps the flagless op signature.
+     */
+    @Builder.Default
+    private boolean inPlaceRecurrentStateCommit = false;
 }

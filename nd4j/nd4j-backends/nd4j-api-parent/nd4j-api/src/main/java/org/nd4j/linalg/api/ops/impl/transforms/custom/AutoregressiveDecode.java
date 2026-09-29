@@ -779,6 +779,27 @@ public class AutoregressiveDecode extends DynamicCustomOp {
      * @return this op (for chaining)
      * @throws IllegalArgumentException if the array length != 2*numKvPairs
      */
+    /**
+     * In-place recurrent state commit flag (optionalMask bit 11 / 2048): the INT32 scalar
+     * the target graph's gated-delta-rule layers read at run time. It must be the SAME
+     * array fed to the target plan as its commit-flag placeholder (the native loop finds it
+     * among the plan's external inputs by buffer); the loop sets it only around steps that
+     * replay each op once, so those commit the GDN states without a copy. It becomes the
+     * LAST input, so call this after every other input-appending builder.
+     */
+    public AutoregressiveDecode withRecurrentCommitFlag(INDArray commitFlag) {
+        if (commitFlag == null) return this;
+        if (commitFlag.rank() != 0 || commitFlag.dataType() != DataType.INT) {
+            throw new IllegalArgumentException("withRecurrentCommitFlag requires an INT32 scalar, got "
+                    + commitFlag.dataType() + " rank " + commitFlag.rank());
+        }
+        inputArguments.add(commitFlag);
+        long prevMask = iArguments.get(4);
+        iArguments.set(4, prevMask | 2048L);
+        this.optionalInputMask = (int) (prevMask | 2048L);
+        return this;
+    }
+
     public AutoregressiveDecode withQuantisedKvScales(INDArray[] kvScaleBuffers) {
         if (kvScaleBuffers == null || kvScaleBuffers.length == 0) return this;
         if (kvScaleBuffers.length != 2 * numKvPairs) {

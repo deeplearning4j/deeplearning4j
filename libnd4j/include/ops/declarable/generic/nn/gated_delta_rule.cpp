@@ -51,7 +51,12 @@ CUSTOM_OP_IMPL(gated_delta_rule, 5, 2, false, 0, 0) {
 
     NDArray* stateIn = nullptr;
     NDArray* actualLen = nullptr;
-    for (int i = 5; i < block.width(); ++i) {
+    // iArg0 == 1: the LAST input is the in-place commit flag (INT32 scalar, read on
+    // the device at run time; see helpers/gated_delta_rule.h).
+    const bool hasCommitFlag = block.numI() > 0 && INT_ARG(0) == 1;
+    const int stateInputsEnd = hasCommitFlag ? block.width() - 1 : block.width();
+    NDArray* commitFlag = hasCommitFlag ? INPUT_VARIABLE(block.width() - 1) : nullptr;
+    for (int i = 5; i < stateInputsEnd; ++i) {
         auto input = INPUT_VARIABLE(i);
         if (input->rankOf() == 0) {
             REQUIRE_TRUE(actualLen == nullptr, 0,
@@ -71,6 +76,9 @@ CUSTOM_OP_IMPL(gated_delta_rule, 5, 2, false, 0, 0) {
                  0, "gated_delta_rule: Q, K, V, beta, and gate must have the same floating dtype");
     REQUIRE_TRUE(stateIn == nullptr || stateIn->dataType() == dataType, 0,
                  "gated_delta_rule: stateIn dtype must match Q dtype");
+    REQUIRE_TRUE(commitFlag == nullptr || (stateIn != nullptr && commitFlag->rankOf() == 0 &&
+                                           commitFlag->dataType() == DataType::INT32), 0,
+                 "gated_delta_rule: the in-place commit flag must be an INT32 scalar and requires stateIn");
     // Q and K may carry fewer heads than V: each Q/K head is shared by
     // H_v / H_qk consecutive value heads (grouped heads, as repeat_interleave).
     REQUIRE_TRUE(Q->rankOf() == 4 && V->rankOf() == 4 && K->isSameShape(Q) &&
@@ -92,7 +100,7 @@ CUSTOM_OP_IMPL(gated_delta_rule, 5, 2, false, 0, 0) {
                  stateIn == nullptr ? "null" : ShapeUtils::shapeAsString(stateIn).c_str());
 
     helpers::gatedDeltaRule(block.launchContext(), Q, K, V, beta, gate, stateIn, actualLen,
-                            output, stateOut);
+                            output, stateOut, commitFlag);
 
     return sd::Status::OK;
 }
@@ -106,6 +114,12 @@ DECLARE_TYPES(gated_delta_rule) {
     // when the sequential path used pool scratch) kept every gap touching its
     // buffers live between islands.
     getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
+    // With the commit flag input the op may write its recurrent state input
+    // (index 5) in place. The flag follows stateIn and an optional actualLen, so it
+    // is input 6 or 7; each group is active only when that input exists and is
+    // INT32 (actualLen is INT64).
+    getOpDescriptor()->addInputWrites({5}, {{5, 4}, {6, 0}}, 6, DataType::INT32);
+    getOpDescriptor()->addInputWrites({5}, {{5, 4}, {7, 0}}, 7, DataType::INT32);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
         ->setAllowedOutputTypes({ALL_FLOATS});
@@ -153,7 +167,12 @@ CUSTOM_OP_IMPL(gated_delta_rule_with_prefix, 5, 3, false, 0, 0) {
 
     NDArray* stateIn = nullptr;
     NDArray* actualLen = nullptr;
-    for (int i = 5; i < block.width(); ++i) {
+    // iArg0 == 1: the LAST input is the in-place commit flag (INT32 scalar, read on
+    // the device at run time; see helpers/gated_delta_rule.h).
+    const bool hasCommitFlag = block.numI() > 0 && INT_ARG(0) == 1;
+    const int stateInputsEnd = hasCommitFlag ? block.width() - 1 : block.width();
+    NDArray* commitFlag = hasCommitFlag ? INPUT_VARIABLE(block.width() - 1) : nullptr;
+    for (int i = 5; i < stateInputsEnd; ++i) {
         auto input = INPUT_VARIABLE(i);
         if (input->rankOf() == 0) {
             REQUIRE_TRUE(actualLen == nullptr, 0,
@@ -176,6 +195,9 @@ CUSTOM_OP_IMPL(gated_delta_rule_with_prefix, 5, 3, false, 0, 0) {
                  0, "gated_delta_rule_with_prefix: Q, K, V, beta, and gate must have the same floating dtype");
     REQUIRE_TRUE(stateIn == nullptr || stateIn->dataType() == dataType, 0,
                  "gated_delta_rule_with_prefix: stateIn dtype must match Q dtype");
+    REQUIRE_TRUE(commitFlag == nullptr || (stateIn != nullptr && commitFlag->rankOf() == 0 &&
+                                           commitFlag->dataType() == DataType::INT32), 0,
+                 "gated_delta_rule_with_prefix: the in-place commit flag must be an INT32 scalar and requires stateIn");
     // Q and K may carry fewer heads than V: each Q/K head is shared by
     // H_v / H_qk consecutive value heads (grouped heads, as repeat_interleave).
     REQUIRE_TRUE(Q->rankOf() == 4 && V->rankOf() == 4 && K->isSameShape(Q) &&
@@ -205,7 +227,7 @@ CUSTOM_OP_IMPL(gated_delta_rule_with_prefix, 5, 3, false, 0, 0) {
                  "gated_delta_rule_with_prefix: prefixOut dtype must match Q dtype");
 
     helpers::gatedDeltaRuleWithPrefix(block.launchContext(), Q, K, V, beta, gate, stateIn, actualLen,
-                                      output, stateOut, prefixOut);
+                                      output, stateOut, prefixOut, commitFlag);
 
     return sd::Status::OK;
 }
@@ -214,6 +236,9 @@ DECLARE_TYPES(gated_delta_rule_with_prefix) {
     // Same capture contract as gated_delta_rule (prefix capture rides the
     // allocation-free sequential path).
     getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
+    // With the commit flag (input 7, after stateIn and the required actualLen) the
+    // op may write its recurrent state input (index 5) in place.
+    getOpDescriptor()->addInputWrites({5}, {{5, 4}, {7, 0}}, 7, DataType::INT32);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
         ->setAllowedOutputTypes({ALL_FLOATS});

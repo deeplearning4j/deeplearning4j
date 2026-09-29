@@ -4358,6 +4358,35 @@ Status NativeDynamicShapePlan::execute(
 // By step 4+, if the plan had any lifecycle issues, they would have been
 // caught. The steady-state path trusts that the plan is healthy.
 
+// executeSteadyState() gates, shared with steadyStateFastPathReady() so the
+// in-place commit guarantee cannot drift from the path actually taken.
+static bool steadyStateDelegatesToOrderedExecuteFor(GraphExecutionMode mode,
+                                                    const GraphBackendExecutionPolicy& policy,
+                                                    bool dynamicSegmentBoundaries) {
+  return ModeContract::forMode(mode).isSlotBySlot || policy.bypassCompiledExecution ||
+         dynamicSegmentBoundaries;
+}
+
+bool NativeDynamicShapePlan::steadyStateDelegatesToOrderedExecute(
+    const GraphBackendExecutionPolicy& policy) const {
+  return steadyStateDelegatesToOrderedExecuteFor(graphExecutionMode_, policy,
+                                                 hasDynamicSegmentBoundaries_);
+}
+
+bool NativeDynamicShapePlan::steadyStateReplayEligible(
+    const GraphBackendExecutionPolicy& policy) const {
+  const bool opSanityActive =
+      Environment::getInstance().dsp().diagnosticsNativeDump() &&
+      DspDiagnostics::getInstance().isEnabled(DSP_DIAG_VERIFY);
+  return planLifecycle_.isReplaying() && executeCount_ >= 4 &&
+         !policy.verifyCompiledExecution && !opSanityActive;
+}
+
+bool NativeDynamicShapePlan::steadyStateFastPathReady() {
+  const GraphBackendExecutionPolicy policy = getResolvedGraphBackendExecutionPolicy();
+  return !steadyStateDelegatesToOrderedExecute(policy) && steadyStateReplayEligible(policy);
+}
+
 Status NativeDynamicShapePlan::executeSteadyState(
     NDArray** externalInputs, int numExternalInputs,
     NDArray** requestedOutputs, int numRequestedOutputs,
@@ -4371,9 +4400,7 @@ Status NativeDynamicShapePlan::executeSteadyState(
 
   const GraphBackendExecutionPolicy backendExecutionPolicy =
       getResolvedGraphBackendExecutionPolicy();
-  if (ModeContract::forMode(graphExecutionMode_).isSlotBySlot ||
-      backendExecutionPolicy.bypassCompiledExecution ||
-      hasDynamicSegmentBoundaries_) {
+  if (steadyStateDelegatesToOrderedExecute(backendExecutionPolicy)) {
     DSP_DIAG(EXECUTE, "[DSP_GATE] executeSteadyState delegates to ordered execute() "
                       "(slotBySlot=%d bypassCompiled=%d dynamicBoundary=%d)",
              ModeContract::forMode(graphExecutionMode_).isSlotBySlot ? 1 : 0,
@@ -4394,11 +4421,7 @@ Status NativeDynamicShapePlan::executeSteadyState(
   processPendingExternalViewReacquire(externalInputs, numExternalInputs);
 
   // Precondition check: fall back to full execute() if not in steady state
-  const bool opSanityActive =
-      Environment::getInstance().dsp().diagnosticsNativeDump() &&
-      DspDiagnostics::getInstance().isEnabled(DSP_DIAG_VERIFY);
-  if (!planLifecycle_.isReplaying() || executeCount_ < 4 ||
-      backendExecutionPolicy.verifyCompiledExecution || opSanityActive) {
+  if (!steadyStateReplayEligible(backendExecutionPolicy)) {
     DSP_DIAG(EXECUTE, "[DSP_GATE] FALLBACK execute() — shapesFrozen=%d executeCount=%d planPhase=%s verifyCompiled=%d",
              (int)planLifecycle_.isShapesFrozen(), (int)executeCount_, planLifecycle_.displayName(),
              (int)backendExecutionPolicy.verifyCompiledExecution);

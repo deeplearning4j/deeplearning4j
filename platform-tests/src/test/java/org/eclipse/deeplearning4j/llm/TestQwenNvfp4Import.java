@@ -6,6 +6,7 @@
  */
 package org.eclipse.deeplearning4j.llm;
 
+import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -554,7 +555,7 @@ public class TestQwenNvfp4Import {
         Map<String, INDArray> first = null, result = null;
         for (int repetition = 0; repetition < 8; repetition++) {
             start.forEach((name, array) -> state.get(name).assign(array));
-            Map<String, INDArray> produced = decoder.output(inputs, outputs.toArray(new String[0]));
+            Map<String, INDArray> produced = decoder.output(ModelIOConfig.withRecurrentCommitFlag(decoder, inputs), outputs.toArray(new String[0]));
             result = new HashMap<>();
             for (String name : outputs) result.put(name, produced.get(name).dup());
             if (first == null) first = result;

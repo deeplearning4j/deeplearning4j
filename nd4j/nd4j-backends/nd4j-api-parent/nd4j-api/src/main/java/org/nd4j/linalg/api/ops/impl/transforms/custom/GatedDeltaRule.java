@@ -69,6 +69,22 @@ public class GatedDeltaRule extends DynamicCustomOp {
         super(buildInputs(q, k, v, beta, gate, stateIn, actualLen), null);
     }
 
+    /** Eager form of the in-place commit flag constructor (INT32 scalar, last input). */
+    public GatedDeltaRule(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate,
+                          INDArray stateIn, INDArray actualLen, INDArray commitFlag) {
+        super(withCommitFlag(buildInputs(q, k, v, beta, gate, stateIn, actualLen), stateIn, commitFlag), null);
+        addIArgument(1);
+    }
+
+    static INDArray[] withCommitFlag(INDArray[] inputs, INDArray stateIn, INDArray commitFlag) {
+        if (stateIn == null || commitFlag == null) {
+            throw new IllegalArgumentException("gated_delta_rule: an in-place commit flag requires stateIn and a flag");
+        }
+        INDArray[] withFlag = Arrays.copyOf(inputs, inputs.length + 1);
+        withFlag[inputs.length] = commitFlag;
+        return withFlag;
+    }
+
     public GatedDeltaRule(SameDiff sd, SDVariable q, SDVariable k, SDVariable v,
                           SDVariable beta, SDVariable gate) {
         this(sd, q, k, v, beta, gate, null, null);
@@ -82,6 +98,32 @@ public class GatedDeltaRule extends DynamicCustomOp {
     public GatedDeltaRule(SameDiff sd, SDVariable q, SDVariable k, SDVariable v,
                           SDVariable beta, SDVariable gate, SDVariable stateIn, SDVariable actualLen) {
         super(null, sd, buildSdInputs(q, k, v, beta, gate, stateIn, actualLen));
+    }
+
+    /**
+     * With an in-place commit flag: an INT32 scalar input the op reads at run time (on the
+     * device for CUDA). When it is nonzero the final state is written into {@code stateIn}
+     * itself and the stateOut output is left unspecified; when zero the op behaves exactly
+     * like the flagless form. Being data, one captured graph serves both modes, which lets
+     * a decode loop commit recurrent state without copying it (the flag is set only around
+     * executions that must commit). The flag is the last input and iArg 0 is 1.
+     */
+    public GatedDeltaRule(SameDiff sd, SDVariable q, SDVariable k, SDVariable v,
+                          SDVariable beta, SDVariable gate, SDVariable stateIn, SDVariable actualLen,
+                          SDVariable commitFlag) {
+        super(null, sd, withCommitFlag(buildSdInputs(q, k, v, beta, gate, stateIn, actualLen),
+                stateIn, commitFlag));
+        addIArgument(1);
+    }
+
+    /** Appends the in-place commit flag as the last input (it requires a state input). */
+    static SDVariable[] withCommitFlag(SDVariable[] inputs, SDVariable stateIn, SDVariable commitFlag) {
+        if (stateIn == null || commitFlag == null) {
+            throw new IllegalArgumentException("gated_delta_rule: an in-place commit flag requires stateIn and a flag");
+        }
+        SDVariable[] withFlag = Arrays.copyOf(inputs, inputs.length + 1);
+        withFlag[inputs.length] = commitFlag;
+        return withFlag;
     }
 
     private static INDArray[] buildInputs(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate,

@@ -324,6 +324,14 @@ public class GenerationPipeline implements AutoCloseable {
      * Thread-confined to the pipeline's decode thread.
      */
     private InGraphKvState cachedFixedBufferState;
+    /**
+     * The decoder's in-place recurrent commit flag (INT32 scalar, see
+     * {@link ModelIOConfig#RECURRENT_STATE_COMMIT_NAME}), or null when the graph has none.
+     * One array per pipeline: every execution feeds it (always 0 on the host side), so
+     * the target plan binds this buffer, and the native decode loop, which receives the
+     * same array, sets it on the device only around steps that commit state in place.
+     */
+    private INDArray recurrentCommitFlag;
     /** Retain retryable failed binding cleanup; never abandon its borrowed input owners. */
     private InGraphKvState pendingScalarTargetCleanup;
 
@@ -1357,6 +1365,32 @@ public class GenerationPipeline implements AutoCloseable {
         return sampling;
     }
 
+    /** The in-place recurrent commit flag of the decoder graph, or null when it has none. */
+    private INDArray recurrentCommitFlag() {
+        if (!decoder.hasVariable(ModelIOConfig.RECURRENT_STATE_COMMIT_NAME)) return null;
+        if (recurrentCommitFlag == null || recurrentCommitFlag.wasClosed()) {
+            recurrentCommitFlag = Nd4j.scalar(DataType.INT, 0);
+        }
+        return recurrentCommitFlag;
+    }
+
+    /**
+     * Hands the decode loop the commit flag the target plan was fed, so it can commit GDN
+     * states in place (appended last; see AutoregressiveDecode#withRecurrentCommitFlag).
+     */
+    private void attachRecurrentCommitFlag(AutoregressiveDecode op, InGraphKvState state) {
+        INDArray flag = recurrentCommitFlag();
+        if (flag != null && state.gdnStateExtIndices != null && state.gdnStateExtIndices.length > 0) {
+            op.withRecurrentCommitFlag(flag);
+        }
+    }
+
+    /** Feeds the recurrent commit flag (0) to a decoder execution when the graph declares it. */
+    private void putRecurrentCommitFlag(Map<String, INDArray> inputs) {
+        INDArray flag = recurrentCommitFlag();
+        if (flag != null) inputs.put(ModelIOConfig.RECURRENT_STATE_COMMIT_NAME, flag);
+    }
+
     /** Resolve the ADR 0106 decode policy for the current call. */
     private DecodePolicy activeDecodePolicy() {
         return resolveDecodePolicy(effectiveSampling(), config);
@@ -2081,6 +2115,7 @@ public class GenerationPipeline implements AutoCloseable {
         }
         Map<String, INDArray> prefillOutputs;
         try {
+            putRecurrentCommitFlag(prefillInputMap);
             prefillOutputs = decoder.output(
                     prefillInputMap, prefillOutputNames.toArray(new String[0]));
         } catch (Exception e) {
@@ -2693,6 +2728,7 @@ public class GenerationPipeline implements AutoCloseable {
             // Merge resolution: warmup-class decode executions request the FULL ordered output
             // list (warmupDecodeOutputNames, includes KV outputs) so configureMaxAllocationForKvCache
             // can max-length-pin the KV slots; decodeOutputNames stays the reduced per-step contract.
+            putRecurrentCommitFlag(scalarMap);
             Map<String, INDArray> scalarResults = decoder.output(scalarMap, warmupDecodeOutputNames.toArray(new String[0]));
             // Keep authoritative outputs independent of per-shape zero-copy readback caches.
             decodeOutputs = new LinkedHashMap<>();
@@ -2731,6 +2767,7 @@ public class GenerationPipeline implements AutoCloseable {
                 }
                 Nd4j.getExecutioner().commit();
                 // Shared recurrent inputs still hold prefix P: scalar used private copies.
+                putRecurrentCommitFlag(decodeInputMap);
                 windowPreparationOutputs = decoder.output(decodeInputMap, warmupDecodeOutputNames.toArray(new String[0]));
             } finally {
                 for (Map.Entry<String, INDArray> entry : committedRows.entrySet()) {
@@ -2744,6 +2781,7 @@ public class GenerationPipeline implements AutoCloseable {
                 for (INDArray row : committedRows.values()) row.close();
             }
         } else {
+            putRecurrentCommitFlag(decodeInputMap);
             decodeOutputs = decoder.output(decodeInputMap, warmupDecodeOutputNames.toArray(new String[0]));
         }
 
@@ -3548,6 +3586,7 @@ public class GenerationPipeline implements AutoCloseable {
 
         Map<String, INDArray> suffixOutputs;
         try {
+            putRecurrentCommitFlag(suffixInputMap);
             suffixOutputs = decoder.output(suffixInputMap, suffixOutputNames.toArray(new String[0]));
         } catch (Exception e) {
             log.error("[PrefixCache] Suffix prefill failed — falling back to full prefill", e);
@@ -3752,6 +3791,7 @@ public class GenerationPipeline implements AutoCloseable {
 
         Map<String, INDArray> decodeOutputs;
         try {
+            putRecurrentCommitFlag(decodeInputMap);
             decodeOutputs = decoder.output(decodeInputMap, decodeOutputNames.toArray(new String[0]));
         } catch (Exception e) {
             log.error("[PrefixCache] Warmup decode failed after suffix prefill", e);
@@ -4462,6 +4502,7 @@ public class GenerationPipeline implements AutoCloseable {
                     }
                     applyConfiguredStopSequences(op,
                             combinedGeneratedHistory(state.generatedSoFar, nativeTokens));
+                    attachRecurrentCommitFlag(op, state);
 
                     INDArray[] results = Nd4j.getExecutioner().exec(op);
                     INDArray nativeTokenIds = results[0];
@@ -4704,6 +4745,7 @@ public class GenerationPipeline implements AutoCloseable {
                     scalarBinding.beginNativeUse();
                 }
                 try {
+                attachRecurrentCommitFlag(op, state);
                 INDArray[] results = Nd4j.getExecutioner().exec(op);
                 INDArray nativeTokenIds = results[0];
                 INDArray nativeTokenCount = results[1];
@@ -4949,6 +4991,7 @@ public class GenerationPipeline implements AutoCloseable {
                 }
             }
 
+            putRecurrentCommitFlag(decodeInputs);
             Map<String, INDArray> outputs = decoder.outputDirect(
                     decodeInputs, state.decodeOutputNames.toArray(new String[0]));
             INDArray logits = outputs.get(state.logitsName);
@@ -5343,6 +5386,7 @@ public class GenerationPipeline implements AutoCloseable {
                 List<String> appendOutputs = state.nativeTargetOutputNames != null
                         && !state.nativeTargetOutputNames.isEmpty()
                         ? state.nativeTargetOutputNames : state.decodeOutputNames;
+                putRecurrentCommitFlag(decodeInputMap);
                 Map<String, INDArray> outputs = decoder.outputDirect(
                         decodeInputMap, appendOutputs.toArray(new String[0]));
                 INDArray logits = outputs.get(state.logitsName);
@@ -7694,6 +7738,7 @@ public class GenerationPipeline implements AutoCloseable {
                 stepMap.put(encName, encoderOutputs);
             }
 
+            putRecurrentCommitFlag(stepMap);
             Map<String, INDArray> stepOut = decoder.output(stepMap, allOutputNames.toArray(new String[0]));
             logits = stepOut.get(logitsOut);
             if (logits == null) {
@@ -8288,6 +8333,7 @@ public class GenerationPipeline implements AutoCloseable {
             }
         }
 
+        putRecurrentCommitFlag(prefillInputMap);
         Map<String, INDArray> prefillOutputs = decoder.output(
                 prefillInputMap, allOutputNames.toArray(new String[0]));
 
@@ -8674,6 +8720,7 @@ public class GenerationPipeline implements AutoCloseable {
         // session needs to recompute the graph correctly. The reference
         // (11005b4ae6, 48 tok/s) goes directly from associateInternalModelInputs
         // to decoder.output() with no plan clearing.
+        putRecurrentCommitFlag(decodeInputMap);
         Map<String, INDArray> decodeOutputs = decoder.output(
                 decodeInputMap, allOutputNames.toArray(new String[0]));
 
@@ -9004,6 +9051,7 @@ public class GenerationPipeline implements AutoCloseable {
                         stepInputMap.put(inputName, staticKvBuffers.get(inputName));
                     }
 
+                    putRecurrentCommitFlag(stepInputMap);
                     Map<String, INDArray> stepOutputs = decoder.output(
                             stepInputMap, allOutputNames.toArray(new String[0]));
 

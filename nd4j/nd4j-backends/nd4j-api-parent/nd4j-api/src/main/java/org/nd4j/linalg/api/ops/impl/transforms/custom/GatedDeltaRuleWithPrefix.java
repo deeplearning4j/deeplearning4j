@@ -71,10 +71,32 @@ public class GatedDeltaRuleWithPrefix extends DynamicCustomOp {
         super(buildInputs(q, k, v, beta, gate, stateIn, actualLen), null);
     }
 
+    /** Eager form of the in-place commit flag constructor (INT32 scalar, last input). */
+    public GatedDeltaRuleWithPrefix(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate,
+                                    INDArray stateIn, INDArray actualLen, INDArray commitFlag) {
+        super(GatedDeltaRule.withCommitFlag(buildInputs(q, k, v, beta, gate, stateIn, actualLen),
+                stateIn, commitFlag), null);
+        addIArgument(1);
+    }
+
     public GatedDeltaRuleWithPrefix(SameDiff sd, SDVariable q, SDVariable k, SDVariable v,
                                     SDVariable beta, SDVariable gate, SDVariable stateIn,
                                     SDVariable actualLen) {
         super(null, sd, buildSdInputs(q, k, v, beta, gate, stateIn, actualLen));
+    }
+
+    /**
+     * With an in-place commit flag: an INT32 scalar read at run time. Nonzero commits the
+     * final state into {@code stateIn} (stateOut is then unspecified); zero writes stateOut
+     * as usual. See {@link GatedDeltaRule#GatedDeltaRule(SameDiff, SDVariable, SDVariable,
+     * SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable)}.
+     */
+    public GatedDeltaRuleWithPrefix(SameDiff sd, SDVariable q, SDVariable k, SDVariable v,
+                                    SDVariable beta, SDVariable gate, SDVariable stateIn,
+                                    SDVariable actualLen, SDVariable commitFlag) {
+        super(null, sd, GatedDeltaRule.withCommitFlag(buildSdInputs(q, k, v, beta, gate, stateIn, actualLen),
+                stateIn, commitFlag));
+        addIArgument(1);
     }
 
     private static INDArray[] buildInputs(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate,
