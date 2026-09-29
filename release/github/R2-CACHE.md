@@ -28,6 +28,10 @@ Bucket: `dl4j-cache`; signing region: `auto`.
   key changes; no compiler-object or archive namespace is invalidated. Release
   actions install only and do not start a GHA server or silently substitute an
   unpatched binary. Existing non-release GHA users retain their setup behavior.
+* Kompile's GraalVM AOT image cache uses
+  `deeplearning4j/releases/kompile-native-cache/v1`. The migration copies it only
+  for the explicit `kompile` namespace; `all` and the live namespace check cover
+  the three DL4J namespaces only.
 
 GitHub's Maven dependency/local `.libnd4j` and executable-download caches remain
 local restore accelerators, not Azure transports. Azure support and all Azure

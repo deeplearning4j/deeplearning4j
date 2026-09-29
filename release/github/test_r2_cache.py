@@ -174,6 +174,26 @@ class R2CacheTests(unittest.TestCase):
         self.assertEqual(2, workflow.count("r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}"))
         self.assertNotIn("azure-cache-connection-string:", workflow)
 
+    def test_kompile_native_cache_migrates_only_when_selected(self):
+        migration = load("r2_migrate_cache", "release/github/migrate-cache-to-r2.py")
+        prefix = "deeplearning4j/releases/kompile-native-cache/v1"
+        self.assertNotIn(prefix, migration.PREFIXES)
+        for argv, expected in ((["--mode", "copy"], migration.PREFIXES),
+                               (["--mode", "copy", "--prefix", prefix], (prefix,))):
+            with self.subTest(argv=argv), \
+                 patch.object(sys, "argv", ["migrate-cache-to-r2.py", *argv]), \
+                 patch.object(migration, "environment", return_value={}), \
+                 patch.object(migration.subprocess, "check_output", return_value='{"count": 1, "bytes": 1}'), \
+                 patch.object(migration.subprocess, "run") as run, \
+                 contextlib.redirect_stdout(io.StringIO()):
+                migration.main()
+                copies = [call.args[0][2:4] for call in run.call_args_list if call.args[0][1] == "copy"]
+                self.assertEqual([[f"azure:releases/{name}", f"r2:dl4j-cache/{name}"] for name in expected], copies)
+        for name in ("migrate-cache-to-r2.yml", "build-deploy-cross-platform.yml"):
+            self.assertIn("[all, compiler, auxiliary, kompile]", (ROOT / ".github/workflows" / name).read_text())
+        self.assertIn(f"kompile) prefixes+=(--prefix {prefix}) ;;",
+                      (ROOT / ".github/workflows/migrate-cache-to-r2.yml").read_text())
+
 
 @unittest.skipUnless(os.environ.get("DL4J_R2_LIVE_VALIDATION") == "1", "remote authenticated validation only")
 class R2LiveCacheTests(unittest.TestCase):

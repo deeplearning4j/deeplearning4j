@@ -1036,42 +1036,37 @@ template <typename T1, typename T2, typename T3>
 static SD_KERNEL void usualCudaDot(const LongType length, const double alpha, const void* vX,
                                   const LongType incx, const void* vY, const LongType incy, const double beta,
                                   void* vZ) {
- // Cache values in shared memory
- __shared__ T3* pairwiseMul;
- __shared__ T3 alphaZ;
- __shared__ T3 betaZ;
- __shared__ bool betaPresent;
+ // Widen low-precision storage only; integer and double contracts stay unchanged.
+ using AccT = typename simdOps::AggregateType<T3>::type;
+ extern __shared__ unsigned char shmem[];
+ AccT* partials = reinterpret_cast<AccT*>(shmem);
 
- if (threadIdx.x == 0) {
-   extern __shared__ unsigned char shmem[];
-   pairwiseMul = reinterpret_cast<T3*>(shmem);
-   alphaZ = alpha;
-   betaZ = beta;
-   betaPresent = beta != 0;
- }
- __syncthreads();
-
- T1* X = reinterpret_cast<T1*>(const_cast<void*>(vX));
- T2* Y = reinterpret_cast<T2*>(const_cast<void*>(vY));
+ const T1* X = reinterpret_cast<const T1*>(vX);
+ const T2* Y = reinterpret_cast<const T2*>(vY);
  T3* Z = reinterpret_cast<T3*>(vZ);
 
- const int tid = blockIdx.x * blockDim.x + threadIdx.x;
- if (tid < length) {
-   pairwiseMul[tid] = X[tid * incx] * Y[tid * incy];
- }
-
+ // The launch is a single block, so its threads cover every product and one shared-memory
+ // reduction adds them all.
+ AccT sum = static_cast<AccT>(0);
+ for (LongType i = threadIdx.x; i < length; i += blockDim.x)
+   sum = sum + static_cast<AccT>(X[i * incx]) * static_cast<AccT>(Y[i * incy]);
+ partials[threadIdx.x] = sum;
  __syncthreads();
 
- if (tid == 0) {
-   T3 sum = static_cast<T3>(0);
-   for (LongType i = 0; i < length; ++i) {
-     sum = sum + pairwiseMul[i];
-   }
+ // Halving tree; the upper half of an odd count folds into the lower half.
+ for (unsigned int active = blockDim.x; active > 1;) {
+   const unsigned int half = (active + 1) / 2;
+   if (threadIdx.x < active - half) partials[threadIdx.x] = partials[threadIdx.x] + partials[threadIdx.x + half];
+   __syncthreads();
+   active = half;
+ }
 
-   if (betaPresent)
-     *Z = alphaZ * sum + betaZ * *Z;
+ if (threadIdx.x == 0) {
+   const AccT result = static_cast<AccT>(alpha) * partials[0];
+   if (beta != 0.0)
+     *Z = static_cast<T3>(result + static_cast<AccT>(beta) * static_cast<AccT>(*Z));
    else
-     *Z = alphaZ * sum;
+     *Z = static_cast<T3>(result);
  }
 }
 
@@ -1080,12 +1075,14 @@ template <typename T1, typename T2, typename T3>
 SD_HOST static void usualDot(const dim3& launchDims, cudaStream_t* stream,
                             const LongType length, const double alpha, const void* vX, const LongType incx,
                             const void* vY, const LongType incy, const double beta, void* vZ) {
- usualCudaDot<T1, T2, T3><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+ using AccT = typename simdOps::AggregateType<T3>::type;
+ // One block reduces the whole vector; its shared memory holds one partial sum per thread.
+ usualCudaDot<T1, T2, T3><<<1, launchDims.y, launchDims.y * sizeof(AccT), *stream>>>(
      length, alpha, vX, incx, vY, incy, beta, vZ);
  DebugHelper::checkGlobalErrorCode("concat dot failed(...) failed");
 }
 
-//////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 // [bS,M,K] x [bS,K,N] = [bS,M,N]
 // [bS,M,K] x    [K,N] = [bS,M,N]
 //    [M,K] x [bS,K,N] = [bS,M,N]
@@ -1209,6 +1206,35 @@ SD_HOST static void batchedGemm(const int blocksPerGrid, const int threadsPerBlo
      bNaxis, cMaxis, cNaxis, alpha, beta);
  DebugHelper::checkGlobalErrorCode("batch gemm failed(...) failed");
 }
+
+// Use the persistent cast cache while DSP owns graph/replay state or the cuBLAS workspace.
+// Warmup fills the cache, capture records stable cache buffer addresses, and replay reuses
+// the same buffers after resetCastCacheIndices().
+static bool matmulUsesCastCache() {
+ return tl_graphExecutionActive || tl_dspReplayActive || tl_cublasGapStreamReady ||
+        tl_cublasWorkspacePtr != nullptr;
+}
+
+// The one type a GEMM over mixed storage computes in when no typed cuBLAS path covers it:
+// FLOAT32 for floating storage (DOUBLE when any operand is DOUBLE), so no floating operand
+// is narrowed, and INT64 when every operand is an integer, which holds every signed and
+// unsigned operand value.
+static DataType mixedGemmComputeType(DataType a, DataType b, DataType c) {
+ if (a == DOUBLE || b == DOUBLE || c == DOUBLE) return DOUBLE;
+ if (DataTypeUtils::isR(a) || DataTypeUtils::isR(b) || DataTypeUtils::isR(c)) return FLOAT32;
+ return INT64;
+}
+
+// source in computeType: source itself, a persistent cache buffer, or a new array that the
+// caller owns through owned. A cast of C carries C's values, so beta keeps its meaning.
+static NDArray* castForMixedGemm(CastCacheSide& side, NDArray* source, DataType computeType,
+                                 std::vector<NDArray*>& owned) {
+ if (source->dataType() == computeType) return source;
+ if (matmulUsesCastCache()) return castWithPersistentCache(side, source, computeType);
+ owned.push_back(source->cast(computeType));
+ return owned.back();
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, double beta,
@@ -1271,11 +1297,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  NDArray* effA = const_cast<NDArray*>(A);
  NDArray* effB = const_cast<NDArray*>(B);
 
- // Use cast cache while DSP owns graph/replay state or the cuBLAS workspace.
- // Warmup fills the cache, capture records stable cache buffer addresses, and
- // replay reuses the same buffers after resetCastCacheIndices().
- bool useCastCache = tl_graphExecutionActive || tl_dspReplayActive ||
-                     tl_cublasGapStreamReady || tl_cublasWorkspacePtr != nullptr;
+ bool useCastCache = matmulUsesCastCache();
 
  // NOTE: FP16 autocast for FP32×FP32 matmul REMOVED.
  // Casting FP32 inputs to HALF loses precision on the input data itself,
@@ -1351,6 +1373,24 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  const bool typeIntFloat = AB && effAType == INT8 && cType == FLOAT32 && major >= 6;
  const bool typeHalfFloat = AB && effAType == HALF && cType == FLOAT32 && major >= 6;
 
+ // The generic kernel below is instantiated on A's type for all three operands, so storage
+ // no typed cuBLAS path covers (e.g. FLOAT32 x BFLOAT16 -> BFLOAT16) would be read and
+ // written with A's element size. Compute it in one type instead and assign into C.
+ // This runs before the device lock, which the same-type call takes itself.
+ if (!ABC && !typeIntFloat && !typeHalfFloat) {
+   const DataType computeType = mixedGemmComputeType(effAType, effBType, cType);
+   std::vector<NDArray*> owned;
+   NDArray* computeA = castForMixedGemm(tl_castA, effA, computeType, owned);
+   NDArray* computeB = castForMixedGemm(tl_castB, effB, computeType, owned);
+   NDArray* computeC = castForMixedGemm(tl_castB, C, computeType, owned);
+   mmulMxM(computeA, computeB, computeC, alpha, beta, outOrder);
+   if (computeC != C) C->assign(computeC);
+   for (auto* array : owned) deleteTemporary(array);
+   deleteTemporary(castA);
+   deleteTemporary(castB);
+   return C;
+ }
+
  std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
 
  auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
@@ -1376,7 +1416,8 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
  if (!typeDouble && !typeFloat && !typeHalf && !typeBfloat && !typeIntFloat && !typeHalfFloat) {
    dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
-   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({C}, {effA, effB});
+   // beta reads C, so C's current values must reach the device first.
+   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({C}, {effA, effB, beta != 0.0 ? C : nullptr});
    BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
                                 (dims.x, dims.y, dims.z, stream, effA->specialBuffer(),
                                  effA->specialShapeInfo(), effB->specialBuffer(), effB->specialShapeInfo(), C->specialBuffer(),
@@ -1422,7 +1463,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    const cublasOperation_t transAblas = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
    const cublasOperation_t transBblas = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({pC}, {pA, pB});
+   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({pC}, {pA, pB, beta != 0.0 ? pC : nullptr});
 
    // cuBLAS Lt fast path for decoder logits projection [1,K] x [K,N] -> [1,N]
    // Use ORIGINAL types (before upcast) for Lt descriptors — cublasLt natively
@@ -1609,13 +1650,11 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
  if (Y->isEmpty()) return Y;
 
- const int incx = X->strideAt(xLenDim);
  const int incy = Y->strideAt(yLenDim);
 
  const int major = sd::env_deviceCapabilityMajor(AffinityManager::currentDeviceId());
 
  const auto aType = A->dataType();
- const auto xType = X->dataType();
  const auto yType = Y->dataType();
 
  // NOTE: FP16 GEMV autocast for BOTH-FP32 inputs REMOVED (don't force FP32→HALF).
@@ -1651,12 +1690,32 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
  const auto effAType = effA->dataType();
  const auto effXType = effX->dataType();
+ // A cast of X is a new contiguous array, so the stride comes from effX.
+ const int incx = effX->strideAt(xLenDim);
 
  const bool AX(effAType == effXType), AY(effAType == yType), AXY(AX && AY);
 
  const bool typeDouble = AXY && effAType == DOUBLE;
  const bool typeFloat = AXY && effAType == FLOAT32;
- const bool typeHalfFloat = AX && effAType == HALF && yType == FLOAT32 && major >= 6;
+ // cublasGemmEx takes X and Y as [N,1] and [M,1] matrices, so both must be contiguous.
+ const bool typeHalfFloat = AX && effAType == HALF && yType == FLOAT32 && major >= 6 && incx == 1 && incy == 1;
+
+ // usualGemv reads and writes A, X and Y through one element type, so a mix that no cuBLAS
+ // path covers is computed in one type and assigned into Y, as in mmulMxM. This runs
+ // before the device lock, which the same-type call takes itself.
+ if (!AXY && !typeHalfFloat) {
+   const DataType computeType = mixedGemmComputeType(effAType, effXType, yType);
+   std::vector<NDArray*> owned;
+   NDArray* computeA = castForMixedGemm(tl_castA, effA, computeType, owned);
+   NDArray* computeX = castForMixedGemm(tl_castB, effX, computeType, owned);
+   NDArray* computeY = castForMixedGemm(tl_castB, Y, computeType, owned);
+   mmulMxV(computeA, computeX, computeY, alpha, beta, outOrder);
+   if (computeY != Y) Y->assign(computeY);
+   for (auto* array : owned) deleteTemporary(array);
+   deleteTemporary(castA);
+   deleteTemporary(castX);
+   return Y;
+ }
 
  std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
 
@@ -1676,16 +1735,17 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
  if (!typeDouble && !typeFloat && !typeHalfFloat) {
    dim3 dims = getGemVDims(M);
-   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({Y}, {A, X});
+   // beta reads Y, so Y's current values must reach the device first.
+   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({Y}, {effA, effX, beta != 0.0 ? Y : nullptr});
 
    const int blocksPerGrid = dims.x;
    const int threadsPerBlock = dims.y;
    BUILD_SINGLE_SELECTOR_THRICE(
-       xType, usualGemv,
-       (blocksPerGrid,threadsPerBlock,stream, A->specialBuffer(), A->specialShapeInfo(), X->specialBuffer(),
-        X->specialShapeInfo(), Y->specialBuffer(), Y->specialShapeInfo(), incx, incy, 0, alpha, beta),
+       effXType, usualGemv,
+       (blocksPerGrid,threadsPerBlock,stream, effA->specialBuffer(), effA->specialShapeInfo(), effX->specialBuffer(),
+        effX->specialShapeInfo(), Y->specialBuffer(), Y->specialShapeInfo(), incx, incy, 0, alpha, beta),
        SD_NUMERIC_TYPES)
-   if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({Y}, {A, X});
+   if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({Y}, {effA, effX});
 
  } else {
    NDArray* pA(const_cast<NDArray*>(effA));
@@ -1704,7 +1764,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
    const cublasOperation_t transAblas = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({Y}, {pA, effX});
+   if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({Y}, {pA, effX, beta != 0.0 ? Y : nullptr});
 
    if (typeDouble) {
      getCublasScalars()->alphaD = alpha;
@@ -1721,10 +1781,12 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
      // HALF inputs with FP32 output and FP32 accumulation for precision.
      getCublasScalars()->alphaF = static_cast<float>(alpha);
      getCublasScalars()->betaF  = static_cast<float>(beta);
+     // op(A) is the logical [M,N] matrix whichever way A is stored; only gemv takes the
+     // stored matrix's dimensions.
      status = cublasGemmEx(*handle, transAblas, CUBLAS_OP_N,
-                           transA ? N : M,  // m (rows of op(A))
+                           M,               // m (rows of op(A))
                            1,               // n = 1 (vector)
-                           transA ? M : N,  // k
+                           N,               // k
                            &getCublasScalars()->alphaF,
                            pA->specialBuffer(), CUDA_R_16F, lda,
                            effX->specialBuffer(), CUDA_R_16F, N,  // ldb = N (contiguous vector)
@@ -1768,6 +1830,20 @@ NDArray* MmulHelper::dot(NDArray* X, NDArray* Y, NDArray* Z, const double alpha,
 
  if (Z == nullptr)
    Z = new NDArray(DataTypeUtils::pickPairwiseResultType(X->dataType(), Y->dataType()), X->getContext());
+
+ // usualDot reads and writes X, Y and Z through X's element type, so mixed storage is
+ // computed in one type and assigned into Z, as in mmulMxM.
+ if (Y->dataType() != X->dataType() || Z->dataType() != X->dataType()) {
+   const DataType computeType = mixedGemmComputeType(X->dataType(), Y->dataType(), Z->dataType());
+   std::vector<NDArray*> owned;
+   NDArray* computeX = castForMixedGemm(tl_castA, X, computeType, owned);
+   NDArray* computeY = castForMixedGemm(tl_castB, Y, computeType, owned);
+   NDArray* computeZ = castForMixedGemm(tl_castB, Z, computeType, owned);
+   dot(computeX, computeY, computeZ, alpha, beta);
+   if (computeZ != Z) Z->assign(computeZ);
+   for (auto* array : owned) deleteTemporary(array);
+   return Z;
+ }
 
  const LongType incx = X->strideAt(xLenDim);
  const LongType incy = Y->strideAt(yLenDim);
@@ -1847,7 +1923,8 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  // custom kernel can't handle it (BUILD_SINGLE_SELECTOR_THRICE assumes all
  // types match). Reshape higher-rank A to 2D and delegate to mmulMxM, which
  // normalizes mixed FLOAT32/HALF and FLOAT32/DOUBLE inputs before cuBLAS.
- if (A->dataType() != B->dataType()) {
+ // Folding A's batch into rows needs one B shared by every batch, so B must be 2D.
+ if (bRank == 2 && A->dataType() != B->dataType()) {
    const auto aType = A->dataType();
    const auto bType = B->dataType();
    const bool isMixedHalfFloat = ((aType == FLOAT32 && bType == HALF) || (aType == HALF && bType == FLOAT32));
@@ -1858,7 +1935,8 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      // For [B0, B1, ..., M, K] × [K, N], reshape A to [B0*B1*...*M, K] (2D),
      // call mmulMxM, then result is [B0*B1*...*M, N] which we reshape to C's shape.
      // This works because each row of A is independently multiplied by B.
-     const LongType M = A->sizeAt(-2);
+     // A and C must fold their rows in the same order, so both are reshaped in logical 'c'
+     // order; reshape returns a view when the strides allow one and a copy otherwise.
      const LongType K = A->sizeAt(-1);
      const LongType N = B->sizeAt(-1);
 
@@ -1870,17 +1948,9 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
      // Reshape A to 2D [totalRows, K]
      std::vector<LongType> a2dShape = {totalRows, K};
-     NDArray* a2d = A->reshape(A->ordering(), a2dShape, false);
+     NDArray* a2d = A->reshape('c', a2dShape, false);
      NDArray* effA2d = a2d;
-
-     // Reshape B to 2D if needed (should already be 2D for the common case)
-     NDArray* b2d = const_cast<NDArray*>(B);
-     bool bReshaped = false;
-     if (bRank > 2) {
-       std::vector<LongType> b2dShape = {K, N};
-       b2d = B->reshape(B->ordering(), b2dShape, false);
-       bReshaped = true;
-     }
+     NDArray* b2d = B;
      NDArray* effB2d = b2d;
 
      // During graph capture, decoder projections frequently reuse the same
@@ -1920,16 +1990,47 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
      // Reshape C to 2D [totalRows, N]
      std::vector<LongType> c2dShape = {totalRows, N};
-     NDArray* c2d = C->reshape(C->ordering(), c2dShape, false);
+     NDArray* c2d = C->reshape('c', c2dShape, false);
 
      mmulMxM(effA2d, effB2d, c2d, alpha, beta, c2d->ordering());
 
-     delete a2d;
-     if (bReshaped) delete b2d;
-     delete c2d;
+     const bool cCopied = c2d->getDataBuffer() != C->getDataBuffer();
+     if (cCopied) {
+       // C has no 'c' view of its folded rows, so the product went to a copy. Write it back
+       // through a view of the copy in C's own shape, which keeps the row order.
+       std::vector<LongType>* cShape = C->getShapeAsVector();
+       NDArray* unfolded = c2d->reshape('c', *cShape, false);
+       delete cShape;
+       C->assign(unfolded);
+       delete unfolded;
+     }
+     // Copies are retired behind the stream that still reads them; views only drop their wrapper.
+     if (a2d->getDataBuffer() != A->getDataBuffer())
+       deleteTemporary(a2d);
+     else
+       delete a2d;
+     if (cCopied)
+       deleteTemporary(c2d);
+     else
+       delete c2d;
 
      return C;
    }
+ }
+
+ // Every other mixed storage (BFLOAT16, a batched B, or a C of another type) would be
+ // read and written by batchedGemm with A's element size. Compute it in one type, as
+ // mmulMxM does, and assign the result into C.
+ if (B->dataType() != A->dataType() || C->dataType() != A->dataType()) {
+   const DataType computeType = mixedGemmComputeType(A->dataType(), B->dataType(), C->dataType());
+   std::vector<NDArray*> owned;
+   NDArray* computeA = castForMixedGemm(tl_castA, A, computeType, owned);
+   NDArray* computeB = castForMixedGemm(tl_castB, B, computeType, owned);
+   NDArray* computeC = castForMixedGemm(tl_castB, C, computeType, owned);
+   mmulNxN(computeA, computeB, computeC, alpha, beta, outOrder);
+   if (computeC != C) C->assign(computeC);
+   for (auto* array : owned) deleteTemporary(array);
+   return C;
  }
 
  const LongType cRank = C->rankOf();
@@ -1964,7 +2065,8 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    cBatchDims = reinterpret_cast<LongType*>(manager.replicatePointer(
        cDims->data(), (cRank - 2) * sizeof(LongType)));
 
- NDArray::prepareSpecialUse({C}, {A, B});
+ // beta reads C, so C's current values must reach the device first.
+ NDArray::prepareSpecialUse({C}, {A, B, beta != 0.0 ? C : nullptr});
  BUILD_SINGLE_SELECTOR_THRICE(
      A->dataType(), batchedGemm,
      (blocksPerGrid, threadsPerBlock, sharedMem, A->getContext()->getCudaStream(), A->specialBuffer(),
@@ -2136,7 +2238,8 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   }
   reapplyCublasWorkspace(*handle);
 
-  NDArray::prepareSpecialUse({C}, {A, B});
+  // beta reads C, so C's current values must reach the device first.
+  NDArray::prepareSpecialUse({C}, {A, B, beta != 0.0 ? C : nullptr});
 
   cudaStream_t intendedStream = stream != nullptr ? *stream : nullptr;
   cudaStream_t handleStream = intendedStream;

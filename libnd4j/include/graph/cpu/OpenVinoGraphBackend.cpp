@@ -85,6 +85,9 @@ static bool isOpenVinoDenseC(NDArray* array) {
 //  - i8/u8 add/sub saturate where eager wraps.
 // Up-conversion of a narrow value into f32/i32 is exact, so narrow values may
 // enter an island, but a slot that produces or computes in one runs natively.
+// The exception is a matmul whose eager product is one f32 product rounded
+// once into HALF/BFLOAT16 storage: it ends its island and runIsland makes
+// that rounding with the eager conversion (see the MatMul contract).
 // f32 transcendental kernels are OpenVINO's own approximations, so float
 // islands match eager within kernel ULP tolerance rather than bit-exactly.
 
@@ -214,6 +217,136 @@ static bool resolveSlotOutputDataType(NativeSlot* slots, int slotIndex,
   return false;
 }
 
+// Eager storage dtype of input `input` of plan slot `slotIndex`; `external`
+// is the bound array when the input is a graph input.
+static bool resolveSlotInputDataType(
+    NativeSlot* slots, int slotIndex, int input,
+    const std::unordered_map<int, std::pair<int, int>>& producers,
+    NDArray** externalInputs, int numExternalInputs,
+    NDArray** outputSlots, int totalOutputSlots,
+    DataType& type, NDArray*& external) {
+  const int source = slots[slotIndex].wiring.inputSourceIndices[input];
+  external = nullptr;
+  if (source < 0) {
+    const int index = -(source + 1);
+    if (externalInputs != nullptr && index < numExternalInputs) {
+      external = externalInputs[index];
+    }
+    if (external == nullptr) return false;
+    type = external->dataType();
+    return true;
+  }
+  if (outputSlots != nullptr && source < totalOutputSlots &&
+      outputSlots[source] != nullptr) {
+    type = outputSlots[source]->dataType();
+    return true;
+  }
+  const auto producer = producers.find(source);
+  return producer != producers.end() &&
+         resolveSlotOutputDataType(slots, producer->second.first,
+                                   producer->second.second, outputSlots,
+                                   totalOutputSlots, type);
+}
+
+static bool isOvNarrowFloatType(DataType type) {
+  return type == DataType::HALF || type == DataType::BFLOAT16;
+}
+
+static bool isOvDenseMatMulOp(const std::string& opName) {
+  return opName == "matmul" || opName == "MatMul" || opName == "mmul";
+}
+
+// ─── MatMul contract ───────────────────────────────────────────────────────
+// Dense matmul (generic/blas/matmul.cpp) is lowered as MatMul(a, b,
+// transposeA, transposeB) from its integer arguments; its transZ and
+// arithmetic arguments and alpha/beta floating arguments are lowered only at
+// their defaults. Its storage contract is not elementwise promotion: the CPU
+// MmulHelper computes in a's type (b is cast to it) and stores into the
+// output once. The product is f32 when a is FLOAT32 and b widens exactly, or
+// when a and b share HALF/BFLOAT16 storage (AggregateType accumulates in
+// f32). The island computes that product in f32. A narrow output takes one
+// round-to-nearest-even store, which runIsland makes with the eager
+// conversion; the unrounded f32 value must not reach another island
+// operation, so such a slot (a narrow anchor) ends its island.
+// xw_plus_b casts x and w to their pairwise result type and the bias to x's
+// type. tensormmul, batched_gemm and xw_plus_b's transposes take arguments
+// that MatMul(a, b) does not express.
+static std::string ovMatMulNativeReason(
+    NativeSlot* slots, int slotIndex,
+    const std::unordered_map<int, std::pair<int, int>>& producers,
+    NDArray** externalInputs, int numExternalInputs,
+    NDArray** outputSlots, int totalOutputSlots, bool& narrowAnchor) {
+  narrowAnchor = false;
+  const NativeSlot& slot = slots[slotIndex];
+  const std::string& opName = slot.ident.opName;
+  const auto& args = slot.args;
+  if (opName == "batch_matmul" || opName == "BatchMatMul" ||
+      opName == "tensormmul" || opName == "TensorMmul" ||
+      opName == "batched_gemm" || opName == "BatchedGemm") {
+    return opName + " arguments are not lowered by MatMul(a, b)";
+  }
+  const bool xwPlusB = opName == "xw_plus_b" || opName == "XwPlusB";
+  if (!xwPlusB && !isOvDenseMatMulOp(opName)) return {};
+
+  if (xwPlusB) {
+    for (int argument = 0; argument < args.numIArgs && argument < 3; ++argument) {
+      if (args.iArgs[argument] != 0) return "xw_plus_b transposes are not lowered";
+    }
+  } else {
+    const bool transposeOutput = args.numIArgs > 2 && args.iArgs[2] != 0;
+    const bool serialArithmetic = args.numIArgs > 3 && args.iArgs[3] != 0;
+    const double alpha = args.numTArgs > 0 ? args.tArgs[0] : 1.0;
+    const double beta = args.numTArgs > 1 ? args.tArgs[1] : 0.0;
+    if (transposeOutput || serialArithmetic || alpha != 1.0 || beta != 0.0) {
+      return "matmul transZ/arithmetic/alpha/beta are not lowered";
+    }
+  }
+  const int numInputs = xwPlusB ? 3 : 2;
+  if (slot.wiring.numInputs != numInputs || slot.wiring.numOutputs != 1) {
+    return opName + " expects " + std::to_string(numInputs) + " inputs and one output";
+  }
+  DataType types[3] = {DataType::UNKNOWN, DataType::UNKNOWN, DataType::UNKNOWN};
+  DataType z = DataType::UNKNOWN;
+  NDArray* external = nullptr;
+  for (int input = 0; input < numInputs; ++input) {
+    if (!resolveSlotInputDataType(slots, slotIndex, input, producers,
+                                  externalInputs, numExternalInputs, outputSlots,
+                                  totalOutputSlots, types[input], external)) {
+      return opName + " input dtype is unknown at compile time";
+    }
+  }
+  if (!resolveSlotOutputDataType(slots, slotIndex, 0, outputSlots,
+                                 totalOutputSlots, z)) {
+    return opName + " output dtype is unknown at compile time";
+  }
+  const DataType a = types[0], b = types[1];
+  auto widensToF32 = [](DataType type) {
+    return type == DataType::FLOAT32 || isOvNarrowFloatType(type);
+  };
+
+  if (xwPlusB) {
+    if (a == DataType::FLOAT32 && widensToF32(b) && widensToF32(types[2]) &&
+        z == DataType::FLOAT32 &&
+        DataTypeUtils::pickPairwiseResultType(a, b) == DataType::FLOAT32) {
+      return {};
+    }
+    return "xw_plus_b casts " + DataTypeUtils::asString(a) + " x " +
+           DataTypeUtils::asString(b) + " + " + DataTypeUtils::asString(types[2]) +
+           " -> " + DataTypeUtils::asString(z) + " outside an f32 product";
+  }
+
+  const bool f32Product = (a == DataType::FLOAT32 && widensToF32(b)) ||
+                          (isOvNarrowFloatType(a) && b == a);
+  if (f32Product && a == DataType::FLOAT32 && z == DataType::FLOAT32) return {};
+  if (f32Product && isOvNarrowFloatType(z) && (a == DataType::FLOAT32 || z == a)) {
+    narrowAnchor = true;
+    return {};
+  }
+  return "matmul computes " + DataTypeUtils::asString(a) + " x " +
+         DataTypeUtils::asString(b) + " -> " + DataTypeUtils::asString(z) +
+         " in its first operand's storage, not as one f32 product";
+}
+
 // Empty when the slot's storage and computation types are exact in OpenVINO
 // CPU; otherwise the reason the slot must run natively.
 static std::string ovPrecisionNativeReason(
@@ -245,28 +378,9 @@ static std::string ovPrecisionNativeReason(
     const int source = wiring.inputSourceIndices[input];
     NDArray* array = nullptr;
     DataType type = DataType::UNKNOWN;
-    bool known = false;
-    if (source < 0) {
-      const int external = -(source + 1);
-      if (externalInputs != nullptr && external < numExternalInputs) {
-        array = externalInputs[external];
-      }
-      if (array != nullptr) {
-        type = array->dataType();
-        known = true;
-      }
-    } else if (outputSlots != nullptr && source < totalOutputSlots &&
-               outputSlots[source] != nullptr) {
-      type = outputSlots[source]->dataType();
-      known = true;
-    } else {
-      const auto producer = producers.find(source);
-      known = producer != producers.end() &&
-              resolveSlotOutputDataType(slots, producer->second.first,
-                                        producer->second.second, outputSlots,
-                                        totalOutputSlots, type);
-    }
-    if (!known) {
+    if (!resolveSlotInputDataType(slots, slotIndex, input, producers,
+                                  externalInputs, numExternalInputs,
+                                  outputSlots, totalOutputSlots, type, array)) {
       return "input " + std::to_string(input) +
              " dtype is unknown at compile time";
     }
@@ -1399,30 +1513,31 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
       }
 
       // ── MatMul ──
-      // For MatMul: cast input[1] (weight) to match input[0] (activation) type.
-      // This ensures the output type equals the activation type — no downstream
-      // conversion needed.  harmonizeBinaryTypes upcasts to the WIDER type which
-      // would force f32 outputs when only the weight is f32, requiring expensive
-      // post-matmul conversion back to f16.
-      else if (opName == "matmul" || opName == "MatMul" || opName == "mmul" ||
-               opName == "batch_matmul" || opName == "BatchMatMul" ||
-               opName == "tensormmul" || opName == "TensorMmul" ||
-               opName == "batched_gemm" || opName == "BatchedGemm") {
+      // ovMatMulNativeReason admits only float products with the default
+      // transZ/arithmetic/alpha/beta arguments (see the MatMul contract).
+      // Both operands are computed in f32: a narrow operand widens exactly,
+      // and runIsland rounds a narrow anchor's product into its array.
+      else if (isOvDenseMatMulOp(opName)) {
         if (inputs.size() >= 2) {
-          auto actType = inputs[0].get_element_type();
-          if (inputs[1].get_element_type() != actType) {
-            inputs[1] = std::make_shared<ov::op::v0::Convert>(inputs[1], actType)->output(0);
+          for (int operand = 0; operand < 2; ++operand) {
+            if (inputs[operand].get_element_type() != ov::element::f32) {
+              inputs[operand] = std::make_shared<ov::op::v0::Convert>(
+                  inputs[operand], ov::element::f32)->output(0);
+            }
           }
-          bool transpA = (slots[s].args.numBArgs > 0) ? slots[s].args.bArgs[0] : false;
-          bool transpB = (slots[s].args.numBArgs > 1) ? slots[s].args.bArgs[1] : false;
-          node = std::make_shared<ov::op::v0::MatMul>(inputs[0], inputs[1], transpA, transpB);
+          const bool transposeA = slots[s].args.numIArgs > 0 && slots[s].args.iArgs[0] != 0;
+          const bool transposeB = slots[s].args.numIArgs > 1 && slots[s].args.iArgs[1] != 0;
+          node = std::make_shared<ov::op::v0::MatMul>(inputs[0], inputs[1], transposeA, transposeB);
         }
       } else if (opName == "xw_plus_b" || opName == "XwPlusB") {
-        // Compose: MatMul(x, w) + b
+        // Compose: MatMul(x, w) + b. ovMatMulNativeReason admits an f32 x
+        // with operands that widen exactly, so every operand is computed in f32.
         if (inputs.size() >= 3) {
-          auto actType = inputs[0].get_element_type();
-          if (inputs[1].get_element_type() != actType) {
-            inputs[1] = std::make_shared<ov::op::v0::Convert>(inputs[1], actType)->output(0);
+          for (int operand = 0; operand < 3; ++operand) {
+            if (inputs[operand].get_element_type() != ov::element::f32) {
+              inputs[operand] = std::make_shared<ov::op::v0::Convert>(
+                  inputs[operand], ov::element::f32)->output(0);
+            }
           }
           auto mm = std::make_shared<ov::op::v0::MatMul>(inputs[0], inputs[1], false, false);
           node = std::make_shared<ov::op::v1::Add>(mm->output(0), inputs[2]);
@@ -2826,7 +2941,19 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
         return result;
       }
       auto expectedType = mapDataType(eagerOutputType);
-      if (graphType != expectedType) {
+      if (isOvNarrowFloatType(eagerOutputType)) {
+        // Only a narrow matmul anchor has a narrow output; its f32 product
+        // stays f32 here and runIsland rounds it into the array.
+        if (!isOvDenseMatMulOp(slots[s].ident.opName) ||
+            graphType != ov::element::f32) {
+          DSP_DIAG(COMPILE,
+                   "OpenVINO: output slot %d of '%s' has narrow dtype %s from graph type %s",
+                   outIdx, slots[s].ident.opName.c_str(),
+                   expectedType.get_type_name().c_str(),
+                   graphType.get_type_name().c_str());
+          return result;
+        }
+      } else if (graphType != expectedType) {
         DSP_DIAG(COMPILE, "OpenVINO: output slot %d type mismatch: graph=%s expected=%s, inserting Convert",
                  outIdx, graphType.get_type_name().c_str(), expectedType.get_type_name().c_str());
         graphOutput = std::make_shared<ov::op::v0::Convert>(graphOutput, expectedType)->output(0);
@@ -2941,16 +3068,28 @@ bool OpenVinoGraphBackend::compileSegment(
   }
   // Slots whose storage or computation dtype OpenVINO CPU does not compute
   // exactly run natively (see the numeric contract at the top of this file).
+  // A narrow matmul anchor stays in OpenVINO under the MatMul contract.
   const auto producers = mapOutputProducers(slots, segEnd);
   std::vector<std::string> precisionReason(
       static_cast<size_t>(segEnd - segStart + 1));
+  std::vector<bool> narrowMatMulAnchor(
+      static_cast<size_t>(segEnd - segStart + 1), false);
   for (int slotIndex = segStart; slotIndex <= segEnd; ++slotIndex) {
     const size_t local = static_cast<size_t>(slotIndex - segStart);
     if (nativeSlot[local]) continue;
-    std::string reason = ovPrecisionNativeReason(
+    bool narrowAnchor = false;
+    std::string reason = ovMatMulNativeReason(
         slots, slotIndex, producers, externalInputs, numExternalInputs,
-        outputSlots, totalOutputSlots);
-    if (reason.empty()) continue;
+        outputSlots, totalOutputSlots, narrowAnchor);
+    if (reason.empty() && !narrowAnchor) {
+      reason = ovPrecisionNativeReason(
+          slots, slotIndex, producers, externalInputs, numExternalInputs,
+          outputSlots, totalOutputSlots);
+    }
+    if (reason.empty()) {
+      narrowMatMulAnchor[local] = narrowAnchor;
+      continue;
+    }
     DSP_DIAG(COMPILE, "OpenVINO: slot %d '%s' runs natively: %s", slotIndex,
              slots[slotIndex].ident.opName.c_str(), reason.c_str());
     nativeSlot[local] = true;
@@ -3014,11 +3153,14 @@ bool OpenVinoGraphBackend::compileSegment(
       compiled->executionSchedule.push_back({true, nativeIdx});
       DSP_DIAG(COMPILE, "OpenVINO: native range [%d-%d]", nativeStart, nativeEnd);
     } else {
-      // Start an OV island — extend until a native range
+      // Start an OV island — extend until a native range. A narrow matmul
+      // anchor ends it: its f32 product is rounded only by runIsland's store.
       int islandStart = s;
       while (s <= segEnd &&
              !nativeSlot[static_cast<size_t>(s - segStart)]) {
+        const bool endsIsland = narrowMatMulAnchor[static_cast<size_t>(s - segStart)];
         s++;
+        if (endsIsland) break;
       }
       int islandEnd = s - 1;
 
@@ -3149,6 +3291,7 @@ Status OpenVinoGraphBackend::executeSegment(
     if (!island.steadyStateCachesInitialized) {
       island.cachedInputShapes.resize(island.inputSlotMap.size());
       island.cachedOutputShapes.resize(island.outputSlotMap.size());
+      island.cachedNarrowedOutputs.resize(island.outputSlotMap.size());
       island.steadyStateCachesInitialized = true;
     }
 
@@ -3247,8 +3390,9 @@ Status OpenVinoGraphBackend::executeSegment(
     }
 
     // Set output tensors: zero-copy — wrap the NDArray host buffer directly in
-    // an OV tensor. buildIsland converts every Result to its array's dtype, so
-    // the model output type and the array type must agree.
+    // an OV tensor. buildIsland converts every Result to its array's dtype,
+    // except a narrow matmul anchor's f32 result: that is staged in an f32
+    // tensor and rounded into its HALF/BFLOAT16 array after infer().
     //
     // Shape selection: use the model output shape when it fits in the NDArray buffer
     // (handles rank differences like [4,1] vs [4]). If the model shape requires MORE
@@ -3270,7 +3414,9 @@ Status OpenVinoGraphBackend::executeSegment(
 
       auto modelOutType = compiledModel.output(static_cast<int>(i)).get_element_type();
       auto arrType = ovDtype(arr->dataType());
-      if (modelOutType != arrType) {
+      const bool narrowedOutput = modelOutType == ov::element::f32 &&
+                                  isOvNarrowFloatType(arr->dataType());
+      if (modelOutType != arrType && !narrowedOutput) {
         return fail("OpenVINO output dtype differs from the compiled model: slot=" +
                     std::to_string(outIdx) + ", model=" +
                     modelOutType.get_type_name() + ", array=" +
@@ -3308,8 +3454,16 @@ Status OpenVinoGraphBackend::executeSegment(
       }
 
       try {
-        request.set_output_tensor(static_cast<int>(i),
-            ov::Tensor(arrType, shape, arr->buffer()));
+        if (narrowedOutput) {
+          auto& staged = island.cachedNarrowedOutputs[i];
+          if (!staged || staged.get_shape() != shape) {
+            staged = ov::Tensor(ov::element::f32, shape);
+          }
+          request.set_output_tensor(static_cast<int>(i), staged);
+        } else {
+          request.set_output_tensor(static_cast<int>(i),
+              ov::Tensor(arrType, shape, arr->buffer()));
+        }
       } catch (const std::exception& e) {
         DSP_DIAG(EXECUTE, "OpenVINO: set_output_tensor[%zu] FAILED for slot %d: %s "
                  "(modelShape=%s arrLen=%lld)",
@@ -3353,6 +3507,27 @@ Status OpenVinoGraphBackend::executeSegment(
                     std::to_string(i) + ", slot=" + std::to_string(outIdx) +
                     ", actualElements=" + std::to_string(actualElements) +
                     ", capacity=" + std::to_string(bufCapacity));
+      }
+    }
+
+    // Round each narrow matmul anchor's f32 product into its array with the
+    // eager round-to-nearest-even conversion, the one store usualGemm makes.
+    for (size_t i = 0; i < island.outputSlotMap.size(); i++) {
+      NDArray* arr = outputSlots[island.outputSlotMap[i]];
+      const DataType arrType = arr->dataType();
+      if (!isOvNarrowFloatType(arrType) ||
+          compiledModel.output(static_cast<int>(i)).get_element_type() != ov::element::f32) {
+        continue;
+      }
+      auto outTensor = request.get_output_tensor(static_cast<int>(i));
+      const float* src = outTensor.data<float>();
+      const size_t numElems = outTensor.get_size();
+      if (arrType == DataType::HALF) {
+        auto* dst = static_cast<::float16*>(arr->buffer());
+        for (size_t e = 0; e < numElems; e++) dst[e] = ::float16(src[e]);
+      } else {
+        auto* dst = static_cast<::bfloat16*>(arr->buffer());
+        for (size_t e = 0; e < numElems; e++) dst[e] = ::bfloat16(src[e]);
       }
     }
 

@@ -65,7 +65,7 @@ DECLARE_TYPES(realdiv) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, {FLOAT32, HALF, DOUBLE})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS})
       ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 

@@ -125,6 +125,10 @@ class OpenVinoGraphBackend : public GraphBackend {
     std::vector<PromotedTensor> cachedPromotedInputs;
     bool promotionInitialized = false;
 
+    // f32 results of HALF/BFLOAT16 matmul anchors, stored into their arrays
+    // with the eager round-to-nearest-even conversion after infer().
+    std::vector<ov::Tensor> cachedNarrowedOutputs;
+
     // Cached per-island vectors to avoid per-token heap allocations.
     // Populated on first execution, reused on subsequent calls.
     std::vector<ov::Shape> cachedInputShapes;

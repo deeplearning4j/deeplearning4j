@@ -357,7 +357,9 @@ public class Mmul extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> gradients) {
         Preconditions.checkState(arithmetic() == Arithmetic.LEGACY,
                 "SERIAL_FMA is an inference arithmetic contract; its rounded recurrence has no matmul_bp contract");
-        return Arrays.asList(new MmulBp(sameDiff, arg(0), arg(1), gradients.get(0), mt).outputVariables());
+        // The alpha/beta fields are not restored from a saved graph; the serialized tArgs are.
+        double alpha = numTArguments() > 0 ? getTArgument(0) : 1.0;
+        return Arrays.asList(new MmulBp(sameDiff, arg(0), arg(1), gradients.get(0), mt, alpha).outputVariables());
     }
 
 

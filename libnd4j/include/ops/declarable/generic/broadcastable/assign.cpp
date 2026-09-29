@@ -24,11 +24,22 @@
 #include <helpers/StringUtils.h>
 #if NOT_EXCLUDED(OP_assign)
 
+#include <helpers/ConstantShapeHelper.h>
 #include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace sd {
 namespace ops {
+#if defined(HAS_FLOAT8) && defined(HAS_UINT8)
+static bool isFp8(DataType dtype) { return dtype == FLOAT8 || dtype == FLOAT8_E5M2; }
+
+// A one-byte UINT8 view of the array's own storage: same buffer, offset, shape and strides.
+static NDArray* storageBytes(NDArray* array) {
+  return new NDArray(array->dataBuffer(), ConstantShapeHelper::getInstance().castToDataType(array->shapeInfo(), UINT8),
+                     array->getContext(), array->offset());
+}
+#endif
+
 BROADCASTABLE_OP_IMPL(assign, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = block.width() < 2 ? x: INPUT_VARIABLE(1);
@@ -40,6 +51,34 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     StringUtils::broadcastStringAssign(x,z);
     return Status::OK;
   }
+
+#if defined(HAS_FLOAT8) && defined(HAS_UINT8)
+  // FP8 has no arithmetic kernels in the pairwise/scalar/broadcast type lists and no numeric
+  // conversion in cast(), so FP8 assign is a storage copy between arrays of one FP8 dtype. It runs
+  // over UINT8 views of the same storage, which copies every encoding (NaN, -0) bit for bit.
+  if (isFp8(x->dataType()) || isFp8(y->dataType()) || isFp8(z->dataType())) {
+    REQUIRE_TRUE(x->dataType() == z->dataType() && y->dataType() == z->dataType(), 0,
+                 "ASSIGN OP: FP8 assign copies storage and needs one dtype for every operand, got x=%s, y=%s, z=%s",
+                 DataTypeUtils::asString(x->dataType()).c_str(), DataTypeUtils::asString(y->dataType()).c_str(),
+                 DataTypeUtils::asString(z->dataType()).c_str());
+    if (x->isEmpty() || y->isEmpty()) return Status::OK;
+
+    NDArray* xBytes = storageBytes(x);
+    NDArray* yBytes = storageBytes(y);
+    NDArray* zBytes = storageBytes(z);
+    auto result = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Assign(), xBytes, yBytes, zBytes);
+    // Any other non-null result is a new byte array of y's shape (scalar x, larger y, z of another shape).
+    const bool wroteOutput = result == zBytes;
+    if (result != nullptr && !wroteOutput) delete result;
+    delete xBytes;
+    delete yBytes;
+    delete zBytes;
+    if (result == nullptr) return Status::KERNEL_FAILURE;
+    REQUIRE_TRUE(wroteOutput, 0, "ASSIGN OP: FP8 assign needs an output of the broadcast shape %s, got %s",
+                 ShapeUtils::shapeAsString(y).c_str(), ShapeUtils::shapeAsString(z).c_str());
+    return Status::OK;
+  }
+#endif
 
   NDArray *castedX = x->dataType() == z->dataType() ? x : x->cast(z->dataType());
   NDArray *castedY = y->dataType() == z->dataType() ? y : y->cast(z->dataType());
@@ -68,6 +107,12 @@ DECLARE_TYPES(assign) {
       ->setAllowedInputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL})
       ->setAllowedInputTypes(1, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL})
       ->setAllowedOutputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL});
+#if defined(HAS_FLOAT8) && defined(HAS_UINT8)
+  // Same-dtype FP8 storage copy only; the op body rejects any FP8 conversion.
+  for (auto fp8 : {FLOAT8, FLOAT8_E5M2}) {
+    getOpDescriptor()->setAllowedInputTypes(0, fp8)->setAllowedInputTypes(1, fp8)->setAllowedOutputTypes(0, fp8);
+  }
+#endif
   getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 

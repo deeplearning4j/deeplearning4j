@@ -11,6 +11,11 @@ PREFIXES = (
     "deeplearning4j/releases/toolchain-cache/v1",
     "deeplearning4j/releases/dependency-cache/v2",
 )
+# Kompile's GraalVM AOT image cache shares the Azure container but is not a DL4J
+# release-worker namespace, so it is copied only when selected explicitly.
+OPTIONAL_PREFIXES = (
+    "deeplearning4j/releases/kompile-native-cache/v1",
+)
 
 
 def environment():
@@ -70,7 +75,8 @@ def environment():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("preview", "copy", "verify"), default="preview")
-    parser.add_argument("--prefix", choices=PREFIXES, action="append", help="Defaults to all three cache namespaces")
+    parser.add_argument("--prefix", choices=PREFIXES + OPTIONAL_PREFIXES, action="append",
+                        help="Defaults to the three DL4J cache namespaces; optional namespaces must be selected")
     args = parser.parse_args()
     env = environment()
     for prefix in args.prefix or PREFIXES:
