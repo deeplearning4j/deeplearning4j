@@ -724,9 +724,10 @@ public class TestReproducibleMmul extends BaseNd4jTestWithBackends {
     }
 
     public static Stream<Arguments> serialPipelineConfigs() {
-        // Decode-shaped SERIAL_FMA: K spanning many pipelined chunks (and one with a
-        // scalar tail after the last whole chunk), one and several rows, and output
-        // counts that leave the last program partly masked.
+        // Decode- and prefill-shaped SERIAL_FMA: K spanning many pipelined chunks (and
+        // one with a scalar tail after the last whole chunk), one, several and 64 rows
+        // (multi-warp prefill programs), and output counts that leave the last program
+        // partly masked.
         List<DataType[]> storage = List.of(
                 new DataType[]{DataType.BFLOAT16, DataType.BFLOAT16},
                 new DataType[]{DataType.HALF, DataType.HALF},
@@ -734,7 +735,7 @@ public class TestReproducibleMmul extends BaseNd4jTestWithBackends {
                 new DataType[]{DataType.BFLOAT16, DataType.FLOAT});
         return configs().flatMap(backend -> storage.stream()
                 .flatMap(types -> Stream.of(512, 5120, 5124)
-                        .flatMap(k -> Stream.of(new int[]{1, 48}, new int[]{5, 40})
+                        .flatMap(k -> Stream.of(new int[]{1, 48}, new int[]{5, 40}, new int[]{64, 48}, new int[]{64, 1024})
                                 .map(rn -> Arguments.of(backend.get()[0], types[0], types[1], k, rn[0], rn[1])))));
     }
 
