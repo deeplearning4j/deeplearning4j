@@ -21,6 +21,7 @@
 #include <helpers/logger.h>
 #include <ops/declarable/helpers/autoregressive_decode.h>
 #include <ops/declarable/helpers/token_sample.h>
+#include <ops/declarable/helpers/cuda/argmax_row_scan.cuh>
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <ops/declarable/helpers/kv_cache_quantize.h>
 #include <execution/LaunchContext.h>
@@ -508,32 +509,14 @@ static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType 
     auto logits = reinterpret_cast<const T*>(vLogits);
     auto output = reinterpret_cast<LongType*>(vOutput);
 
+    // Per-thread scan under the CPU argmax contract (cuda/argmax_row_scan.cuh):
+    // candidates start ABSENT (-inf, vocabSize) so they never win the merge
+    // (round 6, finding 2), NaN is never selected, and NaN detection is fused
+    // into the same traversal (round 6 perf note).
     T localMax;
     LongType localIdx;
     bool localNan = false;
-    if (threadIdx.x < vocabSize) {
-        localMax = logits[threadIdx.x];
-        localIdx = threadIdx.x;
-        if (kWriteValidity && localMax != localMax) localNan = true;
-        for (LongType i = threadIdx.x + blockDim.x; i < vocabSize; i += blockDim.x) {
-            T val = logits[i];
-            if (kWriteValidity && !localNan && val != val) localNan = true;
-            // Strict > keeps the LOWEST index on ties (CPU parity).
-            if (val > localMax) {
-                localMax = val;
-                localIdx = i;
-            }
-        }
-    } else {
-        // Thread saw no element: the ABSENT candidate. -inf is the max-reduction
-        // identity (NVIDIA convention) and idx = vocabSize marks it invalid so
-        // it can never win the reduction (round 6, finding 2: the finite -1e30
-        // init beat very-negative finite rows and returned vocabSize as a token).
-        localMax = -DataTypeUtils::infOrMax<T>();
-        localIdx = vocabSize;
-    }
-    // (Validity NaN detection is FUSED into the max scan above — round 6 perf
-    // note: no second traversal of the logits row.)
+    argmaxScanRow<T, T>(logits, vocabSize, 1, localMax, localIdx, kWriteValidity, localNan);
 
     sMaxVal[threadIdx.x] = localMax;
     sMaxIdx[threadIdx.x] = localIdx;
@@ -558,7 +541,8 @@ static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType 
         ? static_cast<unsigned>(__syncthreads_or(localNan ? 1 : 0)) : 0;
 
     if (threadIdx.x == 0) {
-        output[0] = sMaxIdx[0];
+        // No value above -inf: index 0, as the CPU argmax.
+        output[0] = sMaxIdx[0] < vocabSize ? sMaxIdx[0] : 0;
         if (kWriteValidity) output[1] = blockNan ? 1L : 0L;
     }
 }
@@ -671,27 +655,11 @@ static SD_KERNEL void argmaxMultiRowKernel(const void* vLogits, void* vOutput,
     auto validity = validityPtr != nullptr
         ? reinterpret_cast<LongType*>(validityPtr) + row : nullptr;
 
+    // Same per-thread scan and contract as argmaxKernel (cuda/argmax_row_scan.cuh).
     T localMax;
     LongType localIdx;
     bool localNan = false;
-    if (threadIdx.x < vocabSize) {
-        localMax = logits[threadIdx.x];
-        localIdx = threadIdx.x;
-        if (validity != nullptr && localMax != localMax) localNan = true;
-        for (LongType i = threadIdx.x + blockDim.x; i < vocabSize; i += blockDim.x) {
-            T val = logits[i];
-            if (validity != nullptr && !localNan && val != val) localNan = true;
-            // Strict > keeps the LOWEST index on ties (CPU parity).
-            if (val > localMax) {
-                localMax = val;
-                localIdx = i;
-            }
-        }
-    } else {
-        // ABSENT candidate: -inf identity + invalid index; never wins.
-        localMax = -DataTypeUtils::infOrMax<T>();
-        localIdx = vocabSize;
-    }
+    argmaxScanRow<T, T>(logits, vocabSize, 1, localMax, localIdx, validity != nullptr, localNan);
 
     sMaxVal[threadIdx.x] = localMax;
     sMaxIdx[threadIdx.x] = localIdx;
@@ -721,7 +689,8 @@ static SD_KERNEL void argmaxMultiRowKernel(const void* vLogits, void* vOutput,
     unsigned rowNan = validity != nullptr
         ? static_cast<unsigned>(__syncthreads_or(localNan ? 1 : 0)) : 0;
     if (threadIdx.x == 0) {
-        output[row] = sMaxIdx[0];
+        // No value above -inf: index 0, as the CPU argmax.
+        output[row] = sMaxIdx[0] < vocabSize ? sMaxIdx[0] : 0;
         if (validity != nullptr) {
             validity[0] = rowNan ? 1L : 0L;
         }
