@@ -1573,12 +1573,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Do this before debug reads, output wrapping, listeners or trimming can fail.
         releaseUnretainedPlaceholderCopies(rawResults);
 
-        // Debug: log key output values for diagnosis
-        if (rawResults != null) {
+        // Debug: log key output values for diagnosis. Printing the values reads every small
+        // output back to the host, so it runs only when debug logging is on.
+        if (rawResults != null && log.isDebugEnabled()) {
             for (Map.Entry<String, INDArray> e : rawResults.entrySet()) {
                 INDArray v = e.getValue();
                 if (v != null && v.length() <= 20) {
-                    log.info("DSP_RESULT: key={} shape={} dtype={} values={}", e.getKey(),
+                    log.debug("DSP_RESULT: key={} shape={} dtype={} values={}", e.getKey(),
                             java.util.Arrays.toString(v.shape()), v.dataType(), v.toStringFull());
                 }
             }

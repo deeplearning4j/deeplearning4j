@@ -49,6 +49,15 @@ public class ControlflowListener extends BaseListener {
         return true;
     }
 
+    /**
+     * Counts executions by op type and never reads an activation, so dynamic shape plan
+     * execution does not have to return every intermediate output for this listener.
+     */
+    @Override
+    public boolean requiresAllActivations() {
+        return false;
+    }
+
     @Override
     public void operationStart(SameDiff sd, Operation op) {
         super.operationStart(sd, op);

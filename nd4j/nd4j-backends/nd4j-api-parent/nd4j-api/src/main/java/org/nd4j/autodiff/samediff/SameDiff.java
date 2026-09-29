@@ -31,7 +31,6 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.*;
-import org.nd4j.autodiff.listeners.debugging.ControlflowListener;
 import org.nd4j.autodiff.listeners.impl.HistoryListener;
 import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.autodiff.listeners.records.LossCurve;
@@ -3589,7 +3588,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public Map<String, INDArray> output(Map<String, INDArray> placeholders, @NonNull List<String> outputs) {
         return batchOutput().output(outputs.toArray(new String[0]))
-                .listeners(new ControlflowListener())
                 .inputs(placeholders).output();
     }
 
