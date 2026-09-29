@@ -75,50 +75,21 @@ NDArray AttentionHelper::multiHeadProject(NDArray *input, NDArray *projectionMat
  * @return
  */
 NDArray * AttentionHelper::lowerTriangularMask(std::vector<LongType> *shape) {
-  // Get the last two dimensions (rows and cols of the 2D matrix part)
+  // Causal mask over the last two dimensions [rows = queries, cols = keys], aligned
+  // to the bottom-right like every FlashAttentionHelper path: query i sits at key
+  // position i + max(0, cols - rows) and sees keys j <= that position. With
+  // rows == cols this is the ordinary lower triangle; a single decode row sees
+  // every key. Forward and backward must share this convention.
   auto rank = shape->size();
   auto rows = shape->at(rank - 2);
   auto cols = shape->at(rank - 1);
+  const LongType causalOffset = cols > rows ? cols - rows : 0;
 
-  // Handle edge case: when rows == 1, the lower triangular mask is simply [1, 0, 0, ...]
-  // Only position (0, 0) is on or below the diagonal
-  if (rows == 1) {
-    auto result = NDArrayFactory::create<bool>('c', *shape);
-    bool falseVal = false;
-    bool trueVal = true;
-    result->assign(falseVal);
-    // Set only the first column to true for each batch
-    // For shape [..., 1, cols], we need to set elements at positions [..., 0, 0] to true
-    if (cols > 0) {
-      if (rank == 3) {
-        // Shape is [batch, 1, cols]
-        LongType batch = shape->at(0);
-        for (LongType b = 0; b < batch; b++) {
-          result->p(b, 0, 0, trueVal);
-        }
-      } else if (rank == 4) {
-        // Shape is [batch1, batch2, 1, cols]
-        LongType batch1 = shape->at(0);
-        LongType batch2 = shape->at(1);
-        for (LongType b1 = 0; b1 < batch1; b1++) {
-          for (LongType b2 = 0; b2 < batch2; b2++) {
-            result->p(b1, b2, 0, 0, trueVal);
-          }
-        }
-      } else if (rank == 2) {
-        // Shape is [1, cols] - just set (0, 0)
-        result->p(0, 0, trueVal);
-      }
-    }
-    return result;
-  }
-
-  // For normal cases (rows > 1), use matrix_band_part
-  // matrix_band_part with (-1, 0) keeps the lower triangular part
+  // matrix_band_part keeps all lower diagonals (-1) and causalOffset upper ones.
   ops::matrix_band_part matrixBandPart;
   // Use FLOAT32 because matrix_band_part only supports float types (SD_FLOAT_TYPES)
   auto ones = NDArrayFactory::valueOf(*shape, 1.0f, 'c');
-  auto lower = matrixBandPart.evaluate({ones}, {}, {-1, 0});
+  auto lower = matrixBandPart.evaluate({ones}, {}, {-1, causalOffset});
   auto ret = lower.at(0)->cast(BOOL);
   lower.setNonRemovable();
   delete ones;
@@ -139,7 +110,9 @@ NDArray *AttentionHelper::computeCasualMask(NDArray *query, NDArray *value, bool
     auto ones = NDArrayFactory::create('c',{1,qSeqLength,vSeqLength}, FLOAT32);
     float assignVal = 1.0f;
     ones->assign(assignVal);
-    auto lower = matrixBandPart.evaluate({ones},{},{-1,0});
+    // Bottom-right aligned, as in lowerTriangularMask.
+    const LongType causalOffset = vSeqLength > qSeqLength ? vSeqLength - qSeqLength : 0;
+    auto lower = matrixBandPart.evaluate({ones},{},{-1,causalOffset});
     auto ret = lower.at(0)->cast(BOOL);
     delete ones;
     return ret;
