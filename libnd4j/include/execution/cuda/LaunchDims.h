@@ -801,6 +801,10 @@ dim3 getMMulDims(int length,int sizeofDataType);
 dim3 getAccumDims(int xLength);
 
 dim3 getReduceDims(int xLength);
+// Along-dimension reductions: one block per TAD (grid-strided). The block width
+// follows the reduced (TAD) length only, never the number of TADs, so a row's
+// accumulation order does not depend on how many rows a call reduces.
+dim3 getReduceAlongDimDims(sd::LongType numTads, sd::LongType tadLength);
 dim3 getReduceAllDims(int xLength);
 dim3 getSortFullDims(int xLength);
 

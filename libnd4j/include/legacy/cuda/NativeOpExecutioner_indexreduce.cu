@@ -70,7 +70,7 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
   }
   auto numBlocks = shape::length(hZShapeInfo);
   auto tadLength = shape::length(hXShapeInfo) / numBlocks;
-  dim3 launchDims = getReduceDims(numBlocks);
+  dim3 launchDims = getReduceAlongDimDims(numBlocks, numBlocks > 0 ? shape::length(hXShapeInfo) / numBlocks : 0);
   if (zType != sd::INT64 && zType != sd::INT32) {
     std::string errorMessage = "NativeOpExecutioner::execIndexReduce requires Z operand to have INT32/INT64 type. Z type: " + sd::DataTypeUtils::asString(zType);
     THROW_EXCEPTION(errorMessage.c_str());

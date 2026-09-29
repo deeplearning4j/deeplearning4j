@@ -32,6 +32,8 @@ import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRuleWithPrefix;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -193,16 +195,20 @@ public class TestQwenNvfp4WindowParity {
             }
             // Discover the actual op arguments, including unnamed/renamed casts. Do not
             // reconstruct Q/K/V/beta/g or guess names at the recurrence boundary.
-            GatedDeltaRule recurrence = null;
+            // The block exports accepted-prefix checkpoints by default (GatedDeltaRuleWithPrefix)
+            // and takes the in-place commit flag as an optional last input; both ops share
+            // the leading (Q, K, V, beta, g, state, actual length) contract.
+            DynamicCustomOp recurrence = null;
             for (SameDiffOp op : sd.getOps().values()) {
-                if (op.getOp() instanceof GatedDeltaRule) {
+                if (op.getOp() instanceof GatedDeltaRule || op.getOp() instanceof GatedDeltaRuleWithPrefix) {
                     assertNull(recurrence, "Expected exactly one recurrent block");
-                    recurrence = (GatedDeltaRule) op.getOp();
+                    recurrence = (DynamicCustomOp) op.getOp();
                 }
             }
             assertNotNull(recurrence);
             String[] roles = {"recurrence/Q", "recurrence/K", "recurrence/V", "recurrence/beta", "recurrence/g"};
-            assertEquals(7, recurrence.args().length);
+            assertTrue(recurrence.args().length == 7 || recurrence.args().length == 8,
+                    "recurrence inputs " + recurrence.args().length);
             for (int i = 0; i < roles.length; i++) stages.put(roles[i], recurrence.arg(i).name());
             String[] downstream = {"gdn_out_0", "model.layers.0.gdn.ssm_norm_0",
                     "gdn_gate_proj_0", "gdn_z_reshaped_0", "gdn_gate_input_0", "gdn_gate_act_0",
@@ -518,13 +524,18 @@ public class TestQwenNvfp4WindowParity {
         String accum = "gdn_alpha_proj_1_accum", stored = "gdn_alpha_proj_1";
         String[] outputs = {accum, stored};
         try (SameDiff probe = SameDiff.create()) {
-            SDVariable a = probe.placeHolder(operands[0], DataType.FLOAT, 1, -1, 5120);
-            SDVariable b = probe.placeHolder(operands[1], DataType.FLOAT, 5120, 48);
-            new Mmul(probe, a, b, MMulTranspose.allFalse(), Mmul.Arithmetic.SERIAL_FMA)
+            // The production operands' dtype and weight layout ([N, K] with transposeB for
+            // narrow BF16 projections, [K, N] otherwise), FP32 accumulation.
+            Snapshot activation = window.get(operands[0]), weight = window.get(operands[1]);
+            boolean weightNK = weight.shape[0] == 48;
+            SDVariable a = probe.placeHolder(operands[0], activation.dtype, 1, -1, 5120);
+            SDVariable b = probe.placeHolder(operands[1], weight.dtype, weight.shape[0], weight.shape[1]);
+            MMulTranspose transpose = weightNK ? MMulTranspose.builder().transposeB(true).build() : MMulTranspose.allFalse();
+            new Mmul(probe, a, b, transpose, Mmul.Arithmetic.SERIAL_FMA, DataType.FLOAT)
                     .outputVariable().rename(accum).castTo(DataType.BFLOAT16).rename(stored);
             probe.setOutputs(outputs);
             assertTrue(probe.isDspAutoCompileEnabled());
-            log.info("CONNECTED_NUMERIC captured-only DSP probe: same FLOAT operands and production SERIAL_FMA mmul/cast; "
+            log.info("CONNECTED_NUMERIC captured-only DSP probe: same operands and production SERIAL_FMA mmul/cast; "
                     + "no connected fusion claim; connected observations remain unchanged");
             for (int repeat = 0; repeat < 3; repeat++) {
                 Map<String, Snapshot> w = new LinkedHashMap<>(window);
@@ -574,11 +585,16 @@ public class TestQwenNvfp4WindowParity {
         Snapshot a = window.get(operands[0]), b = window.get(operands[1]);
         Snapshot result = window.get("gdn_alpha_proj_1_accum");
         Snapshot stored = window.get("gdn_alpha_proj_1");
-        assertEquals(DataType.FLOAT, a.dtype);
-        assertEquals(DataType.FLOAT, b.dtype);
+        // Narrow BF16 projections run SERIAL_FMA over the BF16 operands and the [N, K]
+        // weight (transposeB); wider or FLOAT ones over FLOAT operands and [K, N]. Both
+        // accumulate exact products in FP32, and snapshots widen BF16 exactly.
+        assertTrue(a.dtype == DataType.FLOAT || a.dtype == DataType.BFLOAT16, "alpha activation " + a.dtype);
+        assertEquals(a.dtype, b.dtype);
         assertEquals(DataType.FLOAT, result.dtype);
-        assertArrayEquals(new long[]{5120, 48}, b.shape);
         int k = 5120, n = 48;
+        final boolean weightNK = Arrays.equals(new long[]{n, k}, b.shape);
+        assertTrue(weightNK || Arrays.equals(new long[]{k, n}, b.shape), "alpha weight " + Arrays.toString(b.shape));
+        final int weightStrideK = weightNK ? 1 : n, weightStrideN = weightNK ? k : 1;
         assertEquals(IDS.length * k, a.values.length);
         int reported = 0;
         for (int row = 0; row < IDS.length; row++) {
@@ -605,14 +621,15 @@ public class TestQwenNvfp4WindowParity {
                 double dot = 0, scalarDot = 0, abs = 0, scalarAbs = 0;
                 float sequential = 0, reverse = 0;
                 for (int i = 0; i < k; i++) {
-                    double p = (double) a.values[row * k + i] * b.values[i * n + head];
-                    double sp = (double) sa.values[i] * sb.values[i * n + head];
+                    double p = (double) a.values[row * k + i] * b.values[i * weightStrideK + head * weightStrideN];
+                    double sp = (double) sa.values[i] * sb.values[i * weightStrideK + head * weightStrideN];
                     dot += p;
                     scalarDot += sp;
                     abs += Math.abs(p);
                     scalarAbs += Math.abs(sp);
                     sequential += (float) p;
-                    reverse += a.values[row * k + k - 1 - i] * b.values[(k - 1 - i) * n + head];
+                    reverse += a.values[row * k + k - 1 - i]
+                            * b.values[(k - 1 - i) * weightStrideK + head * weightStrideN];
                 }
                 float w = result.values[row * n + head], s = sr.values[head];
                 float ws = stored.values[row * n + head], sc = ss.values[head];
@@ -1116,9 +1133,11 @@ public class TestQwenNvfp4WindowParity {
                     assertEquals(input.size(1), value.size(1), stage.getKey());
                     if (stage.getKey().startsWith("recurrence/")) {
                         assertEquals(DataType.FLOAT, value.dataType(), stage.getKey());
-                        boolean vector = stage.getKey().equals("recurrence/Q")
-                                || stage.getKey().equals("recurrence/K") || stage.getKey().equals("recurrence/V");
-                        assertArrayEquals(vector ? new long[]{1, input.size(1), 48, 128}
+                        // Q and K keep the 16 key heads; the recurrence groups them over
+                        // the 48 value heads itself (no repeated copies).
+                        boolean keyHeads = stage.getKey().equals("recurrence/Q") || stage.getKey().equals("recurrence/K");
+                        boolean vector = keyHeads || stage.getKey().equals("recurrence/V");
+                        assertArrayEquals(vector ? new long[]{1, input.size(1), keyHeads ? 16 : 48, 128}
                                 : new long[]{1, input.size(1), 48}, value.shape(), stage.getKey());
                     }
                     if (stage.getKey().equals("attention")) {

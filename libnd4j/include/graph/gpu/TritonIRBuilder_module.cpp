@@ -189,7 +189,7 @@ static mlir::MLIRContext* createMlirContextWithDialects() {
 }
 
 // Emit the same per-output reduction order used by reduce_same.cu:
-//   1. choose 32/64/128/256 logical lanes from the total output length,
+//   1. choose 32/64/128/256 logical lanes from the reduced length,
 //   2. accumulate each lane at k = lane, lane + blockWidth, ...,
 //   3. fold non-power-of-two lanes, then execute the fixed binary tree.
 //
@@ -222,12 +222,15 @@ static mlir::Value emitNativeOrderedReduction(
         loc, f32TensorType, scalar).getResult();
   };
 
+  // Native along-dimension reductions size their block from the reduced
+  // length only (getReduceAlongDimDims), so a row's order never depends on
+  // how many rows a call reduces.
   int blockWidth;
-  if (outputLength <= 32)
+  if (reductionSize <= 32)
     blockWidth = 32;
-  else if (outputLength <= 64)
+  else if (reductionSize <= 64)
     blockWidth = 64;
-  else if (outputLength <= 128)
+  else if (reductionSize <= 128)
     blockWidth = 128;
   else
     blockWidth = 256;
@@ -485,12 +488,15 @@ static mlir::Value emitNativeOrderedArgReduction(
     return out;
   };
 
+  // Native along-dimension reductions size their block from the reduced
+  // length only (getReduceAlongDimDims), so a row's order never depends on
+  // how many rows a call reduces.
   int blockWidth;
-  if (outputLength <= 32)
+  if (reductionSize <= 32)
     blockWidth = 32;
-  else if (outputLength <= 64)
+  else if (reductionSize <= 64)
     blockWidth = 64;
-  else if (outputLength <= 128)
+  else if (reductionSize <= 128)
     blockWidth = 128;
   else
     blockWidth = 256;

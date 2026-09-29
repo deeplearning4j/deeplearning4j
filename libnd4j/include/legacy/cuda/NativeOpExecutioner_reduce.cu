@@ -74,7 +74,7 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext* lc, int opNum, void 
     THROW_EXCEPTION(errorMessage.c_str());
   }
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims = getReduceDims(numBlocks);
+  dim3 launchDims = getReduceAlongDimDims(numBlocks, numBlocks > 0 ? shape::length(hXShapeInfo) / numBlocks : 0);
 
   BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction,
                         ::execReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
@@ -112,7 +112,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext* lc, int opNum, void 
     THROW_EXCEPTION(errorMessage.c_str());
   }
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims = getReduceDims(numBlocks);
+  dim3 launchDims = getReduceAlongDimDims(numBlocks, numBlocks > 0 ? shape::length(hXShapeInfo) / numBlocks : 0);
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction,
                         ::execReduce(launchDims, stream, opNum, dX,
                                      const_cast<sd::LongType*>(dXShapeInfo),
@@ -144,7 +144,7 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext* lc, int opNum, void 
     THROW_EXCEPTION("NativeOpExecutioner::execReduceBool requires Z operand to have BOOL type");
 
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims = getReduceDims(numBlocks);
+  dim3 launchDims = getReduceAlongDimDims(numBlocks, numBlocks > 0 ? shape::length(hXShapeInfo) / numBlocks : 0);
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction,
                         ::execReduce(launchDims, stream, opNum, dX, const_cast<sd::LongType*>(dXShapeInfo),
                                      const_cast<sd::LongType*>(hXShapeInfo), extraParams,
@@ -179,7 +179,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext* lc, int opNum, cons
         "op for the string data type.")
   }
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims = getReduceDims(numBlocks);
+  dim3 launchDims = getReduceAlongDimDims(numBlocks, numBlocks > 0 ? shape::length(hXShapeInfo) / numBlocks : 0);
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction,
                         ::execReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
                                      reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
@@ -355,7 +355,7 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext* lc, int opNum, const vo
   }
 
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims = getReduceDims(numBlocks);
+  dim3 launchDims = getReduceAlongDimDims(numBlocks, numBlocks > 0 ? shape::length(hXShapeInfo) / numBlocks : 0);
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce3::Reduce3,
       ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParamsVals, dZ, dZShapeInfo, dimension,
@@ -467,7 +467,7 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext* lc, int opNum, const
   }
 
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims = getReduceDims(numBlocks);
+  dim3 launchDims = getReduceAlongDimDims(numBlocks, numBlocks > 0 ? shape::length(hXShapeInfo) / numBlocks : 0);
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce3::Reduce3,
       ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParamsVals, dZ, dZShapeInfo, dimension,

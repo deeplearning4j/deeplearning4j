@@ -560,6 +560,23 @@ dim3 getReduceAllDims(int xLength) {
   return launchDims;
 }
 
+dim3 getReduceAlongDimDims(sd::LongType numTads, sd::LongType tadLength) {
+  // Same power-of-two width rule as getReduceDims, keyed on the TAD length.
+  int blockWidth;
+  if (tadLength <= 32) {
+    blockWidth = 32;
+  } else if (tadLength <= 64) {
+    blockWidth = 64;
+  } else if (tadLength <= 128) {
+    blockWidth = 128;
+  } else {
+    blockWidth = 256;
+  }
+  // The grid only distributes TADs (each TAD is reduced by exactly one block).
+  auto numBlocks = sd::CudaLaunchHelper::getReductionBlocks(numTads, 1);
+  return dim3(numBlocks == 0 ? 1 : numBlocks, blockWidth, 8192);
+}
+
 dim3 getReduceDims(int xLength) {
   // Adaptive thread count: for small reductions, use fewer threads to avoid
   // warp divergence and unnecessary __syncthreads() overhead.
