@@ -65,14 +65,26 @@ static SD_DEVICE inline bool greedyTakeOther(AccT currentVal, LongType currentId
     return otherVal == currentVal && otherIdx < currentIdx;
 }
 
-// Kernel: greedy argmax — one block per batch element, threads cooperate via shared mem reduction
+// 16-byte loads each thread keeps in flight per iteration of the vectorized
+// greedy scan: the scan of a ~250K-entry row is bound by memory-level
+// parallelism, not bandwidth (one scalar load per iteration took ~110 us for
+// a 1 MB FP32 row on GB10).
+static constexpr int kGreedyArgmaxLoadsInFlight = 8;
+
+// Kernel: greedy argmax — one block per batch element, threads cooperate via shared mem reduction.
+// Each thread visits its elements in ascending index order and replaces its candidate only on a
+// strictly larger value, so it holds its lowest-index maximum; the block merge applies the same
+// rule (greedyTakeOther). Candidates start ABSENT and a NaN never compares larger, so NaN is never
+// selected and a row with no value above -inf yields index 0 — exactly the CPU argmax
+// (cpu/token_sample.cpp: maxVal = -inf, maxIdx = 0, strict >).
 template <typename T>
 static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* vlogits,
                                           void* voutput,
                                           const LongType vocabSize,
                                           const LongType rowStride,
                                           const LongType elemStride,
-                                          const LongType rowOffset) {
+                                          const LongType rowOffset,
+                                          const bool vectorRows) {
     using AccT = typename AccType<T>::type;
 
     extern __shared__ char sharedMem[];
@@ -85,25 +97,46 @@ static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* v
     LongType batchIdx = blockIdx.x;
     LongType baseOffset = batchIdx * rowStride + rowOffset;
 
-    AccT localMax;
-    LongType localIdx;
-    if (threadIdx.x < vocabSize) {
-        localMax = static_cast<AccT>(logits[baseOffset + threadIdx.x * elemStride]);
-        localIdx = threadIdx.x;
-        for (LongType v = threadIdx.x + blockDim.x; v < vocabSize; v += blockDim.x) {
-            AccT val = static_cast<AccT>(logits[baseOffset + v * elemStride]);
-            // Strict > keeps the LOWEST index on ties (CPU parity).
-            if (val > localMax) {
-                localMax = val;
-                localIdx = v;
-            }
+    AccT localMax = -sd::DataTypeUtils::infOrMax<AccT>();
+    LongType localIdx = vocabSize;  // ABSENT
+    auto visit = [&](AccT val, LongType v) {
+        if (val > localMax) {
+            localMax = val;
+            localIdx = v;
         }
-    } else {
-        // ABSENT candidate (thread saw no element): -inf identity + invalid
-        // index = vocabSize; can never beat a real candidate (round 7).
-        localMax = -sd::DataTypeUtils::infOrMax<AccT>();
-        localIdx = vocabSize;
+    };
+    LongType scalarStart = 0;
+    if constexpr (sizeof(T) == 4) {
+        if (vectorRows) {
+            // Unit-stride, 16-byte-aligned row: thread t reads 4-element groups
+            // q = i * (blockDim * L) + u * blockDim + t, i.e. ascending indices per thread.
+            constexpr int L = kGreedyArgmaxLoadsInFlight;
+            const auto groups = reinterpret_cast<const float4*>(logits + baseOffset);
+            const LongType groupCount = vocabSize / 4;
+            const LongType span = static_cast<LongType>(blockDim.x) * L;
+            for (LongType first = 0; first < groupCount; first += span) {
+                float4 loaded[L];
+#pragma unroll
+                for (int u = 0; u < L; ++u) {
+                    const LongType q = first + static_cast<LongType>(u) * blockDim.x + threadIdx.x;
+                    if (q < groupCount) loaded[u] = groups[q];
+                }
+#pragma unroll
+                for (int u = 0; u < L; ++u) {
+                    const LongType q = first + static_cast<LongType>(u) * blockDim.x + threadIdx.x;
+                    if (q < groupCount) {
+                        visit(static_cast<AccT>(loaded[u].x), 4 * q);
+                        visit(static_cast<AccT>(loaded[u].y), 4 * q + 1);
+                        visit(static_cast<AccT>(loaded[u].z), 4 * q + 2);
+                        visit(static_cast<AccT>(loaded[u].w), 4 * q + 3);
+                    }
+                }
+            }
+            scalarStart = groupCount * 4;
+        }
     }
+    for (LongType v = scalarStart + threadIdx.x; v < vocabSize; v += blockDim.x)
+        visit(static_cast<AccT>(logits[baseOffset + v * elemStride]), v);
 
     sMaxVal[threadIdx.x] = localMax;
     sMaxIdx[threadIdx.x] = localIdx;
@@ -122,7 +155,7 @@ static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* v
     }
 
     if (threadIdx.x == 0)
-        output[batchIdx] = sMaxIdx[0];
+        output[batchIdx] = sMaxIdx[0] < vocabSize ? sMaxIdx[0] : 0;
 }
 
 // Kernel: temperature + top-k + top-p (nucleus) filtered multinomial sampling.
@@ -331,9 +364,13 @@ static void tokenSampleLauncher(NDArray* logits, NDArray* output,
     size_t sharedSize = launchDims.y * (sizeof(typename AccType<T>::type) + sizeof(LongType));
 
     if (greedy) {
+        // Rows start 16-byte aligned when the buffer and the row stride are.
+        const bool vectorRows = elemStride == 1 && logits->sizeOfT() == 4 &&
+            reinterpret_cast<uintptr_t>(logits->specialBuffer()) % 16 == 0 &&
+            (rowStride * 4) % 16 == 0 && (rowOffset * 4) % 16 == 0;
         greedyArgmaxKernel<T><<<batch, launchDims.y, sharedSize, *stream>>>(
             logits->specialBuffer(), output->specialBuffer(),
-            vocabSize, rowStride, elemStride, rowOffset);
+            vocabSize, rowStride, elemStride, rowOffset, vectorRows);
         DebugHelper::checkGlobalErrorCode("greedyArgmax failed");
     } else {
         float invTemp = (temperature > 0.0) ? static_cast<float>(1.0 / temperature) : 1.0f;

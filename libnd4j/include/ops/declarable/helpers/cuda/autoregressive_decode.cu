@@ -1071,6 +1071,13 @@ void autoregressiveDecode(
         pinnedTokenId = nullptr;
     }
     LongType stackTokenId = 0;  // fallback if pinned alloc fails
+    // Marks the scalar step's token readback so the host can resume while the
+    // recurrent state commit queued behind it (device-to-device only) still runs.
+    struct TokenReadyEvent {
+        cudaEvent_t event = nullptr;
+        TokenReadyEvent() { cudaEventCreateWithFlags(&event, cudaEventDisableTiming); }
+        ~TokenReadyEvent() { if (event != nullptr) cudaEventDestroy(event); }
+    } tokenReady;
 
     // Capture-safe requested-output discriminator. Four raw 64-bit samples per
     // output are copied asynchronously immediately after plan execution and read
@@ -3985,7 +3992,16 @@ void autoregressiveDecode(
         // rejected. Defer the commit to the speculative accept block, which re-runs
         // the plan with the accepted prefix on partial acceptance before committing.
         const bool deferStateCommit = (useSpeculative && proposedCount > 0);
-        if (!deferStateCommit) {
+        // A non-deferred step always takes the scalar path, where nothing before
+        // the next plan execution reads the recurrent inputs. Its commit (~150 MB
+        // of D2D copies on Qwen3.6-27B) is therefore queued after the token
+        // readback, and the host waits only for the token: its stop check and
+        // next-step setup overlap the copies, which stream order still completes
+        // before the next replay. With committed-state sampling (diagnostics) the
+        // commit stays here and the step syncs the whole stream as before.
+        const bool commitAfterTokenReadback = !deferStateCommit && pinnedCommittedStateSamples == nullptr
+                                              && tokenReady.event != nullptr;
+        if (!deferStateCommit && !commitAfterTokenReadback) {
             commitRecurrentState();
             queueCommittedStateSamples(step, currentPosition + 1, false);
         }
@@ -5850,7 +5866,13 @@ void autoregressiveDecode(
             cudaMemcpyAsync(scalarLogitsSample, logitsOutput->specialBuffer(),
                             8 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
         }
-        cudaStreamSynchronize(*stream);
+        if (commitAfterTokenReadback) {
+            cudaEventRecord(tokenReady.event, *stream);
+            commitRecurrentState();
+            cudaEventSynchronize(tokenReady.event);
+        } else {
+            cudaStreamSynchronize(*stream);
+        }
         emitCommittedStateSamples(step);
         // NOTE: mask slices here reflect the already-advanced next-step state (the
         // advance kernels launch before this sync); the KV rows are the payload -

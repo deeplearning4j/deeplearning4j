@@ -21,6 +21,8 @@
 package org.eclipse.deeplearning4j.llm.generation;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample;
 import org.nd4j.linalg.factory.Nd4j;
@@ -148,6 +150,62 @@ class TokenSampleParityTest {
         INDArray[] out = Nd4j.getExecutioner().exec(new TokenSample(logits, 1.0, 1, 0.0, 123));
         for (int b = 0; b < B; b++) {
             assertEquals(am[b], out[0].getLong(b), "batch row " + b + " topK=1 must be its argmax");
+        }
+    }
+
+    /** CPU greedy contract: start at (-inf, 0), replace only on a strictly larger value. */
+    private static int cpuArgmax(float[] d, int from, int length) {
+        float best = Float.NEGATIVE_INFINITY;
+        int idx = 0;
+        for (int v = 0; v < length; v++) {
+            if (d[from + v] > best) {
+                best = d[from + v];
+                idx = v;
+            }
+        }
+        return idx;
+    }
+
+    /**
+     * Greedy selection at decode vocabulary sizes, including the unit-stride vector scan's
+     * tail, rank-3 last-position rows (whose row offset may break 16-byte alignment), exact
+     * ties (lowest index wins), rows with no value above -inf (index 0) and NaN entries
+     * (never selected) — all against the CPU argmax contract.
+     */
+    @ParameterizedTest(name = "greedy vocab={0} batch={1} seq={2}")
+    @CsvSource({"48,1,1", "1023,2,1", "248320,1,1", "248321,3,1", "248320,2,3", "4099,2,2"})
+    void greedyMatchesCpuContractAtDecodeSizes(int vocab, int batch, int seq) {
+        java.util.Random random = new java.util.Random(vocab * 31L + batch * 7L + seq);
+        float[] flat = new float[batch * seq * vocab];
+        for (int i = 0; i < flat.length; i++) flat[i] = (float) random.nextGaussian();
+        for (int b = 0; b < batch; b++) {
+            int row = (b * seq + seq - 1) * vocab;   // the position greedy selection reads
+            switch (b % 3) {
+                case 0: {   // exact tie at three indices: the lowest wins
+                    int[] at = {vocab / 3, vocab - 1, vocab / 7};
+                    for (int a : at) flat[row + a] = 50.0f;
+                    flat[row] = Float.NaN;   // leading NaN must not stick
+                    break;
+                }
+                case 1: {   // nothing above -inf, NaN mixed in: CPU returns 0
+                    for (int v = 0; v < vocab; v++) flat[row + v] = Float.NEGATIVE_INFINITY;
+                    flat[row + vocab / 2] = Float.NaN;
+                    break;
+                }
+                default: {  // NaN just after the true maximum
+                    int at = (vocab * 5) / 8;
+                    flat[row + at] = 40.0f;
+                    flat[row + Math.min(at + 1, vocab - 1)] = Float.NaN;
+                }
+            }
+        }
+        long[] shape = seq == 1 ? new long[]{batch, vocab} : new long[]{batch, seq, vocab};
+        INDArray logits = Nd4j.create(flat, shape);
+        INDArray[] out = Nd4j.getExecutioner().exec(new TokenSample(logits));
+        for (int b = 0; b < batch; b++) {
+            int row = (b * seq + seq - 1) * vocab;
+            assertEquals(cpuArgmax(flat, row, vocab), out[0].getLong(b),
+                    "vocab=" + vocab + " batch row " + b + " seq=" + seq);
         }
     }
 }
