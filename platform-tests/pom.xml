@@ -59,6 +59,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- MTP multi-row commit (SD_MTP_MULTI_ROW_COMMIT); 0 selects single-row commit. -->
         <nd4j.mtp.multiRowCommit>1</nd4j.mtp.multiRowCommit>
+        <nd4j.weightOnly.splitBlocks></nd4j.weightOnly.splitBlocks>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <!-- Kept in sync with the nd4j-cuda artifact family by change-cuda-versions.sh. -->
         <cuda.version>13.1</cuda.version>
@@ -1882,6 +1883,9 @@
                         <!-- MTP multi-row commit (lossless; default ON). Select single-row
                              commit with -Dnd4j.mtp.multiRowCommit=0. -->
                         <SD_MTP_MULTI_ROW_COMMIT>${nd4j.mtp.multiRowCommit}</SD_MTP_MULTI_ROW_COMMIT>
+                        <!-- Weight-only GEMM K split across blocks for few-wave shapes
+                             (empty = built-in choice; 1 disables). -->
+                        <SD_WEIGHT_ONLY_SPLIT_BLOCKS>${nd4j.weightOnly.splitBlocks}</SD_WEIGHT_ONLY_SPLIT_BLOCKS>
                         <ND4J_DSP_NATIVE_DUMP_OUTPUTS>${nd4j.dsp.native.dumpOutputs}</ND4J_DSP_NATIVE_DUMP_OUTPUTS>
                         <ND4J_DSP_DIAG_EXEC_LIMIT>${nd4j.dsp.diagExecLimit}</ND4J_DSP_DIAG_EXEC_LIMIT>
                         <!-- Pinned-host failover budget for CudaMemoryPool (MB). Default 8 GB is too

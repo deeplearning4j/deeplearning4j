@@ -64,10 +64,27 @@ the primitive through a helper API (alongside `MmulHelper::ltMatmulScaled`).
   are staged once per CTA and shared by its warps (`ldsm`).
 - FP32 accumulation. A CTA owns a fixed block of output columns and the whole
   K; its warps split K into fixed ranges and reduce partial tiles through shared
-  memory in a fixed order (no atomics, no cross-CTA split-K). Tile shape, K
+  memory in a fixed order (see below for the few-wave cross-CTA split). Tile shape, K
   ranges and reduction order are compile-time constants independent of the row
   count: results are bit-reproducible under capture/replay and a row's result
   never depends on how many rows the call carries.
+- Few-wave shapes split K across blocks. When a shape's column groups fill
+  fewer than 4 waves of resident blocks and K leaves every split warp at least
+  two chunks, `kSplitBlocks = 4` blocks share a column group. Each block reduces
+  its warps as above and stores an FP32 partial tile in persistent per-device
+  scratch. The group's last block to arrive (an atomic ticket, reset by that
+  block) adds the partials in ascending block order. There is no extra launch
+  and no per-call allocation. The scratch grows only outside stream capture.
+  - The split depends only on the shape and the device's SM count, so row
+    invariance and replay determinism hold.
+  - On GB10 this covers only the Qwen3.6-27B down projection (N=5120,
+    K=17408): 640 column groups against 192 resident blocks, whose partial
+    last wave cost about 19% of that kernel.
+  - Measured back-to-back at 250 tokens, greedy went from 10.66 to 10.89 tok/s
+    (+2.2%). The earlier separate-launch split-K with per-call scratch was ~2%
+    slower. `SD_WEIGHT_ONLY_SPLIT_BLOCKS` (1, 2 or 4; platform-tests
+    `-Dnd4j.weightOnly.splitBlocks`) overrides the split; 1 restores the
+    unsplit order.
 
 ### Weight-format policy
 

@@ -19,7 +19,10 @@
 #include <ops/declarable/helpers/cuda/device_primitives.cuh>
 #include <ops/declarable/helpers/modelopt_linear.h>
 
+#include <cstdlib>
+#include <mutex>
 #include <string>
+#include <vector>
 
 #if HAVE_CUTLASS
 #include <cutlass/cutlass.h>
@@ -184,10 +187,20 @@ SD_DEVICE static ChunkStorage<Weights> fetchChunk(const Weights& weights, LongTy
 // shape, and two column tiles per warp, were both measured slower on GB10.)
 static constexpr int kMinBlocksPerSm = 4;
 
+// Few-wave shapes (the long-K down projection) leave most of the last wave of
+// blocks idle. They split K across kSplitBlocks blocks per column group: each
+// block reduces its warps as usual and stores its FP32 partial tile in a
+// persistent scratch buffer; the last block of the group to arrive (per-group
+// ticket, reset by that block) adds the partials in ascending block order. The
+// split depends only on the shape (never on the row count), so every row count
+// of a shape shares one accumulation order.
+static constexpr int kSplitBlocks = 4;
+
 template <typename X, typename Weights>
 SD_KERNEL static __launch_bounds__(kBlockThreads, kMinBlocksPerSm) void weightOnlyGemmKernel(
     const X* __restrict__ x, const Weights weights, void* __restrict__ z, LongType rows, LongType columns,
-    LongType depth, bool floatOutput) {
+    LongType depth, bool floatOutput, int splitBlocks, float* __restrict__ scratch,
+    unsigned int* __restrict__ tickets) {
   using Element = typename TensorCoreElement<X>::type;
   using Mma = cutlass::arch::Mma<cutlass::gemm::GemmShape<kMmaRows, kMmaColumns, kMmaDepth>, WARP_SIZE, Element,
                                  cutlass::layout::RowMajor, Element, cutlass::layout::ColumnMajor, float,
@@ -200,14 +213,22 @@ SD_KERNEL static __launch_bounds__(kBlockThreads, kMinBlocksPerSm) void weightOn
   const int member = lane % 4;
   const typename Weights::Constants constants = weights.prepare();
 
-  // The warp's K range depends only on K: identical for every row count.
+  __shared__ bool lastArrival;
+
+  // The warp's K range depends only on K and the shape's split: identical for
+  // every row count.
   const LongType chunks = (depth + kChunkDepth - 1) / kChunkDepth;
-  const LongType chunkBegin = warp * chunks / kSplitK;
-  const LongType chunkEnd = (warp + 1) * chunks / kSplitK;
+  const LongType parts = static_cast<LongType>(kSplitK) * splitBlocks;
+  const LongType columnGroups = (columns + kColumnsPerBlock - 1) / kColumnsPerBlock;
 
   // Block-uniform loops: every thread reaches every barrier.
-  for (LongType blockColumn = static_cast<LongType>(blockIdx.x) * kColumnsPerBlock; blockColumn < columns;
-       blockColumn += static_cast<LongType>(gridDim.x) * kColumnsPerBlock) {
+  for (LongType unit = blockIdx.x; unit < columnGroups * splitBlocks; unit += gridDim.x) {
+    const LongType columnGroup = unit / splitBlocks;
+    const int splitIndex = static_cast<int>(unit % splitBlocks);
+    const LongType blockColumn = columnGroup * kColumnsPerBlock;
+    const LongType part = static_cast<LongType>(splitIndex) * kSplitK + warp;
+    const LongType chunkBegin = part * chunks / parts;
+    const LongType chunkEnd = (part + 1) * chunks / parts;
     for (LongType rowBase = 0; rowBase < rows; rowBase += kMmaRows) {
       const LongType rowLow = rowBase + group;
       const LongType rowHigh = rowLow + kMmaRows / 2;
@@ -282,7 +303,9 @@ SD_KERNEL static __launch_bounds__(kBlockThreads, kMinBlocksPerSm) void weightOn
           const LongType column = blockColumn + tile * kMmaColumns + member * 2 + i % 2;
           if (row < rows && column < columns) {
             const LongType zOffset = row * columns + column;
-            if (floatOutput)
+            if (splitBlocks > 1)
+              scratch[static_cast<LongType>(splitIndex) * rows * columns + zOffset] = total;
+            else if (floatOutput)
               static_cast<float*>(z)[zOffset] = total;
             else
               static_cast<X*>(z)[zOffset] = static_cast<X>(total);
@@ -291,7 +314,126 @@ SD_KERNEL static __launch_bounds__(kBlockThreads, kMinBlocksPerSm) void weightOn
       }
       __syncthreads();  // partials are rewritten by the next row tile
     }
+
+    if (splitBlocks > 1) {
+      // Publish this block's partials, then take the group's ticket.
+      __threadfence();
+      __syncthreads();
+      if (threadIdx.x == 0) {
+        const unsigned int ticket = atomicAdd(tickets + columnGroup, 1u);
+        lastArrival = ticket == static_cast<unsigned int>(splitBlocks - 1);
+        if (lastArrival) tickets[columnGroup] = 0;
+      }
+      __syncthreads();
+      if (lastArrival) {
+        __threadfence();
+        const LongType tileColumns = columns - blockColumn < kColumnsPerBlock ? columns - blockColumn
+                                                                              : kColumnsPerBlock;
+        for (LongType e = threadIdx.x; e < rows * tileColumns; e += blockDim.x) {
+          const LongType zOffset = (e / tileColumns) * columns + blockColumn + e % tileColumns;
+          float total = __ldcg(scratch + zOffset);
+          for (int split = 1; split < splitBlocks; ++split)
+            total += __ldcg(scratch + static_cast<LongType>(split) * rows * columns + zOffset);
+          if (floatOutput)
+            static_cast<float*>(z)[zOffset] = total;
+          else
+            static_cast<X*>(z)[zOffset] = static_cast<X>(total);
+        }
+      }
+      __syncthreads();  // lastArrival is rewritten by the next unit
+    }
   }
+}
+
+// Persistent per-device split scratch and zeroed tickets. They grow only while
+// the stream is not capturing (a plan's warmup executes every shape first), so
+// captured graphs keep stable pointers.
+struct SplitScratch {
+  float* partials = nullptr;
+  LongType partialCapacity = 0;
+  unsigned int* tickets = nullptr;
+  LongType ticketCapacity = 0;
+};
+
+static std::mutex splitScratchLock;
+static std::vector<SplitScratch> splitScratchByDevice;
+
+static void ensureSplitScratch(cudaStream_t stream, LongType partials, LongType groups, float** partialsOut,
+                               unsigned int** ticketsOut) {
+  const int device = AffinityManager::currentDeviceId();
+  std::lock_guard<std::mutex> guard(splitScratchLock);
+  if (static_cast<int>(splitScratchByDevice.size()) <= device) splitScratchByDevice.resize(device + 1);
+  SplitScratch& scratch = splitScratchByDevice[device];
+  if (scratch.partialCapacity < partials || scratch.ticketCapacity < groups) {
+    cudaStreamCaptureStatus capture = cudaStreamCaptureStatusNone;
+    if (cudaStreamIsCapturing(stream, &capture) != cudaSuccess || capture != cudaStreamCaptureStatusNone)
+      THROW_EXCEPTION("WeightOnlyGemm: split scratch must grow during capture; execute the shape before capture");
+    // Tickets are reset by their last arrival, so they are zeroed only when allocated.
+    if (cudaStreamSynchronize(stream) != cudaSuccess)
+      THROW_EXCEPTION("WeightOnlyGemm: stream synchronize before split scratch growth failed");
+    if (scratch.partialCapacity < partials) {
+      if (scratch.partials != nullptr) cudaFree(scratch.partials);
+      scratch.partials = nullptr;
+      if (cudaMalloc(&scratch.partials, partials * sizeof(float)) != cudaSuccess)
+        THROW_EXCEPTION("WeightOnlyGemm: split scratch allocation failed");
+      scratch.partialCapacity = partials;
+    }
+    if (scratch.ticketCapacity < groups) {
+      if (scratch.tickets != nullptr) cudaFree(scratch.tickets);
+      scratch.tickets = nullptr;
+      if (cudaMalloc(&scratch.tickets, groups * sizeof(unsigned int)) != cudaSuccess ||
+          cudaMemset(scratch.tickets, 0, groups * sizeof(unsigned int)) != cudaSuccess)
+        THROW_EXCEPTION("WeightOnlyGemm: split ticket allocation failed");
+      scratch.ticketCapacity = groups;
+    }
+  }
+  *partialsOut = scratch.partials;
+  *ticketsOut = scratch.tickets;
+}
+
+// Scratch rows: at least 64 and a power of two, so a plan's later, longer
+// prefill rarely has to grow it.
+static LongType splitScratchRows(LongType rows) {
+  LongType capacity = 64;
+  while (capacity < rows) capacity *= 2;
+  return capacity;
+}
+
+// Blocks resident per SM at the launch bound, times the SM count: one wave.
+static LongType residentBlocks() {
+  int multiprocessors = 0;
+  if (cudaDeviceGetAttribute(&multiprocessors, cudaDevAttrMultiProcessorCount, AffinityManager::currentDeviceId()) !=
+      cudaSuccess)
+    THROW_EXCEPTION("WeightOnlyGemm: multiprocessor count query failed");
+  return static_cast<LongType>(multiprocessors) * kMinBlocksPerSm;
+}
+
+// A shape splits when its column groups fill fewer than kSplitWaveLimit waves:
+// the partial last wave then dominates. Depends on the shape only.
+static constexpr LongType kSplitWaveLimit = 4;
+
+// SD_WEIGHT_ONLY_SPLIT_BLOCKS (1, 2 or 4; empty = kSplitBlocks) overrides the
+// split for few-wave shapes; 1 disables it.
+static int configuredSplitBlocks() {
+  static const int configured = [] {
+    const char* value = std::getenv("SD_WEIGHT_ONLY_SPLIT_BLOCKS");
+    if (value == nullptr || value[0] == '\0') return kSplitBlocks;
+    const int parsed = std::atoi(value);
+    if (parsed != 1 && parsed != 2 && parsed != 4)
+      THROW_EXCEPTION("SD_WEIGHT_ONLY_SPLIT_BLOCKS must be 1, 2 or 4");
+    return parsed;
+  }();
+  return configured;
+}
+
+static int splitBlocksFor(LongType columns, LongType depth) {
+  const int split = configuredSplitBlocks();
+  if (split == 1) return 1;
+  const LongType groups = (columns + kColumnsPerBlock - 1) / kColumnsPerBlock;
+  const LongType chunks = (depth + kChunkDepth - 1) / kChunkDepth;
+  // Each split warp keeps at least two chunks to pipeline.
+  if (chunks < 2LL * kSplitK * split) return 1;
+  return groups < kSplitWaveLimit * residentBlocks() ? split : 1;
 }
 
 template <typename X>
@@ -303,8 +445,18 @@ static void weightOnlyGemmNvfp4_(LaunchContext* context, NDArray* x, NDArray* w,
   const ModelOptNvfp4Weights<X> weights{static_cast<const uint8_t*>(w->specialBuffer()),
                                         static_cast<const float8*>(blockScales->specialBuffer()),
                                         static_cast<const float*>(globalScale->specialBuffer()), depth};
-  weightOnlyGemmKernel<X><<<blocks, kBlockThreads, 0, *context->getCudaStream()>>>(
-      static_cast<const X*>(x->specialBuffer()), weights, z->specialBuffer(), rows, columns, depth, floatOutput);
+  const int splitBlocks = splitBlocksFor(columns, depth);
+  float* scratch = nullptr;
+  unsigned int* tickets = nullptr;
+  const LongType groups = (columns + kColumnsPerBlock - 1) / kColumnsPerBlock;
+  if (splitBlocks > 1)
+    ensureSplitScratch(*context->getCudaStream(), static_cast<LongType>(splitBlocks) * splitScratchRows(rows) * columns,
+                       groups, &scratch, &tickets);
+  const LongType units = groups * splitBlocks;
+  const unsigned int launched = units < blocks ? static_cast<unsigned int>(units) : blocks;
+  weightOnlyGemmKernel<X><<<launched, kBlockThreads, 0, *context->getCudaStream()>>>(
+      static_cast<const X*>(x->specialBuffer()), weights, z->specialBuffer(), rows, columns, depth, floatOutput,
+      splitBlocks, scratch, tickets);
 }
 
 BUILD_SINGLE_TEMPLATE(void weightOnlyGemmNvfp4_,
@@ -352,8 +504,8 @@ void WeightOnlyGemm::run(LaunchContext* context, WeightOnlyFormat format, NDArra
   if (dims.y != static_cast<unsigned int>(kBlockThreads))
     THROW_EXCEPTION(("WeightOnlyGemm: BLOCK_SIZE_WEIGHT_ONLY_GEMM must be " + std::to_string(kBlockThreads)).c_str());
   if (dims.x == 0) THROW_EXCEPTION("WeightOnlyGemm: GRID_SIZE_WEIGHT_ONLY_GEMM must be positive");
-  const LongType needed = (w->sizeAt(0) + kColumnsPerBlock - 1) / kColumnsPerBlock;
-  const unsigned int blocks = needed < dims.x ? static_cast<unsigned int>(needed) : dims.x;
+  // dims.x caps the grid; the launcher sizes it to the shape's work units.
+  const unsigned int blocks = dims.x;
   BUILD_SINGLE_SELECTOR(x->dataType(), weightOnlyGemmNvfp4_,
                         (context, x, w, blockScales, globalScale, z, floatOutput, blocks), SD_WEIGHT_ONLY_MMA_TYPES);
 #else
