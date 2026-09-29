@@ -187,12 +187,13 @@ its rationale, and its current implementation status.
 | [0030](0030%20-%20Type%20Promotion.md) | Smaller Type-Limited Artifact | Superseded | Publish a second Maven artifact with limited data type support (float-only) to reduce binary size. |
 | [0031](0031%20-%20New%20generate%20combinations%20macros.md) | Type Combination Macros | Superseded | Preprocessor macros for automating exhaustive template instantiation for all type combinations. |
 | [0039](0039%20-%20Selective%20rendering%20type%20system.md) | Selective Rendering Type System | Implemented | CMake-level semantic filtering engine that automatically determines valid type combinations and generates compile-time macros, avoiding template combinatorial explosion. |
-| [0041](0041%20-%20CUDA%20Architecture%20Reduction.md) | CUDA Architecture Target Reduction | Proposed | Drop pre-Ampere compute capabilities (target 8.6+ only) to cut build time ~75% and binary size from ~800MB to ~200MB. |
+| [0041](0041%20-%20CUDA%20Architecture%20Reduction.md) | CUDA Architecture Target Reduction | Proposed | Drop pre-Ampere compute capabilities to cut build time ~75% and binary size from ~800MB to ~200MB. Amended by 0124, which restores 8.0 and adds Blackwell. |
 | [0042](0042%20-%20Android%20NDK%20Migration.md) | Android NDK Migration | Proposed | Upgrade from NDK r21d (2019) to r27d (LLVM 18), minimum API 21, full LLVM toolchain. |
 | [0045](0045%20-%20Android%20Cross-Compilation%20Modernization.md) | Android Cross-Compilation Modernization | Proposed | Modernized CMake toolchain files with flexible NDK path detection and explicit LLVM tool specification. |
 | [0046](0046%20-%20CUDA%20Macro%20Standardization.md) | CUDA Macro Standardization | Proposed | Replace mixed `__CUDABLAS__`/`__CUDACC__` with consistent `SD_`-prefixed hierarchy (`SD_CUDA`, `SD_HOST`, `SD_DEVICE`, etc.). |
 | [0047](0047%20-%20Comprehensive%20Template%20Instantiation%20Migration.md) | Template Instantiation Migration | Implemented | Platform-aware type equivalence classes (e.g., `long`/`int64_t`/`LongType`) ensuring all alias variants are instantiated to eliminate cross-platform linker errors. |
 | [0095](0095%20-%20sccache%20CI%20Build%20Caching.md) | sccache CI Build Caching | Implemented | Replaced ccache with sccache in CI workflows for distributed build caching with GHA backend. |
+| [0124](0124%20-%20CUDA%20compute%20profiles.md) | CUDA Compute Profiles | Accepted | `libnd4j.compute.profile`: `dev` (the build machine's GPUs, the default) or `release` (sm_80/86/90/100/120 plus PTX on CUDA 12.9/13.1, sm_80/86/90 plus PTX on 12.6). An explicit `libnd4j.compute` list overrides the profile. `change-cuda-versions.sh` rewrites POMs only. |
 
 ### Namespace Migration
 

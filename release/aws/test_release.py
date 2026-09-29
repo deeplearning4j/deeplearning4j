@@ -1417,10 +1417,24 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn(shared, dispatcher)
         self.assertIn("workflow: ${{ inputs.workflow }}", dispatcher)
         self.assertGreater(len(plan["coveredWorkflows"]), 1)
-        self.assertEqual(
-            [dispatcher_path],
-            sorted((repository_root / ".github/workflows").glob("build-deploy-*")),
+        # Per-lane entry points (the compat and arm64 CUDA classifiers) are thin
+        # wrappers: they may only pin their own matrix key and hand off to the same
+        # shared executor, never carry build steps of their own.
+        matrix = json.loads(
+            (repository_root / "release/github/workflow-matrix.json").read_text(encoding="utf-8")
         )
+        wrappers = [
+            path for path in sorted((repository_root / ".github/workflows").glob("build-deploy-*"))
+            if path != dispatcher_path
+        ]
+        for wrapper_path in wrappers:
+            with self.subTest(wrapper=wrapper_path.name):
+                wrapper = wrapper_path.read_text(encoding="utf-8")
+                self.assertIn(f"uses: ./{shared}", wrapper)
+                self.assertIn(f"workflow: {wrapper_path.name}", wrapper)
+                self.assertNotIn("steps:", wrapper)
+                self.assertIn(wrapper_path.name, matrix["workflows"])
+                self.assertIn(wrapper_path.name, plan["coveredWorkflows"])
 
     def test_every_accelerator_backend_is_profile_gated_like_cuda(self):
         repository_root = Path(__file__).resolve().parents[2]
@@ -1484,17 +1498,17 @@ class ReleaseValidationTest(unittest.TestCase):
             manifest_entries.findtext("m:Built-By", namespaces=namespace),
         )
 
+        # The POMs carry whichever CUDA configuration change-cuda-versions.sh
+        # selected last; every ZLUDA coordinate must follow that one version.
+        cuda = pom.findtext("m:properties/m:cuda.version", namespaces=namespace)
+        self.assertRegex(cuda, r"^\d+\.\d+$")
         self.assertEqual(
-            "nd4j-zluda-12.9-platform",
+            f"nd4j-zluda-{cuda}-platform",
             pom.findtext("m:artifactId", namespaces=namespace),
         )
         self.assertEqual(
             "false",
             pom.findtext("m:properties/m:skipPublishing", namespaces=namespace),
-        )
-        self.assertEqual(
-            "12.9",
-            pom.findtext("m:properties/m:cuda.version", namespaces=namespace),
         )
         self.assertEqual(
             "7.2.4",
@@ -1507,7 +1521,7 @@ class ReleaseValidationTest(unittest.TestCase):
         direct_dependencies = pom.findall("m:dependencies/m:dependency", namespace)
         self.assertEqual(1, len(direct_dependencies))
         self.assertEqual(
-            "nd4j-zluda-12.9",
+            f"nd4j-zluda-{cuda}",
             direct_dependencies[0].findtext("m:artifactId", namespaces=namespace),
         )
         self.assertIsNone(
@@ -1547,7 +1561,7 @@ class ReleaseValidationTest(unittest.TestCase):
             dependency.findtext("m:artifactId", namespaces=namespace)
             for dependency in pom.findall(".//m:dependency", namespace)
         }
-        self.assertNotIn("nd4j-cuda-12.9-platform", all_artifact_ids)
+        self.assertNotIn(f"nd4j-cuda-{cuda}-platform", all_artifact_ids)
         self.assertNotIn("cuda-platform", all_artifact_ids)
 
     def test_every_zluda_shard_publishes_cuda_versioned_maven_coordinates(self):
@@ -2101,8 +2115,13 @@ class ReleaseValidationTest(unittest.TestCase):
             item.findtext("m:artifactId", namespaces=namespace)
             for item in zluda_pom.findall("m:dependencies/m:dependency", namespace)
         }
+        # The runtime follows the checkout's selected CUDA configuration.
+        cuda = zluda_pom.findtext("m:properties/m:cuda.version", namespaces=namespace)
+        self.assertEqual(
+            f"nd4j-zluda-{cuda}", zluda_pom.findtext("m:artifactId", namespaces=namespace)
+        )
         self.assertNotIn("nd4j-cuda-${cuda.version}", runtime_dependencies)
-        self.assertIn("nd4j-cuda-12.9-backend-common", runtime_dependencies)
+        self.assertIn(f"nd4j-cuda-{cuda}-backend-common", runtime_dependencies)
         profile = next(
             item
             for item in zluda_pom.findall("m:profiles/m:profile", namespace)
@@ -3903,7 +3922,7 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual("linux-arm64", build["javacppPlatform"])
         self.assertEqual("13.1", build["cudaVersion"])
         self.assertIs(True, build["crossCompileSbsa"])
-        self.assertEqual("12.1", build_platform.cuda_compute_targets(build))
+        self.assertEqual(("12.1", ""), build_platform.cuda_architecture_contract(build))
         self.assertEqual(4, build["buildThreads"])
         self.assertEqual(1, build["cudaThreads"])
         self.assertEqual(1, build["cudaSplitCompile"])
@@ -3966,45 +3985,84 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertNotIn(":nd4j-cuda-13.1-platform", build["modules"])
 
         with tempfile.TemporaryDirectory() as temp:
-            contract = Path(temp) / "cuda-architecture-contract.cmake"
-            contract.write_text(
-                "cmake_minimum_required(VERSION 3.18)\n"
-                "set(SD_CUDA ON)\n"
-                "set(SD_ZLUDA OFF)\n"
-                "set(SD_GCC_FUNCTRACE OFF)\n"
-                f'include("{root / "libnd4j/cmake/CudaConfiguration.cmake"}")\n'
-                'set(COMPUTE "9.0 12.1")\n'
-                "setup_cuda_architectures_early()\n"
-                'if(NOT CUDA_ARCHITECTURES STREQUAL "90;121")\n'
-                '  message(FATAL_ERROR "architecture mismatch: ${CUDA_ARCHITECTURES}")\n'
-                "endif()\n"
-                'configure_cuda_architecture_flags("9.0 12.1")\n'
-                'if(NOT CUDA_ARCH_FLAGS MATCHES "compute_90,code=sm_90" OR\n'
-                '   NOT CUDA_ARCH_FLAGS MATCHES "compute_121,code=sm_121")\n'
-                '  message(FATAL_ERROR "flag mismatch: ${CUDA_ARCH_FLAGS}")\n'
-                "endif()\n",
-                encoding="utf-8",
-            )
-            valid = subprocess.run(
-                ["cmake", "-P", str(contract)], capture_output=True, text=True
-            )
-            self.assertEqual(0, valid.returncode, valid.stdout + valid.stderr)
+            temp_root = Path(temp)
 
-            invalid = Path(temp) / "cuda-architecture-invalid.cmake"
-            invalid.write_text(
-                "cmake_minimum_required(VERSION 3.18)\n"
-                "set(SD_CUDA ON)\n"
-                "set(SD_ZLUDA OFF)\n"
-                "set(SD_GCC_FUNCTRACE OFF)\n"
-                f'include("{root / "libnd4j/cmake/CudaConfiguration.cmake"}")\n'
-                'configure_cuda_architecture_flags("12..1")\n',
-                encoding="utf-8",
+            def executable(name, lines):
+                path = temp_root / name
+                path.write_text("#!/bin/sh\nprintf '%s\\n' " + " ".join(lines) + "\n", encoding="utf-8")
+                path.chmod(0o755)
+                return path
+
+            def resolve(compute, profile, setup=""):
+                script = temp_root / "cuda-architectures.cmake"
+                script.write_text(
+                    "cmake_minimum_required(VERSION 3.18)\n"
+                    "set(SD_CUDA ON)\n"
+                    "set(SD_ZLUDA OFF)\n"
+                    "set(SD_GCC_FUNCTRACE OFF)\n"
+                    f'include("{root / "libnd4j/cmake/CudaConfiguration.cmake"}")\n'
+                    f"{setup}"
+                    f'set(SD_COMPUTE_PROFILE "{profile}")\n'
+                    f'configure_cuda_architecture_flags("{compute}")\n'
+                    'message(STATUS "CUDA_ARCH_FLAGS=${CUDA_ARCH_FLAGS}")\n',
+                    encoding="utf-8",
+                )
+                result = subprocess.run(["cmake", "-P", str(script)], capture_output=True, text=True)
+                marker = "CUDA_ARCH_FLAGS="
+                flags = next(
+                    (line.split(marker, 1)[1] for line in result.stdout.splitlines() if marker in line),
+                    None,
+                )
+                return result, flags
+
+            def sass(*architectures):
+                return [f"-gencode arch=compute_{arch},code=sm_{arch}" for arch in architectures]
+
+            def ptx(architecture):
+                return [f"-gencode arch=compute_{architecture},code=compute_{architecture}"]
+
+            cases = (
+                # Explicit targets override the profile and build SASS only.
+                ("explicit", "9.0 12.1", "release", "", sass(90, 121)),
+                ("explicit list", "80,86", "dev", "", sass(80, 86)),
+                # Without targets, release builds its SASS set plus PTX of the
+                # newest target for GPUs that postdate the build.
+                ("release", "", "release", "", sass(80, 86, 90, 100, 120) + ptx(120)),
+                # A toolkit without Blackwell builds the older release targets.
+                (
+                    "release on CUDA 12.6",
+                    "",
+                    "release",
+                    'set(CMAKE_CUDA_COMPILER "{}")\n'.format(
+                        executable("nvcc-12.6", ["sm_75", "sm_80", "sm_86", "sm_89", "sm_90"])
+                    ),
+                    sass(80, 86, 90) + ptx(90),
+                ),
+                # dev builds each distinct GPU architecture of the build machine.
+                (
+                    "dev",
+                    "",
+                    "dev",
+                    'set(SD_NVIDIA_SMI_EXECUTABLE "{}")\n'.format(
+                        executable("nvidia-smi", ["12.1", "8.6", "12.1"])
+                    ),
+                    sass(121, 86),
+                ),
+                # Cross-compiling, dev has no GPU to target and builds the baseline.
+                ("dev cross-compiling", "", "dev", "set(CMAKE_CROSSCOMPILING ON)\n", sass(86) + ptx(86)),
             )
-            rejected = subprocess.run(
-                ["cmake", "-P", str(invalid)], capture_output=True, text=True
-            )
+            for name, compute, profile, setup, expected in cases:
+                with self.subTest(case=name):
+                    result, flags = resolve(compute, profile, setup)
+                    self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                    self.assertEqual(" ".join(expected), flags)
+
+            rejected, _ = resolve("12..1", "dev")
             self.assertNotEqual(0, rejected.returncode)
             self.assertIn("Invalid CUDA compute target '12..1'", rejected.stderr)
+            rejected, _ = resolve("", "fast")
+            self.assertNotEqual(0, rejected.returncode)
+            self.assertIn("Unknown CUDA compute profile 'fast'", rejected.stderr)
 
     def test_shared_native_script_emits_specialized_classifiers(self):
         root = Path(__file__).parents[2]
@@ -4020,6 +4078,9 @@ class ReleaseValidationTest(unittest.TestCase):
         cuda = command(DL4J_FAMILY="linux-cuda", DL4J_CUDA_VERSION="12.9", DL4J_HELPER="compile")
         self.assertIn("-Dlibnd4j.classifier=linux-x86_64-cuda-12.9-compile", cuda)
         self.assertIn("-Djavacpp.platform.extension=-compile", cuda)
+        # Without explicit targets a CUDA shard builds the release profile.
+        self.assertIn("-Dlibnd4j.compute=", cuda)
+        self.assertIn("-Dlibnd4j.compute.profile=release", cuda)
 
         dgx_spark = command(
             DL4J_FAMILY="linux-cuda",
@@ -4453,7 +4514,7 @@ class ReleaseValidationTest(unittest.TestCase):
         shard = {
             "id": "linux-x86_64-cuda-12-9", "os": "linux", "workloads": ["maven"],
             "build": {"backend": "cuda", "cudaVersion": "12.9", "javacppPlatform": "linux-x86_64",
-                      "mavenArgs": ["-Dlibnd4j.compute=8.6 9.0"],
+                      "mavenArgs": ["-Dlibnd4j.compute.profile=release"],
                       "cudaThreads": 3, "cudaSplitCompile": 2,
                       "modules": [], "variants": [{"name": "compile", "triton": True}]},
         }
@@ -4464,9 +4525,52 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual("compile", calls[0][1]["DL4J_HELPER"])
         self.assertEqual("12.9", calls[0][1]["DL4J_CUDA_VERSION"])
         self.assertEqual("linux-x86_64", calls[0][1]["DL4J_PLATFORM"])
-        self.assertEqual("8.6 9.0", calls[0][1]["DL4J_COMPUTE"])
+        self.assertEqual("", calls[0][1]["DL4J_COMPUTE"])
+        self.assertEqual("release", calls[0][1]["DL4J_COMPUTE_PROFILE"])
         self.assertEqual("3", calls[0][1]["DL4J_CUDA_THREADS"])
         self.assertEqual("2", calls[0][1]["DL4J_CUDA_SPLIT_COMPILE"])
+
+    def test_cuda_shards_declare_one_architecture_contract(self):
+        def build(*maven_args, **extra):
+            return {"backend": "cuda", "mavenArgs": list(maven_args), **extra}
+
+        contract = build_platform.cuda_architecture_contract
+        self.assertEqual(("", "release"), contract(build("-Dlibnd4j.compute.profile=release")))
+        # Explicit targets remain a supported release contract.
+        self.assertEqual(("8.6 9.0", ""), contract(build("-Dlibnd4j.compute=8.6 9.0")))
+        self.assertEqual(("", ""), contract({"backend": "cpu", "mavenArgs": []}))
+        self.assertEqual(
+            ("", ""),
+            contract(build("-Dlibnd4j.zluda=AMD", zludaVersion="v6")),
+        )
+        rejected = (
+            build(),
+            build("-Dlibnd4j.compute="),
+            build("-Dlibnd4j.compute=12.1", "-Dlibnd4j.compute.profile=release"),
+            build("-Dlibnd4j.compute.profile=release", "-Dlibnd4j.compute.profile=release"),
+            # dev builds only for the GPUs of the build machine.
+            build("-Dlibnd4j.compute.profile=dev"),
+        )
+        for shard_build in rejected:
+            with self.subTest(mavenArgs=shard_build["mavenArgs"]):
+                with self.assertRaises(ValueError):
+                    contract(shard_build)
+
+        root = Path(__file__).parents[2]
+        for provider in ("aws", "azure", "gcp"):
+            plan = json.loads((root / f"release/{provider}/release-plan.json").read_text(encoding="utf-8"))
+            for shard in plan["shards"]:
+                shard_build = shard.get("build", {})
+                if shard_build.get("backend") != "cuda":
+                    continue
+                with self.subTest(provider=provider, shard=shard["id"]):
+                    targets, profile = contract(shard_build)
+                    if shard_build.get("zludaVersion"):
+                        self.assertEqual(("", ""), (targets, profile))
+                    elif shard.get("architecture") == "arm64":
+                        self.assertEqual(("12.1", ""), (targets, profile))
+                    else:
+                        self.assertEqual(("", "release"), (targets, profile))
 
     def test_aws_cross_platform_invokes_the_shared_workflow_script(self):
         calls = []

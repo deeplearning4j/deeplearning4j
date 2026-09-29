@@ -690,75 +690,6 @@ function(configure_cuda_linking main_target_name)
     install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 
-function(setup_cuda_architectures_early)
-    if(NOT SD_CUDA)
-        return()
-    endif()
-
-    # Fix missing _CMAKE_CUDA_WHOLE_FLAG
-    if(NOT DEFINED _CMAKE_CUDA_WHOLE_FLAG)
-        if(WIN32)
-            set(_CMAKE_CUDA_WHOLE_FLAG "/WHOLEARCHIVE:" CACHE INTERNAL "CUDA whole archive flag")
-        else()
-            set(_CMAKE_CUDA_WHOLE_FLAG "-Wl,--whole-archive" CACHE INTERNAL "CUDA whole archive flag")
-        endif()
-    endif()
-
-    if(NOT DEFINED CMAKE_CUDA_WHOLE_FLAG)
-        if(WIN32)
-            set(CMAKE_CUDA_WHOLE_FLAG "/WHOLEARCHIVE:" CACHE STRING "CUDA whole archive flag")
-        else()
-            set(CMAKE_CUDA_WHOLE_FLAG "-Wl,--whole-archive" CACHE STRING "CUDA whole archive flag")
-        endif()
-    endif()
-
-    # ZLUDA translates PTX at runtime. Disable CMake's implicit real+virtual
-    # sm_50 pair so every translation unit embeds one PTX payload rather than
-    # PTX plus native NVIDIA SASS. This is also required to keep the all-ops
-    # Windows DLL below the PE image-size limit.
-    if(SD_ZLUDA)
-        set(CUDA_ARCHITECTURES "OFF" PARENT_SCOPE)
-        set(CMAKE_CUDA_ARCHITECTURES "OFF" PARENT_SCOPE)
-        return()
-    endif()
-
-    if(DEFINED COMPUTE)
-        string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
-        if(COMPUTE_CMP STREQUAL "all" OR COMPUTE_CMP STREQUAL "auto")
-            set(CUDA_ARCHITECTURES "86" PARENT_SCOPE)
-        else()
-            # Accept Maven's whitespace-separated contract as well as comma-separated
-            # values. Three-digit targets are required by CUDA 13 for DGX Spark
-            # (compute capability 12.1 -> sm_121).
-            string(REGEX REPLACE "[ \\t,]+" ";" ARCH_LIST "${COMPUTE}")
-            set(PARSED_ARCHS "")
-            foreach(ARCH IN LISTS ARCH_LIST)
-                string(STRIP "${ARCH}" ARCH)
-                if(ARCH STREQUAL "")
-                    continue()
-                endif()
-                if(NOT ARCH MATCHES "^[0-9]+([.][0-9]+)?$")
-                    message(FATAL_ERROR
-                        "Invalid CUDA compute target '${ARCH}'; use values such as 8.6, 9.0, or 12.1")
-                endif()
-                string(REPLACE "." "" ARCH_CLEAN "${ARCH}")
-                if(NOT ARCH_CLEAN MATCHES "^[0-9][0-9][0-9]?$")
-                    message(FATAL_ERROR
-                        "Invalid CUDA compute target '${ARCH}'; use values such as 8.6, 9.0, or 12.1")
-                endif()
-                list(APPEND PARSED_ARCHS "${ARCH_CLEAN}")
-            endforeach()
-            if(PARSED_ARCHS)
-                set(CUDA_ARCHITECTURES "${PARSED_ARCHS}" PARENT_SCOPE)
-            else()
-                set(CUDA_ARCHITECTURES "86" PARENT_SCOPE)
-            endif()
-        endif()
-    else()
-        set(CUDA_ARCHITECTURES "86" PARENT_SCOPE)
-    endif()
-endfunction()
-
 function(setup_cuda_language)
     if(NOT DEFINED _CMAKE_CUDA_WHOLE_FLAG)
         if(WIN32)
@@ -819,9 +750,14 @@ function(resolve_zluda_ptx_architectures COMPUTE_VALUE)
     set(_requested "${COMPUTE_VALUE}")
     string(STRIP "${_requested}" _requested)
     string(TOLOWER "${_requested}" _requested_lower)
+    # The CUDA profile keywords (see resolve_cuda_architectures) name no PTX
+    # target, so they select the ZLUDA default below.
     set(_explicit TRUE)
     if(_requested STREQUAL "" OR
+       _requested_lower STREQUAL "dev" OR
+       _requested_lower STREQUAL "native" OR
        _requested_lower STREQUAL "auto" OR
+       _requested_lower STREQUAL "release" OR
        _requested_lower STREQUAL "all")
         set(_explicit FALSE)
     endif()
@@ -946,12 +882,241 @@ function(resolve_zluda_ptx_architectures COMPUTE_VALUE)
         "ZLUDA PTX flags: ${_arch_flags_string} (targets=${_normalized_targets_string})")
 endfunction()
 
+# CUDA architectures (ADR 0124). COMPUTE, which Maven sets from
+# libnd4j.compute, is an explicit list of compute capabilities such as
+# "8.6 9.0", "12.1" or "80,86": SASS for exactly those targets and no PTX.
+# When COMPUTE is empty, the profile in SD_COMPUTE_PROFILE (Maven
+# libnd4j.compute.profile) picks the targets for the toolkit being used:
+#
+#   dev      The default. SASS for each distinct GPU architecture on the build
+#            machine and no PTX, so each kernel compiles once and nothing is
+#            JIT-compiled at load. With no visible GPU, or when
+#            cross-compiling, it builds sm_86 SASS plus compute_86 PTX, which
+#            runs on every GPU from compute capability 8.6 on.
+#   release  SASS for each SD_CUDA_RELEASE_ARCHITECTURES target the toolkit
+#            can generate, plus PTX for the newest of them so GPUs released
+#            after the build can JIT-compile it. CUDA 12.9 and 13.1 build
+#            sm_80/86/90/100/120 plus compute_120 PTX; CUDA 12.6, which
+#            predates Blackwell, builds sm_80/86/90 plus compute_90 PTX.
+#
+# COMPUTE also accepts a profile name, and the older keywords "auto"/"native"
+# (dev) and "all" (release).
+#
+# SASS for X.Y also runs on X.Z when Z >= Y, so the release targets cover
+# compute capability 8.0 (A100), 8.6 and 8.9 (RTX 30/40, A10, L4, L40),
+# 9.0 (H100/H200), 10.0 and 10.3 (B200/B300), and 12.0 and 12.1 (RTX 50,
+# RTX PRO Blackwell, DGX Spark). Turing (7.5) and older are not release
+# targets (ADR 0041).
+set(SD_COMPUTE_PROFILE "dev" CACHE STRING
+    "CUDA architecture profile used when COMPUTE is empty: dev or release")
+set_property(CACHE SD_COMPUTE_PROFILE PROPERTY STRINGS dev release)
+set(SD_CUDA_RELEASE_ARCHITECTURES 80 86 90 100 120)
+
+# Sets OUT_VAR to the SASS targets (for example 80;86;90) the CUDA compiler
+# can generate, or to an empty list when nvcc cannot be queried.
+function(sd_cuda_compiler_sass_architectures OUT_VAR)
+    set(_supported "")
+    if(CMAKE_CUDA_COMPILER)
+        execute_process(
+            COMMAND "${CMAKE_CUDA_COMPILER}" --list-gpu-code
+            RESULT_VARIABLE _result
+            OUTPUT_VARIABLE _output
+            ERROR_QUIET)
+        if(_result EQUAL 0)
+            string(REPLACE "\n" ";" _lines "${_output}")
+            foreach(_line IN LISTS _lines)
+                string(STRIP "${_line}" _line)
+                if(_line MATCHES "^sm_([0-9]+)$")
+                    list(APPEND _supported "${CMAKE_MATCH_1}")
+                endif()
+            endforeach()
+        endif()
+    endif()
+    set(${OUT_VAR} "${_supported}" PARENT_SCOPE)
+endfunction()
+
+# Sets OUT_VAR to the distinct SASS targets of the GPUs on this machine (121
+# on DGX Spark, 86;89 on a machine with an RTX 3090 and an RTX 4090), or to an
+# empty list when no GPU is visible or the build is cross-compiling.
+function(sd_cuda_native_architectures OUT_VAR)
+    set(_native "")
+    foreach(_entry IN LISTS CMAKE_CUDA_ARCHITECTURES_NATIVE)
+        if(_entry MATCHES "^([0-9]+)")
+            list(APPEND _native "${CMAKE_MATCH_1}")
+        endif()
+    endforeach()
+    # CMake detects native architectures only from 3.24 on, and only when the
+    # CUDA runtime works, which a driver older than the toolkit prevents.
+    # nvidia-smi still reports the GPU in both cases.
+    if(NOT _native AND NOT CMAKE_CROSSCOMPILING)
+        find_program(SD_NVIDIA_SMI_EXECUTABLE nvidia-smi)
+        mark_as_advanced(SD_NVIDIA_SMI_EXECUTABLE)
+        if(SD_NVIDIA_SMI_EXECUTABLE)
+            execute_process(
+                COMMAND "${SD_NVIDIA_SMI_EXECUTABLE}" --query-gpu=compute_cap --format=csv,noheader
+                RESULT_VARIABLE _result
+                OUTPUT_VARIABLE _output
+                ERROR_QUIET
+                TIMEOUT 60)
+            if(_result EQUAL 0)
+                string(REPLACE "\n" ";" _lines "${_output}")
+                foreach(_line IN LISTS _lines)
+                    string(STRIP "${_line}" _line)
+                    if(_line MATCHES "^([0-9]+)[.]([0-9])$")
+                        list(APPEND _native "${CMAKE_MATCH_1}${CMAKE_MATCH_2}")
+                    endif()
+                endforeach()
+            endif()
+        endif()
+    endif()
+    if(_native)
+        list(REMOVE_DUPLICATES _native)
+    endif()
+    set(${OUT_VAR} "${_native}" PARENT_SCOPE)
+endfunction()
+
+# Resolves COMPUTE_VALUE, or PROFILE_VALUE when COMPUTE_VALUE is empty, to
+# nvcc -gencode flags as described above. Sets CUDA_ARCH_FLAGS and
+# SD_CUDA_ARCH_SUMMARY in the caller.
+function(resolve_cuda_architectures COMPUTE_VALUE PROFILE_VALUE)
+    string(STRIP "${PROFILE_VALUE}" _profile_value)
+    string(TOLOWER "${_profile_value}" _profile_value)
+    if(_profile_value STREQUAL "")
+        set(_profile_value "dev")
+    elseif(NOT _profile_value STREQUAL "dev" AND NOT _profile_value STREQUAL "release")
+        message(FATAL_ERROR "Unknown CUDA compute profile '${PROFILE_VALUE}'; use dev or release")
+    endif()
+    string(STRIP "${COMPUTE_VALUE}" _requested)
+    string(TOLOWER "${_requested}" _requested_lower)
+    # Targets in COMPUTE override the profile.
+    if(_requested_lower STREQUAL "")
+        set(_requested_lower "${_profile_value}")
+    endif()
+    set(_toolkit "CUDA ${CMAKE_CUDA_COMPILER_VERSION}")
+    # An empty list means nvcc could not be queried; nvcc then reports any
+    # unsupported target itself.
+    sd_cuda_compiler_sass_architectures(_supported)
+    string(REPLACE ";" " " _supported_text "${_supported}")
+
+    set(_sass "")
+    set(_ptx "")
+    if(_requested_lower STREQUAL "dev" OR
+       _requested_lower STREQUAL "native" OR
+       _requested_lower STREQUAL "auto")
+        set(_profile "dev")
+        sd_cuda_native_architectures(_native)
+        foreach(_arch IN LISTS _native)
+            if(NOT _supported OR _arch IN_LIST _supported)
+                list(APPEND _sass "${_arch}")
+                continue()
+            endif()
+            # A GPU newer than the toolkit runs the closest older SASS of its
+            # major version (sm_120 on a 12.1 GPU with CUDA 12.8).
+            math(EXPR _major "${_arch} / 10")
+            math(EXPR _minor "${_arch} % 10")
+            set(_closest "")
+            foreach(_candidate IN LISTS _supported)
+                math(EXPR _candidate_major "${_candidate} / 10")
+                math(EXPR _candidate_minor "${_candidate} % 10")
+                if(_candidate_major EQUAL _major AND _candidate_minor LESS_EQUAL _minor)
+                    if(_closest STREQUAL "" OR _candidate GREATER _closest)
+                        set(_closest "${_candidate}")
+                    endif()
+                endif()
+            endforeach()
+            if(_closest STREQUAL "")
+                message(WARNING
+                    "${_toolkit} cannot generate code for the sm_${_arch} GPU on this machine "
+                    "(it supports ${_supported_text}); the dev build will not run on that GPU")
+            else()
+                message(STATUS
+                    "${_toolkit} has no sm_${_arch} target; building sm_${_closest}, which runs on sm_${_arch}")
+                list(APPEND _sass "${_closest}")
+            endif()
+        endforeach()
+        if(_sass)
+            list(REMOVE_DUPLICATES _sass)
+        elseif(_native)
+            message(FATAL_ERROR
+                "${_toolkit} cannot generate code for any GPU on this machine (it supports ${_supported_text}). "
+                "Use a toolkit that supports the GPU or set libnd4j.compute to explicit targets.")
+        else()
+            # Nothing to target natively: the baseline runs on every GPU from
+            # compute capability 8.6 on, directly or through PTX JIT.
+            set(_profile "dev, no GPU detected")
+            set(_sass 86)
+            set(_ptx 86)
+        endif()
+    elseif(_requested_lower STREQUAL "release" OR _requested_lower STREQUAL "all")
+        set(_profile "release")
+        foreach(_arch IN LISTS SD_CUDA_RELEASE_ARCHITECTURES)
+            if(NOT _supported OR _arch IN_LIST _supported)
+                list(APPEND _sass "${_arch}")
+            endif()
+        endforeach()
+        if(NOT _sass)
+            string(REPLACE ";" " " _release_text "${SD_CUDA_RELEASE_ARCHITECTURES}")
+            message(FATAL_ERROR
+                "${_toolkit} supports none of the release targets ${_release_text} (it supports ${_supported_text})")
+        endif()
+        # PTX of the newest target lets GPUs newer than every SASS target
+        # JIT-compile the library.
+        foreach(_arch IN LISTS _sass)
+            if(_ptx STREQUAL "" OR _arch GREATER _ptx)
+                set(_ptx "${_arch}")
+            endif()
+        endforeach()
+    else()
+        set(_profile "explicit")
+        string(REGEX REPLACE "[ \t,]+" ";" _arch_list "${_requested}")
+        foreach(_arch IN LISTS _arch_list)
+            if(_arch STREQUAL "")
+                continue()
+            endif()
+            string(REPLACE "." "" _arch_clean "${_arch}")
+            if(NOT _arch MATCHES "^[0-9]+([.][0-9]+)?$" OR NOT _arch_clean MATCHES "^[0-9][0-9][0-9]?$")
+                message(FATAL_ERROR
+                    "Invalid CUDA compute target '${_arch}'; use targets such as 8.6, 9.0, or 12.1, "
+                    "or leave libnd4j.compute empty to use libnd4j.compute.profile")
+            endif()
+            if(_supported AND NOT _arch_clean IN_LIST _supported)
+                message(FATAL_ERROR
+                    "${_toolkit} cannot generate sm_${_arch_clean} for compute target '${_arch}' "
+                    "(it supports ${_supported_text})")
+            endif()
+            list(APPEND _sass "${_arch_clean}")
+        endforeach()
+        if(NOT _sass)
+            message(FATAL_ERROR "No CUDA compute target in '${COMPUTE_VALUE}'")
+        endif()
+        list(REMOVE_DUPLICATES _sass)
+    endif()
+
+    set(_flags "")
+    set(_sass_text "")
+    foreach(_arch IN LISTS _sass)
+        string(APPEND _flags " -gencode arch=compute_${_arch},code=sm_${_arch}")
+        string(APPEND _sass_text " sm_${_arch}")
+    endforeach()
+    if(_ptx STREQUAL "")
+        set(_ptx_text "none")
+    else()
+        string(APPEND _flags " -gencode arch=compute_${_ptx},code=compute_${_ptx}")
+        set(_ptx_text "compute_${_ptx}")
+    endif()
+    string(STRIP "${_flags}" _flags)
+    string(STRIP "${_sass_text}" _sass_text)
+    set(CUDA_ARCH_FLAGS "${_flags}" PARENT_SCOPE)
+    set(SD_CUDA_ARCH_SUMMARY "profile=${_profile}, SASS=${_sass_text}, PTX=${_ptx_text}" PARENT_SCOPE)
+endfunction()
+
 function(configure_cuda_architecture_flags COMPUTE)
     if(SD_ZLUDA)
         resolve_zluda_ptx_architectures("${COMPUTE}")
         set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}" PARENT_SCOPE)
         set(CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}" PARENT_SCOPE)
         set(ZLUDA_PTX_TARGETS "${ZLUDA_PTX_TARGETS}" PARENT_SCOPE)
+        set(SD_CUDA_ARCH_SUMMARY "ZLUDA PTX=${ZLUDA_PTX_TARGETS}" PARENT_SCOPE)
         return()
     endif()
 
@@ -959,40 +1124,13 @@ function(configure_cuda_architecture_flags COMPUTE)
     if(SD_GCC_FUNCTRACE)
         set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86" PARENT_SCOPE)
         set(CMAKE_CUDA_ARCHITECTURES "86" PARENT_SCOPE)
+        set(SD_CUDA_ARCH_SUMMARY "functrace, SASS=sm_86" PARENT_SCOPE)
         return()
     endif()
 
-    string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
-    if(COMPUTE_CMP STREQUAL "all" OR COMPUTE_CMP STREQUAL "auto")
-        # Keep the baseline SASS and embed PTX for newer devices (e.g. GB10).
-        # SASS alone is not forward-compatible across GPU architecture majors.
-        set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86 -gencode arch=compute_86,code=compute_86" PARENT_SCOPE)
-    else()
-        string(REGEX REPLACE "[ \\t,]+" ";" ARCH_LIST "${COMPUTE}")
-        set(ARCH_FLAGS "")
-        foreach(ARCH IN LISTS ARCH_LIST)
-            string(STRIP "${ARCH}" ARCH)
-            if(ARCH STREQUAL "")
-                continue()
-            endif()
-            if(NOT ARCH MATCHES "^[0-9]+([.][0-9]+)?$")
-                message(FATAL_ERROR
-                    "Invalid CUDA compute target '${ARCH}'; use values such as 8.6, 9.0, or 12.1")
-            endif()
-            string(REPLACE "." "" ARCH_CLEAN "${ARCH}")
-            if(NOT ARCH_CLEAN MATCHES "^[0-9][0-9][0-9]?$")
-                message(FATAL_ERROR
-                    "Invalid CUDA compute target '${ARCH}'; use values such as 8.6, 9.0, or 12.1")
-            endif()
-            set(ARCH_FLAGS "${ARCH_FLAGS} -gencode arch=compute_${ARCH_CLEAN},code=sm_${ARCH_CLEAN}")
-        endforeach()
-        string(STRIP "${ARCH_FLAGS}" ARCH_FLAGS)
-        if(ARCH_FLAGS)
-            set(CUDA_ARCH_FLAGS "${ARCH_FLAGS}" PARENT_SCOPE)
-        else()
-            set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86" PARENT_SCOPE)
-        endif()
-    endif()
+    resolve_cuda_architectures("${COMPUTE}" "${SD_COMPUTE_PROFILE}")
+    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}" PARENT_SCOPE)
+    set(SD_CUDA_ARCH_SUMMARY "${SD_CUDA_ARCH_SUMMARY}" PARENT_SCOPE)
 endfunction()
 
 function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
@@ -1308,17 +1446,16 @@ function(setup_cuda_build)
 
     setup_cuda_include_directories()
 
-    if(NOT DEFINED COMPUTE)
-        set(COMPUTE "auto")
-    endif()
-    configure_cuda_architecture_flags("${COMPUTE}")
-    set_property(GLOBAL PROPERTY CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
-
     setup_cuda_language()
 
     if(NOT CMAKE_CUDA_COMPILER)
         message(FATAL_ERROR "CUDA compiler not found after enabling CUDA language")
     endif()
+
+    # The architecture profiles query the compiler, so resolve them after it
+    # is known.
+    configure_cuda_architecture_flags("${COMPUTE}")
+    set_property(GLOBAL PROPERTY CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
 
     configure_windows_cuda_build()
     build_cuda_compiler_flags("${CUDA_ARCH_FLAGS}")
@@ -1330,7 +1467,7 @@ function(setup_cuda_build)
     set(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES "${CUDA_INCLUDE_DIRS}" PARENT_SCOPE)
 
     # Print summary
-    message(STATUS "CUDA: ${CMAKE_CUDA_COMPILER_VERSION}, arch=${CMAKE_CUDA_ARCHITECTURES}")
+    message(STATUS "CUDA: ${CMAKE_CUDA_COMPILER_VERSION}, ${SD_CUDA_ARCH_SUMMARY}")
     if(SD_ZLUDA)
         message(STATUS "ZLUDA: ${SD_ZLUDA_TARGET}")
     endif()

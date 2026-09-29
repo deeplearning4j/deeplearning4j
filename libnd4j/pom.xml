@@ -89,7 +89,11 @@
         <libnd4j.android.api>24</libnd4j.android.api>
         <libnd4j.extension></libnd4j.extension>
         <libnd4j.cuda></libnd4j.cuda>
+        <!-- CUDA compute capabilities to build, such as "8.6 9.0" or "12.1". Empty uses libnd4j.compute.profile. -->
         <libnd4j.compute></libnd4j.compute>
+        <!-- CUDA targets when libnd4j.compute is empty (ADR 0124): dev builds SASS for the GPUs on the build
+             machine only; release builds SASS for sm_80/86/90/100/120 (sm_80/86/90 on CUDA 12.6) plus PTX. -->
+        <libnd4j.compute.profile>dev</libnd4j.compute.profile>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
         <libnd4j.buildthreads></libnd4j.buildthreads>
         <!-- Single helper (legacy, still supported) -->
@@ -646,6 +650,8 @@
                                         <argument>${cuda.version}</argument>
                                         <argument>--compute</argument>
                                         <argument>${libnd4j.compute}</argument>
+                                        <argument>--compute-profile</argument>
+                                        <argument>${libnd4j.compute.profile}</argument>
                                         <argument>${libnd4j.tests}</argument>
                                         <argument>-j</argument>
                                         <argument>${libnd4j.buildthreads}</argument>
@@ -1365,6 +1371,8 @@
                                         <argument>${cuda.version}</argument>
                                         <argument>--compute</argument>
                                         <argument>${libnd4j.compute}</argument>
+                                        <argument>--compute-profile</argument>
+                                        <argument>${libnd4j.compute.profile}</argument>
                                         <argument>${libnd4j.tests}</argument>
                                         <argument>-j</argument>
                                         <argument>${libnd4j.buildthreads}</argument>

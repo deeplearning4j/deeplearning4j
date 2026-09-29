@@ -47,10 +47,9 @@ public class VersionUpdater implements Callable<Integer> {
                     break;
             }
 
-            // CUDA versioned module names and classifier suffixes also live in the
-            // cloud release plans and workflow manifests.  Walk every file here and
-            // let the selected updater decide which names are in its scope; the
-            // directory filter still prevents touching generated target trees.
+            // Walk every file and let the selected updater decide which files are in
+            // its scope; the directory filter still prevents touching generated
+            // target trees.
             for (File f : FileUtils.listFilesAndDirs(filePath, TrueFileFilter.INSTANCE, new IOFileFilter() {
                 @Override
                 public boolean accept(File file) {

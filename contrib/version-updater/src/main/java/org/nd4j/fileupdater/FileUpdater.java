@@ -12,7 +12,7 @@ public interface FileUpdater {
     Map<String,String> patterns();
 
     default boolean pathMatches(File inputPath) {
-        if(inputPath == null)
+        if(inputPath == null || inputPath.getParentFile() == null)
             return false;
         return !inputPath.getParentFile().getName().equals("target") && inputPath.getName().equals("pom.xml");
     }

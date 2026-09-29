@@ -584,6 +584,7 @@ OS="${OS:-}"
 CHIP="${CHIP:-}"
 BUILD="${BUILD:-}"
 COMPUTE="${COMPUTE:-}"
+COMPUTE_PROFILE="${COMPUTE_PROFILE:-}"
 ARCH="${ARCH:-}"
 ANDROID_ABI="${ANDROID_ABI:-}"
 ANDROID_API="${ANDROID_API:-}"
@@ -1637,6 +1638,10 @@ do
             echo COMPUTE="$value"
             shift # past argument
             ;;
+        --compute-profile)
+            COMPUTE_PROFILE="$value"
+            shift # past argument
+            ;;
         -a|--arch)
             ARCH="$value"
             shift # past argument
@@ -1884,24 +1889,57 @@ fi
 
 SD_CHIP_LC=$(printf '%s' "${CHIP:-}" | tr '[:upper:]' '[:lower:]')
 
-# Number of target GPU arches. COMPUTE empty/all/auto/native => single native
-# arch (CudaConfiguration.cmake resolves "all"/"auto" to the detected arch, e.g.
-# sm_86). nvcc --threads only parallelizes ACROSS gencodes, so it is wasted on a
-# single arch -- there ALL parallelism must come from -j and --threads stays 1.
+# CUDA targets come from COMPUTE when it lists compute capabilities, else from
+# COMPUTE_PROFILE: dev (the GPUs on this machine) or release (the published
+# targets). CudaConfiguration.cmake resolves them; see ADR 0124.
+COMPUTE_PROFILE=$(printf '%s' "${COMPUTE_PROFILE:-}" | tr '[:upper:]' '[:lower:]')
+case "${COMPUTE_PROFILE}" in
+    "") COMPUTE_PROFILE="dev" ;;
+    dev|release) ;;
+    *)
+        echo "Unknown --compute-profile '${COMPUTE_PROFILE}'; use dev or release" >&2
+        exit 1
+        ;;
+esac
+
+# Number of GPU architectures each CUDA TU compiles for, mirroring the targets
+# CudaConfiguration.cmake resolves. nvcc --threads parallelizes only across
+# architectures (the SASS and PTX of one architecture share a compile), so with
+# a single architecture all build parallelism has to come from -j.
 SD_ARCH_COUNT=1
 if [[ "${SD_CHIP_LC}" == "cuda" ]]; then
-    case "$(printf '%s' "${COMPUTE:-}" | tr '[:upper:]' '[:lower:]')" in
-        ""|all|auto|native) SD_ARCH_COUNT=1 ;;
-        *) SD_ARCH_COUNT=$(( $(printf '%s' "${COMPUTE:-}" | tr -cd ',' | wc -c) + 1 )) ;;
+    SD_ARCH_SELECTOR=$(printf '%s' "${COMPUTE:-}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
+    [[ -z "${SD_ARCH_SELECTOR}" ]] && SD_ARCH_SELECTOR="${COMPUTE_PROFILE}"
+    case "${SD_ARCH_SELECTOR}" in
+        dev|auto|native)
+            SD_ARCH_COUNT=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | sort -u | grep -c . || true)
+            ;;
+        release|all)
+            # SD_CUDA_RELEASE_ARCHITECTURES is 80 86 90 100 120; toolkits
+            # before CUDA 12.8 cannot generate the Blackwell targets 100 and 120.
+            SD_ARCH_COUNT=5
+            if [[ "${CHIP_VERSION:-}" =~ ^([0-9]+)\.([0-9]+) ]]; then
+                SD_CUDA_MAJOR="${BASH_REMATCH[1]}"
+                SD_CUDA_MINOR="${BASH_REMATCH[2]}"
+                if (( SD_CUDA_MAJOR < 12 || (SD_CUDA_MAJOR == 12 && SD_CUDA_MINOR < 8) )); then
+                    SD_ARCH_COUNT=3
+                fi
+            fi
+            ;;
+        *) SD_ARCH_COUNT=$(printf '%s' "${COMPUTE}" | tr ',;' '  ' | wc -w) ;;
     esac
+    [[ "${SD_ARCH_COUNT}" =~ ^[0-9]+$ ]] || SD_ARCH_COUNT=1
+    [[ "${SD_ARCH_COUNT}" -lt 1 ]] && SD_ARCH_COUNT=1
 fi
-# Effective nvcc --threads: 1 for single arch, else one per arch capped at 4.
-if [[ "${SD_ARCH_COUNT}" -le 1 ]]; then
-    SD_USED_THREADS=1
+# nvcc threads per TU: --cuda-threads when given, else one per architecture up
+# to 4. Threads beyond the architecture count stay idle.
+if [[ "${CUDA_THREADS:-0}" =~ ^[1-9][0-9]*$ ]]; then
+    SD_USED_THREADS="${CUDA_THREADS}"
 else
     SD_USED_THREADS="${SD_ARCH_COUNT}"
     [[ "${SD_USED_THREADS}" -gt 4 ]] && SD_USED_THREADS=4
 fi
+[[ "${SD_USED_THREADS}" -gt "${SD_ARCH_COUNT}" ]] && SD_USED_THREADS="${SD_ARCH_COUNT}"
 
 # Auto-select MAKEJ only when the user did not pass -j (or pre-set $MAKEJ). Keep
 # MAKEJ x nvcc-threads near the core count (single arch => threads=1 => MAKEJ≈cores
@@ -1917,7 +1955,8 @@ if [[ "${SD_MAKEJ_AUTO:-1}" == "1" ]]; then
     # real heavy-TU footprint. Light TUs and ccache hits cost far less, but sizing for the
     # heavy misses is what prevents the OOM. cpu TUs stay light.
     if [[ "${SD_AVAIL_RAM_GB}" -gt 0 ]]; then
-        if [[ "${SD_CHIP_LC}" == "cuda" ]]; then SD_RAM_PER_JOB=14; else SD_RAM_PER_JOB=2; fi
+        # The nvcc threads of one job compile concurrently, each at the heavy-TU peak.
+        if [[ "${SD_CHIP_LC}" == "cuda" ]]; then SD_RAM_PER_JOB=$(( 14 * SD_USED_THREADS )); else SD_RAM_PER_JOB=2; fi
         SD_RAM_JOBS=$(( SD_AVAIL_RAM_GB / SD_RAM_PER_JOB ))
         [[ "${SD_RAM_JOBS}" -lt 1 ]] && SD_RAM_JOBS=1
         [[ "${MAKEJ}" -gt "${SD_RAM_JOBS}" ]] && MAKEJ="${SD_RAM_JOBS}"
@@ -1926,7 +1965,7 @@ if [[ "${SD_MAKEJ_AUTO:-1}" == "1" ]]; then
 fi
 
 # Apply the coordinated nvcc fan-out (only when left on auto = 0). --threads is
-# the arch count (1 for single arch); --split-compile stays 1 because the cicc
+# the arch count up to 4 (1 for a single arch); --split-compile stays 1 because the cicc
 # device front-end -- not ptxas -- is the bottleneck on misses and cicc does not
 # parallelize.
 if [[ "${SD_CHIP_LC}" == "cuda" ]]; then
@@ -2717,10 +2756,6 @@ if [ -z "$ARCH" ]; then
     ARCH="x86-64"
 fi
 
-if [ -z "$COMPUTE" ]; then
-    COMPUTE="all"
-fi
-
 # Enable call stacking
 if [ "$FUNC_TRACE" == "ON" ]; then
     export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_GCC_FUNCTRACE=ON"
@@ -2897,6 +2932,7 @@ fi
 ARCH_ARG="-DSD_ARCH=$ARCH -DSD_EXTENSION=$CHIP_EXTENSION"
 
 CUDA_COMPUTE="-DCOMPUTE=\"$COMPUTE\""
+COMPUTE_PROFILE_ARG="-DSD_COMPUTE_PROFILE=\"$COMPUTE_PROFILE\""
 
 if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     case $OS in
@@ -3128,6 +3164,7 @@ echo ARCH                = "${ARCH}"
 echo CHIP_EXTENSION      = "${CHIP_EXTENSION}"
 echo CHIP_VERSION        = "${CHIP_VERSION}"
 echo GPU_COMPUTE_CAPABILITY = "${COMPUTE}"
+echo GPU_COMPUTE_PROFILE = "${COMPUTE_PROFILE}"
 echo EXPERIMENTAL        = "${EXPERIMENTAL}"
 echo LIBRARY TYPE        = "${LIBTYPE}"
 echo OPERATIONS          = "${OPERATIONS_ARG}"
@@ -3378,7 +3415,7 @@ elif [ -n "${CC:-}" ] && [ -n "${CXX:-}" ]; then
 fi
 
 # Configure CMake
-echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $MLIR_ARG $TRITON_CMAKE $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE $OPENBLAS_CMAKE $MKL_CMAKE $BLAS_CMAKE -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES $MKL_MULTI_THREADED_CMAKE $COMPILER_ARG $SOURCE_PATH"
+echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $MLIR_ARG $TRITON_CMAKE $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE $COMPUTE_PROFILE_ARG $OPENBLAS_CMAKE $MKL_CMAKE $BLAS_CMAKE -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES $MKL_MULTI_THREADED_CMAKE $COMPILER_ARG $SOURCE_PATH"
 
 # Handle the PREPROCESS flag first - before any build
 if [ "$PREPROCESS" == "ON" ]; then
@@ -3413,6 +3450,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             "$BUILD_TYPE" \
             "$PACKAGING_ARG" \
             "$CUDA_COMPUTE" \
+            "$COMPUTE_PROFILE_ARG" \
             $OPENBLAS_CMAKE \
             $MKL_CMAKE \
             $BLAS_CMAKE \
@@ -3451,6 +3489,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             "$BUILD_TYPE" \
             "$PACKAGING_ARG" \
             "$CUDA_COMPUTE" \
+            "$COMPUTE_PROFILE_ARG" \
             $OPENBLAS_CMAKE \
             $MKL_CMAKE \
             $BLAS_CMAKE \
@@ -3528,6 +3567,7 @@ run_cmake_configure() {
         "$PACKAGING_ARG" \
         "$TESTS_ARG" \
         "$CUDA_COMPUTE" \
+        "$COMPUTE_PROFILE_ARG" \
         $OPENBLAS_CMAKE \
         $MKL_CMAKE \
         $BLAS_CMAKE \

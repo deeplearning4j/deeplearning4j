@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Proposed. Amended by ADR 0124 (September 2026); see the Amendment section.
 
 Proposed by: Adam Gibson (September 2025)
 
@@ -35,15 +35,15 @@ To:
 ```
 
 This change will support:
-- Compute capability 8.6: RTX 3050-3090, RTX A2000-A6000, A40, A100
-- Compute capability 9.0: RTX 4060-4090, L4, L40, H100
+- Compute capability 8.6: RTX 3050-3090, RTX A2000-A6000, A10, A40. Its SASS also runs on 8.9 (RTX 4060-4090, L4, L40)
+- Compute capability 9.0: H100, H200
 - Compute capability 12.1: DGX Spark GB10, through the dedicated Linux ARM64 CUDA 13.1 classifier
 
 We will no longer support:
 - Maxwell (5.0-5.2): GTX 900 series
 - Pascal (6.0-6.1): GTX 1000 series  
 - Volta/Turing (7.0-7.5): RTX 2000 series
-- Older Ampere (8.0): Original A100 revision
+- Ampere 8.0: A100, A30
 
 ## Implementation Strategy
 
@@ -89,6 +89,30 @@ The primary drawback is obvious - users with older GPUs cannot use newer version
 - Legacy enterprise systems that can't be easily upgraded
 
 There's no gradual migration path - it's a hard cutoff. Users must either upgrade their hardware or stay on older software versions.
+
+## Amendment (September 2026)
+
+ADR 0124 replaces the fixed 8.6 and 9.0 list for the x86_64 and Windows CUDA
+artifacts with a `release` profile resolved per CUDA configuration:
+
+| CUDA configuration | SASS | PTX |
+|---|---|---|
+| 12.9, 13.1 | `sm_80 sm_86 sm_90 sm_100 sm_120` | `compute_120` |
+| 12.6 | `sm_80 sm_86 sm_90` | `compute_90` |
+
+What changes and what stays:
+
+- **8.0 is supported again.** It covers A100 and A30.
+- **Blackwell is added:** 10.x and 12.x, including B200 and RTX 50. The 8.6
+  and 9.0 list had no code these GPUs could run, because SASS does not run
+  across major versions and the list had no PTX.
+- **Linux ARM64 CUDA 13.1** keeps 12.1.
+- **Turing (7.5) and older** are still dropped. They can still be built
+  explicitly.
+
+The GPU examples above were corrected when this amendment was written. The
+original listed A100 under 8.6 and RTX 40, L4 and L40 under 9.0. Those GPUs are
+8.0 and 8.9: 8.6 SASS does not run on 8.0, and 9.0 SASS does not run on 8.9.
 
 ## References
 

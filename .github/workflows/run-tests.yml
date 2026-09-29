@@ -35,7 +35,8 @@ on:
         options:
           - nd4j-native
           - nd4j-cuda-13.1
-          - nd4j-cuda-13.1
+          - nd4j-cuda-12.9
+          - nd4j-cuda-12.6
 
       classifier:
         description: 'Full platform classifier (e.g. linux-x86_64, linux-x86_64-onednn, linux-arm64-compile, macosx-arm64). Empty = linux-x86_64.'
@@ -213,6 +214,15 @@ jobs:
           </settings>
           SETTINGS
 
+      # The checkout's POMs hold one CUDA configuration; select the one the chosen
+      # backend was built for so every nd4j-cuda/nd4j-zluda module agrees with it.
+      - name: Select CUDA configuration
+        if: startsWith(inputs.backendArtifactId, 'nd4j-cuda-')
+        shell: bash
+        env:
+          BACKEND: ${{ inputs.backendArtifactId }}
+        run: bash ./change-cuda-versions.sh "${BACKEND#nd4j-cuda-}"
+
       - name: Build Java modules (native jars from snapshots)
         shell: bash
         run: |
@@ -328,6 +338,15 @@ jobs:
             </activeProfiles>
           </settings>
           SETTINGS
+
+      # The checkout's POMs hold one CUDA configuration; select the one the chosen
+      # backend was built for so every nd4j-cuda/nd4j-zluda module agrees with it.
+      - name: Select CUDA configuration
+        if: startsWith(inputs.backendArtifactId, 'nd4j-cuda-')
+        shell: bash
+        env:
+          BACKEND: ${{ inputs.backendArtifactId }}
+        run: bash ./change-cuda-versions.sh "${BACKEND#nd4j-cuda-}"
 
       - name: Build Java modules (native jars from snapshots)
         shell: bash

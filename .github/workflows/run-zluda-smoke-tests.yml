@@ -34,11 +34,11 @@ on:
       backendArtifactId:
         description: 'CUDA backend artifact'
         required: false
-        default: 'nd4j-cuda-13.1'
+        default: 'nd4j-cuda-12.9'
         type: choice
         options:
-          - nd4j-cuda-13.1
-          - nd4j-cuda-13.1
+          - nd4j-cuda-12.9
+          - nd4j-cuda-12.6
 
       classifier:
         description: 'Platform classifier for the backend jars'
@@ -199,6 +199,15 @@ jobs:
               echo "::warning::libnvrtc.so not found under ZLUDA_PATH=$ZLUDA_PATH. Triton/NVRTC-compiled kernels will fall back to cuBLAS or skip. Install a ZLUDA build that includes NVRTC stubs for full PTX JIT support."
             fi
           fi
+
+      # The checkout's POMs hold one CUDA configuration; select the one the chosen
+      # backend was built for so every nd4j-cuda/nd4j-zluda module agrees with it.
+      - name: Select CUDA configuration
+        if: startsWith(inputs.backendArtifactId, 'nd4j-cuda-')
+        shell: bash
+        env:
+          BACKEND: ${{ inputs.backendArtifactId }}
+        run: bash ./change-cuda-versions.sh "${BACKEND#nd4j-cuda-}"
 
       # ZLUDA_PATH is now in the env, so the platform-tests test-zluda profile
       # auto-activates and pulls nd4j-zluda-${cuda.version}; -Pzluda puts its

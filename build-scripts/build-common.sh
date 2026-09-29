@@ -41,12 +41,17 @@ export MVN
 # Thread count for libnd4j builds (matches -Dlibnd4j.buildthreads)
 BUILD_THREADS="${BUILD_THREADS:-12}"
 
-# CUDA versions supported by this project
+# CUDA configurations this project builds bindings for. Each CUDA build selects
+# its configuration with change-cuda-versions.sh before running Maven.
 CUDA_VERSIONS=("12.6" "12.9" "13.1")
 
-# Compute targets per CUDA generation
-CUDA_COMPUTE="8.6 9.0"             # CUDA 12.x: Ampere + Hopper
-CUDA_COMPUTE_13="8.6 9.0 10.0 12.0" # CUDA 13.x: + Blackwell sm_100/sm_120
+# CUDA device targets. An empty CUDA_COMPUTE lets CUDA_COMPUTE_PROFILE pick the
+# targets for the selected toolkit (ADR 0124, libnd4j/cmake/CudaConfiguration.cmake):
+#   release  the toolkit's release architectures plus PTX for the newest of them
+#   dev      only the GPUs on the build machine
+# Setting CUDA_COMPUTE (e.g. "8.6 9.0" or "12.1") builds exactly those targets.
+CUDA_COMPUTE="${CUDA_COMPUTE:-}"
+CUDA_COMPUTE_PROFILE="${CUDA_COMPUTE_PROFILE:-release}"
 
 # SDX bindings output directory (overridable)
 SDX_OUTPUT_DIR="${SDX_OUTPUT_DIR:-${PROJECT_ROOT}/build-output/sdx-sdk}"
@@ -843,9 +848,10 @@ auto_setup_host() {
 # Section 6: Build functions
 # ============================================================
 
-# Common flags injected into every Maven build per user rules
+# Common flags injected into every Maven build per user rules. Every build lists
+# :libnd4j, which the root reactor includes only under the native profile.
 _common_flags() {
-    local flags="-DskipTests -Dlibnd4j.triton=ON -Dlibnd4j.buildthreads=${BUILD_THREADS}"
+    local flags="-Pnative -DskipTests -Dlibnd4j.triton=ON -Dlibnd4j.buildthreads=${BUILD_THREADS}"
     [[ "${DEPLOY:-0}" == "1" ]] && flags="${flags} -DperformRelease"
     echo "${flags}"
 }
@@ -894,7 +900,7 @@ build_libnd4j_cpu() {
         cd "${PROJECT_ROOT}"
         # shellcheck disable=SC2086
         "${MVN}" -Pcpu clean install $(_common_flags) "${extra_flags[@]}" \
-            -pl :libnd4j,:nd4j-native-preset,:nd4j-native
+            -pl :libnd4j,:nd4j-cpu-backend-common,:nd4j-native-preset,:nd4j-native
     )
 }
 
@@ -907,15 +913,9 @@ build_libnd4j_cuda() {
     local cuda_ver="$1"
     shift
 
-    # Select compute targets based on CUDA generation
-    local compute_targets
-    case "${cuda_ver}" in
-        13.*) compute_targets="${CUDA_COMPUTE_13}" ;;
-        *)    compute_targets="${CUDA_COMPUTE}" ;;
-    esac
-
     local helper=""
-    local extra_flags=()
+    local extra_flags=("-Dlibnd4j.compute.profile=${CUDA_COMPUTE_PROFILE}")
+    [[ -n "${CUDA_COMPUTE}" ]] && extra_flags+=("-Dlibnd4j.compute=${CUDA_COMPUTE}")
 
     for opt in "$@"; do
         case "${opt}" in
@@ -928,35 +928,37 @@ build_libnd4j_cuda() {
     [[ -n "${helper}" ]] && extra_flags+=("-Dlibnd4j.helper=${helper}")
 
     # Ensure the project pom files reference the right CUDA version
-    change_cuda_version "${cuda_ver}"
+    change_cuda_version "${cuda_ver}" || return 1
 
-    log "Building CUDA ${cuda_ver} backend (compute='${compute_targets}', helper=${helper:-none})..."
+    log "Building CUDA ${cuda_ver} backend (compute='${CUDA_COMPUTE:-profile ${CUDA_COMPUTE_PROFILE}}', helper=${helper:-none})..."
     (
         cd "${PROJECT_ROOT}"
         # shellcheck disable=SC2086
         "${MVN}" -Pcuda -Dlibnd4j.chip=cuda \
-            -Dlibnd4j.compute="${compute_targets}" \
             clean install $(_common_flags) "${extra_flags[@]}" \
-            -pl :libnd4j,:nd4j-cuda-${cuda_ver}-preset,:nd4j-cuda-${cuda_ver}
+            -pl :libnd4j,:nd4j-cuda-${cuda_ver}-backend-common,:nd4j-cuda-${cuda_ver}-preset,:nd4j-cuda-${cuda_ver}
     )
 }
 
 # build_libnd4j_rocm <cuda_version> — ZLUDA/ROCm variant (AMD GPU)
+# ZLUDA_TARGET (default AMD) and ZLUDA_VERSION (default: the libnd4j pom's) map to
+# libnd4j.zluda and libnd4j.zluda.version. No compute targets are passed: CMake
+# resolves the ZLUDA virtual architecture from the ROCm SDK.
 build_libnd4j_rocm() {
     local cuda_ver="$1"
     local zluda_target="${ZLUDA_TARGET:-AMD}"
+    local extra_flags=("-Dlibnd4j.zluda=${zluda_target}")
+    [[ -n "${ZLUDA_VERSION:-}" ]] && extra_flags+=("-Dlibnd4j.zluda.version=${ZLUDA_VERSION}")
 
-    change_cuda_version "${cuda_ver}"
-    log "Building ROCm/ZLUDA backend (target=${zluda_target})..."
+    change_cuda_version "${cuda_ver}" || return 1
+    log "Building ROCm/ZLUDA backend (CUDA ${cuda_ver}, target=${zluda_target})..."
     (
         cd "${PROJECT_ROOT}"
         # shellcheck disable=SC2086
-        "${MVN}" -Pcuda -Pzluda-amd \
+        "${MVN}" -Pcuda -Pzluda \
             -Dlibnd4j.chip=cuda \
-            -DSD_ZLUDA=ON \
-            -DZLUDA_TARGET="${zluda_target}" \
-            clean install $(_common_flags) \
-            -pl :libnd4j,:nd4j-zluda-${cuda_ver}
+            clean install $(_common_flags) "${extra_flags[@]}" \
+            -pl :libnd4j,:nd4j-cuda-${cuda_ver}-backend-common,:nd4j-cuda-${cuda_ver}-preset,:nd4j-zluda-${cuda_ver}
     )
 }
 
@@ -966,10 +968,10 @@ build_libnd4j_tpu() {
     (
         cd "${PROJECT_ROOT}"
         # shellcheck disable=SC2086
-        "${MVN}" -Dlibnd4j.tpu=true \
+        "${MVN}" -Ptpu -Dlibnd4j.tpu=true \
             -Dlibnd4j.chip=tpu \
             clean install $(_common_flags) \
-            -pl :libnd4j,:nd4j-tpu-preset,:nd4j-tpu
+            -pl :libnd4j,:nd4j-cpu-backend-common,:nd4j-tpu-preset,:nd4j-tpu
     )
 }
 
@@ -997,7 +999,7 @@ build_libnd4j_android() {
             -Dlibnd4j.platform="${platform_flag}" \
             -DANDROID_NDK="${ANDROID_NDK}" \
             clean install $(_common_flags) \
-            -pl :libnd4j,:nd4j-native-preset,:nd4j-native
+            -pl :libnd4j,:nd4j-cpu-backend-common,:nd4j-native-preset,:nd4j-native
     )
 }
 
@@ -1022,7 +1024,7 @@ build_libnd4j_macos() {
         # shellcheck disable=SC2086
         "${MVN}" -Pcpu \
             clean install $(_common_flags) "${extra_flags[@]}" \
-            -pl :libnd4j,:nd4j-native-preset,:nd4j-native
+            -pl :libnd4j,:nd4j-cpu-backend-common,:nd4j-native-preset,:nd4j-native
     )
 }
 

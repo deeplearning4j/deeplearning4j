@@ -5,7 +5,7 @@ Native operations for nd4j. Build using cmake
 ## Prerequisites
 
 * GCC 4.9+
-* CUDA Toolkit Versions 10 or 11
+* CUDA Toolkit 12.6, 12.9 or 13.1 (select one with `change-cuda-versions.sh`)
 * CMake 3.8 (as of Nov 2017, in near future will require 3.9)
 
 ### Additional build arguments
@@ -16,26 +16,30 @@ There's few additional arguments for `buildnativeoperations.sh` script you could
  -a XXXXXXXX// shortcut for -march/-mtune, i.e. -a native
  -b release OR -b debug // enables/desables debug builds. release is considered by default
  -j XX // this argument defines how many threads will be used to binaries on your box. i.e. -j 8 
- -cc XX// CUDA-only argument, builds only binaries for target GPU architecture. use this for fast builds
+ -cc XX // CUDA-only argument, builds exactly these compute capabilities, i.e. -cc 12.1. Overrides --compute-profile
+ --compute-profile dev|release // CUDA-only argument, picks the targets when -cc is not given. dev is the default
  --check-vectorization  auto-vectorization report for developers. (Currently, only GCC is supported)
 ```
 
 [More about AutoVectorization report](auto_vectorization/AutoVectorization.md)  
 
-You can provide the compute capability for your card [on the NVIDIA website here](https://developer.nvidia.com/cuda-gpus) or use auto.  
+You can find the compute capability for your card [on the NVIDIA website here](https://developer.nvidia.com/cuda-gpus).  
 Please also check your Cuda Toolkit Release notes for supported and dropped features.  
 Here is [the latest CUDA Toolkit Release note](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#deprecated-features).  
 You can find the same information for the older Toolkit versions [in the CUDA archives](https://docs.nvidia.com/cuda/archive/).  
 
+Maven passes these as `-Dlibnd4j.compute=...` and `-Dlibnd4j.compute.profile=...`.
+The profiles pick targets for the selected CUDA toolkit
+([ADR 0124](../ADRs/0124%20-%20CUDA%20compute%20profiles.md)):
 
-| -cc and --compute option examples | description | 
+| -cc and --compute-profile examples | description |
 | -------- | --------  |
-|-cc all | builds for common GPUs|
-|-cc auto |tries to detect automatically  |
-|-cc Maxwell | GPU microarchitecture codename |
-|-cc 75|compute capability 7.5 without a dot|
-|-cc 7.5|compute capability 7.5 with a dot|
-|-cc "Maxwell 6.0 7.5"| space-separated multiple arguments within quotes (note: numbers only with a dot)| 
+|(neither) | the dev profile: SASS for each GPU on the build machine, or sm_86 plus compute_86 PTX when no GPU is visible or when cross-compiling|
+|--compute-profile release | the published targets: sm_80/86/90/100/120 plus compute_120 PTX with CUDA 12.9 and 13.1, sm_80/86/90 plus compute_90 PTX with CUDA 12.6|
+|-cc 12.1 | compute capability 12.1 only (SASS, no PTX)|
+|-cc 121 | compute capability 12.1 without a dot|
+|-cc "8.6 9.0" | several compute capabilities, space- or comma-separated|
+|-cc auto, -cc all | older spellings of the dev and release profiles|
 
 
 ## OS Specific Requirements

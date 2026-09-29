@@ -62,19 +62,32 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertNotIn("ref: ${{ inputs.sourceRef }}", workflow)
 
     def test_single_dispatcher_supports_every_logical_release_matrix(self):
+        dispatcher = ROOT / ".github/workflows/build-deploy-cross-platform.yml"
         callers = sorted((ROOT / ".github/workflows").glob("build-deploy-*"))
-        self.assertEqual(
-            [ROOT / ".github/workflows/build-deploy-cross-platform.yml"], callers
-        )
-        workflow = callers[0].read_text()
+        self.assertIn(dispatcher, callers)
+        workflow = dispatcher.read_text()
         self.assertIn("      workflow:\n", workflow)
         self.assertIn("      classifiers:\n", workflow)
         self.assertIn("      targetedRetry:\n", workflow)
         self.assertIn("      workflow: ${{ inputs.workflow }}", workflow)
         self.assertIn("      targetedRetry: ${{ inputs.targetedRetry }}", workflow)
 
-        # The remaining names are logical matrix IDs, not physical workflow
-        # files. The registered cross-platform dispatcher passes any of them
+        # A few lanes also keep a dedicated entry point (the compat and arm64
+        # CUDA classifiers). Those are thin wrappers that pin their own matrix
+        # key and call the same reusable worker; they carry no build steps.
+        for wrapper in callers:
+            if wrapper == dispatcher:
+                continue
+            with self.subTest(wrapper=wrapper.name):
+                text = wrapper.read_text()
+                self.assertIn("uses: ./.github/workflows/_release-worker.yml", text)
+                self.assertIn(f"      workflow: {wrapper.name}\n", text)
+                self.assertIn("      targetedRetry: ${{ inputs.targetedRetry }}", text)
+                self.assertNotIn("steps:", text)
+                self.assertIn(wrapper.name, self.matrix["workflows"])
+
+        # Every other name is a logical matrix ID, not a physical workflow
+        # file. The registered cross-platform dispatcher passes any of them
         # to prepare-worker.py through the reusable release worker.
         self.assertGreater(len(self.matrix["workflows"]), 1)
 

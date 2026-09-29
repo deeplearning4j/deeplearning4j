@@ -5,6 +5,7 @@ set -Eeuo pipefail
 : "${DL4J_BUILD_THREADS:?DL4J_BUILD_THREADS is required}"
 : "${DL4J_PLATFORM:=}"
 : "${DL4J_COMPUTE:=}"
+: "${DL4J_COMPUTE_PROFILE:=}"
 : "${DL4J_CUDA_THREADS:=}"
 : "${DL4J_CUDA_SPLIT_COMPILE:=}"
 : "${DL4J_CUDA_CROSS_SBSA:=0}"
@@ -158,7 +159,9 @@ case "${DL4J_FAMILY}" in
         exit 2
       fi
     fi
-    compute=${DL4J_COMPUTE:-8.6 9.0}
+    # Explicit targets override the profile; without either, build the
+    # release targets (ADR 0124).
+    compute_profile=${DL4J_COMPUTE_PROFILE:-release}
     cuda_compiler_parallelism=()
     [ -z "${DL4J_CUDA_THREADS}" ] ||
       cuda_compiler_parallelism+=("-Dlibnd4j.cuda.threads=${DL4J_CUDA_THREADS}")
@@ -182,7 +185,7 @@ case "${DL4J_FAMILY}" in
       variant=("-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}")
     fi
     win=(); [ "${DL4J_FAMILY}" = linux-cuda ] || win=(-Dlibnd4j.platform=windows-x86_64 -Dlibnd4j.oom.killer=OFF)
-    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} "${cuda_profiles[@]}" "${sdx_profile[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda "-Dlibnd4j.compute=${compute}" "${cuda_compiler_parallelism[@]}" -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Djavacpp.platform=${platform}" "${cuda_host[@]}" ${win[@]+"${win[@]}"} -DskipTests "${variant[@]}" "${sdx_maven_flags[@]}" -pl "${modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
+    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} "${cuda_profiles[@]}" "${sdx_profile[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda "-Dlibnd4j.compute=${DL4J_COMPUTE}" "-Dlibnd4j.compute.profile=${compute_profile}" "${cuda_compiler_parallelism[@]}" -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Djavacpp.platform=${platform}" "${cuda_host[@]}" ${win[@]+"${win[@]}"} -DskipTests "${variant[@]}" "${sdx_maven_flags[@]}" -pl "${modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
     ;;
   windows-cpu)
     modules=:nd4j-native-preset,:nd4j-native

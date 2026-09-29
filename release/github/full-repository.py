@@ -291,8 +291,8 @@ def install_java(command: list[str], source: Path, env: dict, model: Path,
 
 def build_java(source: Path, local: Path, output: Path, version: str, snapshot: str,
                ownership: dict, plan: dict) -> None:
-    # The CUDA updater also rewrites release-plan.json. Read the version set
-    # from the immutable contract, never from that mutated working checkout.
+    # The plan enumerates every CUDA configuration; the checkout's POMs hold only
+    # the one change-cuda-versions.sh selected last. Read the set from the plan.
     cuda_versions = sorted({s["build"]["cudaVersion"] for s in worker.plan_shards(plan).values()
                             if s["build"].get("cudaVersion")})
     env = dict(os.environ, DL4J_PLATFORM="linux-x86_64", DL4J_OS="linux",
