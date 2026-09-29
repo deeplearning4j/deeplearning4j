@@ -43,6 +43,9 @@
 #include <array/DataBufferLifecycleTracker.h>
 #endif
 
+// Defined in LaunchContext.cu: the stream every kernel of a running DSP plan launches on.
+extern thread_local cudaStream_t tl_dspGapStream;
+
 namespace sd {
 
 SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState() {
@@ -99,6 +102,30 @@ SD_INLINE void throwCudaStatus(const char* caller, cudaError_t err) {
                     cudaGetErrorString(err) + " (" +
                     std::to_string(static_cast<int>(err)) + ")";
   THROW_EXCEPTION(msg.c_str());
+}
+
+SD_INLINE void synchronizeDspStream(cudaStream_t stream) {
+  cudaStreamCaptureStatus capture = cudaStreamCaptureStatusNone;
+  auto err = cudaStreamIsCapturing(stream, &capture);
+  if (err != cudaSuccess) {
+    throwCudaStatus("DataBuffer: cudaStreamIsCapturing(DSP stream) failed", err);
+  }
+  // A capturing stream holds recorded work, not queued work; syncing it would invalidate the capture.
+  if (capture != cudaStreamCaptureStatusNone) return;
+  err = cudaStreamSynchronize(stream);
+  if (err != cudaSuccess) {
+    throwCudaStatus("DataBuffer: cudaStreamSynchronize(DSP stream) failed", err);
+  }
+}
+
+// While a DSP plan runs on this thread its kernels are queued on the plan's non-blocking stream,
+// and no per-buffer write events are recorded (recordSpecialWriteEvent), so a host read must drain
+// that stream first: the legacy stream that carries the copy back does not wait for it.
+SD_INLINE void waitForDspStreamsBeforeHostRead() {
+  cudaStream_t gapStream = tl_dspGapStream;
+  cudaStream_t execStream = reinterpret_cast<cudaStream_t>(tl_dspExecutionStream);
+  if (gapStream != nullptr) synchronizeDspStream(gapStream);
+  if (execStream != nullptr && execStream != gapStream) synchronizeDspStream(execStream);
 }
 
 struct ThreadDspCompletionEvent {
@@ -1088,7 +1115,8 @@ void DataBuffer::waitForSpecialWriteEvent(void* streamPtr) const {
 
 void DataBuffer::recordSpecialWriteEvent(void* streamPtr) const {
   // During DSP execution, all ops run on the same tl_dspExecutionStream so
-  // ordering is guaranteed by the stream itself. Per-buffer write events are
+  // ordering between device consumers is guaranteed by the stream itself (host
+  // readers drain it in syncToPrimary). Per-buffer write events are
   // unnecessary and dangerous: temporary buffers allocated during device-drift
   // (cudaGetDevice() returning the wrong device because LaunchContext init
   // iterates all devices) get _deviceId on device 0 while the DSP stream is on
@@ -1215,6 +1243,9 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     return;
   }
 
+  // Before any device switch below: the DSP streams belong to this thread's execution device.
+  waitForDspStreamsBeforeHostRead();
+
   allocatePrimary();
 
   // If primary buffer exists but is undersized (e.g., setPrimaryBuffer was called
@@ -1259,7 +1290,8 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
   }
 
   // Keep D2H on stream 0 without reinitializing thread-local ContextBuffers on
-  // device changes. The legacy stream does NOT order nonblocking DSP streams.
+  // device changes. The legacy stream does NOT order nonblocking DSP streams;
+  // waitForDspStreamsBeforeHostRead above drained them.
   // CudaMemoryPool::memcpyAsync supplies allocation readiness explicitly;
   // write-completion dependencies remain separate from allocation readiness.
   cudaStream_t stream = 0;
