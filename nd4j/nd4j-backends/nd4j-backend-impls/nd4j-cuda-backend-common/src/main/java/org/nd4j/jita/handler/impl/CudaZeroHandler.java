@@ -34,9 +34,7 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
-import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
-import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
@@ -58,7 +56,6 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
-import org.nd4j.nativeblas.OpaqueLaunchContext;
 import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Table;
 import org.slf4j.Logger;
@@ -69,7 +66,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This Mover implementation uses following techs:
@@ -96,8 +92,6 @@ public class CudaZeroHandler implements MemoryHandler {
     private final FlowController flowController;
 
     private final AllocationStatus INITIAL_LOCATION;
-
-    private final List<cublasHandle_t> cublasHandles = new ArrayList<>();
 
     // Per-device context cache - each device has its own streams that must be used for operations on that device
     private final List<CudaContext> deviceContexts = new ArrayList<>();
@@ -148,7 +142,6 @@ public class CudaZeroHandler implements MemoryHandler {
         int numDevices = NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices();
         for (int i = 0; i < numDevices; i++) {
             deviceAllocations.add(new ConcurrentHashMap<Long, Long>());
-            cublasHandles.add(null);
             deviceContexts.add(null);  // Will be lazily initialized when needed
         }
 
@@ -898,75 +891,6 @@ public class CudaZeroHandler implements MemoryHandler {
         return getCudaContext();
     }
 
-    //
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-
-    // Lock for thread-safe access to CUDA context operations
-    private final Object contextLock = new Object();
-
-    protected cublasHandle_t getCudaCublasHandle(OpaqueLaunchContext lc) {
-        val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        try {
-            lock.writeLock().lock();
-
-            // ALWAYS re-fetch the handle from C++ native rather than returning the cached pointer.
-            //
-            // Root of CrossDeviceTransferTest SIGSEGV in cublasSetStream_v2:
-            // CublasHelper::handle() (cublasHelper.cu) is thread-local: on a device switch it
-            // calls cublasDestroy_v2(*tl_handle) then creates a new handle at a new address and
-            // updates tl_handle.  The Java cublasHandles List caches the OLD raw pointer obtained
-            // before the device switch.  When the thread returns to the original device, Java's
-            // cached pointer now points to freed C++ memory; passing it to cublasSetStream_v2
-            // dereferences freed memory → SIGSEGV.
-            //
-            // CublasHelper::handle(deviceId) is itself safe to call on every use:
-            //  - If tl_deviceId == deviceId (common case), it returns the existing tl_handle
-            //    unchanged — no reallocation, no overhead beyond a comparison.
-            //  - If tl_deviceId != deviceId (first call after a device switch), it creates a
-            //    fresh handle for the new device — which is exactly what we need.
-            // Always re-fetching here means the Java wrapper always reflects the current C++
-            // thread-local handle and can never become stale across a device switch.
-            Pointer nativeHandle = nativeOps.lcBlasHandle(lc);
-            if (nativeHandle == null || nativeHandle.isNull()) {
-                throw new ND4JIllegalStateException("cuBLAS handle is null for device " + deviceId +
-                    ". This may indicate cuBLAS initialization failure.");
-            }
-            cublasHandle_t handle = cublasHandles.get(deviceId);
-            if (handle == null || handle.isNull() || handle.address() != nativeHandle.address()) {
-                // The native address changes after a real device/context switch; replace
-                // the wrapper only then. Same-device calls re-fetch for safety but reuse
-                // the existing Java object instead of allocating one per operation.
-                handle = new cublasHandle_t(nativeHandle);
-                cublasHandles.set(deviceId, handle);
-            }
-
-            if (handle.isNull()) {
-                throw new ND4JIllegalStateException("Cached cuBLAS handle became invalid for device " + deviceId +
-                    ". This may indicate CUDA context corruption.");
-            }
-            return handle;
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Return the optional cuSolver handle exposed by the native backend.
-     *
-     * ZLUDA intentionally returns no handle because it does not implement the
-     * cuSolver ABI. Ordinary array/context setup must remain usable; an actual
-     * LAPACK operation will fail through CudaContext#getSolverHandle() with the
-     * existing explicit unsupported-handle error.
-     */
-    private cusolverDnHandle_t getCudaSolverHandle(OpaqueLaunchContext lc) {
-        Pointer nativeHandle = nativeOps.lcSolverHandle(lc);
-        if (nativeHandle == null || nativeHandle.isNull()) {
-            return null;
-        }
-        nativeHandle.retainReference();
-        return new cusolverDnHandle_t(nativeHandle);
-    }
-
     /**
      * This method returns CudaContext for current thread with FRESH stream pointers.
      *
@@ -1000,8 +924,6 @@ public class CudaZeroHandler implements MemoryHandler {
                 .bufferSpecial(nativeOps.lcScalarPointer(lc).retainReference())
                 .oldStream(new cudaStream_t(nativeOps.lcExecutionStream(lc).retainReference()))
                 .specialStream(new cudaStream_t(nativeOps.lcCopyStream(lc).retainReference()))
-                .cublasHandle(getCudaCublasHandle(lc))
-                .solverHandle(getCudaSolverHandle(lc))
                 .deviceId(currentDeviceId)
                 .build();
 
@@ -1049,7 +971,6 @@ public class CudaZeroHandler implements MemoryHandler {
                 // IMPORTANT: retainReference() prevents JavaCPP from freeing CUDA-allocated memory
                 Pointer execStream = nativeOps.lcExecutionStream(lc).retainReference();
                 Pointer copyStream = nativeOps.lcCopyStream(lc).retainReference();
-                cusolverDnHandle_t solverHandle = getCudaSolverHandle(lc);
 
                 // Validate streams
                 if (execStream == null || execStream.isNull()) {
@@ -1068,8 +989,6 @@ public class CudaZeroHandler implements MemoryHandler {
                             .bufferSpecial(nativeOps.lcScalarPointer(lc).retainReference())
                             .oldStream(new cudaStream_t(execStream))
                             .specialStream(new cudaStream_t(copyStream))
-                            .cublasHandle(getCudaCublasHandleForDevice(lc, deviceId))
-                            .solverHandle(solverHandle)
                             .deviceId(deviceId)
                             .build();
                     deviceContexts.set(deviceId, cachedCtx);
@@ -1090,52 +1009,10 @@ public class CudaZeroHandler implements MemoryHandler {
         }
     }
 
-    /**
-     * Get cuBLAS handle for a specific device (used by getCudaContextForDevice)
-     */
-    protected cublasHandle_t getCudaCublasHandleForDevice(OpaqueLaunchContext lc, int deviceId) {
-        try {
-            lock.writeLock().lock();
-
-            if (cublasHandles.get(deviceId) == null) {
-                Pointer nativeHandle = nativeOps.lcBlasHandle(lc);
-                if (nativeHandle == null || nativeHandle.isNull()) {
-                    throw new ND4JIllegalStateException("cuBLAS handle is null for device " + deviceId);
-                }
-                cublasHandles.set(deviceId, new cublasHandle_t(nativeHandle));
-            }
-
-            return cublasHandles.get(deviceId);
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
     @Override
     public void resetCachedContext() {
         tlContext.remove();
         tlContextDeviceId.remove();
-
-        // Invalidate the cached cuBLAS handle for the current device.
-        //
-        // CublasHelper::handle() (cublasHelper.cu) stores a thread_local cublasHandle_t*.
-        // On a device switch it destroys the old handle and creates a new one, so the raw
-        // pointer that Java has cached in cublasHandles becomes a dangling pointer to freed
-        // C++ memory.  Clearing it here forces getCudaCublasHandle() to re-fetch the current
-        // (valid) handle from C++ on the next cuBLAS operation instead of passing the stale
-        // pointer to cublasSetStream_v2, which would SIGSEGV.
-        //
-        // getCudaCublasHandle() already performs an unconditional re-fetch, but clearing here
-        // also protects code paths that read cublasHandles directly (e.g. getCudaCublasHandleForDevice).
-        try {
-            lock.writeLock().lock();
-            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            if (deviceId >= 0 && deviceId < cublasHandles.size()) {
-                cublasHandles.set(deviceId, null);
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
     }
 
     /**

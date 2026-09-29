@@ -36,6 +36,8 @@
 #include <array/DataBuffer.h>
 #include <atomic>
 #include <graph/DspDiagnostics.h>
+#include <utility>
+#include <vector>
 
 #if HAVE_CUDNN
 #include <cudnn.h>
@@ -43,6 +45,89 @@
 
 namespace sd {
 std::mutex CublasHelper::_mutex;
+
+namespace {
+// cuBLAS handles are not thread-safe, so every thread uses its own. Creating one allocates the
+// handle's default workspace in device memory (about 64 MB on sm_12x), and destroying one
+// synchronizes the device, which invalidates a stream capture open on any other thread. So a
+// thread never destroys its handle: when it exits or moves to another device it returns the
+// handle here, and a thread that needs a handle takes a returned one before creating one. Live
+// handles per device are then bounded by the peak number of threads using cuBLAS on it at once,
+// not by the number of threads that ever did.
+template <typename H>
+class RetiredHandles {
+ public:
+  void put(int deviceId, H handle) {
+    std::lock_guard<std::mutex> lock(_lock);
+    _handles.emplace_back(deviceId, handle);
+  }
+
+  bool take(int deviceId, H* handle) {
+    std::lock_guard<std::mutex> lock(_lock);
+    for (size_t e = _handles.size(); e-- > 0;) {
+      if (_handles[e].first == deviceId) {
+        *handle = _handles[e].second;
+        _handles[e] = _handles.back();
+        _handles.pop_back();
+        return true;
+      }
+    }
+    return false;
+  }
+
+ private:
+  std::mutex _lock;
+  std::vector<std::pair<int, H>> _handles;
+};
+
+// Heap-allocated and never destroyed: threads may exit, and return their handles here, while
+// static destructors run at process exit.
+RetiredHandles<cublasHandle_t*>& retiredCublasHandles() {
+  static auto* handles = new RetiredHandles<cublasHandle_t*>();
+  return *handles;
+}
+
+RetiredHandles<cublasLtHandle_t>& retiredCublasLtHandles() {
+  static auto* handles = new RetiredHandles<cublasLtHandle_t>();
+  return *handles;
+}
+
+// The calling thread's cuBLAS handle and the state handle() tracks for it. Retiring makes no
+// CUDA call, so it is safe from the thread-exit path.
+struct ThreadCublasHandle {
+  cublasHandle_t* handle = nullptr;
+  int deviceId = -1;
+  int smMajor = -1;
+  int appliedMode = -1;  // CublasMathModeState
+
+  void retire() {
+    if (handle != nullptr) retiredCublasHandles().put(deviceId, handle);
+    handle = nullptr;
+    deviceId = -1;
+    smMajor = -1;
+    appliedMode = -1;
+  }
+
+  ~ThreadCublasHandle() { retire(); }
+};
+
+struct ThreadCublasLtHandle {
+  cublasLtHandle_t handle = nullptr;
+  int deviceId = -1;
+  bool available = true;
+
+  void retire() {
+    if (handle != nullptr) retiredCublasLtHandles().put(deviceId, handle);
+    handle = nullptr;
+    deviceId = -1;
+  }
+
+  ~ThreadCublasLtHandle() { retire(); }
+};
+
+thread_local ThreadCublasHandle tl_cublas;
+thread_local ThreadCublasLtHandle tl_cublasLt;
+}  // namespace
 
 static void* handle_() {
   auto _handle = new cublasHandle_t();
@@ -142,8 +227,9 @@ CublasHelper::CublasHelper() {
 }
 
 CublasHelper::~CublasHelper() {
-  // The legacy cuBLAS cache and thread-local handles retain their existing
-  // process-lifetime ownership; only optional per-device handles are owned here.
+  // The legacy cuBLAS cache keeps its process-lifetime ownership, and thread handles are
+  // recycled through retiredCublasHandles() rather than destroyed; only optional per-device
+  // handles are owned here.
 
 #if !defined(HAVE_ZLUDA)
   // Destroy only handles that were requested and successfully created.
@@ -285,28 +371,34 @@ void* CublasHelper::handle(int deviceId) {
   // concurrent sd.output() threads causes races: thread A sets stream/workspace,
   // thread B overwrites them, thread A launches GEMM on the wrong stream →
   // CUDA error 906 (cudaErrorLaunchFailure).
-  thread_local cublasHandle_t* tl_handle = nullptr;
-  thread_local int tl_deviceId = -1;
-  static thread_local int tl_smMajor = -1;
+  auto& tl = tl_cublas;
+  if (tl.handle == nullptr || tl.deviceId != deviceId) {
+    // First call on this thread, or the thread moved to another device: the old handle goes
+    // back to the pool rather than being destroyed (see RetiredHandles).
+    tl.retire();
 
-  if (tl_deviceId != deviceId || tl_handle == nullptr) {
-    // Device changed or first call on this thread — create a new handle.
-    if (tl_handle != nullptr) {
-      cublasDestroy_v2(*tl_handle);
-      delete tl_handle;
-      tl_handle = nullptr;
+    cublasHandle_t* handle = nullptr;
+    if (retiredCublasHandles().take(deviceId, &handle)) {
+      // Put the handle back in the state cublasCreate leaves it in: the previous owner's
+      // stream may be destroyed, its workspace freed, and its math mode is not ours.
+      // cublasSetStream also resets the workspace to the handle's default pool.
+      auto status = cublasSetStream_v2(*handle, nullptr);
+      if (status == CUBLAS_STATUS_SUCCESS) status = cublasSetMathMode(*handle, CUBLAS_DEFAULT_MATH);
+      if (status != CUBLAS_STATUS_SUCCESS) {
+        std::string msg = "resetting a reused cuBLAS handle failed; Error code: [" + std::to_string(status) + "]";
+        THROW_EXCEPTION(msg.c_str());
+      }
+    } else {
+      handle = new cublasHandle_t();
+      auto status = cublasCreate_v2(handle);
+      if (status != CUBLAS_STATUS_SUCCESS) {
+        delete handle;
+        std::string msg = "thread-local cuBLAS handle creation failed; Error code: [" + std::to_string(status) + "]";
+        THROW_EXCEPTION(msg.c_str());
+      }
     }
-
-    tl_handle = new cublasHandle_t();
-    auto status = cublasCreate_v2(tl_handle);
-    if (status != CUBLAS_STATUS_SUCCESS) {
-      delete tl_handle;
-      tl_handle = nullptr;
-      std::string msg = "thread-local cuBLAS handle creation failed; Error code: [" + std::to_string(status) + "]";
-      THROW_EXCEPTION(msg.c_str());
-    }
-    tl_deviceId = deviceId;
-    tl_smMajor = -1;  // force re-query for the new device's SM major
+    tl.handle = handle;
+    tl.deviceId = deviceId;
   }
 
   // Lazily converge THIS thread's handle to the mode the process currently
@@ -323,39 +415,38 @@ void* CublasHelper::handle(int deviceId) {
   //              mode explicitly (setCublasWorkspaceForCapture/Warmup); do
   //              not overwrite it here.
   //   TF32/DEFAULT — normal lazy TF32 policy (sm_80+, env-gated).
-  static thread_local int tl_appliedMode = -1;  // CublasMathModeState
   constexpr int MODE_DEFAULT = 0, MODE_TF32 = 1, MODE_PEDANTIC = 2;
   bool wantTf32 = sd::Environment::getInstance().cublasTf32Enabled();
-  if (tl_smMajor < 0) {
+  if (tl.smMajor < 0) {
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, deviceId);
-    tl_smMajor = prop.major;
+    tl.smMajor = prop.major;
   }
   if (CublasHelper::inDeterministicWindow()) {
-    if (tl_appliedMode != MODE_PEDANTIC) {
-      cublasSetMathMode(*tl_handle, CUBLAS_PEDANTIC_MATH);
+    if (tl.appliedMode != MODE_PEDANTIC) {
+      cublasSetMathMode(*tl.handle, CUBLAS_PEDANTIC_MATH);
       DSP_DIAG(EXECUTE, "CUBLAS_HANDLE_MODE: thread handle %p -> PEDANTIC "
                "(deterministic window open, was mode=%d)",
-               (void*)tl_handle, tl_appliedMode);
-      tl_appliedMode = MODE_PEDANTIC;
+               (void*)tl.handle, tl.appliedMode);
+      tl.appliedMode = MODE_PEDANTIC;
     }
   } else if (!tl_cublasLtDisabled) {
-    int want = (wantTf32 && tl_smMajor >= 8) ? MODE_TF32 : MODE_DEFAULT;
-    if (want != tl_appliedMode) {
-      cublasSetMathMode(*tl_handle, want == MODE_TF32 ? CUBLAS_TF32_TENSOR_OP_MATH
+    int want = (wantTf32 && tl.smMajor >= 8) ? MODE_TF32 : MODE_DEFAULT;
+    if (want != tl.appliedMode) {
+      cublasSetMathMode(*tl.handle, want == MODE_TF32 ? CUBLAS_TF32_TENSOR_OP_MATH
                                                       : CUBLAS_DEFAULT_MATH);
       DSP_DIAG(EXECUTE, "CUBLAS_HANDLE_MODE: thread handle %p -> %s "
                "(window closed, was mode=%d)",
-               (void*)tl_handle, want == MODE_TF32 ? "TF32" : "DEFAULT", tl_appliedMode);
-      tl_appliedMode = want;
+               (void*)tl.handle, want == MODE_TF32 ? "TF32" : "DEFAULT", tl.appliedMode);
+      tl.appliedMode = want;
     }
   } else {
     // Caller manages the mode explicitly; forget our tracking so the next
     // unmanaged acquisition re-applies the policy mode.
-    tl_appliedMode = -1;
+    tl.appliedMode = -1;
   }
 
-  return reinterpret_cast<void*>(tl_handle);
+  return reinterpret_cast<void*>(tl.handle);
 }
 
 // ── Process-global deterministic-math window ────────────────────────────
@@ -389,42 +480,34 @@ bool CublasHelper::inDeterministicWindow() {
   return g_deterministicCublasDepth.load(std::memory_order_relaxed) > 0;
 }
 
-// cuBLAS Lt handle: created on-demand per thread/device
-// Returns nullptr if Lt is not available (fallback to standard cuBLAS)
+// cuBLAS Lt handle: one per thread/device, recycled like the cuBLAS handle (cublasLtDestroy
+// also invalidates captures open on other threads). Returns nullptr if Lt is not available
+// (fallback to standard cuBLAS).
 void* CublasHelper::ltHandle() {
-  // Thread-local Lt handle cache - plain thread_local, not static thread_local
-  // to avoid initialization order issues in shared libraries
-  thread_local cublasLtHandle_t tl_ltHandle = nullptr;
-  thread_local int tl_deviceId = -1;
-  thread_local bool tl_available = true;
-  
-  // Check if already initialized for current device
+  auto& tl = tl_cublasLt;
   int currentDevice = AffinityManager::currentDeviceId();
-  if (tl_deviceId == currentDevice && tl_ltHandle != nullptr) {
-    return tl_available ? reinterpret_cast<void*>(&tl_ltHandle) : nullptr;
+  if (tl.handle != nullptr && tl.deviceId == currentDevice) {
+    return reinterpret_cast<void*>(&tl.handle);
   }
-  
-  // Device changed or not initialized - create/replace Lt handle
-  if (tl_ltHandle != nullptr) {
-    cublasLtDestroy(tl_ltHandle);
-    tl_ltHandle = nullptr;
-  }
-  
-  if (!tl_available) {
+
+  // Device changed or not initialized - replace the Lt handle
+  tl.retire();
+  if (!tl.available) {
     return nullptr;  // Lt not available on this system
   }
-  
-  tl_deviceId = currentDevice;
-  
-  cublasLtHandle_t ltHandle;
-  auto status = cublasLtCreate(&ltHandle);
-  if (status != CUBLAS_STATUS_SUCCESS) {
-    tl_available = false;
-    return nullptr;
+
+  // Lt handles carry no stream or math mode, so a reused one needs no reset.
+  cublasLtHandle_t handle = nullptr;
+  if (!retiredCublasLtHandles().take(currentDevice, &handle)) {
+    if (cublasLtCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
+      tl.available = false;
+      return nullptr;
+    }
   }
-  
-  tl_ltHandle = ltHandle;
-  return reinterpret_cast<void*>(&tl_ltHandle);
+
+  tl.handle = handle;
+  tl.deviceId = currentDevice;
+  return reinterpret_cast<void*>(&tl.handle);
 }
 
 void* CublasHelper::ltHandle(int deviceId) {

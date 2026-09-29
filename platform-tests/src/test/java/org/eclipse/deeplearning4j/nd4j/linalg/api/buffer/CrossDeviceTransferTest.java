@@ -34,9 +34,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -1086,36 +1084,47 @@ public class CrossDeviceTransferTest extends BaseNd4jTestWithBackends {
     }
 
     /**
-     * Re-fetching the native cuBLAS pointer is required for cross-device safety,
-     * but a stable same-device pointer must reuse its Java wrapper. Replacing the
-     * wrapper on every op turns model import into an allocation hot path.
+     * cuBLAS handles are not thread-safe, so a context hands out the calling thread's handle. It
+     * stays the same across calls on one thread, and a context built on one thread but used on
+     * another gets the other thread's handle rather than the builder's.
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @DisplayName("Same-device cuBLAS handle re-fetch reuses the Java wrapper")
-    void testSameDeviceCublasHandleWrapperReuse(Nd4jBackend backend) throws Exception {
+    @DisplayName("A context hands out the cuBLAS handle of the thread using it")
+    void testCublasHandleBelongsToCallingThread(Nd4jBackend backend) throws Exception {
         assumeTrue(isCudaBackend(), "Test requires CUDA backend");
 
         Class<?> allocatorClass = Class.forName("org.nd4j.jita.allocator.impl.AtomicAllocator");
         Object allocator = allocatorClass.getMethod("getInstance").invoke(null);
         Object memoryHandler = allocatorClass.getMethod("getMemoryHandler").invoke(allocator);
         Method getDeviceContext = memoryHandler.getClass().getMethod("getDeviceContext");
+        Object context = getDeviceContext.invoke(memoryHandler);
+        Method getCublasHandle = context.getClass().getMethod("getCublasHandle");
 
-        Field handlesField = memoryHandler.getClass().getDeclaredField("cublasHandles");
-        handlesField.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        List<Object> handles = (List<Object>) handlesField.get(memoryHandler);
-        int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-
-        getDeviceContext.invoke(memoryHandler);
-        Object firstWrapper = handles.get(deviceId);
-        assertNotNull(firstWrapper, "cuBLAS wrapper was not initialized");
-
+        long handle = ((org.bytedeco.javacpp.Pointer) getCublasHandle.invoke(context)).address();
+        assertNotEquals(0L, handle, "cuBLAS handle was not initialized");
         for (int i = 0; i < 512; i++) {
-            getDeviceContext.invoke(memoryHandler);
+            Object sameThreadContext = getDeviceContext.invoke(memoryHandler);
+            assertEquals(handle, ((org.bytedeco.javacpp.Pointer) getCublasHandle.invoke(sameThreadContext)).address(),
+                    "The cuBLAS handle changed between calls on one thread");
         }
 
-        assertSame(firstWrapper, handles.get(deviceId),
-                "A stable native cuBLAS handle must not allocate a new Java wrapper per operation");
+        long[] otherThreadHandle = new long[1];
+        Throwable[] failure = new Throwable[1];
+        Thread other = new Thread(() -> {
+            try {
+                otherThreadHandle[0] = ((org.bytedeco.javacpp.Pointer) getCublasHandle.invoke(context)).address();
+            } catch (Throwable t) {
+                failure[0] = t;
+            }
+        });
+        other.start();
+        other.join();
+        if (failure[0] != null) {
+            throw new AssertionError("Fetching the cuBLAS handle on another thread failed", failure[0]);
+        }
+        assertNotEquals(0L, otherThreadHandle[0], "cuBLAS handle was not initialized on the other thread");
+        assertNotEquals(handle, otherThreadHandle[0],
+                "A context used on another thread handed out the building thread's cuBLAS handle");
     }
 }

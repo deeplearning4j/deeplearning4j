@@ -36,7 +36,7 @@ import org.nd4j.nativeblas.OpaqueLaunchContext;
  * the different primitives around the cuda apis
  * This being:
  * streams (both old and new) as well as
- * the cublas handles.
+ * the cublas and cusolver handles.
  *
  *
  */
@@ -51,10 +51,6 @@ public class CudaContext {
 
     // memcpy stream
     private cudaStream_t specialStream;
-
-    // exactly what it says
-    private cublasHandle_t cublasHandle;
-    private cusolverDnHandle_t solverHandle;
 
     // temporary buffers, exactly 1 per thread
     private Pointer bufferReduction;
@@ -124,40 +120,36 @@ public class CudaContext {
         return lptr.get(0);
     }
 
+    /**
+     * Returns the calling thread's cuBLAS handle for its current device. cuBLAS handles are not
+     * thread-safe, so native code keeps one per thread and hands it to another thread once the
+     * first exits. A context can be built on one thread and used on another, so the handle is
+     * looked up on every call instead of being stored in the context.
+     */
     public cublasHandle_t getCublasHandle() {
-        if (cublasHandle == null || cublasHandle.isNull()) {
+        OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
+        lc.retainReference();
+        Pointer handle = nativeOps.lcBlasHandle(lc);
+        if (handle == null || handle.isNull()) {
             throw new ND4JIllegalStateException("cuBLAS handle is null or invalid for device " + deviceId +
                 ". This may indicate CUDA context corruption or device reset.");
         }
-        // FIXME: can we cache this please
-        val lptr = new PointerPointer(cublasHandle);
-        return new cublasHandle_t(lptr.get(0));
+        return new cublasHandle_t(new PointerPointer(handle).get(0));
     }
 
+    /**
+     * Returns the cuSolver handle for the calling thread's current device, creating it on first
+     * use. Backends without cuSolver (ZLUDA) have none, and asking for it fails.
+     */
     public cusolverDnHandle_t getSolverHandle() {
-        if (solverHandle == null || solverHandle.isNull()) {
+        OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
+        lc.retainReference();
+        Pointer handle = nativeOps.lcSolverHandle(lc);
+        if (handle == null || handle.isNull()) {
             throw new ND4JIllegalStateException("cuSolver handle is null or invalid for device " + deviceId +
                 ". This may indicate CUDA context corruption or device reset.");
         }
-        // FIXME: can we cache this please
-        val lptr = new PointerPointer(solverHandle);
-        return new cusolverDnHandle_t(lptr.get(0));
-    }
-
-    /**
-     * Checks if the cuBLAS handle is valid (non-null).
-     * @return true if handle is valid, false otherwise
-     */
-    public boolean isCublasHandleValid() {
-        return cublasHandle != null && !cublasHandle.isNull();
-    }
-
-    /**
-     * Checks if the cuSolver handle is valid (non-null).
-     * @return true if handle is valid, false otherwise
-     */
-    public boolean isSolverHandleValid() {
-        return solverHandle != null && !solverHandle.isNull();
+        return new cusolverDnHandle_t(new PointerPointer(handle).get(0));
     }
 
     /**
