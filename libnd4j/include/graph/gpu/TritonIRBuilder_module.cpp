@@ -3704,7 +3704,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         float scale = getFusedAttentionScale(
             slot.ident.opName, slot.args.numTArgs, slot.args.tArgs, headDim);
         auto attnTile = chooseFusedAttentionTileConfig(
-            batchSize, numQHeads, seqQ, seqK, headDim);
+            batchSize, numQHeads, seqQ, seqK, headDim, 0, numKvHeads);
         if (!attnTile.fitsSharedMem) {
           std::string msg = "TritonIRBuilder: fused attention '" + slot.ident.opName + "' at slot " +
                             std::to_string(si) + " cannot fit shared memory (headDim=" +
@@ -5730,6 +5730,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     int seqQ = std::max(1, sec.seqQ);
     int seqK = std::max(1, sec.seqK);
     int headDim = std::max(1, sec.headDim);
+    // KV heads as the emitter resolves them (grouped-query rows run one per
+    // program; see chooseFusedAttentionTileConfig).
+    int numKvHeads = sec.numKvHeads > 0 ? sec.numKvHeads : numHeads;
 
     // Fused attention launch geometry depends on the op's tensor layout.
     // Prefer the actual Q/K input shapes over section metadata: the section
@@ -5771,6 +5774,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             int seqKDim = opUsesBSHDGrid ? 1 : 2;
             if (static_cast<int>(kShape.size()) > seqKDim) {
               seqK = static_cast<int>(std::max<LongType>(1, kShape[seqKDim]));
+            }
+            // Rank-4 K: [B, seqK, kvHeads, D] (BSHD) or [B, kvHeads, seqK, D].
+            if (kShape.size() >= 4) {
+              numKvHeads = static_cast<int>(std::max<LongType>(1, kShape[opUsesBSHDGrid ? 2 : 1]));
             }
           }
         }
@@ -5821,7 +5828,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     }
 
     auto attnTile = chooseFusedAttentionTileConfig(
-        batchSize, numHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes);
+        batchSize, numHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes, numKvHeads);
     int blockMForAttn = std::max(1, attnTile.blockM);
 
     int gridX = std::max(1, batchSize * numHeads);
@@ -8823,7 +8830,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           float scale = getFusedAttentionScale(
               slot.ident.opName, slot.args.numTArgs, slot.args.tArgs, headDim);
           auto attnTile = chooseFusedAttentionTileConfig(
-              batchSize, numQHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes);
+              batchSize, numQHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes, numKvHeads);
           if (!attnTile.fitsSharedMem) {
             std::string msg = "TritonIRBuilder::buildSectionedModule: attention at slot " +
                               std::to_string(si) + " cannot fit shared memory (headDim=" +
@@ -9590,7 +9597,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           int sq = std::max(1, sec.seqQ);
           int sk = std::max(1, sec.seqK);
           auto attnTile = chooseFusedAttentionTileConfig(
-              sec.batchSize, sec.numHeads, sq, sk, hd);
+              sec.batchSize, sec.numHeads, sq, sk, hd, 0,
+              sec.numKvHeads > 0 ? sec.numKvHeads : sec.numHeads);
           secSmem = attnTile.estimatedSharedMemBytes;
           break;
         }

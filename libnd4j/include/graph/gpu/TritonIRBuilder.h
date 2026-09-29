@@ -427,6 +427,20 @@ class TritonIRBuilder {
   // replay and native slot-by-slot execution give the same bits: ascending-d FMA
   // logits, scale then bias, max, __expf, the native 256-thread sum order,
   // reciprocal normalization and an ascending-key FMA P*V over the attended keys.
+  // One query row of grouped-query attention, mirroring the native
+  // fusedGQADecodeKernel (tiled online softmax, one block per query row)
+  // operation for operation, so compiled attention equals native bits.
+  static void emitNativeOrderedGqaRowAttention(mlir::OpBuilder& builder, mlir::Location loc,
+                                               mlir::Value qPtr, mlir::Value qRowBase,
+                                               mlir::Value kPtr, mlir::Value vPtr,
+                                               mlir::Value kvBase, mlir::Value kvRowStride,
+                                               mlir::Value outPtr, mlir::Value row,
+                                               mlir::Value batchIdx, mlir::Value headIdx,
+                                               int batchSize, int numQHeads, int seqQ, int seqK,
+                                               int headDim, float scale, bool isCausal,
+                                               mlir::Value biasPtr,
+                                               const std::vector<LongType>& biasShape);
+
   static void emitNativeOrderedDecodeAttention(mlir::OpBuilder& builder, mlir::Location loc,
                                                mlir::Value qPtr, mlir::Value qRowBase,
                                                mlir::Value curKPtr, mlir::Value curVPtr,

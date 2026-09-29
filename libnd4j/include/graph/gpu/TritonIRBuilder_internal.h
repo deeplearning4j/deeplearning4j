@@ -315,10 +315,17 @@ struct AttentionTileChoice {
 // Largest query window tiled as decode (one small query tile per head).
 constexpr int kFusedAttentionDecodeRows = 8;
 
+// numKvHeads (forward attention; 0 = unknown): grouped-query attention (fewer
+// KV heads than query heads) always runs one query row per program. Its native
+// kernel (fusedGQADecodeKernel) is one block per query row at every length, and
+// emitFusedAttentionKernel mirrors it operation for operation, so compiled
+// prefill equals native execution bit for bit. Every launch-grid computation
+// must pass the same count as the emitter.
 inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int numHeads,
                                                           int seqQ, int seqK,
                                                           int headDim,
-                                                          int sharedMemLimitBytes = 0) {
+                                                          int sharedMemLimitBytes = 0,
+                                                          int numKvHeads = 0) {
   const int limit = (sharedMemLimitBytes > 0) ? sharedMemLimitBytes : queryCudaSharedMemLimitBytes();
   AttentionTileChoice choice;
 
@@ -328,7 +335,8 @@ inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int num
   // DECODE OPTIMIZATION: For seqQ=1 (single-token decode), use minimal blockM
   // to avoid wasting compute on masked-out positions. Standard flash attention
   // uses blockM=32-128, but decode only needs blockM=1-8.
-  if (seqQ <= kFusedAttentionDecodeRows) {
+  const bool groupedQuery = numKvHeads > 0 && numKvHeads < numHeads;
+  if (seqQ <= kFusedAttentionDecodeRows || groupedQuery) {
     // Decode, speculative windows (MTP verifies K + 1 rows) or a very short
     // prefix: one query row per program, like the native kernel's one block
     // per row, so each row's reduction is the same whatever the window width
@@ -358,7 +366,7 @@ inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int num
   int chosenBytes = estimateFusedAttentionSharedMemBytes(headDim, choice.blockM, choice.blockN);
   if (chosenBytes > limit) {
     bool found = false;
-    const int minBlockM = seqQ <= kFusedAttentionDecodeRows ? choice.blockM : 16;
+    const int minBlockM = (seqQ <= kFusedAttentionDecodeRows || groupedQuery) ? choice.blockM : 16;
     for (int n = choice.blockN; n >= 16 && !found; n /= 2) {
       for (int m = choice.blockM; m >= minBlockM; m /= 2) {
         int bytes = estimateFusedAttentionSharedMemBytes(headDim, m, n);

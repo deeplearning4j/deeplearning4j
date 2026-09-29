@@ -293,6 +293,19 @@ parity. Row invariance already held in steady replay.
   - Keys past the window are masked by the decode bias: they contribute an exact
     +0 and are skipped, so the kernel stays at the flash kernel's speed (57–75 µs
     per call vs 110–220 µs native).
+  - Output-only grouped-query attention outside the GGUF cache contract (padded
+    prefill, fixed-buffer windows) routes natively to `fusedGQADecodeKernel`
+    at every query length. `emitFusedAttentionKernel` mirrors that kernel per row
+    (`emitNativeOrderedGqaRowAttention`):
+    - 256-key tiles with an online max and a `__expf` rescale when the max rises;
+    - the native block size from `getFusedGQADecodeDims` for the strided sum;
+    - a per-tile ascending-key FMA P·V;
+    - K, V and bias cast to the query type first, as `dot_product_attention_v2` does.
+
+    `chooseFusedAttentionTileConfig` gives grouped heads one row per program, and
+    every grid derivation passes the KV head count so launch grids agree.
+    `TestFixedBufferDecodeReuse#paddedPrefillOutputsRemainExactAtCompileTransition`
+    guards it: `attn_out_3` was 1 ulp off in 16301 of 131072 elements before.
   - Other attention contracts keep the flash kernel and are not yet exact.
 - **RMSNorm.** The replicated reduction order was right, but the mean used
   `arith.divf`, which Triton lowers to approximate FP32 division. It now uses the

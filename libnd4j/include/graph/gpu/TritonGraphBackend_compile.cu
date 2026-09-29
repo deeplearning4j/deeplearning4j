@@ -481,6 +481,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       int seqQ = std::max(1, sec.seqQ);
       int seqK = std::max(1, sec.seqK);
       int headDim = std::max(1, sec.headDim);
+      // Grouped-query rows run one per program (chooseFusedAttentionTileConfig).
+      int numKvHeads = sec.numKvHeads > 0 ? sec.numKvHeads : numHeads;
 
       if (sec.batchSize <= 0 || sec.numHeads <= 0 || sec.seqQ <= 0 || sec.headDim <= 0) {
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
@@ -512,6 +514,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                 int seqKDim = qIsBSHD ? 1 : 2;
                 if (static_cast<int>(kShape.size()) > seqKDim) {
                   seqK = static_cast<int>(std::max<LongType>(1, kShape[seqKDim]));
+                }
+                if (kShape.size() >= 4) {
+                  numKvHeads = static_cast<int>(std::max<LongType>(1, kShape[qIsBSHD ? 2 : 1]));
                 }
               }
             }
@@ -559,7 +564,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         }
       }
 
-      auto attnTile = chooseFusedAttentionTileConfig(batchSize, numHeads, seqQ, seqK, headDim);
+      auto attnTile = chooseFusedAttentionTileConfig(batchSize, numHeads, seqQ, seqK, headDim, 0, numKvHeads);
       int blockM = std::max(1, attnTile.blockM);
       int batchHeads = std::max(1, batchSize * numHeads);
       int gridQ = std::max(1, (seqQ + blockM - 1) / blockM);

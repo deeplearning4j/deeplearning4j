@@ -1136,7 +1136,8 @@ int TritonIRBuilder::computeSectionGrid(const KernelSection& section, int blockS
       int seqK = std::max(1, section.seqK);
       int headDim = std::max(1, section.headDim);
       auto attnTile = chooseFusedAttentionTileConfig(
-          batchSize, numHeads, seqQ, seqK, headDim);
+          batchSize, numHeads, seqQ, seqK, headDim, 0,
+          section.numKvHeads > 0 ? section.numKvHeads : section.numHeads);
       int batchHeads = batchSize * numHeads;
       int blockM = std::max(1, attnTile.blockM);
       int gridQ = (seqQ + blockM - 1) / blockM;
@@ -2884,7 +2885,8 @@ void TritonIRBuilder::emitAttentionSection(mlir::OpBuilder& builder, mlir::Locat
       std::max(1, section.numHeads),
       std::max(1, section.seqQ),
       std::max(1, section.seqK),
-      std::max(1, section.headDim));
+      std::max(1, section.headDim), 0,
+      section.numKvHeads > 0 ? section.numKvHeads : section.numHeads);
   int blockM = attnTile.blockM;
   int blockN = attnTile.blockN;
   emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
