@@ -44,6 +44,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <functional>
 #include <cmath>
 #include <sstream>
 #include <unordered_map>
@@ -2259,6 +2260,34 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
   };
   const bool aPairs = widePairs(aArray, tx, true, aLanes);
   const bool bPairs = widePairs(bArray, ty, false, bLanes);
+  // A SERIAL_FMA B operand whose lanes (output columns) are adjacent in memory
+  // and whose K rows start on 16-byte boundaries ([K, N] storage). One K step
+  // gives each lane a single element, too narrow for an asynchronous copy, but
+  // the program's slice of a K row is contiguous: such an operand loads each
+  // chunk as a [steps, block] tile, which copies as 16-byte vectors, and splits
+  // it back into per-step lane values. Single-row outputs only: there each B
+  // tile streams once. Qwen3.6-27B MTP draft (M=1, N=5120-17408): 15-22%
+  // faster per kernel; the M=4 window matmul (N=5120, K=10240), whose rows
+  // re-read every tile, went 1.09 -> 1.62 ms, so it keeps per-step loads.
+  auto rowTiled = [&](NDArray* array, bool transposedK, int lanes, LongType kStride,
+                      mlir::Type elementType) -> bool {
+    if (!serial || !hasLayout || M != 1 || lanes != 1 || kStride <= 1 ||
+        !mlir::isa<mlir::FloatType>(elementType))
+      return false;
+    const int elementSize = static_cast<int>(array->sizeOfT());
+    if (elementSize != 2 && elementSize != 4) return false;
+    if ((static_cast<LongType>(blockSize) * elementSize) % kWidePairBytes != 0) return false;
+    const int rank = array->rankOf();
+    const int outAxis = rank - (transposedK ? 2 : 1);
+    if (array->stridesOf()[outAxis] != 1) return false;
+    if (reinterpret_cast<uintptr_t>(array->specialBuffer()) % kWidePairBytes != 0) return false;
+    for (int d = 0; d < rank; ++d) {
+      if (d == outAxis || array->sizeAt(d) <= 1) continue;
+      if ((array->stridesOf()[d] * static_cast<LongType>(elementSize)) % kWidePairBytes != 0) return false;
+    }
+    return true;
+  };
+  const bool bRowTile = rowTiled(bArray, ty, bLanes, bKStride, bPtrType.getPointeeType());
   // The alignment is a contract on every later binding (checked at launch), so
   // it may also be declared to Triton's axis analysis as pointer divisibility
   // (bytes) on the splatted base pointer, the operand's first tensor value:
@@ -2271,9 +2300,11 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
   };
   if (aLanes > 1) requireAlignment(aArg, splatAPtr, aPairs ? kWidePairBytes : kWideLoadBytes);
   if (bLanes > 1) requireAlignment(bArg, splatBPtr, bPairs ? kWidePairBytes : kWideLoadBytes);
-  DSP_DIAG(JIT, "emitPerElementMatmul: M=%d N=%d K=%d serial=%d wideLanes=%d/%d pairs=%d/%d (layout=%d "
-           "args=%d/%d aKStride=%lld bKStride=%lld)",
-           M, N, K, serial ? 1 : 0, aLanes, bLanes, aPairs ? 1 : 0, bPairs ? 1 : 0, hasLayout ? 1 : 0,
+  if (bRowTile) requireAlignment(bArg, splatBPtr, kWidePairBytes);
+  DSP_DIAG(JIT, "emitPerElementMatmul: M=%d N=%d K=%d serial=%d wideLanes=%d/%d pairs=%d/%d rowTileB=%d "
+           "(layout=%d args=%d/%d aKStride=%lld bKStride=%lld)",
+           M, N, K, serial ? 1 : 0, aLanes, bLanes, aPairs ? 1 : 0, bPairs ? 1 : 0, bRowTile ? 1 : 0,
+           hasLayout ? 1 : 0,
            aArg != nullptr ? 1 : 0, bArg != nullptr ? 1 : 0, static_cast<long long>(aKStride),
            static_cast<long long>(bKStride));
 
@@ -2318,13 +2349,80 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
       LongType kStride;
       int lanes;
       bool pairs;
+      bool rowTile;
     };
     const Operand operands[2] = {
-        {aBasePtrs, aPtrTensorType, aPtrType.getPointeeType(), aKStride, aLanes, aPairs},
-        {bBasePtrs, bPtrTensorType, bPtrType.getPointeeType(), bKStride, bLanes, bPairs}};
+        {aBasePtrs, aPtrTensorType, aPtrType.getPointeeType(), aKStride, aLanes, aPairs, false},
+        {bBasePtrs, bPtrTensorType, bPtrType.getPointeeType(), bKStride, bLanes, bPairs, bRowTile}};
+    // [steps, block] tile of a row-tiled operand: element (u, lane) is the
+    // lane's value at K step k0 + u. Transposed to [block, steps] and halved
+    // along the steps with reshape/split (split yields indices 2j, then 2j+1)
+    // until each piece is one step's [block] values, pushed in ascending u.
+    std::function<void(mlir::Value, int, std::vector<mlir::Value>&)> peelSteps =
+        [&](mlir::Value lanesBySteps, int steps, std::vector<mlir::Value>& out) {
+      if (steps == 1) {
+        out.push_back(builder.create<mlir::triton::ReshapeOp>(loc,
+            llvm::ArrayRef<int64_t>{blockSize}, lanesBySteps).getResult());
+        return;
+      }
+      auto halves = builder.create<mlir::triton::ReshapeOp>(loc,
+          llvm::ArrayRef<int64_t>{blockSize, steps / 2, 2}, lanesBySteps);
+      auto split = builder.create<mlir::triton::SplitOp>(loc, halves.getResult());
+      std::vector<mlir::Value> even, odd;
+      peelSteps(split.getOutLHS(), steps / 2, even);
+      peelSteps(split.getOutRHS(), steps / 2, odd);
+      for (int j = 0; j < steps / 2; ++j) {
+        out.push_back(even[j]);
+        out.push_back(odd[j]);
+      }
+    };
+    auto loadRowTile = [&](mlir::Value k0, const Operand& operand, std::vector<mlir::Value>& raws) {
+      auto pointerType = mlir::cast<mlir::RankedTensorType>(operand.ptrTensorType).getElementType();
+      auto tilePtrType = mlir::RankedTensorType::get({depth, blockSize}, pointerType);
+      auto stepRange = builder.create<mlir::triton::MakeRangeOp>(loc,
+          mlir::RankedTensorType::get({depth}, i32Type), 0, depth);
+      auto steps = builder.create<mlir::arith::AddIOp>(loc,
+          builder.create<mlir::triton::SplatOp>(loc, mlir::RankedTensorType::get({depth}, i32Type), k0),
+          stepRange);
+      auto stepOffsets = builder.create<mlir::arith::MulIOp>(loc, steps,
+          splatConstantI32(builder, loc, mlir::RankedTensorType::get({depth}, i32Type),
+                           static_cast<int>(operand.kStride)));
+      auto stepColumn = builder.create<mlir::triton::ExpandDimsOp>(loc, stepOffsets, 1);
+      auto offsets2 = builder.create<mlir::triton::BroadcastOp>(loc,
+          mlir::RankedTensorType::get({depth, blockSize}, i32Type), stepColumn);
+      auto laneRow = builder.create<mlir::triton::ExpandDimsOp>(loc, operand.basePtrs, 0);
+      auto lanePtrs = builder.create<mlir::triton::BroadcastOp>(loc, tilePtrType, laneRow);
+      auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, tilePtrType, lanePtrs, offsets2);
+      mlir::Value tileMask;
+      if (!wholeBlocks) {
+        auto maskRow = builder.create<mlir::triton::ExpandDimsOp>(loc, mask.getResult(), 0);
+        tileMask = builder.create<mlir::triton::BroadcastOp>(loc,
+            mlir::RankedTensorType::get({depth, blockSize}, builder.getI1Type()), maskRow);
+      }
+      auto tileLoad = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), tileMask, mlir::Value(),
+          mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+      // Coalesced along the lanes (16-byte vectors), applied by
+      // TritonTargetDispatch's MarkedLoadCoalescePass.
+      tileLoad->setDiscardableAttr("nd4j.coalesce_load", builder.getUnitAttr());
+      auto lanesBySteps = builder.create<mlir::triton::TransOp>(loc, tileLoad.getResult(),
+                                                                 llvm::ArrayRef<int32_t>{1, 0});
+      peelSteps(lanesBySteps.getResult(), depth, raws);
+    };
     // Two adjacent words per lane as one [block, 2] load, split back into the
     // lane's consecutive words (split returns [..., 0] then [..., 1]).
-    auto loadPair = [&](mlir::Value wordPtrs, mlir::Type wordPtrType, std::vector<mlir::Value>& raws) {
+    // 16-byte pair copies pay off only while the matmul is latency-bound. They
+    // are used for B, whose row is the lane's own output column (A's row is the
+    // output row, shared by the program's lanes, and its default two-thread
+    // 8-byte copies measured faster: 27B GDN pair per call 39.7 us unmarked,
+    // 29.7 us B only, 46.2 us both), and only with at most two programs per SM.
+    // With many programs in flight the matmul is bandwidth-bound, and per-lane
+    // 16-byte copies of rows 32 apart waste L2 sector bandwidth: on the Qwen3.5
+    // 0.8B decode, kernels of 4-80 programs got 4-23% faster, those of 193-3896
+    // programs 2-9% slower.
+    const LongType matmulPrograms = (static_cast<LongType>(totalElements) + blockSize - 1) / blockSize;
+    const bool coalesceBPairs = matmulPrograms <= 2 * static_cast<LongType>(queryCudaMultiProcessorCount());
+    auto loadPair = [&](mlir::Value wordPtrs, mlir::Type wordPtrType, bool coalesce,
+                        std::vector<mlir::Value>& raws) {
       auto ptrs2Type = mlir::RankedTensorType::get({blockSize, 2}, wordPtrType);
       auto column = builder.create<mlir::triton::ExpandDimsOp>(loc, wordPtrs, 1);
       auto rowPtrs = builder.create<mlir::triton::BroadcastOp>(loc, ptrs2Type, column);
@@ -2340,14 +2438,23 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
         pairMask = builder.create<mlir::triton::BroadcastOp>(loc,
             mlir::RankedTensorType::get({blockSize, 2}, builder.getI1Type()), maskColumn);
       }
-      auto pair = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), pairMask, mlir::Value(),
-          mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false).getResult();
+      auto pairLoad = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), pairMask, mlir::Value(),
+          mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+      // Keep the lane's two words in one thread (16-byte load and copy),
+      // applied by TritonTargetDispatch's MarkedLoadCoalescePass (see
+      // coalesceBPairs for when).
+      if (coalesce) pairLoad->setDiscardableAttr("nd4j.coalesce_load", builder.getUnitAttr());
+      auto pair = pairLoad.getResult();
       auto split = builder.create<mlir::triton::SplitOp>(loc, pair);
       raws.push_back(split.getOutLHS());
       raws.push_back(split.getOutRHS());
     };
     auto loadChunk = [&](mlir::Value k0, std::vector<mlir::Value>& raws) {
       for (const Operand& operand : operands) {
+        if (operand.rowTile) {
+          loadRowTile(k0, operand, raws);
+          continue;
+        }
         mlir::Value chunkPtrs = builder.create<mlir::triton::AddPtrOp>(loc, operand.ptrTensorType,
             operand.basePtrs, builder.create<mlir::arith::MulIOp>(loc,
                 builder.create<mlir::triton::SplatOp>(loc, i32TensorType, k0),
@@ -2364,7 +2471,7 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
             ptrs = builder.create<mlir::triton::BitcastOp>(loc, mlir::RankedTensorType::get({blockSize},
                 wordPtrType), ptrs);
           if (operand.pairs) {
-            loadPair(ptrs, wordPtrType, raws);
+            loadPair(ptrs, wordPtrType, coalesceBPairs && &operand == &operands[1], raws);
             continue;
           }
           raws.push_back(builder.create<mlir::triton::LoadOp>(loc, ptrs, wholeBlocks ? mlir::Value() : mask.getResult(),

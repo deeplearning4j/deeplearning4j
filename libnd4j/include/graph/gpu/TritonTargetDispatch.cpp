@@ -199,6 +199,11 @@ static bool linkAmdgcnObjectToHsaco(const void* objData, size_t objSize,
 #include <triton/Conversion/TritonGPUToLLVM/Passes.h>
 #include <triton/Dialect/TritonGPU/Transforms/Passes.h>
 #include <triton/Target/LLVMIR/Passes.h>
+#include <triton/Analysis/AxisInfo.h>
+#include <triton/Dialect/Triton/IR/Utility.h>
+#include <triton/Dialect/TritonGPU/IR/Dialect.h>
+#include <triton/Dialect/TritonGPU/Transforms/Utility.h>
+#include <mlir/Pass/Pass.h>
 
 // Triton NVIDIA GPU dialect transforms (tensor memory, proxy fence, etc.)
 #if __has_include(<triton/Dialect/TritonNvidiaGPU/Transforms/Passes.h>)
@@ -233,6 +238,47 @@ namespace sd {
 namespace graph {
 
 namespace {
+
+// Coalesced register layouts for the loads TritonIRBuilder marks with
+// "nd4j.coalesce_load" (SERIAL_FMA's per-lane word pairs). Triton's
+// CoalescePass is skipped on large modules because for every memory op it
+// takes the full forward/backward slice, quadratic in the long unrolled
+// SERIAL_FMA chains; a marked load's layout needs only its own pointer's axis
+// information. Without it the default layout splits a lane's contiguous
+// elements across threads, so neither the load nor its asynchronous copy
+// vectorizes. The rewrite is Triton's own: operands converted to the new
+// layout, the load recreated, its result converted back.
+class MarkedLoadCoalescePass final
+    : public mlir::PassWrapper<MarkedLoadCoalescePass, mlir::OperationPass<mlir::ModuleOp>> {
+ public:
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(MarkedLoadCoalescePass)
+
+  void runOnOperation() override {
+    mlir::ModuleOp module = getOperation();
+    mlir::triton::ModuleAxisInfoAnalysis axisInfo(module);
+    const int threadsPerWarp = mlir::triton::gpu::TritonGPUDialect::getThreadsPerWarp(module);
+    llvm::SmallVector<std::pair<mlir::Operation*, mlir::Attribute>> layouts;
+    module.walk([&](mlir::triton::LoadOp load) {
+      if (!load->hasAttr("nd4j.coalesce_load")) return;
+      auto ptrType = mlir::dyn_cast<mlir::RankedTensorType>(load.getPtr().getType());
+      if (!ptrType || !ptrType.getEncoding()) return;
+      llvm::SmallVector<int64_t> shapePerCTA = mlir::triton::gpu::getShapePerCTA(ptrType);
+      auto sorted = mlir::argSort(axisInfo.getAxisInfo(load.getPtr())->getContiguity());
+      llvm::SmallVector<unsigned> order(sorted.begin(), sorted.end());
+      const int numWarps = mlir::triton::gpu::lookupNumWarps(load.getOperation());
+      unsigned perThread = mlir::getNumElementsPerThread(load.getOperation(), order, axisInfo, shapePerCTA);
+      const int64_t elements = mlir::product<int64_t>(shapePerCTA);
+      perThread = std::min<unsigned>(perThread, static_cast<unsigned>(std::max<int64_t>(
+          elements / (static_cast<int64_t>(numWarps) * threadsPerWarp), 1)));
+      llvm::SmallVector<unsigned> sizePerThread(ptrType.getRank(), 1);
+      sizePerThread[order[0]] = perThread;
+      layouts.emplace_back(load.getOperation(), mlir::triton::gpu::BlockedEncodingAttr::get(
+          &getContext(), ptrType.getShape(), sizePerThread, order, numWarps, threadsPerWarp,
+          mlir::triton::gpu::getCTALayout(ptrType.getEncoding())));
+    });
+    for (auto& [op, layout] : layouts) mlir::convertDistributedOpEncoding(layout, op);
+  }
+};
 
 // Return the directory to use for Triton diagnostic files (TTIR dumps, error
 // logs, etc.).  Prefers TritonConfig::dumpDir() (set by ND4J_TRITON_DUMP_DIR),
@@ -1055,6 +1101,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     if (!skipCoalesce) {
       pm.addPass(mlir::triton::gpu::createTritonGPUCoalesce());
     }
+    pm.addPass(std::make_unique<MarkedLoadCoalescePass>());
     pm.addPass(mlir::triton::gpu::createTritonGPUF32DotTC());
     pm.addPass(mlir::triton::gpu::createTritonGPURemoveLayoutConversions());
     if (!skipCoalesce) {

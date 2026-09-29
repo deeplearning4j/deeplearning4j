@@ -144,9 +144,29 @@ The compiled recipe now expresses the same thing:
   `[block, 2]` tile split back into consecutive words; the alignment is declared
   to Triton as `tt.divisibility` on the splatted base pointer (indirect-table
   pointers are `int_to_ptr` results the axis analysis cannot see through) and is
-  enforced on every binding through `requiredAlignment`. Without Triton's
-  Coalesce pass (skipped for modules above 128 ops) the tile's default layout
-  still splits each lane's pair across two threads, so the copies are 8 bytes.
+  enforced on every binding through `requiredAlignment`.
+- Triton's Coalesce pass is skipped for modules above 128 ops: for every
+  memory op it takes the full forward/backward slice, quadratic in the unrolled
+  serial chains. Without it a tile's default layout splits a lane's words across
+  threads. The emitter therefore marks the loads it needs coalesced
+  (`nd4j.coalesce_load`), and `MarkedLoadCoalescePass` (after TTIR→TTGIR) gives
+  only those Triton's coalesced encoding from their own pointer's axis info.
+  B's pair tiles (each lane streams its own weight row) are marked when the
+  matmul launches at most two programs per SM; A's never are: its row is the
+  output row, shared by the program's lanes, and its default two-thread 8-byte
+  copies measured faster (27B GDN pair per call: 39.7 µs unmarked, 29.7 µs B
+  only, 46.2 µs both). With many programs in flight the matmul is
+  bandwidth-bound and per-lane 16-byte copies of rows 32 apart waste L2 sector
+  bandwidth: on the Qwen3.5-0.8B decode, kernels of 4-80 programs got 4-23%
+  faster with B marked, those of 193-3896 programs 2-9% slower.
+- A [K,N] B operand of a single-row output (the wide MTP draft projections)
+  loads each chunk as a `[steps, block]` tile, coalesced into 16-byte copies,
+  whose shared-memory read lands directly in a steps-per-thread layout; a
+  transpose plus reshape/split tree yields each step's lane values with no layout
+  conversions. Draft kernels (M=1, N=5120-17408): MLP gate+up 2.03 → 1.59 ms,
+  down 0.95 → 0.76 ms, q/k/v 340 → 285 µs, eh_proj 552 → 489 µs, o 340 →
+  286 µs. The M=4 window matmul, whose rows re-read every tile, got slower
+  (1.09 → 1.62 ms) and keeps per-step loads.
 - The accumulation order is untouched: bit-identity tests cover K spanning many
   chunks and a scalar tail, 1 and 5 rows, partly masked programs, and [N,K] view,
   [N,K] transpose-B and [K,N] storage.
