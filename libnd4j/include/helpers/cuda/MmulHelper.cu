@@ -36,6 +36,8 @@
 #include <atomic>
 #include <graph/DspDiagnostics.h>
 #include <helpers/DebugHelper.h>
+#include <memory>
+#include <mutex>
 #include <numeric>
 #include <unordered_map>
 #include <utility>
@@ -351,9 +353,15 @@ struct CastCacheSide {
     lastCaptureCastArray = nullptr;
   }
 
-  void clear(std::vector<NDArray*>& retiredCache) {
+  // Arrays a mismatching cast replaced while a captured graph could still read
+  // them. They are freed with the side, once no graph that baked them can replay.
+  std::vector<NDArray*> retired;
+
+  void clear() {
     for (auto* p : cache) delete p;
     cache.clear();
+    for (auto* p : retired) delete p;
+    retired.clear();
     index = 0;
     captureCastReuse.clear();
     lastCaptureCastSource = nullptr;
@@ -362,9 +370,78 @@ struct CastCacheSide {
   }
 };
 
-static thread_local CastCacheSide tl_castA;
-static thread_local CastCacheSide tl_castB;
-static thread_local std::vector<NDArray*> tl_retiredCastCache;
+// The A and B slots of one execution unit. A captured CUDA graph bakes the
+// device addresses of the slots it used, so each DSP segment casts into a scope
+// of its own (MmulHelper::enterCastCacheScope). One thread-wide slot list was
+// shared by every segment of every plan: a segment on another device, or with
+// other shapes, re-cast (retiring the old array for good) or migrated a slot that
+// another segment's graph still read, on every decode step. Work outside a
+// segment uses the calling thread's default scope.
+struct CastCacheScope {
+  CastCacheSide a;
+  CastCacheSide b;
+
+  void resetIndices() {
+    a.resetIndices();
+    b.resetIndices();
+  }
+
+  void clear() {
+    a.clear();
+    b.clear();
+  }
+};
+
+struct CastCacheScopeKey {
+  const void* owner;
+  LongType unit;
+
+  bool operator==(const CastCacheScopeKey& other) const {
+    return owner == other.owner && unit == other.unit;
+  }
+};
+
+struct CastCacheScopeKeyHash {
+  std::size_t operator()(const CastCacheScopeKey& key) const {
+    std::size_t h = std::hash<const void*>{}(key.owner);
+    h ^= std::hash<LongType>{}(key.unit) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    return h;
+  }
+};
+
+// Segment scopes belong to their owner (the plan), not to a thread: a plan can be
+// torn down on another thread than the one that executed it.
+struct CastCacheScopeRegistry {
+  std::mutex mutex;
+  std::unordered_map<CastCacheScopeKey, std::unique_ptr<CastCacheScope>, CastCacheScopeKeyHash> scopes;
+};
+
+// Never destroyed: plans can be torn down during process exit, after static
+// destructors have run.
+static CastCacheScopeRegistry& castScopeRegistry() {
+  static auto* registry = new CastCacheScopeRegistry();
+  return *registry;
+}
+
+static thread_local CastCacheScope tl_defaultCastScope;
+static thread_local CastCacheScope* tl_activeCastScope = nullptr;
+
+static CastCacheScope& activeCastScope() {
+  return tl_activeCastScope != nullptr ? *tl_activeCastScope : tl_defaultCastScope;
+}
+
+static CastCacheSide& castSideA() { return activeCastScope().a; }
+static CastCacheSide& castSideB() { return activeCastScope().b; }
+
+static size_t castArrayBytes(const std::vector<NDArray*>& arrays) {
+  size_t bytes = 0;
+  for (auto* array : arrays) {
+    if (array != nullptr) {
+      bytes += static_cast<size_t>(array->lengthOf()) * array->sizeOfT();
+    }
+  }
+  return bytes;
+}
 
 // Persistent PINNED-HOST cuBLAS scalar parameters for CUDA graph capture.
 // cuBLAS internally enqueues H2D memcpy from the alpha/beta host addresses.
@@ -452,8 +529,7 @@ struct LtMatmulAlgoCacheEntry {
 static thread_local std::unordered_map<LtMatmulCacheKey, LtMatmulAlgoCacheEntry, LtMatmulCacheKeyHash> tl_ltAlgoCache;
 
 void MmulHelper::resetCastCacheIndices() {
-  tl_castA.resetIndices();
-  tl_castB.resetIndices();
+  activeCastScope().resetIndices();
   // NOTE: tl_ltAlgoCache is intentionally NOT cleared here.
   // The algo cache is keyed by {M, N, K, types, flags} — different shapes have
   // separate entries, so there is no stale-key risk between steps.  Preserving
@@ -467,40 +543,81 @@ void MmulHelper::resetCastCacheIndicesTo(size_t hwmA, size_t hwmB) {
   // Clamp to actual cache sizes — the high-water mark must not exceed them.
   // Clear per-call reuse maps: they were populated during capture and
   // are no longer valid for the current replay step's unmerged gap matmuls.
-  tl_castA.resetIndicesTo(hwmA);
-  tl_castB.resetIndicesTo(hwmB);
+  auto& scope = activeCastScope();
+  scope.a.resetIndicesTo(hwmA);
+  scope.b.resetIndicesTo(hwmB);
   // NOTE: tl_ltAlgoCache is intentionally NOT cleared here — see resetCastCacheIndices().
 }
 
 std::pair<size_t, size_t> MmulHelper::getCastCacheHighWaterMark() {
-  return {tl_castA.index, tl_castB.index};
+  auto& scope = activeCastScope();
+  return {scope.a.index, scope.b.index};
 }
 
 void MmulHelper::clearCastCache() {
-  auto cacheBytes = [](const std::vector<NDArray*>& arrays) {
-    size_t bytes = 0;
-    for (auto* array : arrays) {
-      if (array != nullptr) {
-        bytes += static_cast<size_t>(array->lengthOf()) * array->sizeOfT();
-      }
-    }
-    return bytes;
-  };
-  const size_t arraysA = tl_castA.cache.size();
-  const size_t arraysB = tl_castB.cache.size();
-  const size_t retiredArrays = tl_retiredCastCache.size();
-  const size_t bytesA = cacheBytes(tl_castA.cache);
-  const size_t bytesB = cacheBytes(tl_castB.cache);
-  const size_t retiredBytes = cacheBytes(tl_retiredCastCache);
+  auto& scope = tl_defaultCastScope;
   DSP_DIAG(MEMORY,
            "CAST_CACHE_CLEAR arraysA=%zu arraysB=%zu retired=%zu bytesA=%zu bytesB=%zu retiredBytes=%zu",
-           arraysA, arraysB, retiredArrays, bytesA, bytesB, retiredBytes);
-
-  tl_castA.clear(tl_retiredCastCache);
-  tl_castB.clear(tl_retiredCastCache);
-  for (auto* p : tl_retiredCastCache) delete p;
-  tl_retiredCastCache.clear();
+           scope.a.cache.size(), scope.b.cache.size(),
+           scope.a.retired.size() + scope.b.retired.size(),
+           castArrayBytes(scope.a.cache), castArrayBytes(scope.b.cache),
+           castArrayBytes(scope.a.retired) + castArrayBytes(scope.b.retired));
+  scope.clear();
   tl_ltAlgoCache.clear();
+}
+
+void* MmulHelper::enterCastCacheScope(const void* owner, LongType unit) {
+  CastCacheScope* previous = tl_activeCastScope;
+  CastCacheScope* scope = nullptr;
+  if (owner != nullptr) {
+    auto& registry = castScopeRegistry();
+    std::lock_guard<std::mutex> lock(registry.mutex);
+    auto& entry = registry.scopes[CastCacheScopeKey{owner, unit}];
+    if (entry == nullptr) entry = std::make_unique<CastCacheScope>();
+    scope = entry.get();
+  }
+  // Re-entering the active scope keeps its position: a nested path of the same
+  // unit must not rewind slots the enclosing pass already handed out.
+  if (scope != previous) {
+    tl_activeCastScope = scope;
+    activeCastScope().resetIndices();
+  }
+  return previous;
+}
+
+void MmulHelper::restoreCastCacheScope(void* previous) {
+  tl_activeCastScope = static_cast<CastCacheScope*>(previous);
+}
+
+void MmulHelper::releaseCastCacheScopes(const void* owner) {
+  if (owner == nullptr) return;
+  std::vector<std::unique_ptr<CastCacheScope>> released;
+  {
+    auto& registry = castScopeRegistry();
+    std::lock_guard<std::mutex> lock(registry.mutex);
+    for (auto it = registry.scopes.begin(); it != registry.scopes.end();) {
+      if (it->first.owner == owner) {
+        released.push_back(std::move(it->second));
+        it = registry.scopes.erase(it);
+      } else {
+        ++it;
+      }
+    }
+  }
+  size_t arrays = 0, retiredArrays = 0, bytes = 0, retiredBytes = 0;
+  for (auto& scope : released) {
+    if (tl_activeCastScope == scope.get()) tl_activeCastScope = nullptr;
+    for (CastCacheSide* side : {&scope->a, &scope->b}) {
+      arrays += side->cache.size();
+      bytes += castArrayBytes(side->cache);
+      retiredArrays += side->retired.size();
+      retiredBytes += castArrayBytes(side->retired);
+    }
+    scope->clear();
+  }
+  DSP_DIAG(MEMORY,
+           "CAST_CACHE_RELEASE owner=%p scopes=%zu arrays=%zu retired=%zu bytes=%zu retiredBytes=%zu",
+           owner, released.size(), arrays, retiredArrays, bytes, retiredBytes);
 }
 
 // Constant-free epoch: bumped whenever constant DataBuffers may have been
@@ -572,7 +689,7 @@ static NDArray* castWithPersistentCache(CastCacheSide& side, NDArray* source, Da
 
     if (cached != nullptr) {
       if (tl_graphExecutionActive || tl_dspReplayActive) {
-        tl_retiredCastCache.push_back(cached);
+        side.retired.push_back(cached);
       } else {
         delete cached;
       }
@@ -1315,7 +1432,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    if (A->dataType() == HALF && B->dataType() == FLOAT32) {
      // Weight is HALF, activation is FLOAT32 → upcast weight to FLOAT32
      if (useCastCache) {
-       effA = castWithPersistentCache(tl_castA, effA, FLOAT32);
+       effA = castWithPersistentCache(castSideA(), effA, FLOAT32);
      } else {
        castA = effA->cast(FLOAT32);
        effA = castA;
@@ -1323,7 +1440,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    } else if (A->dataType() == FLOAT32 && B->dataType() == HALF) {
      // Activation is FLOAT32, weight is HALF → upcast weight to FLOAT32
      if (useCastCache) {
-       effB = castWithPersistentCache(tl_castB, effB, FLOAT32);
+       effB = castWithPersistentCache(castSideB(), effB, FLOAT32);
      } else {
        castB = effB->cast(FLOAT32);
        effB = castB;
@@ -1344,7 +1461,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    if (supportedA && supportedB) {
      if (currentAType != DOUBLE) {
        if (useCastCache) {
-         effA = castWithPersistentCache(tl_castA, effA, DOUBLE);
+         effA = castWithPersistentCache(castSideA(), effA, DOUBLE);
        } else {
          castA = effA->cast(DOUBLE);
          effA = castA;
@@ -1352,7 +1469,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      }
      if (currentBType != DOUBLE) {
        if (useCastCache) {
-         effB = castWithPersistentCache(tl_castB, effB, DOUBLE);
+         effB = castWithPersistentCache(castSideB(), effB, DOUBLE);
        } else {
          castB = effB->cast(DOUBLE);
          effB = castB;
@@ -1380,9 +1497,9 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  if (!ABC && !typeIntFloat && !typeHalfFloat) {
    const DataType computeType = mixedGemmComputeType(effAType, effBType, cType);
    std::vector<NDArray*> owned;
-   NDArray* computeA = castForMixedGemm(tl_castA, effA, computeType, owned);
-   NDArray* computeB = castForMixedGemm(tl_castB, effB, computeType, owned);
-   NDArray* computeC = castForMixedGemm(tl_castB, C, computeType, owned);
+   NDArray* computeA = castForMixedGemm(castSideA(), effA, computeType, owned);
+   NDArray* computeB = castForMixedGemm(castSideB(), effB, computeType, owned);
+   NDArray* computeC = castForMixedGemm(castSideB(), C, computeType, owned);
    mmulMxM(computeA, computeB, computeC, alpha, beta, outOrder);
    if (computeC != C) C->assign(computeC);
    for (auto* array : owned) deleteTemporary(array);
@@ -1706,9 +1823,9 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  if (!AXY && !typeHalfFloat) {
    const DataType computeType = mixedGemmComputeType(effAType, effXType, yType);
    std::vector<NDArray*> owned;
-   NDArray* computeA = castForMixedGemm(tl_castA, effA, computeType, owned);
-   NDArray* computeX = castForMixedGemm(tl_castB, effX, computeType, owned);
-   NDArray* computeY = castForMixedGemm(tl_castB, Y, computeType, owned);
+   NDArray* computeA = castForMixedGemm(castSideA(), effA, computeType, owned);
+   NDArray* computeX = castForMixedGemm(castSideB(), effX, computeType, owned);
+   NDArray* computeY = castForMixedGemm(castSideB(), Y, computeType, owned);
    mmulMxV(computeA, computeX, computeY, alpha, beta, outOrder);
    if (computeY != Y) Y->assign(computeY);
    for (auto* array : owned) deleteTemporary(array);
@@ -1836,9 +1953,9 @@ NDArray* MmulHelper::dot(NDArray* X, NDArray* Y, NDArray* Z, const double alpha,
  if (Y->dataType() != X->dataType() || Z->dataType() != X->dataType()) {
    const DataType computeType = mixedGemmComputeType(X->dataType(), Y->dataType(), Z->dataType());
    std::vector<NDArray*> owned;
-   NDArray* computeX = castForMixedGemm(tl_castA, X, computeType, owned);
-   NDArray* computeY = castForMixedGemm(tl_castB, Y, computeType, owned);
-   NDArray* computeZ = castForMixedGemm(tl_castB, Z, computeType, owned);
+   NDArray* computeX = castForMixedGemm(castSideA(), X, computeType, owned);
+   NDArray* computeY = castForMixedGemm(castSideB(), Y, computeType, owned);
+   NDArray* computeZ = castForMixedGemm(castSideB(), Z, computeType, owned);
    dot(computeX, computeY, computeZ, alpha, beta);
    if (computeZ != Z) Z->assign(computeZ);
    for (auto* array : owned) deleteTemporary(array);
@@ -1960,29 +2077,31 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      // same order.
      if (tl_graphExecutionActive) {
        if (aType == FLOAT32 && bType == HALF) {
-         auto reuseIt = tl_castA.captureCastReuse.find(A);
-         if (reuseIt != tl_castA.captureCastReuse.end()) {
-           if (tl_castA.index < tl_castA.cache.size()) tl_castA.index++;
+         CastCacheSide& sideA = castSideA();
+         auto reuseIt = sideA.captureCastReuse.find(A);
+         if (reuseIt != sideA.captureCastReuse.end()) {
+           if (sideA.index < sideA.cache.size()) sideA.index++;
            effA2d = reuseIt->second;
-         } else if (tl_castA.index < tl_castA.cache.size()
-                    && tl_castA.cache[tl_castA.index]->dataType() == HALF
-                    && tl_castA.cache[tl_castA.index]->isSameShape(a2d)) {
-           NDArray* cached = tl_castA.cache[tl_castA.index++];
+         } else if (sideA.index < sideA.cache.size()
+                    && sideA.cache[sideA.index]->dataType() == HALF
+                    && sideA.cache[sideA.index]->isSameShape(a2d)) {
+           NDArray* cached = sideA.cache[sideA.index++];
            cached->assign(a2d);
-           tl_castA.captureCastReuse.emplace(A, cached);
+           sideA.captureCastReuse.emplace(A, cached);
            effA2d = cached;
          }
        } else if (aType == HALF && bType == FLOAT32) {
-         auto reuseIt = tl_castB.captureCastReuse.find(B);
-         if (reuseIt != tl_castB.captureCastReuse.end()) {
-           if (tl_castB.index < tl_castB.cache.size()) tl_castB.index++;
+         CastCacheSide& sideB = castSideB();
+         auto reuseIt = sideB.captureCastReuse.find(B);
+         if (reuseIt != sideB.captureCastReuse.end()) {
+           if (sideB.index < sideB.cache.size()) sideB.index++;
            effB2d = reuseIt->second;
-         } else if (tl_castB.index < tl_castB.cache.size()
-                    && tl_castB.cache[tl_castB.index]->dataType() == HALF
-                    && tl_castB.cache[tl_castB.index]->isSameShape(b2d)) {
-           NDArray* cached = tl_castB.cache[tl_castB.index++];
+         } else if (sideB.index < sideB.cache.size()
+                    && sideB.cache[sideB.index]->dataType() == HALF
+                    && sideB.cache[sideB.index]->isSameShape(b2d)) {
+           NDArray* cached = sideB.cache[sideB.index++];
            cached->assign(b2d);
-           tl_castB.captureCastReuse.emplace(B, cached);
+           sideB.captureCastReuse.emplace(B, cached);
            effB2d = cached;
          }
        }
@@ -2024,9 +2143,9 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  if (B->dataType() != A->dataType() || C->dataType() != A->dataType()) {
    const DataType computeType = mixedGemmComputeType(A->dataType(), B->dataType(), C->dataType());
    std::vector<NDArray*> owned;
-   NDArray* computeA = castForMixedGemm(tl_castA, A, computeType, owned);
-   NDArray* computeB = castForMixedGemm(tl_castB, B, computeType, owned);
-   NDArray* computeC = castForMixedGemm(tl_castB, C, computeType, owned);
+   NDArray* computeA = castForMixedGemm(castSideA(), A, computeType, owned);
+   NDArray* computeB = castForMixedGemm(castSideB(), B, computeType, owned);
+   NDArray* computeC = castForMixedGemm(castSideB(), C, computeType, owned);
    mmulNxN(computeA, computeB, computeC, alpha, beta, outOrder);
    if (computeC != C) C->assign(computeC);
    for (auto* array : owned) deleteTemporary(array);
