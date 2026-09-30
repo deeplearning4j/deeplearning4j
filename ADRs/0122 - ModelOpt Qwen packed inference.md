@@ -322,6 +322,23 @@ parity. Row invariance already held in steady replay.
 - **RMSNorm.** The replicated reduction order was right, but the mean used
   `arith.divf`, which Triton lowers to approximate FP32 division. It now uses the
   precise division, like native `div.rn`.
+  - The value-pinned order must not dictate thread layout. Stage 1 (the
+    stride-256 fold) rebuilds each 256-lane row from the input's producers over
+    that row's index range (`RowSlicer`). It rebuilds make_range, splats,
+    pure elementwise ops, and loads with no intervening write. Every row then has
+    one register layout, and the fold stays one lane per thread. Rows wholly past
+    the logical width are skipped. A producer that cannot be rebuilt falls back to
+    the exact masked-column-sum extraction.
+  - Stages 2 and 3 (the warp and cross-warp shuffle trees) are pair sums. A
+    no-reorder reshape puts each native add's two operands on a size-2 axis, and
+    reducing that axis is exactly one rounded add under any layout. The previous
+    reshape/trans/split tree asked for a register layout. In Triton 3.6 a load
+    smaller than the CTA (a [256] row under 16 warps) counts as cheap to
+    rematerialize and is not a layout anchor, so that layout propagated back into
+    the row loads: every thread loaded every lane of every row.
+  - On 27B decode (nsys, last 20 tokens) RMSNorm fell from 0.982 to 0.447
+    ms/token. Output bits and the greedy token hash (-1685314511) did not
+    change, and MTP stays at 0/250 emission deltas.
 
 Guards:
 - `DspDecodeRowInvarianceTest`: every decode op, both properties, 27B shapes.

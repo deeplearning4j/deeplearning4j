@@ -32,11 +32,16 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <string>
+#include <vector>
 
 // MLIR core
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinTypes.h>
+#include <mlir/IR/IRMapping.h>
+#include <mlir/Interfaces/SideEffectInterfaces.h>
+#include <llvm/ADT/DenseMap.h>
 
 // Triton MLIR dialect
 #include <triton/Dialect/Triton/IR/Dialect.h>
@@ -45,6 +50,7 @@
 // Standard MLIR dialects
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Math/IR/Math.h>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 
 namespace sd {
 namespace graph {
@@ -1199,6 +1205,145 @@ mlir::Value TritonIRBuilder::emitReductionOp(mlir::OpBuilder& builder, mlir::Loc
   return result;
 }
 
+namespace {
+
+// Rebuilds the contiguous sub-range [offset, offset + count) of a rank-1 value
+// from its producers at the builder's insertion point, instead of extracting
+// it from the full tensor. Extraction is a cross-thread reduction (shared
+// memory and a barrier per sub-range); a rebuilt slice is a fresh [count]
+// tensor, so every slice gets the same register layout and an elementwise fold
+// over slices never leaves the thread.
+//
+// A producer is rebuilt only when its sub-range is the same computation on the
+// sub-ranges of its operands: make_range, splat, splat constants, pure
+// elementwise ops, and plain pointer loads. A load is re-issued only if no
+// operation between it and the insertion point may write memory, so the slice
+// reads exactly the bytes the original load read. Anything else makes the
+// slice fail; discard() then erases every op this slicer created.
+class RowSlicer {
+ public:
+  RowSlicer(mlir::OpBuilder& builder, mlir::Location loc) : builder_(builder), loc_(loc) {}
+
+  mlir::Value slice(mlir::Value value, int64_t offset, int64_t count) {
+    offset_ = offset;
+    count_ = count;
+    memo_.clear();
+    return rebuild(value);
+  }
+
+  void discard() {
+    for (auto it = created_.rbegin(); it != created_.rend(); ++it) (*it)->erase();
+    created_.clear();
+  }
+
+ private:
+  mlir::RankedTensorType sliceType(mlir::RankedTensorType type) const {
+    return mlir::RankedTensorType::get({count_}, type.getElementType(), type.getEncoding());
+  }
+
+  mlir::Value record(mlir::Operation* op, mlir::Value original, mlir::Value rebuilt) {
+    created_.push_back(op);
+    memo_[original] = rebuilt;
+    return rebuilt;
+  }
+
+  // True when nothing executed between `load` and the insertion point may
+  // write memory. The walk leaves nested blocks only through scf.if, whose
+  // branches run once, after everything that precedes the scf.if.
+  bool noWriteSince(mlir::Operation* load) const {
+    mlir::Block* loadBlock = load->getBlock();
+    mlir::Block* block = builder_.getInsertionBlock();
+    mlir::Block::iterator end = builder_.getInsertionPoint();
+    while (block) {
+      mlir::Block::iterator begin =
+          block == loadBlock ? std::next(mlir::Block::iterator(load)) : block->begin();
+      for (auto it = begin; it != end; ++it) {
+        auto effects = mlir::getEffectsRecursively(&*it);
+        if (!effects) return false;
+        for (const auto& effect : *effects) {
+          if (mlir::isa<mlir::MemoryEffects::Write>(effect.getEffect())) return false;
+        }
+      }
+      if (block == loadBlock) return true;
+      mlir::Operation* parent = block->getParentOp();
+      if (!parent || !mlir::isa<mlir::scf::IfOp>(parent)) return false;
+      end = mlir::Block::iterator(parent);
+      block = parent->getBlock();
+    }
+    return false;
+  }
+
+  mlir::Value rebuild(mlir::Value value) {
+    auto type = mlir::dyn_cast<mlir::RankedTensorType>(value.getType());
+    if (!type) return value;  // scalars dominate the insertion point unchanged
+    if (type.getRank() != 1) return {};
+    auto known = memo_.find(value);
+    if (known != memo_.end()) return known->second;
+    mlir::Operation* op = value.getDefiningOp();
+    if (!op) return {};
+
+    if (auto range = mlir::dyn_cast<mlir::triton::MakeRangeOp>(op)) {
+      int64_t start = range.getStartAttr().getInt() + offset_;
+      auto sliced = builder_.create<mlir::triton::MakeRangeOp>(
+          loc_, sliceType(type), static_cast<uint32_t>(start), static_cast<uint32_t>(start + count_));
+      return record(sliced, value, sliced.getResult());
+    }
+    if (auto splat = mlir::dyn_cast<mlir::triton::SplatOp>(op)) {
+      auto sliced = builder_.create<mlir::triton::SplatOp>(loc_, sliceType(type), splat.getSrc());
+      return record(sliced, value, sliced.getResult());
+    }
+    if (auto constant = mlir::dyn_cast<mlir::arith::ConstantOp>(op)) {
+      auto dense = mlir::dyn_cast<mlir::DenseElementsAttr>(constant.getValue());
+      if (!dense || !dense.isSplat()) return {};
+      auto sliced = builder_.create<mlir::arith::ConstantOp>(
+          loc_, mlir::cast<mlir::TypedAttr>(dense.resizeSplat(sliceType(type))));
+      return record(sliced, value, sliced.getResult());
+    }
+    if (auto load = mlir::dyn_cast<mlir::triton::LoadOp>(op)) {
+      if (load.getIsVolatile() || !load.getBoundaryCheck().empty() || load.getPadding()) return {};
+      if (!noWriteSince(op)) return {};
+      mlir::Value ptr = rebuild(load.getPtr());
+      if (!ptr) return {};
+      mlir::Value mask;
+      mlir::Value other;
+      if (load.getMask() && !(mask = rebuild(load.getMask()))) return {};
+      if (load.getOther() && !(other = rebuild(load.getOther()))) return {};
+      auto sliced = builder_.create<mlir::triton::LoadOp>(
+          loc_, ptr, mask, other, llvm::ArrayRef<int32_t>{}, std::nullopt,
+          load.getCache(), load.getEvict(), /*isVolatile=*/false);
+      return record(sliced, value, sliced.getResult());
+    }
+    if (op->hasTrait<mlir::OpTrait::Elementwise>() && op->getNumRegions() == 0 &&
+        mlir::isMemoryEffectFree(op)) {
+      mlir::IRMapping mapping;
+      for (mlir::Value operand : op->getOperands()) {
+        mlir::Value sliced = rebuild(operand);
+        if (!sliced) return {};
+        mapping.map(operand, sliced);
+      }
+      mlir::Operation* clone = builder_.clone(*op, mapping);
+      for (mlir::OpResult result : clone->getResults()) {
+        if (auto resultType = mlir::dyn_cast<mlir::RankedTensorType>(result.getType())) {
+          result.setType(sliceType(resultType));
+        }
+      }
+      created_.push_back(clone);
+      for (unsigned i = 0; i < op->getNumResults(); ++i) memo_[op->getResult(i)] = clone->getResult(i);
+      return memo_[value];
+    }
+    return {};
+  }
+
+  mlir::OpBuilder& builder_;
+  mlir::Location loc_;
+  int64_t offset_ = 0;
+  int64_t count_ = 0;
+  llvm::DenseMap<mlir::Value, mlir::Value> memo_;
+  std::vector<mlir::Operation*> created_;
+};
+
+}  // namespace
+
 // ─── Normalization op emission ───────────────────────────────────────────────
 
 mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir::Location loc,
@@ -1299,11 +1444,11 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
     // Generic tt.reduce reassociates freely and differs by 1 ULP (reproduced:
     // prefill rms_norm width 1024, element 12289, row 12 position 1).
     //
-    // The mapping is pinned in VALUES (exact row extraction, then
-    // reshape/transpose/split with allowReorder=false for the warp trees), so
-    // Triton's launch layout (e.g. 16 warps vs native 8) cannot change the
-    // arithmetic. Padded tail rows/lanes are exact
-    // zero no-ops in the fold, matching native threads beyond `cols`.
+    // The mapping is pinned in VALUES (rows rebuilt or extracted exactly, then
+    // pair sums over size-2 axes for the warp trees), so Triton's launch
+    // layout (e.g. 16 warps vs native 8) cannot change the arithmetic. Rows
+    // wholly past `cols` are not folded, and padded lanes of the last row are
+    // exact zero no-ops, matching native threads beyond `cols`.
     int64_t rowLen = tensorTy.getRank() > 0 ? tensorTy.getShape()[tensorTy.getRank() - 1] : 0;
     bool nativeWarpTree = tensorTy.getRank() == 1 && rowLen >= 32 &&
                           (rowLen & (rowLen - 1)) == 0 && reductionSize <= rowLen;
@@ -1320,79 +1465,103 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
             /*libname=*/"", /*libpath=*/"", "__nv_fmaf_rn", /*pure=*/true).getResult();
       };
       // ── Stage 1: stride-256 thread-local left fold (fmad-contracted) ──
-      // Row k of [iters, lanes] (row-major [k][t] = x[t + k*lanes]) is
-      // extracted by summing the column with every other row masked to +0.
-      // A sum of one value and exact zeros is that value under any
-      // association (a -0 input becomes +0, whose square is the same +0), so
-      // the extraction is exact whatever layout Triton assigns, and every
-      // extracted row shares the reduction's slice layout: the fold below is
-      // elementwise, one lane per thread as in the native kernel. (Peeling
-      // rows with reshape/trans/split instead left the rows in a replicated
-      // layout — every thread computed all 256 lanes, ~1.4 ms per 5120 row.)
+      // Row k holds x[k*lanes + t] for lane t. Rows past the logical width
+      // hold only padding, and native threads fold positions < cols only, so
+      // those rows are skipped outright.
+      //
+      // Each row is rebuilt from the input's producers over its own index
+      // range (RowSlicer), so every row is a fresh [lanes] tensor in one
+      // register layout and the fold below is elementwise, one lane per thread
+      // as in the native kernel, with no shared memory. When a producer cannot
+      // be rebuilt, rows are extracted from the full tensor instead: the column
+      // sum with every other row masked to +0 is that row exactly under any
+      // association (a -0 input becomes +0, whose square is the same +0), at
+      // the cost of one cross-thread reduction per row. (Peeling rows with
+      // reshape/trans/split left the rows in a replicated layout — every
+      // thread computed all 256 lanes, ~1.4 ms per 5120 row.)
       int64_t lanes = std::min<int64_t>(rowLen, 256);
       int64_t iters = rowLen / lanes;  // power of two; 1 when rowLen <= 256
-      auto rowsType = mlir::RankedTensorType::get({iters, lanes}, elemType);
-      auto rows2d = builder.create<mlir::triton::ReshapeOp>(
-          loc, rowsType, input, /*allowReorder=*/false);
-      auto i32 = builder.getI32Type();
-      auto rowIndex = builder.create<mlir::triton::MakeRangeOp>(
-          loc, mlir::RankedTensorType::get({iters}, i32), 0, static_cast<int32_t>(iters));
-      auto rowIndexColumn = builder.create<mlir::triton::ExpandDimsOp>(loc, rowIndex, 1);
-      auto rowIndex2d = builder.create<mlir::triton::BroadcastOp>(
-          loc, mlir::RankedTensorType::get({iters, lanes}, i32), rowIndexColumn);
-      auto zeros = builder.create<mlir::triton::SplatOp>(loc, rowsType,
-          builder.create<mlir::arith::ConstantOp>(loc, elemType, builder.getFloatAttr(elemType, 0.0)));
-      auto extractRow = [&](int64_t k) -> mlir::Value {
-        auto kSplat = builder.create<mlir::triton::SplatOp>(loc, rowIndex2d.getType(),
-            builder.create<mlir::arith::ConstantIntOp>(loc, k, 32));
-        auto isRow = builder.create<mlir::arith::CmpIOp>(
-            loc, mlir::arith::CmpIPredicate::eq, rowIndex2d, kSplat);
-        auto selected = builder.create<mlir::arith::SelectOp>(loc, isRow, rows2d, zeros);
-        return makeReduce(selected, 0, addCombiner);
-      };
-      mlir::Value s;
+      int64_t foldRows = std::min<int64_t>(iters, (reductionSize + lanes - 1) / lanes);
+      llvm::SmallVector<mlir::Value> rows;
       if (iters == 1) {
-        s = roundedBinary(input, input, "__nv_fmul_rn");  // input is already [lanes]
+        rows.push_back(input);  // input is already [lanes]
       } else {
-        mlir::Value row = extractRow(0);
-        s = roundedBinary(row, row, "__nv_fmul_rn");
-        for (int64_t k = 1; k < iters; ++k) {
-          row = extractRow(k);
-          s = fusedFma(row, row, s);
+        RowSlicer slicer(builder, loc);
+        for (int64_t k = 0; k < foldRows; ++k) {
+          mlir::Value row = slicer.slice(input, k * lanes, lanes);
+          if (!row) {
+            slicer.discard();
+            rows.clear();
+            break;
+          }
+          rows.push_back(row);
         }
       }
+      if (rows.empty()) {
+        DSP_DIAG(COMPILE, "TritonIRBuilder::emitNormalizationOp: %s input producers cannot be rebuilt "
+                 "per row; extracting %lld rows through cross-thread reductions",
+                 opName.c_str(), static_cast<long long>(foldRows));
+        auto rowsType = mlir::RankedTensorType::get({iters, lanes}, elemType);
+        auto rows2d = builder.create<mlir::triton::ReshapeOp>(
+            loc, rowsType, input, /*allowReorder=*/false);
+        auto i32 = builder.getI32Type();
+        auto rowIndex = builder.create<mlir::triton::MakeRangeOp>(
+            loc, mlir::RankedTensorType::get({iters}, i32), 0, static_cast<int32_t>(iters));
+        auto rowIndexColumn = builder.create<mlir::triton::ExpandDimsOp>(loc, rowIndex, 1);
+        auto rowIndex2d = builder.create<mlir::triton::BroadcastOp>(
+            loc, mlir::RankedTensorType::get({iters, lanes}, i32), rowIndexColumn);
+        auto zeros = builder.create<mlir::triton::SplatOp>(loc, rowsType,
+            builder.create<mlir::arith::ConstantOp>(loc, elemType, builder.getFloatAttr(elemType, 0.0)));
+        for (int64_t k = 0; k < foldRows; ++k) {
+          auto kSplat = builder.create<mlir::triton::SplatOp>(loc, rowIndex2d.getType(),
+              builder.create<mlir::arith::ConstantIntOp>(loc, k, 32));
+          auto isRow = builder.create<mlir::arith::CmpIOp>(
+              loc, mlir::arith::CmpIPredicate::eq, rowIndex2d, kSplat);
+          auto selected = builder.create<mlir::arith::SelectOp>(loc, isRow, rows2d, zeros);
+          rows.push_back(makeReduce(selected, 0, addCombiner));
+        }
+      }
+      mlir::Value s = roundedBinary(rows[0], rows[0], "__nv_fmul_rn");
+      for (size_t k = 1; k < rows.size(); ++k) {
+        s = fusedFma(rows[k], rows[k], s);
+      }
       mlir::Value partials = s;  // [lanes]
-      // ── Stage 2: warp-local pairing (shuffle-down 16,8,4,2,1) ──
+      // ── Stages 2-3: the native shuffle trees as pair sums ──
+      // Each native add is pinned by a reshape (no reordering) that puts its
+      // two operands on a size-2 axis, then a reduction of that axis: a
+      // two-element reduction is exactly one rounded add under any layout
+      // Triton picks (registers, one xor shuffle, or one shared-memory
+      // exchange). A reduction takes its operand's layout as it is, so nothing
+      // here asks for a register layout that Triton would pull back into the
+      // row loads. (A reshape/trans/split tree does ask — split needs its axis
+      // in registers — and a [lanes] load smaller than the CTA counts as cheap
+      // to rematerialize, so every thread loaded all 256 lanes of every row:
+      // ~0.54 ms per 5120 row.)
+      auto roundedAdd = [](mlir::OpBuilder& b, mlir::Location l, mlir::Value a, mlir::Value e) {
+        return b.create<mlir::triton::ExternElementwiseOp>(
+            l, a.getType(), mlir::ValueRange{a, e},
+            /*libname=*/"", /*libpath=*/"", "__nv_fadd_rn", /*pure=*/true).getResult();
+      };
+      auto pairSum = [&](mlir::Value value, llvm::ArrayRef<int64_t> shape, int pairAxis) {
+        auto paired = builder.create<mlir::triton::ReshapeOp>(
+            loc, mlir::RankedTensorType::get(shape, elemType), value, /*allowReorder=*/false);
+        return makeReduce(paired, pairAxis, roundedAdd);
+      };
+      // Stage 2: warp-local pairing (shuffle-down 16,8,4,2,1): lane l of each
+      // warp takes lane l + width/2.
       int64_t numWarps = lanes / 32;
-      partials = builder.create<mlir::triton::ReshapeOp>(
-          loc, mlir::RankedTensorType::get({numWarps, 32}, elemType),
-          partials, /*allowReorder=*/false);
       for (int64_t width = 32; width > 1; width /= 2) {
-        auto paired = builder.create<mlir::triton::ReshapeOp>(
-            loc, mlir::RankedTensorType::get({numWarps, 2, width / 2}, elemType),
-            partials, /*allowReorder=*/false);
-        auto order = builder.getDenseI32ArrayAttr({0, 2, 1});
-        auto transposed = builder.create<mlir::triton::TransOp>(loc, paired, order);
-        auto split = builder.create<mlir::triton::SplitOp>(loc, transposed);
-        partials = roundedBinary(
-            split.getResult(0), split.getResult(1), "__nv_fadd_rn");
+        partials = pairSum(partials, {numWarps, 2, width / 2}, 1);
+      }
+      // Stage 3: cross-warp combine over the (<=8) warp totals, warp w taking
+      // warp w + width/2. Native runs warp 0's shuffle tree over 8 slots;
+      // absent warps add exact zeros, so the reduced-width tree is
+      // bit-identical.
+      for (int64_t width = numWarps; width > 1; width /= 2) {
+        partials = pairSum(partials, {2, width / 2}, 0);
       }
       partials = builder.create<mlir::triton::ReshapeOp>(
-          loc, mlir::RankedTensorType::get({numWarps}, elemType),
-          partials, /*allowReorder=*/false);
-      // ── Stage 3: cross-warp combine over the (<=8) warp totals ──
-      // Native runs warp 0's shuffle tree over 8 slots; absent warps add
-      // exact zeros, so the reduced-width tree below is bit-identical.
-      for (int64_t width = numWarps; width > 1; width /= 2) {
-        auto paired = builder.create<mlir::triton::ReshapeOp>(
-            loc, mlir::RankedTensorType::get({2, width / 2}, elemType),
-            partials, /*allowReorder=*/false);
-        auto order = builder.getDenseI32ArrayAttr({1, 0});
-        auto transposed = builder.create<mlir::triton::TransOp>(loc, paired, order);
-        auto split = builder.create<mlir::triton::SplitOp>(loc, transposed);
-        partials = roundedBinary(
-            split.getResult(0), split.getResult(1), "__nv_fadd_rn");
-      }
+          loc, mlir::RankedTensorType::get({1}, elemType), partials, /*allowReorder=*/false);
       sumSquared = makeReduce(partials, 0, addCombiner);
     } else {
       sumSquared = makeReduce(squared, axis, addCombiner);
