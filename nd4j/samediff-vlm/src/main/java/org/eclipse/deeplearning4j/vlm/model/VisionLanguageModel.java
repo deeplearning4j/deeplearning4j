@@ -2594,7 +2594,11 @@ public class VisionLanguageModel implements AutoCloseable {
         return requestedMaxTokens > 0 ? Math.min(requestedMaxTokens, available) : available;
     }
 
-    private int resolveContextWindow() {
+    /**
+     * The context window generation enforces, in tokens: the model's position embeddings,
+     * capped by the fixed KV length when one is set. Zero when neither is known.
+     */
+    public int resolveContextWindow() {
         int contextWindow = config != null && config.getMaxPositionEmbeddings() != null
                 ? config.getMaxPositionEmbeddings() : 0;
         if (maxKvLen > 0) {
