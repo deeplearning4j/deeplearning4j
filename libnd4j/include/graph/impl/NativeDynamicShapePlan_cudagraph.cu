@@ -3116,6 +3116,10 @@ void NativeDynamicShapePlan::performReplayVerify(
       referenceStatus = Status::KERNEL_FAILURE;
       break;
     }
+    // The reference plan must not cast into the live segment's slots, which
+    // the live graphs baked. Its scopes are freed with the reference plan.
+    MmulHelper::CastCacheScopeGuard castScope(referencePlan.get(),
+                                              referenceSegment.def.startSlot);
     const Status migrationStatus = referencePlan->platformMigrateSegmentInputs(
         referenceSegment, verifyExternals, numExt);
     if (migrationStatus != Status::OK) {

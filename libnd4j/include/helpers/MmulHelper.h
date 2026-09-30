@@ -199,7 +199,8 @@ class SD_LIB_EXPORT MmulHelper {
   static void clearLtEpilogue();
 
   /**
-   * Reset the mixed-precision cast cache indices to 0.
+   * Reset the mixed-precision cast cache indices of the ACTIVE cast-cache scope
+   * (see enterCastCacheScope) to 0.
    * Must be called before CUDA graph capture to ensure cached buffers are
    * reused in the same order as the non-capture warmup execution.
    */
@@ -230,18 +231,53 @@ class SD_LIB_EXPORT MmulHelper {
   static void resetCastCacheIndicesTo(size_t hwmA, size_t hwmB);
 
   /**
-   * Return the current cast-cache indices (A and B) as a pair.
+   * Return the active scope's cast-cache indices (A and B) as a pair.
    * Called after merged-capture completes to record the high-water mark:
    * the merged graph owns cache slots [0, idxA) and [0, idxB).
    */
   static std::pair<size_t, size_t> getCastCacheHighWaterMark();
 
   /**
-   * Clear the entire cast cache (delete buffers and reset indices).
-   * Must be called when shapes change (e.g. prefill → decode transition)
-   * so the cache is repopulated with correctly-sized buffers during warmup.
+   * Clear the calling thread's DEFAULT cast cache (delete buffers and reset
+   * indices) and its cuBLAS Lt algorithm cache. Segment scopes are released by
+   * their owner (releaseCastCacheScopes): their arrays can be baked into a
+   * live plan's captured graphs.
    */
   static void clearCastCache();
+
+  /**
+   * Make the cast-cache scope of (owner, unit) the calling thread's active scope
+   * and return the previously active one for restoreCastCacheScope. A captured
+   * CUDA graph bakes the device addresses of the cast slots it used, so each DSP
+   * segment casts into its own slots: a slot list shared across segments made a
+   * segment on another device, or with other shapes, re-cast or migrate slots
+   * that other segments' graphs still read. Entering a different scope resets its
+   * indices; re-entering the active scope keeps them. A null owner selects the
+   * thread's default scope.
+   */
+  static void* enterCastCacheScope(const void* owner, LongType unit);
+
+  /** Restore the scope returned by enterCastCacheScope. */
+  static void restoreCastCacheScope(void* previous);
+
+  /**
+   * Free every cast-cache scope of owner. Call only when no captured graph that
+   * used those scopes can replay again (plan teardown, capture invalidation).
+   */
+  static void releaseCastCacheScopes(const void* owner);
+
+  // Activates a cast-cache scope for the lifetime of the guard.
+  class CastCacheScopeGuard {
+   public:
+    CastCacheScopeGuard(const void* owner, LongType unit)
+        : previous_(enterCastCacheScope(owner, unit)) {}
+    ~CastCacheScopeGuard() { restoreCastCacheScope(previous_); }
+    CastCacheScopeGuard(const CastCacheScopeGuard&) = delete;
+    CastCacheScopeGuard& operator=(const CastCacheScopeGuard&) = delete;
+
+   private:
+    void* previous_;
+  };
 
   /**
    * Resolve transpose flags based on dimension compatibility

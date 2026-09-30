@@ -657,6 +657,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       NativeDynamicShapePlan* plan;
       ~RestoreSegmentDevice() { plan->platformRestoreSegmentDevice(); }
     } restoreSegmentDevice{this};
+    // Same cast slots as dispatchSegment: the ones this segment's graphs baked.
+    MmulHelper::CastCacheScopeGuard castScope(this, seg.def.startSlot);
     cudaStream_t segmentStream = dspGetExecutionStream() != nullptr
         ? reinterpret_cast<cudaStream_t>(dspGetExecutionStream()) : cudaStr;
     void* stream = &segmentStream;
@@ -3543,11 +3545,13 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   tl_cublasWorkspacePtr = nullptr;
   tl_cublasWorkspaceSize = 0;
 
-  // Clear thread-local cast cache in MmulHelper - the cached NDArray* pointers
-  // reference arrays owned by this plan's model. After plan destruction, those
-  // arrays are freed. If another plan (e.g. next config in a sequential test run)
-  // reuses CUDA graph capture on the same thread, the stale cast cache entries
-  // cause GEMM to read from freed/corrupted memory, producing wrong output.
+  // Free this plan's per-segment cast scopes: only this plan's graphs baked
+  // their device addresses. Other plans' scopes stay, because their graphs can
+  // still replay (plan-cache ejection tears one plan down while others live).
+  // clearCastCache() then drops the thread's default cast cache, which no
+  // captured graph reads: its entries reference arrays of this plan's model,
+  // which are freed with it.
+  MmulHelper::releaseCastCacheScopes(this);
   MmulHelper::clearCastCache();
 
   // -- Reset ALL DSP thread-local state to prevent cross-plan contamination --
@@ -4162,9 +4166,10 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
              cublasWorkspaceBuffer_, cublasWorkspaceSize_ / (1024*1024));
   }
 
-  // Reset FP16 cast-cache indices at plan execution boundary.
-  // Two interleaved plans share the same thread-local cast cache
-  // (tl_castA/tl_castB). Without resetting, plan2 inherits
+  // Reset FP16 cast-cache indices at plan execution boundary. This resets the
+  // thread's default cast scope, which interleaved plans share outside their
+  // segments; each segment resets its own scope when it becomes active
+  // (MmulHelper::enterCastCacheScope). Without resetting, plan2 inherits
   // plan1's stale index and reads wrong HALF-cast buffers, causing
   // maxDiff=83+ in mixed-precision FP16 matmuls.
   MmulHelper::resetCastCacheIndices();
@@ -4615,6 +4620,9 @@ void NativeDynamicShapePlan::platformDumpExtInputGpuValues(NDArray* arr, int ext
 }
 
 void NativeDynamicShapePlan::platformClearCastCache() {
+  // Callers invalidate this plan's captures first, so no graph reads its
+  // segment scopes any more.
+  MmulHelper::releaseCastCacheScopes(this);
   MmulHelper::clearCastCache();
 }
 

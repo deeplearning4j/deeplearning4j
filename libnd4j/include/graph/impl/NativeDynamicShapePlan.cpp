@@ -3603,8 +3603,8 @@ Status NativeDynamicShapePlan::execute(
   if (planLifecycle_.isSlotBySlot()) {
     // Reset cast-cache INDEX only — do NOT call clearCastCache() here.
     //
-    // clearCastCache() deletes the cached FP32-upcast NDArray objects (tl_castB[0],
-    // tl_castA[0] etc.) from the thread-local cast cache. This is unsafe when another
+    // clearCastCache() deletes the cached FP32-upcast NDArray objects (slot 0 of
+    // the A/B sides etc.) from the thread-local cast cache. This is unsafe when another
     // plan's CUDA graph is live on the same thread: that graph has cuBLAS kernel nodes
     // with device pointers BAKED AT CAPTURE TIME pointing to these same cast buffers.
     // Deleting the buffers leaves the baked pointers dangling → cuBLAS reads freed
@@ -5651,6 +5651,7 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
               std::to_string(segment.def.endSlot) + "] to its target device");
       return Status::KERNEL_FAILURE;
     }
+    MmulHelper::CastCacheScopeGuard castScope(this, segment.def.startSlot);
     auto migrationStatus = platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
     if (migrationStatus != Status::OK) {
       // ErrorReference is device-context-local. Preserve the target-device cause
@@ -7253,6 +7254,9 @@ Status NativeDynamicShapePlan::dispatchSegment(
   DspThreadState segmentState(segmentStream, segmentStream,
                               tl_graphExecutionActive, tl_dspReplayActive);
 #endif
+  // Mixed-precision matmuls cast into this segment's own slots: a captured graph
+  // bakes their addresses, so no other segment may re-cast or migrate them.
+  MmulHelper::CastCacheScopeGuard castScope(this, seg.def.startSlot);
   usedGraph = false;
   const GraphCompilationPolicy compilationPolicy =
       makeGraphBackendRequest().compilationPolicy();

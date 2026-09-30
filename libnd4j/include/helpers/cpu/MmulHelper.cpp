@@ -76,6 +76,9 @@ void MmulHelper::matmulSerial(LaunchContext* context, NDArray* x, NDArray* y, ND
 // CPU stubs for cast cache methods (only used on CUDA)
 void MmulHelper::clearCastCache() {}
 void MmulHelper::resetCastCacheIndices() {}
+void* MmulHelper::enterCastCacheScope(const void*, LongType) { return nullptr; }
+void MmulHelper::restoreCastCacheScope(void*) {}
+void MmulHelper::releaseCastCacheScopes(const void*) {}
 
 
 //////////////////////////////////////////////////////////////////////////////

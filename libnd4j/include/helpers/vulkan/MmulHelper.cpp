@@ -469,6 +469,12 @@ std::pair<size_t, size_t> MmulHelper::getCastCacheHighWaterMark() {
 
 void MmulHelper::clearCastCache() {}
 
+void* MmulHelper::enterCastCacheScope(const void*, LongType) { return nullptr; }
+
+void MmulHelper::restoreCastCacheScope(void*) {}
+
+void MmulHelper::releaseCastCacheScopes(const void*) {}
+
 void MmulHelper::bumpCastCacheEpoch() {}
 
 }  // namespace sd
