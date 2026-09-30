@@ -599,6 +599,29 @@ class ScopedCudaAllocationRequestTracking {
   bool active_ = true;
 };
 
+// cuFuncGetParamInfo (CUDA 12.4 driver) is the only way to learn how many
+// entries a captured node's kernelParams array holds: the array has one
+// pointer per kernel parameter and no terminator. Resolved through
+// cuGetProcAddress so this diagnostics-only query does not raise the minimum
+// driver libnd4jcuda loads against. nullptr = the driver lacks it.
+using DspFuncGetParamInfoFn = CUresult (CUDAAPI*)(CUfunction, size_t, size_t*, size_t*);
+
+static DspFuncGetParamInfoFn dspResolveFuncGetParamInfo() {
+#if defined(CUDA_VERSION) && CUDA_VERSION >= 12000
+  static const DspFuncGetParamInfoFn fn = [] {
+    void* pfn = nullptr;
+    CUdriverProcAddressQueryResult status = CU_GET_PROC_ADDRESS_SYMBOL_NOT_FOUND;
+    if (cuGetProcAddress("cuFuncGetParamInfo", &pfn, 12040, CU_GET_PROC_ADDRESS_DEFAULT, &status) != CUDA_SUCCESS ||
+        status != CU_GET_PROC_ADDRESS_SUCCESS)
+      return static_cast<DspFuncGetParamInfoFn>(nullptr);
+    return reinterpret_cast<DspFuncGetParamInfoFn>(pfn);
+  }();
+  return fn;
+#else
+  return nullptr;
+#endif
+}
+
 static bool instantiateAndStoreMergedCapture(
     const char* diagPrefix,
     sd::cuda::CudaGraphHandle* nativeHandle,
@@ -725,35 +748,55 @@ static bool instantiateAndStoreMergedCapture(
           CUresult drvRes = cuGraphKernelNodeGetParams(
               reinterpret_cast<CUgraphNode>(nodeCopy), &dkp);
           if (drvRes == CUDA_SUCCESS) {
+            // -1 = unknown (driver without cuFuncGetParamInfo, or a node that
+            // names its kernel through CUkernel instead of func).
+            const DspFuncGetParamInfoFn getParamInfo = dspResolveFuncGetParamInfo();
+            int paramCount = -1;
+            if (getParamInfo != nullptr && dkp.func != nullptr) {
+              size_t paramOffset = 0, paramSize = 0;
+              paramCount = 0;
+              while (paramCount < 4096 &&
+                     getParamInfo(dkp.func, paramCount, &paramOffset, &paramSize) == CUDA_SUCCESS)
+                paramCount++;
+            }
             DSP_DIAG(EXECUTE,
                      "NODE_AUDIT: group=%d node[%zu] KERNEL(driver) func=%p grid=%ux%ux%u "
-                     "block=%ux%ux%u sharedMem=%u paramCount=%u",
+                     "block=%ux%ux%u sharedMem=%u paramCount=%d",
                      mergedGroupId, ni.nodeIndex, (void*)dkp.func,
                      dkp.gridDimX, dkp.gridDimY, dkp.gridDimZ,
                      dkp.blockDimX, dkp.blockDimY, dkp.blockDimZ,
-                     dkp.sharedMemBytes, dkp.kernelParams != nullptr ? 1u : 0u);
+                     dkp.sharedMemBytes, paramCount);
             // Bake check: dereference the captured param VALUES (kernelParams is
             // an array of pointers to the baked argument values). For indirect-
             // args Triton kernels: [0]=argTable device ptr, [1]=n_elements i32,
             // [2]=global scratch (null), [3]=profile (null). A baked n_elements
             // differing from the live launch's, or a stale argTable pointer,
-            // directly explains replay-vs-live divergence.
+            // directly explains replay-vs-live divergence. Only the first
+            // paramCount entries exist, and each value is read at its real size:
+            // entries past the end are unrelated heap words, and dereferencing
+            // one faulted the serving JVM (SIGSEGV) on a 1-parameter kernel.
             if (dkp.kernelParams != nullptr) {
-              for (unsigned p = 0; p < 4 && dkp.kernelParams[p] != nullptr; p++) {
-                // Heuristic per known Triton launch layout: arg0/arg2/arg3 are
-                // 8-byte pointers, arg1 is a 4-byte i32.
-                if (p == 1) {
+              for (int p = 0; p < paramCount && p < 4; p++) {
+                size_t paramOffset = 0, paramSize = 0;
+                if (getParamInfo(dkp.func, p, &paramOffset, &paramSize) != CUDA_SUCCESS ||
+                    dkp.kernelParams[p] == nullptr)
+                  break;
+                if (paramSize == sizeof(int32_t)) {
                   int32_t ival = 0;
                   memcpy(&ival, dkp.kernelParams[p], sizeof(ival));
                   DSP_DIAG(EXECUTE,
-                           "NODE_AUDIT: group=%d node[%zu] PARAM[%u] i32=%d",
+                           "NODE_AUDIT: group=%d node[%zu] PARAM[%d] i32=%d",
                            mergedGroupId, ni.nodeIndex, p, ival);
-                } else {
+                } else if (paramSize == sizeof(void*)) {
                   void* pval = nullptr;
                   memcpy(&pval, dkp.kernelParams[p], sizeof(pval));
                   DSP_DIAG(EXECUTE,
-                           "NODE_AUDIT: group=%d node[%zu] PARAM[%u] ptr=%p",
+                           "NODE_AUDIT: group=%d node[%zu] PARAM[%d] ptr=%p",
                            mergedGroupId, ni.nodeIndex, p, pval);
+                } else {
+                  DSP_DIAG(EXECUTE,
+                           "NODE_AUDIT: group=%d node[%zu] PARAM[%d] size=%zu (not decoded)",
+                           mergedGroupId, ni.nodeIndex, p, paramSize);
                 }
               }
             }
