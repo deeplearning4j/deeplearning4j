@@ -1294,13 +1294,18 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
 
     /**
      * Mixed-precision matmuls (FLOAT activations x HALF weights) upcast each weight into a
-     * cast-cache slot, and a captured graph bakes that slot's address. When every segment
-     * shared one thread-wide slot list, each device's replay rewound it and re-cast or
-     * migrated slots the other device's graphs had baked, so every decode step retained new
-     * cast arrays (SmolDocling: ~160 MB per step) and could feed a graph another layer's
-     * weights. The two device halves differ in weight shape at every slot position and each
-     * layer scales by its own power of two, so a shared slot shows up as a wrong value or as
-     * device memory growth.
+     * cast-cache slot. When every segment shared one thread-wide slot list, each device's
+     * composite replay rewound it and re-cast or migrated the other device's slots, so every
+     * decode step retained new cast arrays (SmolDocling: ~160 MB per step).
+     *
+     * <p>The graph is a chain of gated MLP blocks. The gate x up product reads two separate
+     * matmul sections, so Triton compiles it as an island and replays the matmuls around it as
+     * live gaps: the steady-state path that consults the cast cache on every step. A bias-only
+     * chain would not cover it, because Triton folds each bias into its matmul section, finds no
+     * island and replays one monolithic graph. CUDA_GRAPHS always replays monolithically, so it
+     * covers only the capture-time casts and parity. Device 0 runs the F=1024 blocks and
+     * device 1 the F=512 blocks, so the two halves differ in weight shape at every slot position
+     * and a shared slot list re-casts on every step.
      */
     @ParameterizedTest
     @EnumSource(value = GraphExecutionMode.class, names = {"TRITON", "CUDA_GRAPHS"})
@@ -1310,9 +1315,9 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         assumeTrue(deviceCount == 2, "requires two CUDA devices");
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         boolean poolEnabled = nativeOps.isMemoryPoolEnabled();
-        // Device 0 runs layers 0-3 (256x1024, 1024x256, ...), device 1 layers 4-8 (256x256 first).
-        int[] widths = {256, 1024, 256, 1024, 256, 256, 1024, 256, 1024, 256};
-        int firstSecondaryLayer = 4;
+        int hidden = 256;
+        int[] blockWidths = {1024, 1024, 512, 512};
+        int firstSecondaryBlock = 2;
         float bias = 0.125f;
         int iterations = 20;
         int warmupLast = 8;
@@ -1328,31 +1333,37 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             graph = SameDiff.create();
             graph.setGraphExecutionMode(mode);
-            SDVariable h = graph.placeHolder("x", DataType.FLOAT, 1, widths[0]);
-            for (int layer = 0; layer + 1 < widths.length; layer++) {
-                // scale / fan-in is a power of two, so the weight is exact in HALF.
-                INDArray weight = Nd4j.valueArrayOf(new long[]{widths[layer], widths[layer + 1]},
-                        mixedPrecisionLayerScale(layer) / widths[layer], DataType.HALF);
-                SDVariable product = graph.mmul("mm_" + layer, h, graph.constant("castWeight_" + layer, weight));
-                INDArray layerBias = Nd4j.valueArrayOf(new long[]{1, widths[layer + 1]}, bias, DataType.FLOAT);
-                h = product.add(layer + 2 == widths.length ? "out" : "h_" + layer,
-                        graph.constant("castBias_" + layer, layerBias));
+            SDVariable h = graph.placeHolder("x", DataType.FLOAT, 1, hidden);
+            for (int block = 0; block < blockWidths.length; block++) {
+                int width = blockWidths[block];
+                // Every weight value is a power of two, so it is exact in HALF. With h = v
+                // everywhere: gate = v, up = 2v, act = 2v^2, down = 2 * scale * v^2.
+                SDVariable gate = graph.mmul("gate_" + block, h, graph.constant("gateWeight_" + block,
+                        Nd4j.valueArrayOf(new long[]{hidden, width}, 1f / hidden, DataType.HALF)));
+                SDVariable up = graph.mmul("up_" + block, h, graph.constant("upWeight_" + block,
+                        Nd4j.valueArrayOf(new long[]{hidden, width}, 2f / hidden, DataType.HALF)));
+                SDVariable act = gate.mul("act_" + block, up);
+                SDVariable down = graph.mmul("down_" + block, act, graph.constant("downWeight_" + block,
+                        Nd4j.valueArrayOf(new long[]{width, hidden}, mixedPrecisionLayerScale(block) / width,
+                                DataType.HALF)));
+                h = down.add(block + 1 == blockWidths.length ? "out" : "h_" + block, graph.constant(
+                        "bias_" + block, Nd4j.valueArrayOf(new long[]{1, hidden}, bias, DataType.FLOAT)));
             }
             String[] outputs = {"out"};
             DynamicShapePlan plan = graph.compileDynamicShapePlan(outputs);
             for (var slot : plan.getSlots()) slot.setTargetDeviceId(
-                    mixedPrecisionLayerDevice(slot.getOutputVarNames(), firstSecondaryLayer));
+                    mixedPrecisionBlockDevice(slot.getOutputVarNames(), firstSecondaryBlock));
             graph.compileNativeDynamicShapePlan(outputs);
 
-            x = Nd4j.create(DataType.FLOAT, 1, widths[0]);
+            x = Nd4j.create(DataType.FLOAT, 1, hidden);
             for (int iteration = 0; iteration < iterations; iteration++) {
                 double expected = (4 + iteration % 8) / 32.0;
                 x.assign(expected);
-                for (int layer = 0; layer + 1 < widths.length; layer++) {
-                    expected = expected * mixedPrecisionLayerScale(layer) + bias;
+                for (int block = 0; block < blockWidths.length; block++) {
+                    expected = 2 * mixedPrecisionLayerScale(block) * expected * expected + bias;
                 }
                 try (INDArray got = runOnce(graph, x, false)) {
-                    assertArrayEquals(new long[]{1, widths[widths.length - 1]}, got.shape());
+                    assertArrayEquals(new long[]{1, hidden}, got.shape());
                     for (float value : got.data().asFloat()) {
                         assertEquals(expected, value, 1e-3, mode + " parity at iteration " + iteration);
                     }
@@ -1394,6 +1405,23 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             }
             assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > 0, "must exercise replay");
             DspPlanAssertions.assertNoCaptureFailures(graph, "mixed-precision cast slots across devices");
+            if (mode == GraphExecutionMode.TRITON) {
+                // Each device half must replay Triton islands around live gap matmuls;
+                // a monolithic replay never consults the cast cache.
+                int segments = nativeOps.getPlanSegmentCount(DspPlanAssertions.getPlanHandleForQuery(graph));
+                int liveGapSegments = 0;
+                for (int segment = 0; segment < segments; segment++) {
+                    if (DspPlanAssertions.getSegmentReplayMode(graph, segment) == DspPlanAssertions.REPLAY_MODE_COMPOSITE
+                            && DspPlanAssertions.getSegmentIslandUnitCount(graph, segment) > 0
+                            && DspPlanAssertions.getSegmentGapUnitCount(graph, segment) > 0
+                            && DspPlanAssertions.getSegmentReplayCount(graph, segment) > 0) {
+                        liveGapSegments++;
+                    }
+                }
+                log.info("Mixed-precision cast plan: {}", DspPlanAssertions.snapshotPlanState(graph));
+                assertTrue(liveGapSegments >= deviceCount, "expected a composite island + gap replay per device, got "
+                        + liveGapSegments + ": " + DspPlanAssertions.snapshotPlanState(graph));
+            }
         } finally {
             try { if (graph != null) graph.close(); }
             finally {
@@ -1404,17 +1432,17 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
-    /** 0.5, 1, 2, 0.5, ...: each layer of the mixed-precision chain scales differently. */
-    private static float mixedPrecisionLayerScale(int layer) {
-        return (float) Math.pow(2, layer % 3 - 1);
+    /** 0.5, 1, 2, 0.5, ...: each block of the mixed-precision chain scales differently. */
+    private static float mixedPrecisionLayerScale(int block) {
+        return (float) Math.pow(2, block % 3 - 1);
     }
 
-    /** Layers from {@code firstSecondaryLayer} on, and the output, run on device 1. */
-    private static int mixedPrecisionLayerDevice(String[] outputNames, int firstSecondaryLayer) {
+    /** Blocks from {@code firstSecondaryBlock} on, and the output, run on device 1. */
+    private static int mixedPrecisionBlockDevice(String[] outputNames, int firstSecondaryBlock) {
         for (String name : outputNames) {
             if (name.equals("out")) return 1;
-            Matcher layer = Pattern.compile("(mm|h)_([0-9]+)").matcher(name);
-            if (layer.matches() && Integer.parseInt(layer.group(2)) >= firstSecondaryLayer) return 1;
+            Matcher block = Pattern.compile("(gate|up|act|down|h)_([0-9]+)").matcher(name);
+            if (block.matches() && Integer.parseInt(block.group(2)) >= firstSecondaryBlock) return 1;
         }
         return 0;
     }
