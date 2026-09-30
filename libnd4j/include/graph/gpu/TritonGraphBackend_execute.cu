@@ -902,7 +902,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         ShapeList* inferredShapes = nullptr;
         try {
           inferredShapes = slot.ident.op->calculateOutputShape(&inputShapes, inferCtx);
+        } catch (const std::exception& e) {
+          DSP_DIAG(SHAPE, "POST_GAP_RESHAPE: slot %d (%s) shape inference threw, outputs keep their "
+                   "pre-allocated shapes: %s",
+                   si, slot.ident.opName.c_str(), e.what());
+          continue;
         } catch (...) {
+          DSP_DIAG(SHAPE, "POST_GAP_RESHAPE: slot %d (%s) shape inference threw a non-std exception, "
+                   "outputs keep their pre-allocated shapes",
+                   si, slot.ident.opName.c_str());
           continue;
         }
         if (inferredShapes == nullptr || inferredShapes->size() == 0) {
