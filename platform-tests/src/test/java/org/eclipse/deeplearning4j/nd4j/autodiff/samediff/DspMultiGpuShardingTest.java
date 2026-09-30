@@ -25,6 +25,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -56,6 +57,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -1287,6 +1290,133 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
+    }
+
+    /**
+     * Mixed-precision matmuls (FLOAT activations x HALF weights) upcast each weight into a
+     * cast-cache slot, and a captured graph bakes that slot's address. When every segment
+     * shared one thread-wide slot list, each device's replay rewound it and re-cast or
+     * migrated slots the other device's graphs had baked, so every decode step retained new
+     * cast arrays (SmolDocling: ~160 MB per step) and could feed a graph another layer's
+     * weights. The two device halves differ in weight shape at every slot position and each
+     * layer scales by its own power of two, so a shared slot shows up as a wrong value or as
+     * device memory growth.
+     */
+    @ParameterizedTest
+    @EnumSource(value = GraphExecutionMode.class, names = {"TRITON", "CUDA_GRAPHS"})
+    public void testMixedPrecisionCastSlotsStayPerSegmentAcrossDevices(GraphExecutionMode mode) {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
+        assumeTrue(deviceCount == 2, "requires two CUDA devices");
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        boolean poolEnabled = nativeOps.isMemoryPoolEnabled();
+        // Device 0 runs layers 0-3 (256x1024, 1024x256, ...), device 1 layers 4-8 (256x256 first).
+        int[] widths = {256, 1024, 256, 1024, 256, 256, 1024, 256, 1024, 256};
+        int firstSecondaryLayer = 4;
+        float bias = 0.125f;
+        int iterations = 20;
+        int warmupLast = 8;
+        long slack = 64L * 1024;
+        int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        long[] counterPlateau = new long[deviceCount];
+        long[] poolPlateau = new long[deviceCount];
+        SameDiff graph = null;
+        INDArray x = null;
+        try {
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+            graph = SameDiff.create();
+            graph.setGraphExecutionMode(mode);
+            SDVariable h = graph.placeHolder("x", DataType.FLOAT, 1, widths[0]);
+            for (int layer = 0; layer + 1 < widths.length; layer++) {
+                // scale / fan-in is a power of two, so the weight is exact in HALF.
+                INDArray weight = Nd4j.valueArrayOf(new long[]{widths[layer], widths[layer + 1]},
+                        mixedPrecisionLayerScale(layer) / widths[layer], DataType.HALF);
+                SDVariable product = graph.mmul("mm_" + layer, h, graph.constant("castWeight_" + layer, weight));
+                INDArray layerBias = Nd4j.valueArrayOf(new long[]{1, widths[layer + 1]}, bias, DataType.FLOAT);
+                h = product.add(layer + 2 == widths.length ? "out" : "h_" + layer,
+                        graph.constant("castBias_" + layer, layerBias));
+            }
+            String[] outputs = {"out"};
+            DynamicShapePlan plan = graph.compileDynamicShapePlan(outputs);
+            for (var slot : plan.getSlots()) slot.setTargetDeviceId(
+                    mixedPrecisionLayerDevice(slot.getOutputVarNames(), firstSecondaryLayer));
+            graph.compileNativeDynamicShapePlan(outputs);
+
+            x = Nd4j.create(DataType.FLOAT, 1, widths[0]);
+            for (int iteration = 0; iteration < iterations; iteration++) {
+                double expected = (4 + iteration % 8) / 32.0;
+                x.assign(expected);
+                for (int layer = 0; layer + 1 < widths.length; layer++) {
+                    expected = expected * mixedPrecisionLayerScale(layer) + bias;
+                }
+                try (INDArray got = runOnce(graph, x, false)) {
+                    assertArrayEquals(new long[]{1, widths[widths.length - 1]}, got.shape());
+                    for (float value : got.data().asFloat()) {
+                        assertEquals(expected, value, 1e-3, mode + " parity at iteration " + iteration);
+                    }
+                }
+                if (iteration == 0) assertUsesEveryCudaDevice(graph);
+                assertEquals(0, nativeOps.lastErrorCode(), "native error at iteration " + iteration);
+                if (iteration == warmupLast) {
+                    DspPlanAssertions.assertPhaseReached(graph, PlanPhase.SHAPES_FROZEN,
+                            "memory sample must come from frozen execution");
+                    DspPlanAssertions.assertAllCapturableSegmentsReachedPhase(
+                            graph, ExecutionPhase.REPLAYING, "mixed-precision cast sample");
+                }
+                Nd4j.getExecutioner().commit();
+                for (int device = 0; device < deviceCount; device++) {
+                    long counter = Nd4j.getEnvironment().getDeviceCounter(device);
+                    long poolUsed = -1;
+                    if (poolEnabled) {
+                        nativeOps.trimMemoryPool(device);
+                        try (LongPointer used = new LongPointer(1);
+                             LongPointer reserved = new LongPointer(1)) {
+                            nativeOps.getMemoryPoolStats(device, used, reserved);
+                            poolUsed = used.get();
+                        }
+                    }
+                    log.info("Mixed-precision cast mode={} iteration={} device={} counter={} poolUsed={}",
+                            mode, iteration, device, counter, poolUsed);
+                    if (iteration == warmupLast) {
+                        counterPlateau[device] = counter;
+                        poolPlateau[device] = poolUsed;
+                    } else if (iteration > warmupLast) {
+                        assertTrue(counter <= counterPlateau[device] + slack,
+                                mode + ": device " + device + " allocations grew at iteration " + iteration
+                                        + " (baseline=" + counterPlateau[device] + " now=" + counter + ")");
+                        assertTrue(!poolEnabled || poolUsed <= poolPlateau[device] + slack,
+                                mode + ": device " + device + " pool usage grew at iteration " + iteration
+                                        + " (baseline=" + poolPlateau[device] + " now=" + poolUsed + ")");
+                    }
+                }
+            }
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > 0, "must exercise replay");
+            DspPlanAssertions.assertNoCaptureFailures(graph, "mixed-precision cast slots across devices");
+        } finally {
+            try { if (graph != null) graph.close(); }
+            finally {
+                SameDiffMemoryUtils.safeClose(x);
+                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+            }
+        }
+    }
+
+    /** 0.5, 1, 2, 0.5, ...: each layer of the mixed-precision chain scales differently. */
+    private static float mixedPrecisionLayerScale(int layer) {
+        return (float) Math.pow(2, layer % 3 - 1);
+    }
+
+    /** Layers from {@code firstSecondaryLayer} on, and the output, run on device 1. */
+    private static int mixedPrecisionLayerDevice(String[] outputNames, int firstSecondaryLayer) {
+        for (String name : outputNames) {
+            if (name.equals("out")) return 1;
+            Matcher layer = Pattern.compile("(mm|h)_([0-9]+)").matcher(name);
+            if (layer.matches() && Integer.parseInt(layer.group(2)) >= firstSecondaryLayer) return 1;
+        }
+        return 0;
     }
 
     /** Eviction must return logical headroom BEFORE incoming allocation or execution. */
