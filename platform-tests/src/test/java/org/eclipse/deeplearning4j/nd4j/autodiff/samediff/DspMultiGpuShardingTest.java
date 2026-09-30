@@ -2169,21 +2169,25 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         // Every fixed-width output is 4096 bytes. UTF8 has no fixed width, so each
         // UTF8 output is sized as the average known slot (also 4096 bytes). An even
         // two-device split therefore puts slots 0-2 on one device and 3-5 on the other.
+        // The 4096-element outputs lead, so sizing by element count (BFLOAT16 and FLOAT
+        // hold fewer elements than bytes) or by one fixed width moves the boundary.
         INDArray[] outputs = {
-                Nd4j.create("a", "b"),
-                Nd4j.create("c", "d"),
                 Nd4j.create(DataType.BOOL, 64, 64),
                 Nd4j.createUninitialized(DataType.INT8, new long[]{64, 64}, 'f'),
+                Nd4j.create("a", "b"),
+                Nd4j.create("c", "d"),
                 Nd4j.create(DataType.BFLOAT16, 2, 32, 32),
                 Nd4j.create(DataType.FLOAT, 1024)
         };
         // A scalar's shape info has its own layout (extras at index 3).
-        INDArray[] scalarPair = {
+        INDArray[] scalarSet = {
                 Nd4j.scalar(DataType.DOUBLE, 1.0),
-                Nd4j.create(DataType.FLOAT, 2)
+                Nd4j.create(DataType.FLOAT, 1),
+                Nd4j.create(DataType.FLOAT, 1),
+                Nd4j.create(DataType.FLOAT, 1)
         };
         DynamicShapePlan plan = staticOutputPlan(outputs);
-        DynamicShapePlan scalarPlan = staticOutputPlan(scalarPair);
+        DynamicShapePlan scalarPlan = staticOutputPlan(scalarSet);
         try {
             plan.assignDevices(Map.of(0, 1L, 1, 1L));
             DynamicShapeSlot[] slots = plan.getSlots();
@@ -2197,19 +2201,22 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                                 + plan.getDeviceAssignmentSummary());
             }
 
-            // 8 scalar bytes fill exactly half of the 16-byte total.
+            // The three 4-byte outputs are costed at the 5-byte average, so the total is
+            // 23 and the first device's half is 12: the 8-byte scalar fits, the next 5
+            // bytes do not. A scalar sized smaller (unknown, or decoded from the wrong
+            // word) lets slot 1 in too.
             scalarPlan.assignDevices(Map.of(0, 1L, 1, 1L));
             DynamicShapeSlot[] scalarSlots = scalarPlan.getSlots();
             assertTrue(scalarSlots[0].getTargetDeviceId() >= 0
                             && scalarSlots[1].getTargetDeviceId() >= 0
                             && scalarSlots[0].getTargetDeviceId() != scalarSlots[1].getTargetDeviceId(),
-                    "the scalar output must fill the first device's half: "
+                    "the 8-byte scalar alone must fill the first device's half: "
                             + scalarPlan.getDeviceAssignmentSummary());
         } finally {
             plan.close();
             scalarPlan.close();
             for (INDArray output : outputs) SameDiffMemoryUtils.safeClose(output);
-            for (INDArray output : scalarPair) SameDiffMemoryUtils.safeClose(output);
+            for (INDArray output : scalarSet) SameDiffMemoryUtils.safeClose(output);
         }
     }
 
