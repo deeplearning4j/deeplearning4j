@@ -34,11 +34,13 @@ import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.nativeblas.NativeOps;
@@ -2150,5 +2152,79 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
         assertEquals(originalDevice, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
                 "test must restore the original caller device");
+    }
+
+    /**
+     * Byte-aware placement must decode each static output's dtype from the shape-info
+     * extras word. It read {@code info[rank + 2]} instead — a stride at rank >= 2, the
+     * extras word itself at rank 1 — so a C-order BOOL [64, 64] output decoded its last
+     * stride of 1 as BOOL, the legacy width table rejected BOOL, and every DSP compile of
+     * the SmolDocling vision encoder failed with "Illegal opType for length".
+     */
+    @Test
+    public void testBytePlacementDecodesStaticOutputDtypes() {
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() > 1,
+                "per-device DSP placement requires >1 CUDA device");
+
+        // Every fixed-width output is 4096 bytes. UTF8 has no fixed width, so each
+        // UTF8 output is sized as the average known slot (also 4096 bytes). An even
+        // two-device split therefore puts slots 0-2 on one device and 3-5 on the other.
+        INDArray[] outputs = {
+                Nd4j.create("a", "b"),
+                Nd4j.create("c", "d"),
+                Nd4j.create(DataType.BOOL, 64, 64),
+                Nd4j.createUninitialized(DataType.INT8, new long[]{64, 64}, 'f'),
+                Nd4j.create(DataType.BFLOAT16, 2, 32, 32),
+                Nd4j.create(DataType.FLOAT, 1024)
+        };
+        // A scalar's shape info has its own layout (extras at index 3).
+        INDArray[] scalarPair = {
+                Nd4j.scalar(DataType.DOUBLE, 1.0),
+                Nd4j.create(DataType.FLOAT, 2)
+        };
+        DynamicShapePlan plan = staticOutputPlan(outputs);
+        DynamicShapePlan scalarPlan = staticOutputPlan(scalarPair);
+        try {
+            plan.assignDevices(Map.of(0, 1L, 1, 1L));
+            DynamicShapeSlot[] slots = plan.getSlots();
+            int first = slots[0].getTargetDeviceId();
+            int second = slots[3].getTargetDeviceId();
+            assertTrue(first >= 0 && second >= 0 && first != second,
+                    "an even byte split must use both devices: " + plan.getDeviceAssignmentSummary());
+            for (int s = 0; s < slots.length; s++) {
+                assertEquals(s < 3 ? first : second, slots[s].getTargetDeviceId(),
+                        "slot " + s + " is on the wrong side of the byte split: "
+                                + plan.getDeviceAssignmentSummary());
+            }
+
+            // 8 scalar bytes fill exactly half of the 16-byte total.
+            scalarPlan.assignDevices(Map.of(0, 1L, 1, 1L));
+            DynamicShapeSlot[] scalarSlots = scalarPlan.getSlots();
+            assertTrue(scalarSlots[0].getTargetDeviceId() >= 0
+                            && scalarSlots[1].getTargetDeviceId() >= 0
+                            && scalarSlots[0].getTargetDeviceId() != scalarSlots[1].getTargetDeviceId(),
+                    "the scalar output must fill the first device's half: "
+                            + scalarPlan.getDeviceAssignmentSummary());
+        } finally {
+            plan.close();
+            scalarPlan.close();
+            for (INDArray output : outputs) SameDiffMemoryUtils.safeClose(output);
+            for (INDArray output : scalarPair) SameDiffMemoryUtils.safeClose(output);
+        }
+    }
+
+    /** A plan of zero-input slots, one per array, each declaring that array's shape info. */
+    private static DynamicShapePlan staticOutputPlan(INDArray[] outputs) {
+        DynamicShapeSlot[] slots = new DynamicShapeSlot[outputs.length];
+        for (int s = 0; s < outputs.length; s++) {
+            slots[s] = DynamicShapeSlot.builder()
+                    .opName("static_output_" + s)
+                    .outputSlotIndices(new int[]{s})
+                    .staticOutputShapeInfos(new long[][]{outputs[s].shapeInfoJava()})
+                    .build();
+        }
+        int[][] releaseAtStep = new int[slots.length][0];
+        return new DynamicShapePlan(slots, slots.length, releaseAtStep, new OpContext[slots.length],
+                new String[0], Collections.emptySet(), Collections.emptyMap(), false);
     }
 }

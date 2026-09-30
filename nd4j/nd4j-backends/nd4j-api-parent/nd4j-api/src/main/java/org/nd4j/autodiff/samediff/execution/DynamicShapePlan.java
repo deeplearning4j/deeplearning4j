@@ -25,9 +25,10 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.device.MultiGpuTracer;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -684,19 +685,24 @@ public class DynamicShapePlan implements Closeable {
 
     /**
      * Byte length of the array described by a ND4J shape-info buffer
-     * (rank at [0], shape at [1..rank], dtype code at [rank + 2]).
+     * ({@code [rank, shape..., stride..., extras, ews, order]}). The dtype is
+     * encoded in the extras word, so it is decoded with
+     * {@link ArrayOptionsHelper#dataType(long[])}; the word right after the
+     * shape is a stride (the extras word at rank 1). Returns 0 for an unknown
+     * dimension or a dtype without a fixed element width (UTF8/16/32).
      */
     private static long shapeInfoBytes(long[] info) {
-        if (info == null || info.length < 2) return 0L;
+        if (info == null || info.length == 0) return 0L;
         int rank = (int) info[0];
-        if (rank < 0 || info.length < rank + 3) return 0L;
+        if (rank < 0 || info.length < Shape.shapeInfoLength(rank)) return 0L;
         long elements = 1L;
         for (int d = 1; d <= rank; d++) {
             long dim = info[d];
             if (dim <= 0) return 0L; // dynamic placeholder — unknown
             elements *= dim;
         }
-        return elements * DataTypeUtil.lengthForDtype(DataType.fromInt((int) info[rank + 2]));
+        int width = ArrayOptionsHelper.dataType(info).width();
+        return width > 0 ? elements * width : 0L;
     }
 
     /**
