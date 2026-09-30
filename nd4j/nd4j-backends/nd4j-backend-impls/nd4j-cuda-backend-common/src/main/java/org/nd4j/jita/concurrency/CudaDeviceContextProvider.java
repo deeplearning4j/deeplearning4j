@@ -51,7 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 5. Fetches fresh stream pointers via buildContext()
  *
  * buildContext() is the SINGLE place that does:
- *   defaultLaunchContext() -&gt; lcExecutionStream() -&gt; retainReference()
+ *   defaultLaunchContext() -&gt; lcExecutionStream()
  * Previously duplicated at 15+ call sites.
  */
 public class CudaDeviceContextProvider implements DeviceContextProvider {
@@ -145,7 +145,6 @@ public class CudaDeviceContextProvider implements DeviceContextProvider {
             if (lc != null) {
                 Pointer stream = nativeOps.lcExecutionStream(lc);
                 if (stream != null && stream.address() != 0) {
-                    stream.retainReference();
                     return stream;
                 }
             }
@@ -219,13 +218,11 @@ public class CudaDeviceContextProvider implements DeviceContextProvider {
             if (lc != null) {
                 Pointer stream = nativeOps.lcExecutionStream(lc);
                 if (stream != null && stream.address() != 0) {
-                    stream.retainReference();
                     execStream = stream;
                 }
 
                 Pointer special = nativeOps.lcCopyStream(lc);
                 if (special != null && special.address() != 0) {
-                    special.retainReference();
                     copyStream = special;
                 }
             }

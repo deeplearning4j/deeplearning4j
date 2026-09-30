@@ -376,7 +376,14 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                         "public native org.nd4j.nativeblas.OpaqueRandomGenerator createRandomGenerator(@Cast(\"sd::LongType\") long rootSeed, @Cast(\"sd::LongType\") long nodeSeed);"))
                 .put(new Info("getGraphContextRandomGenerator").javaText(
                         "public native org.nd4j.nativeblas.OpaqueRandomGenerator getGraphContextRandomGenerator(org.nd4j.nativeblas.OpaqueContext ptr);"))
-                .put(new Info("OpaqueLaunchContext").pointerTypes("org.nd4j.nativeblas.OpaqueLaunchContext"))
+                // OpaqueLaunchContext is itself a pointer (sd::LaunchContext*), so it maps as a value
+                // type. With pointerTypes alone every by-value use became @ByVal, and each
+                // defaultLaunchContext() call heap-allocated a cell holding the pointer and registered
+                // a deallocator for it. The undefined OpaqueLaunchContext* overloads in NativeOps.h
+                // map to the same Java signatures, so they are not generated.
+                .put(new Info("OpaqueLaunchContext").cast()
+                        .valueTypes("org.nd4j.nativeblas.OpaqueLaunchContext")
+                        .pointerTypes("org.nd4j.nativeblas.OpaqueLaunchContext"))
                 .put(new Info("OpaqueDataBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueDataBuffer"))
                 // Add @NoDeallocator to OpaqueDataBuffer-returning methods to prevent JavaCPP
                 // from attaching a NativeDeallocator. ND4J's DeallocatorService manages buffer lifecycle.

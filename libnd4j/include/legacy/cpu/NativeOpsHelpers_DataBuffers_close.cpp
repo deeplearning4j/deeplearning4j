@@ -162,6 +162,7 @@ void dbFreeBuffersOnly(OpaqueDataBuffer *dataBuffer) {
   sd::DataBuffer* db = dataBuffer->getDataBufferDirect();
   if (db == nullptr) return;
 
+  dataBuffer->waitForNoReaders();
   db->freeGpuOnly();
   dataBuffer->invalidateDataBuffer();
   delete db;
@@ -173,6 +174,14 @@ void dbFreeBuffersOnStream(OpaqueDataBuffer *dataBuffer, void *stream) {
 }
 
 bool dbIsOwner(OpaqueDataBuffer *dataBuffer) {
-  if (dataBuffer == nullptr) return false;
-  return dataBuffer->isOwner();
+  // True when closing this wrapper frees the memory dbPrimaryBuffer reports.
+  // Owning the DataBuffer object is not enough: an external buffer's
+  // DataBuffer borrows its pointers.
+  if (dataBuffer == nullptr || !dataBuffer->isOwner()) return false;
+  if (dataBuffer->isConstant.load(std::memory_order_acquire)) return false;
+  if (!dataBuffer->acquireAccess()) return false;
+  sd::DataBuffer* db = dataBuffer->getDataBufferDirect();
+  const bool ownsMemory = db != nullptr && db->_isOwnerPrimary;
+  dataBuffer->releaseAccess();
+  return ownsMemory;
 }

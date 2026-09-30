@@ -245,6 +245,7 @@ void dbFreeBuffersOnly(OpaqueDataBuffer *dataBuffer) {
 
   size_t bytes = dataBuffer->_cachedLenInBytes;
 
+  dataBuffer->waitForNoReaders();
   db->freeGpuOnly();
 
   // Update tracking counters
@@ -294,6 +295,7 @@ void dbFreeBuffersOnStream(OpaqueDataBuffer *dataBuffer, void *stream) {
   // If the buffer is on a different device than the caller's stream, the stream
   // is invalid for that device. Use nullptr (default stream) for cross-device frees.
   void* freeStream = (currentDevice != bufferDeviceId) ? nullptr : stream;
+  dataBuffer->waitForNoReaders();
   db->freeGpuOnStream(freeStream);
 
   g_dataBufferCount.fetch_sub(1, std::memory_order_relaxed);
@@ -314,6 +316,15 @@ void dbFreeBuffersOnStream(OpaqueDataBuffer *dataBuffer, void *stream) {
 }
 
 bool dbIsOwner(OpaqueDataBuffer *dataBuffer) {
-  if (dataBuffer == nullptr) return false;
-  return dataBuffer->isOwner();
+  // True when closing this wrapper frees the device memory dbSpecialBuffer
+  // reports. Owning the DataBuffer object is not enough: an external
+  // buffer's DataBuffer borrows its pointers, and DSP dedups frees by device
+  // address on this answer, so a borrower must not claim the owner's address.
+  if (dataBuffer == nullptr || !dataBuffer->isOwner()) return false;
+  if (dataBuffer->isConstant.load(std::memory_order_acquire)) return false;
+  if (!dataBuffer->acquireAccess()) return false;
+  sd::DataBuffer* db = dataBuffer->getDataBufferDirect();
+  const bool ownsDeviceMemory = db != nullptr && db->_isOwnerSpecial;
+  dataBuffer->releaseAccess();
+  return ownsDeviceMemory;
 }

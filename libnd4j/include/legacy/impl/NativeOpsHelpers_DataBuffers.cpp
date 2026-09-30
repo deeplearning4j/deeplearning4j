@@ -309,7 +309,18 @@ OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType
     return nullptr;
   }
 
-  buffer->markOwner(false);
+  // The wrapper keeps ownership of the DataBuffer it just created, so closing
+  // the wrapper deletes it. Only the DataBuffer's memory ownership is cleared:
+  // it never frees the borrowed pointers, but it does free what it allocates
+  // itself later (the device copy of a host-only buffer, the host copy of a
+  // device-only one) along with its write event. markOwner(false) would clear
+  // both, and every closed external buffer then leaked its DataBuffer and
+  // those copies.
+  auto shell = buffer->dataBuffer();
+  if (shell != nullptr) {
+    shell->_isOwnerPrimary = false;
+    shell->_isOwnerSpecial = false;
+  }
 
   if (primary != nullptr) buffer->setPrimary(primary, elements);
 

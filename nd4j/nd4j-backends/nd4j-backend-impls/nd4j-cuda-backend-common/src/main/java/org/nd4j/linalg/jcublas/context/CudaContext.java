@@ -83,13 +83,10 @@ public class CudaContext {
      */
     public void syncOldStream() {
         // Get fresh launch context and stream pointer from native
-        // This ensures we use the currently valid stream, not a potentially stale cached pointer
-        // IMPORTANT: retainReference() prevents JavaCPP's NativeDeallocator from freeing
-        // the static singleton returned by defaultLaunchContext()
+        // This ensures we use the currently valid stream, not a potentially stale cached pointer.
+        // Both are raw pointers into native state: Java owns neither and frees neither.
         OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-        lc.retainReference();
-        // retainReference() prevents JavaCPP from freeing CUDA-allocated stream memory
-        Pointer freshStream = nativeOps.lcExecutionStream(lc).retainReference();
+        Pointer freshStream = nativeOps.lcExecutionStream(lc);
         if (freshStream == null || freshStream.isNull()) {
             throw new ND4JIllegalStateException("CUDA execution stream is null - context may not be initialized");
         }
@@ -100,12 +97,8 @@ public class CudaContext {
 
     public void syncSpecialStream() {
         // Get fresh launch context and stream pointer from native
-        // IMPORTANT: retainReference() prevents JavaCPP's NativeDeallocator from freeing
-        // the static singleton returned by defaultLaunchContext()
         OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-        lc.retainReference();
-        // retainReference() prevents JavaCPP from freeing CUDA-allocated stream memory
-        Pointer freshStream = nativeOps.lcCopyStream(lc).retainReference();
+        Pointer freshStream = nativeOps.lcCopyStream(lc);
         if (freshStream == null || freshStream.isNull()) {
             throw new ND4JIllegalStateException("CUDA special stream is null - context may not be initialized");
         }
@@ -128,7 +121,6 @@ public class CudaContext {
      */
     public cublasHandle_t getCublasHandle() {
         OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-        lc.retainReference();
         Pointer handle = nativeOps.lcBlasHandle(lc);
         if (handle == null || handle.isNull()) {
             throw new ND4JIllegalStateException("cuBLAS handle is null or invalid for device " + deviceId +
@@ -143,7 +135,6 @@ public class CudaContext {
      */
     public cusolverDnHandle_t getSolverHandle() {
         OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-        lc.retainReference();
         Pointer handle = nativeOps.lcSolverHandle(lc);
         if (handle == null || handle.isNull()) {
             throw new ND4JIllegalStateException("cuSolver handle is null or invalid for device " + deviceId +

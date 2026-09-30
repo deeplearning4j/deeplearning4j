@@ -200,7 +200,17 @@ void dbFreeBuffersOnStream(OpaqueDataBuffer* dataBuffer, void* stream) {
 }
 
 bool dbIsOwner(OpaqueDataBuffer* dataBuffer) {
-  return dataBuffer != nullptr && dataBuffer->isOwner();
+  // True when closing this wrapper frees the device memory dbSpecialBuffer
+  // reports. Owning the DataBuffer object is not enough: an external
+  // buffer's DataBuffer borrows its pointers, and DSP dedups frees by device
+  // address on this answer, so a borrower must not claim the owner's address.
+  if (dataBuffer == nullptr || !dataBuffer->isOwner()) return false;
+  if (dataBuffer->isConstant.load(std::memory_order_acquire)) return false;
+  if (!dataBuffer->acquireAccess()) return false;
+  sd::DataBuffer* db = dataBuffer->getDataBufferDirect();
+  const bool ownsDeviceMemory = db != nullptr && db->_isOwnerSpecial;
+  dataBuffer->releaseAccess();
+  return ownsDeviceMemory;
 }
 
 
