@@ -293,6 +293,18 @@ parity. Row invariance already held in steady replay.
   - Keys past the window are masked by the decode bias: they contribute an exact
     +0 and are skipped, so the kernel stays at the flash kernel's speed (57–75 µs
     per call vs 110–220 µs native).
+  - Memory access changes, none of which change the arithmetic order:
+    - P·V runs over 16-key tiles loaded by a pipelined `cp.async` loop. Each key's
+      weight is picked from the tile with a -0.0 one-hot, which is exact.
+    - QK reads keys as 16-byte chunks. The module declares, and the launch
+      checks, a 16-byte alignment for the key rows.
+    - V is read as 32-bit words under a 4-byte alignment contract. Each word
+      holds two adjacent output columns, and each column keeps its own
+      ascending-key FMA chain.
+
+    On 27B decode (nsys, last 20 tokens), attention fell from 2.862 to 1.200 to
+    0.503 ms/token. The output bits and the greedy token hash (-1685314511)
+    stayed the same.
   - Output-only grouped-query attention outside the GGUF cache contract (padded
     prefill, fixed-buffer windows) routes natively to `fusedGQADecodeKernel`
     at every query length. `emitFusedAttentionKernel` mirrors that kernel per row

@@ -2211,6 +2211,128 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
             biasPtr ? 1 : 0, dualBuffer ? 1 : 0, kvIsInt8 ? 1 : 0);
 }
 
+// ─── Native-ordered P*V ──────────────────────────────────────────────────────
+// Keys one iteration of the native-ordered P*V loops consumes.
+static constexpr int kNativePvTileKeys = 16;
+// Bytes of each key row one iteration of the native-ordered logits loop reads
+// as a single vector (two 64-bit words, cp.async's widest copy), and the
+// shared-memory buffers its asynchronous copies rotate through.
+static constexpr int kNativeLogitChunkBytes = 16;
+static constexpr int kNativeLogitStages = 3;
+
+// Byte alignment declared for a kernel pointer as tt.divisibility, on its
+// defining operation (an int_to_ptr from the indirect argument table) or its
+// function argument; 1 when none is. The module builder declares it only
+// together with a launch-checked alignment contract on the argument.
+static int64_t declaredPointerAlignment(mlir::Value ptr) {
+  mlir::Attribute attr;
+  if (auto* op = ptr.getDefiningOp()) {
+    attr = op->getDiscardableAttr("tt.divisibility");
+  } else if (auto argument = mlir::dyn_cast<mlir::BlockArgument>(ptr)) {
+    if (auto func = mlir::dyn_cast<mlir::triton::FuncOp>(argument.getOwner()->getParentOp()))
+      attr = func.getArgAttr(argument.getArgNumber(), "tt.divisibility");
+  }
+  auto value = mlir::dyn_cast_or_null<mlir::IntegerAttr>(attr);
+  return value ? value.getInt() : 1;
+}
+
+// Repeats a rank-1 tensor along a new axis: axis 1 makes it the column of
+// [n, extent] (row i holds element i), axis 0 the row of [extent, n].
+static mlir::Value broadcastAlong(mlir::OpBuilder& builder, mlir::Location loc, mlir::Value vector,
+                                  int axis, int64_t extent) {
+  auto type = mlir::cast<mlir::RankedTensorType>(vector.getType());
+  llvm::SmallVector<int64_t, 2> shape{type.getShape()[0], extent};
+  if (axis == 0) std::swap(shape[0], shape[1]);
+  auto expanded = builder.create<mlir::triton::ExpandDimsOp>(loc, vector, axis);
+  return builder.create<mlir::triton::BroadcastOp>(loc,
+      mlir::RankedTensorType::get(shape, type.getElementType()), expanded);
+}
+
+// out_p[c] = sum over keys k in [0, count), ascending, of weight[k] * row_k,p[c]
+// as FMAs from +0 (the native attention kernels' P*V chain), kNativePvTileKeys
+// keys per iteration. One gather fetches the tile's weights and one masked load
+// (loadRows, given the tile's keys and which of them are below count) its value
+// rows as `parts` [keys, lanes] f32 tiles, each with a chain of its own (a
+// load of 32-bit words gives its low and high halves as two parts). The FMAs
+// then run in key order on rows taken out of the tiles by a one-hot sum along
+// the key axis; that sum adds -0.0 to the selected element only, and
+// x + (-0.0) == x for every x, so each FMA sees exactly the operands of a
+// one-key-per-iteration loop. Keys at or past count load nothing, and a select
+// keeps their FMA out of the chain (a masked load leaves those rows undefined).
+// With stages >= 2 the software pipeliner fetches value rows stages - 1 tiles
+// ahead (loads of at least 32 bits become asynchronous copies).
+static llvm::SmallVector<mlir::Value, 2> emitNativeOrderedPv(
+    mlir::OpBuilder& builder, mlir::Location loc, mlir::Value weights, mlir::Value count, int lanes,
+    int parts, int stages,
+    llvm::function_ref<llvm::SmallVector<mlir::Value, 2>(mlir::Value keys, mlir::Value valid)> loadRows,
+    llvm::function_ref<mlir::Value(mlir::Value weight, mlir::Value value, mlir::Value acc)> fma) {
+  constexpr int tile = kNativePvTileKeys;
+  auto f32Type = builder.getF32Type();
+  auto i32Type = builder.getI32Type();
+  auto keyI32 = mlir::RankedTensorType::get({tile}, i32Type);
+  auto tileI32 = mlir::RankedTensorType::get({tile, lanes}, i32Type);
+  auto tileF32 = mlir::RankedTensorType::get({tile, lanes}, f32Type);
+  auto dF32 = mlir::RankedTensorType::get({lanes}, f32Type);
+  const int lastWeight = static_cast<int>(mlir::cast<mlir::RankedTensorType>(weights.getType()).getShape()[0]) - 1;
+  auto constI32 = [&](int value) -> mlir::Value {
+    return builder.create<mlir::arith::ConstantIntOp>(loc, value, 32);
+  };
+  auto splat = [&](mlir::Type type, mlir::Value scalar) -> mlir::Value {
+    return builder.create<mlir::triton::SplatOp>(loc, type, scalar);
+  };
+  auto splatF32 = [&](mlir::Type type, float value) -> mlir::Value {
+    return splat(type, builder.create<mlir::arith::ConstantOp>(loc, f32Type, builder.getF32FloatAttr(value)));
+  };
+
+  llvm::SmallVector<mlir::Value, 2> zeros(parts, splatF32(dF32, 0.0f));
+  auto loop = builder.create<mlir::scf::ForOp>(loc, constI32(0), count, constI32(tile), zeros);
+  if (stages >= 2) loop->setAttr("tt.num_stages", builder.getI32IntegerAttr(stages));
+  {
+    mlir::OpBuilder::InsertionGuard guard(builder);
+    builder.setInsertionPointToStart(loop.getBody());
+    mlir::Value first = loop.getInductionVar();
+    auto lane = builder.create<mlir::triton::MakeRangeOp>(loc, keyI32, 0, tile);
+    auto keys = builder.create<mlir::arith::AddIOp>(loc, splat(keyI32, first), lane);
+    auto valid = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, keys,
+                                                     splat(keyI32, count));
+    // Weights of keys at or past count are never used; their indices only stay in range.
+    auto weight = builder.create<mlir::triton::GatherOp>(loc, weights,
+        builder.create<mlir::arith::MinSIOp>(loc, keys, splat(keyI32, constI32(lastWeight))), 0u);
+    mlir::Value weightTile = broadcastAlong(builder, loc, weight, 1, lanes);
+    llvm::SmallVector<mlir::Value, 2> valueTiles = loadRows(keys, valid);
+    mlir::Value keyOfRow = broadcastAlong(builder, loc, lane, 1, lanes);
+    mlir::Value negZero = splatF32(tileF32, -0.0f);
+    auto rowOf = [&](mlir::Value values, int u) -> mlir::Value {
+      auto selected = builder.create<mlir::arith::SelectOp>(loc,
+          builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::eq, keyOfRow,
+                                              splat(tileI32, constI32(u))),
+          values, negZero);
+      auto reduce = builder.create<mlir::triton::ReduceOp>(loc, mlir::ValueRange{selected}, 0);
+      auto* block = builder.createBlock(&reduce.getCombineOp(), {}, {f32Type, f32Type}, {loc, loc});
+      builder.setInsertionPointToEnd(block);
+      auto sum = builder.create<mlir::arith::AddFOp>(loc, block->getArgument(0), block->getArgument(1));
+      builder.create<mlir::triton::ReduceReturnOp>(loc, mlir::ValueRange{sum.getResult()});
+      builder.setInsertionPointAfter(reduce);
+      return reduce->getResult(0);
+    };
+    llvm::SmallVector<mlir::Value, 2> accs(loop.getRegionIterArgs().begin(), loop.getRegionIterArgs().end());
+    for (int u = 0; u < tile; ++u) {
+      mlir::Value keyWeight = rowOf(weightTile, u);
+      // The tile's first key is always below count.
+      mlir::Value inRange = u == 0 ? mlir::Value() : builder.create<mlir::arith::CmpIOp>(loc,
+          mlir::arith::CmpIPredicate::slt, builder.create<mlir::arith::AddIOp>(loc, first, constI32(u)), count)
+          .getResult();
+      for (int p = 0; p < parts; ++p) {
+        mlir::Value next = fma(keyWeight, rowOf(valueTiles[p], u), accs[p]);
+        if (inRange) next = builder.create<mlir::arith::SelectOp>(loc, inRange, next, accs[p]);
+        accs[p] = next;
+      }
+    }
+    builder.create<mlir::scf::YieldOp>(loc, accs);
+  }
+  return llvm::SmallVector<mlir::Value, 2>(loop.getResults().begin(), loop.getResults().end());
+}
+
 // ─── GGUF in-graph KV-cache decode attention ─────────────────────────────────
 //
 // Implements the rank-4 BSHD live-cache contract described in the header.
@@ -2259,7 +2381,6 @@ void TritonIRBuilder::emitNativeOrderedDecodeAttention(
   auto kvI1 = mlir::RankedTensorType::get({keys}, i1Type);
   auto dI32 = mlir::RankedTensorType::get({lanesD}, i32Type);
   auto dF32 = mlir::RankedTensorType::get({lanesD}, f32Type);
-  auto dI1 = mlir::RankedTensorType::get({lanesD}, i1Type);
   auto constI32 = [&](int value) -> mlir::Value {
     return builder.create<mlir::arith::ConstantIntOp>(loc, value, 32);
   };
@@ -2326,32 +2447,120 @@ void TritonIRBuilder::emitNativeOrderedDecodeAttention(
   auto qRowPtr = builder.create<mlir::triton::AddPtrOp>(loc, qPtr.getType(), qPtr, qRowBase);
 
   // ── Logits: ascending-d FMA chain from +0 per key ──
-  auto dot = builder.create<mlir::scf::ForOp>(loc, constI32(0), constI32(headDim), constI32(1),
-      mlir::ValueRange{splatConstantF32(builder, loc, kvF32, 0.0f)});
-  {
-    mlir::OpBuilder::InsertionGuard guard(builder);
-    builder.setInsertionPointToStart(dot.getBody());
-    mlir::Value d = dot.getInductionVar();
-    auto qScalar = builder.create<mlir::triton::LoadOp>(loc,
+  auto qElement = [&](mlir::Value d) -> mlir::Value {
+    auto q = builder.create<mlir::triton::LoadOp>(loc,
         builder.create<mlir::triton::AddPtrOp>(loc, qPtr.getType(), qRowPtr, d), mlir::Value(),
         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
-    auto qd = splat(kvF32, castTo(builder, loc, qScalar, f32Type));
-    auto dSplat = splat(kvI32, d);
-    mlir::Value kValue;
-    if (uniformK) {
-      auto kPtrs = builder.create<mlir::arith::SelectOp>(loc, isCur, kCurPtrs, kPastPtrs);
-      kValue = castTo(builder, loc,
-          load(builder.create<mlir::triton::AddPtrOp>(loc, kPtrs.getType(), kPtrs, dSplat), attended), f32Type);
-    } else {
-      auto kPast = load(builder.create<mlir::triton::AddPtrOp>(loc, kPastPtrs.getType(), kPastPtrs, dSplat), isPast);
-      auto kCur = load(builder.create<mlir::triton::AddPtrOp>(loc, kCurPtrs.getType(), kCurPtrs, dSplat), isCur);
-      kValue = builder.create<mlir::arith::SelectOp>(loc, isCur, castTo(builder, loc, kCur, f32Type),
-                                                     asQueryType(kPast));
+    return splat(kvF32, castTo(builder, loc, q, f32Type));
+  };
+  // With both key sources declared 16-byte aligned (the module builder's
+  // launch-checked contract) and rows a whole number of 16-byte chunks, each
+  // iteration reads one chunk of every attended key row as a [keys, 2] tile of
+  // 64-bit words: a 16-byte vector per row instead of one element per row per
+  // iteration, which Triton's software pipeliner turns into asynchronous copies
+  // issued kNativeLogitStages - 1 chunks ahead. The chunk's elements are taken
+  // out of the words (shift, truncate, bitcast: exactly the stored values) and
+  // feed the same ascending-d FMA chain, so the logits are bit-identical.
+  // Caches of another type or unaligned buffers keep one element per iteration.
+  constexpr int kWordBytes = 8;
+  constexpr int kWordsPerChunk = kNativeLogitChunkBytes / kWordBytes;
+  static_assert(kWordsPerChunk == 2, "a chunk's words are separated by tt.split");
+  const int elementBits = static_cast<int>(queryType.getIntOrFloatBitWidth());
+  const int wordElements = kWordBytes * 8 / elementBits;
+  const bool wideK = uniformK && (headDim * elementBits / 8) % kNativeLogitChunkBytes == 0 &&
+      declaredPointerAlignment(kCachePtr) >= kNativeLogitChunkBytes &&
+      declaredPointerAlignment(curKPtr) >= kNativeLogitChunkBytes;
+  mlir::Value dotProduct;
+  if (wideK) {
+    auto wordType = builder.getIntegerType(kWordBytes * 8);
+    auto wordPtrType = mlir::triton::PointerType::get(wordType,
+        mlir::cast<mlir::triton::PointerType>(kCachePtr.getType()).getAddressSpace());
+    auto kvWords = mlir::RankedTensorType::get({keys}, wordType);
+    auto chunkI32 = mlir::RankedTensorType::get({keys, kWordsPerChunk}, i32Type);
+    auto chunkPtrType = mlir::RankedTensorType::get({keys, kWordsPerChunk}, wordPtrType);
+    auto kPtrs = builder.create<mlir::arith::SelectOp>(loc, isCur, kCurPtrs, kPastPtrs);
+    auto rowWords = builder.create<mlir::triton::BitcastOp>(loc,
+        mlir::RankedTensorType::get({keys}, wordPtrType), kPtrs);
+    auto wordOfChunk = builder.create<mlir::triton::MakeRangeOp>(loc,
+        mlir::RankedTensorType::get({kWordsPerChunk}, i32Type), 0, kWordsPerChunk);
+    mlir::Value firstChunk = builder.create<mlir::triton::AddPtrOp>(loc, chunkPtrType,
+        broadcastAlong(builder, loc, rowWords, 1, kWordsPerChunk),
+        broadcastAlong(builder, loc, wordOfChunk, 0, keys));
+    mlir::Value chunkMask = broadcastAlong(builder, loc, attended, 1, kWordsPerChunk);
+    // Iterates over words (a multiple of kWordsPerChunk), so the axis analysis
+    // sees every chunk start on a 16-byte boundary.
+    auto dot = builder.create<mlir::scf::ForOp>(loc, constI32(0), constI32(headDim / wordElements),
+        constI32(kWordsPerChunk), mlir::ValueRange{splatConstantF32(builder, loc, kvF32, 0.0f)});
+    // One chunk of every key row per stage; unpipelined when two do not fit.
+    const LongType stageBytes = static_cast<LongType>(keys) * kNativeLogitChunkBytes;
+    const int stages = static_cast<int>(std::min<LongType>(kNativeLogitStages,
+        queryCudaSharedMemLimitBytes() / stageBytes));
+    if (stages >= 2) dot->setAttr("tt.num_stages", builder.getI32IntegerAttr(stages));
+    DSP_DIAG(JIT, "emitNativeOrderedDecodeAttention: 16-byte key chunks, keys=%d headDim=%d stages=%d",
+             keys, headDim, stages >= 2 ? stages : 1);
+    {
+      mlir::OpBuilder::InsertionGuard guard(builder);
+      builder.setInsertionPointToStart(dot.getBody());
+      mlir::Value word0 = dot.getInductionVar();
+      const int chunk = kWordsPerChunk * wordElements;
+      mlir::Value d0 = builder.create<mlir::arith::MulIOp>(loc, word0, constI32(wordElements));
+      llvm::SmallVector<mlir::Value, 8> qValues;
+      for (int j = 0; j < chunk; ++j) {
+        qValues.push_back(qElement(j == 0 ? d0
+            : builder.create<mlir::arith::AddIOp>(loc, d0, constI32(j)).getResult()));
+      }
+      auto chunkLoad = builder.create<mlir::triton::LoadOp>(loc,
+          builder.create<mlir::triton::AddPtrOp>(loc, chunkPtrType, firstChunk, splat(chunkI32, word0)),
+          chunkMask, mlir::Value(), mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL,
+          false);
+      // One thread reads a row's whole chunk (TritonTargetDispatch's MarkedLoadCoalescePass).
+      chunkLoad->setDiscardableAttr("nd4j.coalesce_load", builder.getUnitAttr());
+      auto split = builder.create<mlir::triton::SplitOp>(loc, chunkLoad.getResult());
+      const mlir::Value chunkWords[kWordsPerChunk] = {split.getOutLHS(), split.getOutRHS()};
+      mlir::Value acc = dot.getRegionIterArgs()[0];
+      for (int j = 0; j < chunk; ++j) {
+        // Little-endian: the lowest address is the least significant element.
+        mlir::Value word = chunkWords[j / wordElements];
+        const int shift = (j % wordElements) * elementBits;
+        if (shift != 0) {
+          word = builder.create<mlir::arith::ShRUIOp>(loc, word,
+              splat(kvWords, builder.create<mlir::arith::ConstantIntOp>(loc, shift, kWordBytes * 8)));
+        }
+        auto element = builder.create<mlir::arith::TruncIOp>(loc,
+            mlir::RankedTensorType::get({keys}, builder.getIntegerType(elementBits)), word);
+        auto kValue = castTo(builder, loc, builder.create<mlir::triton::BitcastOp>(loc,
+            mlir::RankedTensorType::get({keys}, queryType), element), f32Type);
+        acc = emitNativeCudaFmaRn(builder, loc, kValue, qValues[j], acc);
+      }
+      builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{acc});
     }
-    auto acc = emitNativeCudaFmaRn(builder, loc, kValue, qd, dot.getRegionIterArgs()[0]);
-    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{acc});
+    dotProduct = dot.getResult(0);
+  } else {
+    auto dot = builder.create<mlir::scf::ForOp>(loc, constI32(0), constI32(headDim), constI32(1),
+        mlir::ValueRange{splatConstantF32(builder, loc, kvF32, 0.0f)});
+    {
+      mlir::OpBuilder::InsertionGuard guard(builder);
+      builder.setInsertionPointToStart(dot.getBody());
+      mlir::Value d = dot.getInductionVar();
+      auto qd = qElement(d);
+      auto dSplat = splat(kvI32, d);
+      mlir::Value kValue;
+      if (uniformK) {
+        auto kPtrs = builder.create<mlir::arith::SelectOp>(loc, isCur, kCurPtrs, kPastPtrs);
+        kValue = castTo(builder, loc,
+            load(builder.create<mlir::triton::AddPtrOp>(loc, kPtrs.getType(), kPtrs, dSplat), attended), f32Type);
+      } else {
+        auto kPast = load(builder.create<mlir::triton::AddPtrOp>(loc, kPastPtrs.getType(), kPastPtrs, dSplat), isPast);
+        auto kCur = load(builder.create<mlir::triton::AddPtrOp>(loc, kCurPtrs.getType(), kCurPtrs, dSplat), isCur);
+        kValue = builder.create<mlir::arith::SelectOp>(loc, isCur, castTo(builder, loc, kCur, f32Type),
+                                                       asQueryType(kPast));
+      }
+      auto acc = emitNativeCudaFmaRn(builder, loc, kValue, qd, dot.getRegionIterArgs()[0]);
+      builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{acc});
+    }
+    dotProduct = dot.getResult(0);
   }
-  mlir::Value logit = emitNativeCudaMulRn(builder, loc, dot.getResult(0),
+  mlir::Value logit = emitNativeCudaMulRn(builder, loc, dotProduct,
                                           splatConstantF32(builder, loc, kvF32, scale));
   if (biasPtr) {
     // Right-aligned [batch, heads, query, key] bias; size-one axes broadcast.
@@ -2445,51 +2654,122 @@ void TritonIRBuilder::emitNativeOrderedDecodeAttention(
   mlir::Value weights = normalizeAfterPv ? probability
       : emitNativeCudaMulRn(builder, loc, probability, splat(kvF32, inverseScalar));
 
+  auto keyEnd = builder.create<mlir::arith::MinSIOp>(loc, windowEnd, constI32(cacheMaxSeq));
+  auto outType = mlir::cast<mlir::triton::PointerType>(outPtr.getType()).getPointeeType();
+  auto fmaPv = [&](mlir::Value weight, mlir::Value value, mlir::Value acc) {
+    return emitNativeCudaFmaRn(builder, loc, value, weight, acc);
+  };
+  // V rows of window keys come from the producer, earlier ones from the cache.
+  struct ValueRows {
+    mlir::Value current;  // the key is in the window
+    mlir::Value pastBase;
+    mlir::Value curBase;
+  };
+  auto valueRows = [&](mlir::Value tileKeys) -> ValueRows {
+    auto keyType = tileKeys.getType();
+    auto current = builder.create<mlir::arith::AndIOp>(loc,
+        builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge, tileKeys, splat(keyType, cachePos)),
+        builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, tileKeys, splat(keyType, windowEnd)));
+    auto pastBase = builder.create<mlir::arith::AddIOp>(loc, splat(keyType, cacheBase),
+        builder.create<mlir::arith::MulIOp>(loc, tileKeys, splat(keyType, kvRowStride)));
+    auto curIndex = builder.create<mlir::arith::MaxSIOp>(loc,
+        builder.create<mlir::arith::SubIOp>(loc, tileKeys, splat(keyType, cachePos)), splat(keyType, constI32(0)));
+    auto curRowBase = builder.create<mlir::arith::AddIOp>(loc, splat(keyType, curBase),
+        builder.create<mlir::arith::MulIOp>(loc, curIndex, splat(keyType, kvRowStride)));
+    return {current, pastBase, curRowBase};
+  };
+
+  // With both value sources declared 4-byte aligned (the module builder's
+  // launch-checked contract), 16-bit elements and an even head size (rows start
+  // at multiples of headDim elements, so on 32-bit words), each thread reads one
+  // word, two adjacent columns, of every row of the tile: half the loads, and
+  // wide enough for the software pipeliner to fetch tiles ahead as asynchronous
+  // copies. The words' low and high halves (truncate, bitcast: exactly the
+  // stored values) are the even and odd columns, each with its own ascending-key
+  // FMA chain, so every output column is bit-identical to the element loop's.
+  constexpr int kWordBits = 32;
+  const bool wideV = uniformV && elementBits * 2 == kWordBits && headDim % 2 == 0 &&
+      declaredPointerAlignment(vCachePtr) >= kWordBits / 8 && declaredPointerAlignment(curVPtr) >= kWordBits / 8;
+  if (wideV) {
+    const int wordLanes = lanesD / 2;
+    auto wI32 = mlir::RankedTensorType::get({wordLanes}, i32Type);
+    auto wF32 = mlir::RankedTensorType::get({wordLanes}, f32Type);
+    auto tileWords = mlir::RankedTensorType::get({kNativePvTileKeys, wordLanes}, i32Type);
+    auto wordPtrType = mlir::triton::PointerType::get(i32Type,
+        mlir::cast<mlir::triton::PointerType>(vCachePtr.getType()).getAddressSpace());
+    auto wRange = builder.create<mlir::triton::MakeRangeOp>(loc, wI32, 0, wordLanes);
+    auto wMask = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, wRange,
+                                                     splat(wI32, constI32(headDim / 2)));
+    mlir::Value wordColumns = broadcastAlong(builder, loc, wRange, 0, kNativePvTileKeys);
+    mlir::Value wordColumnMask = broadcastAlong(builder, loc, wMask, 0, kNativePvTileKeys);
+    auto loadWordRows = [&](mlir::Value tileKeys, mlir::Value valid) -> llvm::SmallVector<mlir::Value, 2> {
+      ValueRows source = valueRows(tileKeys);
+      auto rowStarts = builder.create<mlir::arith::SelectOp>(loc, source.current,
+          tensorPtr(curVPtr, source.curBase), tensorPtr(vCachePtr, source.pastBase));
+      auto rowWords = builder.create<mlir::triton::BitcastOp>(loc,
+          mlir::RankedTensorType::get({kNativePvTileKeys}, wordPtrType), rowStarts);
+      auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc,
+          mlir::RankedTensorType::get({kNativePvTileKeys, wordLanes}, wordPtrType),
+          broadcastAlong(builder, loc, rowWords, 1, wordLanes), wordColumns);
+      mlir::Value words = load(ptrs, builder.create<mlir::arith::AndIOp>(loc,
+          broadcastAlong(builder, loc, valid, 1, wordLanes), wordColumnMask));
+      // Little-endian: the low half is the even column.
+      auto half = [&](int shift) -> mlir::Value {
+        mlir::Value bits = words;
+        if (shift != 0) bits = builder.create<mlir::arith::ShRUIOp>(loc, bits, splat(tileWords, constI32(shift)));
+        auto element = builder.create<mlir::arith::TruncIOp>(loc,
+            mlir::RankedTensorType::get({kNativePvTileKeys, wordLanes}, builder.getIntegerType(elementBits)), bits);
+        return castTo(builder, loc, builder.create<mlir::triton::BitcastOp>(loc,
+            mlir::RankedTensorType::get({kNativePvTileKeys, wordLanes}, queryType), element), f32Type);
+      };
+      return {half(0), half(elementBits)};
+    };
+    // One tile of value rows per stage; unpipelined when two do not fit.
+    const LongType stageBytes = static_cast<LongType>(kNativePvTileKeys) * wordLanes * (kWordBits / 8);
+    const int stages = static_cast<int>(std::min<LongType>(kNativeLogitStages,
+        queryCudaSharedMemLimitBytes() / stageBytes));
+    DSP_DIAG(JIT, "emitNativeOrderedDecodeAttention: 32-bit value words, headDim=%d stages=%d",
+             headDim, stages >= 2 ? stages : 1);
+    auto columns = emitNativeOrderedPv(builder, loc, weights, keyEnd, wordLanes, 2, stages, loadWordRows, fmaPv);
+    for (int parity = 0; parity < 2; ++parity) {
+      mlir::Value result = columns[parity];
+      if (normalizeAfterPv) result = emitNativeCudaMulRn(builder, loc, result, splat(wF32, inverseScalar));
+      auto column = builder.create<mlir::arith::AddIOp>(loc,
+          builder.create<mlir::arith::MulIOp>(loc, wRange, splat(wI32, constI32(2))), splat(wI32, constI32(parity)));
+      auto outPtrs = tensorPtr(outPtr, builder.create<mlir::arith::AddIOp>(loc, splat(wI32, qRowBase), column));
+      builder.create<mlir::triton::StoreOp>(loc, outPtrs, castTo(builder, loc, result, outType), wMask,
+                                            mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+    }
+    return;
+  }
+
   auto dRange = builder.create<mlir::triton::MakeRangeOp>(loc, dI32, 0, lanesD);
   auto dMask = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, dRange,
                                                    splat(dI32, constI32(headDim)));
-  auto keyEnd = builder.create<mlir::arith::MinSIOp>(loc, windowEnd, constI32(cacheMaxSeq));
-  auto pv = builder.create<mlir::scf::ForOp>(loc, constI32(0), keyEnd, constI32(1),
-      mlir::ValueRange{splatConstantF32(builder, loc, dF32, 0.0f)});
-  {
-    mlir::OpBuilder::InsertionGuard guard(builder);
-    builder.setInsertionPointToStart(pv.getBody());
-    mlir::Value key = pv.getInductionVar();
-    auto weight = builder.create<mlir::triton::GatherOp>(loc, weights, splat(dI32, key), 0u);
-    auto current = builder.create<mlir::arith::AndIOp>(loc,
-        builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge, key, cachePos),
-        builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, key, windowEnd));
-    auto currentMask = builder.create<mlir::arith::AndIOp>(loc, dMask, splat(dI1, current));
-    auto pastMask = builder.create<mlir::arith::AndIOp>(loc, dMask,
-        splat(dI1, builder.create<mlir::arith::XOrIOp>(loc, current,
-            builder.create<mlir::arith::ConstantIntOp>(loc, 1, 1))));
-    auto pastBase = builder.create<mlir::arith::AddIOp>(loc, cacheBase,
-        builder.create<mlir::arith::MulIOp>(loc, key, kvRowStride));
-    auto curIndex = builder.create<mlir::arith::MaxSIOp>(loc,
-        builder.create<mlir::arith::SubIOp>(loc, key, cachePos), constI32(0));
-    auto curRowBase = builder.create<mlir::arith::AddIOp>(loc, curBase,
-        builder.create<mlir::arith::MulIOp>(loc, curIndex, kvRowStride));
-    mlir::Value value;
+  mlir::Value columns = broadcastAlong(builder, loc, dRange, 0, kNativePvTileKeys);
+  mlir::Value columnMask = broadcastAlong(builder, loc, dMask, 0, kNativePvTileKeys);
+  auto loadValueRows = [&](mlir::Value tileKeys, mlir::Value valid) -> llvm::SmallVector<mlir::Value, 2> {
+    auto rows = [&](mlir::Value perKey) { return broadcastAlong(builder, loc, perKey, 1, lanesD); };
+    ValueRows source = valueRows(tileKeys);
+    mlir::Value pastOffsets = builder.create<mlir::arith::AddIOp>(loc, rows(source.pastBase), columns);
+    mlir::Value curOffsets = builder.create<mlir::arith::AddIOp>(loc, rows(source.curBase), columns);
+    mlir::Value currentRows = rows(source.current);
+    mlir::Value rowMask = builder.create<mlir::arith::AndIOp>(loc, rows(valid), columnMask);
     if (uniformV) {
-      auto rowPtr = builder.create<mlir::arith::SelectOp>(loc, current,
-          builder.create<mlir::triton::AddPtrOp>(loc, curVPtr.getType(), curVPtr, curRowBase),
-          builder.create<mlir::triton::AddPtrOp>(loc, vCachePtr.getType(), vCachePtr, pastBase));
-      value = castTo(builder, loc, load(tensorPtr(rowPtr, dRange), dMask), f32Type);
-    } else {
-      auto vPast = load(tensorPtr(vCachePtr, builder.create<mlir::arith::AddIOp>(loc, splat(dI32, pastBase), dRange)),
-                        pastMask);
-      auto vCur = load(tensorPtr(curVPtr, builder.create<mlir::arith::AddIOp>(loc, splat(dI32, curRowBase), dRange)),
-                       currentMask);
-      value = builder.create<mlir::arith::SelectOp>(loc, splat(dI1, current),
-                                                    castTo(builder, loc, vCur, f32Type), asQueryType(vPast));
+      auto ptrs = builder.create<mlir::arith::SelectOp>(loc, currentRows,
+          tensorPtr(curVPtr, curOffsets), tensorPtr(vCachePtr, pastOffsets));
+      return {castTo(builder, loc, load(ptrs, rowMask), f32Type)};
     }
-    auto acc = emitNativeCudaFmaRn(builder, loc, value, weight, pv.getRegionIterArgs()[0]);
-    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{acc});
-  }
-  mlir::Value result = pv.getResult(0);
+    auto pastRows = builder.create<mlir::arith::XOrIOp>(loc, currentRows,
+        splat(currentRows.getType(), builder.create<mlir::arith::ConstantIntOp>(loc, 1, 1)));
+    auto vPast = load(tensorPtr(vCachePtr, pastOffsets), builder.create<mlir::arith::AndIOp>(loc, rowMask, pastRows));
+    auto vCur = load(tensorPtr(curVPtr, curOffsets), builder.create<mlir::arith::AndIOp>(loc, rowMask, currentRows));
+    return {builder.create<mlir::arith::SelectOp>(loc, currentRows, castTo(builder, loc, vCur, f32Type),
+                                                  asQueryType(vPast))};
+  };
+  mlir::Value result = emitNativeOrderedPv(builder, loc, weights, keyEnd, lanesD, 1, 0, loadValueRows, fmaPv)[0];
   if (normalizeAfterPv) result = emitNativeCudaMulRn(builder, loc, result, splat(dF32, inverseScalar));
 
-  auto outType = mlir::cast<mlir::triton::PointerType>(outPtr.getType()).getPointeeType();
   auto outPtrs = tensorPtr(outPtr, builder.create<mlir::arith::AddIOp>(loc, splat(dI32, qRowBase), dRange));
   builder.create<mlir::triton::StoreOp>(loc, outPtrs, castTo(builder, loc, result, outType), dMask,
                                         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
@@ -2624,6 +2904,8 @@ void TritonIRBuilder::emitNativeOrderedGqaRowAttention(
   auto dRange = builder.create<mlir::triton::MakeRangeOp>(loc, dI32, 0, lanesD);
   auto dMask = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, dRange,
                                                    splat(dI32, constI32(headDim)));
+  mlir::Value columns = broadcastAlong(builder, loc, dRange, 0, kNativePvTileKeys);
+  mlir::Value columnMask = broadcastAlong(builder, loc, dMask, 0, kNativePvTileKeys);
   auto qRowPtr = builder.create<mlir::triton::AddPtrOp>(loc, qPtr.getType(), qPtr, qRowBase);
   auto negInfScalar = constF32(-std::numeric_limits<float>::infinity());
 
@@ -2736,22 +3018,22 @@ void TritonIRBuilder::emitNativeOrderedGqaRowAttention(
     // P*V over the tile's keys in ascending order, FMAs from +0.
     auto tileEnd = builder.create<mlir::arith::MinSIOp>(loc, constI32(tile),
         builder.create<mlir::arith::SubIOp>(loc, maxKv, kvStart));
-    auto pv = builder.create<mlir::scf::ForOp>(loc, constI32(0), tileEnd, constI32(1),
-        mlir::ValueRange{splatConstantF32(builder, loc, dF32, 0.0f)});
-    {
-      mlir::OpBuilder::InsertionGuard pvGuard(builder);
-      builder.setInsertionPointToStart(pv.getBody());
-      mlir::Value k = pv.getInductionVar();
-      auto weight = builder.create<mlir::triton::GatherOp>(loc, probability, splat(dI32, k), 0u);
-      auto vRowBase = builder.create<mlir::arith::AddIOp>(loc, kvBase,
-          builder.create<mlir::arith::MulIOp>(loc, builder.create<mlir::arith::AddIOp>(loc, kvStart, k),
-                                              kvRowStride));
-      auto value = asAccumulator(
-          load(tensorPtr(vPtr, builder.create<mlir::arith::AddIOp>(loc, splat(dI32, vRowBase), dRange)), dMask));
-      auto acc = emitNativeCudaFmaRn(builder, loc, weight, value, pv.getRegionIterArgs()[0]);
-      builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{acc});
-    }
-    out = builder.create<mlir::arith::AddFOp>(loc, out, pv.getResult(0));
+    auto loadValueRows = [&](mlir::Value keys, mlir::Value valid) -> llvm::SmallVector<mlir::Value, 2> {
+      auto keyType = keys.getType();
+      auto rowBase = builder.create<mlir::arith::AddIOp>(loc, splat(keyType, kvBase),
+          builder.create<mlir::arith::MulIOp>(loc,
+              builder.create<mlir::arith::AddIOp>(loc, splat(keyType, kvStart), keys), splat(keyType, kvRowStride)));
+      auto offsets = builder.create<mlir::arith::AddIOp>(loc, broadcastAlong(builder, loc, rowBase, 1, lanesD),
+                                                         columns);
+      auto mask = builder.create<mlir::arith::AndIOp>(loc, broadcastAlong(builder, loc, valid, 1, lanesD),
+                                                      columnMask);
+      return {asAccumulator(load(tensorPtr(vPtr, offsets), mask))};
+    };
+    mlir::Value pv = emitNativeOrderedPv(builder, loc, probability, tileEnd, lanesD, 1, 0, loadValueRows,
+        [&](mlir::Value weight, mlir::Value value, mlir::Value acc) {
+          return emitNativeCudaFmaRn(builder, loc, weight, value, acc);
+        })[0];
+    out = builder.create<mlir::arith::AddFOp>(loc, out, pv);
     builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{out, globalMax, globalSum});
   }
 

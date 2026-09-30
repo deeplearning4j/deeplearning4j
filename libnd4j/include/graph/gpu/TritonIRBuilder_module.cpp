@@ -78,6 +78,49 @@ using namespace ir_builder_internal;
 // argument passing via a pointer array.
 static constexpr int TRITON_DIRECT_ARG_LIMIT = 200;
 
+// Declares that kernel pointer `ptr`, bound to argument `arg`, starts on a
+// `bytes` boundary: a contract on the argument that every later binding must
+// satisfy (checked at launch), given to Triton's axis analysis as the pointer's
+// divisibility on its int_to_ptr (indirect argument table) or its function
+// argument, where emitters read it back (declaredPointerAlignment).
+static void declarePointerAlignment(mlir::OpBuilder& builder, TritonKernelArg& arg, mlir::Value ptr, int bytes) {
+  arg.requiredAlignment = std::max(arg.requiredAlignment, bytes);
+  auto divisibility = builder.getI32IntegerAttr(arg.requiredAlignment);
+  if (auto* op = ptr.getDefiningOp()) {
+    op->setDiscardableAttr("tt.divisibility", divisibility);
+    return;
+  }
+  auto argument = mlir::cast<mlir::BlockArgument>(ptr);
+  mlir::cast<mlir::triton::FuncOp>(argument.getOwner()->getParentOp())
+      .setArgAttr(argument.getArgNumber(), "tt.divisibility", divisibility);
+}
+
+// The native-ordered decode attention reads key rows as 16-byte vectors and
+// value rows as 32-bit words when both sources of that operand, the cache and
+// the current window, are declared aligned to that width
+// (emitNativeOrderedDecodeAttention). Declared only when both concrete buffers
+// are; the launch check rejects any later binding that is not.
+static constexpr int kDecodeKeyRowBytes = 16;
+static constexpr int kDecodeValueWordBytes = 4;
+static void declareDecodeRowAlignment(mlir::OpBuilder& builder, std::vector<TritonKernelArg>& args,
+                                      const std::unordered_map<int, int>& slotToArgIdx, int attentionSlot,
+                                      const char* operand, int bytes,
+                                      int cacheSlot, NDArray* cache, mlir::Value cachePtr,
+                                      int currentSlot, NDArray* current, mlir::Value currentPtr) {
+  auto aligned = [&](int slot, NDArray* array) {
+    return array != nullptr && array->specialBuffer() != nullptr &&
+        reinterpret_cast<uintptr_t>(array->specialBuffer()) % bytes == 0 &&
+        slotToArgIdx.find(slot) != slotToArgIdx.end();
+  };
+  const bool declared = aligned(cacheSlot, cache) && aligned(currentSlot, current);
+  if (declared) {
+    declarePointerAlignment(builder, args[slotToArgIdx.at(cacheSlot)], cachePtr, bytes);
+    declarePointerAlignment(builder, args[slotToArgIdx.at(currentSlot)], currentPtr, bytes);
+  }
+  DSP_DIAG(JIT, "ATTN slot=%d: decode %s sources %s%d-byte aligned", attentionSlot, operand,
+           declared ? "" : "not ", bytes);
+}
+
 static float getFusedAttentionScale(const std::string& opName, int numTArgs,
                                     const double* tArgs, int headDim) {
   const float automaticScale =
@@ -3833,6 +3876,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             NDArray* kcArrForMax = resolveArr(keyCacheSrc);
             int cacheMaxSeq = (kcArrForMax && kcArrForMax->rankOf() == 4)
                 ? static_cast<int>(kcArrForMax->sizeAt(1)) : 0;
+            declareDecodeRowAlignment(builder, result.args, slotToArgIdx, si, "key", kDecodeKeyRowBytes,
+                                      keyCacheSrc, kcArrForMax, kCachePtrV, kSrc, resolveArr(kSrc), curKPtrV);
+            declareDecodeRowAlignment(builder, result.args, slotToArgIdx, si, "value", kDecodeValueWordBytes,
+                                      valueCacheSrc, resolveArr(valueCacheSrc), vCachePtrV,
+                                      vSrc, resolveArr(vSrc), curVPtrV);
             emitGgufDecodeAttentionKernel(builder, loc, qPtr,
                                           curKPtrV, curVPtrV,
                                           kCachePtrV, vCachePtrV, cachePosPtrV,
@@ -8994,6 +9042,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               NDArray* kcSecMax = resolveArr(keyCacheSrcSec);
               int cacheMaxSeqSec = (kcSecMax && kcSecMax->rankOf() == 4)
                   ? static_cast<int>(kcSecMax->sizeAt(1)) : 0;
+              declareDecodeRowAlignment(builder, result.args, slotToArgIdx, si, "key", kDecodeKeyRowBytes,
+                                        keyCacheSrcSec, kcSecMax, kCachePtrSec, kSrc, resolveArr(kSrc), curKPtrSec);
+              declareDecodeRowAlignment(builder, result.args, slotToArgIdx, si, "value", kDecodeValueWordBytes,
+                                        valueCacheSrcSec, resolveArr(valueCacheSrcSec), vCachePtrSec,
+                                        vSrc, resolveArr(vSrc), curVPtrSec);
               emitGgufDecodeAttentionKernel(builder, loc, qPtr,
                                             curKPtrSec, curVPtrSec,
                                             kCachePtrSec, vCachePtrSec, cachePosPtrSec,
