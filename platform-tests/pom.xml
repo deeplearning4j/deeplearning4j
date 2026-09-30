@@ -60,6 +60,7 @@
         <!-- MTP multi-row commit (SD_MTP_MULTI_ROW_COMMIT); 0 selects single-row commit. -->
         <nd4j.mtp.multiRowCommit>1</nd4j.mtp.multiRowCommit>
         <nd4j.weightOnly.splitBlocks></nd4j.weightOnly.splitBlocks>
+        <nd4j.weightOnly.staging></nd4j.weightOnly.staging>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <!-- Kept in sync with the nd4j-cuda artifact family by change-cuda-versions.sh. -->
         <cuda.version>13.1</cuda.version>
@@ -1886,6 +1887,9 @@
                         <!-- Weight-only GEMM K split across blocks for few-wave shapes
                              (empty = built-in choice; 1 disables). -->
                         <SD_WEIGHT_ONLY_SPLIT_BLOCKS>${nd4j.weightOnly.splitBlocks}</SD_WEIGHT_ONLY_SPLIT_BLOCKS>
+                        <!-- Weight-only GEMM staging (empty = measured rule; direct or bulk
+                             force a kernel wherever the operands admit it; timing only). -->
+                        <SD_WEIGHT_ONLY_STAGING>${nd4j.weightOnly.staging}</SD_WEIGHT_ONLY_STAGING>
                         <ND4J_DSP_NATIVE_DUMP_OUTPUTS>${nd4j.dsp.native.dumpOutputs}</ND4J_DSP_NATIVE_DUMP_OUTPUTS>
                         <ND4J_DSP_DIAG_EXEC_LIMIT>${nd4j.dsp.diagExecLimit}</ND4J_DSP_DIAG_EXEC_LIMIT>
                         <!-- Pinned-host failover budget for CudaMemoryPool (MB). Default 8 GB is too

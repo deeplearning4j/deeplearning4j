@@ -5,11 +5,13 @@ import org.bytedeco.javacpp.BytePointer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.Arguments;
+import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.PlanPhase;
+import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -1139,7 +1141,121 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
     }
 
     /**
-     * Throughput probe for the decode GEMVs of Qwen3.5-27B NVFP4 (shapes taken
+     * The weight-only GEMM has two kernels that share their work units, K ranges,
+     * reduction and split combine: the direct kernel loads each lane's weights
+     * from global memory, and the bulk kernel (sm_90+) stages a unit's weight
+     * tile in shared memory with bulk copies. Their results must be identical bit
+     * for bit. Block scales 2 bytes into their buffer are admitted (the kernels
+     * read scale pairs) but cannot be bulk-copied, so they take the direct
+     * kernel. The same scales 16-byte aligned take the bulk kernel where it was
+     * measured faster: a unit spans at least 4096 of K, the shape has at least
+     * four waves of units, and a unit's activation slice (rows by its K range)
+     * is at most 64 KB. BULK shapes meet that on every sm_90+ device with up to
+     * 256 SMs (at least 4096 units, tiles of 24 KB or less); DIRECT shapes fail
+     * it on every device; EITHER shapes depend on the SM count and only have to
+     * match. The launched kernel is read from the BACKEND diagnostics. Covers
+     * the Qwen3.6-27B projections' K ranges at decode widths 1 and 5 (the gate
+     * and up projections' K = 5120, at twice their 17408 columns so that every
+     * device has four waves; the down projection, K = 17408 over 5120 columns,
+     * split across four blocks), the 64 KB activation
+     * bound from both sides (K = 5120 at 6 and 7 rows, K = 4096 at 8 and 9),
+     * several units per block (65544 columns exceed the 8192-block grid, so
+     * blocks restage their tile), a partial last chunk with scale rows that are
+     * not 16-byte multiples (K = 5152), an uneven split whose K ranges start mid
+     * scale row and end in a partial chunk (K = 17696), a K shorter than one
+     * chunk (96), and shapes failing only the depth (K = 3968) or only the wave
+     * count (64 columns). With -Dnd4j.weightOnly.staging=direct every run must
+     * take the direct kernel; with =bulk the choice is not asserted, and every
+     * shape whose tile fits is compared staged against direct.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNvfp4BulkStagingMatchesDirectKernel(Nd4jBackend backend) {
+        assumeFalse(Nd4j.getEnvironment().isCPU(), "the weight-only tensor-core GEMM is a CUDA kernel");
+        boolean bulkCopies = Nd4j.getNativeOps()
+                .getDeviceMajor(Nd4j.getAffinityManager().getDeviceForCurrentThread()) >= 9;
+        // Set from -Dnd4j.weightOnly.staging; empty selects the measured rule.
+        String staging = System.getenv("SD_WEIGHT_ONLY_STAGING");
+        boolean measuredRule = staging == null || staging.isEmpty();
+        final int BULK = 1, DIRECT = 0, EITHER = -1;
+        // {K, N, then (rows, kernel on sm_90+) pairs}
+        int[][] shapes = {
+                {5120, 34816, 1, BULK, 5, BULK, 6, BULK, 7, DIRECT, 17, DIRECT},
+                {4096, 65544, 3, BULK, 8, BULK, 9, DIRECT},
+                {5152, 32768, 2, BULK, 6, BULK},
+                {17408, 5120, 1, EITHER, 5, EITHER, 8, DIRECT},
+                {17696, 5120, 3, EITHER, 7, EITHER},
+                {3968, 32768, 1, DIRECT},
+                {5120, 64, 1, DIRECT},
+                {96, 4096, 3, DIRECT}};
+        java.util.Random random = new java.util.Random(20260930L);
+        INDArray global = scalar(.1003f);
+        DspDiagnostics.setCategories(DspDiagnostics.BACKEND);
+        try {
+            for (int[] shape : shapes) {
+                int k = shape[0], n = shape[1];
+                byte[] bytes = new byte[n * (k / 2)];
+                random.nextBytes(bytes);
+                byte[] blocks = new byte[n * (k / 16)];
+                for (int i = 0; i < blocks.length; i++) blocks[i] = (byte) (0x30 + random.nextInt(0x11));
+                byte[] padded = new byte[blocks.length + 16];
+                System.arraycopy(blocks, 0, padded, 2, blocks.length);
+                INDArray w = raw(DataType.UBYTE, bytes, n, k / 2);
+                INDArray aligned = raw(DataType.FLOAT8, blocks, n, k / 16);
+                INDArray offset = Nd4j.create(raw(DataType.FLOAT8, padded, padded.length).data(),
+                        new long[]{n, k / 16}, new long[]{k / 16, 1}, 2, 'c');
+                for (int pair = 2; pair < shape.length; pair += 2) {
+                    int rows = shape[pair], expected = shape[pair + 1];
+                    for (DataType dtype : new DataType[]{DataType.BFLOAT16, DataType.HALF}) {
+                        float[] values = new float[rows * k];
+                        for (int i = 0; i < values.length; i++)
+                            values[i] = (random.nextInt(4097) - 2048) / 1024.0f;
+                        INDArray x = Nd4j.create(values, new long[]{rows, k}, DataType.FLOAT).castTo(dtype);
+                        for (boolean floatOutput : new boolean[]{false, true}) {
+                            String context = dtype + "/floatOutput=" + floatOutput + "/rows=" + rows + "/k=" + k
+                                    + "/n=" + n;
+                            DspDiagnostics.clear();
+                            INDArray direct =
+                                    Nd4j.exec(new ModelOptNvfp4Linear(x, w, offset, global, floatOutput))[0];
+                            assertEquals("direct", weightOnlyKernel(context),
+                                    context + ": scales without 16-byte alignment must take the direct kernel");
+                            DspDiagnostics.clear();
+                            INDArray staged =
+                                    Nd4j.exec(new ModelOptNvfp4Linear(x, w, aligned, global, floatOutput))[0];
+                            String kernel = weightOnlyKernel(context);
+                            if (!bulkCopies)
+                                assertEquals("direct", kernel, context + ": bulk copies need sm_90");
+                            else if ("direct".equals(staging))
+                                assertEquals("direct", kernel, context + ": staging is forced off");
+                            else if (measuredRule && expected == BULK)
+                                assertEquals("bulk", kernel, context + ": this shape must be staged");
+                            else if (measuredRule && expected == DIRECT)
+                                assertEquals("direct", kernel, context + ": staging this shape was measured slower");
+                            assertArrayEquals(direct.castTo(DataType.FLOAT).data().asFloat(),
+                                    staged.castTo(DataType.FLOAT).data().asFloat(),
+                                    context + ": the " + kernel + " kernel differs from the direct kernel");
+                        }
+                    }
+                }
+            }
+        } finally {
+            DspDiagnostics.setCategories(DspDiagnostics.NONE);
+        }
+    }
+
+    // The weight-only GEMM kernel the NVFP4 linear launched since the last
+    // DspDiagnostics.clear(), from its BACKEND event.
+    private static String weightOnlyKernel(String context) {
+        java.util.regex.Matcher launch = java.util.regex.Pattern.compile("WeightOnlyGemm (bulk|direct) ")
+                .matcher(DspDiagnostics.getJsonReport());
+        assertTrue(launch.find(), context + ": no weight-only GEMM launch was recorded");
+        String kernel = launch.group(1);
+        assertFalse(launch.find(), context + ": more than one weight-only GEMM launch was recorded");
+        return kernel;
+    }
+
+    /**
+     * Throughput probe for the decode GEMVs of Qwen3.6-27B NVFP4 (shapes taken
      * from the imported graph), run in isolation so kernel work can be measured
      * in seconds instead of a full model run. Reports microseconds per call and
      * effective weight bandwidth for the W=1 and W=5 row counts. Opt-in:
@@ -1192,6 +1308,138 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
                         nv ? "nvfp4" : "fp8", n, k, rows, usPerCall, weightBytes / (usPerCall * 1e3));
             }
         }
+    }
+
+    /**
+     * The Qwen3.6-27B NVFP4 decode MLP in model order — gate and up GEMVs
+     * (N=17408, K=5120), swish-mul, down GEMV (N=5120, K=17408) — over
+     * -Dmodelopt.mlpBench.layers distinct weight sets, so each kernel runs in the
+     * memory context the model gives it instead of back to back with itself.
+     * Profile it (nsys) for per-kernel times. Opt-in: -Dmodelopt.mlpBench=true.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "modelopt.mlpBench", matches = "true")
+    public void benchDecodeMlpSequence(Nd4jBackend backend) {
+        int hidden = 5120, intermediate = 17408;
+        int layers = Integer.getInteger("modelopt.mlpBench.layers", 8);
+        int iterations = Integer.getInteger("modelopt.mlpBench.iterations", 20);
+        java.util.Random random = new java.util.Random(11);
+        DynamicCustomOp[][] ops = new DynamicCustomOp[layers][];
+        INDArray x = Nd4j.rand(DataType.FLOAT, 1, hidden).subi(0.5).castTo(DataType.BFLOAT16);
+        for (int layer = 0; layer < layers; layer++) {
+            INDArray gate = Nd4j.create(DataType.BFLOAT16, 1, intermediate);
+            INDArray up = Nd4j.create(DataType.BFLOAT16, 1, intermediate);
+            INDArray hiddenState = Nd4j.create(DataType.BFLOAT16, 1, intermediate);
+            INDArray down = Nd4j.create(DataType.BFLOAT16, 1, hidden);
+            DynamicCustomOp gateOp = nvfp4Projection(random, x, intermediate, hidden);
+            gateOp.addOutputArgument(gate);
+            DynamicCustomOp upOp = nvfp4Projection(random, x, intermediate, hidden);
+            upOp.addOutputArgument(up);
+            DynamicCustomOp downOp = nvfp4Projection(random, hiddenState, hidden, intermediate);
+            downOp.addOutputArgument(down);
+            ops[layer] = new DynamicCustomOp[]{gateOp, upOp, new SwishMul(gate, up, hiddenState), downOp};
+        }
+        for (int warmup = 0; warmup < 2; warmup++)
+            for (DynamicCustomOp[] layer : ops)
+                for (DynamicCustomOp op : layer) Nd4j.exec(op);
+        Nd4j.getExecutioner().commit();
+        long start = System.nanoTime();
+        for (int i = 0; i < iterations; i++)
+            for (DynamicCustomOp[] layer : ops)
+                for (DynamicCustomOp op : layer) Nd4j.exec(op);
+        Nd4j.getExecutioner().commit();
+        System.out.printf("MLP_BENCH layers=%d: %.1f us/layer%n", layers,
+                (System.nanoTime() - start) / 1e3 / iterations / layers);
+    }
+
+    /**
+     * benchDecodeMlpSequence as an optimized SameDiff graph executed by DSP, so
+     * the kernels replay back to back from a CUDA graph with activations in
+     * the plan's arena, as in the model. Each layer's down projection feeds
+     * the next layer. -Dmodelopt.mlpBench.fp8Interlude=true precedes each MLP
+     * with the model's FP8 attention-side projections (N=10240 and N=6144 over
+     * K=5120, then N=5120 over K=6144), whose weights stream through L2 at
+     * normal priority between the MLPs. =allocate creates the same constants
+     * in the same order but leaves the projections out of the computation, so
+     * the MLP weights sit where they sit under =true while L2 sees only MLP
+     * traffic. Opt-in: -Dmodelopt.mlpDspBench=true.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "modelopt.mlpDspBench", matches = "true")
+    public void benchDecodeMlpDsp(Nd4jBackend backend) {
+        int hidden = 5120, intermediate = 17408, value = 6144;
+        int layers = Integer.getInteger("modelopt.mlpBench.layers", 8);
+        int iterations = Integer.getInteger("modelopt.mlpBench.iterations", 20);
+        String interlude = System.getProperty("modelopt.mlpBench.fp8Interlude", "");
+        boolean runInterlude = interlude.equals("true");
+        boolean allocateInterlude = runInterlude || interlude.equals("allocate");
+        java.util.Random random = new java.util.Random(11);
+        try (SameDiff source = SameDiff.create()) {
+            SDVariable x = source.placeHolder("x", DataType.BFLOAT16, 1, hidden);
+            for (int layer = 0; layer < layers; layer++) {
+                if (allocateInterlude) {
+                    SDVariable wide = fp8Projection(source, random, "wide" + layer, x, 10240, hidden);
+                    SDVariable narrow = fp8Projection(source, random, "narrow" + layer, x, value, hidden);
+                    SDVariable mixed = narrow.add(wide.get(SDIndex.all(), SDIndex.interval(0, value)));
+                    SDVariable out = fp8Projection(source, random, "out" + layer, mixed, hidden, value);
+                    if (runInterlude) x = out;
+                }
+                SDVariable gate = nvfp4Projection(source, random, "gate" + layer, x, intermediate, hidden);
+                SDVariable up = nvfp4Projection(source, random, "up" + layer, x, intermediate, hidden);
+                SDVariable hiddenState = source.nn().swish(gate).mul(up);
+                x = nvfp4Projection(source, random, "down" + layer, hiddenState, hidden, intermediate);
+            }
+            String output = x.name();
+            source.setOutputs(output);
+            SameDiff optimized = GraphOptimizer.optimize(source, Collections.singletonList(output));
+            try {
+                optimized.setDspAutoCompileEnabled(true);
+                optimized.setDspNativeAutoCompileEnabled(true);
+                Map<String, INDArray> inputs = Map.of("x",
+                        Nd4j.rand(DataType.FLOAT, 1, hidden).subi(0.5).castTo(DataType.BFLOAT16));
+                for (int warmup = 0; warmup < 12; warmup++) optimized.outputSingle(inputs, output);
+                DspPlanAssertions.assertFullyReplaying(optimized, "the MLP bench must time graph replay");
+                long start = System.nanoTime();
+                for (int i = 0; i < iterations; i++) optimized.outputSingle(inputs, output);
+                System.out.printf("MLP_DSP_BENCH layers=%d: %.1f us/layer%n", layers,
+                        (System.nanoTime() - start) / 1e3 / iterations / layers);
+            } finally {
+                if (optimized != source) optimized.close();
+            }
+        }
+    }
+
+    private static SDVariable nvfp4Projection(SameDiff sd, java.util.Random random, String name, SDVariable x,
+                                              int n, int k) {
+        DynamicCustomOp op = nvfp4Projection(random, Nd4j.create(DataType.BFLOAT16, 1, k), n, k);
+        INDArray[] arguments = op.inputArguments().toArray(new INDArray[0]);
+        return new ModelOptNvfp4Linear(sd, x, sd.constant(name + "_w", arguments[1]),
+                sd.constant(name + "_scale", arguments[2]), sd.constant(name + "_global", arguments[3]), false)
+                .outputVariable();
+    }
+
+    // A random FP8 projection [n, k] of x: weight magnitudes 0.5 to 1 (E4M3
+    // exponent 6, random sign and mantissa), scaled so outputs keep x's range.
+    private static SDVariable fp8Projection(SameDiff sd, java.util.Random random, String name, SDVariable x,
+                                            int n, int k) {
+        byte[] bytes = new byte[n * k];
+        random.nextBytes(bytes);
+        for (int i = 0; i < bytes.length; i++) bytes[i] = (byte) ((bytes[i] & 0x87) | 0x30);
+        return new ModelOptFp8Linear(sd, x, sd.constant(name + "_w", raw(DataType.FLOAT8, bytes, n, k)),
+                sd.constant(name + "_scale", scalar((float) (1 / (0.75 * Math.sqrt(k))))),
+                sd.constant(name + "_input", scalar(1 / 64f)), false).outputVariable();
+    }
+
+    // A random NVFP4 projection [n, k] of x, scales in the decoded-value range the model uses.
+    private static DynamicCustomOp nvfp4Projection(java.util.Random random, INDArray x, int n, int k) {
+        byte[] bytes = new byte[n * (k / 2)];
+        random.nextBytes(bytes);
+        byte[] blocks = new byte[n * (k / 16)];
+        for (int i = 0; i < blocks.length; i++) blocks[i] = (byte) (0x30 + random.nextInt(0x11));
+        return new ModelOptNvfp4Linear(x, raw(DataType.UBYTE, bytes, n, k / 2), raw(DataType.FLOAT8, blocks, n, k / 16),
+                scalar(.1003f), false);
     }
 
     private static void assertResult(Fixture f, INDArray z, boolean fp32, String context) {

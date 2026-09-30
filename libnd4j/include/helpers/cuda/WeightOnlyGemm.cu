@@ -8,17 +8,27 @@
 // lane's packed weights and dequantizes them in registers with the format's
 // exact arithmetic; the mainloop is format-independent.
 //
+// Two kernels share the mainloop, the reduction and the split combine, so they
+// produce bit-identical results. The direct kernel has every lane load its
+// weights from global memory. On sm_90 and later, the bulk kernel has one
+// thread copy the unit's whole weight tile into shared memory with bulk
+// asynchronous copies (cp.async.bulk, completed on an mbarrier); lanes then read
+// their weights from shared memory. The launcher picks the bulk kernel for the
+// shapes and row counts it was measured faster on (bulkStagingPays).
+//
 #include <helpers/WeightOnlyGemm.h>
 
 #include <config.h>
 #include <execution/AffinityManager.h>
 #include <execution/cuda/LaunchDims.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/CutlassHelper.h>
 #include <helpers/shape.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/cuda/device_primitives.cuh>
 #include <ops/declarable/helpers/modelopt_linear.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <mutex>
 #include <string>
@@ -34,6 +44,14 @@
 #define SD_WEIGHT_ONLY_GEMM_AVAILABLE 1
 #else
 #define SD_WEIGHT_ONLY_GEMM_AVAILABLE 0
+#endif
+
+// Bulk asynchronous copies need sm_90 or later. The bulk kernel compiles to a
+// trap for older targets; the host never launches that code (ptxVersion check).
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 900
+#define SD_WEIGHT_ONLY_BULK_DEVICE 1
+#else
+#define SD_WEIGHT_ONLY_BULK_DEVICE 0
 #endif
 
 namespace sd {
@@ -85,6 +103,64 @@ struct TensorCoreElement<float16> {
   using type = cutlass::half_t;
 };
 
+template <typename X>
+using WeightOnlyMma =
+    cutlass::arch::Mma<cutlass::gemm::GemmShape<kMmaRows, kMmaColumns, kMmaDepth>, WARP_SIZE,
+                       typename TensorCoreElement<X>::type, cutlass::layout::RowMajor,
+                       typename TensorCoreElement<X>::type, cutlass::layout::ColumnMajor, float,
+                       cutlass::layout::RowMajor, cutlass::arch::OpMultiplyAdd>;
+
+// ─── Bulk asynchronous copies (sm_90+) ──────────────────────────────────────
+//
+// One thread arms an mbarrier with the byte count of a tile, issues the tile's
+// cp.async.bulk copies (global -> shared, completing on the barrier), and every
+// thread waits on the barrier's phase. The copies read the weights once, so they
+// carry an L2 evict-first policy.
+#if SD_WEIGHT_ONLY_BULK_DEVICE
+static SD_DEVICE SD_INLINE uint32_t bulkSharedAddress(const void* pointer) {
+  return static_cast<uint32_t>(__cvta_generic_to_shared(pointer));
+}
+
+static SD_DEVICE SD_INLINE void bulkInitBarrier(uint64_t* barrier) {
+  asm volatile("mbarrier.init.shared::cta.b64 [%0], %1;" ::"r"(bulkSharedAddress(barrier)), "r"(1) : "memory");
+  asm volatile("fence.mbarrier_init.release.cluster;" ::: "memory");
+}
+
+static SD_DEVICE SD_INLINE void bulkExpectBytes(uint64_t* barrier, uint32_t bytes) {
+  asm volatile("mbarrier.arrive.expect_tx.shared::cta.b64 _, [%0], %1;" ::"r"(bulkSharedAddress(barrier)),
+               "r"(bytes)
+               : "memory");
+}
+
+// source and destination 16-byte aligned, bytes a multiple of 16.
+static SD_DEVICE SD_INLINE void bulkCopy(void* destination, const void* source, uint32_t bytes, uint64_t* barrier,
+                                        uint64_t policy) {
+  asm volatile(
+      "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint [%0], [%1], %2, [%3], %4;" ::"r"(
+          bulkSharedAddress(destination)),
+      "l"(source), "r"(bytes), "r"(bulkSharedAddress(barrier)), "l"(policy)
+      : "memory");
+}
+
+static SD_DEVICE SD_INLINE void bulkWait(uint64_t* barrier, uint32_t parity) {
+  asm volatile(
+      "{\n .reg .pred p;\n WAIT_%=:\n mbarrier.try_wait.parity.shared::cta.b64 p, [%0], %1;\n @!p bra WAIT_%=;\n}\n" ::"r"(
+          bulkSharedAddress(barrier)),
+      "r"(parity)
+      : "memory");
+}
+
+static SD_DEVICE SD_INLINE uint64_t bulkCopyPolicy() {
+  uint64_t policy;
+  asm volatile("createpolicy.fractional.L2::evict_first.b64 %0, 1.0;" : "=l"(policy));
+  return policy;
+}
+
+// Orders this thread's earlier shared-memory accesses (generic proxy) before
+// its later bulk copies into the same memory (async proxy).
+static SD_DEVICE SD_INLINE void bulkFenceAsyncProxy() { asm volatile("fence.proxy.async.shared::cta;" ::: "memory"); }
+#endif  // SD_WEIGHT_ONLY_BULK_DEVICE
+
 // ─── Weight-format policies ─────────────────────────────────────────────────
 //
 // A format provides: Constants prepare() — per-thread constants, validated on
@@ -93,7 +169,9 @@ struct TensorCoreElement<float16> {
 // the mainloop can prefetch it a chunk ahead; LaneWeights unpack(packed) — its
 // validated, decoded metadata; and dequantize(lane, step, constants, weights) —
 // the lane's K elements 4*step .. 4*step+3 in the format's exact arithmetic, as
-// tensor-core elements.
+// tensor-core elements. For the bulk kernel it also provides Tile tileFor(chunks)
+// — the shared-memory layout of a unit's weights; stage(...) — the unit's bulk
+// copies; and stagedLane(...) / staged(lane, chunk) — fetch() from that tile.
 
 // ModelOpt NVFP4 (ADR 0122): FP32 block x global scale, FP32 E2M1 x scale
 // (modelOptNvfp4WeightFp32), then one round-to-nearest-even into the tensor-core
@@ -153,6 +231,94 @@ struct ModelOptNvfp4Weights {
       weights[e] = Element(ops::helpers::modelOptNvfp4WeightFp32(
           static_cast<unsigned char>((nibbles >> (4 * e)) & 15), blockScale, global));
   }
+
+  // A unit's staged tile: its kColumnsPerBlock packed rows over the unit's K
+  // range, then the rows' scales.
+  struct Tile {
+    LongType rowStride;    // bytes between the packed rows 2p and 2p + 2
+    LongType scaleOffset;  // first scale row
+    LongType scaleStride;  // bytes between scale rows
+    LongType bytes;        // dynamic shared memory
+  };
+
+  // chunks: the most K chunks one unit spans.
+  static Tile tileFor(LongType chunks) {
+    Tile tile;
+    tile.rowStride = chunks * (kChunkDepth / 2);
+    tile.scaleOffset = kColumnsPerBlock * tile.rowStride + 64;
+    // A scale row is copied as its 16-byte-aligned superset: at most 16 bytes
+    // more than the row. An odd multiple of 16 bytes between rows puts the 8
+    // rows a warp reads at once in distinct banks.
+    tile.scaleStride = (chunks * (kChunkDepth / 16) + 15) / 16 * 16 + 16;
+    if ((tile.scaleStride / 16) % 2 == 0) tile.scaleStride += 16;
+    tile.bytes = tile.scaleOffset + kColumnsPerBlock * tile.scaleStride;
+    return tile;
+  }
+
+  // Rows 2p and 2p + 1 are 64 bytes apart modulo 128: a quarter-warp reads 64
+  // contiguous bytes of each, and they fall in distinct banks.
+  SD_HOST_DEVICE static LongType packedRowOffset(int row, LongType rowStride) {
+    return (row >> 1) * rowStride + (row & 1) * (4 * rowStride + 64);
+  }
+
+  SD_DEVICE const uint8_t* scaleRow(LongType column, LongType k) const {
+    return reinterpret_cast<const uint8_t*>(blockScales) + column * (depth / 16) + k / 16;
+  }
+
+#if SD_WEIGHT_ONLY_BULK_DEVICE
+  // One thread: copies the rows [blockColumn, blockColumn + kColumnsPerBlock)
+  // over K range [kb, ke) into the tile and arms ready with the byte count.
+  // Packed rows are 16-byte aligned (K % 32 == 0 and a 16-byte-aligned base).
+  // A scale row starts only 2-byte aligned, so it is copied as its 16-byte-aligned
+  // superset; with a 16-byte-aligned base the superset stays inside the buffer,
+  // whose size N * K / 16 is a multiple of 16.
+  SD_DEVICE void stage(uint8_t* tile, const Tile& geometry, LongType blockColumn, LongType kb, LongType ke,
+                       uint64_t* ready, uint64_t policy) const {
+    const uint32_t packedBytes = static_cast<uint32_t>((ke - kb) / 2);
+    const uint32_t scaleBytes = static_cast<uint32_t>((ke - kb) / 16);
+    uint32_t bytes = kColumnsPerBlock * packedBytes;
+    CUTLASS_PRAGMA_UNROLL
+    for (int row = 0; row < kColumnsPerBlock; ++row) {
+      const uintptr_t first = reinterpret_cast<uintptr_t>(scaleRow(blockColumn + row, kb));
+      bytes += static_cast<uint32_t>(((first + scaleBytes + 15) & ~uintptr_t(15)) - (first & ~uintptr_t(15)));
+    }
+    bulkExpectBytes(ready, bytes);
+    CUTLASS_PRAGMA_UNROLL
+    for (int row = 0; row < kColumnsPerBlock; ++row) {
+      bulkCopy(tile + packedRowOffset(row, geometry.rowStride), packed + (blockColumn + row) * (depth / 2) + kb / 2,
+               packedBytes, ready, policy);
+      const uintptr_t first = reinterpret_cast<uintptr_t>(scaleRow(blockColumn + row, kb));
+      const uintptr_t begin = first & ~uintptr_t(15);
+      bulkCopy(tile + geometry.scaleOffset + row * geometry.scaleStride, reinterpret_cast<const void*>(begin),
+               static_cast<uint32_t>(((first + scaleBytes + 15) & ~uintptr_t(15)) - begin), ready, policy);
+    }
+  }
+#endif
+
+  // The lane's storage in a tile staged from K offset kb: its 16 bytes of its
+  // row's packed chunk and its scale pair, which sits (first scale & 15) bytes
+  // into the row's superset.
+  struct StagedLane {
+    const uint8_t* packed;
+    const uint8_t* scales;
+  };
+
+  SD_DEVICE StagedLane stagedLane(const uint8_t* tile, const Tile& geometry, LongType blockColumn, LongType kb,
+                                  int group, int member) const {
+    const uintptr_t head = reinterpret_cast<uintptr_t>(scaleRow(blockColumn + group, kb)) & 15;
+    StagedLane lane;
+    lane.packed = tile + packedRowOffset(group, geometry.rowStride) + member * (kLaneDepth / 2);
+    lane.scales = tile + geometry.scaleOffset + group * geometry.scaleStride + head + member * (kLaneDepth / 16);
+    return lane;
+  }
+
+  // fetch() of the staged unit's chunk-th chunk.
+  SD_DEVICE Packed staged(const StagedLane& lane, LongType chunk) const {
+    Packed raw;
+    raw.packed = *reinterpret_cast<const uint4*>(lane.packed + chunk * (kChunkDepth / 2));
+    raw.scales = *reinterpret_cast<const uint16_t*>(lane.scales + chunk * (kChunkDepth / 16));
+    return raw;
+  }
 };
 
 // ─── Mainloop ───────────────────────────────────────────────────────────────
@@ -179,6 +345,131 @@ SD_DEVICE static ChunkStorage<Weights> fetchChunk(const Weights& weights, LongTy
   return storage;
 }
 
+// One chunk of one row tile: the lane's kLaneDepth K elements of rows g and
+// g + 8 against its dequantized weights of each column tile, one MMA per step.
+template <typename X, typename Weights>
+SD_DEVICE SD_INLINE static void multiplyChunk(
+    const X* __restrict__ x, const Weights& weights, const typename Weights::Constants constants,
+    const typename Weights::LaneWeights (&current)[kColumnTilesPerWarp], const bool (&active)[kColumnTilesPerWarp],
+    bool laneActive, LongType rowLow, LongType rowHigh, LongType rows, LongType depth, LongType k,
+    typename WeightOnlyMma<X>::FragmentC (&accumulators)[kColumnTilesPerWarp]) {
+  using Mma = WeightOnlyMma<X>;
+  using Element = typename TensorCoreElement<X>::type;
+  CUTLASS_PRAGMA_UNROLL
+  for (int step = 0; step < kStepsPerChunk; ++step) {
+    // A fragment words: 0 = row g, 1 = row g+8 (K positions 2m, 2m+1);
+    // 2 = row g, 3 = row g+8 (K positions 2m+8, 2m+9).
+    typename Mma::FragmentA a;
+    auto* aWords = reinterpret_cast<uint32_t*>(&a);
+    const uint2 low = laneActive && rowLow < rows ? *reinterpret_cast<const uint2*>(x + rowLow * depth + k + 4 * step)
+                                                  : make_uint2(0, 0);
+    const uint2 high = laneActive && rowHigh < rows
+                           ? *reinterpret_cast<const uint2*>(x + rowHigh * depth + k + 4 * step)
+                           : make_uint2(0, 0);
+    aWords[0] = low.x;
+    aWords[1] = high.x;
+    aWords[2] = low.y;
+    aWords[3] = high.y;
+
+    CUTLASS_PRAGMA_UNROLL
+    for (int c = 0; c < kColumnTilesPerWarp; ++c) {
+      // B fragment: elements 0,1 at K positions 2m, 2m+1; 2,3 at 2m+8, 2m+9.
+      Element dequantized[4] = {Element(0.0f), Element(0.0f), Element(0.0f), Element(0.0f)};
+      if (active[c]) weights.dequantize(current[c], step, constants, dequantized);
+      typename Mma::FragmentB b;
+      CUTLASS_PRAGMA_UNROLL
+      for (int e = 0; e < 4; ++e) b[e] = dequantized[e];
+      Mma()(accumulators[c], a, b, accumulators[c]);
+    }
+  }
+}
+
+// Fixed-order split-K reduction of one row tile: warp w sums column tiles w,
+// w + kSplitK, ... over the warps' partials in ascending warp order, then stores
+// the sums — for a split shape, as the block's FP32 partial. Block-wide: every
+// thread calls it.
+template <typename X>
+SD_DEVICE SD_INLINE static void reduceRowTile(
+    float (&partials)[kSplitK][kColumnTilesPerWarp][WARP_SIZE][4],
+    const typename WeightOnlyMma<X>::FragmentC (&accumulators)[kColumnTilesPerWarp], void* __restrict__ z,
+    float* __restrict__ scratch, LongType rowBase, LongType blockColumn, LongType rows, LongType columns,
+    bool floatOutput, int splitBlocks, int splitIndex, int warp, int lane) {
+  const int group = lane / 4;
+  const int member = lane % 4;
+  CUTLASS_PRAGMA_UNROLL
+  for (int c = 0; c < kColumnTilesPerWarp; ++c) {
+    CUTLASS_PRAGMA_UNROLL
+    for (int i = 0; i < 4; ++i) partials[warp][c][lane][i] = accumulators[c][i];
+  }
+  __syncthreads();
+
+  for (int tile = warp; tile < kColumnTilesPerWarp; tile += kSplitK) {
+    CUTLASS_PRAGMA_UNROLL
+    for (int i = 0; i < 4; ++i) {
+      float total = partials[0][tile][lane][i];
+      CUTLASS_PRAGMA_UNROLL
+      for (int part = 1; part < kSplitK; ++part) total += partials[part][tile][lane][i];
+      // C fragment: elements 0,1 at row g, 2,3 at row g+8; columns 2m, 2m+1.
+      const LongType row = rowBase + group + (i / 2) * (kMmaRows / 2);
+      const LongType column = blockColumn + tile * kMmaColumns + member * 2 + i % 2;
+      if (row < rows && column < columns) {
+        const LongType zOffset = row * columns + column;
+        if (splitBlocks > 1)
+          scratch[static_cast<LongType>(splitIndex) * rows * columns + zOffset] = total;
+        else if (floatOutput)
+          static_cast<float*>(z)[zOffset] = total;
+        else
+          static_cast<X*>(z)[zOffset] = static_cast<X>(total);
+      }
+    }
+  }
+  __syncthreads();  // partials are rewritten by the next row tile
+}
+
+// Split shapes, after a unit's row tiles: publish the block's partials and take
+// the column group's ticket; the last block to arrive (which resets the ticket)
+// adds the partials in ascending split order. Block-wide.
+//
+// reduceRowTile's closing barrier orders the block's partial stores before
+// thread 0 takes the ticket with a release RMW; the last arrival's acquire
+// fence synchronizes with every split's release through the ticket, and the
+// barrier after it extends that to the threads reading the scratch (the
+// pattern of a grid barrier). A __threadfence in every thread instead
+// compiles to a sequentially consistent fence plus an L1 invalidation per
+// warp, which kept evicting the resident blocks' activation rows: the
+// 5120 x 17408 down projection of the Qwen3.6-27B decode ran 8% slower
+// (249 vs 230 us) whenever the L2 held the preceding GEMMs' lines.
+template <typename X>
+SD_DEVICE SD_INLINE static void combineSplits(bool& lastArrival, unsigned int* __restrict__ tickets,
+                                              const float* __restrict__ scratch, void* __restrict__ z,
+                                              LongType columnGroup, LongType blockColumn, LongType rows,
+                                              LongType columns, bool floatOutput, int splitBlocks) {
+  if (threadIdx.x == 0) {
+    unsigned int ticket;
+    asm volatile("atom.release.gpu.global.add.u32 %0, [%1], 1;" : "=r"(ticket) : "l"(tickets + columnGroup) : "memory");
+    lastArrival = ticket == static_cast<unsigned int>(splitBlocks - 1);
+    if (lastArrival) {
+      asm volatile("fence.acq_rel.gpu;" ::: "memory");
+      tickets[columnGroup] = 0;
+    }
+  }
+  __syncthreads();
+  if (lastArrival) {
+    const LongType tileColumns = columns - blockColumn < kColumnsPerBlock ? columns - blockColumn : kColumnsPerBlock;
+    for (LongType e = threadIdx.x; e < rows * tileColumns; e += blockDim.x) {
+      const LongType zOffset = (e / tileColumns) * columns + blockColumn + e % tileColumns;
+      float total = __ldcg(scratch + zOffset);
+      for (int split = 1; split < splitBlocks; ++split)
+        total += __ldcg(scratch + static_cast<LongType>(split) * rows * columns + zOffset);
+      if (floatOutput)
+        static_cast<float*>(z)[zOffset] = total;
+      else
+        static_cast<X*>(z)[zOffset] = static_cast<X>(total);
+    }
+  }
+  __syncthreads();  // lastArrival is rewritten by the next unit
+}
+
 // The launch bound fixes the block size and asks for kMinBlocksPerSm resident
 // blocks, so the compiler budgets registers for occupancy (<= 64 per thread).
 // Unbounded, the kernel compiled to 90 registers (2 resident blocks per SM) and
@@ -196,15 +487,24 @@ static constexpr int kMinBlocksPerSm = 4;
 // of a shape shares one accumulation order.
 static constexpr int kSplitBlocks = 4;
 
+// A column group's splits are consecutive units, so the blocks running at once
+// read whole rows of consecutive column groups. Split-major order (consecutive
+// column groups of one split, each block reading a quarter of each row) ran the
+// 5120x17408 down projection 12% slower in the direct kernel and 5% slower in
+// the bulk kernel on GB10. The order only schedules units; no result depends
+// on it.
+SD_DEVICE SD_INLINE static LongType unitColumnGroup(LongType unit, int splitBlocks) { return unit / splitBlocks; }
+
+SD_DEVICE SD_INLINE static int unitSplit(LongType unit, int splitBlocks) {
+  return static_cast<int>(unit % splitBlocks);
+}
+
 template <typename X, typename Weights>
 SD_KERNEL static __launch_bounds__(kBlockThreads, kMinBlocksPerSm) void weightOnlyGemmKernel(
     const X* __restrict__ x, const Weights weights, void* __restrict__ z, LongType rows, LongType columns,
     LongType depth, bool floatOutput, int splitBlocks, float* __restrict__ scratch,
     unsigned int* __restrict__ tickets) {
-  using Element = typename TensorCoreElement<X>::type;
-  using Mma = cutlass::arch::Mma<cutlass::gemm::GemmShape<kMmaRows, kMmaColumns, kMmaDepth>, WARP_SIZE, Element,
-                                 cutlass::layout::RowMajor, Element, cutlass::layout::ColumnMajor, float,
-                                 cutlass::layout::RowMajor, cutlass::arch::OpMultiplyAdd>;
+  using Mma = WeightOnlyMma<X>;
   __shared__ float partials[kSplitK][kColumnTilesPerWarp][WARP_SIZE][4];
 
   const int lane = static_cast<int>(threadIdx.x) % WARP_SIZE;
@@ -223,8 +523,8 @@ SD_KERNEL static __launch_bounds__(kBlockThreads, kMinBlocksPerSm) void weightOn
 
   // Block-uniform loops: every thread reaches every barrier.
   for (LongType unit = blockIdx.x; unit < columnGroups * splitBlocks; unit += gridDim.x) {
-    const LongType columnGroup = unit / splitBlocks;
-    const int splitIndex = static_cast<int>(unit % splitBlocks);
+    const LongType columnGroup = unitColumnGroup(unit, splitBlocks);
+    const int splitIndex = unitSplit(unit, splitBlocks);
     const LongType blockColumn = columnGroup * kColumnsPerBlock;
     const LongType part = static_cast<LongType>(splitIndex) * kSplitK + warp;
     const LongType chunkBegin = part * chunks / parts;
@@ -252,97 +552,121 @@ SD_KERNEL static __launch_bounds__(kBlockThreads, kMinBlocksPerSm) void weightOn
         CUTLASS_PRAGMA_UNROLL
         for (int c = 0; c < kColumnTilesPerWarp; ++c)
           if (fetched.active[c]) current[c] = weights.unpack(fetched.lanes[c]);
-
-        CUTLASS_PRAGMA_UNROLL
-        for (int step = 0; step < kStepsPerChunk; ++step) {
-          // A fragment words: 0 = row g, 1 = row g+8 (K positions 2m, 2m+1);
-          // 2 = row g, 3 = row g+8 (K positions 2m+8, 2m+9).
-          typename Mma::FragmentA a;
-          auto* aWords = reinterpret_cast<uint32_t*>(&a);
-          const uint2 low = laneActive && rowLow < rows
-                                ? *reinterpret_cast<const uint2*>(x + rowLow * depth + k + 4 * step)
-                                : make_uint2(0, 0);
-          const uint2 high = laneActive && rowHigh < rows
-                                 ? *reinterpret_cast<const uint2*>(x + rowHigh * depth + k + 4 * step)
-                                 : make_uint2(0, 0);
-          aWords[0] = low.x;
-          aWords[1] = high.x;
-          aWords[2] = low.y;
-          aWords[3] = high.y;
-
-          CUTLASS_PRAGMA_UNROLL
-          for (int c = 0; c < kColumnTilesPerWarp; ++c) {
-            // B fragment: elements 0,1 at K positions 2m, 2m+1; 2,3 at 2m+8, 2m+9.
-            Element dequantized[4] = {Element(0.0f), Element(0.0f), Element(0.0f), Element(0.0f)};
-            if (fetched.active[c]) weights.dequantize(current[c], step, constants, dequantized);
-            typename Mma::FragmentB b;
-            CUTLASS_PRAGMA_UNROLL
-            for (int e = 0; e < 4; ++e) b[e] = dequantized[e];
-            Mma()(accumulators[c], a, b, accumulators[c]);
-          }
-        }
+        multiplyChunk(x, weights, constants, current, fetched.active, laneActive, rowLow, rowHigh, rows, depth, k,
+                      accumulators);
       }
-
-      // Fixed-order split-K reduction: warp w sums column tiles w, w + kSplitK,
-      // ... over the warps' partials in ascending warp order.
-      CUTLASS_PRAGMA_UNROLL
-      for (int c = 0; c < kColumnTilesPerWarp; ++c) {
-        CUTLASS_PRAGMA_UNROLL
-        for (int i = 0; i < 4; ++i) partials[warp][c][lane][i] = accumulators[c][i];
-      }
-      __syncthreads();
-
-      for (int tile = warp; tile < kColumnTilesPerWarp; tile += kSplitK) {
-        CUTLASS_PRAGMA_UNROLL
-        for (int i = 0; i < 4; ++i) {
-          float total = partials[0][tile][lane][i];
-          CUTLASS_PRAGMA_UNROLL
-          for (int part = 1; part < kSplitK; ++part) total += partials[part][tile][lane][i];
-          // C fragment: elements 0,1 at row g, 2,3 at row g+8; columns 2m, 2m+1.
-          const LongType row = rowBase + group + (i / 2) * (kMmaRows / 2);
-          const LongType column = blockColumn + tile * kMmaColumns + member * 2 + i % 2;
-          if (row < rows && column < columns) {
-            const LongType zOffset = row * columns + column;
-            if (splitBlocks > 1)
-              scratch[static_cast<LongType>(splitIndex) * rows * columns + zOffset] = total;
-            else if (floatOutput)
-              static_cast<float*>(z)[zOffset] = total;
-            else
-              static_cast<X*>(z)[zOffset] = static_cast<X>(total);
-          }
-        }
-      }
-      __syncthreads();  // partials are rewritten by the next row tile
+      reduceRowTile<X>(partials, accumulators, z, scratch, rowBase, blockColumn, rows, columns, floatOutput,
+                       splitBlocks, splitIndex, warp, lane);
     }
 
-    if (splitBlocks > 1) {
-      // Publish this block's partials, then take the group's ticket.
-      __threadfence();
-      __syncthreads();
-      if (threadIdx.x == 0) {
-        const unsigned int ticket = atomicAdd(tickets + columnGroup, 1u);
-        lastArrival = ticket == static_cast<unsigned int>(splitBlocks - 1);
-        if (lastArrival) tickets[columnGroup] = 0;
-      }
-      __syncthreads();
-      if (lastArrival) {
-        __threadfence();
-        const LongType tileColumns = columns - blockColumn < kColumnsPerBlock ? columns - blockColumn
-                                                                              : kColumnsPerBlock;
-        for (LongType e = threadIdx.x; e < rows * tileColumns; e += blockDim.x) {
-          const LongType zOffset = (e / tileColumns) * columns + blockColumn + e % tileColumns;
-          float total = __ldcg(scratch + zOffset);
-          for (int split = 1; split < splitBlocks; ++split)
-            total += __ldcg(scratch + static_cast<LongType>(split) * rows * columns + zOffset);
-          if (floatOutput)
-            static_cast<float*>(z)[zOffset] = total;
-          else
-            static_cast<X*>(z)[zOffset] = static_cast<X>(total);
-        }
-      }
-      __syncthreads();  // lastArrival is rewritten by the next unit
+    if (splitBlocks > 1)
+      combineSplits<X>(lastArrival, tickets, scratch, z, columnGroup, blockColumn, rows, columns, floatOutput,
+                       splitBlocks);
+  }
+}
+
+// The same units, K ranges, reduction and split combine as weightOnlyGemmKernel
+// — so bit-identical results — with each unit's weights staged in shared memory
+// by bulk copies instead of loaded by the lanes. A unit's warps cover the K
+// chunks [stageBegin, stageEnd) together; thread 0 copies those chunks of the
+// unit's kColumnsPerBlock rows in one transaction group, and the block waits on
+// it once per unit. Needs geometry.bytes of dynamic shared memory.
+template <typename X, typename Weights>
+SD_KERNEL static __launch_bounds__(kBlockThreads, kMinBlocksPerSm) void weightOnlyGemmBulkKernel(
+    const X* __restrict__ x, const Weights weights, void* __restrict__ z, LongType rows, LongType columns,
+    LongType depth, bool floatOutput, int splitBlocks, float* __restrict__ scratch, unsigned int* __restrict__ tickets,
+    const typename Weights::Tile geometry) {
+#if SD_WEIGHT_ONLY_BULK_DEVICE
+  static_assert(kColumnTilesPerWarp == 1, "a staged tile holds one column tile");
+  using Mma = WeightOnlyMma<X>;
+  extern __shared__ __align__(128) uint8_t weightOnlyStage[];
+  __shared__ __align__(8) uint64_t stageReady;
+  __shared__ float partials[kSplitK][kColumnTilesPerWarp][WARP_SIZE][4];
+  __shared__ bool lastArrival;
+
+  const int lane = static_cast<int>(threadIdx.x) % WARP_SIZE;
+  const int warp = static_cast<int>(threadIdx.x) / WARP_SIZE;
+  const int group = lane / 4;
+  const int member = lane % 4;
+
+  const LongType chunks = (depth + kChunkDepth - 1) / kChunkDepth;
+  const LongType parts = static_cast<LongType>(kSplitK) * splitBlocks;
+  const LongType columnGroups = (columns + kColumnsPerBlock - 1) / kColumnsPerBlock;
+  const LongType units = columnGroups * splitBlocks;
+  const uint64_t policy = bulkCopyPolicy();
+
+  // The unit's staged K range: [stageBegin, stageEnd) chunks, the last one
+  // possibly partial.
+  auto stageRange = [&](LongType unit, LongType& stageBegin, LongType& kb, LongType& ke) {
+    const LongType splitIndex = unitSplit(unit, splitBlocks);
+    stageBegin = splitIndex * kSplitK * chunks / parts;
+    const LongType stageEnd = (splitIndex + 1) * kSplitK * chunks / parts;
+    kb = stageBegin * kChunkDepth;
+    ke = stageEnd * kChunkDepth < depth ? stageEnd * kChunkDepth : depth;
+  };
+
+  // The first unit's copies overlap the constants and the barrier's publication.
+  if (threadIdx.x == 0) {
+    bulkInitBarrier(&stageReady);
+    if (blockIdx.x < units) {
+      LongType stageBegin, kb, ke;
+      stageRange(blockIdx.x, stageBegin, kb, ke);
+      weights.stage(weightOnlyStage, geometry, unitColumnGroup(blockIdx.x, splitBlocks) * kColumnsPerBlock, kb, ke,
+                    &stageReady, policy);
     }
   }
+  const typename Weights::Constants constants = weights.prepare();
+  __syncthreads();
+
+  uint32_t phase = 0;
+  // Block-uniform loops: every thread reaches every barrier.
+  for (LongType unit = blockIdx.x; unit < units; unit += gridDim.x) {
+    const LongType columnGroup = unitColumnGroup(unit, splitBlocks);
+    const int splitIndex = unitSplit(unit, splitBlocks);
+    const LongType blockColumn = columnGroup * kColumnsPerBlock;
+    const LongType part = static_cast<LongType>(splitIndex) * kSplitK + warp;
+    const LongType chunkBegin = part * chunks / parts;
+    const LongType chunkEnd = (part + 1) * chunks / parts;
+    LongType stageBegin, kb, ke;
+    stageRange(unit, stageBegin, kb, ke);
+    // The previous unit's last barrier ended every read of the tile.
+    if (threadIdx.x == 0 && unit != blockIdx.x) {
+      bulkFenceAsyncProxy();
+      weights.stage(weightOnlyStage, geometry, blockColumn, kb, ke, &stageReady, policy);
+    }
+    const typename Weights::StagedLane staged =
+        weights.stagedLane(weightOnlyStage, geometry, blockColumn, kb, group, member);
+    bulkWait(&stageReady, phase);
+    phase ^= 1;
+
+    for (LongType rowBase = 0; rowBase < rows; rowBase += kMmaRows) {
+      const LongType rowLow = rowBase + group;
+      const LongType rowHigh = rowLow + kMmaRows / 2;
+      typename Mma::FragmentC accumulators[kColumnTilesPerWarp];
+      CUTLASS_PRAGMA_UNROLL
+      for (auto& accumulator : accumulators) accumulator.clear();
+
+      for (LongType chunk = chunkBegin; chunk < chunkEnd; ++chunk) {
+        const LongType k = chunk * kChunkDepth + member * kLaneDepth;
+        const bool laneActive = k < depth;
+        // Columns come in whole column tiles (admission), so only K masks a lane.
+        const bool active[kColumnTilesPerWarp] = {laneActive};
+        typename Weights::LaneWeights current[kColumnTilesPerWarp];
+        if (laneActive) current[0] = weights.unpack(weights.staged(staged, chunk - stageBegin));
+        multiplyChunk(x, weights, constants, current, active, laneActive, rowLow, rowHigh, rows, depth, k,
+                      accumulators);
+      }
+      reduceRowTile<X>(partials, accumulators, z, scratch, rowBase, blockColumn, rows, columns, floatOutput,
+                       splitBlocks, splitIndex, warp, lane);
+    }
+
+    if (splitBlocks > 1)
+      combineSplits<X>(lastArrival, tickets, scratch, z, columnGroup, blockColumn, rows, columns, floatOutput,
+                       splitBlocks);
+  }
+#else
+  __trap();
+#endif
 }
 
 // Persistent per-device split scratch and zeroed tickets. They grow only while
@@ -436,15 +760,119 @@ static int splitBlocksFor(LongType columns, LongType depth) {
   return groups < kSplitWaveLimit * residentBlocks() ? split : 1;
 }
 
+// The largest staged tile (dynamic shared memory) at which two bulk blocks stay
+// resident per SM; 0 when the device, or the kernel image loaded for it, has no
+// bulk copies. Staging pays for itself only with a second block per SM to
+// overlap one block's copies with another's MMAs: on GB10, unsplit K = 12288
+// and 17408 tiles (one block per SM) ran 5-7% slower than the direct kernel,
+// K = 9216 (two per SM) 14% faster. Cached per device.
+template <typename X>
+static LongType bulkTileLimit() {
+  static std::mutex lock;
+  static std::vector<LongType> limits;
+  const int device = AffinityManager::currentDeviceId();
+  std::lock_guard<std::mutex> guard(lock);
+  if (static_cast<int>(limits.size()) <= device) limits.resize(device + 1, -1);
+  if (limits[device] >= 0) return limits[device];
+  LongType limit = 0;
+  if (CutlassHelper::getSmVersion(device) >= 90) {
+    const auto kernel = weightOnlyGemmBulkKernel<X, ModelOptNvfp4Weights<X>>;
+    cudaFuncAttributes attributes;
+    if (cudaFuncGetAttributes(&attributes, kernel) != cudaSuccess)
+      THROW_EXCEPTION("WeightOnlyGemm: bulk kernel attribute query failed");
+    // ptxVersion is the virtual architecture of the image loaded for this
+    // device: below 90 the kernel was built without bulk copies.
+    if (attributes.ptxVersion >= 90) {
+      int optIn = 0;
+      if (cudaDeviceGetAttribute(&optIn, cudaDevAttrMaxSharedMemoryPerBlockOptin, device) != cudaSuccess)
+        THROW_EXCEPTION("WeightOnlyGemm: shared memory limit query failed");
+      const int dynamicMax = optIn - static_cast<int>(attributes.sharedSizeBytes);
+      if (cudaFuncSetAttribute(kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, dynamicMax) != cudaSuccess)
+        THROW_EXCEPTION("WeightOnlyGemm: bulk kernel shared memory opt-in failed");
+      size_t twoPerSm = 0;
+      if (cudaOccupancyAvailableDynamicSMemPerBlock(&twoPerSm, kernel, 2, kBlockThreads) != cudaSuccess)
+        THROW_EXCEPTION("WeightOnlyGemm: bulk kernel occupancy query failed");
+      limit = std::min<LongType>(static_cast<LongType>(twoPerSm), dynamicMax);
+    }
+  }
+  limits[device] = limit;
+  return limit;
+}
+
+static bool alignedTo16(NDArray* array) {
+  return reinterpret_cast<uintptr_t>(array->specialBuffer()) % 16 == 0;
+}
+
+// The CUDA memory type backing an operand (diagnostics: managed and host
+// memory stream more slowly than device memory).
+static const char* memoryType(NDArray* array) {
+  cudaPointerAttributes attributes;
+  if (cudaPointerGetAttributes(&attributes, array->specialBuffer()) != cudaSuccess) {
+    cudaGetLastError();
+    return "unknown";
+  }
+  switch (attributes.type) {
+    case cudaMemoryTypeDevice: return "device";
+    case cudaMemoryTypeManaged: return "managed";
+    case cudaMemoryTypeHost: return "host";
+    default: return "unregistered";
+  }
+}
+
+// Measured on GB10 (sm_121: 48 SMs, 128 KB of L1 and shared memory per SM),
+// staging beats the direct kernel only when, besides the tile leaving room for
+// two resident blocks (bulkTileLimit):
+//  - a unit spans at least kBulkMinUnitDepth of K, so the copy each unit waits
+//    for is amortized (N = 17408, one row: K = 2048 and 3072 are 1-2% slower,
+//    K = 4096 4% faster, K = 5120 11% faster);
+//  - the shape has at least kSplitWaveLimit waves of units, so every SM keeps
+//    cycling units and one block's copy overlaps the others' MMAs (K = 5120,
+//    one row: 512 units 11% slower, 640 5% slower, 768 2% faster, 2176 11%
+//    faster);
+//  - a unit's activation slice, rows by its K range, fits kBulkActivationBytes:
+//    the tiles' shared memory is carved out of L1, which must still hold the
+//    slice for the SM's other units (N = 17408, K = 5120: 6 rows (60 KB) 1%
+//    faster, 7 rows (70 KB) 13% slower, 16 rows 49% slower; the direct kernel
+//    alone, forced to the same carve-out, runs 33% slower at 8 rows).
+// Both kernels accumulate in the same order, so the choice may depend on rows
+// without changing any result.
+static constexpr LongType kBulkMinUnitDepth = 4096;
+static constexpr LongType kBulkActivationBytes = 64 * 1024;
+
+template <typename X>
+static bool bulkStagingPays(LongType rows, LongType unitDepth, LongType units) {
+  return unitDepth >= kBulkMinUnitDepth && units >= kSplitWaveLimit * residentBlocks() &&
+         rows * unitDepth * static_cast<LongType>(sizeof(X)) <= kBulkActivationBytes;
+}
+
+// SD_WEIGHT_ONLY_STAGING overrides bulkStagingPays, to A/B the kernels in one
+// thermal state or re-measure the rule on another device: "direct" never
+// stages, "bulk" stages every shape the device and operands admit; empty =
+// bulkStagingPays. Only timing changes.
+enum class Staging { Measured, Direct, Bulk };
+
+static Staging configuredStaging() {
+  static const Staging configured = [] {
+    const char* value = std::getenv("SD_WEIGHT_ONLY_STAGING");
+    if (value == nullptr || value[0] == '\0') return Staging::Measured;
+    const std::string choice(value);
+    if (choice != "direct" && choice != "bulk")
+      THROW_EXCEPTION("SD_WEIGHT_ONLY_STAGING must be direct, bulk or empty");
+    return choice == "direct" ? Staging::Direct : Staging::Bulk;
+  }();
+  return configured;
+}
+
 template <typename X>
 static void weightOnlyGemmNvfp4_(LaunchContext* context, NDArray* x, NDArray* w, NDArray* blockScales,
                                  NDArray* globalScale, NDArray* z, bool floatOutput, unsigned int blocks) {
+  using Weights = ModelOptNvfp4Weights<X>;
   const LongType depth = x->sizeAt(-1);
   const LongType rows = x->lengthOf() / depth;
   const LongType columns = w->sizeAt(0);
-  const ModelOptNvfp4Weights<X> weights{static_cast<const uint8_t*>(w->specialBuffer()),
-                                        static_cast<const float8*>(blockScales->specialBuffer()),
-                                        static_cast<const float*>(globalScale->specialBuffer()), depth};
+  const Weights weights{static_cast<const uint8_t*>(w->specialBuffer()),
+                        static_cast<const float8*>(blockScales->specialBuffer()),
+                        static_cast<const float*>(globalScale->specialBuffer()), depth};
   const int splitBlocks = splitBlocksFor(columns, depth);
   float* scratch = nullptr;
   unsigned int* tickets = nullptr;
@@ -454,19 +882,38 @@ static void weightOnlyGemmNvfp4_(LaunchContext* context, NDArray* x, NDArray* w,
                        groups, &scratch, &tickets);
   const LongType units = groups * splitBlocks;
   const unsigned int launched = units < blocks ? static_cast<unsigned int>(units) : blocks;
-  weightOnlyGemmKernel<X><<<launched, kBlockThreads, 0, *context->getCudaStream()>>>(
-      static_cast<const X*>(x->specialBuffer()), weights, z->specialBuffer(), rows, columns, depth, floatOutput,
-      splitBlocks, scratch, tickets);
+
+  // The largest K range a unit stages (the kernel's split of the chunks).
+  const LongType chunks = (depth + kChunkDepth - 1) / kChunkDepth;
+  const LongType parts = static_cast<LongType>(kSplitK) * splitBlocks;
+  LongType unitChunks = 0;
+  for (LongType split = 0; split < splitBlocks; ++split)
+    unitChunks = std::max(unitChunks, (split + 1) * kSplitK * chunks / parts - split * kSplitK * chunks / parts);
+  const typename Weights::Tile tile = Weights::tileFor(unitChunks);
+  const Staging staging = configuredStaging();
+  const bool bulk = staging != Staging::Direct && alignedTo16(blockScales) &&
+                    (staging == Staging::Bulk || bulkStagingPays<X>(rows, unitChunks * kChunkDepth, units)) &&
+                    tile.bytes <= bulkTileLimit<X>();
+  DSP_DIAG(BACKEND, "WeightOnlyGemm %s rows=%lld columns=%lld depth=%lld split=%d tileBytes=%lld memory w=%s scales=%s",
+           bulk ? "bulk" : "direct", static_cast<long long>(rows), static_cast<long long>(columns),
+           static_cast<long long>(depth), splitBlocks, static_cast<long long>(tile.bytes), memoryType(w),
+           memoryType(blockScales));
+
+  cudaStream_t stream = *context->getCudaStream();
+  if (bulk)
+    weightOnlyGemmBulkKernel<X><<<launched, kBlockThreads, static_cast<size_t>(tile.bytes), stream>>>(
+        static_cast<const X*>(x->specialBuffer()), weights, z->specialBuffer(), rows, columns, depth, floatOutput,
+        splitBlocks, scratch, tickets, tile);
+  else
+    weightOnlyGemmKernel<X><<<launched, kBlockThreads, 0, stream>>>(
+        static_cast<const X*>(x->specialBuffer()), weights, z->specialBuffer(), rows, columns, depth, floatOutput,
+        splitBlocks, scratch, tickets);
 }
 
 BUILD_SINGLE_TEMPLATE(void weightOnlyGemmNvfp4_,
     (LaunchContext* context, NDArray* x, NDArray* w, NDArray* blockScales, NDArray* globalScale, NDArray* z,
      bool floatOutput, unsigned int blocks),
     SD_WEIGHT_ONLY_MMA_TYPES);
-
-static bool alignedTo16(NDArray* array) {
-  return reinterpret_cast<uintptr_t>(array->specialBuffer()) % 16 == 0;
-}
 
 #endif  // SD_WEIGHT_ONLY_GEMM_AVAILABLE
 
