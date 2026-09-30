@@ -287,6 +287,17 @@ static void detectBufferAliasing(int ki,
   }
 }
 
+// Shape functions of value-dependent ops read small integral control tensors on the
+// host (reshape's shape operand, slice bounds). Same predicate executeSegmentSlotBySlot
+// uses to decide whether a producer must be drained before host shape inference.
+static bool isSmallIntegralControlArray(NDArray* arr) {
+  if (arr == nullptr) return false;
+  const auto dt = arr->dataType();
+  if (dt != INT32 && dt != INT64 && dt != BOOL) return false;
+  const auto len = arr->lengthOf();
+  return len > 0 && len <= 32;
+}
+
 // ─── executeSegment ─────────────────────────────────────────────────────────
 
 Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
@@ -848,6 +859,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         DSP_DIAG(EXECUTE, "POST_GAP_RESHAPE SKIPPED during capture [gap %d-%d]",
                  nextSlotToRun, subKernel.startSlot_ - 1);
       } else {
+      bool gapProducerDrained = false;
       for (int si = subKernel.startSlot_; si <= subKernel.endSlot_; si++) {
         auto& slot = slots[si];
         // Check if any input comes from the gap range
@@ -874,6 +886,41 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           }
         }
         if (!allInputsAvailable) continue;
+
+        // Value-dependent shape functions read gap-produced control values on the host.
+        // syncToPrimary copies on the legacy stream, which does not order the
+        // non-blocking stream the gap ran on (the ordered range executor routes gap ops
+        // onto this segment's stream), so drain it first: the rule
+        // executeSegmentSlotBySlot applies before its own shape inference.
+        if (slot.flags.outputShapeDependsOnInputValues && !gapProducerDrained) {
+          const bool scansRuntimeTensorValues = slot.hasDynamicOutputSize();
+          int pendingInput = -1;
+          for (int inp = 0; inp < slot.wiring.numInputs && pendingInput < 0; inp++) {
+            if (slot.wiring.inputSourceIndices[inp] < 0 ||
+                (!scansRuntimeTensorValues && !isSmallIntegralControlArray(inputArrays[inp]))) {
+              continue;
+            }
+            auto* controlBuffer = inputArrays[inp]->dataBuffer();
+            if (controlBuffer != nullptr && !controlBuffer->isClosed() &&
+                (scansRuntimeTensorValues ||
+                 (controlBuffer->isSpecialActual() && !controlBuffer->isPrimaryActual()))) {
+              pendingInput = inp;
+            }
+          }
+          if (pendingInput >= 0 && actualStream != nullptr) {
+            auto syncErr = cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(actualStream));
+            if (syncErr != cudaSuccess) {
+              DSP_DIAG(STREAM_SYNC, "POST_GAP_VALUE_SHAPE_SYNC_FAILED: slot %d (%s) input %d: %s",
+                       si, slot.ident.opName.c_str(), pendingInput, cudaGetErrorString(syncErr));
+              cudaGetLastError();
+              return failSegment("post-gap value-shape producer sync failed");
+            }
+            gapProducerDrained = true;
+            DSP_DIAG(STREAM_SYNC, "POST_GAP_VALUE_SHAPE_SYNC: slot %d (%s) input %d drained gap [%d-%d] "
+                     "before host shape inference",
+                     si, slot.ident.opName.c_str(), pendingInput, nextSlotToRun, subKernel.startSlot_ - 1);
+          }
+        }
 
         // Build input shape list and run shape inference
         ShapeList inputShapes;
