@@ -3018,7 +3018,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         long incomingCost = pinnedLeaseEstimatedBytes.containsKey(pendingIdentity)
                 ? 0L : DEFAULT_LEASE_COST_ESTIMATE_BYTES;
         // Costs recorded at lease time cover only external inputs; executed plans hold far
-        // larger slot intermediates. Refresh from measured slot bytes BEFORE the budget
+        // larger slot intermediates. Refresh from measured owned bytes BEFORE the budget
         // decision, or the projection stays near zero and eviction never fires.
         refreshPinnedLeaseCosts();
         long total = 0;
@@ -3046,7 +3046,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             Pointer handle = pinnedPlanHandles.get(handleAddress.longValue());
             if (handle == null) continue;
-            // Costs were refreshed from measured slot bytes above; the recorded
+            // Costs were refreshed from measured owned bytes above; the recorded
             // value is the real device footprint this eviction frees.
             long evictedBytes = pinnedLeaseEstimatedBytes.getOrDefault(victim, 0L);
             // Fail closed if release/close/unpin fails. Keep the remaining lease and cost
@@ -3083,7 +3083,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      * while real plans hold hundreds of MB, so capacity ejection never fired in
      * real e2e runs. Every pinned plan carries structure (2527 slots on Gemma),
      * workspaces, and captured replay state; the DEFAULT floor is the
-     * conservative minimum, refreshed upward from measured slot bytes at
+     * conservative minimum, refreshed upward from measured owned bytes at
      * eviction time.</p>
      */
     private long estimateLeaseCostBytes() {
@@ -3097,39 +3097,28 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
-     * Measure a pinned plan's actual device footprint by summing its output
-     * slot lengths. Slots are allocated lazily on first execution, so this is
-     * only meaningful for plans that have run at least once — exactly the case
-     * that matters for eviction of LRU victims. Returns 0 when the handle is
-     * not a pinned lease or no slots have allocated.
+     * Measure a pinned plan's retained device footprint from the plan's own
+     * accounting: owned intermediates, staging, compiled artifacts and replay
+     * workspaces, each buffer counted once at its real width. Buffers are
+     * allocated lazily on first execution, so this is only meaningful for plans
+     * that have run at least once — exactly the case that matters for eviction
+     * of LRU victims. No slot array is read: a pinned plan's identity slot can
+     * still hold a caller's input that was deleted after the plan last ran.
+     * Returns 0 when the handle is not a pinned lease or nothing is allocated.
      */
-    private long measurePlanSlotBytes(PlanLeaseKey victim) {
+    private long measurePlanOwnedBytes(PlanLeaseKey victim) {
         Long handleAddress = pinnedPlanHandlesByIdentity.get(victim);
         if (handleAddress == null) return 0;
         Pointer handle = pinnedPlanHandles.get(handleAddress.longValue());
         if (handle == null) return 0;
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        int slots = nativeOps.getTotalPlanOutputSlots(handle);
-        if (slots <= 0) return 0;
-        long slotBytes = 0;
-        for (int i = 0; i < slots; i++) {
-            OpaqueNDArray opaque = nativeOps.getPlanSlotOutputArray(handle, i);
-            if (opaque == null) continue;
-            try {
-                long length = nativeOps.getOpaqueNDArrayLength(opaque);
-                if (length > 0) slotBytes += length * dataTypeWidthOrDefault();
-            } finally {
-                opaque.setNull();
-            }
-        }
-        return slotBytes;
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().getPlanEstimatedOwnedBytes(handle);
     }
 
     /** Fallback per-lease cost when nothing better is known (0.5 GiB). */
     private static final long DEFAULT_LEASE_COST_ESTIMATE_BYTES = 512L * 1024 * 1024;
 
     /**
-     * Refresh every pinned lease's recorded cost from its measured slot bytes.
+     * Refresh every pinned lease's recorded cost from its measured owned bytes.
      * Costs recorded at lease time cover only the external input buffers; the
      * slot intermediates an executed plan holds (KV caches, fused activations)
      * are the dominant device footprint and only exist after that plan has run.
@@ -3138,7 +3127,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     private void refreshPinnedLeaseCosts() {
         for (PlanLeaseKey identity : pinnedPlanHandlesByIdentity.keySet().toArray(new PlanLeaseKey[0])) {
-            long measured = measurePlanSlotBytes(identity);
+            long measured = measurePlanOwnedBytes(identity);
             if (measured <= 0) continue;
             pinnedLeaseEstimatedBytes.merge(identity, measured, Math::max);
         }

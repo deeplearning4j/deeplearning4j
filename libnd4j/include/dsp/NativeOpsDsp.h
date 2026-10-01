@@ -1216,7 +1216,9 @@ SD_LIB_EXPORT int copyPlanStagingToBuffer(sd::Pointer planHandle, int extIdx, Op
 // =============================================================================
 
 /**
- * Get a slot's output array as OpaqueNDArray.
+ * Get a slot's output array as OpaqueNDArray, borrowed from the plan.
+ * Null when the slot is empty or holds a caller's input array (an identity of an
+ * external input): the caller may have deleted that array since the execute.
  */
 SD_LIB_EXPORT OpaqueNDArray getPlanSlotOutputArray(sd::Pointer planHandle, int slotIdx);
 
@@ -1224,6 +1226,13 @@ SD_LIB_EXPORT OpaqueNDArray getPlanSlotOutputArray(sd::Pointer planHandle, int s
  * Get the total number of output slots.
  */
 SD_LIB_EXPORT int getTotalPlanOutputSlots(sd::Pointer planHandle);
+
+/**
+ * Device bytes the plan retains (NativeDynamicShapePlan::estimatedOwnedBytes): owned
+ * intermediates, staging, compiled artifacts and workspaces, each buffer once, callers'
+ * inputs excluded. Safe between executes. 0 for a null handle.
+ */
+SD_LIB_EXPORT long long getPlanEstimatedOwnedBytes(sd::Pointer planHandle);
 
 /**
  * Get the monotonic write-generation counter for a slot.

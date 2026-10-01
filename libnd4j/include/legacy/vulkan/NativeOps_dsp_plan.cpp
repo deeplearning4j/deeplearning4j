@@ -1013,11 +1013,14 @@ int copyPlanStagingToBuffer(sd::Pointer h, int i, OpaqueDataBuffer* dst) {
   if (dst == nullptr) return -3;
   return planOf(h)->copyStagingToBuffer(i, dst->dataBuffer());
 }
+// Read between executes: a caller's wrapper held by a slot may be deleted.
 OpaqueNDArray getPlanSlotOutputArray(sd::Pointer h, int i) {
-  if (!h || i < 0 || i >= planOf(h)->getNumSlots()) return nullptr;
-  return planOf(h)->getSlotOutputArray(i);
+  return h ? planOf(h)->getIntrospectableSlotArray(i) : nullptr;
 }
 int getTotalPlanOutputSlots(sd::Pointer h) { return h ? planOf(h)->getTotalOutputSlots() : 0; }
+long long getPlanEstimatedOwnedBytes(sd::Pointer h) {
+  return h ? static_cast<long long>(planOf(h)->estimatedOwnedBytes()) : 0;
+}
 int getPlanSlotGeneration(sd::Pointer h, int i) { return h ? planOf(h)->getSlotGeneration(i) : -1; }
 int getPlanSegmentReplayMode(sd::Pointer h, int i) { return h ? planOf(h)->getSegmentReplayMode(i) : 0; }
 long long getPlanSegmentArgGeneration(sd::Pointer h, int i) { return h ? planOf(h)->getSegmentArgGeneration(i) : -1; }

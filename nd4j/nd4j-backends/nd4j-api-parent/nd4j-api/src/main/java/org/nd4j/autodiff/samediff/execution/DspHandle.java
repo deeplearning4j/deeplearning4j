@@ -420,7 +420,8 @@ public final class DspHandle {
     /**
      * Get a COPY of the output array at the given internal slot index.
      * Call immediately after replay() while slot memory is valid.
-     * Returns null if the slot is empty or out of range.
+     * Returns null if the slot is empty or out of range, or if it holds a caller's
+     * input array (an identity of an external input); read that input directly.
      */
     public INDArray getSlotOutput(int slotIdx) {
         Pointer handle = requireHandle();

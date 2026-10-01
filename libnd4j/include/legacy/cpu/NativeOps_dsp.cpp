@@ -1427,12 +1427,19 @@ int copyPlanStagingToBuffer(sd::Pointer planHandle, int extIdx, OpaqueDataBuffer
 
 OpaqueNDArray getPlanSlotOutputArray(sd::Pointer planHandle, int slotIdx) {
   if (planHandle == nullptr) return nullptr;
-  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSlotOutputArray(slotIdx);
+  // Read between executes: a caller's wrapper held by a slot may be deleted.
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getIntrospectableSlotArray(slotIdx);
 }
 
 int getTotalPlanOutputSlots(sd::Pointer planHandle) {
   if (planHandle == nullptr) return 0;
   return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getTotalOutputSlots();
+}
+
+long long getPlanEstimatedOwnedBytes(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  return static_cast<long long>(
+      reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->estimatedOwnedBytes());
 }
 
 int getPlanSlotGeneration(sd::Pointer planHandle, int slotIdx) {

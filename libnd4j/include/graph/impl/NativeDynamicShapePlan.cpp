@@ -397,12 +397,23 @@ void NativeDynamicShapePlan::flushDeferredSlotDeletes() {
                                       : 0;
   liveArraySlots.reserve(liveSlotCapacity);
   liveBufferSlots.reserve(liveSlotCapacity);
+  // A slot can hold a caller's identity-alias wrapper that the caller has since
+  // deleted (releaseGpuIntermediates flushes between executes), so the buffers
+  // of recorded external wrappers come from the record.
+  std::unordered_map<NDArray*, DataBuffer*> recordedExternalBuffers;
+  const size_t recordedCount = std::min(lastExternalInputsCopy_.size(), lastExternalInputRecords_.size());
+  for (size_t e = 0; e < recordedCount; e++) {
+    if (lastExternalInputsCopy_[e] != nullptr) {
+      recordedExternalBuffers.emplace(lastExternalInputsCopy_[e], lastExternalInputRecords_[e].buffer);
+    }
+  }
   if (outputSlots_ != nullptr) {
     for (int slot = 0; slot < totalOutputSlots_; slot++) {
       NDArray* live = outputSlots_[slot];
       if (live == nullptr) continue;
       liveArraySlots.emplace(live, slot);
-      DataBuffer* liveBuffer = live->dataBuffer();
+      auto recorded = recordedExternalBuffers.find(live);
+      DataBuffer* liveBuffer = recorded != recordedExternalBuffers.end() ? recorded->second : live->dataBuffer();
       if (liveBuffer != nullptr) liveBufferSlots.emplace(liveBuffer, slot);
     }
   }
@@ -1199,12 +1210,7 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
   // Direct identity/control-flow/in-place publication can hand the plan the
   // caller's exact external wrapper. A new wrapper does not imply ownership:
   // only arrays allocated/materialized by this plan may enter planOwnedArrays_.
-  const bool isBorrowedExternal =
-      value != nullptr &&
-      (std::find(lastExternalInputsCopy_.begin(), lastExternalInputsCopy_.end(), value) !=
-           lastExternalInputsCopy_.end() ||
-       isStagingOwnedWrapper(value, placeholderStagingBuffers_, numExternalInputs_,
-                             deviceStagingBuffers_));
+  const bool isBorrowedExternal = value != nullptr && isBorrowedExternalWrapper(value);
   // View wrappers minted by the plan are owned even when their backing buffer
   // is a protected weight. The wrapper itself must be retired; only the exact
   // caller-provided external wrapper is borrowed.
@@ -1346,10 +1352,11 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
                  slotIdx, (void*)old, (void*)oldDb);
       }
     } else {
-      // NOT plan-owned but being replaced — this is a potential leak.
-      long long leakedBytes = old->dataBuffer() ? (long long)old->dataBuffer()->getLenInBytes() : 0;
-      DSP_DIAG(MEMORY, "WRITE_SLOT_LEAK: slot=%d tag=%s old=%p NOT plan-owned, bytes=%lld planOwned=%d",
-               slotIdx, tag, (void*)old, leakedBytes, (int)planOwnedArrays_.size());
+      // NOT plan-owned but being replaced — this is a potential leak. The old
+      // wrapper may be a caller's array that is already deleted, so it is only
+      // reported by address.
+      DSP_DIAG(MEMORY, "WRITE_SLOT_LEAK: slot=%d tag=%s old=%p NOT plan-owned planOwned=%d",
+               slotIdx, tag, (void*)old, (int)planOwnedArrays_.size());
     }
   }
 
@@ -1581,11 +1588,7 @@ void NativeDynamicShapePlan::materializeViewSlot(int slotIdx, const char* tag) {
   // Retire only plan-created wrappers. A requested output may be the caller's
   // exact external view wrapper; materializing it must not transfer ownership
   // or delete the caller's array during teardown.
-  const bool borrowedExternal =
-      std::find(lastExternalInputsCopy_.begin(), lastExternalInputsCopy_.end(), viewArr) !=
-          lastExternalInputsCopy_.end() ||
-      isStagingOwnedWrapper(viewArr, placeholderStagingBuffers_, numExternalInputs_,
-                            deviceStagingBuffers_);
+  const bool borrowedExternal = isBorrowedExternalWrapper(viewArr);
   if (!borrowedExternal) {
     deferredSlotDeletes_.push_back(viewArr);
   }
@@ -2905,6 +2908,17 @@ Status NativeDynamicShapePlan::execute(
     return Status::BAD_ARGUMENTS;
   }
 
+  // Clear dirty bitmap.
+  std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
+
+  // Record the inputs while the caller's arrays are guaranteed live (this call).
+  // Callers pass fresh wrappers each step and may delete the old ones, so code
+  // that runs between executes reads the records, never these NDArray*.
+  // Recording also rebinds slot aliases of the previous wrappers, so it runs
+  // before anything reads the slots, and before the warmup-lock decision
+  // because a rebind may unseal the plan.
+  recordExternalInputs(externalInputs, numExternalInputs);
+
   processPendingExternalViewReacquire(externalInputs, numExternalInputs);
   int warmupDeviceIdx = sd::graph::dspGetCurrentDevice();
   if (warmupDeviceIdx < 0 || warmupDeviceIdx >= kMaxDevices) warmupDeviceIdx = 0;
@@ -2914,14 +2928,6 @@ Status NativeDynamicShapePlan::execute(
   bool needsWarmupLock = !planLifecycle_.isReplaying() ||
                          hasDynamicSegmentBoundaries_;
   WarmupSerializationGuard warmupGuard(needsWarmupLock ? &g_warmupSerializationMtx[warmupDeviceIdx] : nullptr);
-
-  // Clear dirty bitmap.
-  std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
-
-  // Record the inputs while the caller's arrays are guaranteed live (this call).
-  // Callers pass fresh wrappers each step and may delete the old ones, so code
-  // that runs between executes reads the records, never these NDArray*.
-  recordExternalInputs(externalInputs, numExternalInputs);
 
   // Capture external input ranks on first call — used by FusionPass pass 5
   // to distinguish 1D bias vectors from N-D residual operands.
@@ -4563,6 +4569,11 @@ Status NativeDynamicShapePlan::executeSteadyState(
     return Status::BAD_ARGUMENTS;
   }
 
+  // Record first: recording rebinds slot aliases of the previous call's wrappers,
+  // so it runs before anything reads the slots, and before the eligibility check
+  // because a rebind may unseal the plan.
+  recordExternalInputs(externalInputs, numExternalInputs);
+
   processPendingExternalViewReacquire(externalInputs, numExternalInputs);
 
   // Precondition check: fall back to full execute() if not in steady state
@@ -4575,6 +4586,9 @@ Status NativeDynamicShapePlan::executeSteadyState(
   }
   DSP_DIAG(EXECUTE, "[DSP_GATE] FAST executeSteadyState() — executeCount=%d planPhase=%s",
            (int)executeCount_, planLifecycle_.displayName());
+  // Per-exec reset, as in execute(): staging is current only if this exec's
+  // pre-replay sync refreshes it, so nothing may read last call's passthroughs.
+  stagingMaintainedThisExec_ = false;
 
   // Advance dirty generation instead of clearing the entire bitmap.
   // The compositeReplay loop marks active slots with currentDirtyGeneration_,
@@ -4588,9 +4602,6 @@ Status NativeDynamicShapePlan::executeSteadyState(
     currentDirtyGeneration_ = 1;
     std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
   }
-
-  // Record the inputs while the caller's arrays are live (see execute()).
-  recordExternalInputs(externalInputs, numExternalInputs);
 
   // Reuse cached PlanExecutionContext — avoid heap alloc/free per step.
   // On first call, create the context and a reusable cross-stream event.
@@ -4919,8 +4930,450 @@ void NativeDynamicShapePlan::setBackendPriority(const std::vector<std::string>& 
 // Retired slot/view wrappers are drained at plan-execution boundaries by
 // flushDeferredSlotDeletes(); never delete them during slot traversal.
 
+namespace {
+// Rank, dtype, emptiness, order, shape and strides. Buffers and offsets are
+// compared separately by the callers.
+bool sameSemanticLayout(const LongType* a, const LongType* b) {
+  if (a == nullptr || b == nullptr) return a == b;
+  return shape::rank(a) == shape::rank(b) &&
+         ArrayOptions::dataType(a) == ArrayOptions::dataType(b) &&
+         shape::isEmptyConst(a) == shape::isEmptyConst(b) &&
+         shape::order(a) == shape::order(b) &&
+         shape::haveSameShapeAndStrides(a, b);
+}
+
+// Whether a view with this layout, starting `offset` elements into `buffer`,
+// stays inside the buffer's allocation.
+bool viewFitsBuffer(const LongType* shapeInfo, LongType offset, DataBuffer* buffer) {
+  if (shapeInfo == nullptr || buffer == nullptr || offset < 0) return false;
+  if (shape::isEmptyConst(shapeInfo) || shape::length(shapeInfo) <= 0) return false;
+  const LongType* dims = shape::shapeOf(shapeInfo);
+  const LongType* strides = shape::stride(shapeInfo);
+  LongType lastElement = offset;
+  for (int d = 0; d < shape::rank(shapeInfo); d++) {
+    const LongType stride = strides[d] < 0 ? -strides[d] : strides[d];
+    lastElement += (dims[d] - 1) * stride;
+  }
+  const LongType elementBytes = static_cast<LongType>(DataTypeUtils::sizeOf(shapeInfo));
+  return (lastElement + 1) * elementBytes <= static_cast<LongType>(buffer->getLenInBytes());
+}
+}  // namespace
+
+bool NativeDynamicShapePlan::isPlanControlledWrapper(NDArray* array) const {
+  if (array == nullptr) return false;
+  if (planOwnedArrays_.count(array) != 0) return true;
+  // releaseGpuIntermediates leaves retired requested outputs in their slots for readers.
+  if (retiredRequestedOutputOwnersSet_.count(array) != 0) return true;
+  if (isStagingOwnedWrapper(array, placeholderStagingBuffers_, numExternalInputs_,
+                            deviceStagingBuffers_)) {
+    return true;
+  }
+  for (const auto& entry : migrationBuffers_) {
+    if (entry.second == array) return true;
+  }
+  return std::find(outputDeliveryBuffers_.begin(), outputDeliveryBuffers_.end(), array) !=
+         outputDeliveryBuffers_.end();
+}
+
+NDArray* NativeDynamicShapePlan::getIntrospectableSlotArray(int slotIdx) const {
+  NDArray* value = getSlotOutputArray(slotIdx);
+  return isPlanControlledWrapper(value) ? value : nullptr;
+}
+
+bool NativeDynamicShapePlan::isRecordedExternalBuffer(const DataBuffer* buffer) const {
+  if (buffer == nullptr) return false;
+  for (const ExternalInputRecord& record : lastExternalInputRecords_) {
+    if (record.buffer == buffer) return true;
+  }
+  return false;
+}
+
+size_t NativeDynamicShapePlan::estimatedOwnedBytes() const {
+  size_t total = 0;
+  std::vector<std::pair<uintptr_t, size_t>> captureWorkspaceRanges;
+  auto addReplayWorkspace = [&total, &captureWorkspaceRanges](
+                                const auto& handle) {
+    if (handle == nullptr || handle->getWorkspacePtr() == nullptr ||
+        handle->getWorkspaceBytes() == 0) {
+      return;
+    }
+    captureWorkspaceRanges.emplace_back(
+        reinterpret_cast<uintptr_t>(handle->getWorkspacePtr()),
+        handle->getWorkspaceBytes());
+    if (!handle->isWorkspaceExternal()) {
+      total += handle->getWorkspaceBytes();
+    }
+  };
+  for (const auto& segment : segments_) {
+    total += segment.compiledGraphBackendArtifactOwnedBytes;
+    addReplayWorkspace(segment.exec.replayHandle);
+    for (const auto& handle :
+         segment.exec.compositeReplaySchedule.mergedReplayHandles) {
+      addReplayWorkspace(handle);
+    }
+    for (const auto& handle :
+         segment.exec.compositeReplaySchedule.compositeReplayHandles) {
+      addReplayWorkspace(handle);
+    }
+  }
+#ifdef SD_CUDA
+  for (const auto& entry : captureWorkspacesByDevice_) {
+    if (entry.second.first == nullptr) continue;
+    captureWorkspaceRanges.emplace_back(
+        reinterpret_cast<uintptr_t>(entry.second.first), entry.second.second);
+    total += entry.second.second;
+  }
+  for (const auto& workspace : cublasWorkspaces_) total += workspace.second.second;
+#endif
+
+  // Plan-owned views over a caller's input share the caller's DataBuffer. It is
+  // not plan memory, and between executes the caller may have closed or freed
+  // it, so it is matched by pointer and never probed.
+  std::unordered_set<const DataBuffer*> externalBuffers;
+  for (const ExternalInputRecord& record : lastExternalInputRecords_) {
+    if (record.buffer != nullptr) externalBuffers.insert(record.buffer);
+  }
+
+  // Count every unique plan-owned DataBuffer once. Capture-workspace interior
+  // pointers are already represented by their arena above and must not be
+  // charged again. Include staging and untracked caches in addition to slot
+  // outputs so the plan-cache budget reflects the complete retained footprint.
+  std::unordered_set<DataBuffer*> countedBuffers;
+  auto addArray = [&total, &captureWorkspaceRanges, &countedBuffers, &externalBuffers](
+                      NDArray* arr) {
+    if (arr == nullptr) return;
+    DataBuffer* db = arr->dataBuffer();
+    if (db == nullptr || externalBuffers.count(db) != 0 || !db->isValid() ||
+        !countedBuffers.insert(db).second) {
+      return;
+    }
+    const uintptr_t special = reinterpret_cast<uintptr_t>(db->special());
+    for (const auto& range : captureWorkspaceRanges) {
+      if (special >= range.first && special - range.first < range.second) {
+        return;
+      }
+    }
+    total += static_cast<size_t>(arr->memoryFootprint());
+  };
+  for (NDArray* arr : planOwnedArrays_) addArray(arr);
+  for (NDArray* arr : outputDeliveryBuffers_) addArray(arr);
+  for (NDArray* arr : retiredRequestedOutputOwners_) addArray(arr);
+  for (const auto& entry : migrationBuffers_) addArray(entry.second);
+  if (placeholderStagingBuffers_ != nullptr) {
+    for (int i = 0; i < numExternalInputs_; ++i) {
+      addArray(placeholderStagingBuffers_[i]);
+    }
+  }
+  for (const auto& entry : deviceStagingBuffers_) {
+    for (NDArray* arr : entry.second) addArray(arr);
+  }
+  if (untrackedOutputCache_ != nullptr) {
+    for (int i = 0; i < untrackedOutputCacheSize_; ++i) {
+      addArray(untrackedOutputCache_[i]);
+    }
+  }
+  return total;
+}
+
+bool NativeDynamicShapePlan::isBorrowedExternalWrapper(NDArray* array) const {
+  if (array == nullptr) return false;
+  return std::find(lastExternalInputsCopy_.begin(), lastExternalInputsCopy_.end(), array) !=
+             lastExternalInputsCopy_.end() ||
+         isStagingOwnedWrapper(array, placeholderStagingBuffers_, numExternalInputs_,
+                               deviceStagingBuffers_);
+}
+
+long long NativeDynamicShapePlan::getEffectiveExternalAddress(int extIdx) const {
+  if (extIdx < 0 || extIdx >= numExternalInputs_) return 0;
+  NDArray* effective = effectiveExternals_ != nullptr ? effectiveExternals_[extIdx] : nullptr;
+  if (effective != nullptr && isPlanControlledWrapper(effective)) {
+    return reinterpret_cast<long long>(effective->specialBuffer());
+  }
+  if (effective != nullptr) {
+    // A caller's wrapper may already be deleted: answer from what execute recorded.
+    const size_t recorded = std::min(lastExternalInputsCopy_.size(), lastExternalInputRecords_.size());
+    for (size_t j = 0; j < recorded; j++) {
+      if (lastExternalInputsCopy_[j] != effective) continue;
+      const ExternalInputRecord& record = lastExternalInputRecords_[j];
+      if (record.special == nullptr || record.shapeInfo.empty()) return 0;
+#if defined(SD_VULKAN)
+      // Vulkan's specialBuffer() is the allocation identity and carries no offset.
+      return reinterpret_cast<long long>(record.special);
+#else
+      const size_t elementBytes = DataTypeUtils::sizeOf(record.shapeInfo.data());
+      return reinterpret_cast<long long>(static_cast<int8_t*>(record.special) +
+                                         record.offset * static_cast<LongType>(elementBytes));
+#endif
+    }
+  }
+  NDArray** stagingBuffers = activeStagingBuffers_ != nullptr
+      ? activeStagingBuffers_ : placeholderStagingBuffers_;
+  if (stagingBuffers != nullptr && stagingBuffers[extIdx] != nullptr) {
+    return reinterpret_cast<long long>(stagingBuffers[extIdx]->specialBuffer());
+  }
+  return 0;
+}
+
+void NativeDynamicShapePlan::rebindExternalInputAliases(NDArray** externalInputs, int count) {
+  const int prevCount = std::min({static_cast<int>(lastExternalInputsCopy_.size()),
+                                  static_cast<int>(lastExternalInputRecords_.size()),
+                                  static_cast<int>(lastExternalInputAddrs_.size()), count});
+  if (prevCount <= 0 || externalInputs == nullptr || outputSlots_ == nullptr ||
+      slots_ == nullptr || totalOutputSlots_ <= 0) {
+    return;
+  }
+
+  // Which inputs differ from the previous call. The previous wrappers and buffers
+  // are compared, never dereferenced: the caller may already have deleted them.
+  struct Change {
+    int ext;
+    NDArray* prev;
+    NDArray* next;
+    DataBuffer* nextBuffer;
+    LongType nextOffset;
+    bool addressChanged;
+    bool layoutChanged;
+  };
+  std::vector<Change> changes;
+  for (int e = 0; e < prevCount; e++) {
+    NDArray* prev = lastExternalInputsCopy_[e];
+    if (prev == nullptr) continue;
+    NDArray* next = externalInputs[e];
+    DataBuffer* nextBuffer = next != nullptr ? next->dataBuffer() : nullptr;
+    void* nextSpecial = nextBuffer != nullptr ? nextBuffer->special() : nullptr;
+    void* nextAddress = nextSpecial != nullptr
+        ? nextSpecial : (nextBuffer != nullptr ? nextBuffer->primary() : nullptr);
+    const LongType nextOffset = next != nullptr ? next->offset() : 0;
+    const ExternalInputRecord& prevRecord = lastExternalInputRecords_[e];
+    const bool addressChanged = nextBuffer != prevRecord.buffer ||
+                                reinterpret_cast<long long>(nextAddress) != lastExternalInputAddrs_[e] ||
+                                nextOffset != prevRecord.offset;
+    const bool layoutChanged = !sameSemanticLayout(
+        prevRecord.shapeInfo.empty() ? nullptr : prevRecord.shapeInfo.data(),
+        next != nullptr ? next->shapeInfo() : nullptr);
+    if (next == prev && !addressChanged && !layoutChanged) continue;
+    changes.push_back({e, prev, next, nextBuffer, nextOffset, addressChanged, layoutChanged});
+  }
+  if (changes.empty()) return;
+
+  // derived[slot] = the external input a chain of identity/view steps aliases;
+  // steps run in order, so a producer is classified before its consumers.
+  std::vector<int> derived(static_cast<size_t>(totalOutputSlots_), -1);
+  std::vector<int> producerStep(static_cast<size_t>(totalOutputSlots_), -1);
+  for (int s = 0; s < numSlots_; s++) {
+    const NativeSlot& slot = slots_[s];
+    int root = -1;
+    if (slot.aliasesInput() && slot.wiring.numInputs >= 1) {
+      const int src = slot.wiring.inputSourceIndices[0];
+      if (src < 0) {
+        const int ext = -(src + 1);
+        if (ext < count) root = ext;
+      } else if (src < totalOutputSlots_) {
+        root = derived[src];
+      }
+    }
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      const int out = slot.wiring.outputSlotIndices[o];
+      if (out < 0 || out >= totalOutputSlots_) continue;
+      producerStep[out] = s;
+      if (root >= 0) derived[out] = root;
+    }
+  }
+
+  auto invalidateAnchoredSnapshotSlot = [this](int si) {
+    if (!frozenSnapshot_.valid || si < 0 || si >= frozenSnapshot_.totalSlots) return;
+    const bool anchored =
+        (frozenSnapshot_.slotDataBuffers != nullptr && frozenSnapshot_.slotDataBuffers[si] != nullptr) ||
+        (frozenSnapshot_.slotGpuAddresses != nullptr && frozenSnapshot_.slotGpuAddresses[si] != nullptr);
+    if (anchored) invalidateSnapshotForSlot(si);
+  };
+  auto isMigrationBuffer = [this](NDArray* array) {
+    for (const auto& entry : migrationBuffers_) {
+      if (entry.second == array) return true;
+    }
+    return false;
+  };
+  auto replaceInContexts = [this](NDArray* from, NDArray* to) {
+    if (contextPool_ == nullptr) return;
+    for (int s = 0; s < numSlots_; s++) {
+      if (contextPool_[s] == nullptr) continue;
+      for (auto*& arr : contextPool_[s]->fastpath_in()) if (arr == from) arr = to;
+      for (auto*& arr : contextPool_[s]->fastpath_out()) if (arr == from) arr = to;
+    }
+  };
+  auto retargetOwnership = [this](int si, DataBuffer* from, DataBuffer* to) {
+    if (slotOwnership_ == nullptr || slotOwnership_[si].dataBuffer != from) return;
+    slotOwnership_[si].dataBuffer = to;
+    if (to != nullptr) slotOwnership_[si].deviceId = to->deviceId();
+  };
+
+  // Slots whose value changed address (args stale) or could not be re-expressed
+  // (captures and slot states invalid); consumers are added below.
+  std::vector<uint8_t> staleSlots(static_cast<size_t>(totalOutputSlots_), 0);
+  std::vector<uint8_t> rewarmSlots(static_cast<size_t>(totalOutputSlots_), 0);
+  int repointed = 0, reminted = 0, dropped = 0;
+
+  for (const Change& change : changes) {
+    const int e = change.ext;
+    const ExternalInputRecord& prevRecord = lastExternalInputRecords_[e];
+    // A caller may feed the plan's own output back in. Then only slots wired to
+    // this input alias it; the producer keeps its wrapper.
+    const bool prevPlanControlled = isPlanControlledWrapper(change.prev);
+
+    // Pass (a): the previous wrapper itself, published by identity steps.
+    for (int si = 0; si < totalOutputSlots_; si++) {
+      if (outputSlots_[si] != change.prev) continue;
+      if (prevPlanControlled && derived[si] != e) continue;
+      if (change.next == nullptr) {
+        outputSlots_[si] = nullptr;
+        resetSlotBufferOwnership(slotOwnership_, totalOutputSlots_, si);
+        invalidateAnchoredSnapshotSlot(si);
+        rewarmSlots[si] = 1;
+        dropped++;
+        continue;
+      }
+      outputSlots_[si] = change.next;
+      retargetOwnership(si, prevRecord.buffer, change.nextBuffer);
+      if (change.addressChanged || change.layoutChanged) {
+        invalidateAnchoredSnapshotSlot(si);
+        staleSlots[si] = 1;
+        if (change.layoutChanged) rewarmSlots[si] = 1;
+      } else if (frozenSnapshot_.valid && si < frozenSnapshot_.totalSlots) {
+        if (frozenSnapshot_.slotNDArrayIdentity != nullptr &&
+            frozenSnapshot_.slotNDArrayIdentity[si] == change.prev) {
+          frozenSnapshot_.slotNDArrayIdentity[si] = change.next;
+        }
+        if (frozenSnapshot_.slotShapeInfoAddresses != nullptr &&
+            frozenSnapshot_.slotShapeInfoAddresses[si] != nullptr) {
+          frozenSnapshot_.slotShapeInfoAddresses[si] = change.next->specialShapeInfo();
+        }
+      }
+      repointed++;
+    }
+    if (contextPool_ != nullptr) {
+      for (int s = 0; s < numSlots_; s++) {
+        Context* ctx = contextPool_[s];
+        if (ctx == nullptr) continue;
+        bool wired = !prevPlanControlled;
+        for (int i = 0; !wired && i < slots_[s].wiring.numInputs; i++) {
+          const int src = slots_[s].wiring.inputSourceIndices[i];
+          wired = src == -(e + 1) || (src >= 0 && src < totalOutputSlots_ && derived[src] == e);
+        }
+        for (int o = 0; !wired && o < slots_[s].wiring.numOutputs; o++) {
+          const int out = slots_[s].wiring.outputSlotIndices[o];
+          wired = out >= 0 && out < totalOutputSlots_ && derived[out] == e;
+        }
+        if (!wired) continue;
+        for (auto*& arr : ctx->fastpath_in()) if (arr == change.prev) arr = change.next;
+        for (auto*& arr : ctx->fastpath_out()) if (arr == change.prev) arr = change.next;
+      }
+    }
+    if (effectiveExternals_ != nullptr && e < numExternalInputs_ &&
+        effectiveExternals_[e] == change.prev) {
+      effectiveExternals_[e] = change.next;
+    }
+
+    // Pass (b): plan-owned views minted over the previous input's buffer.
+    if (!change.addressChanged && !change.layoutChanged) continue;
+    for (int si = 0; si < totalOutputSlots_; si++) {
+      if (derived[si] != e) continue;
+      NDArray* view = outputSlots_[si];
+      if (view == nullptr || view == change.next) continue;
+      if (planOwnedArrays_.count(view) == 0 ||
+          isStagingOwnedWrapper(view, placeholderStagingBuffers_, numExternalInputs_,
+                                deviceStagingBuffers_) ||
+          isMigrationBuffer(view)) {
+        continue;
+      }
+      if (view->dataBuffer() != prevRecord.buffer) continue;
+      if (view->ownsDataBuffer() && !view->isView()) continue;
+
+      NDArray* fresh = nullptr;
+      const LongType relativeOffset = view->offset() - prevRecord.offset;
+      if (!change.layoutChanged && change.next != nullptr && relativeOffset >= 0) {
+        const LongType nextViewOffset = relativeOffset + change.nextOffset;
+        if (viewFitsBuffer(view->shapeInfo(), nextViewOffset, change.nextBuffer)) {
+          fresh = registerOwned(new NDArray(change.nextBuffer, const_cast<LongType*>(view->shapeInfo()),
+                                            view->getContext(), nextViewOffset));
+        }
+      }
+      planOwnedArrays_.erase(view);
+      deferredSlotDeletes_.push_back(view);
+      for (int sj = 0; sj < totalOutputSlots_; sj++) {
+        if (outputSlots_[sj] != view) continue;
+        outputSlots_[sj] = fresh;
+        invalidateAnchoredSnapshotSlot(sj);
+        if (fresh != nullptr) {
+          retargetOwnership(sj, prevRecord.buffer, change.nextBuffer);
+          staleSlots[sj] = 1;
+        } else {
+          resetSlotBufferOwnership(slotOwnership_, totalOutputSlots_, sj);
+          rewarmSlots[sj] = 1;
+        }
+      }
+      replaceInContexts(view, fresh);
+      if (fresh != nullptr) {
+        reminted++;
+        DSP_DIAG(MEMORY, "EXT_REBIND_VIEW: ext=%d slot=%d old=%p new=%p offset=%lld",
+                 e, si, (void*)view, (void*)fresh, (long long)fresh->offset());
+      } else {
+        dropped++;
+      }
+    }
+  }
+
+  // Producers and consumers of every changed slot; segments are invalidated only
+  // after all repointing, since invalidation reads the slots.
+  std::vector<uint8_t> staleSteps(static_cast<size_t>(numSlots_), 0);
+  std::vector<uint8_t> rewarmSteps(static_cast<size_t>(numSlots_), 0);
+  for (int si = 0; si < totalOutputSlots_; si++) {
+    const int producer = producerStep[si];
+    if (producer < 0) continue;
+    if (staleSlots[si] || rewarmSlots[si]) slots_[producer].bumpGeneration();
+    if (staleSlots[si]) staleSteps[producer] = 1;
+    if (rewarmSlots[si]) rewarmSteps[producer] = 1;
+  }
+  for (int s = 0; s < numSlots_; s++) {
+    for (int i = 0; i < slots_[s].wiring.numInputs; i++) {
+      const int src = slots_[s].wiring.inputSourceIndices[i];
+      if (src < 0 || src >= totalOutputSlots_) continue;
+      if (staleSlots[src]) staleSteps[s] = 1;
+      if (rewarmSlots[src]) rewarmSteps[s] = 1;
+    }
+  }
+  std::vector<uint8_t> coveredSteps(static_cast<size_t>(numSlots_), 0);
+  int staleSegments = 0, rewarmedSegments = 0;
+  for (auto& seg : segments_) {
+    bool stale = false, rewarm = false;
+    for (int s = std::max(0, seg.def.startSlot); s <= seg.def.endSlot && s < numSlots_; s++) {
+      coveredSteps[s] = 1;
+      stale = stale || staleSteps[s];
+      rewarm = rewarm || rewarmSteps[s];
+    }
+    if (rewarm) {
+      SegmentLifecycle::invalidateSegmentCaptures(this, seg, "external_alias_rebind");
+      seg.exec.resetForWarmup();
+      seg.exec.markArgsStale();
+      rewarmedSegments++;
+    } else if (stale) {
+      seg.exec.markArgsStale();
+      staleSegments++;
+    }
+  }
+  for (int s = 0; s < numSlots_; s++) {
+    if (rewarmSteps[s] && !coveredSteps[s]) resetSlotStatesForSegment(s, s);
+  }
+  if (rewarmedSegments > 0 && planLifecycle_.isReplaying()) planLifecycle_.unseal();
+
+  DSP_DIAG(MEMORY, "EXT_REBIND: changedInputs=%d repointed=%d reminted=%d dropped=%d "
+           "staleSegments=%d rewarmedSegments=%d phase=%s execCount=%d",
+           (int)changes.size(), repointed, reminted, dropped, staleSegments,
+           rewarmedSegments, planLifecycle_.displayName(), executeCount_);
+}
+
 void NativeDynamicShapePlan::recordExternalInputs(NDArray** externalInputs, int numExternalInputs) {
   const int count = (externalInputs != nullptr && numExternalInputs > 0) ? numExternalInputs : 0;
+  rebindExternalInputAliases(externalInputs, count);
   // The array-of-pointers may be stack-allocated by the caller, so keep a copy.
   lastExternalInputsCopy_.assign(externalInputs, externalInputs + count);
   lastExternalInputs_ = count > 0 ? lastExternalInputsCopy_.data() : nullptr;
@@ -8063,16 +8516,6 @@ void NativeDynamicShapePlan::processPendingExternalViewReacquire(NDArray** exter
   if (!externalViewReacquirePending_) return;
   externalViewReacquirePending_ = false;
   if (slots_ == nullptr || outputSlots_ == nullptr) return;
-
-  // Flush deferred slot deletes from prior executes/teardowns before the
-  // writeOutputSlot calls below push new entries. deferredSlotDeletes_ is
-  // thread-local and outlives any single plan; entries left by a previous
-  // session (e.g. a plan torn down without a following execute on that plan)
-  // are freed-but-pending pointers whose memory the allocator may already
-  // have recycled for this plan's arrays. This runs in the execute preamble,
-  // so nothing on this thread is mid-execution — the flush is safe here for
-  // the same reason it is safe at platformEndExecution.
-  flushDeferredSlotDeletes();
 
   int checked = 0;
   int kept = 0;

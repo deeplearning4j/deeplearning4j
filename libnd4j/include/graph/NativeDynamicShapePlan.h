@@ -2098,20 +2098,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   }
 
   /** Device address the CUDA graph will actually read from for ext[extIdx].
-   *  Returns staging address if variable with staging, else the original ext address, else 0. */
-  long long getEffectiveExternalAddress(int extIdx) const {
-    if (effectiveExternals_ != nullptr && extIdx >= 0 && extIdx < numExternalInputs_) {
-      NDArray* eff = effectiveExternals_[extIdx];
-      if (eff != nullptr) return reinterpret_cast<long long>(eff->specialBuffer());
-    }
-    NDArray** stagingBuffers = activeStagingBuffers_ != nullptr
-        ? activeStagingBuffers_ : placeholderStagingBuffers_;
-    if (stagingBuffers != nullptr && extIdx >= 0 && extIdx < numExternalInputs_) {
-      NDArray* staging = stagingBuffers[extIdx];
-      if (staging != nullptr) return reinterpret_cast<long long>(staging->specialBuffer());
-    }
-    return 0;
-  }
+   *  Returns staging address if variable with staging, else the original ext address, else 0.
+   *  Called between executes: a caller's wrapper is answered from its execute-time record. */
+  long long getEffectiveExternalAddress(int extIdx) const;
 
   /** Number of variable ext inputs with allocated staging buffers. */
   int getNumStagingBuffers() const {
@@ -2267,85 +2256,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * backend-owned compiled artifacts, replay-handle workspaces, and CUDA
    * shared-capture/cuBLAS workspaces.
    * NativePlanCache uses this value for its device-memory budget, so every
-   * plan-lifetime allocation must be represented here.
+   * plan-lifetime allocation must be represented here. Callers' external
+   * buffers are not plan memory and are never probed, so it is safe between
+   * executes.
    */
-  size_t estimatedOwnedBytes() const {
-    size_t total = 0;
-    std::vector<std::pair<uintptr_t, size_t>> captureWorkspaceRanges;
-    auto addReplayWorkspace = [&total, &captureWorkspaceRanges](
-                                  const auto& handle) {
-      if (handle == nullptr || handle->getWorkspacePtr() == nullptr ||
-          handle->getWorkspaceBytes() == 0) {
-        return;
-      }
-      captureWorkspaceRanges.emplace_back(
-          reinterpret_cast<uintptr_t>(handle->getWorkspacePtr()),
-          handle->getWorkspaceBytes());
-      if (!handle->isWorkspaceExternal()) {
-        total += handle->getWorkspaceBytes();
-      }
-    };
-    for (const auto& segment : segments_) {
-      total += segment.compiledGraphBackendArtifactOwnedBytes;
-      addReplayWorkspace(segment.exec.replayHandle);
-      for (const auto& handle :
-           segment.exec.compositeReplaySchedule.mergedReplayHandles) {
-        addReplayWorkspace(handle);
-      }
-      for (const auto& handle :
-           segment.exec.compositeReplaySchedule.compositeReplayHandles) {
-        addReplayWorkspace(handle);
-      }
-    }
-#ifdef SD_CUDA
-    for (const auto& entry : captureWorkspacesByDevice_) {
-      if (entry.second.first == nullptr) continue;
-      captureWorkspaceRanges.emplace_back(
-          reinterpret_cast<uintptr_t>(entry.second.first), entry.second.second);
-      total += entry.second.second;
-    }
-    for (const auto& workspace : cublasWorkspaces_) total += workspace.second.second;
-#endif
-
-    // Count every unique plan-owned DataBuffer once. Capture-workspace interior
-    // pointers are already represented by their arena above and must not be
-    // charged again. Include staging and untracked caches in addition to slot
-    // outputs so the plan-cache budget reflects the complete retained footprint.
-    std::unordered_set<DataBuffer*> countedBuffers;
-    auto addArray = [&total, &captureWorkspaceRanges, &countedBuffers](
-                        NDArray* arr) {
-      if (arr == nullptr) return;
-      DataBuffer* db = arr->dataBuffer();
-      if (db == nullptr || !db->isValid() || !countedBuffers.insert(db).second) {
-        return;
-      }
-      const uintptr_t special = reinterpret_cast<uintptr_t>(db->special());
-      for (const auto& range : captureWorkspaceRanges) {
-        if (special >= range.first && special - range.first < range.second) {
-          return;
-        }
-      }
-      total += static_cast<size_t>(arr->memoryFootprint());
-    };
-    for (NDArray* arr : planOwnedArrays_) addArray(arr);
-    for (NDArray* arr : outputDeliveryBuffers_) addArray(arr);
-    for (NDArray* arr : retiredRequestedOutputOwners_) addArray(arr);
-    for (const auto& entry : migrationBuffers_) addArray(entry.second);
-    if (placeholderStagingBuffers_ != nullptr) {
-      for (int i = 0; i < numExternalInputs_; ++i) {
-        addArray(placeholderStagingBuffers_[i]);
-      }
-    }
-    for (const auto& entry : deviceStagingBuffers_) {
-      for (NDArray* arr : entry.second) addArray(arr);
-    }
-    if (untrackedOutputCache_ != nullptr) {
-      for (int i = 0; i < untrackedOutputCacheSize_; ++i) {
-        addArray(untrackedOutputCache_[i]);
-      }
-    }
-    return total;
-  }
+  size_t estimatedOwnedBytes() const;
 
   /**
    * Get the output slots array (NDArray pointers for all slots).
@@ -2842,12 +2757,22 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     return lastExternalInputRecords_[extIdx].special;
   }
 
-  /** Get the output NDArray* at a specific slot index, or nullptr. */
+  /** Get the output NDArray* at a specific slot index, or nullptr. For code inside an
+   *  execute: an identity slot can hold the caller's wrapper, which may be deleted after. */
   NDArray* getSlotOutputArray(int slotIdx) const {
     if (outputSlots_ == nullptr || slotIdx < 0 || slotIdx >= totalOutputSlots_)
       return nullptr;
     return outputSlots_[slotIdx];
   }
+
+  /** The slot value for readers outside execute (JNI introspection): a wrapper whose
+   *  lifetime the plan controls, or nullptr. A slot holding a caller's wrapper reads as
+   *  nullptr; the caller may already have deleted it, and its storage is not the plan's. */
+  NDArray* getIntrospectableSlotArray(int slotIdx) const;
+
+  /** Whether buffer is the DataBuffer of an external input the last execute recorded.
+   *  The caller owns it and may have closed or freed it since: compare, never dereference. */
+  bool isRecordedExternalBuffer(const DataBuffer* buffer) const;
 
   /** Get the dirty generation counter for a slot (0 if out of range). */
   int getSlotGeneration(int slotIdx) const {
@@ -3329,6 +3254,18 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::vector<ExternalInputRecord> lastExternalInputRecords_;
   // Record the inputs of the current call; every execute entry point calls this first.
   void recordExternalInputs(NDArray** externalInputs, int numExternalInputs);
+  // Wrappers whose object lifetime the plan controls: plan-owned slot arrays, retired
+  // requested outputs, delivery, staging and migration buffers. Only these may be
+  // dereferenced outside the execute that bound them.
+  bool isPlanControlledWrapper(NDArray* array) const;
+  // A caller's external wrapper from the last recorded execute, or a staging wrapper: the
+  // plan never deletes either.
+  bool isBorrowedExternalWrapper(NDArray* array) const;
+  // Identity ops publish the caller's wrapper as a slot value, and plan-owned views borrow
+  // its DataBuffer. Repoint both onto this call's inputs before anything reads the slots,
+  // since the caller may already have deleted the previous wrappers. Reads only the previous
+  // records and pointers, never the previous wrappers.
+  void rebindExternalInputAliases(NDArray** externalInputs, int count);
   // placeholderStagingBuffers_[extIdx], allocated from the recorded layout if missing.
   // nullptr when nothing usable was recorded for extIdx.
   NDArray* ensurePlaceholderStagingFromRecord(int extIdx);

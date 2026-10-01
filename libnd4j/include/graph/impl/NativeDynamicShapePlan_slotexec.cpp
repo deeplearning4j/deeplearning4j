@@ -1343,7 +1343,8 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
       // Deferring all deletes until after all new views are installed prevents
       // this interleaving.
       outputSlots_[outSi] = nullptr;
-      planOwnedArrays_.erase(cached);
+      const bool cachedOwned = planOwnedArrays_.erase(cached) > 0;
+      // A caller's wrapper published by an identity step is borrowed, never deleted.
       // Guard: only defer-delete if the DataBuffer is still live.
       // cachedValid checks only _shapeInfo validity (safeHasValidShapeInfo).
       // cachedDb->isValid() additionally checks the DataBuffer magic number and
@@ -1352,7 +1353,8 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
       // Without this guard, a view with a destroyed DataBuffer would reach the
       // post-execution delete queue and corrupt the heap when its destructor
       // touches the already-destroyed DataBuffer.
-      if (cachedValid && cachedDb != nullptr && cachedDb->isValid()) {
+      if ((cachedOwned || !isBorrowedExternalWrapper(cached)) &&
+          cachedValid && cachedDb != nullptr && cachedDb->isValid()) {
         deferredSlotDeletes_.push_back(cached);
       }
       // If !cachedValid or DataBuffer is invalid/destroyed, skip delete —
@@ -2956,7 +2958,7 @@ Status NativeDynamicShapePlan::executeSlot(
     }
 
     if (!tl_graphExecutionActive && !isSlotArrayShared(cached, slotIdx)) {
-      planOwnedArrays_.erase(cached);
+      const bool owned = planOwnedArrays_.erase(cached) > 0;
       // Defer deletion until after executeSlot completes to prevent heap
       // corruption.  Inline delete here frees the NDArray memory, which the
       // allocator may immediately reuse for a subsequent op's output or
@@ -2964,9 +2966,15 @@ Status NativeDynamicShapePlan::executeSlot(
       // object, the allocator's free-list metadata update corrupts the
       // Workspace, producing SIGSEGV in Workspace::allocateBytes with a
       // garbage `this` pointer full of ASCII string data.
-      deferredSlotDeletes_.push_back(cached);
-      DSP_DIAG(MEMORY, "discardCachedSlotArray: slot=%d tag=%s deferred-delete=%p",
-               slotIdx, tag, (void*)cached);
+      // A caller's wrapper published by an identity step is borrowed, never deleted.
+      if (owned || !isBorrowedExternalWrapper(cached)) {
+        deferredSlotDeletes_.push_back(cached);
+        DSP_DIAG(MEMORY, "discardCachedSlotArray: slot=%d tag=%s deferred-delete=%p",
+                 slotIdx, tag, (void*)cached);
+      } else {
+        DSP_DIAG(MEMORY, "discardCachedSlotArray: slot=%d tag=%s borrowed=%p",
+                 slotIdx, tag, (void*)cached);
+      }
     } else {
       DSP_DIAG(MEMORY, "discardCachedSlotArray: slot=%d tag=%s preserved=%p sharedOrCapturing=%d",
                slotIdx, tag, (void*)cached,

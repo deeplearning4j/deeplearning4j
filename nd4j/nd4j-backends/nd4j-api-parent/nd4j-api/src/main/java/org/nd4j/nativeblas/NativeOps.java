@@ -2389,7 +2389,9 @@ public interface NativeOps {
 
   /**
    * Get the OpaqueNDArray at the given output slot index.
-   * Non-owning view — valid until next execute(). Returns null if out of range or empty.
+   * Non-owning view — valid until next execute(). Returns null if out of range or empty,
+   * and for a slot holding a caller's input array (an identity of an external input),
+   * which the caller may have deleted since the execute.
    */
   default OpaqueNDArray getPlanSlotOutputArray(Pointer planHandle, int slotIdx) { return null; }
 
@@ -2398,6 +2400,13 @@ public interface NativeOps {
    * Returns -1 if handle is invalid.
    */
   default int getTotalPlanOutputSlots(Pointer planHandle) { return -1; }
+
+  /**
+   * Device bytes a compiled plan retains: owned intermediates, staging, compiled artifacts
+   * and workspaces, each buffer counted once, callers' inputs excluded. Reads no slot
+   * array, so it is safe after callers deleted their inputs. Returns 0 if unsupported.
+   */
+  default long getPlanEstimatedOwnedBytes(Pointer planHandle) { return 0L; }
 
   // =============================================================================
   // Per-Segment Pointer Tracking

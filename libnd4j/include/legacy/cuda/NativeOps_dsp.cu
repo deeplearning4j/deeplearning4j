@@ -2149,25 +2149,37 @@ int copyPlanStagingToBuffer(sd::Pointer planHandle, int extIdx, OpaqueDataBuffer
 OpaqueNDArray getPlanSlotOutputArray(sd::Pointer planHandle, int slotIdx) {
   if (planHandle == nullptr) return nullptr;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  auto* result = plan->getSlotOutputArray(slotIdx);
+  // Java reads slots between executes, when a slot may still hold a caller's
+  // wrapper that the caller has deleted. Only plan-controlled wrappers come back.
+  auto* result = plan->getIntrospectableSlotArray(slotIdx);
   if (result == nullptr) {
     // Null-read tracing for the longViewChain/JIT null-slot investigation:
     // pairs with WRITE_SLOT's plan=%p to show whether the Java handle reads
-    // the same plan instance the writers populated (task #52).
-    DSP_DIAG(MEMORY, "GET_SLOT_OUTPUT_NULL: slot=%d plan=%p", slotIdx, (void*)plan);
+    // the same plan instance the writers populated (task #52). held= is the
+    // caller's wrapper an empty answer withholds, printed by address only.
+    DSP_DIAG(MEMORY, "GET_SLOT_OUTPUT_NULL: slot=%d held=%p plan=%p", slotIdx,
+             (void*)plan->getSlotOutputArray(slotIdx), (void*)plan);
   } else if (DSP_DIAG_ENABLED(MEMORY)) {
     // Buffer-state fingerprint at Java read time: distinguishes a truly-null
     // slot from a live wrapper whose underlying buffer is closed/zero-length
     // (dead ext-fed view) — the Java side only sees "length 0" for both.
     auto* rdb = result->dataBuffer();
-    DSP_DIAG(MEMORY,
-             "GET_SLOT_OUTPUT: slot=%d arr=%p db=%p dbValid=%d dbClosed=%d lenBytes=%zu "
-             "wrapperLen=%lld plan=%p",
-             slotIdx, (void*)result, (void*)rdb,
-             rdb != nullptr && rdb->isValid() ? 1 : 0,
-             rdb != nullptr && rdb->isClosed() ? 1 : 0,
-             rdb != nullptr ? rdb->getLenInBytes() : 0,
-             (long long)result->lengthOf(), (void*)plan);
+    if (plan->isRecordedExternalBuffer(rdb)) {
+      // A plan-owned view over a caller's input: the wrapper is live but the
+      // caller may have closed or freed the buffer, so it is not probed.
+      DSP_DIAG(MEMORY,
+               "GET_SLOT_OUTPUT: slot=%d arr=%p db=%p external=1 wrapperLen=%lld plan=%p",
+               slotIdx, (void*)result, (void*)rdb, (long long)result->lengthOf(), (void*)plan);
+    } else {
+      DSP_DIAG(MEMORY,
+               "GET_SLOT_OUTPUT: slot=%d arr=%p db=%p dbValid=%d dbClosed=%d lenBytes=%zu "
+               "wrapperLen=%lld plan=%p",
+               slotIdx, (void*)result, (void*)rdb,
+               rdb != nullptr && rdb->isValid() ? 1 : 0,
+               rdb != nullptr && rdb->isClosed() ? 1 : 0,
+               rdb != nullptr ? rdb->getLenInBytes() : 0,
+               (long long)result->lengthOf(), (void*)plan);
+    }
   }
   return result;
 }
@@ -2175,6 +2187,12 @@ OpaqueNDArray getPlanSlotOutputArray(sd::Pointer planHandle, int slotIdx) {
 int getTotalPlanOutputSlots(sd::Pointer planHandle) {
   if (planHandle == nullptr) return 0;
   return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getTotalOutputSlots();
+}
+
+long long getPlanEstimatedOwnedBytes(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  return static_cast<long long>(
+      reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->estimatedOwnedBytes());
 }
 
 int getPlanSlotGeneration(sd::Pointer planHandle, int slotIdx) {

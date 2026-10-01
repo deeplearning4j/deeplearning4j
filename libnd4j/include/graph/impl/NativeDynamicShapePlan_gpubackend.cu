@@ -4459,8 +4459,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
          // zero-initialized but ensureAndSyncStagingBuffers may not have run
          // yet for this execution. Populate null entries from externalArrays
          // so gap ops don't see null inputs.
+         // Only a table this exec's staging sync refreshed: otherwise its
+         // passthrough entries may still be the previous call's wrappers.
          NDArray** gapExternals = externalArrays;
-         if (effectiveExternals_ != nullptr &&
+         if (stagingMaintainedThisExec_ &&
+             effectiveExternals_ != nullptr &&
              !externalInputIsVariable_.empty() &&
              !planLifecycle_.isSlotBySlot()) {
            // Backfill null entries from externalArrays — ensureAndSyncStagingBuffers
