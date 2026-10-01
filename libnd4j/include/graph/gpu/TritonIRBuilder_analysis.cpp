@@ -857,8 +857,8 @@ SegmentKernelPattern TritonIRBuilder::classifySegment(NativeSlot* slots, int sta
 // warp whose K recurrence is a long dependent instruction stream; several per
 // SM let the schedulers interleave them instead of stalling on one.
 static constexpr int kSerialMatmulProgramsPerSm = 4;
-// One output per lane: a smaller block leaves lanes of the warp idle (Triton
-// replicates the tensor across them) at no latency benefit.
+// One output per lane of the program's warp, while the outputs still give every
+// SM a program at that width.
 static constexpr int kMinSerialMatmulBlock = 32;
 
 void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& categories,
@@ -869,6 +869,7 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
   bool hasReduction = false;
   bool hasFusedAttention = false;
   bool hasNormalization = false;
+  bool allMatmul = !categories.empty();
 
   // Compute total output length for dynamic dim functions
   LongType maxOutputLen = 0;
@@ -883,6 +884,7 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
     if (cat == TritonOpCategory::REDUCTION) hasReduction = true;
     if (cat == TritonOpCategory::NORMALIZATION) hasNormalization = true;
     if (cat == TritonOpCategory::FUSED_ATTENTION) hasFusedAttention = true;
+    if (cat != TritonOpCategory::MATMUL) allMatmul = false;
   }
 
   if (hasFusedAttention) {
@@ -915,12 +917,23 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
       // only parallelism is the output count. A program's time is its K-long
       // instruction stream whatever its width, so spread the outputs over
       // kSerialMatmulProgramsPerSm one-warp programs per SM.
+      const LongType sms = queryCudaMultiProcessorCount();
       const LongType outputs = static_cast<LongType>(approxM) * approxN;
-      const LongType perSm = std::max<LongType>(
-          1, outputs / (static_cast<LongType>(queryCudaMultiProcessorCount()) * kSerialMatmulProgramsPerSm));
+      const LongType perSm = std::max<LongType>(1, outputs / (sms * kSerialMatmulProgramsPerSm));
       int perProgram = 1;
       while (static_cast<LongType>(perProgram) * 2 <= perSm) perProgram *= 2;
       blockSize = std::max(kMinSerialMatmulBlock, std::min(perProgram, 64));
+      // Too few outputs for a full-warp program on every SM (Qwen3.6-27B GDN
+      // in_proj_a/b: 48 per matmul, which ran on four SMs). Each lane streams
+      // its own operand rows, so a program's K loop is bounded by the memory
+      // requests its SM keeps in flight, and narrower programs on more SMs
+      // finish sooner; Triton replicates the spare lanes. Take the widest
+      // power-of-two block that still gives every SM a program. Pure matmul
+      // segments only: all sections of a segment share the block size.
+      if (allMatmul && outputs < sms * kMinSerialMatmulBlock) {
+        blockSize = 1;
+        while (static_cast<LongType>(blockSize) * 2 * sms <= outputs) blockSize *= 2;
+      }
       numWarps = 1;
       numStages = 2;
     } else if (approxM <= 16) {
@@ -967,7 +980,7 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
 
   // Clamp to reasonable Triton tile range (serial decode matmuls chose a
   // smaller per-SM block above deliberately).
-  const int minBlockSize = hasSerialMatmul && hasMatmul ? kMinSerialMatmulBlock : 64;
+  const int minBlockSize = hasSerialMatmul && hasMatmul ? 1 : 64;
   blockSize = std::max(minBlockSize, std::min(blockSize, 4096));
   numWarps = std::max(1, std::min(numWarps, 16));
 

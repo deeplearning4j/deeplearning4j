@@ -246,8 +246,14 @@ namespace {
 // SERIAL_FMA chains; a marked load's layout needs only its own pointer's axis
 // information. Without it the default layout splits a lane's contiguous
 // elements across threads, so neither the load nor its asynchronous copy
-// vectorizes. The rewrite is Triton's own: operands converted to the new
-// layout, the load recreated, its result converted back.
+// vectorizes. A thread keeps its lane's whole vector even when the tile has
+// fewer elements than the warp has threads (narrow SERIAL_FMA blocks): Triton
+// replicates the tile across the spare threads, and its asynchronous copies
+// issue from one thread per element. A load also marked "nd4j.thread_row" (a
+// one-lane block's chunk of words) puts its whole contiguous row in one thread,
+// so the chunk copies as one group of 16-byte copies. The rewrite is Triton's
+// own: operands converted to the new layout, the load recreated, its result
+// converted back.
 class MarkedLoadCoalescePass final
     : public mlir::PassWrapper<MarkedLoadCoalescePass, mlir::OperationPass<mlir::ModuleOp>> {
  public:
@@ -266,10 +272,9 @@ class MarkedLoadCoalescePass final
       auto sorted = mlir::argSort(axisInfo.getAxisInfo(load.getPtr())->getContiguity());
       llvm::SmallVector<unsigned> order(sorted.begin(), sorted.end());
       const int numWarps = mlir::triton::gpu::lookupNumWarps(load.getOperation());
-      unsigned perThread = mlir::getNumElementsPerThread(load.getOperation(), order, axisInfo, shapePerCTA);
-      const int64_t elements = mlir::product<int64_t>(shapePerCTA);
-      perThread = std::min<unsigned>(perThread, static_cast<unsigned>(std::max<int64_t>(
-          elements / (static_cast<int64_t>(numWarps) * threadsPerWarp), 1)));
+      const unsigned perThread = load->hasAttr("nd4j.thread_row")
+          ? static_cast<unsigned>(shapePerCTA[order[0]])
+          : mlir::getNumElementsPerThread(load.getOperation(), order, axisInfo, shapePerCTA);
       llvm::SmallVector<unsigned> sizePerThread(ptrType.getRank(), 1);
       sizePerThread[order[0]] = perThread;
       layouts.emplace_back(load.getOperation(), mlir::triton::gpu::BlockedEncodingAttr::get(
