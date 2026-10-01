@@ -29,6 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.util.ArrayTypeConverters;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -47,6 +48,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -507,6 +509,116 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
             assertArrayEquals(expected, targetAsBytes.toIntVector(),
                     fp8 + " copy must replace exactly the addressed bytes");
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testHalfFromFloatMatchesNativeCast(Nd4jBackend backend) {
+        // toHalfs builds the HALF buffers Java fills from arrays (CUDA buffers, scalars,
+        // constants). The exponents reach each rounding branch: at most half the smallest
+        // subnormal, subnormals, the carry from the largest subnormal into the smallest normal,
+        // normals, the 65504/65520 overflow edge and past it.
+        assertFloatsMatchNativeCast(DataType.HALF, new int[]{101, 102, 103, 112, 113, 127, 142, 143},
+                ArrayTypeConverters::toHalfs);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBfloat16FromFloatMatchesNativeCast(Nd4jBackend backend) {
+        // toBfloats builds the BFLOAT16 buffers Java fills from arrays. bfloat16 keeps the float
+        // exponent, so one rounding serves every binade; the exponents reach subnormals, the carry
+        // into the smallest normal, normals, the round past the largest finite value to infinity,
+        // infinity and every NaN.
+        assertFloatsMatchNativeCast(DataType.BFLOAT16, new int[]{0, 1, 127, 254, 255},
+                ArrayTypeConverters::toBfloats);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testHalfBfloat16BitsMatchNativeCast(Nd4jBackend backend) {
+        // Every 16-bit pattern read as each type; the element index is the pattern.
+        short[] patterns = new short[1 << 16];
+        short[] halfToBfloat16 = new short[patterns.length];
+        short[] bfloat16ToHalf = new short[patterns.length];
+        float[] halfToFloat = new float[patterns.length];
+        for (int i = 0; i < patterns.length; i++) {
+            patterns[i] = (short) i;
+            halfToBfloat16[i] = ArrayTypeConverters.toBFloat16(patterns[i]);
+            bfloat16ToHalf[i] = ArrayTypeConverters.bfloat16ToShort(patterns[i]);
+            halfToFloat[i] = ArrayTypeConverters.halfToFloat(patterns[i]);
+        }
+        INDArray halfs = bitsAs(patterns, DataType.HALF);
+        assertBitsMatchNativeCast("HALF to BFLOAT16", halfs, DataType.BFLOAT16, halfToBfloat16);
+        assertBitsMatchNativeCast("BFLOAT16 to HALF", bitsAs(patterns, DataType.BFLOAT16), DataType.HALF,
+                bfloat16ToHalf);
+        float[] expected = halfs.castTo(DataType.FLOAT).toFloatVector();
+        for (int i = 0; i < patterns.length; i++) {
+            if (Float.floatToRawIntBits(expected[i]) == Float.floatToRawIntBits(halfToFloat[i])
+                    || (Float.isNaN(expected[i]) && Float.isNaN(halfToFloat[i]))) continue;
+            fail(String.format("half 0x%04x casts to %s natively but converts to %s in Java",
+                    i, expected[i], halfToFloat[i]));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testScalarKeepsNegativeZero(Nd4jBackend backend) {
+        // A scalar op's value reaches a plan as tArgs[0] through getDouble(0). relu with cutoff -0
+        // returns -0 for negative inputs, so the sign must survive the scalar's storage type.
+        for (DataType dtype : new DataType[]{DataType.HALF, DataType.BFLOAT16, DataType.FLOAT, DataType.DOUBLE}) {
+            INDArray scalar = Nd4j.scalar(dtype, -0.0);
+            assertEquals(Double.doubleToRawLongBits(-0.0), Double.doubleToRawLongBits(scalar.getDouble(0)),
+                    dtype + " scalar -0");
+        }
+    }
+
+    /**
+     * Every float of the given exponents, of both signs, and the specials, converted to the
+     * target in Java must give the bits libnd4j's cast gives. The element index is the mantissa.
+     */
+    private static void assertFloatsMatchNativeCast(DataType target, int[] exponents,
+                                                    Function<float[], short[]> javaConversion) {
+        float[] values = new float[1 << 23];
+        for (int exponent : exponents) {
+            for (int sign = 0; sign < 2; sign++) {
+                for (int mantissa = 0; mantissa < values.length; mantissa++) {
+                    values[mantissa] = Float.intBitsToFloat((sign << 31) | (exponent << 23) | mantissa);
+                }
+                assertBitsMatchNativeCast("FLOAT exponent " + exponent + (sign == 0 ? "" : ", negative") + " to "
+                        + target, Nd4j.createFromArray(values), target, javaConversion.apply(values));
+            }
+        }
+        float[] specials = {0.0f, -0.0f, Float.MIN_VALUE, -Float.MIN_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE,
+                Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NaN, Float.intBitsToFloat(0xffc00000),
+                Float.intBitsToFloat(0x7f800001)};
+        assertBitsMatchNativeCast("FLOAT specials to " + target, Nd4j.createFromArray(specials), target,
+                javaConversion.apply(specials));
+    }
+
+    /** NaN payloads differ between conversions, so any two NaNs match. */
+    private static void assertBitsMatchNativeCast(String context, INDArray source, DataType target,
+                                                  short[] javaBits) {
+        INDArray nativeBits = Nd4j.create(DataType.SHORT, source.length());
+        Nd4j.exec(new BitCast(source.castTo(target), DataType.SHORT, nativeBits));
+        int[] expected = nativeBits.toIntVector();
+        for (int i = 0; i < javaBits.length; i++) {
+            int e = expected[i] & 0xffff;
+            int a = javaBits[i] & 0xffff;
+            if (e == a || (isNaN(target, e) && isNaN(target, a))) continue;
+            fail(String.format("%s: element %d (%s) casts to 0x%04x natively but converts to 0x%04x in Java",
+                    context, i, source.getDouble(i), e, a));
+        }
+    }
+
+    private static INDArray bitsAs(short[] patterns, DataType type) {
+        INDArray out = Nd4j.create(type, patterns.length);
+        Nd4j.exec(new BitCast(Nd4j.createFromArray(patterns), type, out));
+        return out;
+    }
+
+    private static boolean isNaN(DataType type, int bits) {
+        int exponentMask = type == DataType.HALF ? 0x7c00 : 0x7f80;
+        return (bits & exponentMask) == exponentMask && (bits & 0x7fff & ~exponentMask) != 0;
     }
 
     @Override

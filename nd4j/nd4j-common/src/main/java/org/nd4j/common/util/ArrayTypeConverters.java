@@ -656,22 +656,46 @@ public final class ArrayTypeConverters {
 
     /**
      * Convert a single float to its IEEE 754 half-precision (FP16) bit pattern,
-     * stored as a short.
+     * stored as a short. The rounding is libnd4j's float16 conversion
+     * (cpu_float2ihalf_rn, the host twin of __float2half_rn), so a half built
+     * here holds the bits a native cast would: round to nearest even, the sign
+     * of zero kept, subnormals rounded at their own precision, magnitudes of
+     * 65520 and above to infinity, and every NaN to 0x7fff.
      */
     public static short fromFloat(float v) {
-        if (Float.isNaN(v))              return (short) 0x7fff;
-        if (v == Float.POSITIVE_INFINITY) return (short) 0x7c00;
-        if (v == Float.NEGATIVE_INFINITY) return (short) 0xfc00;
-        if (v == 0.0f)                   return (short) 0x0000;
-        if (v == -0.0f)                  return (short) 0x8000;
-        if (v > 65504.0f)                return 0x7bff;
-        if (v < -65504.0f)               return (short) (0x7bff | 0x8000);
-        if (v > 0.0f && v < 5.96046E-8f) return 0x0001;
-        if (v < 0.0f && v > -5.96046E-8f) return (short) 0x8001;
-        final int f = Float.floatToIntBits(v);
-        return (short) (((f >> 16) & 0x8000)
-                | ((((f & 0x7f800000) - 0x38000000) >> 13) & 0x7c00)
-                | ((f >> 13) & 0x03ff));
+        final int bits = Float.floatToRawIntBits(v);
+        final int magnitude = bits & 0x7fffffff;
+        if (magnitude > 0x7f800000) return (short) 0x7fff;
+        final int sign = (bits >>> 16) & 0x8000;
+        if (magnitude > 0x477fefff) return (short) (sign | 0x7c00);
+        // At most half the smallest subnormal: the tie rounds to the even zero.
+        if (magnitude < 0x33000001) return (short) sign;
+
+        int exponent = magnitude >>> 23;
+        int mantissa = magnitude & 0x7fffff;
+        final int shift;
+        if (exponent > 0x70) {
+            shift = 13;
+            exponent -= 0x70;
+        } else {
+            // Subnormal half: the implicit bit joins the mantissa, which then
+            // drops the bits below 2^-24.
+            shift = 0x7e - exponent;
+            exponent = 0;
+            mantissa |= 0x800000;
+        }
+        final int lsb = 1 << shift;
+        final int halfLsb = lsb >>> 1;
+        final int remainder = mantissa & (lsb - 1);
+        mantissa >>>= shift;
+        if (remainder > halfLsb || (remainder == halfLsb && (mantissa & 1) != 0)) {
+            ++mantissa;
+            if ((mantissa & 0x3ff) == 0) {
+                ++exponent;
+                mantissa = 0;
+            }
+        }
+        return (short) (sign | (exponent << 10) | mantissa);
     }
 
     public static short toHalf(float data) {
@@ -680,6 +704,22 @@ public final class ArrayTypeConverters {
 
     public static short toHalf(double data) {
         return fromFloat((float) data);
+    }
+
+    /** The float a half-precision (FP16) bit pattern holds; every half is exactly a float. */
+    public static float halfToFloat(short half) {
+        final int bits = half & 0xffff;
+        final int sign = (bits & 0x8000) << 16;
+        final int exponent = (bits >>> 10) & 0x1f;
+        final int mantissa = bits & 0x3ff;
+        if (exponent == 0) {
+            // Zero or subnormal: mantissa * 2^-24 is exact in float.
+            return Float.intBitsToFloat(sign | Float.floatToRawIntBits(mantissa * 0x1p-24f));
+        }
+        if (exponent == 0x1f) {
+            return Float.intBitsToFloat(sign | 0x7f800000 | (mantissa << 13));
+        }
+        return Float.intBitsToFloat(sign | ((exponent + 112) << 23) | (mantissa << 13));
     }
 
     public static short[] toHalfs(boolean[] data) {
@@ -729,27 +769,22 @@ public final class ArrayTypeConverters {
     // -------------------------------------------------------------------------
 
     /**
-     * Convert a half-precision (FP16) short bit pattern to bfloat16 bit pattern.
-     * Adjusts the exponent bias from FP16 (15) to BF16 (127).
+     * Convert a half-precision (FP16) bit pattern to a bfloat16 bit pattern,
+     * through the float the half holds, as libnd4j's bfloat16(float16) does.
      */
     public static short toBFloat16(short data) {
-        int sign = data >>> 15;
-        int exp  = (data >>> 10) & 0x1F;
-        int fraction = data & 0x3FF;
-        exp = exp - 15 + 127;
-        if (exp < 0)   { exp = 0;   fraction = 0; }
-        else if (exp > 255) { exp = 255; fraction = 0; }
-        fraction >>>= 3;
-        return (short) ((sign << 15) | (exp << 7) | fraction);
+        return toBFloat16(halfToFloat(data));
     }
 
+    /**
+     * Convert a float to its bfloat16 bit pattern with libnd4j's bfloat16
+     * rounding: round to nearest even, where magnitudes that round past the
+     * largest finite value become infinity, and every NaN becomes 0x7fc0.
+     */
     public static short toBFloat16(float data) {
-        int floatBits = Float.floatToRawIntBits(data);
-        int sign     = floatBits >>> 31;
-        int exp      = (floatBits >>> 23) & 0xFF;
-        int fraction = floatBits & 0x7FFFFF;
-        fraction >>>= 16;
-        return (short) ((sign << 15) | (exp << 7) | fraction);
+        final int bits = Float.floatToRawIntBits(data);
+        if ((bits & 0x7fffffff) > 0x7f800000) return (short) 0x7fc0;
+        return (short) ((bits + 0x7fff + ((bits >>> 16) & 1)) >>> 16);
     }
 
     public static short toBFloat16(double data) {
@@ -757,7 +792,7 @@ public final class ArrayTypeConverters {
     }
 
     public static short longToBFloat16(long l) {
-        return toBFloat16((double) l);
+        return toBFloat16((float) l);
     }
 
     public static float bfloat16ToFloat(short b) {
@@ -781,13 +816,12 @@ public final class ArrayTypeConverters {
         return (int) bfloat16ToFloat(b);
     }
 
+    /**
+     * Convert a bfloat16 bit pattern to a half-precision (FP16) bit pattern,
+     * through the float the bfloat16 holds, as libnd4j's float16(bfloat16) does.
+     */
     public static short bfloat16ToShort(short b) {
-        int sign     = b >>> 15;
-        int exp      = (b >>> 7) & 0xFF;
-        int fraction = b & 0x7F;
-        exp      >>>= 3;
-        fraction <<= 3;
-        return (short) ((sign << 15) | (exp << 10) | fraction);
+        return fromFloat(bfloat16ToFloat(b));
     }
 
     public static short[] toBfloats(double[] data) {

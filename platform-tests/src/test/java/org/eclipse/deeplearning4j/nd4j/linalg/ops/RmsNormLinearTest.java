@@ -359,9 +359,8 @@ public class RmsNormLinearTest extends BaseNd4jTestWithBackends {
     public void testGammaIsNotRoundedBeforeNormalization(DataType type, float scale) {
         double inv = 1 / Math.sqrt(2.5 + 1e-6);
         // Both fixtures have inv * scale in [0.5, 1), so the storage ULP is
-        // 2^-8 for BF16 and 2^-11 for HALF. Round independently to nearest-even:
-        // Nd4j.create(double[], ..., type) goes through ArrayTypeConverters,
-        // whose HALF/BF16 conversion truncates and is not an output-rounding oracle.
+        // 2^-8 for BF16 and 2^-11 for HALF. Round independently to nearest-even,
+        // so the expectation does not rest on a library conversion.
         double quantum = Math.scalb(1.0, type == DataType.BFLOAT16 ? -8 : -11);
         double first = Math.rint(inv * scale / quantum) * quantum;
         double[] expected = {first, 2 * first};
