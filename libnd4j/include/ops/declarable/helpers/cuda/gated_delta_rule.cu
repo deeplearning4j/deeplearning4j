@@ -211,7 +211,7 @@ SD_KERNEL void gatedDeltaRuleSequenceKernel(
 
     const LongType b = bh / H;
     const LongType h = bh % H;
-    extern __shared__ unsigned char gatedDeltaSharedStorage[];
+    extern __shared__ SD_ALIGN32 unsigned char gatedDeltaSharedStorage[];
     AccT* tileState = reinterpret_cast<AccT*>(gatedDeltaSharedStorage);  // [D_k][columnsPerBlock]
     AccT* kShared = tileState + D_k * columnsPerBlock;                     // [D_k]
     AccT* qShared = kShared + D_k;                                          // [D_k]
@@ -278,6 +278,43 @@ static constexpr int kGdrParts = 4;
 // read the same column in different parts, and the skew puts them in
 // distinct banks.
 static constexpr int kGdrPartPad = 8;
+// State words a thread moves per batch in the split kernel's tile copy.
+static constexpr int kGdrWordBatch = 8;
+
+// The split kernel copies its state tile between global and shared memory in
+// 16-byte words. Tile rows are contiguous runs of columnsPerBlock elements, so
+// consecutive threads taking consecutive words of a row move whole lines per
+// warp, where per-lane column copies move one 32-byte sector per part. The
+// shared side takes the word's elements in the accumulator type: a whole
+// number of 16-byte words, as the part blocks' rows are (kGdrPartPad and the
+// tile width are whole words of AccT). The conversions are the element copy's.
+template <typename T>
+static SD_DEVICE SD_INLINE void gatedDeltaStoreSharedWord(
+    const uint4 word, typename simdOps::AggregateType<T>::type* __restrict__ shared) {
+    using AccT = typename simdOps::AggregateType<T>::type;
+    constexpr int kElements = static_cast<int>(sizeof(uint4) / sizeof(T));
+    constexpr int kSharedWords = static_cast<int>(kElements * sizeof(AccT) / sizeof(uint4));
+    const T* elements = reinterpret_cast<const T*>(&word);
+    alignas(sizeof(uint4)) AccT widened[kElements];
+    for (int e = 0; e < kElements; ++e) widened[e] = static_cast<AccT>(elements[e]);
+    for (int w = 0; w < kSharedWords; ++w)
+        reinterpret_cast<uint4*>(shared)[w] = reinterpret_cast<const uint4*>(widened)[w];
+}
+
+template <typename T>
+static SD_DEVICE SD_INLINE uint4 gatedDeltaLoadSharedWord(
+    const typename simdOps::AggregateType<T>::type* __restrict__ shared) {
+    using AccT = typename simdOps::AggregateType<T>::type;
+    constexpr int kElements = static_cast<int>(sizeof(uint4) / sizeof(T));
+    constexpr int kSharedWords = static_cast<int>(kElements * sizeof(AccT) / sizeof(uint4));
+    alignas(sizeof(uint4)) AccT widened[kElements];
+    for (int w = 0; w < kSharedWords; ++w)
+        reinterpret_cast<uint4*>(widened)[w] = reinterpret_cast<const uint4*>(shared)[w];
+    uint4 word;
+    T* elements = reinterpret_cast<T*>(&word);
+    for (int e = 0; e < kElements; ++e) elements[e] = static_cast<T>(widened[e]);
+    return word;
+}
 
 template <typename AccT>
 static SD_DEVICE SD_INLINE AccT gatedDeltaCombineParts(AccT partRoot) {
@@ -393,7 +430,7 @@ SD_KERNEL void gatedDeltaRuleSplitSequenceKernel(
     const LongType partRows = D_k / kGdrParts;
     const LongType partStride = partRows * columnsPerBlock + kGdrPartPad;
 
-    extern __shared__ unsigned char gatedDeltaSharedStorage[];
+    extern __shared__ SD_ALIGN32 unsigned char gatedDeltaSharedStorage[];
     AccT* tileState = reinterpret_cast<AccT*>(gatedDeltaSharedStorage);
     AccT* kShared = tileState + kGdrParts * partStride;  // [D_k]
     AccT* qShared = kShared + D_k;                       // [D_k]
@@ -406,19 +443,59 @@ SD_KERNEL void gatedDeltaRuleSplitSequenceKernel(
     const LongType firstRow = part * partRows;
     AccT* column = tileState + part * partStride + c;
 
-    // stateIn may be stateOut (in place): every lane reads its own rows before
-    // any are written, and lanes own disjoint rows. Loads are batched so each
-    // lane keeps several in flight.
-    for (LongType rBase = 0; rBase < partRows; rBase += kGdrRowBatch) {
-        AccT rows[kGdrRowBatch];
-        for (int r = 0; r < kGdrRowBatch; ++r) {
-            const LongType row = rBase + r;
-            rows[r] = stateIn != nullptr && row < partRows
-                ? static_cast<AccT>(stateIn[headOffset + (firstRow + row) * D_v + dv])
-                : static_cast<AccT>(0);
+    // Word copies need 16-byte aligned state rows (base pointers and the D_v
+    // pitch) and a tile of whole words. Each thread then owns one word column
+    // of the tile and every rowStep-th row (blockDim is a whole number of tile
+    // rows' words). Tile coordinates fit in int (D_k <= GDR_CUDA_MAX_HEAD_DIM,
+    // the tile fits in shared memory).
+    constexpr int kWordElements = static_cast<int>(sizeof(uint4) / sizeof(T));
+    const bool wordTile = columnsPerBlock % kWordElements == 0 &&
+                          (D_v * static_cast<LongType>(sizeof(T))) % static_cast<LongType>(sizeof(uint4)) == 0 &&
+                          ((reinterpret_cast<uintptr_t>(stateIn) | reinterpret_cast<uintptr_t>(stateOut)) %
+                           sizeof(uint4)) == 0;
+    const int tileRows = static_cast<int>(D_k);
+    const int tilePartRows = static_cast<int>(partRows);
+    const int tileColumns = static_cast<int>(columnsPerBlock);
+    const int rowWords = tileColumns / kWordElements;
+    const int wordColumn = wordTile ? static_cast<int>(threadIdx.x) % rowWords * kWordElements : 0;
+    const int wordRow = wordTile ? static_cast<int>(threadIdx.x) / rowWords : 0;
+    const int rowStep = wordTile ? static_cast<int>(blockDim.x) / rowWords : 0;
+    // Tile row `row` in shared memory: part-major row blocks kGdrPartPad apart.
+    auto sharedRow = [&](int row) -> AccT* {
+        return tileState + row * tileColumns + row / tilePartRows * kGdrPartPad;
+    };
+
+    // stateIn may be stateOut (in place): the whole tile is read before any of
+    // it is written (the steps' barriers, or the one before the store, order
+    // the reads first), and blocks own disjoint tiles. Loads are batched so
+    // each thread keeps several in flight.
+    if (wordTile) {
+        for (int rowBase = wordRow; rowBase < tileRows; rowBase += kGdrWordBatch * rowStep) {
+            uint4 words[kGdrWordBatch];
+            for (int i = 0; i < kGdrWordBatch; ++i) {
+                const int row = rowBase + i * rowStep;
+                if (row >= tileRows) continue;
+                words[i] = stateIn != nullptr
+                    ? *reinterpret_cast<const uint4*>(stateIn + headOffset + row * D_v + dvBegin + wordColumn)
+                    : make_uint4(0u, 0u, 0u, 0u);
+            }
+            for (int i = 0; i < kGdrWordBatch; ++i) {
+                const int row = rowBase + i * rowStep;
+                if (row < tileRows) gatedDeltaStoreSharedWord<T>(words[i], sharedRow(row) + wordColumn);
+            }
         }
-        for (int r = 0; r < kGdrRowBatch; ++r) {
-            if (rBase + r < partRows) column[(rBase + r) * columnsPerBlock] = rows[r];
+    } else {
+        for (LongType rBase = 0; rBase < partRows; rBase += kGdrRowBatch) {
+            AccT rows[kGdrRowBatch];
+            for (int r = 0; r < kGdrRowBatch; ++r) {
+                const LongType row = rBase + r;
+                rows[r] = stateIn != nullptr && row < partRows
+                    ? static_cast<AccT>(stateIn[headOffset + (firstRow + row) * D_v + dv])
+                    : static_cast<AccT>(0);
+            }
+            for (int r = 0; r < kGdrRowBatch; ++r) {
+                if (rBase + r < partRows) column[(rBase + r) * columnsPerBlock] = rows[r];
+            }
         }
     }
 
@@ -432,8 +509,17 @@ SD_KERNEL void gatedDeltaRuleSplitSequenceKernel(
                                    bS0, bS1, bS2, gS0, gS1, gS2, oS0, oS1, oS2, oS3);
     }
 
-    // Each lane stores only the rows it owns and wrote.
     T* stateTarget = gatedDeltaStateTarget(stateIn, stateOut, commitFlag);
+    if (wordTile) {
+        // Words gather rows that other lanes wrote.
+        __syncthreads();
+        for (int row = wordRow; row < tileRows; row += rowStep) {
+            *reinterpret_cast<uint4*>(stateTarget + headOffset + row * D_v + dvBegin + wordColumn) =
+                gatedDeltaLoadSharedWord<T>(sharedRow(row) + wordColumn);
+        }
+        return;
+    }
+    // Each lane stores only the rows it owns and wrote.
     for (LongType r = 0; r < partRows; ++r) {
         stateTarget[headOffset + (firstRow + r) * D_v + dv] = static_cast<T>(column[r * columnsPerBlock]);
     }

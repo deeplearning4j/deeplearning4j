@@ -3,14 +3,18 @@ package org.eclipse.deeplearning4j.nd4j.linalg.ops;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Random;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The decode-window gated delta rule is bit-identical to its reproducible definition:
@@ -112,6 +116,71 @@ class GatedDeltaRuleReproducibleReferenceTest {
                 assertEquals(Float.floatToRawIntBits(b[j]), Float.floatToRawIntBits(a[j]),
                         (i == 0 ? "output" : "state") + " element " + j + " L=" + length);
             }
+        }
+    }
+
+    /**
+     * The split-row kernel moves its state tile between global and shared memory in
+     * 16-byte words when the state rows are 16-byte aligned, and per element otherwise:
+     * a state view one element into its buffer takes the element copy. Either copy, with
+     * the state written to the op's output or committed in place, gives bit-identical
+     * outputs and states in each floating type the op accepts (ALL_FLOATS).
+     */
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = DataType.class, names = {"HALF", "FLOAT", "DOUBLE", "BFLOAT16"})
+    void stateTileCopyIsIndependentOfAlignment(DataType type) {
+        final int dk = 128;
+        Random rng = new Random(20261001L + type.ordinal());
+        INDArray q = Nd4j.create(random(rng, L * H * dk, 1f), new long[]{1, L, H, dk}, 'c').castTo(type);
+        INDArray k = Nd4j.create(random(rng, L * H * dk, 0.2f), new long[]{1, L, H, dk}, 'c').castTo(type);
+        INDArray v = Nd4j.create(random(rng, L * H * DV, 4f), new long[]{1, L, H, DV}, 'c').castTo(type);
+        float[] beta = new float[L * H];
+        float[] gate = new float[L * H];
+        for (int i = 0; i < beta.length; i++) {
+            beta[i] = rng.nextFloat();
+            gate[i] = -rng.nextFloat();
+        }
+        INDArray betaArray = Nd4j.create(beta, new long[]{1, L, H}, 'c').castTo(type);
+        INDArray gateArray = Nd4j.create(gate, new long[]{1, L, H}, 'c').castTo(type);
+        INDArray state = Nd4j.create(random(rng, H * dk * DV, 1f), new long[]{1, H, dk, DV}, 'c').castTo(type);
+        INDArray length = Nd4j.scalar(DataType.INT64, (long) L);
+
+        INDArray[] aligned = Nd4j.exec(new GatedDeltaRule(q, k, v, betaArray, gateArray, state.dup('c'), length));
+        INDArray[] shifted = Nd4j.exec(new GatedDeltaRule(q, k, v, betaArray, gateArray, shiftedCopy(state), length));
+        INDArray committedState = state.dup('c');
+        INDArray[] committed = Nd4j.exec(new GatedDeltaRule(q, k, v, betaArray, gateArray, committedState, length,
+                Nd4j.scalar(DataType.INT32, 1)));
+        INDArray committedShiftedState = shiftedCopy(state);
+        INDArray[] committedShifted = Nd4j.exec(new GatedDeltaRule(q, k, v, betaArray, gateArray,
+                committedShiftedState, length, Nd4j.scalar(DataType.INT32, 1)));
+
+        assertBitwiseEqual(aligned[0], shifted[0], type + " output, misaligned state");
+        assertBitwiseEqual(aligned[1], shifted[1], type + " state, misaligned state");
+        assertBitwiseEqual(aligned[0], committed[0], type + " output, committed in place");
+        assertBitwiseEqual(aligned[1], committedState, type + " state, committed in place");
+        assertBitwiseEqual(aligned[0], committedShifted[0], type + " output, misaligned state committed in place");
+        assertBitwiseEqual(aligned[1], committedShiftedState, type + " state, misaligned state committed in place");
+    }
+
+    /** A dense row-major copy of {@code source} one element into a larger buffer. */
+    private static INDArray shiftedCopy(INDArray source) {
+        INDArray buffer = Nd4j.create(source.dataType(), source.length() + 1);
+        INDArray view = buffer.get(NDArrayIndex.interval(1, source.length() + 1)).reshape(source.shape());
+        assertEquals(1L, view.offset(), "the shifted state must be a view one element into its buffer");
+        view.assign(source);
+        return view;
+    }
+
+    /** Every floating type widens exactly to DOUBLE, so equal DOUBLE bits are equal source bits. */
+    private static void assertBitwiseEqual(INDArray expected, INDArray actual, String what) {
+        assertEquals(expected.dataType(), actual.dataType(), what);
+        assertArrayEquals(expected.shape(), actual.shape(), what);
+        double[] e = expected.castTo(DataType.DOUBLE).dup('c').data().asDouble();
+        double[] a = actual.castTo(DataType.DOUBLE).dup('c').data().asDouble();
+        for (int i = 0; i < e.length; i++) {
+            assertTrue(Double.isFinite(e[i]), what + " element " + i + " is not finite: " + e[i]);
+            assertEquals(Double.doubleToRawLongBits(e[i]), Double.doubleToRawLongBits(a[i]),
+                    what + " element " + i + " expected " + e[i] + " got " + a[i]);
         }
     }
 
