@@ -76,6 +76,9 @@ void MmulHelper::matmulSerial(LaunchContext* context, NDArray* x, NDArray* y, ND
 // CPU stubs for cast cache methods (only used on CUDA)
 void MmulHelper::clearCastCache() {}
 void MmulHelper::resetCastCacheIndices() {}
+void* MmulHelper::enterCastCacheScope(const void*, LongType) { return nullptr; }
+void MmulHelper::restoreCastCacheScope(void*) {}
+void MmulHelper::releaseCastCacheScopes(const void*) {}
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -289,23 +292,37 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
   T1* X = reinterpret_cast<T1*>(const_cast<void*>(vX));
   T2* Y = reinterpret_cast<T2*>(const_cast<void*>(vY));
   T3* Z = reinterpret_cast<T3*>(vZ);
-  T3 alphaZ(alpha), betaZ(beta);
+
+  // Widen low-precision storage only; integer and double contracts stay unchanged.
+  using AccT = typename simdOps::AggregateType<T3>::type;
+  const AccT alphaZ = static_cast<AccT>(alpha);
+  const AccT betaZ = static_cast<AccT>(beta);
 
   const bool betaPersent = beta;
 
-  T3 sum = static_cast<T3>(0);
+  // Each thread sums its own range into its own slot, and the slots are added after the
+  // threads finish; one accumulator shared by the threads would race.
+  const sd::LongType numThreads =
+      std::max<sd::LongType>(1, sd::Environment::getInstance().maxMasterThreads());
+  std::vector<AccT> partials(numThreads, static_cast<AccT>(0));
 
   auto func = PRAGMA_THREADS_FOR {
+    AccT partial = static_cast<AccT>(0);
     for (sd::LongType i = start; i < stop; ++i) {
-      sum += X[i * incx] * Y[i * incy];
+      partial += static_cast<AccT>(X[i * incx]) * static_cast<AccT>(Y[i * incy]);
     }
+    partials[thread_id] += partial;
   };
 
-  samediff::Threads::parallel_for(func, 0, length);
+  samediff::Threads::parallel_for(func, 0, length, 1, numThreads);
+
+  AccT sum = static_cast<AccT>(0);
+  for (const auto partial : partials) sum += partial;
+
   if (betaPersent)
-    *Z = alphaZ * sum + betaZ * *Z;
+    *Z = static_cast<T3>(alphaZ * sum + betaZ * static_cast<AccT>(*Z));
   else
-    *Z = alphaZ * sum;
+    *Z = static_cast<T3>(alphaZ * sum);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -398,6 +415,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
       NDArray* bEff = (bF32 != nullptr) ? bF32 : const_cast<NDArray*>(B);
       std::vector<LongType> cShape = {M, N};
       NDArray cF32('c', cShape, DataType::FLOAT32, A->getContext());
+      if (beta != 0.0) cF32.assign(C);
       auto blasLock3 = BlasHelper::getInstance().lockBlas();
       BlasHelper::getInstance().sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
                          aEff->bufferAsT<float>(), K, bEff->bufferAsT<float>(), N, (float)beta,
@@ -415,6 +433,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
       NDArray* bEff = (bF64 != nullptr) ? bF64 : const_cast<NDArray*>(B);
       std::vector<LongType> cShape = {M, N};
       NDArray cF64('c', cShape, DataType::DOUBLE, A->getContext());
+      if (beta != 0.0) cF64.assign(C);
       auto blasLock4 = BlasHelper::getInstance().lockBlas();
       BlasHelper::getInstance().dgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, alpha,
                          aEff->bufferAsT<double>(), K, bEff->bufferAsT<double>(), N, beta,
@@ -436,6 +455,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
       NDArray* castB = (bType != aType) ? B->cast(aType) : nullptr;
       std::vector<LongType> cShape = {M, N};
       NDArray* castC = (cType != aType) ? new NDArray(NDArray('c', cShape, aType, C->getContext())) : nullptr;
+      if (castC != nullptr && beta != 0.0) castC->assign(C);
       NDArray* effB = (castB != nullptr) ? castB : const_cast<NDArray*>(B);
       NDArray* effC = (castC != nullptr) ? castC : const_cast<NDArray*>(C);
       BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, effB, effC, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
@@ -886,6 +906,20 @@ NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double 
   }
 
   if (C->isEmpty()) return C;
+
+  // batchedGemm is instantiated on A's type for all three operands, so mixed storage
+  // would be read and written with A's element size. Compute in A's type, as mmulMxM
+  // does: cast B, run into a copy of C in A's type (kept for beta), then assign back.
+  const auto aType = A->dataType();
+  if (B->dataType() != aType || C->dataType() != aType) {
+    NDArray* castB = B->dataType() != aType ? B->cast(aType) : nullptr;
+    NDArray* castC = C->dataType() != aType ? C->cast(aType) : nullptr;
+    mmulNxN(A, castB != nullptr ? castB : B, castC != nullptr ? castC : C, alpha, beta, outOrder);
+    if (castC != nullptr) C->assign(castC);
+    delete castB;
+    delete castC;
+    return C;
+  }
 
   const sd::LongType cRank = C->rankOf();
 

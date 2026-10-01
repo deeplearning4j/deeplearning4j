@@ -513,7 +513,10 @@ void MmulHelper::manualBatchedGemm(NDArray* A, NDArray* B, NDArray* C,
     batchContiguous = false;  // For ranks > 4, use slice-based approach
   }
 
-  if (aRowMajor && bRowMajor && cRowMajor && batchContiguous &&
+  // The fast path reads B and writes C through A's element type, so it needs one
+  // dtype for all three; mixed storage takes the slice path, whose mmul casts.
+  const bool sameTypes = B->dataType() == xType && C->dataType() == xType;
+  if (aRowMajor && bRowMajor && cRowMajor && batchContiguous && sameTypes &&
       (xType == DataType::FLOAT32 || xType == DataType::DOUBLE)) {
     // Optimized parallel implementation
     const LongType totalRows = totalBatchSize * M;
@@ -1102,18 +1105,24 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
   NDArray *zT = z;
 
   if ((transX && xRank > 1) || (transY && yRank > 1)) {
-    const int rank = xRank >= yRank ? xRank : yRank;
-    std::vector<LongType> permut(rank);
-    for (int i = 0; i < rank - 2; ++i) permut[i] = i;
-    permut[rank - 2] = rank - 1;
-    permut[rank - 1] = rank - 2;
+    // Each operand swaps its own last two axes; a broadcast pairs a 2D operand with a
+    // higher-rank one, so the two permutations can differ in length.
+    auto lastTwoSwapped = [](const int rank) {
+      std::vector<LongType> permut(rank);
+      for (int i = 0; i < rank - 2; ++i) permut[i] = i;
+      permut[rank - 2] = rank - 1;
+      permut[rank - 1] = rank - 2;
+      return permut;
+    };
 
-    if (transX) {
+    if (transX && xRank > 1) {
+      std::vector<LongType> permut = lastTwoSwapped(xRank);
       NDArray* permutedView = x->permute(permut, false, false);
       xT = permutedView->dup();
       delete permutedView;
     }
-    if (transY) {
+    if (transY && yRank > 1) {
+      std::vector<LongType> permut = lastTwoSwapped(yRank);
       NDArray* permutedView = y->permute(permut, false, false);
       yT = permutedView->dup();
       delete permutedView;

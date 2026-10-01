@@ -1565,16 +1565,49 @@ CUSTOM_OP_IMPL(kv_cache_quantize, 1, 2, false, 0, 1) {
     auto scales = OUTPUT_VARIABLE(1);
 
     int quantFormat = INT_ARG(0);
-    // ADR 0107 V2 ROW-INLINE (INT8 only): when the 2nd I-arg is 1, OUTPUT 0 is a row-inline INT8
+    // ADR 0107 V2 ROW-INLINE (INT8/FP8): when the 2nd I-arg is 1, OUTPUT 0 is a row-inline INT8
     // tensor of the input shape with the last dimension extended by 4 — each row holds rowLen
     // int8 values followed by that row's float32 scale. The scale rides INSIDE the logical
     // tensor, so any DSP staging/copy preserves it. OUTPUT 1 is an unused dummy scalar.
     // helpers::kvCacheQuantize writes the in-row scales when passed a null scales array.
     const bool inlineScale = (block.numI() > 1 && INT_ARG(1) != 0);
 
+    const auto format = static_cast<helpers::KVQuantFormat>(quantFormat);
+    REQUIRE_TRUE(format == helpers::KVQuantFormat::INT8 || format == helpers::KVQuantFormat::FP8_E4M3 ||
+                     format == helpers::KVQuantFormat::FP8_E5M2 || format == helpers::KVQuantFormat::INT4,
+                 0, "kv_cache_quantize: unsupported quantization format %i", quantFormat);
+    REQUIRE_TRUE(!(inlineScale && format == helpers::KVQuantFormat::INT4), 0,
+                 "kv_cache_quantize: the row-inline scale layout supports INT8/FP8 only, not INT4");
+
+    // Rows run along the last dimension; quantized keeps the input's rank and leading dimensions.
+    const int rank = input->rankOf();
+    REQUIRE_TRUE(rank >= 1, 0, "kv_cache_quantize: input must have rank >= 1");
+    REQUIRE_TRUE(quantized->rankOf() == rank, 0,
+                 "kv_cache_quantize: quantized output rank %i must equal the input rank %i", quantized->rankOf(), rank);
+    LongType numRows = 1;
+    for (int i = 0; i < rank - 1; ++i) {
+        REQUIRE_TRUE(quantized->sizeAt(i) == input->sizeAt(i), 0,
+                     "kv_cache_quantize: quantized output dimension %i is %lld, expected %lld", i,
+                     static_cast<long long>(quantized->sizeAt(i)), static_cast<long long>(input->sizeAt(i)));
+        numRows *= input->sizeAt(i);
+    }
+    const LongType rowLen = input->sizeAt(-1);
+    REQUIRE_TRUE(rowLen > 0 || numRows == 0, 0,
+                 "kv_cache_quantize: the last dimension must not be empty for %lld rows", static_cast<long long>(numRows));
+
     if (inlineScale) {
+        REQUIRE_TRUE(quantized->sizeAt(-1) == rowLen + 4 && (quantized->lengthOf() == 0 || quantized->strideAt(-1) == 1),
+                     0, "kv_cache_quantize: the row-inline output must be [..., %lld] with a unit last-dimension stride",
+                     static_cast<long long>(rowLen + 4));
+        // Output 1 is unused in this layout; write it so both outputs are fully written.
+        scales->nullify();
         helpers::kvCacheQuantize(input, quantized, /*scales=*/nullptr, quantFormat, block.launchContext());
     } else {
+        REQUIRE_TRUE(quantized->sizeAt(-1) == rowLen, 0,
+                     "kv_cache_quantize: quantized output last dimension is %lld, expected %lld",
+                     static_cast<long long>(quantized->sizeAt(-1)), static_cast<long long>(rowLen));
+        REQUIRE_TRUE(scales->lengthOf() == numRows, 0, "kv_cache_quantize: scales hold %lld values, expected one per row (%lld)",
+                     static_cast<long long>(scales->lengthOf()), static_cast<long long>(numRows));
         helpers::kvCacheQuantize(input, quantized, scales, quantFormat, block.launchContext());
     }
 
@@ -1604,9 +1637,10 @@ DECLARE_SHAPE_FN(kv_cache_quantize) {
         return new ShapeList(std::vector<LongType*>{rowInlineInfo, dummyInfo});
     }
 
-    // Output 0: quantized data — same shape as input, INT8 dtype
-    auto quantShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        DataType::INT8, shape::order(inShape), static_cast<int>(shape::rank(inShape)), shape::shapeOf(inShape), static_cast<LongType>(0));
+    // Output 0: quantized data — same shape as input, INT8 dtype. The vector overload flags a
+    // zero-length shape empty, so an empty input yields empty outputs.
+    const std::vector<LongType> quantShapeVec(shape::shapeOf(inShape), shape::shapeOf(inShape) + rank);
+    auto quantShape = ConstantShapeHelper::getInstance().createShapeInfo(DataType::INT8, shape::order(inShape), quantShapeVec);
 
     // Output 1: scales — input shape with last dimension removed (one scale per row)
     std::vector<LongType> scaleShapeVec;
@@ -1641,6 +1675,24 @@ CUSTOM_OP_IMPL(kv_cache_dequantize, 2, 1, false, 0, 1) {
 
     int quantFormat = INT_ARG(0);
 
+    const auto format = static_cast<helpers::KVQuantFormat>(quantFormat);
+    REQUIRE_TRUE(format == helpers::KVQuantFormat::INT8 || format == helpers::KVQuantFormat::FP8_E4M3 ||
+                     format == helpers::KVQuantFormat::FP8_E5M2 || format == helpers::KVQuantFormat::INT4,
+                 0, "kv_cache_dequantize: unsupported quantization format %i", quantFormat);
+
+    // quantized carries one byte per output element (INT4 packs into the first half of each row),
+    // and each row along the last dimension has one scale. Row-inline tensors carry their scales
+    // in-row and are read directly by the attention kernels, not by this op.
+    REQUIRE_TRUE(output->rankOf() >= 1, 0, "kv_cache_dequantize: input must have rank >= 1");
+    REQUIRE_TRUE(quantized->isSameShape(output), 0,
+                 "kv_cache_dequantize: the output shape must equal the quantized input shape");
+    LongType numRows = 1;
+    for (int i = 0; i < output->rankOf() - 1; ++i) numRows *= output->sizeAt(i);
+    REQUIRE_TRUE(output->sizeAt(-1) > 0 || numRows == 0, 0,
+                 "kv_cache_dequantize: the last dimension must not be empty for %lld rows", static_cast<long long>(numRows));
+    REQUIRE_TRUE(scales->lengthOf() == numRows, 0, "kv_cache_dequantize: scales hold %lld values, expected one per row (%lld)",
+                 static_cast<long long>(scales->lengthOf()), static_cast<long long>(numRows));
+
     helpers::kvCacheDequantize(quantized, scales, output, quantFormat, block.launchContext());
 
     return Status::OK;
@@ -1649,9 +1701,9 @@ CUSTOM_OP_IMPL(kv_cache_dequantize, 2, 1, false, 0, 1) {
 DECLARE_SHAPE_FN(kv_cache_dequantize) {
     auto quantShape = inputShape->at(0);
 
-    // Output: same shape as quantized input, FLOAT32 dtype
-    auto outShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        DataType::FLOAT32, shape::order(quantShape), static_cast<int>(shape::rank(quantShape)), shape::shapeOf(quantShape), static_cast<LongType>(0));
+    // Output: same shape as quantized input, FLOAT32 dtype (flagged empty when zero-length)
+    const std::vector<LongType> outShapeVec(shape::shapeOf(quantShape), shape::shapeOf(quantShape) + shape::rank(quantShape));
+    auto outShape = ConstantShapeHelper::getInstance().createShapeInfo(DataType::FLOAT32, shape::order(quantShape), outShapeVec);
 
     return SHAPELIST(outShape);
 }

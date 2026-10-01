@@ -62,6 +62,13 @@ struct DataBufferThreadState {
   int dspAllocCount = 0;
   int dspFreeCount = 0;
   int dspFreeSkipCount = 0;
+  long long dspWarmupAllocationBytes = 0;
+  int dspWarmupAllocationCount = 0;
+  bool dspWarmupAllocationTracking = false;
+  size_t captureWorkspaceDataBufferBytes = 0;
+  size_t captureWorkspacePointerBytes = 0;
+  size_t captureWorkspacePoolBytes = 0;
+  size_t captureWorkspaceExtraArgsBytes = 0;
   bool dspReplayActive = false;
   bool cublasLtDisabled = false;
   void* graphCaptureStream = nullptr;   // cudaStream_t on CUDA, unused on CPU
@@ -99,6 +106,13 @@ SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState();
 #define tl_dspAllocCount          dataBufferThreadState().dspAllocCount
 #define tl_dspFreeCount           dataBufferThreadState().dspFreeCount
 #define tl_dspFreeSkipCount       dataBufferThreadState().dspFreeSkipCount
+#define tl_dspWarmupAllocationBytes dataBufferThreadState().dspWarmupAllocationBytes
+#define tl_dspWarmupAllocationCount dataBufferThreadState().dspWarmupAllocationCount
+#define tl_dspWarmupAllocationTracking dataBufferThreadState().dspWarmupAllocationTracking
+#define tl_captureWorkspaceDataBufferBytes dataBufferThreadState().captureWorkspaceDataBufferBytes
+#define tl_captureWorkspacePointerBytes dataBufferThreadState().captureWorkspacePointerBytes
+#define tl_captureWorkspacePoolBytes dataBufferThreadState().captureWorkspacePoolBytes
+#define tl_captureWorkspaceExtraArgsBytes dataBufferThreadState().captureWorkspaceExtraArgsBytes
 #define tl_dspReplayActive        dataBufferThreadState().dspReplayActive
 #define tl_cublasLtDisabled       dataBufferThreadState().cublasLtDisabled
 #define tl_graphCaptureStream     dataBufferThreadState().graphCaptureStream
@@ -148,6 +162,15 @@ class SD_LIB_EXPORT DataBuffer {
   mutable std::atomic<LongType> _readPrimary;
   mutable std::atomic<LongType> _readSpecial;
 
+  // Process-unique id of the contents lineage this object holds. Every object
+  // draws a fresh value, and it is redrawn whenever storage is attached or the
+  // sync counters are reset or copied, so it never repeats for different
+  // contents even when the allocator recycles an object or address. Within one
+  // generation the write ticks above only move forward.
+  std::atomic<uint64_t> _contentGeneration{nextContentGeneration()};
+  static uint64_t nextContentGeneration();
+  void renewContentGeneration();
+
   // Backend event tracking the last write to the special (device) buffer.
   // CUDA stores cudaEvent_t; Vulkan stores VulkanExecutionEvent. The opaque
   // field keeps vendor headers out of this shared ABI header.
@@ -156,6 +179,8 @@ class SD_LIB_EXPORT DataBuffer {
   mutable std::atomic<bool> _writeEventRecorded{false};
 
   // (content version << 16) | predicate of the last stampContentValidated; 0 = none.
+  // renewContentGeneration() clears it: a version only orders writes within one
+  // generation.
   mutable std::atomic<uint64_t> _contentValidationStamp{0};
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -317,14 +342,31 @@ class SD_LIB_EXPORT DataBuffer {
 
 #ifndef __JAVACPP_HACK__
   /**
+   * Version of the contents this buffer holds. (contentGeneration(),
+   * lastWriteTick()) compares equal only for the same storage lineage with no
+   * write in between on either side, so caches of per-content work key on it
+   * instead of on addresses, which the allocator reuses. Only backends with a
+   * device copy maintain write ticks; on CPU lastWriteTick() never advances and
+   * the generation alone identifies the contents.
+   */
+  uint64_t contentGeneration() const { return _contentGeneration.load(std::memory_order_acquire); }
+  LongType lastWriteTick() const {
+    const LongType primary = _writePrimary.load();
+    const LongType special = _writeSpecial.load();
+    return primary > special ? primary : special;
+  }
+
+  /**
    * Content-validation stamp: remembers that `predicate` holds for this buffer's
    * current content, so callers can skip re-validating an immutable input (for
    * example a model's quantization scales) on every use. The stamp belongs to
    * this buffer object and its content version — any later write to either the
-   * host or the device copy invalidates it, and a new buffer has none — so it
-   * cannot vouch for different data the way an address-keyed cache can after
-   * the allocator reuses an address. Backends that do not track writes
-   * (tracksContentWrites() == false) never report a stamp.
+   * host or the device copy invalidates it, renewing the content generation
+   * (attaching storage, resetting or copying the counters) clears it, and a new
+   * buffer has none — so it cannot vouch for different data the way an
+   * address-keyed cache can after the allocator reuses an address. Backends
+   * that do not track writes (tracksContentWrites() == false) never report a
+   * stamp.
    */
   void stampContentValidated(ContentPredicate predicate) const {
     if (tracksContentWrites()) _contentValidationStamp.store(contentStamp(predicate), std::memory_order_release);
@@ -338,11 +380,10 @@ class SD_LIB_EXPORT DataBuffer {
 
  private:
   // Every write stores a fresh value of the per-buffer event counter, so the
-  // newest write tick of either side is a version that changes on any write.
+  // newest write tick of either side is a version that changes on any write
+  // within one content generation.
   uint64_t contentStamp(ContentPredicate predicate) const {
-    const LongType version = std::max(_writePrimary.load(std::memory_order_acquire),
-                                      _writeSpecial.load(std::memory_order_acquire));
-    return (static_cast<uint64_t>(version) << 16) | static_cast<uint16_t>(predicate);
+    return (static_cast<uint64_t>(lastWriteTick()) << 16) | static_cast<uint16_t>(predicate);
   }
 
  public:

@@ -23,6 +23,7 @@
 //
 #include <array/DataTypeUtils.h>
 #include <climits>
+#include <limits>
 
 #include <execution/AffinityManager.h>
 #include <memory/MemoryCounter.h>
@@ -48,6 +49,13 @@ extern thread_local cudaStream_t tl_dspGapStream;
 
 namespace sd {
 
+// Plain C++ declarable-op translation units cannot see DebugHelper's CUDA-only
+// inline overloads. Expose the same capture authority for host-side scalar-op
+// wrappers without duplicating the TLS/stream capture checks there.
+SD_LIB_EXPORT bool isCudaGraphCaptureActiveForScalarOps(void* stream) {
+  return DebugHelper::inGraphCapture(reinterpret_cast<cudaStream_t*>(stream));
+}
+
 SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState() {
   static thread_local DataBufferThreadState state;
   return state;
@@ -61,6 +69,31 @@ SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
   auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
   cudaStream_t lcStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
   return DebugHelper::captureSafeStream(lcStream);
+}
+
+// Single rule for where a buffer's device work runs (kernel peers: memset, mallocAsync,
+// freeAsync). The resolved stream (LaunchContext / plan stream) is the correct choice whenever
+// it belongs to the buffer's device — it is the same stream the H2D copies and kernels for
+// that device use, so everything stays stream-ordered without extra events. "Device != 0"
+// does NOT imply the resolved stream is foreign: a plan can be homed on any GPU. Only when
+// the resolved stream really belongs to another device fall back to the current device's
+// per-thread stream, mirroring platformBindSegmentDevice. Never called during capture (the
+// capture branches run first at every call site). Throws if the resolved stream's device
+// cannot be queried.
+SD_INLINE cudaStream_t streamForDeviceWork(int deviceId, cudaStream_t resolved, const char* site) {
+  if (resolved == nullptr || resolved == cudaStreamPerThread || resolved == cudaStreamLegacy)
+    return resolved;
+  int resolvedDev = -1;
+  auto err = cudaStreamGetDevice(resolved, &resolvedDev);
+  if (err != cudaSuccess) {
+    cudaGetLastError();
+    THROW_EXCEPTION("streamForDeviceWork: cudaStreamGetDevice failed");
+  }
+  const cudaStream_t finalStream = (resolvedDev == deviceId) ? resolved : cudaStreamPerThread;
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=%s dev=%d resolved=%p resolvedDev=%d final=%p",
+           site, deviceId, (void*)resolved, resolvedDev, (void*)finalStream);
+  return finalStream;
 }
 
 SD_INLINE cudaStream_t asyncTransferStream(bool switchedDevice) {
@@ -934,7 +967,24 @@ void DataBuffer::allocateSpecial() {
     }
 
     if (_workspace == nullptr) {
-      if (!memory::MemoryCounter::getInstance().validate(getLenInBytes())) {
+      bool admitted = memory::MemoryCounter::getInstance().validate(getLenInBytes());
+      // MemoryCounter charges live logical buffers, not pool reservations.
+      // A reusable physical block does not reduce the new buffer's live charge.
+      if (!admitted) {
+        size_t poolUsed = 0, poolReserved = 0;
+        memory::CudaMemoryPool::getInstance().getStats(deviceId, poolUsed, poolReserved);
+        const size_t poolFreeReserved =
+            poolReserved > poolUsed ? poolReserved - poolUsed : 0;
+          DSP_DIAG(MEMORY,
+                   "ALLOC_REFUSED: db=%p bytes=%lld dev=%d counterFree=%lldMB poolFreeReserved=%zuMB — shortfall=%lldMB",
+                   (void*)this, (long long)getLenInBytes(), deviceId,
+                   (long long)(memory::MemoryCounter::getInstance().deviceLimit(deviceId) -
+                               memory::MemoryCounter::getInstance().allocatedDevice(deviceId)) / (1024 * 1024),
+                   poolFreeReserved / (1024 * 1024),
+                   (long long)(getLenInBytes() - (memory::MemoryCounter::getInstance().deviceLimit(deviceId) -
+                                            memory::MemoryCounter::getInstance().allocatedDevice(deviceId))) / (1024 * 1024));
+      }
+      if (!admitted) {
         std::string errorMessage;
         errorMessage += "DataBuffer::allocateSpecial: ";
         errorMessage += "Requested amount exceeds device limits";
@@ -984,6 +1034,7 @@ void DataBuffer::allocateSpecial() {
           _specialBuffer = reinterpret_cast<int8_t*>(
               static_cast<char*>(tl_captureWorkspace) + tl_captureWorkspaceOffset);
           tl_captureWorkspaceOffset += aligned;
+          tl_captureWorkspaceDataBufferBytes += aligned;
           // Workspace-allocated: NOT owned by this DataBuffer (workspace
           // lifecycle manages the memory). Set _isOwnerSpecial=false below
           // so deleteSpecial() doesn't try to free an interior pointer.
@@ -1012,20 +1063,27 @@ void DataBuffer::allocateSpecial() {
         // captured graph silently reads garbage — the documented root cause of
         // the 49.6% accuracy mega-graph bug (commit 321884f564). Capture is a
         // contract for stable graphs only: when the capture cannot be made safe
-        // (insufficient bump space), abort it and let the segment fall back to
-        // slot-by-slot execution, which is always correct.
-        DSP_DIAG(MEMORY, "CAPTURE_WORKSPACE_EXHAUSTED: need %zu, remaining %zu/%zu — "
-                 "failing capture (unsafe addresses would be baked into the graph); "
-                 "caller must fall back to slot-by-slot",
-                 aligned, tl_captureWorkspaceSize - tl_captureWorkspaceOffset,
-                 tl_captureWorkspaceSize);
+        // (insufficient bump space), abort it. NOTE: DSP callers run with a
+        // no-fallback contract — the caller surfaces this error rather than
+        // silently degrading to slot-by-slot, so this message must NOT suggest
+        // fallback or tuning paths.
+        const size_t remainingWorkspace = tl_captureWorkspaceSize - tl_captureWorkspaceOffset;
+        DSP_DIAG(MEMORY,
+                 "CAPTURE_WORKSPACE_EXHAUSTED: device=%d buffer=%p dataBytes=%lld "
+                 "allocBytes=%zu used=%zu/%zu need=%zu remaining=%zu "
+                 "sources[data=%zu pointers=%zu pool=%zu extraArgs=%zu] — "
+                 "failing capture (unsafe addresses would be baked into the graph)",
+                 deviceId, static_cast<void*>(this),
+                 static_cast<long long>(getLenInBytes()), allocSize,
+                 tl_captureWorkspaceOffset, tl_captureWorkspaceSize,
+                 aligned, remainingWorkspace, tl_captureWorkspaceDataBufferBytes,
+                 tl_captureWorkspacePointerBytes, tl_captureWorkspacePoolBytes,
+                 tl_captureWorkspaceExtraArgsBytes);
         const std::string exhaustionMessage = "CAPTURE_WORKSPACE_EXHAUSTED: capture workspace exhausted "
                         "during CUDA graph capture (need " +
                         std::to_string(aligned) + " bytes, " +
                         std::to_string(tl_captureWorkspaceSize - tl_captureWorkspaceOffset) +
-                        " remaining). Capture aborted to avoid baking unsafe addresses; "
-                        "re-run this segment slot-by-slot. Tune via "
-                        "Environment::dspCaptureWorkspaceMb if capture is required.";
+                        " remaining). Capture aborted to avoid baking unsafe addresses.";
         THROW_EXCEPTION(exhaustionMessage.c_str());
       }
 
@@ -1439,17 +1497,19 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     // The H2D memcpy node bakes the source address — if _primaryBuffer is freed
     // after capture, graph replay reads garbage. The pinned copy in the workspace
     // persists for the graph's lifetime (freed when replay handle is destroyed).
-    void* h2dSource = _primaryBuffer;
-    if (tl_captureHostWorkspace != nullptr) {
-      size_t aligned = (getLenInBytes() + 255) & ~255ULL;
-      if (tl_captureHostWorkspaceOffset + aligned <= tl_captureHostWorkspaceSize) {
-        void* pinnedCopy = static_cast<char*>(tl_captureHostWorkspace) + tl_captureHostWorkspaceOffset;
-        tl_captureHostWorkspaceOffset += aligned;
-        std::memcpy(pinnedCopy, _primaryBuffer, getLenInBytes());
-        h2dSource = pinnedCopy;
-      }
-      // If workspace exhausted, fall through to use _primaryBuffer directly
+    const size_t copyBytes = static_cast<size_t>(getLenInBytes());
+    if (copyBytes > std::numeric_limits<size_t>::max() - 255)
+      THROW_EXCEPTION("DataBuffer::syncToSpecial: capture host staging size overflow");
+    const size_t aligned = (copyBytes + 255) & ~static_cast<size_t>(255);
+    if (tl_captureHostWorkspace == nullptr ||
+        tl_captureHostWorkspaceOffset > tl_captureHostWorkspaceSize ||
+        aligned > tl_captureHostWorkspaceSize - tl_captureHostWorkspaceOffset) {
+      THROW_EXCEPTION("DataBuffer::syncToSpecial: capture host workspace unavailable or exhausted; "
+                      "refusing to record an H2D node with a potentially short-lived host source");
     }
+    void* h2dSource = static_cast<char*>(tl_captureHostWorkspace) + tl_captureHostWorkspaceOffset;
+    tl_captureHostWorkspaceOffset += aligned;
+    std::memcpy(h2dSource, _primaryBuffer, copyBytes);
 
     cudaStream_t capturedStream = captureSafeStreamOrDefault();
     auto res = memory::CudaMemoryPool::memcpyAsync(_specialBuffer, h2dSource, getLenInBytes(),
@@ -1458,7 +1518,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
              getLenInBytes(), h2dSource, _specialBuffer,
              (h2dSource != _primaryBuffer) ? 1 : 0, (void*)capturedStream);
     if (res != cudaSuccess) {
-      cudaGetLastError();  // Clear error
+      throwCudaStatus("DataBuffer::syncToSpecial: captured H2D copy failed", res);
     }
     writeSpecial();
     return;
@@ -1548,6 +1608,10 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   auto startTime = std::chrono::high_resolution_clock::now();
 
   cudaStream_t stream = asyncTransferStream(switchedDevice);
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=syncToSpecial db=%p ptr=%p bytes=%lld bufDev=%d resolved=%p",
+           (void*)this, _specialBuffer, (long long)getLenInBytes(),
+           _specialDeviceId.load(), (void*)stream);
 
   // Validate stream and check for latent CUDA errors before cudaMemcpyAsync.
   // Catches: stale/destroyed streams, latent errors from prior ops.
@@ -1818,6 +1882,7 @@ void DataBuffer::setCountersToZero() {
   _writeSpecial.store(0L);
   _readPrimary.store(0L);
   _readSpecial.store(0L);
+  renewContentGeneration();
 
   // Write events are created lazily by async copy paths. Constructor/reset does
   // not allocate CUDA objects.
@@ -1832,6 +1897,7 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
   _writeSpecial.store(other._readPrimary);
   _readPrimary.store(other._writeSpecial);
   _readSpecial.store(other._writePrimary);
+  renewContentGeneration();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2074,8 +2140,13 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
     // a device-1 buffer fails with invalid argument even though we are on device 1. Use
     // cudaStreamPerThread (the current device's per-thread stream) for secondary buffers; device 0
     // keeps the existing resolver so the single-GPU path stays byte-identical.
-    stream = (bufferDeviceId != 0) ? cudaStreamPerThread : captureSafeStreamOrDefault();
+    stream = streamForDeviceWork(bufferDeviceId, captureSafeStreamOrDefault(),
+                                 "setToZeroBuffers");
   }
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=setToZeroBuffers db=%p ptr=%p bytes=%lld bufDev=%d resolved=%p capture=%d",
+           (void*)this, special(), (long long)getLenInBytes(), bufferDeviceId,
+           (void*)stream, (int)(tl_graphExecutionActive && tl_graphCaptureStream != nullptr));
   auto res = cudaMemsetAsync(special(), 0, getLenInBytes(), stream);
 
   if (res == 901 || res == 906) {
@@ -2206,6 +2277,11 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
   } deviceScope{currentDeviceId, switchedDevice};
 
   cudaStream_t stream = asyncTransferStream(switchedDevice);
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=memcpyWithT dst=%p src=%p bytes=%lld dstDev=%d srcDev=%d resolved=%p",
+           dst->special(), specialSource ? src->special() : src->primary(),
+           (long long)copyBytes, dstDeviceId,
+           specialSource ? src->deviceId() : src->deviceId(), (void*)stream);
   waitForLastDspCompletionIfNeeded(stream);
   dst->waitForSpecialWriteEvent(stream);
   if (copyBytes < dst->getLenInBytes() && !dst->isSpecialActual() && dst->isPrimaryActual()) {
@@ -2232,10 +2308,25 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
   dst->writeSpecial();
 }
 BUILD_SINGLE_TEMPLATE(void memcpyWithT, (DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n), SD_COMMON_TYPES);
+// FP8 storage is intentionally outside SD_COMMON_TYPES (and has no selective-rendering
+// flag), so dispatch both formats explicitly. memcpyWithT uses T only for element-offset
+// arithmetic, which is exact for any fixed-width type; string buffers (offset header plus
+// variable-length payload) stay unsupported.
+template void memcpyWithT<float8>(DataBuffer*, DataBuffer*, sd::LongType, sd::LongType, sd::LongType);
+template void memcpyWithT<float8_e5m2>(DataBuffer*, DataBuffer*, sd::LongType, sd::LongType, sd::LongType);
 
 void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
                         sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n) {
-  BUILD_SINGLE_SELECTOR(src->getDataType(), memcpyWithT, (dst, src, startingOffset, dstOffset, n), SD_COMMON_TYPES);
+  const auto dataType = src->getDataType();
+  if (dataType == DataType::FLOAT8) {
+    memcpyWithT<float8>(dst, src, startingOffset, dstOffset, n);
+    return;
+  }
+  if (dataType == DataType::FLOAT8_E5M2) {
+    memcpyWithT<float8_e5m2>(dst, src, startingOffset, dstOffset, n);
+    return;
+  }
+  BUILD_SINGLE_SELECTOR(dataType, memcpyWithT, (dst, src, startingOffset, dstOffset, n), SD_COMMON_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2316,13 +2407,15 @@ void DataBuffer::migrate() {
 
   // Requested-device admission happens before any target allocation. Padding is
   // physical capacity only: MemoryCounter consistently charges logical bytes.
+  // Admission and commit must validate the same live charge; pool reservations
+  // are physical reuse capacity, not a discount on MemoryCounter's live bytes.
   if (!counter.transferDeviceAllocation(oldChargeDevice, oldCharge, requestedDevice, bytes, false)) {
-    sd_printf("MIGRATION_ADMISSION_REJECT db=%p oldBuffer=%p physicalSourceDevice=%d oldChargeDevice=%d oldOwner=%d oldCaptureWorkspace=%d host=%d oldCharge=%lld bytes=%lld requestedDevice=%d\n",
-              static_cast<void*>(this), oldBuffer, oldLocation.device, oldChargeDevice,
-              static_cast<int>(oldOwner), static_cast<int>(oldCaptureWorkspace),
-              static_cast<int>(oldLocation.host), static_cast<long long>(oldCharge),
-              static_cast<long long>(bytes), requestedDevice);
-    THROW_EXCEPTION("DataBuffer::migrate: requested target exceeds device or DEVICE-group memory limits");
+      sd_printf("MIGRATION_ADMISSION_REJECT db=%p oldBuffer=%p physicalSourceDevice=%d oldChargeDevice=%d oldOwner=%d oldCaptureWorkspace=%d host=%d oldCharge=%lld bytes=%lld requestedDevice=%d\n",
+                static_cast<void*>(this), oldBuffer, oldLocation.device, oldChargeDevice,
+                static_cast<int>(oldOwner), static_cast<int>(oldCaptureWorkspace),
+                static_cast<int>(oldLocation.host), static_cast<long long>(oldCharge),
+                static_cast<long long>(bytes), requestedDevice);
+      THROW_EXCEPTION("DataBuffer::migrate: requested target exceeds device or DEVICE-group memory limits");
   }
 
   auto* callerStream = LaunchContext::defaultContext()->getCudaStream();
@@ -2392,7 +2485,60 @@ void DataBuffer::migrate() {
     THROW_EXCEPTION("DataBuffer::migrate: target stream is capturing");
   if (copySource != nullptr) {
     cudaError_t err;
-    if (!copyPrimary && oldLocation.type == cudaMemoryTypeDevice && target.type == cudaMemoryTypeDevice &&
+    // Remote-device source policy: without peer access, source memory on another
+    // device is addressable ONLY from that device's context. The Device/Device
+    // branch handles peer device-to-device copies, but pool failover can hand
+    // back a HOST-RESIDENT target (managed preferred-CPU, or pinned) — host
+    // pages are visible to every context, so the plain Default copy runs on this
+    // context and raises cudaErrorInvalidValue when it dereferences the remote
+    // source (observed: gdn_out_8 on dev1 -> managed failover target on dev0,
+    // no P2P). Stage through pinned host on the SOURCE device instead — the
+    // same non-peer safety policy the target guard above enforces.
+    const bool remoteDeviceSource = !copyPrimary && oldLocation.type == cudaMemoryTypeDevice &&
+                                    oldLocation.device != candidate.device;
+    if (remoteDeviceSource && !pool.isPeerAccessEnabled(candidate.device, oldLocation.device)) {
+      // Per-thread reusable staging scratch: pinned allocation is expensive
+      // page-locking work and the pinned budget is shared with failover
+      // storage. Migrate can fire hundreds of times per plan run, so a fresh
+      // allocate/free per call churns the pinned pool and transiently doubles
+      // pinned pressure. The scratch grows to the largest migrate seen on
+      // this thread and is retired by CudaMemoryPool::release() with every
+      // other tracked host allocation — never per call.
+      thread_local void* stageScratch = nullptr;
+      thread_local size_t stageScratchCap = 0;
+      if (stageScratchCap < allocSize) {
+        if (stageScratch != nullptr) {
+          pool.freePinnedHost(stageScratch);
+          stageScratch = nullptr;
+          stageScratchCap = 0;
+        }
+        stageScratch = pool.allocatePinnedHost(allocSize);
+        if (stageScratch != nullptr) stageScratchCap = allocSize;
+      }
+      void* stage = stageScratch;
+      if (stage == nullptr)
+        THROW_EXCEPTION("DataBuffer::migrate: remote-source pinned staging allocation failed");
+      AffinityManager::setCurrentNativeDevice(oldLocation.device);
+      err = memory::CudaMemoryPool::memcpyAsync(stage, copySource, bytes,
+                                                cudaMemcpyDeviceToHost, copyStream);
+      if (err != cudaSuccess) throwCudaStatus("DataBuffer::migrate: remote-source staging copy failed", err);
+      auto stageErr = cudaStreamSynchronize(copyStream);
+      if (stageErr != cudaSuccess)
+        throwCudaStatus("DataBuffer::migrate: remote-source staging sync failed", stageErr);
+      AffinityManager::setCurrentNativeDevice(candidate.device);
+      copyStream = cudaStreamPerThread;
+      // Source is host memory now: visible from the destination context, so the
+      // Default-direction copy above is valid for managed and pinned targets.
+      err = memory::CudaMemoryPool::memcpyAsync(candidate.pointer, stage, bytes,
+                                                cudaMemcpyDefault, copyStream);
+      // The scratch is reused by later migrates on this thread; complete the
+      // copy here so reuse can never race this read.
+      if (err == cudaSuccess) {
+        auto stageCopyErr = cudaStreamSynchronize(copyStream);
+        if (stageCopyErr != cudaSuccess)
+          throwCudaStatus("DataBuffer::migrate: staging copy completion failed", stageCopyErr);
+      }
+    } else if (!copyPrimary && oldLocation.type == cudaMemoryTypeDevice && target.type == cudaMemoryTypeDevice &&
         oldLocation.device != candidate.device) {
       err = memory::CudaMemoryPool::memcpyPeerAsync(candidate.pointer, candidate.device, copySource, oldLocation.device, bytes, copyStream);
     } else {

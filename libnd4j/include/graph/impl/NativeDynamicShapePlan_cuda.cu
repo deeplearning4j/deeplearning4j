@@ -73,6 +73,7 @@
 #include <helpers/cublasHelper.h>
 #include <cublas_v2.h>
 #include <memory/cuda/CudaMemoryPool.h>
+#include <memory/MemoryCounter.h>
 #include <helpers/AttentionWorkspace.h>
 #include <graph/gpu/NvrtcKernelBuilder.h>
 #include <graph/gpu/NvrtcKernelCache.h>
@@ -375,30 +376,66 @@ struct SegmentDeviceSavedState {
 };
 static thread_local SegmentDeviceSavedState tl_segDevSaved;
 
-// The stream holding the running execution's writes on `device`. Segments on
-// the execution device dispatch on its DSP stream: the plan-owned stream under
-// execute(), the caller's stream under executeSteadyState(). The plan-owned
-// stream is idle during a steady-state replay, so completing it orders nothing.
-// Without an execution context (precompilePlan through the C API, the replay
-// verifier's reference plan) dispatchSegment uses the thread's installed DSP
-// stream, else the LaunchContext stream. Secondary-device segments run on that
-// device's per-thread stream; binding one parks the execution device and its
-// stream in tl_segDevSaved. `boundDevice` is the device bound before the
-// caller switched to `device`.
-cudaStream_t executionWriterStream(const PlanExecutionContext* execCtx, int boundDevice, int device) {
-  int executionDevice = boundDevice;
-  auto executionStream = reinterpret_cast<cudaStream_t>(tl_dspExecutionStream);
-  if (execCtx != nullptr) {
-    executionDevice = execCtx->deviceId;
-    executionStream = reinterpret_cast<cudaStream_t>(execCtx->dspStream);
-  } else if (tl_segDevSaved.active) {
-    executionDevice = tl_segDevSaved.primaryDevice;
-    executionStream = reinterpret_cast<cudaStream_t>(tl_segDevSaved.execStream);
+// Streams that can hold this execution's writes on the plan's primary device.
+// Segments dispatch on the thread's DSP execution stream (dispatchSegment reads
+// dspGetExecutionStream()): the plan-owned stream under execute(), the caller's
+// stream on the frozen fast path and under executeSteadyState(). Without one
+// (precompilePlan through the C API outside an execution) dispatch runs on the
+// LaunchContext stream. Per-buffer write events are suppressed during DSP
+// execution, so a cross-device reader must complete the stream a producer
+// actually ran on. While a secondary segment is bound, tl_segDevSaved holds them.
+struct PrimaryProducerStreams {
+  int device = -1;
+  cudaStream_t execution = nullptr;
+  cudaStream_t gap = nullptr;
+};
+
+PrimaryProducerStreams primaryProducerStreams() {
+  PrimaryProducerStreams streams;
+  if (tl_segDevSaved.active) {
+    streams.device = tl_segDevSaved.primaryDevice;
+    streams.execution = reinterpret_cast<cudaStream_t>(tl_segDevSaved.execStream);
+    streams.gap = tl_segDevSaved.gapStream;
+  } else if (cudaGetDevice(&streams.device) == cudaSuccess) {
+    streams.execution = reinterpret_cast<cudaStream_t>(tl_dspExecutionStream);
+    streams.gap = tl_dspGapStream;
+    if (streams.execution == nullptr) {
+      auto* launchStream = LaunchContext::defaultContext()->getCudaStream();
+      if (launchStream != nullptr) streams.execution = *launchStream;
+    }
+  } else {
+    cudaGetLastError();
+    streams.device = -1;
   }
-  if (device != executionDevice) return cudaStreamPerThread;
-  if (executionStream != nullptr) return executionStream;
-  auto* launchStream = LaunchContext::defaultContext()->getCudaStream();
-  return launchStream != nullptr ? *launchStream : cudaStreamPerThread;
+  return streams;
+}
+
+// Host-completes every stream that can hold a producer on sourceDevice, which
+// must be current: the plan-owned stream when it lives there (else the per-thread
+// stream a secondary segment runs on), plus the primary execution and gap
+// streams. Never drain the whole device: another plan may be capturing on it.
+cudaError_t completeSourceProducers(int sourceDevice, const PrimaryProducerStreams& primary,
+                                    const cudaStream_t* ownedStream, int ownedStreamDevice) {
+  cudaStream_t streams[3];
+  int count = 0;
+  auto add = [&](cudaStream_t stream) {
+    for (int i = 0; i < count; i++) {
+      if (streams[i] == stream) return;
+    }
+    streams[count++] = stream;
+  };
+  add(ownedStream != nullptr && ownedStreamDevice == sourceDevice ? *ownedStream : cudaStreamPerThread);
+  if (sourceDevice == primary.device) {
+    if (primary.execution != nullptr) add(primary.execution);
+    if (primary.gap != nullptr) add(primary.gap);
+  }
+  for (int i = 0; i < count; i++) {
+    DSP_DIAG(STREAM_SYNC, "SOURCE_PRODUCER_SYNC: device=%d stream=%p (%d/%d)",
+             sourceDevice, static_cast<void*>(streams[i]), i + 1, count);
+    const cudaError_t error = cudaStreamSynchronize(streams[i]);
+    if (error != cudaSuccess) return error;
+  }
+  return cudaSuccess;
 }
 }  // namespace
 
@@ -646,6 +683,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       NativeDynamicShapePlan* plan;
       ~RestoreSegmentDevice() { plan->platformRestoreSegmentDevice(); }
     } restoreSegmentDevice{this};
+    // Same cast slots as dispatchSegment: the ones this segment's graphs baked.
+    MmulHelper::CastCacheScopeGuard castScope(this, seg.def.startSlot);
     cudaStream_t segmentStream = dspGetExecutionStream() != nullptr
         ? reinterpret_cast<cudaStream_t>(dspGetExecutionStream()) : cudaStr;
     void* stream = &segmentStream;
@@ -719,6 +758,49 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
                (int)ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas,
                (int)tl_cublasLtDisabled);
 
+      // A rehomed or sharded segment replays against the staging buffers of its
+      // own device, whose addresses the graph baked at capture. The plan-level
+      // sync above staged only the device it ran on, so a segment bound to a
+      // different device refreshes that device's staging here. Replay still
+      // receives the caller's table (MTP contract below).
+      if (numExternalInputs > 0 && !externalInputIsVariable_.empty()) {
+        int segmentDevice = -1;
+        const cudaError_t deviceErr = cudaGetDevice(&segmentDevice);
+        if (deviceErr != cudaSuccess) {
+          cudaGetLastError();
+          return cudaPlanFailure(
+              "CUDA frozen fast-path segment device query failed: seg[%d-%d] "
+              "cudaError=%d (%s)",
+              seg.def.startSlot, seg.def.endSlot, static_cast<int>(deviceErr),
+              cudaGetErrorString(deviceErr));
+        }
+        if (segmentDevice != activeStagingDevice_) {
+          DSP_DIAG(MULTI_DEVICE,
+                   "FROZEN_FAST_PATH: seg[%d-%d] staging device %d->%d before replay",
+                   seg.def.startSlot, seg.def.endSlot, activeStagingDevice_,
+                   segmentDevice);
+          auto* execCtx = static_cast<PlanExecutionContext*>(activeExecCtx_);
+          if (execCtx != nullptr) {
+            execCtx->execTarget = ExecTarget::GRAPH_REPLAY;
+          }
+          DspStagingSyncResult segmentSync = performPreReplaySync(
+              externalInputs, numExternalInputs, stream, "frozen_fast_path_segment");
+          if (!segmentSync.ok() || segmentSync.effectiveExternals == nullptr) {
+            DSP_DIAG(EXECUTE,
+                     "FROZEN_FAST_PATH: seg[%d-%d] device=%d input staging failed "
+                     "status=%d cudaError=%d - aborting",
+                     seg.def.startSlot, seg.def.endSlot, segmentDevice,
+                     static_cast<int>(segmentSync.status), segmentSync.cudaError);
+            return cudaPlanFailure(
+                "CUDA frozen fast-path segment input staging failed: seg[%d-%d] "
+                "device=%d syncStatus=%d, cudaError=%d (%s)",
+                seg.def.startSlot, seg.def.endSlot, segmentDevice,
+                static_cast<int>(segmentSync.status), segmentSync.cudaError,
+                cudaGetErrorString(static_cast<cudaError_t>(segmentSync.cudaError)));
+          }
+        }
+      }
+
       // 2026-09-16 MTP acceptance regression: 136dfc0b44 added a SECOND
       // per-segment performPreReplaySync here and replayed with
       // segmentSync.effectiveExternals instead of the caller's externals.
@@ -726,7 +808,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // between chained predictor calls can hand the graph different effective
       // arrays than the plan-level sync at the entry intended. The Sept-05
       // code (8cb739c8a6, 77% acceptance) used externalInputs directly.
-      // Restored that behavior. performPreReplaySync still runs at plan entry.
+      // Restored that behavior. performPreReplaySync still runs at plan entry,
+      // and again above only when this segment's device differs from the last
+      // staged device.
       auto replayStatus = replayMonolithicGraph(seg, externalInputs, numExternalInputs,
                                                 stream, "frozen_fast_path");
       if (replayStatus == Status::MAYBE) {
@@ -1259,6 +1343,18 @@ bool NativeDynamicShapePlan::platformBindSegmentDevice(const GraphSegment& segme
 // segment starts from the plan's primary-device state.
 void NativeDynamicShapePlan::platformRestoreSegmentDevice() {
   if (!tl_segDevSaved.active) return;
+  // ErrorReference is per device context. A failure recorded while this
+  // secondary segment was bound must reach the primary context the caller
+  // reads, and must not stay behind to fail a later op on this device.
+  auto* segmentErrors = LaunchContext::defaultContext()->errorReference();
+  const int pendingCode = segmentErrors->errorCode();
+  const char* pending = segmentErrors->errorMessage();  // consumes the code
+  const std::string pendingMessage =
+      pendingCode != 0 && pending != nullptr ? pending : "";
+  if (pendingCode != 0 || (pending != nullptr && pending[0] != '\0')) {
+    segmentErrors->setErrorCode(0);
+    segmentErrors->setErrorMessage("");
+  }
   tl_dspGapStream = tl_segDevSaved.gapStream;
   tl_dspExecutionStream = tl_segDevSaved.execStream;
   tl_cublasGapStreamReady = tl_segDevSaved.gapReady;
@@ -1266,6 +1362,16 @@ void NativeDynamicShapePlan::platformRestoreSegmentDevice() {
   tl_cublasWorkspaceSize = tl_segDevSaved.wsSize;
   cudaSetDevice(tl_segDevSaved.primaryDevice);
   tl_segDevSaved.active = false;
+  if (pendingCode != 0) {
+    auto* primaryErrors = LaunchContext::defaultContext()->errorReference();
+    if (primaryErrors->errorCode() == 0) {
+      primaryErrors->setErrorMessage(
+          pendingMessage.empty()
+              ? "DSP secondary-device segment failed without backend detail"
+              : pendingMessage);
+      primaryErrors->setErrorCode(pendingCode);
+    }
+  }
 }
 
 // ===============================================================================
@@ -1285,6 +1391,8 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     if (err != cudaSuccess)
       return cudaPlanFailure("CUDA automatic segment device query failed: %s", cudaGetErrorString(err));
   }
+  // Read before any source-device switch below.
+  const PrimaryProducerStreams primaryProducers = primaryProducerStreams();
 
   migratedInputs_.clear();
 
@@ -1315,29 +1423,160 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     return external ? residentExternalSources_[index] : residentSources_[index];
   };
 
-  // Producer device of each output slot: that of the first slot (in slot order)
-  // writing it with an assigned device, else -1 (automatic). Built once per call — one pass over the plan — rather than
-  // scanning every slot for each consumed source, which cost ~30 ms per decode
-  // step on a 2400-slot plan.
-  std::vector<int> producerDevice;
-  auto producerDeviceOf = [&](int outputSlotIdx) -> int {
-    if (producerDevice.empty()) {
-      producerDevice.assign(static_cast<size_t>(totalOutputSlots_), -1);
-      for (int s = 0; s < numSlots_; s++) {
-        const NativeSlot& producer = slots_[s];
-        if (producer.targetDeviceId < 0) continue;
-        for (int o = 0; o < producer.wiring.numOutputs; o++) {
-          const int out = producer.wiring.outputSlotIndices[o];
-          if (out < 0 || out >= totalOutputSlots_ || producerDevice[out] >= 0) continue;
-          producerDevice[out] = producer.targetDeviceId;
-        }
+  // Producers of each output slot, indexed once per call - one pass over the
+  // plan - rather than by scanning every slot for each consumed source, which
+  // cost ~30 ms per decode step on a 2400-slot plan. producerDevices holds the
+  // device of the first slot (in slot order) writing it with an assigned
+  // device, else -1 (automatic); producerSteps holds the first slot writing it.
+  // A capacity shift rebinds this segment's slots and clears the index.
+  std::vector<int> producerDevices;
+  std::vector<int> producerSteps;
+  auto indexProducers = [&]() {
+    if (!producerDevices.empty()) return;
+    producerDevices.assign(static_cast<size_t>(totalOutputSlots_), -1);
+    producerSteps.assign(static_cast<size_t>(totalOutputSlots_), -1);
+    for (int s = 0; s < numSlots_; s++) {
+      const NativeSlot& producer = slots_[s];
+      for (int o = 0; o < producer.wiring.numOutputs; o++) {
+        const int out = producer.wiring.outputSlotIndices[o];
+        if (out < 0 || out >= totalOutputSlots_) continue;
+        if (producerSteps[out] < 0) producerSteps[out] = s;
+        if (producerDevices[out] < 0 && producer.targetDeviceId >= 0)
+          producerDevices[out] = producer.targetDeviceId;
       }
     }
-    return producerDevice[outputSlotIdx];
+  };
+  auto producerDeviceOf = [&](int outputSlotIdx) -> int {
+    indexProducers();
+    return producerDevices[outputSlotIdx];
+  };
+  auto producerStepOf = [&](int outputSlotIdx) -> int {
+    indexProducers();
+    return producerSteps[outputSlotIdx];
   };
 
+  // A capture-time rehome must give every output produced by this segment a
+  // device-local publication before cudaStreamBeginCapture. Normal segment
+  // sharding only stages inputs; their producers already allocated outputs on
+  // the target device during warmup. A rehomed, not-yet-captured segment is the
+  // one exception: its warmup outputs still belong to the source device.
+  std::unordered_set<int> rehomedSegmentOutputSlots;
+  std::unordered_map<int, int> rehomedViewParentSlots;
+  std::unordered_map<int, NDArray*> rehomedViewOriginals;
+  std::unordered_map<int, int> rehomedInPlaceParentSlots;
+  if (seg.exec.captureRehomePending) {
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+      const NativeSlot& slot = slots_[s];
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        if (outputSlot >= 0 && outputSlot < totalOutputSlots_)
+          rehomedSegmentOutputSlots.insert(outputSlot);
+      }
+    }
+
+    // Revalidate the narrow owner/view contract selected during admission. The
+    // view wrapper is provisional source-device state; preserve it for rollback,
+    // but never stage it as an independent dense segment output.
+    for (const int outputSlot : rehomedSegmentOutputSlots) {
+      NDArray* output = outputSlots_[outputSlot];
+      if (output == nullptr || !output->isView()) continue;
+      if (slotOwnership_ == nullptr ||
+          slotOwnership_[outputSlot].ownership != BufferOwnership::VIEW_OF_SLOT) {
+        return cudaPlanFailure(
+            "CUDA capture rehome view output has no tracked slot owner: outputSlot=%d",
+            outputSlot);
+      }
+      const int parentSlot = slotOwnership_[outputSlot].parentSlotIdx;
+      NDArray* parent = parentSlot >= 0 && parentSlot < totalOutputSlots_
+          ? outputSlots_[parentSlot] : nullptr;
+      if (parentSlot < 0 || rehomedSegmentOutputSlots.count(parentSlot) == 0 ||
+          parent == nullptr || parent->isView() || parent->offset() != 0 ||
+          output->offset() != 0 || parent->dataBuffer() == nullptr ||
+          parent->dataBuffer() != output->dataBuffer() ||
+          !shape::strideDescendingCAscendingF(parent->shapeInfo()) ||
+          slotOwnership_[parentSlot].ownership != BufferOwnership::SLOT_OWNED) {
+        return cudaPlanFailure(
+            "CUDA capture rehome only supports a direct view of an owned output "
+            "in the same segment: outputSlot=%d parentSlot=%d",
+            outputSlot, parentSlot);
+      }
+      rehomedViewParentSlots.emplace(outputSlot, parentSlot);
+      rehomedViewOriginals.emplace(outputSlot, output);
+    }
+
+    // In-place outputs are not view wrappers: they publish the exact same
+    // NDArray owner as their source slot. Revalidate that narrow contract here
+    // and stage only the source owner; the child publication is rebound after
+    // all owner copies have completed.
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+      const NativeSlot& slot = slots_[s];
+      if (!slot.isInPlaceFused()) continue;
+      if (slot.wiring.numOutputs < 1 || slotOwnership_ == nullptr) {
+        return cudaPlanFailure(
+            "CUDA capture rehome lost in-place output metadata: step=%d", s);
+      }
+      const int outputSlot = slot.wiring.outputSlotIndices[0];
+      const int parentSlot = slot.inPlaceSourceSlot();
+      NDArray* output = outputSlot >= 0 && outputSlot < totalOutputSlots_
+          ? outputSlots_[outputSlot] : nullptr;
+      NDArray* parent = parentSlot >= 0 && parentSlot < totalOutputSlots_
+          ? outputSlots_[parentSlot] : nullptr;
+      int parentProducer = -1;
+      if (parentSlot >= 0) {
+        for (int producerStep = seg.def.startSlot;
+             producerStep <= seg.def.endSlot && producerStep < numSlots_;
+             producerStep++) {
+          const NativeSlot& producer = slots_[producerStep];
+          for (int output = 0; output < producer.wiring.numOutputs; output++) {
+            if (producer.wiring.outputSlotIndices[output] == parentSlot) {
+              parentProducer = producerStep;
+              break;
+            }
+          }
+          if (parentProducer >= 0) break;
+        }
+      }
+      if (parentSlot < 0 || outputSlot < 0 || output == nullptr || parent == nullptr ||
+          output != parent || parent->isView() || parent->dataBuffer() == nullptr ||
+          slotOwnership_[outputSlot].ownership != BufferOwnership::VIEW_OF_SLOT ||
+          slotOwnership_[outputSlot].parentSlotIdx != parentSlot ||
+          slotOwnership_[parentSlot].ownership != BufferOwnership::SLOT_OWNED ||
+          rehomedSegmentOutputSlots.count(parentSlot) == 0 ||
+          parentProducer < seg.def.startSlot || parentProducer > seg.def.endSlot) {
+        return cudaPlanFailure(
+            "CUDA capture rehome only supports an exact in-place alias of an owned "
+            "output in the same segment: step=%d outputSlot=%d parentSlot=%d",
+            s, outputSlot, parentSlot);
+      }
+      rehomedInPlaceParentSlots.emplace(outputSlot, parentSlot);
+    }
+  }
+
+  // A rehomed segment also stages all of its own warmed outputs into the
+  // target-device staging table. Capture will overwrite them in graph order, but
+  // it must not bake source-device addresses into the target graph. View and
+  // in-place children are skipped below and rebuilt over their staged owner.
+  std::vector<int> rehomeInputSources;
+  if (seg.exec.captureRehomePending) {
+    rehomeInputSources = cachedSources->second;
+    std::unordered_set<int> listed(rehomeInputSources.begin(), rehomeInputSources.end());
+    for (const int outputSlot : rehomedSegmentOutputSlots) {
+      if (outputSlots_[outputSlot] != nullptr && listed.insert(outputSlot).second)
+        rehomeInputSources.push_back(outputSlot);
+    }
+  }
+  const std::vector<int>& inputSources =
+      seg.exec.captureRehomePending ? rehomeInputSources : cachedSources->second;
+
   int migrated = 0;
-  for (int sourceIdx : cachedSources->second) {
+  std::unordered_set<int> attemptedDevices{targetDevice};
+  for (size_t inputIndex = 0; inputIndex < inputSources.size(); ++inputIndex) {
+    const int sourceIdx = inputSources[inputIndex];
+    if (seg.exec.captureRehomePending &&
+        (rehomedViewParentSlots.count(sourceIdx) > 0 ||
+         rehomedInPlaceParentSlots.count(sourceIdx) > 0)) {
+      continue;  // Rebuilt over the staged owner after all owner copies complete.
+    }
     const bool externalSource = sourceIdx < 0;
     if (externalSource) {
       const int extIdx = -(sourceIdx + 1);
@@ -1356,18 +1595,58 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     auto* db = arr->dataBuffer();
     if (db == nullptr) continue;
 
-    // Writable externals need a stable, bidirectional replica, not a disposable
-    // input copy. Reuse the existing per-device staging owners (including their
-    // release/accounting lifecycle), but keep these state inputs out of ordinary
-    // input-only staging. A same-device replacement must refresh an existing owner.
-    // Device-managed inputs (shared KV/state/weights registered via
-    // registerDeviceManagedExternalInput) bypass staging entirely — their live
-    // device buffer is the source of truth (NativeDynamicShapePlan.h:2484) — so
-    // they must NOT enter this migration path (the generic DataBuffer::memcpy
-    // here also lacks FLOAT8 handling for quantized storage).
+    // During a capture-time rehome, device-managed external state/weights keep
+    // their caller-owned address. Do not route them through the generic copy
+    // path (which is not valid for every packed/FLOAT8 storage contract). They
+    // may remain remote only when CUDA peer access or unified memory makes that
+    // exact pointer addressable from the target device.
+    if (seg.exec.captureRehomePending && externalSource &&
+        isDeviceManagedExternalInput(externalInputIdx, arr)) {
+      void* pointer = db->special();
+      cudaPointerAttributes attributes;
+      const cudaError_t attrError = pointer != nullptr
+          ? cudaPointerGetAttributes(&attributes, pointer)
+          : cudaErrorInvalidValue;
+      if (attrError == cudaSuccess &&
+          attributes.type == cudaMemoryTypeManaged) {
+        continue;
+      }
+      if (attrError == cudaSuccess &&
+          attributes.type == cudaMemoryTypeDevice &&
+          attributes.device == targetDevice) {
+        continue;
+      }
+      const int sourceDevice = attrError == cudaSuccess &&
+              attributes.type == cudaMemoryTypeDevice
+          ? attributes.device : -1;
+      int canAccess = 0;
+      const cudaError_t peerError = sourceDevice >= 0
+          ? cudaDeviceCanAccessPeer(&canAccess, targetDevice, sourceDevice)
+          : cudaErrorInvalidValue;
+      if (peerError == cudaSuccess && canAccess) {
+        continue;
+      }
+      if (attrError != cudaSuccess) cudaGetLastError();
+      if (peerError != cudaSuccess) cudaGetLastError();
+      return cudaPlanFailure(
+          "CUDA capture rehome cannot access device-managed external input: "
+          "external=%d sourceDevice=%d targetDevice=%d attrError=%d peerError=%d peer=%d",
+          externalInputIdx, sourceDevice, targetDevice,
+          static_cast<int>(attrError), static_cast<int>(peerError), canAccess);
+    }
+
+    // Writable externals whose storage lives on another device need a stable,
+    // bidirectional replica, not a disposable input copy: the replica keeps the
+    // caller's storage size, layout and offset, so cleanup writes it back over the
+    // same bytes, and the copy is event-ordered instead of host-staged. Reuse the
+    // existing per-device staging owners (including their release/accounting
+    // lifecycle), but keep these state inputs out of ordinary input-only staging.
+    // Every writable external is device-managed: on its own device the live buffer
+    // is the source of truth (NativeDynamicShapePlan.h:2484) and is consumed in
+    // place, so only a consumer on another device replicates it.
     if (externalSource && externalInputIsVariable_[externalInputIdx] &&
         !externalInputIsPlaceholder_[externalInputIdx] &&
-        !isDeviceManagedExternalInput(externalInputIdx, arr)) {
+        db->deviceId() != targetDevice) {
       NDArray** stateBuffers = nullptr;
       if (targetDevice == 0) {
         stateBuffers = placeholderStagingBuffers_;
@@ -1376,126 +1655,118 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
         if (it != deviceStagingBuffers_.end()) stateBuffers = it->second.data();
       }
       NDArray* state = stateBuffers != nullptr ? stateBuffers[externalInputIdx] : nullptr;
-      if (state != nullptr || db->deviceId() != targetDevice) {
-        int savedDevice = -1;
-        cudaGetDevice(&savedDevice);
-        try {
-          // Publish the producer stream's writes, including any earlier transfer
-          // into the caller buffer. Per-op events are suppressed inside DSP, so
-          // this cross-device boundary owns the event explicitly. Primary
-          // segments use the plan stream; secondary segments use per-thread streams.
-          const int sourceDevice = db->deviceId();
-          auto* execution = static_cast<PlanExecutionContext*>(activeExecutionContext());
-          if (sourceDevice < 0 || execution == nullptr)
-            throw std::runtime_error("writable external has no producer device/context");
-          auto producerErr = cudaSetDevice(sourceDevice);
-          if (producerErr != cudaSuccess) throw std::runtime_error(cudaGetErrorString(producerErr));
-          cudaStream_t producerStream = sourceDevice == execution->deviceId
-              ? reinterpret_cast<cudaStream_t>(execution->dspStream) : cudaStreamPerThread;
-          if (producerStream == nullptr || DebugHelper::inGraphCapture(&producerStream))
-            throw std::runtime_error("writable external migration requires an uncaptured producer stream");
-          {
-            DspStreamGuard publishScope(nullptr);
-            db->waitForSpecialWriteEvent(producerStream);
-            db->recordSpecialWriteEvent(producerStream);
-          }
-          auto err = cudaSetDevice(targetDevice);
-          if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
-          if (stateBuffers == nullptr) {
-            if (targetDevice == 0) {
-              placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
-              stateBuffers = placeholderStagingBuffers_;
-            } else {
-              auto& buffers = deviceStagingBuffers_[targetDevice];
-              buffers.resize(numExternalInputs_, nullptr);
-              stateBuffers = buffers.data();
-            }
-          }
-          if (state == nullptr) {
-            // Preserve the backing layout and offset, not just the logical shape:
-            // offset views and quantized caches can have storage outside lengthOf().
-            std::vector<LongType> dimensions(arr->shapeOf(), arr->shapeOf() + arr->rankOf());
-            auto* storage = new DataBuffer(db->getLenInBytes(), arr->dataType(), nullptr, false);
-            try {
-              state = new NDArray(storage, arr->ordering(), dimensions, arr->dataType(),
-                                  LaunchContext::defaultContext(), true, false, arr->offset());
-              state->setShapeInfo(arr->shapeInfo());
-            } catch (...) {
-              if (state != nullptr) delete state;
-              else delete storage;
-              throw;
-            }
-            stateBuffers[externalInputIdx] = state;
-          }
-          if (state->dataBuffer()->getLenInBytes() != db->getLenInBytes() ||
-              state->offset() != arr->offset() || !shape::equalsStrict(state->shapeInfo(), arr->shapeInfo())) {
-            throw std::runtime_error("writable external changed storage contract within a plan lease");
-          }
-          // DataBuffer::memcpy handles peer/non-peer transfers and publishes a
-          // destination write event; no source migration or host round trip here.
-          {
-            // This is a cross-stream transfer boundary, not an op on the DSP
-            // stream. Allow DataBuffer to publish its normal completion event.
-            DspStreamGuard transferScope(nullptr);
-            DataBuffer::memcpy(state->dataBuffer(), db, 0, 0, db->getNumElements());
-          }
-          state->dataBuffer()->waitForSpecialWriteEvent(dspGetExecutionStream());
-          auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
-          if (lcStream != nullptr) state->dataBuffer()->waitForSpecialWriteEvent(*lcStream);
-          MigratedInput mi;
-          mi.outputSlotIdx = -1;
-          mi.original = arr;
-          mi.migrated = state;
-          mi.externalInputTable = externalInputs;
-          mi.externalInputIdx = externalInputIdx;
-          migratedInputs_.push_back(mi);
-          externalInputs[externalInputIdx] = state;
-          // Pre-replay sync can reuse its already-synchronized table on this
-          // device. Managed state bypasses ordinary staging, so publish the
-          // same replica there rather than letting dedup restore caller storage.
-          if (effectiveExternals_ != nullptr) effectiveExternals_[externalInputIdx] = state;
-        } catch (const std::exception& error) {
-          if (savedDevice >= 0) cudaSetDevice(savedDevice);
-          const char* extName = externalInputIdx < static_cast<int>(externalInputNames_.size())
-                                    ? externalInputNames_[externalInputIdx].c_str() : "?";
-          return cudaPlanFailure("CUDA writable external migration failed: ext=%d '%s' "
-                                 "isVariable=%d isPlaceholder=%d targetDevice=%d: %s",
-                                 externalInputIdx, extName,
-                                 externalInputIdx < static_cast<int>(externalInputIsVariable_.size())
-                                     ? static_cast<int>(externalInputIsVariable_[externalInputIdx]) : -1,
-                                 externalInputIdx < static_cast<int>(externalInputIsPlaceholder_.size())
-                                     ? static_cast<int>(externalInputIsPlaceholder_[externalInputIdx]) : -1,
-                                 targetDevice, error.what());
-        }
-        if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        continue;
-      }
-      // Same-device storage can still carry an asynchronous writeback from a
-      // previous segment. Acquire that publication on this consumer's stream;
-      // special-actual means current contents, not cross-stream readiness.
+      int savedDevice = -1;
+      cudaGetDevice(&savedDevice);
       try {
-        auto consumerStream = reinterpret_cast<cudaStream_t>(dspGetExecutionStream());
-        if (consumerStream == nullptr || DebugHelper::inGraphCapture(&consumerStream))
-          throw std::runtime_error("writable external consumption requires an uncaptured segment stream");
-        db->waitForSpecialWriteEvent(consumerStream);
+        // Publish the producer stream's writes, including any earlier transfer
+        // into the caller buffer. Per-op events are suppressed inside DSP, so
+        // this cross-device boundary owns the event explicitly. Primary
+        // segments use the bound execution stream (the caller's stream on the
+        // frozen fast path, not dspStream); secondary segments use per-thread streams.
+        const int sourceDevice = db->deviceId();
+        auto* execution = static_cast<PlanExecutionContext*>(activeExecutionContext());
+        if (sourceDevice < 0 || execution == nullptr)
+          throw std::runtime_error("writable external has no producer device/context");
+        auto producerErr = cudaSetDevice(sourceDevice);
+        if (producerErr != cudaSuccess) throw std::runtime_error(cudaGetErrorString(producerErr));
+        cudaStream_t producerStream = cudaStreamPerThread;
+        if (sourceDevice == execution->deviceId) {
+          producerStream = sourceDevice == primaryProducers.device && primaryProducers.execution != nullptr
+              ? primaryProducers.execution : reinterpret_cast<cudaStream_t>(execution->dspStream);
+        }
+        if (producerStream == nullptr || DebugHelper::inGraphCapture(&producerStream))
+          throw std::runtime_error("writable external migration requires an uncaptured producer stream");
+        {
+          DspStreamGuard publishScope(nullptr);
+          db->waitForSpecialWriteEvent(producerStream);
+          db->recordSpecialWriteEvent(producerStream);
+        }
+        auto err = cudaSetDevice(targetDevice);
+        if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
+        if (stateBuffers == nullptr) {
+          if (targetDevice == 0) {
+            placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
+            stateBuffers = placeholderStagingBuffers_;
+          } else {
+            auto& buffers = deviceStagingBuffers_[targetDevice];
+            buffers.resize(numExternalInputs_, nullptr);
+            stateBuffers = buffers.data();
+          }
+        }
+        if (state == nullptr) {
+          // Preserve the backing layout and offset, not just the logical shape:
+          // offset views and quantized caches can have storage outside lengthOf().
+          std::vector<LongType> dimensions(arr->shapeOf(), arr->shapeOf() + arr->rankOf());
+          auto* storage = new DataBuffer(db->getLenInBytes(), arr->dataType(), nullptr, false);
+          try {
+            state = new NDArray(storage, arr->ordering(), dimensions, arr->dataType(),
+                                LaunchContext::defaultContext(), true, false, arr->offset());
+            state->setShapeInfo(arr->shapeInfo());
+          } catch (...) {
+            if (state != nullptr) delete state;
+            else delete storage;
+            throw;
+          }
+          stateBuffers[externalInputIdx] = state;
+        }
+        if (state->dataBuffer()->getLenInBytes() != db->getLenInBytes() ||
+            state->offset() != arr->offset() || !shape::equalsStrict(state->shapeInfo(), arr->shapeInfo())) {
+          throw std::runtime_error("writable external changed storage contract within a plan lease");
+        }
+        // DataBuffer::memcpy handles peer/non-peer transfers and publishes a
+        // destination write event; no source migration or host round trip here.
+        {
+          // This is a cross-stream transfer boundary, not an op on the DSP
+          // stream. Allow DataBuffer to publish its normal completion event.
+          DspStreamGuard transferScope(nullptr);
+          DataBuffer::memcpy(state->dataBuffer(), db, 0, 0, db->getNumElements());
+        }
+        state->dataBuffer()->waitForSpecialWriteEvent(dspGetExecutionStream());
+        auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
+        if (lcStream != nullptr) state->dataBuffer()->waitForSpecialWriteEvent(*lcStream);
+        MigratedInput mi;
+        mi.outputSlotIdx = -1;
+        mi.original = arr;
+        mi.migrated = state;
+        mi.targetDevice = targetDevice;
+        mi.externalInputTable = externalInputs;
+        mi.externalInputIdx = externalInputIdx;
+        migratedInputs_.push_back(mi);
+        externalInputs[externalInputIdx] = state;
+        // Pre-replay sync can reuse its already-synchronized table on this
+        // device. Managed state bypasses ordinary staging, so publish the
+        // same replica there rather than letting dedup restore caller storage.
+        if (effectiveExternals_ != nullptr) effectiveExternals_[externalInputIdx] = state;
       } catch (const std::exception& error) {
-        return cudaPlanFailure("CUDA writable external consumer wait failed: ext=%d device=%d: %s",
-                               externalInputIdx, targetDevice, error.what());
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        const char* extName = externalInputIdx < static_cast<int>(externalInputNames_.size())
+                                  ? externalInputNames_[externalInputIdx].c_str() : "?";
+        return cudaPlanFailure("CUDA writable external migration failed: ext=%d '%s' "
+                               "isVariable=%d isPlaceholder=%d targetDevice=%d: %s",
+                               externalInputIdx, extName,
+                               externalInputIdx < static_cast<int>(externalInputIsVariable_.size())
+                                   ? static_cast<int>(externalInputIsVariable_[externalInputIdx]) : -1,
+                               externalInputIdx < static_cast<int>(externalInputIsPlaceholder_.size())
+                                   ? static_cast<int>(externalInputIsPlaceholder_[externalInputIdx]) : -1,
+                               targetDevice, error.what());
       }
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
       continue;
     }
 
     // The array may be on a different device. We check by trying to determine
     // where the special (GPU) buffer lives. If targetDevice differs from where
-    // the data was produced, we need to migrate.
-    // Find which device produced this output by checking the source slot's targetDeviceId
-    {
+    // the data was produced, we need to migrate. A rehome must stage even the
+    // host-resident sources a resident record admits, so it skips that record.
+    if (!seg.exec.captureRehomePending) {
       const ResidentSource& resident = residentEntry(externalSource, externalSource ? externalInputIdx : slotIdx);
       if (resident.array == arr && resident.devicePointer == db->special() &&
           resident.targetDevice == targetDevice) {
         continue;  // Proven same-device resident at this allocation.
       }
     }
+    // Find which device produced this output by checking the source slot's targetDeviceId
+    const int producerStep = externalSource ? -1 : producerStepOf(slotIdx);
     int sourceDevice = externalSource ? db->deviceId() : producerDeviceOf(slotIdx);
 
     if (sourceDevice < 0) {
@@ -1503,6 +1774,48 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       int activeDev = 0;
       cudaGetDevice(&activeDev);
       sourceDevice = activeDev;
+    }
+
+    // A frozen constant output never changes while its producer's generation,
+    // DataBuffer and device address are unchanged (in-place fusion over it is
+    // disabled), so the copy made from exactly that source is still current.
+    // Publish it without another cross-device transfer.
+    const bool frozenSource = !externalSource && !seg.exec.captureRehomePending &&
+        producerStep >= 0 && slots_[producerStep].frozenConstantSlot() &&
+        !arr->isView() && arr->offset() == 0;
+    if (frozenSource) {
+      const uint64_t frozenKey = (static_cast<uint64_t>(targetDevice) << 32) |
+                                 static_cast<uint32_t>(sourceIdx);
+      auto record = frozenMigrationSources_.find(frozenKey);
+      auto cached = migrationBuffers_.find(frozenKey);
+      NDArray* copy = cached != migrationBuffers_.end() ? cached->second : nullptr;
+      const size_t sourceBytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
+      if (record != frozenMigrationSources_.end() && copy != nullptr &&
+          record->second.copy == copy && record->second.source == db &&
+          record->second.sourceSpecial != nullptr &&
+          record->second.sourceSpecial == db->special() &&
+          record->second.producerGeneration == slots_[producerStep].generation() &&
+          copy->dataBuffer() != nullptr && copy->dataBuffer()->isValid() &&
+          !copy->dataBuffer()->isClosed() && copy->dataBuffer()->deviceId() == targetDevice &&
+          copy->dataType() == arr->dataType() && copy->ordering() == arr->ordering() &&
+          copy->offset() == 0 && copy->dataBuffer()->getLenInBytes() >= sourceBytes &&
+          shape::strideDescendingCAscendingF(copy->shapeInfo()) &&
+          shape::equalsSoft(copy->shapeInfo(), arr->shapeInfo())) {
+        DSP_DIAG(MULTI_DEVICE,
+                 "migrateSlotInputsToTargetDevice: reused frozen slot=%d producer=%d "
+                 "dev%d->dev%d bytes=%zu",
+                 slotIdx, producerStep, sourceDevice, targetDevice, sourceBytes);
+        MigratedInput mi;
+        mi.outputSlotIdx = slotIdx;
+        mi.original = arr;
+        mi.migrated = copy;
+        mi.retained = true;
+        mi.targetDevice = targetDevice;
+        migratedInputs_.push_back(mi);
+        outputSlots_[slotIdx] = copy;
+        migrated++;
+        continue;
+      }
     }
 
     int savedDevice = -1;
@@ -1515,7 +1828,9 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     // acquire their real payload when the producer executes below. Do not reject
     // those wrappers merely because migration inspected them before execution.
     void* originalDev = (arr->dataBuffer() != nullptr) ? arr->dataBuffer()->special() : nullptr;
-    if (!externalSource && originalDev == nullptr &&
+    const bool rehomedSegmentOutput = seg.exec.captureRehomePending && !externalSource &&
+        rehomedSegmentOutputSlots.count(slotIdx) > 0;
+    if (!externalSource && !rehomedSegmentOutput && originalDev == nullptr &&
         sourceDevice == targetDevice) {
       DSP_DIAG(MULTI_DEVICE,
                "migrateSlotInputsToTargetDevice: defer same-device metadata-only "
@@ -1532,115 +1847,65 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     auto originalAttrErr = originalDev != nullptr
         ? cudaPointerGetAttributes(&originalAttrs, originalDev)
         : cudaErrorInvalidValue;
-    // A buffer whose special() is not a device pointer has its bytes on the host:
-    // DeviceMemoryManager CPU-failover moves device allocations back to host and
-    // the buffer then serves special() from primary(). Treat ANY non-device
-    // source (including unregistered malloc that cudaPointerGetAttributes
-    // reports as cudaErrorInvalidValue/Host/Unregistered) as host-resident and
-    // stage it H2D to the target instead of rejecting the whole plan.
+    // Device memory is located by its pointer. Host-resident memory - pinned host or
+    // CPU-preferred managed memory from pool failover, or a buffer whose special side
+    // was never allocated - is located by its DataBuffer device tag: consumers compare
+    // that tag, not the pointer kind, before migrating the caller's buffer. On its own
+    // tag it is therefore read in place over UVA, exactly as outside DSP (a copy there
+    // would also detach writable state from the caller). Any other device gets a
+    // retained copy through the common path below.
     const bool sourceOnDevice =
         originalDev != nullptr && originalAttrErr == cudaSuccess &&
         originalAttrs.type == cudaMemoryTypeDevice;
+    if (originalDev != nullptr && originalAttrErr != cudaSuccess) {
+      cudaGetLastError();  // unregistered host memory: clear the benign query error
+    }
+    const int residentDevice = sourceOnDevice ? originalAttrs.device : db->deviceId();
     if (!sourceOnDevice) {
-      if (originalAttrErr == cudaSuccess) {
-        cudaGetLastError();  // clear benign attribute-query state
-      }
       DSP_DIAG(MEMORY,
-               "migrateSlotInputsToTargetDevice: host-resident source slot=%d "
-               "metadataDevice=%d targetDevice=%d ptr=%p attrType=%d attrErr=%d "
-               "bytes=%lld - H2D staging",
-               slotIdx, sourceDevice, targetDevice, originalDev,
+               "migrateSlotInputsToTargetDevice: host-resident source slot=%d external=%d "
+               "metadataDevice=%d bufferDevice=%d targetDevice=%d ptr=%p attrType=%d "
+               "attrErr=%d bytes=%lld",
+               slotIdx, externalInputIdx, sourceDevice, residentDevice, targetDevice,
+               originalDev,
                originalAttrErr == cudaSuccess ? static_cast<int>(originalAttrs.type) : -1,
                static_cast<int>(originalAttrErr),
                static_cast<long long>(arr->lengthOf() * arr->sizeOfT()));
-      if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      // The host copy is authoritative here (there is no newer device copy or
-      // the device copy was evicted with the failover) - never syncToHost() on
-      // a buffer whose special() is not a live device allocation.
-      auto* srcHost = (arr->dataBuffer() != nullptr &&
-                       arr->dataBuffer()->primary() != nullptr &&
-                       arr->dataBuffer()->isPrimaryActual())
-                          ? arr->dataBuffer()->primary()
-                          : originalDev;
-      cudaSetDevice(targetDevice);
-      NDArray* migrated = nullptr;
-      try {
-        // Same constructor pattern as the peer-copy path above: fresh dense
-        // buffer, shapeInfo-preserving, on the (now-current) target device.
-        migrated = new NDArray(arr->shapeInfo(), arr->dataType(), false,
-                               LaunchContext::defaultContext(), false);
-      } catch (const std::exception& e) {
-        DSP_DIAG(MEMORY,
-                 "migrateSlotInputsToTargetDevice: host-source target alloc failed "
-                 "slot=%d targetDevice=%d cause=%s",
-                 slotIdx, targetDevice, e.what());
-        if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        return cudaPlanFailure(
-            "CUDA host-source migration target allocation failed: slot=%d "
-            "targetDevice=%d cause=%s",
-            slotIdx, targetDevice, e.what());
-      }
-      const size_t hBytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
-      auto* dstDev = migrated->dataBuffer() != nullptr ? migrated->dataBuffer()->special() : nullptr;
-      if (dstDev == nullptr || srcHost == nullptr || hBytes == 0) {
-        delete migrated;
-        if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        return cudaPlanFailure(
-            "CUDA host-source migration invalid buffers: slot=%d targetDevice=%d",
-            slotIdx, targetDevice);
-      }
-      auto* h2dStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-      cudaStream_t h2dStream = (h2dStreamPtr != nullptr) ? *h2dStreamPtr : nullptr;
-      auto h2dErr = h2dStream != nullptr
-          ? cudaMemcpyAsync(dstDev, srcHost, hBytes, cudaMemcpyHostToDevice, h2dStream)
-          : cudaMemcpyAsync(dstDev, srcHost, hBytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
-      auto h2dSyncErr = cudaStreamSynchronize(
-          h2dStream != nullptr ? h2dStream : cudaStreamPerThread);
-      if (h2dErr != cudaSuccess || h2dSyncErr != cudaSuccess) {
-        auto syncErr = cudaGetLastError();
-        delete migrated;
-        if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        return cudaPlanFailure(
-            "CUDA host-source migration H2D failed: slot=%d targetDevice=%d "
-            "copyErr=%d (%s) syncErr=%d (%s)",
-            slotIdx, targetDevice,
-            static_cast<int>(h2dErr), cudaGetErrorString(h2dErr),
-            static_cast<int>(h2dSyncErr), cudaGetErrorString(h2dSyncErr));
-      }
-      // Publish like the peer-copy path: replace the slot publication for the
-      // segment and register restoration of the original after the segment.
-      MigratedInput mi;
-      mi.outputSlotIdx = slotIdx;
-      mi.original = arr;
-      mi.migrated = migrated;
-      mi.retained = true;
-      migratedInputs_.push_back(mi);
-      outputSlots_[slotIdx] = migrated;
-      DSP_DIAG(MULTI_DEVICE,
-               "migrateSlotInputsToTargetDevice: host-source migrated slot=%d "
-               "targetDevice=%d ptr=%p bytes=%zu",
-               slotIdx, targetDevice, (void*)dstDev, hBytes);
-      if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      continue;
     }
-    if (originalAttrs.device != sourceDevice) {
+    if (residentDevice >= 0 && residentDevice != sourceDevice) {
       DSP_DIAG(MULTI_DEVICE,
                "migrateSlotInputsToTargetDevice: correcting stale source device slot=%d "
-               "metadata=%d actual=%d",
-               slotIdx, sourceDevice, originalAttrs.device);
-      sourceDevice = originalAttrs.device;
+               "metadata=%d actual=%d hostResident=%d",
+               slotIdx, sourceDevice, residentDevice, static_cast<int>(!sourceOnDevice));
+      sourceDevice = residentDevice;
       cudaSetDevice(sourceDevice);
     }
-    if (sourceDevice == targetDevice) {
+    // A rehomed output still needs a device-local stage when it is host-resident.
+    if (sourceDevice == targetDevice && (sourceOnDevice || !rehomedSegmentOutput)) {
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
       residentEntry(externalSource, externalSource ? externalInputIdx : slotIdx) =
           ResidentSource{arr, originalDev, targetDevice};
       continue;  // Same device, no migration needed
     }
+    // Without a special allocation the host copy holds the only bytes. A buffer with
+    // neither has nothing to migrate; copying its fresh allocation would hand the
+    // consumer uninitialized memory.
+    if (originalDev == nullptr && !rehomedSegmentOutput &&
+        (db->primary() == nullptr || !db->isPrimaryActual())) {
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: source has no current bytes slot=%d "
+               "external=%d sourceDevice=%d targetDevice=%d",
+               slotIdx, externalInputIdx, sourceDevice, targetDevice);
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return cudaPlanFailure(
+          "CUDA cross-device migration source has no current bytes: slot=%d external=%d "
+          "sourceDevice=%d targetDevice=%d",
+          slotIdx, externalInputIdx, sourceDevice, targetDevice);
+    }
 
-    // Complete only this plan's producer, not unrelated captures on its GPU.
-    const auto producerReady = cudaStreamSynchronize(executionWriterStream(
-        static_cast<const PlanExecutionContext*>(activeExecCtx_), savedDevice, sourceDevice));
+    // Complete only this plan's producers, not unrelated captures on its GPU.
+    const auto producerReady =
+        completeSourceProducers(sourceDevice, primaryProducers, ownedStream_, ownedStreamDeviceId_);
     if (producerReady != cudaSuccess) {
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
       return cudaPlanFailure("CUDA migration producer completion failed: slot=%d device=%d: %s",
@@ -1653,12 +1918,15 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     NDArray* srcArr = arr;
     NDArray* srcMat = nullptr;
     static thread_local cudaEvent_t tl_inputDupEvent = nullptr;
-    // If the cross-segment input is a VIEW, its DataBuffer is the PARENT's - copying the raw
-    // buffer would migrate the parent's layout, not the view's permuted/sliced layout, silently
-    // corrupting the consumer on the target device. Materialize the view into a contiguous array
-    // (on the validated source device, in the view's logical order) and migrate THAT. The temp is
-    // freed at segment cleanup via a slot-less migratedInputs_ entry.
-    if (arr->isView()) {
+    // The copy below moves lengthOf() elements from the buffer base. A VIEW shares its
+    // PARENT's DataBuffer, and an offset or non-dense stride layout neither starts at nor
+    // fills that base, so a raw copy would silently corrupt the consumer on the target
+    // device. Materialize such an input into a dense array (on the validated source
+    // device, in its logical order) and migrate THAT. The temp is freed at segment
+    // cleanup via a slot-less migratedInputs_ entry.
+    const bool denseSource = !arr->isView() && arr->offset() == 0 &&
+                             shape::strideDescendingCAscendingF(arr->shapeInfo());
+    if (!denseSource) {
       try {
         srcMat = arr->dup(arr->ordering());
       } catch (...) {
@@ -1682,7 +1950,22 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       cudaEventRecord(tl_inputDupEvent, dupStreamPtr != nullptr ? *dupStreamPtr : cudaStreamPerThread);
     }
     std::vector<NDArray*> reads{srcArr};
-    NDArray::prepareSpecialUse({}, reads);
+    try {
+      NDArray::prepareSpecialUse({}, reads);
+    } catch (const std::exception& e) {
+      // Allocation admission can reject a source whose bytes still live only on the
+      // host. Report it through the status path so callers restore publications.
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: source preparation failed slot=%d external=%d "
+               "sourceDevice=%d targetDevice=%d cause=%s",
+               slotIdx, externalInputIdx, sourceDevice, targetDevice, e.what());
+      if (srcMat != nullptr) delete srcMat;
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return cudaPlanFailure(
+          "CUDA cross-device migration source preparation failed: slot=%d external=%d "
+          "sourceDevice=%d targetDevice=%d cause=%s",
+          slotIdx, externalInputIdx, sourceDevice, targetDevice, e.what());
+    }
     // Complete source-local coherence/materialization before exposing its bytes
     // to the target. A device-wide wait would invalidate another worker's capture.
     const auto sourceSyncErr = cudaStreamSynchronize(cudaStreamPerThread);
@@ -1708,87 +1991,24 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     auto srcAttrErr = srcDev != nullptr
         ? cudaPointerGetAttributes(&srcAttrs, srcDev)
         : cudaErrorInvalidValue;
-    if (srcDev == nullptr || srcAttrErr != cudaSuccess || srcAttrs.type != cudaMemoryTypeDevice) {
-      // Materialized source is not on any device - host-resident (failover or
-      // fresh host allocation). Allocate the target-side copy here and stage it
-      // H2D instead of rejecting the plan.
+    if (srcDev == nullptr) {
       DSP_DIAG(MEMORY,
-               "migrateSlotInputsToTargetDevice: materialized source is host-resident "
-               "slot=%d ptr=%p targetDevice=%d attrErr=%d - H2D staging",
-               slotIdx, srcDev, targetDevice, static_cast<int>(srcAttrErr));
-      if (srcAttrErr == cudaSuccess) cudaGetLastError();
-      // A CPU-failover dup can carry its bytes in the pinned-host "special"
-      // allocation with no primary at all. Prefer primary when actual, else
-      // the special pointer itself - both are valid H2D sources.
-      auto* dbBytes = srcArr->dataBuffer();
-      auto* hostBytes = (dbBytes != nullptr && dbBytes->primary() != nullptr)
-          ? dbBytes->primary() : srcDev;
-      const size_t mBytes = static_cast<size_t>(srcArr->lengthOf()) *
-                            static_cast<size_t>(DataTypeUtils::sizeOf(srcArr->dataType()));
-      if (hostBytes == nullptr || mBytes == 0) {
-        if (srcMat != nullptr) delete srcMat;
-        if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        return cudaPlanFailure(
-            "CUDA cross-device migration host materialized source invalid: slot=%d",
-            slotIdx);
-      }
-      cudaSetDevice(targetDevice);
-      NDArray* staged = nullptr;
-      try {
-        staged = new NDArray(srcArr->shapeInfo(), srcArr->dataType(), false,
-                             LaunchContext::defaultContext(), false);
-      } catch (const std::exception& e) {
-        DSP_DIAG(MEMORY,
-                 "migrateSlotInputsToTargetDevice: host materialized target alloc failed "
-                 "slot=%d targetDevice=%d cause=%s",
-                 slotIdx, targetDevice, e.what());
-        if (srcMat != nullptr) delete srcMat;
-        if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        return cudaPlanFailure(
-            "CUDA host materialized migration target allocation failed: slot=%d cause=%s",
-            slotIdx, e.what());
-      }
-      auto* dstDev2 = staged->dataBuffer() != nullptr ? staged->dataBuffer()->special() : nullptr;
-      if (dstDev2 == nullptr) {
-        delete staged;
-        if (srcMat != nullptr) delete srcMat;
-        if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        return cudaPlanFailure(
-            "CUDA host materialized migration invalid destination: slot=%d", slotIdx);
-      }
-      auto* h2dStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-      cudaStream_t h2dStream = (h2dStreamPtr != nullptr) ? *h2dStreamPtr : cudaStreamPerThread;
-      auto h2dErr = cudaMemcpyAsync(dstDev2, hostBytes, mBytes,
-                                    cudaMemcpyHostToDevice, h2dStream);
-      auto h2dSyncErr = cudaStreamSynchronize(h2dStream);
-      if (h2dErr != cudaSuccess || h2dSyncErr != cudaSuccess) {
-        auto syncErr = cudaGetLastError();
-        delete staged;
-        if (srcMat != nullptr) delete srcMat;
-        if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        return cudaPlanFailure(
-            "CUDA host materialized H2D failed: slot=%d copyErr=%d (%s) syncErr=%d (%s)",
-            slotIdx, static_cast<int>(h2dErr), cudaGetErrorString(h2dErr),
-            static_cast<int>(h2dSyncErr), cudaGetErrorString(h2dSyncErr));
-      }
-      // Register the target-side copy for segment cleanup and publish it into
-      // the slot (original restored afterwards), mirroring the peer-copy path.
-      MigratedInput mi;
-      mi.outputSlotIdx = slotIdx;
-      mi.original = arr;
-      mi.migrated = staged;
-      mi.retained = true;
-      migratedInputs_.push_back(mi);
-      outputSlots_[slotIdx] = staged;
-      DSP_DIAG(MULTI_DEVICE,
-               "migrateSlotInputsToTargetDevice: host materialized migrated slot=%d "
-               "targetDevice=%d ptr=%p bytes=%zu",
-               slotIdx, targetDevice, (void*)dstDev2, mBytes);
+               "migrateSlotInputsToTargetDevice: source has no readable storage slot=%d "
+               "external=%d sourceDevice=%d targetDevice=%d",
+               slotIdx, externalInputIdx, sourceDevice, targetDevice);
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      continue;
+      return cudaPlanFailure(
+          "CUDA cross-device migration source has no readable storage: slot=%d external=%d "
+          "sourceDevice=%d targetDevice=%d",
+          slotIdx, externalInputIdx, sourceDevice, targetDevice);
     }
-    if (srcAttrs.device != sourceDevice) {
+    // After coherence the special pointer holds the current bytes on either side of
+    // the bus. Pageable (unregistered) memory fails the query; it is host memory too.
+    if (srcAttrErr != cudaSuccess) cudaGetLastError();
+    const bool copySourceOnDevice =
+        srcAttrErr == cudaSuccess && srcAttrs.type == cudaMemoryTypeDevice;
+    if (copySourceOnDevice && srcAttrs.device != sourceDevice) {
       DSP_DIAG(MULTI_DEVICE,
                "migrateSlotInputsToTargetDevice: correcting stale materialized device "
                "slot=%d metadata=%d actual=%d",
@@ -1824,7 +2044,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                                   static_cast<uint32_t>(sourceIdx);
     auto cachedCopy = migrationBuffers_.find(migrationKey);
     NDArray* previousCopy = cachedCopy != migrationBuffers_.end() ? cachedCopy->second : nullptr;
-    const bool reuseCopy = previousCopy != nullptr && previousCopy->dataBuffer() != nullptr &&
+    const bool reusableCopy = previousCopy != nullptr && previousCopy->dataBuffer() != nullptr &&
         previousCopy->dataBuffer()->isValid() && !previousCopy->dataBuffer()->isClosed() &&
         previousCopy->dataBuffer()->deviceId() == targetDevice &&
         previousCopy->dataType() == srcArr->dataType() &&
@@ -1852,33 +2072,106 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     size_t poolReusable = poolReserved > poolUsed ? poolReserved - poolUsed : 0;
     size_t availableBytes = freeBytes;
     if (poolReusable <= SIZE_MAX - availableBytes) availableBytes += poolReusable;
-    if (!reuseCopy && memInfoErr == cudaSuccess && availableBytes < srcLen) {
+    // Match DataBuffer::allocateSpecial live-byte admission. Driver capacity can exceed the operator's
+    // device limit (e.g. a 2 GiB weight with only 765 MiB of cap remaining).
+    auto& counter = memory::MemoryCounter::getInstance();
+    const bool counterAdmitted = counter.validateDevice(targetDevice, static_cast<LongType>(srcLen));
+    // Mirror CudaMemoryPool's per-process budget: past it, the pool serves a new
+    // allocation from host-resident failover memory instead of this device.
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+    const int64_t deviceBudget = -1;
+#else
+    const int64_t deviceBudget = Environment::getInstance().maxDeviceMemory();
+#endif
+    const bool budgetAdmitted = deviceBudget <= 0 || tl_graphExecutionActive ||
+        !memory::CudaMemoryPool::getInstance().isEnabled() ||
+        (poolUsed <= static_cast<size_t>(deviceBudget) &&
+         srcLen <= static_cast<size_t>(deviceBudget) - poolUsed);
+    const bool deviceAdmitted = counterAdmitted && budgetAdmitted &&
+        (memInfoErr != cudaSuccess || availableBytes >= srcLen);
+    // A capture rehome needs a device-local stage, so a cached copy that failed over
+    // to host memory cannot serve it. Elsewhere that copy stays in use like any other
+    // failover allocation rather than being reallocated on every invocation.
+    bool previousHostResident = false;
+    if (reusableCopy && seg.exec.captureRehomePending) {
+      void* previousSpecial = previousCopy->dataBuffer()->special();
+      cudaPointerAttributes previousAttrs;
+      const auto previousAttrErr = previousSpecial != nullptr
+          ? cudaPointerGetAttributes(&previousAttrs, previousSpecial)
+          : cudaErrorInvalidValue;
+      if (previousSpecial != nullptr && previousAttrErr != cudaSuccess) cudaGetLastError();
+      previousHostResident = previousAttrErr != cudaSuccess ||
+                             previousAttrs.type != cudaMemoryTypeDevice;
+    }
+    const bool reuseCopy = reusableCopy && !previousHostResident;
+    if (!reuseCopy && !deviceAdmitted) {
       DSP_DIAG(MEMORY,
                "migrateSlotInputsToTargetDevice: destination capacity rejected slot=%d "
-               "sourceDevice=%d targetDevice=%d bytes=%zu free=%zu poolReusable=%zu total=%zu",
-               slotIdx, sourceDevice, targetDevice, srcLen, freeBytes, poolReusable, totalBytes);
-      if (srcMat != nullptr) delete srcMat;
-      if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      // POLICY (device-shift react): the segment's device cannot hold this
-      // input copy. The compute must move to where the data already lives.
-      // Rebind the whole segment to the source device for this invocation and
-      // every later one - the caller gets a transparent capacity-shift note.
-      GraphSegment& mutableSeg = const_cast<GraphSegment&>(seg);
-      for (int s = mutableSeg.def.startSlot;
-           s <= mutableSeg.def.endSlot && s < numSlots_; s++) {
-        slots_[s].targetDeviceId = sourceDevice;
+               "sourceDevice=%d targetDevice=%d bytes=%zu free=%zu poolReusable=%zu total=%zu "
+               "counterAdmitted=%d poolUsed=%zu budget=%lld",
+               slotIdx, sourceDevice, targetDevice, srcLen, freeBytes, poolReusable, totalBytes,
+               static_cast<int>(counterAdmitted), poolUsed, static_cast<long long>(deviceBudget));
+      // Ordinary capacity shifts are only safe before the segment has executed:
+      // warmed outputs and captured addresses require the capture-rehome protocol.
+      const bool shiftAvailable = !seg.exec.captureRehomePending && executeCount_ == 0 &&
+          !planLifecycle_.isInFrozenOrReplayState() && attemptedDevices.count(sourceDevice) == 0;
+      if (!shiftAvailable && counterAdmitted && !seg.exec.captureRehomePending) {
+        // Only the pool budget or driver free memory rejected the copy, and the segment
+        // can no longer move. The allocation below then fails over to host-resident
+        // memory tagged for this device, which its consumers read in place.
+        DSP_DIAG(MEMORY,
+                 "migrateSlotInputsToTargetDevice: capacity fallback slot=%d sourceDevice=%d "
+                 "targetDevice=%d bytes=%zu - host-resident destination",
+                 slotIdx, sourceDevice, targetDevice, srcLen);
+      } else {
+        if (srcMat != nullptr) delete srcMat;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        if (seg.exec.captureRehomePending) {
+          return cudaPlanFailure(
+              "CUDA capture rehome input staging exceeded target-device capacity: "
+              "slot=%d sourceDevice=%d targetDevice=%d bytes=%zu free=%zu "
+              "poolReusable=%zu total=%zu",
+              slotIdx, sourceDevice, targetDevice, srcLen, freeBytes,
+              poolReusable, totalBytes);
+        }
+        if (!shiftAvailable) {
+          return cudaPlanFailure(
+              "CUDA migration capacity shift unavailable: slot=%d sourceDevice=%d "
+              "targetDevice=%d bytes=%zu counterAdmitted=%d executionCount=%d",
+              slotIdx, sourceDevice, targetDevice, srcLen, (int)counterAdmitted, executeCount_);
+        }
+        attemptedDevices.insert(sourceDevice);
+        // Restore all publications staged on the old device before changing TLS.
+        // Inputs visited earlier must be checked again for the new target, including
+        // inputs skipped because they were already local to the old target.
+        platformCleanupMigratedInputs();
+        // POLICY (device-shift react): the segment's device cannot hold this
+        // input copy. The compute must move to where the data already lives.
+        // Rebind the whole segment to the source device for this invocation and
+        // every later one - the caller gets a transparent capacity-shift note.
+        GraphSegment& mutableSeg = const_cast<GraphSegment&>(seg);
+        for (int s = mutableSeg.def.startSlot;
+             s <= mutableSeg.def.endSlot && s < numSlots_; s++) {
+          slots_[s].targetDeviceId = sourceDevice;
+        }
+        // Rebind THIS segment's stream/workspace TLS to the new device too, so
+        // the immediate re-run below and all later invocations land correctly.
+        platformRestoreSegmentDevice();
+        if (!platformBindSegmentDevice(mutableSeg)) {
+          return cudaPlanFailure("CUDA capacity shift could not bind segment [%d-%d] to device %d",
+                                 mutableSeg.def.startSlot, mutableSeg.def.endSlot, sourceDevice);
+        }
+        DSP_DIAG(EXECUTE,
+                 "CAPACITY_SHIFT_SEGMENT: seg[%d-%d] rebound from device %d to device %d "
+                 "(destination full for %zu-byte input; input residency wins over plan hint)",
+                 mutableSeg.def.startSlot, mutableSeg.def.endSlot,
+                 targetDevice, sourceDevice, srcLen);
+        targetDevice = sourceDevice;
+        migrated = 0;
+        producerDevices.clear();  // re-index the rebound slots on the next lookup
+        inputIndex = static_cast<size_t>(-1);  // loop increment restarts at the first input
+        continue;
       }
-      // Rebind THIS segment's stream/workspace TLS to the new device too, so
-      // the immediate re-run below and all later invocations land correctly.
-      platformRestoreSegmentDevice();
-      platformBindSegmentDevice(mutableSeg);
-      DSP_DIAG(EXECUTE,
-               "CAPACITY_SHIFT_SEGMENT: seg[%d-%d] rebound from device %d to device %d "
-               "(destination full for %zu-byte input; input residency wins over plan hint)",
-               mutableSeg.def.startSlot, mutableSeg.def.endSlot,
-               targetDevice, sourceDevice, srcLen);
-      targetDevice = sourceDevice;
-      continue;
     }
 
     // The transfer fully overwrites a dense destination. Do not enqueue a
@@ -1929,8 +2222,15 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     auto dstAttrErr = dstDev != nullptr
         ? cudaPointerGetAttributes(&dstAttrs, dstDev)
         : cudaErrorInvalidValue;
-    if (dstDev == nullptr || dstAttrErr != cudaSuccess ||
-        dstAttrs.type != cudaMemoryTypeDevice || dstAttrs.device != targetDevice) {
+    // Pool failover may serve a new copy from pinned host or CPU-preferred managed
+    // memory. Consumers read it in place while its buffer is tagged for this device;
+    // a capture rehome still requires a device-local stage.
+    const bool dstOnTarget = dstAttrErr == cudaSuccess &&
+        dstAttrs.type == cudaMemoryTypeDevice && dstAttrs.device == targetDevice;
+    const bool dstHostResident = dstAttrErr == cudaSuccess &&
+        (dstAttrs.type == cudaMemoryTypeHost || dstAttrs.type == cudaMemoryTypeManaged) &&
+        copy->dataBuffer()->deviceId() == targetDevice && !seg.exec.captureRehomePending;
+    if (dstDev == nullptr || (!dstOnTarget && !dstHostResident)) {
       DSP_DIAG(MEMORY,
                "migrateSlotInputsToTargetDevice: destination pointer validation failed slot=%d "
                "targetDevice=%d ptr=%p actualDevice=%d attrErr=%s bytes=%zu",
@@ -1956,8 +2256,17 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       cudaDeviceCanAccessPeer(&canAccessForward, targetDevice, sourceDevice);
       cudaDeviceCanAccessPeer(&canAccessReverse, sourceDevice, targetDevice);
       cudaError_t copyErr = cudaSuccess;
-      if (canAccessForward && canAccessReverse) {
-        // Order the peer copy after the materialization dup (view inputs only).
+      if (!copySourceOnDevice || !dstOnTarget) {
+        // Host memory on either side: one UVA copy crosses the bus once. Issue it from
+        // the device-resident side; bounded pinned staging is only for device pairs.
+        cudaSetDevice(copySourceOnDevice ? sourceDevice : targetDevice);
+        if (srcMat != nullptr) copyErr = cudaEventSynchronize(tl_inputDupEvent);
+        if (copyErr == cudaSuccess)
+          copyErr = cudaMemcpyAsync(dstDev, srcDev, srcLen, cudaMemcpyDefault, cudaStreamPerThread);
+        if (copyErr == cudaSuccess) copyErr = cudaStreamSynchronize(cudaStreamPerThread);
+        cudaSetDevice(targetDevice);
+      } else if (canAccessForward && canAccessReverse) {
+        // Order the peer copy after the materialization dup (non-dense inputs only).
         if (srcMat != nullptr) cudaStreamWaitEvent(cudaStr, tl_inputDupEvent, 0);
         copyErr = cudaMemcpyPeerAsync(dstDev, targetDevice, srcDev, sourceDevice,
                                       srcLen, cudaStr);
@@ -2028,6 +2337,12 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
         deferredSlotDeletes_.push_back(previousCopy);
       }
     }
+    if (frozenSource && srcMat == nullptr) {
+      frozenMigrationSources_[migrationKey] =
+          FrozenMigrationSource{copy, db, srcDev, slots_[producerStep].generation()};
+    } else {
+      frozenMigrationSources_.erase(migrationKey);
+    }
 
     // Restore the caller's device. Leaving the thread on the secondary device
     // makes the next plan/request allocate on the wrong GPU and amplifies pool
@@ -2042,8 +2357,11 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     mi.original = arr;
     mi.migrated = copy;
     mi.retained = true;
+    mi.targetDevice = targetDevice;
+    mi.segmentOutput = rehomedSegmentOutputSlots.count(slotIdx) > 0;
     mi.externalInputTable = externalSource ? externalInputs : nullptr;
     mi.externalInputIdx = externalInputIdx;
+    mi.newlyAllocated = !reuseCopy;
     migratedInputs_.push_back(mi);
     if (srcMat != nullptr) {
       MigratedInput tmp;
@@ -2065,6 +2383,207 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     migrated++;
   }
 
+  if (seg.exec.captureRehomePending) {
+    // Publish exact-wrapper in-place aliases only after their owner has been
+    // staged. This is a slot publication, not a second allocation or migration
+    // owner; rollback restores the original wrapper and the owner's migration
+    // record remains solely responsible for retiring the staged buffer.
+    for (const auto& [outputSlot, parentSlot] : rehomedInPlaceParentSlots) {
+      NDArray* original = outputSlots_[outputSlot];
+      NDArray* parent = outputSlots_[parentSlot];
+      DataBuffer* parentBuffer = parent != nullptr ? parent->dataBuffer() : nullptr;
+      if (original == nullptr || parent == nullptr || parent->isView() ||
+          parentBuffer == nullptr || parentBuffer->deviceId() != targetDevice) {
+        return cudaPlanFailure(
+            "CUDA capture rehome lost exact in-place owner before publication: "
+            "outputSlot=%d parentSlot=%d targetDevice=%d",
+            outputSlot, parentSlot, targetDevice);
+      }
+      MigratedInput alias;
+      alias.outputSlotIdx = outputSlot;
+      alias.original = original;
+      alias.migrated = parent;
+      alias.targetDevice = targetDevice;
+      alias.retained = true;
+      alias.segmentOutput = true;
+      alias.segmentInPlaceAlias = true;
+      alias.aliasParentOutputSlotIdx = parentSlot;
+      migratedInputs_.push_back(alias);
+      outputSlots_[outputSlot] = parent;
+      DSP_DIAG(MULTI_DEVICE,
+               "CAPTURE_DEVICE_REHOME_INPLACE_ALIAS: outputSlot=%d ownerSlot=%d "
+               "targetDevice=%d sharedWrapper=%p sharedBuffer=%p",
+               outputSlot, parentSlot, targetDevice, (void*)parent,
+               (void*)parentBuffer);
+    }
+
+    // Ownership records describe the source publications until rehome. Reset
+    // this segment's relationships, then classify the staged owners before
+    // rebuilding any child view wrappers against them.
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+      const NativeSlot& slot = slots_[s];
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        if (outputSlot >= 0 && outputSlot < totalOutputSlots_ && slotOwnership_ != nullptr)
+          resetSlotBufferOwnership(slotOwnership_, totalOutputSlots_, outputSlot);
+      }
+    }
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+      const NativeSlot& slot = slots_[s];
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        if (outputSlot < 0 || outputSlot >= totalOutputSlots_ ||
+            rehomedViewParentSlots.count(outputSlot) > 0 ||
+            outputSlots_[outputSlot] == nullptr || slotOwnership_ == nullptr)
+          continue;
+        classifyAndUpdateOwnership(
+            slotOwnership_[outputSlot], outputSlots_[outputSlot], outputSlot,
+            nullptr, 0, outputSlots_, totalOutputSlots_, slotOwnership_);
+      }
+    }
+
+    // Rebuild supported views only after their owners have been staged. This
+    // preserves the zero-copy alias rather than migrating the view as a dense
+    // array. Keep the original source wrapper in the transaction for rollback.
+    std::vector<int> viewSlots;
+    viewSlots.reserve(rehomedViewParentSlots.size());
+    for (const auto& entry : rehomedViewParentSlots) viewSlots.push_back(entry.first);
+    std::sort(viewSlots.begin(), viewSlots.end());
+    for (const int viewSlot : viewSlots) {
+      const int parentSlot = rehomedViewParentSlots.at(viewSlot);
+      NDArray* originalView = rehomedViewOriginals.at(viewSlot);
+      NDArray* parent = outputSlots_[parentSlot];
+      DataBuffer* parentBuffer = parent != nullptr ? parent->dataBuffer() : nullptr;
+      if (parentBuffer == nullptr || parent->isView() ||
+          parentBuffer->deviceId() != targetDevice) {
+        return cudaPlanFailure(
+            "CUDA capture rehome lost its target owner before view rebuild: "
+            "outputSlot=%d parentSlot=%d targetDevice=%d",
+            viewSlot, parentSlot, targetDevice);
+      }
+
+      NDArray* targetView = nullptr;
+      try {
+        targetView = new NDArray(parentBuffer,
+                                 const_cast<LongType*>(originalView->shapeInfo()),
+                                 LaunchContext::defaultContext(), originalView->offset());
+      } catch (const std::exception& error) {
+        return cudaPlanFailure(
+            "CUDA capture rehome could not rebuild output view %d over owner %d: %s",
+            viewSlot, parentSlot, error.what());
+      }
+      if (targetView == nullptr || !targetView->isView() ||
+          targetView->dataBuffer() != parentBuffer ||
+          targetView->dataType() != originalView->dataType() ||
+          targetView->offset() != originalView->offset() ||
+          targetView->ordering() != originalView->ordering() ||
+          !shape::equalsStrict(targetView->shapeInfo(), originalView->shapeInfo()) ||
+          !shape::strideEquals(targetView->shapeInfo(), originalView->shapeInfo())) {
+        if (targetView != nullptr) deferredSlotDeletes_.push_back(targetView);
+        return cudaPlanFailure(
+            "CUDA capture rehome could not preserve output-view layout: "
+            "outputSlot=%d parentSlot=%d",
+            viewSlot, parentSlot);
+      }
+
+      MigratedInput alias;
+      alias.outputSlotIdx = viewSlot;
+      alias.original = originalView;
+      alias.migrated = targetView;
+      alias.targetDevice = targetDevice;
+      alias.retained = true;
+      alias.segmentOutput = true;
+      alias.segmentViewAlias = true;
+      alias.aliasParentOutputSlotIdx = parentSlot;
+      migratedInputs_.push_back(alias);
+      writeOutputSlot(viewSlot, targetView, "view-op-install");
+      // writeOutputSlot queues the source view for deferred deletion. It remains
+      // the rollback publication until graph capture commits, so protect it from
+      // the end-of-execution drain and keep its plan ownership intact.
+      deferredSlotDeletes_.erase(
+          std::remove(deferredSlotDeletes_.begin(), deferredSlotDeletes_.end(), originalView),
+          deferredSlotDeletes_.end());
+      planOwnedArrays_.insert(originalView);
+      if (slotOwnership_ != nullptr) {
+        classifyAndUpdateOwnership(
+            slotOwnership_[viewSlot], targetView, viewSlot,
+            nullptr, 0, outputSlots_, totalOutputSlots_, slotOwnership_);
+      }
+      DSP_DIAG(MULTI_DEVICE,
+               "CAPTURE_DEVICE_REHOME_VIEW: outputSlot=%d ownerSlot=%d targetDevice=%d "
+               "sourceWrapper=%p targetWrapper=%p sharedBuffer=%p",
+               viewSlot, parentSlot, targetDevice, (void*)originalView,
+               (void*)targetView, (void*)parentBuffer);
+    }
+
+    // This check runs before CUDA graph capture begins. Every materialized output
+    // and rebuilt view publication must now resolve to the target device; no
+    // source-device address may reach the target graph.
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+      const NativeSlot& slot = slots_[s];
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        if (outputSlot < 0 || outputSlot >= totalOutputSlots_) continue;
+        NDArray* output = outputSlots_[outputSlot];
+        if (output == nullptr || output->isEmpty()) continue;
+        if (rehomedInPlaceParentSlots.count(outputSlot) > 0) {
+          const int parentSlot = rehomedInPlaceParentSlots.at(outputSlot);
+          NDArray* parent = outputSlots_[parentSlot];
+          auto alias = std::find_if(migratedInputs_.begin(), migratedInputs_.end(),
+              [outputSlot, parentSlot](const MigratedInput& entry) {
+                return entry.segmentInPlaceAlias && entry.outputSlotIdx == outputSlot &&
+                    entry.aliasParentOutputSlotIdx == parentSlot;
+              });
+          if (alias == migratedInputs_.end() || !slot.isInPlaceFused() ||
+              slot.inPlaceSourceSlot() != parentSlot || output != parent ||
+              alias->migrated != parent || parent == nullptr || parent->isView() ||
+              parent->dataBuffer() == nullptr ||
+              parent->dataBuffer()->deviceId() != targetDevice) {
+            return cudaPlanFailure(
+                "CUDA capture rehome lost exact in-place alias before capture: "
+                "outputSlot=%d parentSlot=%d targetDevice=%d",
+                outputSlot, parentSlot, targetDevice);
+          }
+          continue;
+        }
+        if (rehomedViewParentSlots.count(outputSlot) > 0) {
+          auto alias = std::find_if(migratedInputs_.begin(), migratedInputs_.end(),
+              [outputSlot](const MigratedInput& entry) {
+                return entry.segmentViewAlias && entry.outputSlotIdx == outputSlot;
+              });
+          NDArray* parent = outputSlots_[rehomedViewParentSlots.at(outputSlot)];
+          if (alias == migratedInputs_.end() || !output->isView() || parent == nullptr ||
+              parent->dataBuffer() == nullptr || output->dataBuffer() != parent->dataBuffer() ||
+              parent->dataBuffer()->deviceId() != targetDevice) {
+            return cudaPlanFailure(
+                "CUDA capture rehome view lost its target alias before capture: "
+                "outputSlot=%d parentSlot=%d targetDevice=%d",
+                outputSlot, rehomedViewParentSlots.at(outputSlot), targetDevice);
+          }
+          continue;
+        }
+        DataBuffer* outputBuffer = output->dataBuffer();
+        void* pointer = outputBuffer != nullptr ? outputBuffer->special() : nullptr;
+        cudaPointerAttributes attributes;
+        const cudaError_t attrError = pointer != nullptr
+            ? cudaPointerGetAttributes(&attributes, pointer)
+            : cudaErrorInvalidValue;
+        if (attrError != cudaSuccess) cudaGetLastError();
+        if (outputBuffer == nullptr || attrError != cudaSuccess ||
+            attributes.type != cudaMemoryTypeDevice ||
+            attributes.device != targetDevice ||
+            outputBuffer->deviceId() != targetDevice) {
+          return cudaPlanFailure(
+              "CUDA capture rehome rejected non-local segment output before capture: "
+              "slot=%d outputSlot=%d targetDevice=%d actualDevice=%d attrError=%d",
+              s, outputSlot, targetDevice,
+              attrError == cudaSuccess ? attributes.device : -1,
+              static_cast<int>(attrError));
+        }
+      }
+    }
+  }
+
   if (migrated > 0) {
     DSP_DIAG(EXECUTE, "NativeDSP::execute: migrated %d input arrays from device(s) to device %d "
              "for seg[%d-%d] (host-staged D->H->D)",
@@ -2074,7 +2593,35 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
 }
 
 void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
-  if (migratedInputs_.empty()) return;
+  if (migratedInputs_.empty()) {
+    for (auto& segment : segments_) {
+      if (!segment.exec.captureRehomePending) continue;
+      if (!segment.exec.captureRehomeCommitted) {
+        const int sourceDevice = segment.exec.captureRehomeSourceDevice;
+        if (sourceDevice >= 0) {
+          for (int s = segment.def.startSlot;
+               s <= segment.def.endSlot && s < numSlots_; s++) {
+            slots_[s].targetDeviceId = sourceDevice;
+          }
+        }
+        segment.exec.captureRehomeSourceDevice = -1;
+        segment.exec.captureRehomeTargetDevice = -1;
+      }
+      segment.exec.captureRehomePending = false;
+    }
+    return;
+  }
+
+  // A rehome is still provisional until capture, launch, and post-capture
+  // fixup have all committed. Writable state replicas from that transaction must
+  // not be copied back to caller storage on rollback.
+  std::unordered_set<int> uncommittedRehomeTargets;
+  for (const auto& segment : segments_) {
+    if (segment.exec.captureRehomePending && !segment.exec.captureRehomeCommitted &&
+        segment.exec.captureRehomeTargetDevice >= 0) {
+      uncommittedRehomeTargets.insert(segment.exec.captureRehomeTargetDevice);
+    }
+  }
 
   // Segment binding routes replay and gap kernels onto this stream. Retained
   // state uses event dependencies below, with no host barrier. Disposable input
@@ -2087,20 +2634,70 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
     const bool stateReplica = mi.externalInputIdx >= 0 &&
         externalInputIsVariable_[mi.externalInputIdx] &&
         !externalInputIsPlaceholder_[mi.externalInputIdx];
-    hasTemporary |= !stateReplica;
+    const bool discardUncommittedRehomeState = stateReplica &&
+        uncommittedRehomeTargets.count(mi.targetDevice) > 0;
+    hasTemporary |= !stateReplica || discardUncommittedRehomeState;
   }
   const auto syncErr = hasTemporary ? cudaStreamSynchronize(segmentStream) : cudaSuccess;
 
   std::exception_ptr writebackFailure;
+  // Restore child publications before their backing owner entries. On rollback,
+  // restoring source views and exact-wrapper publications first lets the owner
+  // stage below become unshared and retire; committed views remain deferred.
+  for (auto& mi : migratedInputs_) {
+    if ((!mi.segmentViewAlias && !mi.segmentInPlaceAlias) ||
+        outputSlots_ == nullptr || mi.outputSlotIdx < 0 ||
+        mi.outputSlotIdx >= totalOutputSlots_) continue;
+    NDArray* current = outputSlots_[mi.outputSlotIdx];
+    if (mi.segmentInPlaceAlias) {
+      // Child and owner are the same NDArray wrapper. The owner migration entry
+      // alone controls allocation lifetime; this entry only restores the child
+      // publication on rollback.
+      if (!mi.persistOutput) {
+        outputSlots_[mi.outputSlotIdx] = mi.original;
+        if (current != nullptr && current != mi.original && current != mi.migrated) {
+          planOwnedArrays_.erase(current);
+          deferredSlotDeletes_.push_back(current);
+        }
+      }
+      continue;
+    }
+    if (mi.persistOutput) {
+      if (mi.original != nullptr && mi.original != current) {
+        planOwnedArrays_.erase(mi.original);
+        deferredSlotDeletes_.push_back(mi.original);
+      }
+      continue;
+    }
+
+    outputSlots_[mi.outputSlotIdx] = mi.original;
+    if (mi.original != nullptr) {
+      deferredSlotDeletes_.erase(
+          std::remove(deferredSlotDeletes_.begin(), deferredSlotDeletes_.end(), mi.original),
+          deferredSlotDeletes_.end());
+      planOwnedArrays_.insert(mi.original);
+    }
+    auto retireCandidateWrapper = [&](NDArray* candidate) {
+      if (candidate == nullptr || candidate == mi.original) return;
+      planOwnedArrays_.erase(candidate);
+      deferredSlotDeletes_.push_back(candidate);
+    };
+    retireCandidateWrapper(current);
+    if (mi.migrated != current) retireCandidateWrapper(mi.migrated);
+  }
+
   // Restore original arrays in the publication table. A consumer view can still
   // share a migrated owner's DataBuffer after this segment completes. Retire that
   // owner through the plan-level deferred queue so it stays alive until the view
   // is replaced; deleting it here leaves a dangling output-slot wrapper.
   for (auto& mi : migratedInputs_) {
+    if (mi.segmentViewAlias || mi.segmentInPlaceAlias) continue;
     const bool stateReplica = mi.externalInputIdx >= 0 &&
         externalInputIsVariable_[mi.externalInputIdx] &&
         !externalInputIsPlaceholder_[mi.externalInputIdx];
-    if (stateReplica && syncErr == cudaSuccess) {
+    const bool discardUncommittedRehomeState = stateReplica &&
+        uncommittedRehomeTargets.count(mi.targetDevice) > 0;
+    if (stateReplica && !discardUncommittedRehomeState && syncErr == cudaSuccess) {
       try {
         // Only writable state is returned; weights and ordinary feeds remain
         // input-only. The retained source survives this asynchronous peer copy,
@@ -2118,7 +2715,55 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
       }
     }
     if (outputSlots_ != nullptr && mi.outputSlotIdx >= 0 && mi.outputSlotIdx < totalOutputSlots_) {
-      outputSlots_[mi.outputSlotIdx] = mi.original;
+      if (mi.persistOutput) {
+        // Keep the wrapper published by the captured segment when it aliases
+        // the validated staged DataBuffer; never restore its source warmup wrapper.
+        NDArray* current = outputSlots_[mi.outputSlotIdx];
+        if (current == nullptr || current == mi.original) {
+          outputSlots_[mi.outputSlotIdx] = mi.migrated;
+          current = mi.migrated;
+        }
+        if (mi.segmentOutput && mi.migrated != nullptr) {
+          const uint64_t key = (static_cast<uint64_t>(mi.targetDevice) << 32) |
+                               static_cast<uint32_t>(mi.outputSlotIdx);
+          auto cached = migrationBuffers_.find(key);
+          if (current == mi.migrated) {
+            // The exact staged wrapper is now the output publication, so
+            // transfer it from the migration cache to normal slot ownership.
+            if (cached != migrationBuffers_.end() && cached->second == mi.migrated) {
+              migrationBuffers_.erase(cached);
+              frozenMigrationSources_.erase(key);
+            }
+            planOwnedArrays_.insert(mi.migrated);
+          } else if (cached == migrationBuffers_.end() ||
+                     cached->second != mi.migrated) {
+            // A distinct capture wrapper shares this DataBuffer. Keep the
+            // staged wrapper as its plan-owned backing owner.
+            planOwnedArrays_.insert(mi.migrated);
+          }
+        }
+        if (mi.original != nullptr && mi.original != current &&
+            planOwnedArrays_.count(mi.original) > 0 &&
+            !isSlotArrayShared(mi.original, mi.outputSlotIdx)) {
+          planOwnedArrays_.erase(mi.original);
+          deferredSlotDeletes_.push_back(mi.original);
+          DSP_DIAG(MEMORY,
+                   "platformCleanupMigratedInputs: retired rehomed source output "
+                   "slot=%d owner=%p targetDevice=%d",
+                   mi.outputSlotIdx, (void*)mi.original, mi.targetDevice);
+        }
+      } else {
+        NDArray* current = outputSlots_[mi.outputSlotIdx];
+        outputSlots_[mi.outputSlotIdx] = mi.original;
+        // Capture may have regenerated a wrapper during target execution. Restore
+        // the source publication and retire any distinct candidate wrapper after
+        // graph teardown; deferred cleanup destroys views before owner buffers.
+        if (mi.segmentOutput && current != nullptr && current != mi.original &&
+            current != mi.migrated) {
+          planOwnedArrays_.erase(current);
+          deferredSlotDeletes_.push_back(current);
+        }
+      }
     }
     if (mi.externalInputTable != nullptr && mi.externalInputIdx >= 0) {
       mi.externalInputTable[mi.externalInputIdx] = mi.original;
@@ -2126,6 +2771,27 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
           effectiveExternals_[mi.externalInputIdx] == mi.migrated) {
         effectiveExternals_[mi.externalInputIdx] = mi.original;
       }
+    }
+    if (mi.segmentOutput && !mi.persistOutput && mi.newlyAllocated &&
+        mi.migrated != nullptr && !isSlotArrayShared(mi.migrated, mi.outputSlotIdx)) {
+      // A failed rehome has no graph that can use this newly-created target
+      // output wrapper. Reused migration-cache entries are left alone; newly
+      // allocated stages are removed from the cache and retired after the full
+      // segment/plan traversal, never deleted inline.
+      const uint64_t key = (static_cast<uint64_t>(mi.targetDevice) << 32) |
+                           static_cast<uint32_t>(mi.outputSlotIdx);
+      auto cached = migrationBuffers_.find(key);
+      if (cached != migrationBuffers_.end() && cached->second == mi.migrated) {
+        migrationBuffers_.erase(cached);
+        frozenMigrationSources_.erase(key);
+      }
+      planOwnedArrays_.erase(mi.migrated);
+      deferredSlotDeletes_.push_back(mi.migrated);
+      DSP_DIAG(MEMORY,
+               "platformCleanupMigratedInputs: retired failed rehome output stage "
+               "slot=%d owner=%p targetDevice=%d",
+               mi.outputSlotIdx, (void*)mi.migrated, mi.targetDevice);
+      mi.migrated = nullptr;
     }
     if (mi.migrated != nullptr && !stateReplica && !mi.retained) {
       // Slot replacement may already have queued this same wrapper. Deleting
@@ -2142,7 +2808,49 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
       mi.migrated = nullptr;
     }
   }
+  // On rollback, rebuild the complete segment ownership relation only after all
+  // source publications are restored. This handles owner/view groups without
+  // leaving either the parent viewRefCount or child parentSlot tied to staging.
+  if (slotOwnership_ != nullptr) {
+    for (const auto& segment : segments_) {
+      if (!segment.exec.captureRehomePending || segment.exec.captureRehomeCommitted) continue;
+      for (int s = segment.def.startSlot; s <= segment.def.endSlot && s < numSlots_; s++) {
+        const NativeSlot& slot = slots_[s];
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[o];
+          if (outputSlot >= 0 && outputSlot < totalOutputSlots_)
+            resetSlotBufferOwnership(slotOwnership_, totalOutputSlots_, outputSlot);
+        }
+      }
+      for (int s = segment.def.startSlot; s <= segment.def.endSlot && s < numSlots_; s++) {
+        const NativeSlot& slot = slots_[s];
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[o];
+          if (outputSlot < 0 || outputSlot >= totalOutputSlots_ ||
+              outputSlots_[outputSlot] == nullptr) continue;
+          classifyAndUpdateOwnership(
+              slotOwnership_[outputSlot], outputSlots_[outputSlot], outputSlot,
+              nullptr, 0, outputSlots_, totalOutputSlots_, slotOwnership_);
+        }
+      }
+    }
+  }
   migratedInputs_.clear();
+  for (auto& segment : segments_) {
+    if (!segment.exec.captureRehomePending) continue;
+    if (!segment.exec.captureRehomeCommitted) {
+      const int sourceDevice = segment.exec.captureRehomeSourceDevice;
+      if (sourceDevice >= 0) {
+        for (int s = segment.def.startSlot;
+             s <= segment.def.endSlot && s < numSlots_; s++) {
+          slots_[s].targetDeviceId = sourceDevice;
+        }
+      }
+      segment.exec.captureRehomeSourceDevice = -1;
+      segment.exec.captureRehomeTargetDevice = -1;
+    }
+    segment.exec.captureRehomePending = false;
+  }
   if (writebackFailure) std::rethrow_exception(writebackFailure);
   if (syncErr != cudaSuccess)
     throw std::runtime_error(std::string("migration segment completion failed: ") + cudaGetErrorString(syncErr));
@@ -2207,21 +2915,16 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   // DSP/gap stream across those switches. The producer completion boundary
   // below orders its writes before the delivery stream gathers a requested view.
   // The per-thread stream token resolves on each bound device; restore on exit.
+  const PrimaryProducerStreams primaryProducers = primaryProducerStreams();
   DspThreadState deliveryStreams(cudaStreamPerThread, cudaStreamPerThread,
                                  tl_graphExecutionActive, tl_dspReplayActive);
 
   // -- Async copy from sourceDevice to device-0 --------------------------------
-  // 1. Switch to sourceDevice and ensure its stream has committed the write.
-  checkCuda(cudaSetDevice(sourceDevice), "bind producer device");
+  // 1. Switch to sourceDevice and ensure its producers have committed the write.
   // Never drain the whole device here: another plan may be capturing on it,
   // and cudaDeviceSynchronize both fails and invalidates that peer capture.
-  // The delivery streams above replaced this thread's DSP streams, so only the
-  // execution context still names the producer's stream.
-  auto* execCtx = static_cast<const PlanExecutionContext*>(activeExecCtx_);
-  if (execCtx == nullptr) {
-    THROW_EXCEPTION("DSP output delivery failed: no execution produced the output");
-  }
-  checkCuda(cudaStreamSynchronize(executionWriterStream(execCtx, callerDevice, sourceDevice)),
+  checkCuda(cudaSetDevice(sourceDevice), "bind producer device");
+  checkCuda(completeSourceProducers(sourceDevice, primaryProducers, ownedStream_, ownedStreamDeviceId_),
             "complete producer stream");
   {
     std::vector<NDArray*> reads{arr};
@@ -2510,11 +3213,24 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
 
     case SelectedBackend::DEVICE_REPLAY: {
       auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
+      if (status == Status::MAYBE && !segment.exec.captureRehomePending &&
+          segment.exec.captureRehomeSourceDevice >= 0 &&
+          segment.exec.captureRehomeTargetDevice >= 0) {
+        // This is a typed outer-loop request, not an execution success or a
+        // reason to run slot-by-slot. phaseReplay owns device/stream rebinding.
+        DSP_DIAG(MULTI_DEVICE,
+                 "CUDA graph capture requested outer rehome for seg[%d-%d] "
+                 "runtimeDevice=%d->%d",
+                 segment.def.startSlot, segment.def.endSlot,
+                 segment.exec.captureRehomeSourceDevice,
+                 segment.exec.captureRehomeTargetDevice);
+        return status;
+      }
       if (status != Status::OK) {
-        // A genuine capture OOM is deferred by executeSegmentWithGraph.  Count
-        // this attempted execution so the next invocation reaches the scheduled
-        // retry interval, while preserving the graph-only execution contract.
-        if (segment.exec.segPhase.oomRetryPending) {
+        // A genuine capture OOM is deferred by executeSegmentWithGraph only
+        // before a rehome transaction starts. Rehome must either commit or fail.
+        if (segment.exec.segPhase.oomRetryPending &&
+            !segment.exec.captureRehomePending) {
           dspSegIncrementExecCount(segment, "cuda-graph-capture-oom-deferred");
           DSP_DIAG(MEMORY,
                    "CUDA graph capture OOM deferred for seg[%d-%d]; "
@@ -2524,6 +3240,18 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
                    GraphSegment::maxOomRetries(),
                    segment.exec.captureRetryAfterExec);
           return Status::OK;
+        }
+
+        // A rehome capture failure is returned to phaseReplay so it can clean
+        // target staging and restore the original placement. Never fall back.
+        if (segment.exec.captureRehomePending) {
+          if (!segment.exec.segPhase.isFailed()) {
+            SegmentLifecycle::markFailed(segment.exec,
+                                         "cuda_graph_rehome_capture_failed",
+                                         segment.def.startSlot,
+                                         segment.def.endSlot);
+          }
+          return status;
         }
 
         // Non-OOM capture failures are terminal and must retain their original
@@ -2901,11 +3629,13 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   tl_cublasWorkspacePtr = nullptr;
   tl_cublasWorkspaceSize = 0;
 
-  // Clear thread-local cast cache in MmulHelper - the cached NDArray* pointers
-  // reference arrays owned by this plan's model. After plan destruction, those
-  // arrays are freed. If another plan (e.g. next config in a sequential test run)
-  // reuses CUDA graph capture on the same thread, the stale cast cache entries
-  // cause GEMM to read from freed/corrupted memory, producing wrong output.
+  // Free this plan's per-segment cast scopes: only this plan's graphs baked
+  // their device addresses. Other plans' scopes stay, because their graphs can
+  // still replay (plan-cache ejection tears one plan down while others live).
+  // clearCastCache() then drops the thread's default cast cache, which no
+  // captured graph reads: its entries reference arrays of this plan's model,
+  // which are freed with it.
+  MmulHelper::releaseCastCacheScopes(this);
   MmulHelper::clearCastCache();
 
   // -- Reset ALL DSP thread-local state to prevent cross-plan contamination --
@@ -3520,9 +4250,10 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
              cublasWorkspaceBuffer_, cublasWorkspaceSize_ / (1024*1024));
   }
 
-  // Reset FP16 cast-cache indices at plan execution boundary.
-  // Two interleaved plans share the same thread-local cast cache
-  // (tl_castA/tl_castB). Without resetting, plan2 inherits
+  // Reset FP16 cast-cache indices at plan execution boundary. This resets the
+  // thread's default cast scope, which interleaved plans share outside their
+  // segments; each segment resets its own scope when it becomes active
+  // (MmulHelper::enterCastCacheScope). Without resetting, plan2 inherits
   // plan1's stale index and reads wrong HALF-cast buffers, causing
   // maxDiff=83+ in mixed-precision FP16 matmuls.
   MmulHelper::resetCastCacheIndices();
@@ -3532,7 +4263,52 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
 
 void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* stream, bool frozen, int execCount) {
   auto* ctx = static_cast<PlanExecutionContext*>(executionState);
+  struct ExecutionFinalizer {
+    NativeDynamicShapePlan* plan;
+    PlanExecutionContext* ctx;
+    ~ExecutionFinalizer() noexcept {
+      if (ctx == nullptr) return;
 
+      // End-of-execution cleanup must run even if CUDA/cuBLAS reporting throws.
+      // Do not call into cuBLAS here: the CUDA context may already be unhealthy.
+      tl_dspReplayActive = false;
+      tl_graphExecutionActive = false;
+      tl_graphCaptureStream = nullptr;
+      tl_cublasWorkspacePtr = nullptr;
+      tl_cublasWorkspaceSize = 0;
+      if (tl_cublasLtDisabled) {
+        tl_cublasLtDisabled = false;
+        try {
+          CublasHelper::exitDeterministicWindow();
+        } catch (...) {
+        }
+      }
+      AttentionWorkspace::setActiveScope(ctx->previousAttentionWorkspaceScope);
+      ctx->previousAttentionWorkspaceScope = nullptr;
+      if (tl_activeMmulFpPlan == plan) {
+        tl_activeMmulFpPlan = nullptr;
+        tl_activeMmulFpOrdinal = 0;
+      }
+      if (tl_gapStreamPinnedByPlanExec) {
+        tl_dspGapStream = tl_prevGapStreamForPlanExec;
+        tl_prevGapStreamForPlanExec = nullptr;
+        tl_gapStreamPinnedByPlanExec = false;
+      }
+
+      const int endDevice = ctx->deviceId;
+      auto* streamGuard = static_cast<DspStreamGuard*>(ctx->streamGuard);
+      ctx->streamGuard = nullptr;
+      delete streamGuard;
+      delete ctx;
+
+      int device = endDevice;
+      if (device < 0 || device >= 16) device = 0;
+      if (g_execCount[device].fetch_sub(1, std::memory_order_acq_rel) <= 1)
+        g_captureCV[device].notify_all();
+    }
+  } finalizer{this, ctx};
+
+  bool cudaContextHealthy = true;
   // Cross-stream synchronization: make post-execution streams wait for DSP.
   if (stream != nullptr) {
     DSP_DIAG(EXECUTE, "platformEndExecution: frozen=%d execCount=%d syncLevel=%s "
@@ -3551,7 +4327,7 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
     // call below (cudaEventCreateWithFlags, cudaEventRecord, etc.) would
     // inherit the sticky error and crash the process.
     auto stickyErr = cudaGetLastError();
-    bool cudaContextHealthy = (stickyErr == cudaSuccess);
+    cudaContextHealthy = (stickyErr == cudaSuccess);
     if (!cudaContextHealthy) {
       DSP_DIAG(EXECUTE, "platformEndExecution: cleared sticky CUDA error: %s - skipping event sync",
                cudaGetErrorString(stickyErr));
@@ -3649,27 +4425,23 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
 
   // Restore cuBLAS state for modes that enforced deterministic cuBLAS.
   if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
-    // Clear workspace from handle and TLS (workspace buffer itself is kept for reuse)
-    auto* restoreHandle = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
-    if (restoreHandle != nullptr && tl_cublasWorkspacePtr != nullptr) {
-      cublasSetWorkspace(*restoreHandle, nullptr, 0);
+    // A sticky CUDA failure makes handle acquisition unsafe (and can replace the
+    // original execution error with a cuBLAS initialization failure). Restore
+    // the device handle only while the context is healthy; the finalizer always
+    // clears thread-local ownership and balances the global deterministic window.
+    if (cudaContextHealthy) {
+      auto* restoreHandle = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+      if (restoreHandle != nullptr && tl_cublasWorkspacePtr != nullptr) {
+        cublasSetWorkspace(*restoreHandle, nullptr, 0);
+      }
+      // Get handle while tl_cublasLtDisabled is still true so lazy TF32 policy
+      // cannot overwrite the explicit restore below.
+      auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+      if (handlePtr != nullptr) cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
     }
     tl_cublasWorkspacePtr = nullptr;
     tl_cublasWorkspaceSize = 0;
-    // Get handle while tl_cublasLtDisabled is still true - this suppresses
-    // the lazy-TF32 logic in CublasHelper::handle() so it doesn't overwrite
-    // our restore below with a stale TF32/DEFAULT mode.
-    auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
-    if (handlePtr != nullptr) {
-      cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
-    }
-    // Clear AFTER math mode restore - the next CublasHelper::handle() call
-    // from non-DSP code will see tl_cublasLtDisabled=false and correctly
-    // lazy-apply TF32 if wanted.
     tl_cublasLtDisabled = false;
-    // Close the deterministic window opened by platformBeginExecution.
-    // Other threads' handles converge back to TF32/DEFAULT on their next
-    // acquisition (lazy, per-thread).
     CublasHelper::exitDeterministicWindow();
   }
 
@@ -3706,11 +4478,11 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
     DSP_DIAG(EXECUTE, "TLS_CLEANUP: tl_cublasLtDisabled=true at platformEndExecution - "
              "force-resetting (mode=%d). Likely leaked from a prior crashed execution.",
              static_cast<int>(graphExecutionMode_));
-    tl_cublasLtDisabled = false;
-    auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
-    if (handlePtr != nullptr) {
-      cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
+    if (cudaContextHealthy) {
+      auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+      if (handlePtr != nullptr) cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
     }
+    tl_cublasLtDisabled = false;
     // The leaked flag implies a begin that never reached its end - balance
     // the deterministic window too (exit clamps at zero if already closed).
     CublasHelper::exitDeterministicWindow();
@@ -3728,44 +4500,8 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
     tl_graphCaptureStream = nullptr;
   }
 
-  // Restore AttentionWorkspace ownership before returning to non-plan code.
-  AttentionWorkspace::setActiveScope(ctx->previousAttentionWorkspaceScope);
-  ctx->previousAttentionWorkspaceScope = nullptr;
-
-  if (tl_activeMmulFpPlan == this) {
-    tl_activeMmulFpPlan = nullptr;
-    tl_activeMmulFpOrdinal = 0;
-  }
-
-  // Restore the plan-wide gap-stream pin (paired with platformBeginExecution).
-  // Must happen at plan end, NOT earlier - warmup/frozen slot-by-slot phases
-  // rely on it to keep ops, pool allocations, and frees on ONE stream (#57).
-  if (tl_gapStreamPinnedByPlanExec) {
-    tl_dspGapStream = tl_prevGapStreamForPlanExec;
-    tl_prevGapStreamForPlanExec = nullptr;
-    tl_gapStreamPinnedByPlanExec = false;
-  }
-
-  // Explicitly delete the stream guard before the context.
-  // DspStreamGuard restores tl_dspExecutionStream to its previous value.
-  // Reuse the device id resolved at begin (WS-N4 - was a redundant
-  // cudaGetDevice; DspStreamGuard pinned the device for the whole execution,
-  // and the paired fetch_add at begin used this same id).
-  int endDev = ctx->deviceId;
-  delete static_cast<DspStreamGuard*>(ctx->streamGuard);
-  ctx->streamGuard = nullptr;
-  delete ctx;
-
-  // Decrement per-device execution counter and notify any waiting capture thread.
-  {
-    int dev = endDev;
-    if (dev < 0 || dev >= 16) dev = 0;
-    int prev = g_execCount[dev].fetch_sub(1, std::memory_order_acq_rel);
-    if (prev <= 1) {
-      // Last executor on this device - wake the capture thread if waiting
-      g_captureCV[dev].notify_all();
-    }
-  }
+  // The scope finalizer restores stream/TLS ownership, deletes the execution
+  // context, and decrements the per-device execution count on every exit path.
 }
 
 void NativeDynamicShapePlan::platformSetDeterministicCublas(bool enable) {
@@ -3917,9 +4653,11 @@ void NativeDynamicShapePlan::platformDumpExternalInputDiagnostics(NDArray** ext,
     if (arr == nullptr || arr->dataType() != FLOAT32 || arr->lengthOf() <= 0) continue;
     auto* db = arr->dataBuffer();
     const char* nm = (dbgI < (int)externalInputNames_.size()) ? externalInputNames_[dbgI].c_str() : "?";
+    // Resident address only: specialBuffer() would move caller state that
+    // lives on another device.
     DSP_DIAG(EXECUTE, "EXT_ENTRY execCount=%d ext[%d]='%s' arr=%p sbuf=%p len=%lld "
              "pAct=%d sAct=%d",
-             execCount, dbgI, nm, (void*)arr, arr->specialBuffer(),
+             execCount, dbgI, nm, (void*)arr, residentSpecialPointer(arr),
              (long long)arr->lengthOf(),
              db ? (db->isPrimaryActual() ? 1 : 0) : -1,
              db ? (db->isSpecialActual() ? 1 : 0) : -1);
@@ -3931,12 +4669,22 @@ void NativeDynamicShapePlan::platformDumpExtInputGpuValues(NDArray* arr, int ext
   // Fingerprint raw device bytes for every dtype, including partial words for
   // scalar FLOAT/HALF/BOOL and INT64 control inputs such as actual_sequence_length.
   // This remains fully asynchronous and
-  // does not materialize values on the host.
-  if (arr->specialBuffer() != nullptr && arr->lengthOf() > 0) {
+  // does not materialize values on the host. It observes the resident
+  // allocation only and never relocates it.
+  void* sbuf = residentSpecialPointer(arr);
+  if (sbuf != nullptr && arr->lengthOf() > 0) {
     DSP_DIAG(VERIFY, "EXT_INPUT_START: exec=%d extIdx=%d len=%lld dtype=%d sbuf=%p "
                      "(async path: value dump skipped)",
              execCount, extIdx, (long long)arr->lengthOf(),
-             static_cast<int>(arr->dataType()), arr->specialBuffer());
+             static_cast<int>(arr->dataType()), sbuf);
+    int currentDevice = -1;
+    cudaGetDevice(&currentDevice);
+    if (arr->dataBuffer()->deviceId() != currentDevice) {
+      DSP_DIAG(VERIFY, "EXT_INPUT_START: extIdx=%d resident on device %d, current %d "
+                       "(fingerprint skipped)",
+               extIdx, arr->dataBuffer()->deviceId(), currentDevice);
+      return;
+    }
     if (fpRingEnabled_) {
       if (fpLabels_[BUF_FP_TRACE_TRACK].tag[0] == '\0') {
         snprintf(fpLabels_[BUF_FP_TRACE_TRACK].tag,
@@ -3950,12 +4698,15 @@ void NativeDynamicShapePlan::platformDumpExtInputGpuValues(NDArray* arr, int ext
           ? *static_cast<cudaStream_t*>(stream) : nullptr;
       size_t fpBytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
       recordBufFingerprintPublic(cudaStr, execCount, BUF_FP_TRACE_TRACK,
-                                 arr->specialBuffer(), fpBytes);
+                                 sbuf, fpBytes);
     }
   }
 }
 
 void NativeDynamicShapePlan::platformClearCastCache() {
+  // Callers invalidate this plan's captures first, so no graph reads its
+  // segment scopes any more.
+  MmulHelper::releaseCastCacheScopes(this);
   MmulHelper::clearCastCache();
 }
 

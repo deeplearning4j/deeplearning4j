@@ -183,6 +183,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"shared_kv_attention", {dim3(GRID_SIZE_SHARED_KV_ATTENTION, BLOCK_SIZE_SHARED_KV_ATTENTION, SHARED_MEM_SIZE_SHARED_KV_ATTENTION)}},
     {"dual_rope", {dim3(GRID_SIZE_DUAL_ROPE, BLOCK_SIZE_DUAL_ROPE, SHARED_MEM_SIZE_DUAL_ROPE)}},
     {"squared_relu", {dim3(GRID_SIZE_SQUARED_RELU, BLOCK_SIZE_SQUARED_RELU, SHARED_MEM_SIZE_SQUARED_RELU)}},
+    {"fused_elementwise_chain", {dim3(GRID_SIZE_FUSED_ELEMENTWISE_CHAIN, BLOCK_SIZE_FUSED_ELEMENTWISE_CHAIN, SHARED_MEM_SIZE_FUSED_ELEMENTWISE_CHAIN)}},
     {"mamba2_ssm", {dim3(GRID_SIZE_MAMBA2_SSM, BLOCK_SIZE_MAMBA2_SSM, SHARED_MEM_SIZE_MAMBA2_SSM)}},
     {"moe_shared_experts", {dim3(GRID_SIZE_MOE_SHARED_EXPERTS, BLOCK_SIZE_MOE_SHARED_EXPERTS, SHARED_MEM_SIZE_MOE_SHARED_EXPERTS)}},
     {"rms_norm_linear", {dim3(GRID_SIZE_RMS_NORM_LINEAR, BLOCK_SIZE_RMS_NORM_LINEAR, SHARED_MEM_SIZE_RMS_NORM_LINEAR)}},
@@ -198,6 +199,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"state_commit_copy", {dim3(GRID_SIZE_STATE_COMMIT_COPY, BLOCK_SIZE_STATE_COMMIT_COPY, SHARED_MEM_SIZE_STATE_COMMIT_COPY)}},
     {"ggml_qmatmul", {dim3(GRID_SIZE_GGML_QMATMUL, BLOCK_SIZE_GGML_QMATMUL, SHARED_MEM_SIZE_GGML_QMATMUL)}},
     {"moe_weighted_sum", {dim3(GRID_SIZE_MOE_WEIGHTED_SUM, BLOCK_SIZE_MOE_WEIGHTED_SUM, SHARED_MEM_SIZE_MOE_WEIGHTED_SUM)}},
+    {"kv_cache_quantize", {dim3(GRID_SIZE_KV_CACHE_QUANTIZE, BLOCK_SIZE_KV_CACHE_QUANTIZE, SHARED_MEM_SIZE_KV_CACHE_QUANTIZE)}},
 
 };
 
@@ -380,6 +382,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"shared_kv_attention", {"GRID_SIZE_SHARED_KV_ATTENTION", "BLOCK_SIZE_SHARED_KV_ATTENTION", "SHARED_MEM_SIZE_SHARED_KV_ATTENTION"}},
     {"dual_rope", {"GRID_SIZE_DUAL_ROPE", "BLOCK_SIZE_DUAL_ROPE", "SHARED_MEM_SIZE_DUAL_ROPE"}},
     {"squared_relu", {"GRID_SIZE_SQUARED_RELU", "BLOCK_SIZE_SQUARED_RELU", "SHARED_MEM_SIZE_SQUARED_RELU"}},
+    {"fused_elementwise_chain", {"GRID_SIZE_FUSED_ELEMENTWISE_CHAIN", "BLOCK_SIZE_FUSED_ELEMENTWISE_CHAIN", "SHARED_MEM_SIZE_FUSED_ELEMENTWISE_CHAIN"}},
     {"mamba2_ssm", {"GRID_SIZE_MAMBA2_SSM", "BLOCK_SIZE_MAMBA2_SSM", "SHARED_MEM_SIZE_MAMBA2_SSM"}},
     {"moe_shared_experts", {"GRID_SIZE_MOE_SHARED_EXPERTS", "BLOCK_SIZE_MOE_SHARED_EXPERTS", "SHARED_MEM_SIZE_MOE_SHARED_EXPERTS"}},
     {"rms_norm_linear", {"GRID_SIZE_RMS_NORM_LINEAR", "BLOCK_SIZE_RMS_NORM_LINEAR", "SHARED_MEM_SIZE_RMS_NORM_LINEAR"}},
@@ -397,6 +400,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"state_commit_copy", {"GRID_SIZE_STATE_COMMIT_COPY", "BLOCK_SIZE_STATE_COMMIT_COPY", "SHARED_MEM_SIZE_STATE_COMMIT_COPY"}},
     {"ggml_qmatmul", {"GRID_SIZE_GGML_QMATMUL", "BLOCK_SIZE_GGML_QMATMUL", "SHARED_MEM_SIZE_GGML_QMATMUL"}},
     {"moe_weighted_sum", {"GRID_SIZE_MOE_WEIGHTED_SUM", "BLOCK_SIZE_MOE_WEIGHTED_SUM", "SHARED_MEM_SIZE_MOE_WEIGHTED_SUM"}},
+    {"kv_cache_quantize", {"GRID_SIZE_KV_CACHE_QUANTIZE", "BLOCK_SIZE_KV_CACHE_QUANTIZE", "SHARED_MEM_SIZE_KV_CACHE_QUANTIZE"}},
 
 };
 
@@ -1351,6 +1355,28 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
   int requestedShared = getEnvVariable("SHARED_MEM_SIZE_FUSED_GQA_DECODE", sharedMem);
   sharedMem = std::max(sharedMem, requestedShared);
 
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
+}
+
+dim3 getKvCacheQuantizeDims(sd::LongType numRows, sd::LongType rowLen) {
+  // Threads stride over one row: 256, or 512/1024 for longer rows, shrunk to the row length in
+  // whole warps. The block max reductions need full warps, so any BLOCK override is clamped to
+  // [32, 1024] and rounded down to a warp multiple before it caps the threads.
+  int threadsPerBlock = rowLen > 512 ? 1024 : rowLen > 256 ? 512 : 256;
+  if (rowLen < threadsPerBlock) {
+    threadsPerBlock = static_cast<int>(((rowLen + 31) / 32) * 32);
+    if (threadsPerBlock < 32) threadsPerBlock = 32;
+  }
+  int maxThreads = BLOCK_SIZE_KV_CACHE_QUANTIZE;
+  maxThreads = std::max(32, std::min(1024, maxThreads));
+  maxThreads = (maxThreads / 32) * 32;
+  threadsPerBlock = std::min(threadsPerBlock, maxThreads);
+
+  // One block per row up to GRID; the block-stride loop covers the remaining rows.
+  const int maxBlocks = std::max(1, static_cast<int>(GRID_SIZE_KV_CACHE_QUANTIZE));
+  const int blocksPerGrid = static_cast<int>(std::min<sd::LongType>(std::max<sd::LongType>(numRows, 1), maxBlocks));
+
+  const int sharedMem = std::max(0, static_cast<int>(SHARED_MEM_SIZE_KV_CACHE_QUANTIZE));
   return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 

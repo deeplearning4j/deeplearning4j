@@ -30,9 +30,11 @@
 #include <ops/declarable/DeclarableOp.h>
 #include <system/common.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <cassert>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -436,6 +438,20 @@ struct SlotFlags {
   bool isDynamicShape = false;
 };
 
+/**
+ * How a fused chain member's secondary operand relates to the chain value. The
+ * member's eager op decides it: a legacy scalar op reads element 0 only, a
+ * legacy pairwise op needs identical shapes, and a broadcastable declarable
+ * keeps the chain value's shape only while the secondary broadcasts into it.
+ * Replay re-checks the policy against the live arrays and de-fuses on mismatch.
+ */
+enum FusedChainSecondaryPolicy : int8_t {
+  FUSED_SECONDARY_NONE = 0,
+  FUSED_SECONDARY_SCALAR = 1,
+  FUSED_SECONDARY_SAME_SHAPE = 2,
+  FUSED_SECONDARY_BROADCAST = 3,
+};
+
 /** Fused elementwise chain metadata. */
 struct FusedChain {
   bool isFusedChainHead = false;
@@ -443,7 +459,28 @@ struct FusedChain {
   int fusedChainOpCodes[MAX_FUSED_CHAIN] = {};
   int fusedChainSlots[MAX_FUSED_CHAIN] = {};
   int fusedChainSecondaryInputSources[MAX_FUSED_CHAIN] = {};
+  int8_t fusedChainSecondaryPolicy[MAX_FUSED_CHAIN] = {};
+  // clipbyvalue bounds. A chain carries at most one pair; FusionPass refuses
+  // members whose bounds differ from an earlier clip in the same chain.
+  bool fusedChainHasClip = false;
+  double fusedChainClipMin = 0.0;
+  double fusedChainClipMax = 0.0;
   bool isFusedChainTail = false;
+
+  /** Drops this slot's head metadata. Member slots own isFusedChainTail. */
+  void clearHead() {
+    isFusedChainHead = false;
+    fusedChainLength = 0;
+    std::fill(std::begin(fusedChainOpCodes), std::end(fusedChainOpCodes), 0);
+    std::fill(std::begin(fusedChainSlots), std::end(fusedChainSlots), 0);
+    std::fill(std::begin(fusedChainSecondaryInputSources),
+              std::end(fusedChainSecondaryInputSources), INT32_MIN);
+    std::fill(std::begin(fusedChainSecondaryPolicy),
+              std::end(fusedChainSecondaryPolicy), FUSED_SECONDARY_NONE);
+    fusedChainHasClip = false;
+    fusedChainClipMin = 0.0;
+    fusedChainClipMax = 0.0;
+  }
 };
 
 /** Control flow support. */
@@ -1154,6 +1191,20 @@ struct GraphSegmentExec {
   // otherwise the compiled backend is preserved and graph capture is deferred.
   size_t peakWarmupAllocationBytes = 0;
 
+  // Gross CUDA-pool and pointer-table allocation requests observed during
+  // slot-by-slot warmup. Capture's bump workspace cannot reclaim those addresses.
+  size_t warmupWorkspaceAllocationBytes = 0;
+  int warmupWorkspaceAllocationCount = 0;
+  bool warmupWorkspaceAllocationObserved = false;
+
+  // A capture-time capacity move is allowed only before this segment has a
+  // replay handle. The move is transactional: slot outputs are staged on the
+  // target device before capture, then retained only after capture succeeds.
+  bool captureRehomePending = false;
+  bool captureRehomeCommitted = false;
+  int captureRehomeSourceDevice = -1;
+  int captureRehomeTargetDevice = -1;
+
   // LRU tracking: last executeCount_ at which this segment was replayed.
   // Used by proactive eviction to target least-recently-used graphs.
   int lastReplayExecCount = 0;
@@ -1302,6 +1353,13 @@ struct GraphSegmentExec {
     precommitFunctionalWarmupCount = 0;
     captureOomRetries = 0;
     captureRetryAfterExec = 0;
+    warmupWorkspaceAllocationBytes = 0;
+    warmupWorkspaceAllocationCount = 0;
+    warmupWorkspaceAllocationObserved = false;
+    captureRehomePending = false;
+    captureRehomeCommitted = false;
+    captureRehomeSourceDevice = -1;
+    captureRehomeTargetDevice = -1;
     resetCaptureKeys();
     clearGraphContentFlags("reset_for_warmup");
     DSP_DIAG(LIFECYCLE, "RESET_FOR_WARMUP: counters+keys+graphflags reset phase=%s",
@@ -1509,6 +1567,13 @@ struct GraphSegmentExec {
     terminalReason = nullptr;
     captureOomRetries = 0;
     captureRetryAfterExec = 0;
+    warmupWorkspaceAllocationBytes = 0;
+    warmupWorkspaceAllocationCount = 0;
+    warmupWorkspaceAllocationObserved = false;
+    captureRehomePending = false;
+    captureRehomeCommitted = false;
+    captureRehomeSourceDevice = -1;
+    captureRehomeTargetDevice = -1;
     lastReplayExecCount = 0;
     replayHandle.reset();
     outcome = SegmentExecOutcome::PENDING;
@@ -2515,27 +2580,35 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool isDeviceManagedExternalInput(NDArray* input) const;
   bool isDeviceManagedExternalInput(int extIdx, NDArray* input) const;
   bool hasDeviceManagedExternalInputs(NDArray** externalInputs, int numExternalInputs) const;
+  // Address of the array's resident device storage (view offset applied), or
+  // nullptr without a device allocation. Unlike specialBuffer(), never migrates
+  // storage that is resident on another device.
+  static void* residentDeviceAddress(NDArray* array);
 
 #ifdef SD_CUDA
   /**
    * Record, for every external index the segment reads that classifies as
    * device-managed, the device address the just-completed capture baked in.
-   * Called once per segment capture completion so the staging passthrough in
-   * ensureAndSyncStagingBuffers can later verify ADDRESS IDENTITY per replay.
+   * Called once per segment capture completion, on the capture device, so the
+   * staging passthrough in ensureAndSyncStagingBuffers can later verify
+   * ADDRESS IDENTITY per replay on that device.
    */
   void recordManagedExtBakedAddrsForCapture(GraphSegment& seg, NDArray** externalArrays, int numExt);
 
   /**
-   * Address-identity verdict for the staging passthrough skip.
+   * Address-identity verdict for the staging passthrough skip on `device`.
    * Returns the classification result (extIdx >= 0 classification first, then
-   * resident-address lookup). When classified as managed AND the recorded baked
-   * capture address for extIdx exists and differs from the live address, sets
-   * drifted=true and bakedAddr to the captured address: the caller must NOT skip
-   * staging — it must refresh the captured address instead. reboundEvent=true
-   * exactly when the live address changed since the previous call AND drifted
-   * (the REBOUND diagnostic fires once per relocation, not per call).
+   * resident-address lookup). When classified as managed AND the baked capture
+   * address recorded for extIdx on `device` exists and differs from the live
+   * address, sets drifted=true and bakedAddr to the captured address: the caller
+   * must NOT skip staging — it must refresh the captured address instead.
+   * Writable state resident on another device is never drifted here: the
+   * segment's replica migration refreshes and writes back that copy.
+   * reboundEvent=true exactly when the live address changed since the previous
+   * call on `device` AND drifted (the REBOUND diagnostic fires once per
+   * relocation, not per call).
    */
-  bool isDeviceManagedExternalInputIdentityChecked(int extIdx, NDArray* input,
+  bool isDeviceManagedExternalInputIdentityChecked(int device, int extIdx, NDArray* input,
                                                    bool& drifted, void*& bakedAddr,
                                                    bool& reboundEvent) const;
 #endif
@@ -3252,6 +3325,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Execution state (reused across calls)
   NDArray** outputSlots_;              // THE slot arrays — current output values for all slots
+  // REDZONE GUARD state: raw allocation holding outputSlots_ with a 64-byte
+  // front/back redzone, its payload byte count, and the last exec whose redzone
+  // check passed. See verifyOutputSlotsRedzone() in NativeDynamicShapePlan.cpp.
+  uint8_t* outputSlotsRedzoneRaw_ = nullptr;
+  size_t outputSlotsRedzoneBytes_ = 0;
+  int outputSlotsRedzoneLastOkExec_ = -1;
   // slotIsViewProducer_ removed — use slots_[i].slotPhase.isViewProducer instead.
   Context** contextPool_;              // Pre-allocated Context pool
   bool viewProducerDetectionDone_;
@@ -3652,9 +3731,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Internal methods
   // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline
-  void buildSegments();
+  void buildSegments(bool captureMemoryBudgetReady = false);
   void refreshDynamicSegmentBoundaryAnalysis();
-  void resegmentForFreeze();
+  bool resegmentForFreeze(bool allowCaptureMemoryBudget = false);
   SelectedBackend resolveBackendForSegment(bool isBackendEligible);
 
   // ── Slot execution (NativeDynamicShapePlan_slotexec.cpp) ──
@@ -4097,10 +4176,17 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   struct MigratedInput {
     int outputSlotIdx;       // Which outputSlots_[] entry was replaced
     NDArray* original;       // Original array (on source device) - restore after segment
-    NDArray* migrated;       // Migrated copy (on target device) - delete after segment
+    NDArray* migrated;       // Per-device staging copy, retained in migrationBuffers_ when reusable
     NDArray** externalInputTable = nullptr;  // Non-null when an external input was replaced
     int externalInputIdx = -1;
+    int targetDevice = -1;
     bool retained = false;
+    bool segmentOutput = false;  // Produced inside a capture-time rehomed segment
+    bool persistOutput = false;  // Commit this output publication after capture succeeds
+    bool newlyAllocated = false;  // This migration created the staging wrapper
+    bool segmentViewAlias = false;  // Rehomed view publication of a segment output
+    bool segmentInPlaceAlias = false;  // Exact-wrapper in-place output publication
+    int aliasParentOutputSlotIdx = -1;  // Owner publication for either segment output alias
   };
   std::vector<MigratedInput> migratedInputs_;
   // Internal sources proven resident on their segment's device, keyed by
@@ -4119,8 +4205,20 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // external inputs), from its fixed wiring, keyed by the segment's slot range.
   std::unordered_map<uint64_t, std::vector<int>> segmentInputSources_;
   // Stable input storage baked into captured consumers. Key is device/source
-  // publication, not caller address; values are refreshed on every invocation.
+  // publication, not caller address; values are refreshed on every invocation
+  // unless frozenMigrationSources_ proves the source unchanged.
   std::unordered_map<uint64_t, NDArray*> migrationBuffers_;
+  // Source identity behind a migrationBuffers_ copy of a frozen constant slot
+  // output (same key). The frozen output is fixed while its producer's
+  // generation, DataBuffer and device address are unchanged, so a copy made
+  // from exactly that source is reused instead of copied again.
+  struct FrozenMigrationSource {
+    NDArray* copy = nullptr;
+    DataBuffer* source = nullptr;
+    void* sourceSpecial = nullptr;
+    uint32_t producerGeneration = 0;
+  };
+  std::unordered_map<uint64_t, FrozenMigrationSource> frozenMigrationSources_;
 
   // Max-allocation mode for KV cache outputs
   // Maps output slot index -> max number of elements to pre-allocate
@@ -4155,12 +4253,17 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // and remains the source of truth. Classification alone is NOT proof that the
   // baked address still matches the live buffer: registerDeviceManagedExternalInput
   // can run AFTER capture with a relocated allocation, and the same captured graph
-  // then reads stale bytes. Record, per external index, the address baked at the
-  // most recent capture so ensureAndSyncStagingBuffers can verify identity per call
-  // and refresh the captured address when the live buffer moved.
-  std::unordered_map<int, void*> managedExtBakedAddrs_;   // ext idx → captured (baked) dev addr
-  // mutable: REBOUND event-gating bookkeeping updated by the const identity check.
-  mutable std::unordered_map<int, void*> managedExtLastLiveAddrs_;  // ext idx → last-seen live dev addr
+  // then reads stale bytes. Record, per device and external index, the address
+  // baked at the most recent capture so ensureAndSyncStagingBuffers can verify
+  // identity per call and refresh the captured address when the live buffer moved.
+  // Keyed by device first: one external index is baked as the caller's buffer on
+  // its owner device and as a stable per-device replica on every other consumer
+  // device, so a single per-plan address would report false drift across devices.
+  // device → (ext idx → captured (baked) dev addr)
+  std::unordered_map<int, std::unordered_map<int, void*>> managedExtBakedAddrs_;
+  // device → (ext idx → last-seen live dev addr). mutable: REBOUND event-gating
+  // bookkeeping updated by the const identity check.
+  mutable std::unordered_map<int, std::unordered_map<int, void*>> managedExtLastLiveAddrs_;
 #endif
   DataType kvScatterDtype_ = DataType::FLOAT32;
   LongType* kvPositionDevice_ = nullptr;  // Device-accessible int64 position scalar (owned)

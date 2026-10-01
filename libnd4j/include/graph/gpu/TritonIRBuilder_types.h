@@ -115,6 +115,32 @@ struct KernelSection {
 };
 
 /**
+ * A forward attention op as the fused and GGUF attention emitters implement it,
+ * from TritonIRBuilder::describeAttentionContract. Section planning and module
+ * emission both read it. A non-empty reason means the emitters cannot reproduce
+ * the op and it runs natively.
+ */
+struct AttentionContract {
+  std::string reason;
+  int qSrc = 0, kSrc = 0, vSrc = 0, outSlot = 0;
+  int batch = 1, qHeads = 1, kvHeads = 1, seqQ = 1, seqK = 1, headDim = 1;
+  bool qIsBSHD = true, kIsBSHD = true, causal = false;
+  float scale = 1.0f;
+  // ONNX past K/V: keys [0, pastSeq) come from past [B, kvH, pastSeq, D] and
+  // keys [pastSeq, seqK) from the current K/V.
+  bool dualBuffer = false;
+  int pastKSrc = 0, pastVSrc = 0, pastSeq = 0, curSeq = 0;
+  // DPA v2 KV cache [B, cacheMaxSeq, kvH, D] written in place at the device
+  // position held by cachePosSrc.
+  bool gguf = false;
+  int keyCacheSrc = 0, valueCacheSrc = 0, cachePosSrc = 0, cacheMaxSeq = 0;
+  bool hasBias = false;
+  int biasSrc = 0;
+  std::vector<LongType> biasShape;
+  bool supported() const { return reason.empty(); }
+};
+
+/**
  * Epilogue operation applied to the matmul accumulator in-register.
  * Pure C++ — no MLIR types.
  */

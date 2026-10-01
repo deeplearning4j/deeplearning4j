@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.ModelConfig;
+import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
 import org.eclipse.deeplearning4j.llm.generation.batch.BatchGenerationState;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
@@ -71,6 +72,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.IdentityHashMap;
@@ -1277,67 +1279,10 @@ public class VisionLanguageModel implements AutoCloseable {
         int numFrames = splitResult.frames.size();
 
         for (int f = 0; f < numFrames; f++) {
-            java.awt.image.BufferedImage frame = splitResult.frames.get(f);
-            INDArray frameTensor = imagePreprocessor.preprocess(frame);
-            // Use normalizeVisionInputShape to match what encodeImage() does — it checks
-            // whether the encoder expects rank-5 [batch,frames,C,H,W] or rank-4 [batch,C,H,W].
-            // Unconditionally reshaping to rank-5 breaks models that expect rank-4 (e.g.,
-            // SmolDocling's conv2d pipeline has permute ops with 4-element permutation vectors).
-            INDArray visionFrameInput = normalizeVisionInputShape(frameTensor);
-
-            Map<String, INDArray> inputs = new HashMap<>();
-            inputs.put(visionEncoderIOConfig.getPixelValuesName(), visionFrameInput);
-
-            // Create pixel attention mask for this frame
-            ImageTiler.ContentRegion region = splitResult.contentRegions.get(f);
-            INDArray pixelMask = ImageTiler.createPixelAttentionMask(
-                    region.width, region.height, targetSize);
-            // Only add if the encoder accepts it
-            if (visionEncoderIOConfig.hasPixelAttentionMask()) {
-                inputs.put(visionEncoderIOConfig.getPixelAttentionMaskName(), pixelMask);
+            INDArray embedding = encodeTiledFrame(splitResult, f, targetSize);
+            if (embedding != null) {
+                frameEmbeddings.add(embedding);
             }
-
-            // Run vision encoder for this frame using discovered output names
-            Map<String, INDArray> outputs = visionEncoder.output(inputs, visionEncoderIOConfig.getOutputNames());
-            VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(outputs);
-
-            if (selected == null || selected.tensor == null) {
-                log.warn("Frame {}/{}: no usable vision output, skipping", f + 1, numFrames);
-                continue;
-            }
-
-            if (VisionEncoderUtils.isAllZeroOrNaN(selected.tensor)) {
-                log.warn("Frame {}/{}: vision output is all zeros/NaN, skipping", f + 1, numFrames);
-                continue;
-            }
-
-            // Ensure rank-3: [1, seqLen, hiddenDim]
-            INDArray embedding = selected.tensor;
-            if (embedding.rank() == 2) {
-                embedding = embedding.reshape(1, embedding.size(0), embedding.size(1));
-            }
-
-            frameEmbeddings.add(embedding.dup());
-
-            if (log.isDebugEnabled()) {
-                log.debug("Frame {}/{}: output '{}' shape={}, min={}, max={}",
-                        f + 1, numFrames, selected.name,
-                        java.util.Arrays.toString(embedding.shape()),
-                        embedding.minNumber(), embedding.maxNumber());
-            } else {
-                log.info("Frame {}/{}: output '{}' shape={}",
-                        f + 1, numFrames, selected.name,
-                        java.util.Arrays.toString(embedding.shape()));
-            }
-
-            // Do NOT close plan-owned output arrays — their DataBuffers may be
-            // the same GPU allocation the DSP plan's slot buffers reference.
-            // Closing them frees GPU memory that the next execution still reads,
-            // causing Xid 13 (Out Of Range Address). The .dup() above already
-            // copied what we need; the plan will manage its own buffers.
-
-            SameDiffMemoryUtils.safeClose(frameTensor);
-            SameDiffMemoryUtils.safeClose(pixelMask);
         }
 
         if (frameEmbeddings.isEmpty()) {
@@ -1360,6 +1305,76 @@ public class VisionLanguageModel implements AutoCloseable {
         log.info("Encoded {} frames -> vision embeddings shape={}",
                 numFrames, java.util.Arrays.toString(result.shape()));
         return result;
+    }
+
+    /**
+     * Run the vision encoder on one frame of a tiled image.
+     *
+     * @return a detached {@code [1, seqLen, hiddenDim]} embedding the caller owns, or
+     *         {@code null} when the encoder produced no usable output for the frame
+     */
+    private INDArray encodeTiledFrame(ImageTiler.SplitImageResult splitResult, int f, int targetSize) {
+        int numFrames = splitResult.frames.size();
+        INDArray frameTensor = imagePreprocessor.preprocess(splitResult.frames.get(f));
+        // Create pixel attention mask for this frame
+        ImageTiler.ContentRegion region = splitResult.contentRegions.get(f);
+        INDArray pixelMask = ImageTiler.createPixelAttentionMask(
+                region.width, region.height, targetSize);
+        try {
+            // Use normalizeVisionInputShape to match what encodeImage() does — it checks
+            // whether the encoder expects rank-5 [batch,frames,C,H,W] or rank-4 [batch,C,H,W].
+            // Unconditionally reshaping to rank-5 breaks models that expect rank-4 (e.g.,
+            // SmolDocling's conv2d pipeline has permute ops with 4-element permutation vectors).
+            INDArray visionFrameInput = normalizeVisionInputShape(frameTensor);
+
+            Map<String, INDArray> inputs = new HashMap<>();
+            inputs.put(visionEncoderIOConfig.getPixelValuesName(), visionFrameInput);
+            // Only add if the encoder accepts it
+            if (visionEncoderIOConfig.hasPixelAttentionMask()) {
+                inputs.put(visionEncoderIOConfig.getPixelAttentionMaskName(), pixelMask);
+            }
+
+            // Run vision encoder for this frame using discovered output names
+            Map<String, INDArray> outputs = visionEncoder.output(inputs, visionEncoderIOConfig.getOutputNames());
+            VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(outputs);
+
+            if (selected == null || selected.tensor == null) {
+                log.warn("Frame {}/{}: no usable vision output, skipping", f + 1, numFrames);
+                return null;
+            }
+
+            if (VisionEncoderUtils.isAllZeroOrNaN(selected.tensor)) {
+                log.warn("Frame {}/{}: vision output is all zeros/NaN, skipping", f + 1, numFrames);
+                return null;
+            }
+
+            // Ensure rank-3: [1, seqLen, hiddenDim]
+            INDArray embedding = selected.tensor;
+            if (embedding.rank() == 2) {
+                embedding = embedding.reshape(1, embedding.size(0), embedding.size(1));
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug("Frame {}/{}: output '{}' shape={}, min={}, max={}",
+                        f + 1, numFrames, selected.name,
+                        java.util.Arrays.toString(embedding.shape()),
+                        embedding.minNumber(), embedding.maxNumber());
+            } else {
+                log.info("Frame {}/{}: output '{}' shape={}",
+                        f + 1, numFrames, selected.name,
+                        java.util.Arrays.toString(embedding.shape()));
+            }
+
+            // Do NOT close plan-owned output arrays — their DataBuffers may be
+            // the same GPU allocation the DSP plan's slot buffers reference.
+            // Closing them frees GPU memory that the next execution still reads,
+            // causing Xid 13 (Out Of Range Address). The dup() copies what we need;
+            // the plan will manage its own buffers.
+            return embedding.dup();
+        } finally {
+            SameDiffMemoryUtils.safeClose(frameTensor);
+            SameDiffMemoryUtils.safeClose(pixelMask);
+        }
     }
 
     /**
@@ -1626,6 +1641,149 @@ public class VisionLanguageModel implements AutoCloseable {
             // We must close it here to prevent ~5 MB GPU memory leak per page.
             SameDiffMemoryUtils.safeClose(inputsEmbeds);
         }
+    }
+
+    /**
+     * Generate the next assistant turn of a multi-turn conversation whose messages may carry
+     * images.
+     *
+     * <p>Every {@code image} content part is a placeholder ({@link ChatTemplate.ContentPart#image()})
+     * that consumes the next entry of {@code images}, so images stay where the conversation put
+     * them, across turns. Each image is tiled the way this model's preprocessor config asks
+     * (Idefics3 {@code do_image_splitting}: longest edge to {@code size.longest_edge}, then
+     * {@code max_image_size} tiles plus a global frame), encoded, and expanded into its row/column
+     * image-token block. The rendered prompt must then carry exactly one image token per vision
+     * token; a mismatch fails instead of filling slots out of order.</p>
+     *
+     * @param messages the conversation in order; image parts are placeholders
+     * @param images decoded images, one per image part in conversation order (null or empty
+     *               for a text-only conversation)
+     * @param config sampling configuration; {@code maxNewTokens} is capped by the context left
+     *               after the prompt
+     * @return generation result with text and metrics
+     */
+    public GenerationResult generateChat(List<ChatTemplate.Message> messages,
+                                         List<BufferedImage> images,
+                                         SamplingConfig config) {
+        checkNotClosed();
+        if (messages == null || messages.isEmpty()) {
+            throw new IllegalArgumentException("generateChat needs at least one message");
+        }
+        List<BufferedImage> supplied = images != null ? images : List.of();
+        int imageParts = 0;
+        for (ChatTemplate.Message message : messages) {
+            for (ChatTemplate.ContentPart part : message.resolveContentParts()) {
+                if ("image".equals(part.getType())) {
+                    imageParts++;
+                }
+            }
+        }
+        if (imageParts != supplied.size()) {
+            throw new IllegalArgumentException("The conversation has " + imageParts
+                    + " image part(s) but " + supplied.size() + " image(s) were supplied");
+        }
+        SamplingConfig sampling = config != null ? config : SamplingConfig.greedy();
+
+        List<INDArray> frameEmbeddings = new ArrayList<>();
+        INDArray visionEmbeddings = null;
+        INDArray inputsEmbeds = null;
+        try {
+            List<ChatTemplate.Message> expanded = new ArrayList<>(messages.size());
+            int nextImage = 0;
+            for (ChatTemplate.Message message : messages) {
+                List<ChatTemplate.ContentPart> parts = new ArrayList<>();
+                StringBuilder flat = new StringBuilder();
+                for (ChatTemplate.ContentPart part : message.resolveContentParts()) {
+                    ChatTemplate.ContentPart rendered = "image".equals(part.getType())
+                            ? ChatTemplate.ContentPart.image(
+                                    encodeChatImage(supplied.get(nextImage++), frameEmbeddings))
+                            : part;
+                    parts.add(rendered);
+                    if (rendered.getText() != null) {
+                        flat.append(rendered.getText());
+                    }
+                }
+                // Idefics3 templates render the parts; the other families render the content.
+                expanded.add(new ChatTemplate.Message(message.getRole(), flat.toString(), parts,
+                        message.getToolCalls(), message.getToolCallId(), message.getToolName()));
+            }
+
+            String templateText = tokenizer.getChatTemplate();
+            String prompt = new ChatTemplate(templateText != null ? templateText : "",
+                    tokenizer.getBosToken(), tokenizer.getEosToken()).apply(expanded, true);
+            int[] promptIds = tokenizer.encode(prompt, false).getIds();
+            int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
+            if (!frameEmbeddings.isEmpty()) {
+                visionEmbeddings = frameEmbeddings.size() == 1 ? frameEmbeddings.get(0)
+                        : Nd4j.concat(1, frameEmbeddings.toArray(new INDArray[0]));
+                int slots = ImagePromptBuilder.countOccurrences(promptIds, imageTokenId);
+                if (slots != visionEmbeddings.size(1)) {
+                    throw new IllegalStateException("The chat prompt has " + slots
+                            + " image token slots but " + supplied.size() + " image(s) produced "
+                            + visionEmbeddings.size(1) + " vision tokens; message text must not "
+                            + "contain the model's image token");
+                }
+            }
+            int maxTokens = resolveGenerationBudget(promptIds.length, sampling.getMaxNewTokens());
+            log.info("generateChat: {} messages, {} images, prompt {} tokens, budget {} tokens",
+                    messages.size(), supplied.size(), promptIds.length, maxTokens);
+
+            inputsEmbeds = embedText(promptIds);
+            if (visionEmbeddings != null) {
+                INDArray textEmbeddings = inputsEmbeds;
+                inputsEmbeds = EmbeddingMerger.mergeEmbeddings(
+                        textEmbeddings, visionEmbeddings, promptIds, imageTokenId);
+                SameDiffMemoryUtils.safeClose(textEmbeddings);
+            }
+            VlmProtocolPlan plan = outputProtocols.prepare(
+                    VlmProtocolRequest.builder().protocolId("builtin.plain").promptOverride(prompt).build(),
+                    tokenizer, this.config);
+            return decodeWithStaticLoop(inputsEmbeds, promptIds,
+                    sampling.toBuilder().maxNewTokens(maxTokens).build(), plan);
+        } finally {
+            // The decode loop treats inputsEmbeds as externally owned.
+            SameDiffMemoryUtils.safeClose(inputsEmbeds);
+            if (frameEmbeddings.size() > 1) {
+                SameDiffMemoryUtils.safeClose(visionEmbeddings);
+            }
+            for (INDArray frame : frameEmbeddings) {
+                SameDiffMemoryUtils.safeClose(frame);
+            }
+        }
+    }
+
+    /**
+     * Tile one chat image per this model's preprocessor config, encode every frame into
+     * {@code frameEmbeddings}, and return the image-token block that stands in for it.
+     */
+    private String encodeChatImage(BufferedImage image, List<INDArray> frameEmbeddings) {
+        PreprocessorConfig preprocessing = imagePreprocessor.getConfig();
+        int frameSize = preprocessing.getTargetHeight();
+        ImageTiler.SplitImageResult split;
+        if (preprocessing.isDoImageSplitting()) {
+            PreprocessorConfig.ImageSize size = preprocessing.getSize();
+            BufferedImage source = size != null && size.getLongestEdge() != null
+                    ? ImageTiler.resizeLongestEdge(image, size.getLongestEdge()) : image;
+            split = ImageTiler.splitImageForVLM(source, frameSize, -1);
+        } else {
+            split = ImageTiler.splitImageForVLMPreservingScale(image, frameSize, 1);
+        }
+        long tokensPerFrame = -1;
+        for (int f = 0; f < split.getTotalFrames(); f++) {
+            INDArray embedding = encodeTiledFrame(split, f, frameSize);
+            if (embedding == null) {
+                throw new IllegalStateException("The vision encoder produced no usable output for frame "
+                        + (f + 1) + " of " + split.getTotalFrames());
+            }
+            frameEmbeddings.add(embedding);
+            if (tokensPerFrame < 0) {
+                tokensPerFrame = embedding.size(1);
+            } else if (embedding.size(1) != tokensPerFrame) {
+                throw new IllegalStateException("Vision frames disagree on token count: "
+                        + tokensPerFrame + " vs " + embedding.size(1));
+            }
+        }
+        return ImagePromptBuilder.buildImagePromptString(split.numRows, split.numCols, (int) tokensPerFrame);
     }
 
     /**
@@ -2436,7 +2594,11 @@ public class VisionLanguageModel implements AutoCloseable {
         return requestedMaxTokens > 0 ? Math.min(requestedMaxTokens, available) : available;
     }
 
-    private int resolveContextWindow() {
+    /**
+     * The context window generation enforces, in tokens: the model's position embeddings,
+     * capped by the fixed KV length when one is set. Zero when neither is known.
+     */
+    public int resolveContextWindow() {
         int contextWindow = config != null && config.getMaxPositionEmbeddings() != null
                 ? config.getMaxPositionEmbeddings() : 0;
         if (maxKvLen > 0) {

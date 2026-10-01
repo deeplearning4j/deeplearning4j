@@ -764,22 +764,6 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     }
 
     /**
-     * Wire ADR 0107 V2 quantized-KV scale buffers into the op after construction.
-     *
-     * <p>The caller has already constructed this op with {@code staticKvBuffers} containing the INT8
-     * KV arrays (bit 2 in optionalMask). This method appends {@code 2*numKvPairs} float32 scale
-     * arrays after the KV buffers and sets bit 7 (128) in {@code iArgs[4]} (optionalInputMask) so
-     * the C++ decode op knows to read them.</p>
-     *
-     * <p>Scale layout: {@code kvScaleBuffers[0..numKvPairs-1]} = key scales per layer,
-     * {@code [numKvPairs..2*numKvPairs-1]} = value scales per layer.
-     * Each array shape: {@code [batch, maxKvLen, kvHeads]} float32.</p>
-     *
-     * @param kvScaleBuffers the 2*numKvPairs float32 scale arrays (key scales then value scales)
-     * @return this op (for chaining)
-     * @throws IllegalArgumentException if the array length != 2*numKvPairs
-     */
-    /**
      * In-place recurrent state commit flag (optionalMask bit 11 / 2048): the INT32 scalar
      * the target graph's gated-delta-rule layers read at run time. It must be the SAME
      * array fed to the target plan as its commit-flag placeholder (the native loop finds it
@@ -797,25 +781,6 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         long prevMask = iArguments.get(4);
         iArguments.set(4, prevMask | 2048L);
         this.optionalInputMask = (int) (prevMask | 2048L);
-        return this;
-    }
-
-    public AutoregressiveDecode withQuantisedKvScales(INDArray[] kvScaleBuffers) {
-        if (kvScaleBuffers == null || kvScaleBuffers.length == 0) return this;
-        if (kvScaleBuffers.length != 2 * numKvPairs) {
-            throw new IllegalArgumentException(
-                    "withQuantisedKvScales: expected " + (2 * numKvPairs) + " scale arrays, got " + kvScaleBuffers.length);
-        }
-        // Append scale buffers to the input list
-        for (INDArray sc : kvScaleBuffers) {
-            if (sc != null) inputArguments.add(sc);
-        }
-        // Set bit 7 (128) in iArgs[4] (optionalInputMask)
-        if (iArguments.size() > 4) {
-            long prevMask = iArguments.get(4);
-            iArguments.set(4, prevMask | 128L);
-            this.optionalInputMask = (int)(prevMask | 128L);
-        }
         return this;
     }
 
@@ -943,10 +908,10 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     /**
      * Attach the isolated Qwen3.5 MTP predictor plan to this target decode invocation.
      *
-     * <p>The seven arrays are appended after the target KV (and optional quantised-scale)
-     * inputs. MTP plan metadata is encoded in tArgs[27..42], preserving every existing
-     * iArg and stop-token offset. All pointer halves are unsigned 32-bit values and are
-     * therefore exactly representable as doubles.</p>
+     * <p>The seven arrays are appended after the target KV inputs. MTP plan metadata is
+     * encoded in tArgs[27..42], preserving every existing iArg and stop-token offset. All
+     * pointer halves are unsigned 32-bit values and are therefore exactly representable as
+     * doubles.</p>
      */
     public AutoregressiveDecode withMtpPlan(
             INDArray mtpInputIds,

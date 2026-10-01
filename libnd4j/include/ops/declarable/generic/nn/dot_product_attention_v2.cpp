@@ -214,11 +214,10 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   if (valScaleCache != nullptr && valScaleCache->isEmpty()) valScaleCache = nullptr;
 
   // Determine if this is a V2 quantised call: keyCache is INT8.
-  // ADR 0107 V2 INLINE-SCALE: the per-token-per-head scale rides in the INT8 cache's own
-  // DataBuffer tail (over-allocated combined buffer), so a separate scale cache is NOT required.
-  // When keyScaleCache/valScaleCache are null the write/read launchers derive the scale pointer
-  // from the cache buffer tail (scalePtr = cache.specialBuffer() + cache.lengthOf()). Inputs 9/10
-  // and the registry remain supported for the eager/op-level path (non-null → used directly).
+  // ADR 0107 V2 ROW-INLINE SCALE: with inputs 9/10 absent, every INT8 cache row is
+  // [headDim values | FLOAT32 scale] (last dim headDim + 4), so the scale travels with its row.
+  // Non-empty inputs 9/10 are separate FLOAT32 [batch, maxKvLen, kvHeads] scale caches over an
+  // INT8 [batch, maxKvLen, kvHeads, headDim] cache.
   bool useQuantisedKv = (keyCache != nullptr && keyCache->dataType() == DataType::INT8);
 
   // ADR 0107 V2 diagnosis: record whether the quantised-KV path is taken at each call.
@@ -270,28 +269,19 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     }
 
     if (useQuantisedKv) {
-      // V2 QUANTIZED: quantise current K/V into the INT8 cache at cachePosition.
-      // newKv (keys/values) are float [batch,1,kvHeads,headDim]; cast to float if needed.
-      NDArray* keysF = keys;
-      NDArray* valuesF = values;
-      NDArray* keysCastForQuant = nullptr;
-      NDArray* valuesCastForQuant = nullptr;
-      if (keysF->dataType() != DataType::FLOAT32) {
-        keysCastForQuant = keysF->cast(DataType::FLOAT32);
-        keysF = keysCastForQuant;
-      }
-      if (valuesF->dataType() != DataType::FLOAT32) {
-        valuesCastForQuant = valuesF->cast(DataType::FLOAT32);
-        valuesF = valuesCastForQuant;
-      }
-      helpers::kvInPlaceWriteQuantisedBSHD(
-          keyCache, keyScaleCache, keysF, cachePosPtr, block.launchContext());
-      helpers::kvInPlaceWriteQuantisedBSHD(
-          valueCache, valScaleCache, valuesF, cachePosPtr, block.launchContext());
-      if (keysCastForQuant) delete keysCastForQuant;
-      if (valuesCastForQuant) delete valuesCastForQuant;
-      // Note: keys/values remain float for the non-quantised path below (but we
-      // override the attention call to use the quantised kernel; see below).
+      // V2 QUANTIZED: quantise the current-step K/V rows (model dtype, any float type) into the
+      // INT8 caches at cachePosition. keys/values keep pointing at those rows: the quantised read
+      // below takes them as its current window instead of reading back the row just scattered.
+      REQUIRE_TRUE(isRank4 && keys->rankOf() == 4 && values->rankOf() == 4 && queries->sizeAt(1) == 1 &&
+                       keys->sizeAt(1) == 1 && values->sizeAt(1) == 1,
+                   0,
+                   "dot_product_attention_v2: the INT8 KV cache supports rank-4 single-token decode only "
+                   "([batch, 1, heads, headDim] queries/keys/values); got query rank %i seq %lld, key rank %i "
+                   "seq %lld, value rank %i seq %lld",
+                   queries->rankOf(), (long long)queries->sizeAt(1), keys->rankOf(), (long long)keys->sizeAt(1),
+                   values->rankOf(), (long long)values->sizeAt(1));
+      helpers::kvInPlaceWriteQuantisedBSHD(keyCache, keyScaleCache, keys, cachePosPtr, block.launchContext());
+      helpers::kvInPlaceWriteQuantisedBSHD(valueCache, valScaleCache, values, cachePosPtr, block.launchContext());
     } else {
       // Float path (unchanged)
       // Write current K/V at cache_position in the buffers (in-place).
@@ -437,6 +427,44 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     attentionBias = biasCastBuf;
   }
 
+  // V2 QUANTIZED decode read: the INT8 caches were written above. Q, the current K/V window, the
+  // bias and the output stay in the query dtype; only the cache rows are INT8, dequantized with
+  // their FLOAT32 scales inside the kernel. This runs before the K/V auto-cast below so a window
+  // cast can use persistent workspace buffers (same capture-safety rule as the bias cast above).
+  if (useQuantisedKv && useInPlaceKv) {
+    REQUIRE_TRUE(applyScoresOut->dataType() == queries->dataType(), 0,
+                 "dot_product_attention_v2: the INT8 KV cache path writes the query dtype %i, got output dtype %i",
+                 static_cast<int>(queries->dataType()), static_cast<int>(applyScoresOut->dataType()));
+    auto* workspace = AttentionWorkspace::getInstance();
+    auto windowInQueryType = [&](NDArray* window, const char* bufferKey) -> NDArray* {
+      if (window->dataType() == queries->dataType()) return window;
+      std::vector<sd::LongType> windowShape(window->shapeOf(), window->shapeOf() + window->rankOf());
+      NDArray* castBuf = workspace->getBuffer(bufferKey, windowShape, queries->dataType(), block.launchContext());
+      castBuf->assign(window);
+      return castBuf;
+    };
+    NDArray* keyWindow = windowInQueryType(keys, "dpa_v2_quantKeyWindowCast");
+    NDArray* valueWindow = windowInQueryType(values, "dpa_v2_quantValueWindowCast");
+    NDArray* quantBias = hasAttentionBias ? attentionBias : nullptr;
+
+#if defined(__CUDACC__) || defined(SD_CUDA)
+    fusedGQADecodeQuantisedCuda(queries, keyCache, keyScaleCache, valueCache, valScaleCache, applyScoresOut, scale,
+                                block.launchContext(), quantBias, keyWindow, valueWindow, currentKvPosition,
+                                attentionScores, attentionLogits);
+#else
+    helpers::fusedGQADecodeQuantisedCpu(queries, keyCache, keyScaleCache, valueCache, valScaleCache, applyScoresOut,
+                                        scale, quantBias, block.launchContext(), keyWindow, valueWindow,
+                                        currentKvPosition, attentionScores, attentionLogits);
+#endif
+
+    // The rank-4 single-token requirement above rules out the rank-2 reshape and K/V casts, so
+    // only the auto-promotion and sliced-bias allocations can be live here.
+    if (promotedV) delete valuesOrig;
+    if (promotedK) delete promotedKPtr;
+    if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
+    return sd::Status::OK;
+  }
+
   // Auto-cast K/V to match Q dtype when they differ (e.g. FusedRoPE promotes
   // Q/K to FLOAT while V stays HALF, or GraphOptimizer strips type casts).
   // This mirrors how MmulHelper handles mixed dtypes via pickPairwiseResultType.
@@ -455,67 +483,6 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   if (values->dataType() != queries->dataType()) {
     valuesCastOwner = values->cast(queries->dataType());
     values = valuesCastOwner;
-  }
-
-  // V2 QUANTIZED decode: quantised caches have been written; read via fused quantised kernel.
-  // This takes priority over all other attention paths when useQuantisedKv is active.
-  if (useQuantisedKv && useInPlaceKv && isRank4) {
-    // Cast bias to float if needed (quantised kernel is always float32)
-    NDArray* biasForQuant = attentionBias;
-    std::unique_ptr<NDArray> biasQuantCastOwner;
-    if (biasForQuant != nullptr && !biasForQuant->isEmpty()
-        && biasForQuant->dataType() != DataType::FLOAT32) {
-      biasQuantCastOwner.reset(biasForQuant->cast(DataType::FLOAT32));
-      biasForQuant = biasQuantCastOwner.get();
-    }
-
-    // Cast queries to float if needed
-    NDArray* queriesF = queries;
-    std::unique_ptr<NDArray> queriesQuantCastOwner;
-    if (queriesF->dataType() != DataType::FLOAT32) {
-      queriesQuantCastOwner.reset(queriesF->cast(DataType::FLOAT32));
-      queriesF = queriesQuantCastOwner.get();
-    }
-
-    // Cast output to float staging if needed
-    bool needOutCast = (applyScoresOut->dataType() != DataType::FLOAT32);
-    NDArray* outF = applyScoresOut;
-    std::unique_ptr<NDArray> outQuantCastOwner;
-    if (needOutCast) {
-      std::vector<sd::LongType> outShape(applyScoresOut->shapeOf(),
-                                         applyScoresOut->shapeOf() + applyScoresOut->rankOf());
-      outQuantCastOwner.reset(new NDArray('c', outShape, DataType::FLOAT32, block.launchContext()));
-      outF = outQuantCastOwner.get();
-    }
-
-    // CPU path: use CPU reference implementation
-    // CUDA path: use fused quantised CUDA kernel
-#if defined(__CUDACC__) || defined(SD_CUDA)
-    fusedGQADecodeQuantisedCuda(
-        queriesF, keyCache, keyScaleCache, valueCache, valScaleCache,
-        outF, scale, block.launchContext(),
-        (biasForQuant != nullptr && !biasForQuant->isEmpty()) ? biasForQuant : nullptr);
-#else
-    sd::ops::helpers::fusedGQADecodeQuantisedCpu(
-        queriesF, keyCache, keyScaleCache, valueCache, valScaleCache,
-        outF, scale,
-        (biasForQuant != nullptr && !biasForQuant->isEmpty()) ? biasForQuant : nullptr,
-        block.launchContext());
-#endif
-
-    if (needOutCast) {
-      applyScoresOut->assign(outF->cast(applyScoresOut->dataType()));
-    }
-
-    // Cleanup
-    if (keysCastOwner) delete keysCastOwner;
-    if (valuesCastOwner) delete valuesCastOwner;
-    if (reshapedQ) {
-      delete keysPreCast;
-      delete valuesPreCast;
-    }
-    if (slicedBiasOwner) delete slicedBiasOwner;
-    return sd::Status::OK;
   }
 
   // Fast flash path: explicitly enabled + no masks + no dropout
@@ -732,10 +699,10 @@ DECLARE_TYPES(dot_product_attention_v2) {
       ->setAllowedInputTypes(4, {ALL_FLOATS, ALL_INTS, BOOL})  // valueMask (optional)
       ->setAllowedInputTypes(5, {ALL_FLOATS, ALL_INTS, BOOL, INT8})  // attentionBias/keyCache (V2: INT8)
       ->setAllowedInputTypes(6, {ALL_FLOATS, ALL_INTS, BOOL, INT8})  // valueCache (V2: INT8)
-      ->setAllowedInputTypes(7, {ALL_INTS})                    // cache_position (optional)
+      ->setAllowedInputTypes(7, {DataType::INT64})             // cache_position (optional); kernels read int64
       ->setAllowedInputTypes(8, {ALL_FLOATS, ALL_INTS, BOOL})  // attention bias with KV cache (optional)
-      ->setAllowedInputTypes(9, {ALL_FLOATS})                  // V2: key scale cache (optional)
-      ->setAllowedInputTypes(10, {ALL_FLOATS})                 // V2: value scale cache (optional)
+      ->setAllowedInputTypes(9, {DataType::FLOAT32})           // V2: separate key scale cache (optional)
+      ->setAllowedInputTypes(10, {DataType::FLOAT32})          // V2: separate value scale cache (optional)
       ->setAllowedOutputTypes({ALL_FLOATS})
       ;
 }

@@ -748,6 +748,10 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_SQUARED_RELU getEnvVariable("BLOCK_SIZE_SQUARED_RELU", 256)
 #define SHARED_MEM_SIZE_SQUARED_RELU getEnvVariable("SHARED_MEM_SIZE_SQUARED_RELU", 0)
 
+#define GRID_SIZE_FUSED_ELEMENTWISE_CHAIN getEnvVariable("GRID_SIZE_FUSED_ELEMENTWISE_CHAIN", 256)
+#define BLOCK_SIZE_FUSED_ELEMENTWISE_CHAIN getEnvVariable("BLOCK_SIZE_FUSED_ELEMENTWISE_CHAIN", 256)
+#define SHARED_MEM_SIZE_FUSED_ELEMENTWISE_CHAIN getEnvVariable("SHARED_MEM_SIZE_FUSED_ELEMENTWISE_CHAIN", 0)
+
 #define GRID_SIZE_MAMBA2_SSM getEnvVariable("GRID_SIZE_MAMBA2_SSM", 256)
 #define BLOCK_SIZE_MAMBA2_SSM getEnvVariable("BLOCK_SIZE_MAMBA2_SSM", 256)
 #define SHARED_MEM_SIZE_MAMBA2_SSM getEnvVariable("SHARED_MEM_SIZE_MAMBA2_SSM", 0)
@@ -931,6 +935,16 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
 #define GRID_SIZE_FUSED_GQA_DECODE getEnvVariable("GRID_SIZE_FUSED_GQA_DECODE", 256)
 #define BLOCK_SIZE_FUSED_GQA_DECODE getEnvVariable("BLOCK_SIZE_FUSED_GQA_DECODE", 256)
 #define SHARED_MEM_SIZE_FUSED_GQA_DECODE getEnvVariable("SHARED_MEM_SIZE_FUSED_GQA_DECODE", 8192)
+
+// kv_cache_quantize / kv_cache_dequantize: a block walks rows along the last dimension with a
+// block-stride loop and its threads stride over the row. GRID caps the row blocks, BLOCK caps the
+// threads per row (a warp multiple: the block max reductions need full warps). The kernels use
+// static shared memory only, so the dynamic shared memory defaults to 0.
+#define GRID_SIZE_KV_CACHE_QUANTIZE getEnvVariable("GRID_SIZE_KV_CACHE_QUANTIZE", 65535)
+#define BLOCK_SIZE_KV_CACHE_QUANTIZE getEnvVariable("BLOCK_SIZE_KV_CACHE_QUANTIZE", 1024)
+#define SHARED_MEM_SIZE_KV_CACHE_QUANTIZE getEnvVariable("SHARED_MEM_SIZE_KV_CACHE_QUANTIZE", 0)
+
+dim3 getKvCacheQuantizeDims(sd::LongType numRows, sd::LongType rowLen);
 
 // ModelOpt packed linear general path: one thread per output, view-safe
 // INDEX2COORDS/COORDS2INDEX addressing, no scratch or weight materialization.

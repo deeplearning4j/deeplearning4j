@@ -95,6 +95,21 @@ public class TestGenerationPipeline {
     }
 
     @Test
+    @DisplayName("Prefill KV stages in the float placeholder dtype, never the INT8 declaration")
+    public void testPrefillKvStagingDtype() {
+        // Float cache: the declared placeholder dtype wins over a widened prefill output.
+        assertEquals(DataType.HALF, GenerationPipeline.kvStagingDtype(DataType.HALF, null, DataType.FLOAT, false));
+        // Quantised cache: the placeholder is already declared INT8, and staging into it would
+        // truncate every prefill value before quantisation. The dtype recorded before the INT8
+        // declaration wins instead.
+        assertEquals(DataType.HALF, GenerationPipeline.kvStagingDtype(DataType.INT8, DataType.HALF, DataType.FLOAT, true));
+        assertEquals(DataType.FLOAT, GenerationPipeline.kvStagingDtype(DataType.INT8, DataType.FLOAT, DataType.HALF, true));
+        // Nothing recorded (the placeholder was INT8 on entry): the prefill output dtype, not INT8.
+        assertEquals(DataType.FLOAT, GenerationPipeline.kvStagingDtype(DataType.INT8, null, DataType.FLOAT, true));
+        assertEquals(DataType.BFLOAT16, GenerationPipeline.kvStagingDtype(DataType.UNKNOWN, null, DataType.BFLOAT16, false));
+    }
+
+    @Test
     @DisplayName("In-graph native handoff consumes the sampled token at the advanced position")
     public void testInGraphNativeDecodeHandoffAdvancesTokenAndPosition() {
         INDArray inputIds = Nd4j.createFromArray(10L).reshape(1, 1);

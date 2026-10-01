@@ -33,6 +33,7 @@
 #include <types/float16.h>
 #include <execution/cuda/LaunchDims.h>
 #include <math/templatemath.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 #include <string>
 #include <type_traits>
 
@@ -347,7 +348,7 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedAttention3DKernel(
    const LongType dim,
    const double scale,
    const bool isCausal,
-   const int biasRank,             // 0=no bias, 3=[batch,seqQ,seqKV], 4=[batch,1,seqQ,seqKV]
+   const int biasRank,             // 0=no bias, 1=[seqKV], 2=[seqQ,seqKV], 3=[batch,seqQ,seqKV], 4=[batch,1,seqQ,seqKV]
    const LongType biasStride0,     // Stride for batch dimension
    const LongType biasStride1,     // Stride for seqQ (or heads) dimension
    const LongType biasStride2) {   // Stride for seqKV dimension
@@ -898,7 +899,10 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedGQAAttentionWithScores4DKernel(
   const LongType queryPosition = validCurrentWindow
       ? currentStart + queryIdx
       : queryIdx + causalOffset;
-  const LongType maxKV = isCausal ? min(queryPosition + 1, seqKV) : seqKV;
+  // A current window ends the written cache prefix at currentStart + currentSeq; rows past it are
+  // unwritten or stale, so they are never attended whatever the bias holds.
+  const LongType writtenKV = validCurrentWindow ? min(currentStart + currentSeq, seqKV) : seqKV;
+  const LongType maxKV = isCausal ? min(queryPosition + 1, writtenKV) : writtenKV;
 
   AccT threadMax = -DataTypeUtils::infOrMax<AccT>();
   for (LongType kv = threadIdx.x; kv < seqKV; kv += blockDim.x) {
@@ -1196,6 +1200,13 @@ void fusedAttentionCuda(
      biasStride0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
      biasStride1 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
      biasStride2 = attentionBias->sizeAt(3) > 1 ? attentionBias->strideAt(3) : 0;
+   } else if (biasRank == 2) {
+     // [seqQ, seqKV], shared by every batch
+     biasStride1 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
+     biasStride2 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
+   } else if (biasRank == 1) {
+     // [seqKV], shared by every batch and query
+     biasStride2 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
    }
    // IMPORTANT: prepareSpecialUse BEFORE reading specialBuffer().
    // attentionBias may be host-only when first created (specialBuffer() returns host ptr).
@@ -1322,13 +1333,17 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
  }
 
  // When a cache-form op supplies the current producer window, query rows are
- // anchored at that device-resident cache position. Otherwise retain the
- // right-aligned semantics used by direct non-cache callers.
+ // anchored at that device-resident cache position and the written cache prefix
+ // ends at currentStart + currentSeq: rows past it are unwritten or stale, so they
+ // are never attended whatever the bias holds (the INT8 decode uses the same
+ // bound). Otherwise retain the right-aligned semantics used by direct non-cache
+ // callers.
  const LongType causalOffset = seqKV > seqQ ? seqKV - seqQ : 0;
  const LongType queryPosition = validCurrentWindow
      ? currentStart + queryIdx
      : queryIdx + causalOffset;
- const LongType maxKV = isCausal ? min(queryPosition + 1, seqKV) : seqKV;
+ const LongType writtenKV = validCurrentWindow ? min(currentStart + currentSeq, seqKV) : seqKV;
+ const LongType maxKV = isCausal ? min(queryPosition + 1, writtenKV) : writtenKV;
 
  // Online softmax state (block-wide via shared memory)
  __shared__ AccT globalMax;
@@ -1650,7 +1665,7 @@ void fusedGQADecodeCuda(
  if (attentionBias != nullptr && !attentionBias->isEmpty()) {
    inputs.push_back(attentionBias);
    biasPtr = attentionBias->specialBuffer();
-   // Normalize rank-2/3/4 masks to logical [batch, head, query, key]
+   // Normalize rank-1/2/3/4 masks to logical [batch, head, query, key]
    // broadcast-safe strides. Dimensions of size one intentionally use stride zero.
    const int biasRank = attentionBias->rankOf();
    if (biasRank == 4) {
@@ -1663,11 +1678,12 @@ void fusedGQADecodeCuda(
      biasStride1 = 0;
      biasStride2 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
      biasStride3 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
-   } else {
-     biasStride0 = 0;
-     biasStride1 = 0;
+   } else if (biasRank == 2) {
      biasStride2 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
      biasStride3 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
+   } else {
+     // Rank 1: [seqKV], or a scalar
+     biasStride3 = attentionBias->lengthOf() > 1 ? attentionBias->strideAt(0) : 0;
    }
  }
  NDArray::prepareSpecialUse({output}, inputs);
@@ -1703,249 +1719,284 @@ void fusedGQADecodeCuda(
 //////////////////////////////////////////////////////////////////////////////
 // V2: fusedGQADecodeQuantisedKernel
 //
-// GQA decode attention with inline INT8 K/V dequantisation.
-// One block per (qHead, batch) pair — same grid as fusedGQADecodeKernel.
-// Inner loop: kval = float(keyQ[idx]) * keyScale[head_pos_idx]
-//             vval = float(valQ[idx]) * valScale[head_pos_idx]
+// Single-token GQA decode over INT8 K/V caches, templated on the model dtype T: the query, the
+// current K/V window, the bias and the output are T. Each cache row carries one FLOAT32 scale,
+// held in separate [batch, seqKV, kvHeads] caches or inline in bytes [headDim, headDim + 4) of a
+// [.., headDim + 4] row (ADR 0107 V2). The K row scale folds into the dot product and the V row
+// scale into the softmax weight; scores, softmax state and the output accumulator are AccT.
+// Grid and shared memory follow fusedGQADecodeKernel's seqQ == 1 contract: one block per
+// (qHead, batch) with blockIdx.x = batch * numQHeads + qHead.
 //
-// Accepts the ADR-0106 substrate mask (attentionBias) with shape
-// [B, 1_or_qH, 1, seqKV] (broadcast-safe via zero strides for size-1 dims).
+// Rows inside the current window [currentStart, currentStart + currentSeq) are read from the T
+// window, so this call never reads back the INT8 rows it just wrote and the current token is not
+// quantized twice. Attention stops at the end of that window, which for the single decode query
+// is also its causal bound, so unwritten or stale rows are never read whatever the bias holds.
+// Without a window the bias alone masks.
+//
+// The optional score/logit outputs get the softmax weights and pre-softmax scores of that same
+// computation; rows past the attended prefix get the masked logit and a zero score.
 //////////////////////////////////////////////////////////////////////////////
+static SD_DEVICE SD_INLINE float int8KvRowScale(const int8_t* row, LongType headDim, const float* separateScale) {
+  if (separateScale != nullptr) return *separateScale;
+  // A row-inline scale sits at an arbitrary byte offset, so read it without assuming alignment.
+  float rowScale;
+  memcpy(&rowScale, row + headDim, sizeof(float));
+  return rowScale;
+}
+
+template <typename T>
 SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeQuantisedKernel(
-    const float* __restrict__ query,       // [batch, 1, numQHeads, headDim]
-    const int8_t* __restrict__ keyQ,       // [batch, seqKV, numKvHeads, headDim]
-    const float*  __restrict__ keyScale,   // [batch, seqKV, numKvHeads]
-    const int8_t* __restrict__ valQ,       // [batch, seqKV, numKvHeads, headDim]
-    const float*  __restrict__ valScale,   // [batch, seqKV, numKvHeads]
-    const float*  __restrict__ attnBias,   // [batch, numQHeads, 1, seqKV] or nullptr
-    float* __restrict__ output,            // [batch, 1, numQHeads, headDim]
+    const T* query,               // [batch, 1, numQHeads, headDim]
+    const int8_t* keyCache,       // [batch, seqKV, numKvHeads, headDim] or [.., headDim + 4]
+    const float* keyScales,       // [batch, seqKV, numKvHeads], nullptr when row-inline
+    const int8_t* valueCache,     // [batch, seqKV, numKvHeads, headDim] or [.., headDim + 4]
+    const float* valueScales,     // [batch, seqKV, numKvHeads], nullptr when row-inline
+    const T* currentKeyWindow,    // [batch, currentSeq, numKvHeads, headDim] or nullptr
+    const T* currentValueWindow,  // [batch, currentSeq, numKvHeads, headDim] or nullptr
+    const LongType* currentKvPosition,
+    const LongType currentSeq,
+    const T* attnBias,            // logical [batch, numQHeads, 1, seqKV] or nullptr
+    T* output,                    // [batch, 1, numQHeads, headDim]
+    T* attentionScores,           // [batch, numQHeads, 1, seqKV] or nullptr
+    T* attentionLogits,           // [batch, numQHeads, 1, seqKV] or nullptr
     const LongType batch,
     const LongType seqKV,
     const LongType numQHeads,
-    const LongType numKvHeads,
     const LongType headDim,
     const LongType headsPerKvHead,
     const double scale,
-    // Q strides [batch, 1, numQHeads, headDim]
     const LongType qStride0, const LongType qStride2, const LongType qStride3,
-    // K/V int8 cache strides [batch, seqKV, numKvHeads, headDim] — assumed contiguous
-    const LongType kvS0, const LongType kvS1, const LongType kvS2,
-    // Scale strides [batch, seqKV, numKvHeads] — assumed contiguous
-    const LongType ksS0, const LongType ksS1,
-    // Output strides [batch, 1, numQHeads, headDim]
+    const LongType kStride0, const LongType kStride1, const LongType kStride2, const LongType kStride3,
+    const LongType vStride0, const LongType vStride1, const LongType vStride2, const LongType vStride3,
+    const LongType kScaleStride0, const LongType kScaleStride1, const LongType kScaleStride2,
+    const LongType vScaleStride0, const LongType vScaleStride1, const LongType vScaleStride2,
+    const LongType currentKStride0, const LongType currentKStride1,
+    const LongType currentKStride2, const LongType currentKStride3,
+    const LongType currentVStride0, const LongType currentVStride1,
+    const LongType currentVStride2, const LongType currentVStride3,
     const LongType oStride0, const LongType oStride2, const LongType oStride3,
-    // Bias strides (broadcast-safe)
-    const LongType biasStride0, const LongType biasStride1,
-    const LongType biasStride2, const LongType biasStride3) {
+    // Broadcast-safe bias strides (zero on size-1 dims); seqQ == 1 needs no query stride.
+    const LongType biasStride0, const LongType biasStride1, const LongType biasStride3,
+    const LongType scoresStride0, const LongType scoresStride1, const LongType scoresStride3,
+    const LongType logitsStride0, const LongType logitsStride1, const LongType logitsStride3) {
+  using AccT = typename FlashAccType<T>::type;
 
-    const LongType qHead    = blockIdx.x;
-    const LongType batchIdx = blockIdx.y;
-    if (batchIdx >= batch || qHead >= numQHeads) return;
+  const LongType qHead = blockIdx.x % numQHeads;
+  const LongType batchIdx = blockIdx.x / numQHeads;
+  if (batchIdx >= batch) return;
+  const LongType kvHead = qHead / headsPerKvHead;
 
-    const LongType kvHead = qHead / headsPerKvHead;
+  // Shared memory layout: scores tile + output accumulator [headDim], both AccT.
+  extern __shared__ char sharedMem[];
+  AccT* sharedScores = reinterpret_cast<AccT*>(sharedMem);
+  AccT* sharedOutput = sharedScores + GQA_DECODE_TILE_SIZE_KV;
+  __shared__ AccT reduceScratch[WARP_SIZE];
+  __shared__ AccT globalMax;
+  __shared__ AccT globalSum;
+  __shared__ AccT tileRescale;
 
-    // Shared memory: scores tile [TILE_SIZE_KV] + output accumulator [headDim]
-    extern __shared__ char sharedMemQ2[];
-    float* sharedScores = reinterpret_cast<float*>(sharedMemQ2);
-    float* sharedOutput = sharedScores + TILE_SIZE_KV;
+  const T* Q = query + batchIdx * qStride0 + qHead * qStride2;
+  T* O = output + batchIdx * oStride0 + qHead * oStride2;
+  const T* biasRow = attnBias != nullptr ? attnBias + batchIdx * biasStride0 + qHead * biasStride1 : nullptr;
+  T* scoresRow = attentionScores != nullptr ? attentionScores + batchIdx * scoresStride0 + qHead * scoresStride1
+                                            : nullptr;
+  T* logitsRow = attentionLogits != nullptr ? attentionLogits + batchIdx * logitsStride0 + qHead * logitsStride1
+                                            : nullptr;
 
-    // Q pointer
-    const float* Q = query + batchIdx * qStride0 + qHead * qStride2;
+  const int8_t* kBase = keyCache + batchIdx * kStride0 + kvHead * kStride2;
+  const int8_t* vBase = valueCache + batchIdx * vStride0 + kvHead * vStride2;
+  const float* kScaleBase =
+      keyScales != nullptr ? keyScales + batchIdx * kScaleStride0 + kvHead * kScaleStride2 : nullptr;
+  const float* vScaleBase =
+      valueScales != nullptr ? valueScales + batchIdx * vScaleStride0 + kvHead * vScaleStride2 : nullptr;
 
-    // K/V base pointers for this batch × kvHead
-    const int8_t* Kbase = keyQ   + batchIdx * kvS0 + kvHead * kvS2;
-    const float*  KsBase= keyScale+ batchIdx * ksS0;          // seqKV × kvHeads; kvHead added per-token
-    const int8_t* Vbase = valQ   + batchIdx * kvS0 + kvHead * kvS2;
-    const float*  VsBase= valScale+ batchIdx * ksS0;
+  const bool hasCurrentWindow = currentKeyWindow != nullptr && currentValueWindow != nullptr &&
+                                currentKvPosition != nullptr && currentSeq > 0;
+  const LongType currentStart = hasCurrentWindow ? currentKvPosition[0] : -1;
+  const bool validCurrentWindow = hasCurrentWindow && currentStart >= 0 && currentStart < seqKV;
+  const T* currentKBase =
+      validCurrentWindow ? currentKeyWindow + batchIdx * currentKStride0 + kvHead * currentKStride2 : nullptr;
+  const T* currentVBase =
+      validCurrentWindow ? currentValueWindow + batchIdx * currentVStride0 + kvHead * currentVStride2 : nullptr;
+  const LongType maxKV =
+      validCurrentWindow ? sd::math::sd_min<LongType>(currentStart + currentSeq, seqKV) : seqKV;
 
-    // Output
-    float* O = output + batchIdx * oStride0 + qHead * oStride2;
+  const AccT masked = -DataTypeUtils::infOrMax<AccT>();
+  const AccT scaleAcc = static_cast<AccT>(scale);
 
-    // Bias row
-    const float* biasRow = nullptr;
-    if (attnBias != nullptr) {
-        biasRow = attnBias + batchIdx * biasStride0 + qHead * biasStride1;
+  // Q.K * scale + bias for one attended row. Step 1 and the score/logit outputs share it.
+  auto scoreAt = [&](LongType kvIdx) -> AccT {
+    const LongType currentIndex = kvIdx - currentStart;
+    AccT dot = static_cast<AccT>(0);
+    if (validCurrentWindow && currentIndex >= 0 && currentIndex < currentSeq) {
+      const T* kRow = currentKBase + currentIndex * currentKStride1;
+      for (LongType d = 0; d < headDim; d++) {
+        dot += static_cast<AccT>(Q[d * qStride3]) * static_cast<AccT>(kRow[d * currentKStride3]);
+      }
+    } else {
+      const int8_t* kRow = kBase + kvIdx * kStride1;
+      for (LongType d = 0; d < headDim; d++) {
+        dot += static_cast<AccT>(Q[d * qStride3]) * static_cast<AccT>(kRow[d * kStride3]);
+      }
+      dot *= static_cast<AccT>(
+          int8KvRowScale(kRow, headDim, kScaleBase != nullptr ? kScaleBase + kvIdx * kScaleStride1 : nullptr));
+    }
+    AccT score = dot * scaleAcc;
+    if (biasRow != nullptr) score += static_cast<AccT>(biasRow[kvIdx * biasStride3]);
+    return score;
+  };
+
+  if (threadIdx.x == 0) {
+    globalMax = masked;
+    globalSum = static_cast<AccT>(0);
+  }
+  for (LongType d = threadIdx.x; d < headDim; d += blockDim.x) {
+    sharedOutput[d] = static_cast<AccT>(0);
+  }
+  __syncthreads();
+
+  for (LongType kvStart = 0; kvStart < maxKV; kvStart += GQA_DECODE_TILE_SIZE_KV) {
+    const int tileSize = static_cast<int>(sd::math::sd_min<LongType>(GQA_DECODE_TILE_SIZE_KV, maxKV - kvStart));
+
+    // Step 1: scores = Q.K * scale + bias, plus a per-thread max.
+    AccT localMax = masked;
+    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
+      const AccT score = scoreAt(kvStart + k);
+      sharedScores[k] = score;
+      localMax = sd::math::sd_max<AccT>(localMax, score);
     }
 
-    // Online softmax state
-    __shared__ float globalMax;
-    __shared__ float globalSum;
+    // Step 2: tile max, valid in thread 0.
+    const AccT tileMax = sd::device::blockReduceMax<AccT>(localMax, reduceScratch);
+
+    // Step 3: only thread 0 updates the running max and sum, and the other threads read the
+    // rescale factor after the barrier, so no thread reads globalMax while it changes. Before any
+    // finite score there is nothing to rescale, which also keeps a fully masked leading tile from
+    // evaluating -inf - -inf.
     if (threadIdx.x == 0) {
-        globalMax = -DataTypeUtils::infOrMax<float>();
-        globalSum = 0.0f;
-    }
-
-    for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-        sharedOutput[d] = 0.0f;
+      const AccT newMax = sd::math::sd_max<AccT>(globalMax, tileMax);
+      tileRescale = (globalMax == masked || newMax == globalMax) ? static_cast<AccT>(1)
+                                                                  : flashExp<AccT>(globalMax - newMax);
+      globalSum *= tileRescale;
+      globalMax = newMax;
     }
     __syncthreads();
-
-    if (headDim <= 0 || seqKV <= 0) return;
-
-    for (LongType kvStart = 0; kvStart < seqKV; kvStart += TILE_SIZE_KV) {
-        const LongType kvEnd  = min(kvStart + TILE_SIZE_KV, seqKV);
-        const int tileSize = static_cast<int>(kvEnd - kvStart);
-        if (tileSize <= 0) continue;
-
-        // Step 1: Q @ K^T scores (inline dequant)
-        // ADR 0107 V2 ROW-INLINE: null keyScale → the cache last dim is headDim+4 and each row's
-        // float32 scale sits at Krow+headDim (inside the logical tensor — staging-proof).
-        for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
-            const LongType kvIdx = kvStart + k;
-            const int8_t* Krow  = Kbase + kvIdx * kvS1;
-            const float   ksc   = keyScale != nullptr
-                ? KsBase[kvIdx * ksS1 + kvHead]
-                : *reinterpret_cast<const float*>(Krow + headDim);
-
-            float score = 0.0f;
-            for (LongType d = 0; d < headDim; d++) {
-                float kval = static_cast<float>(Krow[d]) * ksc;
-                score += Q[d * qStride3] * kval;
-            }
-            score *= static_cast<float>(scale);
-            if (biasRow != nullptr) {
-                score += biasRow[kvIdx * biasStride3];
-            }
-            sharedScores[k] = score;
-        }
-        __syncthreads();
-
-        // Step 2: tile max
-        float tileMax = -DataTypeUtils::infOrMax<float>();
-        for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
-            tileMax = sd::math::sd_max<float>(tileMax, sharedScores[k]);
-        }
-        for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-            tileMax = sd::math::sd_max<float>(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
-        }
-        __shared__ float warpMaxes[32];
-        if (threadIdx.x % WARP_SIZE == 0) warpMaxes[threadIdx.x / WARP_SIZE] = tileMax;
-        __syncthreads();
-        if (threadIdx.x < blockDim.x / WARP_SIZE) tileMax = warpMaxes[threadIdx.x];
-        else tileMax = -DataTypeUtils::infOrMax<float>();
-        for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-            tileMax = sd::math::sd_max<float>(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
-        }
-
-        __shared__ float newMax;
-        if (threadIdx.x == 0) newMax = sd::math::sd_max<float>(globalMax, tileMax);
-        __syncthreads();
-
-        // Step 3: rescale previous accumulator. Read the previous max in every
-        // thread before thread 0 publishes the new one (WAR hazard otherwise).
-        const float previousMax = globalMax;
-        const bool maxChanged = newMax > previousMax;
-        const float rescale = maxChanged ? flashExp<float>(previousMax - newMax) : 1.0f;
-        if (maxChanged) {
-            for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-                sharedOutput[d] *= rescale;
-            }
-        }
-        __syncthreads();
-        if (threadIdx.x == 0 && maxChanged) {
-            globalSum *= rescale;
-            globalMax = newMax;
-        }
-        __syncthreads();
-
-        // Step 4: softmax weights
-        float tileSum = 0.0f;
-        for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
-            // Preserve zero weight for masked leading tiles (-inf - -inf is NaN).
-            float expScore = sharedScores[k] == -DataTypeUtils::infOrMax<float>()
-                ? 0.0f : flashExp<float>(sharedScores[k] - globalMax);
-            sharedScores[k] = expScore;
-            tileSum += expScore;
-        }
-        for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-            tileSum += __shfl_down_sync(0xffffffff, tileSum, offset);
-        }
-        __shared__ float warpSums[32];
-        if (threadIdx.x % WARP_SIZE == 0) warpSums[threadIdx.x / WARP_SIZE] = tileSum;
-        __syncthreads();
-        if (threadIdx.x < blockDim.x / WARP_SIZE) tileSum = warpSums[threadIdx.x];
-        else tileSum = 0.0f;
-        for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-            tileSum += __shfl_down_sync(0xffffffff, tileSum, offset);
-        }
-        if (threadIdx.x == 0) globalSum += tileSum;
-        __syncthreads();
-
-        // Step 5: weighted V accumulation (inline dequant; row-inline scale when valScale null)
-        for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-            float acc = 0.0f;
-            for (int k = 0; k < tileSize; k++) {
-                const LongType kvIdx = kvStart + k;
-                const int8_t* Vrow = Vbase + kvIdx * kvS1;
-                const float   vsc  = valScale != nullptr
-                    ? VsBase[kvIdx * ksS1 + kvHead]
-                    : *reinterpret_cast<const float*>(Vrow + headDim);
-                float vval = static_cast<float>(Vrow[d]) * vsc;
-                acc += sharedScores[k] * vval;
-            }
-            sharedOutput[d] += acc;
-        }
-        __syncthreads();
+    if (tileRescale != static_cast<AccT>(1)) {
+      for (LongType d = threadIdx.x; d < headDim; d += blockDim.x) {
+        sharedOutput[d] *= tileRescale;
+      }
     }
 
-    // Step 6: normalize and write
-    float invSum = (globalSum > 0.0f) ? (1.0f / globalSum) : 0.0f;
-    for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-        O[d * oStride3] = sharedOutput[d] * invSum;
+    // Step 4: softmax numerators; a masked score has zero weight. The running sum takes the plain
+    // weight, while the stored weight of a cache row also carries that row's V scale.
+    AccT localSum = static_cast<AccT>(0);
+    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
+      const AccT score = sharedScores[k];
+      const AccT weight = score == masked ? static_cast<AccT>(0) : flashExp<AccT>(score - globalMax);
+      localSum += weight;
+      const LongType kvIdx = kvStart + k;
+      const LongType currentIndex = kvIdx - currentStart;
+      if (validCurrentWindow && currentIndex >= 0 && currentIndex < currentSeq) {
+        sharedScores[k] = weight;
+      } else {
+        sharedScores[k] = weight * static_cast<AccT>(int8KvRowScale(
+            vBase + kvIdx * vStride1, headDim, vScaleBase != nullptr ? vScaleBase + kvIdx * vScaleStride1 : nullptr));
+      }
     }
+    // The barrier inside the reduction also publishes the weights to Step 5.
+    const AccT tileSum = sd::device::blockReduceSum<AccT>(localSum, reduceScratch);
+    if (threadIdx.x == 0) globalSum += tileSum;
+
+    // Step 5: weighted V; each thread owns a disjoint set of output dimensions.
+    for (LongType d = threadIdx.x; d < headDim; d += blockDim.x) {
+      AccT acc = static_cast<AccT>(0);
+      for (int k = 0; k < tileSize; k++) {
+        const LongType kvIdx = kvStart + k;
+        const LongType currentIndex = kvIdx - currentStart;
+        const AccT value = validCurrentWindow && currentIndex >= 0 && currentIndex < currentSeq
+                               ? static_cast<AccT>(currentVBase[currentIndex * currentVStride1 + d * currentVStride3])
+                               : static_cast<AccT>(vBase[kvIdx * vStride1 + d * vStride3]);
+        acc += sharedScores[k] * value;
+      }
+      sharedOutput[d] += acc;
+    }
+    __syncthreads();
+  }
+
+  // Step 6: normalize. If nothing was attended (every score masked, or an empty prefix) the
+  // output is zero.
+  const AccT invSum = globalSum > static_cast<AccT>(0) ? static_cast<AccT>(1) / globalSum : static_cast<AccT>(0);
+  for (LongType d = threadIdx.x; d < headDim; d += blockDim.x) {
+    O[d * oStride3] = static_cast<T>(sharedOutput[d] * invSum);
+  }
+
+  // Step 7: the optional score/logit outputs. The shared tile only ever holds one tile, so the
+  // scores are recomputed against the final max and sum. The last tile barrier published both.
+  if (scoresRow != nullptr || logitsRow != nullptr) {
+    for (LongType kvIdx = threadIdx.x; kvIdx < seqKV; kvIdx += blockDim.x) {
+      const AccT score = kvIdx < maxKV ? scoreAt(kvIdx) : masked;
+      if (logitsRow != nullptr) logitsRow[kvIdx * logitsStride3] = static_cast<T>(score);
+      if (scoresRow != nullptr) {
+        const AccT weight = score == masked ? static_cast<AccT>(0) : flashExp<AccT>(score - globalMax);
+        scoresRow[kvIdx * scoresStride3] = static_cast<T>(weight * invSum);
+      }
+    }
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // Launcher for fusedGQADecodeQuantised
 //////////////////////////////////////////////////////////////////////////////
+template <typename T>
 static void fusedGQADecodeQuantisedLauncher(
-    const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-    const cudaStream_t* stream,
-    const void* vQuery,
-    const void* vKeyQ, const void* vKeyScale,
-    const void* vValQ, const void* vValScale,
-    const void* vAttnBias,
-    void* vOutput,
-    LongType batch, LongType seqKV, LongType numQHeads, LongType numKvHeads,
-    LongType headDim, LongType headsPerKvHead, double scale,
+    const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream,
+    const void* vQuery, const void* vKeyCache, const void* vKeyScales,
+    const void* vValueCache, const void* vValueScales,
+    const void* vCurrentKeyWindow, const void* vCurrentValueWindow,
+    const void* vCurrentKvPosition, LongType currentSeq,
+    const void* vAttnBias, void* vOutput, void* vAttentionScores, void* vAttentionLogits,
+    LongType batch, LongType seqKV, LongType numQHeads, LongType headDim, LongType headsPerKvHead, double scale,
     LongType qStride0, LongType qStride2, LongType qStride3,
-    LongType kvS0, LongType kvS1, LongType kvS2,
-    LongType ksS0, LongType ksS1,
+    LongType kStride0, LongType kStride1, LongType kStride2, LongType kStride3,
+    LongType vStride0, LongType vStride1, LongType vStride2, LongType vStride3,
+    LongType kScaleStride0, LongType kScaleStride1, LongType kScaleStride2,
+    LongType vScaleStride0, LongType vScaleStride1, LongType vScaleStride2,
+    LongType currentKStride0, LongType currentKStride1, LongType currentKStride2, LongType currentKStride3,
+    LongType currentVStride0, LongType currentVStride1, LongType currentVStride2, LongType currentVStride3,
     LongType oStride0, LongType oStride2, LongType oStride3,
-    LongType biasStride0, LongType biasStride1,
-    LongType biasStride2, LongType biasStride3) {
+    LongType biasStride0, LongType biasStride1, LongType biasStride3,
+    LongType scoresStride0, LongType scoresStride1, LongType scoresStride3,
+    LongType logitsStride0, LongType logitsStride1, LongType logitsStride3) {
+  using AccT = typename FlashAccType<T>::type;
+  // Never launch with less than the score tile plus the headDim accumulator in AccT.
+  const size_t required = static_cast<size_t>(GQA_DECODE_TILE_SIZE_KV + headDim) * sizeof(AccT);
+  const size_t smem = static_cast<size_t>(sharedMem) > required ? static_cast<size_t>(sharedMem) : required;
 
-    auto query    = reinterpret_cast<const float*>(vQuery);
-    auto keyQ     = reinterpret_cast<const int8_t*>(vKeyQ);
-    auto keyScale = reinterpret_cast<const float*>(vKeyScale);
-    auto valQ     = reinterpret_cast<const int8_t*>(vValQ);
-    auto valScale = reinterpret_cast<const float*>(vValScale);
-    auto attnBias = vAttnBias != nullptr ? reinterpret_cast<const float*>(vAttnBias) : nullptr;
-    auto output   = reinterpret_cast<float*>(vOutput);
-
-    dim3 grid(numQHeads, batch);
-    dim3 block(threadsPerBlock);
-
-    size_t smem = sharedMem > 0
-        ? static_cast<size_t>(sharedMem)
-        : static_cast<size_t>(TILE_SIZE_KV + headDim) * sizeof(float);
-
-    fusedGQADecodeQuantisedKernel<<<grid, block, smem, *stream>>>(
-        query,
-        keyQ, keyScale, valQ, valScale,
-        attnBias, output,
-        batch, seqKV, numQHeads, numKvHeads,
-        headDim, headsPerKvHead, scale,
-        qStride0, qStride2, qStride3,
-        kvS0, kvS1, kvS2,
-        ksS0, ksS1,
-        oStride0, oStride2, oStride3,
-        biasStride0, biasStride1, biasStride2, biasStride3);
-    DebugHelper::checkGlobalErrorCode("fusedGQADecodeQuantised failed");
+  fusedGQADecodeQuantisedKernel<T><<<blocksPerGrid, threadsPerBlock, smem, *stream>>>(
+      reinterpret_cast<const T*>(vQuery),
+      reinterpret_cast<const int8_t*>(vKeyCache), reinterpret_cast<const float*>(vKeyScales),
+      reinterpret_cast<const int8_t*>(vValueCache), reinterpret_cast<const float*>(vValueScales),
+      reinterpret_cast<const T*>(vCurrentKeyWindow), reinterpret_cast<const T*>(vCurrentValueWindow),
+      reinterpret_cast<const LongType*>(vCurrentKvPosition), currentSeq,
+      reinterpret_cast<const T*>(vAttnBias), reinterpret_cast<T*>(vOutput),
+      reinterpret_cast<T*>(vAttentionScores), reinterpret_cast<T*>(vAttentionLogits),
+      batch, seqKV, numQHeads, headDim, headsPerKvHead, scale,
+      qStride0, qStride2, qStride3,
+      kStride0, kStride1, kStride2, kStride3,
+      vStride0, vStride1, vStride2, vStride3,
+      kScaleStride0, kScaleStride1, kScaleStride2,
+      vScaleStride0, vScaleStride1, vScaleStride2,
+      currentKStride0, currentKStride1, currentKStride2, currentKStride3,
+      currentVStride0, currentVStride1, currentVStride2, currentVStride3,
+      oStride0, oStride2, oStride3,
+      biasStride0, biasStride1, biasStride3,
+      scoresStride0, scoresStride1, scoresStride3,
+      logitsStride0, logitsStride1, logitsStride3);
+  DebugHelper::checkGlobalErrorCode("fusedGQADecodeQuantised failed");
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Public interface: fusedGQADecodeQuantisedCuda
+// Public interface: fusedGQADecodeQuantisedCuda. Same validation as fusedGQADecodeQuantisedCpu.
 //////////////////////////////////////////////////////////////////////////////
 void fusedGQADecodeQuantisedCuda(
     NDArray* query,
@@ -1956,93 +2007,209 @@ void fusedGQADecodeQuantisedCuda(
     NDArray* output,
     double scale,
     LaunchContext* context,
-    NDArray* attentionBias) {
+    NDArray* attentionBias,
+    NDArray* currentKeyWindow,
+    NDArray* currentValueWindow,
+    const void* currentKvPosition,
+    NDArray* attentionScores,
+    NDArray* attentionLogits) {
 
-    auto stream = context->getCudaStream();
+  const DataType dtype = query->dataType();
+  if (query->rankOf() != 4 || query->sizeAt(1) != 1) {
+    THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: query must be [batch, 1, qHeads, headDim]");
+  }
+  const LongType batch = query->sizeAt(0);
+  const LongType numQHeads = query->sizeAt(2);
+  const LongType headDim = query->sizeAt(3);
+  if (output->dataType() != dtype || output->rankOf() != 4 || output->sizeAt(0) != batch ||
+      output->sizeAt(1) != 1 || output->sizeAt(2) != numQHeads || output->sizeAt(3) != headDim) {
+    THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: output must match the query shape and dtype");
+  }
+  if (quantKeyCache->dataType() != DataType::INT8 || quantValCache->dataType() != DataType::INT8 ||
+      quantKeyCache->rankOf() != 4 || !quantKeyCache->isSameShape(quantValCache)) {
+    THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: key/value caches must be INT8 rank-4 with the same shape");
+  }
+  if (quantKeyCache->sizeAt(0) != batch) {
+    THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: cache batch must match the query batch");
+  }
+  const LongType seqKV = quantKeyCache->sizeAt(1);
+  const LongType numKvHeads = quantKeyCache->sizeAt(2);
+  if (numKvHeads <= 0 || numQHeads % numKvHeads != 0) {
+    THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: qHeads must be a multiple of kvHeads");
+  }
 
-    const auto batch        = query->sizeAt(0);
-    const auto numQHeads    = query->sizeAt(2);
-    const auto headDim      = query->sizeAt(3);
-    const auto seqKV        = quantKeyCache->sizeAt(1);
-    const auto numKvHeads   = quantKeyCache->sizeAt(2);
-    const auto headsPerKvH  = numQHeads / numKvHeads;
-
-    // Q strides
-    const LongType qStride0 = query->strideAt(0);
-    const LongType qStride2 = query->strideAt(2);
-    const LongType qStride3 = query->strideAt(3);
-
-    // INT8 K/V cache strides [batch, seqKV, kvHeads, headDim] — typically contiguous
-    const LongType kvS0 = quantKeyCache->strideAt(0);
-    const LongType kvS1 = quantKeyCache->strideAt(1);
-    const LongType kvS2 = quantKeyCache->strideAt(2);
-
-    // ADR 0107 V2 ROW-INLINE: when the scale caches are null the INT8 caches are row-inline
-    // tensors [batch, seqKV, kvHeads, headDim+4] — each row carries its own float32 scale at
-    // row+headDim, INSIDE the logical tensor (survives DSP ext-input staging by construction).
-    // The kernel derives the per-row scale from the row pointer when its scale pointer is null.
-    const bool inlineKeyScale = (keyScaleCache == nullptr);
-    const bool inlineValScale = (valScaleCache == nullptr);
-    if (inlineKeyScale && quantKeyCache->sizeAt(3) != headDim + 4) {
-        THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: row-inline key cache last dim must equal headDim+4");
+  // ADR 0107 V2 ROW-INLINE: null scale caches mean each cache row carries its FLOAT32 scale at
+  // row + headDim, inside the logical tensor. Non-null scales are the separate [batch, seqKV, kvHeads]
+  // layout.
+  const bool inlineScales = (keyScaleCache == nullptr);
+  if (inlineScales != (valScaleCache == nullptr)) {
+    THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: key and value scale caches must both be set or both be null");
+  }
+  LongType kScaleStride0 = 0, kScaleStride1 = 0, kScaleStride2 = 0;
+  LongType vScaleStride0 = 0, vScaleStride1 = 0, vScaleStride2 = 0;
+  if (inlineScales) {
+    if (quantKeyCache->sizeAt(3) != headDim + 4 || quantKeyCache->strideAt(3) != 1 ||
+        quantValCache->strideAt(3) != 1) {
+      THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: row-inline caches must be [batch, seqKV, kvHeads, headDim+4] "
+                      "with a unit last-dimension stride");
     }
-    if (inlineValScale && quantValCache->sizeAt(3) != headDim + 4) {
-        THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: row-inline value cache last dim must equal headDim+4");
+  } else {
+    if (quantKeyCache->sizeAt(3) != headDim) {
+      THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: separate-scale cache last dim must equal headDim");
     }
-    const void* keyScalePtr = inlineKeyScale ? nullptr : keyScaleCache->specialBuffer();
-    const void* valScalePtr = inlineValScale ? nullptr : valScaleCache->specialBuffer();
+    const std::vector<LongType> scaleShape = {batch, seqKV, numKvHeads};
+    if (keyScaleCache->dataType() != DataType::FLOAT32 || valScaleCache->dataType() != DataType::FLOAT32 ||
+        !keyScaleCache->isSameShape(scaleShape) || !valScaleCache->isSameShape(scaleShape)) {
+      THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: scale caches must be FLOAT32 [batch, seqKV, kvHeads]");
+    }
+    kScaleStride0 = keyScaleCache->strideAt(0);
+    kScaleStride1 = keyScaleCache->strideAt(1);
+    kScaleStride2 = keyScaleCache->strideAt(2);
+    vScaleStride0 = valScaleCache->strideAt(0);
+    vScaleStride1 = valScaleCache->strideAt(1);
+    vScaleStride2 = valScaleCache->strideAt(2);
+  }
 
-    // Scale strides [batch, seqKV, kvHeads] — unused (0) in row-inline mode.
-    const LongType ksS0 = inlineKeyScale ? 0 : keyScaleCache->strideAt(0);
-    const LongType ksS1 = inlineKeyScale ? 0 : keyScaleCache->strideAt(1);
+  const bool hasWindow = currentKeyWindow != nullptr && currentValueWindow != nullptr;
+  if (hasWindow) {
+    if (currentKeyWindow->dataType() != dtype || currentValueWindow->dataType() != dtype ||
+        currentKeyWindow->rankOf() != 4 || !currentKeyWindow->isSameShape(currentValueWindow) ||
+        currentKeyWindow->sizeAt(0) != batch || currentKeyWindow->sizeAt(2) != numKvHeads ||
+        currentKeyWindow->sizeAt(3) != headDim) {
+      THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: current K/V windows must be [batch, seq, kvHeads, headDim] "
+                      "in the query dtype");
+    }
+  }
+  const bool hasBias = attentionBias != nullptr && !attentionBias->isEmpty();
+  if (hasBias && attentionBias->dataType() != dtype) {
+    THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: attentionBias must be in the query dtype");
+  }
+  // The kernel reads the bias at every kvIdx below the device-resident written-prefix bound, so a
+  // wide last dim must cover the whole cache; the other dims broadcast or match exactly.
+  if (hasBias) {
+    const int biasRank = attentionBias->rankOf();
+    auto broadcastsTo = [attentionBias](int dim, LongType full) {
+      return attentionBias->sizeAt(dim) == 1 || attentionBias->sizeAt(dim) == full;
+    };
+    const LongType biasKv = biasRank == 0 ? 1 : attentionBias->sizeAt(biasRank - 1);
+    bool biasFits = biasRank <= 4 && (biasKv == 1 || biasKv >= seqKV);
+    if (biasRank == 4) {
+      biasFits = biasFits && broadcastsTo(0, batch) && broadcastsTo(1, numQHeads) && attentionBias->sizeAt(2) == 1;
+    } else if (biasRank == 3) {
+      biasFits = biasFits && broadcastsTo(0, batch) && attentionBias->sizeAt(1) == 1;
+    } else if (biasRank == 2) {
+      biasFits = biasFits && attentionBias->sizeAt(0) == 1;
+    }
+    if (!biasFits) {
+      THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: attentionBias must broadcast to [batch, qHeads, 1, seqKV]");
+    }
+  }
+  // Null or empty aux outputs are not requested (the DSP executor passes empty placeholders for
+  // dead outputs); requested ones must be the dpa_v2 score layout in the query dtype.
+  NDArray* scoresOut = attentionScores != nullptr && !attentionScores->isEmpty() ? attentionScores : nullptr;
+  NDArray* logitsOut = attentionLogits != nullptr && !attentionLogits->isEmpty() ? attentionLogits : nullptr;
+  const std::vector<LongType> auxShape = {batch, numQHeads, 1, seqKV};
+  for (NDArray* aux : {scoresOut, logitsOut}) {
+    if (aux != nullptr && (aux->dataType() != dtype || !aux->isSameShape(auxShape))) {
+      THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: attention scores/logits must be [batch, qHeads, 1, seqKV] "
+                      "in the query dtype");
+    }
+  }
 
-    // Output strides
-    const LongType oStride0 = output->strideAt(0);
-    const LongType oStride2 = output->strideAt(2);
-    const LongType oStride3 = output->strideAt(3);
+  if (batch == 0 || numQHeads == 0 || headDim == 0) return;
 
-    LongType biasStride0 = 0, biasStride1 = 0, biasStride2 = 0, biasStride3 = 0;
-    const void* biasPtr = nullptr;
+  // "Current window" contract (mirrors fusedGQADecodeCuda): the device-resident cache position
+  // anchors the pre-quantization window rows inside the cache.
+  const bool useCurrentWindow = hasWindow && currentKvPosition != nullptr;
+  const LongType currentSeq = useCurrentWindow ? currentKeyWindow->sizeAt(1) : 0;
+  LongType currentKStride0 = 0, currentKStride1 = 0, currentKStride2 = 0, currentKStride3 = 0;
+  LongType currentVStride0 = 0, currentVStride1 = 0, currentVStride2 = 0, currentVStride3 = 0;
+  if (useCurrentWindow) {
+    currentKStride0 = currentKeyWindow->strideAt(0);
+    currentKStride1 = currentKeyWindow->strideAt(1);
+    currentKStride2 = currentKeyWindow->strideAt(2);
+    currentKStride3 = currentKeyWindow->strideAt(3);
+    currentVStride0 = currentValueWindow->strideAt(0);
+    currentVStride1 = currentValueWindow->strideAt(1);
+    currentVStride2 = currentValueWindow->strideAt(2);
+    currentVStride3 = currentValueWindow->strideAt(3);
+  }
 
-    // Build the input special-use list; the inline scale tail is covered by the cache buffers, so
-    // only include the scale NDArrays when they are genuinely separate allocations.
-    std::vector<NDArray*> inArrs = {query, quantKeyCache, quantValCache};
-    if (!inlineKeyScale) inArrs.push_back(keyScaleCache);
-    if (!inlineValScale) inArrs.push_back(valScaleCache);
-    if (attentionBias != nullptr && !attentionBias->isEmpty()) {
-        inArrs.push_back(attentionBias);
-        NDArray::prepareSpecialUse({output}, inArrs);
-        biasPtr = attentionBias->specialBuffer();
-        biasStride0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
-        biasStride1 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
-        biasStride2 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
-        biasStride3 = attentionBias->sizeAt(3) > 1 ? attentionBias->strideAt(3) : 0;
+  // Additive bias, broadcast through zero strides on size-1 dims. seqQ == 1, so the query
+  // dimension never contributes an offset. Rank 3 is [batch, seqQ, seqKV], rank 2 [seqQ, seqKV].
+  LongType biasStride0 = 0, biasStride1 = 0, biasStride3 = 0;
+  if (hasBias) {
+    auto strideIfWide = [attentionBias](int dim) -> LongType {
+      return attentionBias->sizeAt(dim) > 1 ? attentionBias->strideAt(dim) : 0;
+    };
+    const int biasRank = attentionBias->rankOf();
+    if (biasRank == 4) {
+      biasStride0 = strideIfWide(0);
+      biasStride1 = strideIfWide(1);
+      biasStride3 = strideIfWide(3);
+    } else if (biasRank == 3) {
+      biasStride0 = strideIfWide(0);
+      biasStride3 = strideIfWide(2);
+    } else if (biasRank == 2) {
+      biasStride3 = strideIfWide(1);
     } else {
-        NDArray::prepareSpecialUse({output}, inArrs);
+      biasStride3 = attentionBias->lengthOf() > 1 ? attentionBias->strideAt(0) : 0;
     }
+  }
 
-    // Reuse the existing dims function — same grid structure as float GQA decode
-    int dtypeSize = static_cast<int>(sizeof(float));  // output is always float
-    dim3 launchDims = getFusedGQADecodeDims(
-        static_cast<int>(numQHeads), static_cast<int>(batch),
-        static_cast<int>(seqKV), static_cast<int>(headDim), dtypeSize);
+  // Row-inline scales live inside the cache buffers, so separate scale caches are only listed
+  // when they exist.
+  std::vector<NDArray*> inputs = {query, quantKeyCache, quantValCache};
+  if (!inlineScales) {
+    inputs.push_back(keyScaleCache);
+    inputs.push_back(valScaleCache);
+  }
+  if (useCurrentWindow) {
+    inputs.push_back(currentKeyWindow);
+    inputs.push_back(currentValueWindow);
+  }
+  if (hasBias) inputs.push_back(attentionBias);
+  std::vector<NDArray*> outputs = {output};
+  if (scoresOut != nullptr) outputs.push_back(scoresOut);
+  if (logitsOut != nullptr) outputs.push_back(logitsOut);
+  NDArray::prepareSpecialUse(outputs, inputs);
 
-    fusedGQADecodeQuantisedLauncher(
-        launchDims.x, launchDims.y, launchDims.z, stream,
-        query->specialBuffer(),
-        quantKeyCache->specialBuffer(), keyScalePtr,
-        quantValCache->specialBuffer(), valScalePtr,
-        biasPtr, output->specialBuffer(),
-        batch, seqKV, numQHeads, numKvHeads,
-        headDim, headsPerKvH, scale,
-        qStride0, qStride2, qStride3,
-        kvS0, kvS1, kvS2,
-        ksS0, ksS1,
-        oStride0, oStride2, oStride3,
-        biasStride0, biasStride1, biasStride2, biasStride3);
+  const dim3 launchDims = getFusedGQADecodeDims(static_cast<int>(numQHeads), static_cast<int>(batch),
+                                                static_cast<int>(seqKV), static_cast<int>(headDim),
+                                                static_cast<int>(query->sizeOfT()));
 
-    // inArrs already excludes null (inline) scale caches and includes attentionBias when present.
-    NDArray::registerSpecialUse({output}, inArrs);
+  BUILD_SINGLE_SELECTOR(dtype, fusedGQADecodeQuantisedLauncher,
+                        (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(),
+                         query->specialBuffer(),
+                         quantKeyCache->specialBuffer(), inlineScales ? nullptr : keyScaleCache->specialBuffer(),
+                         quantValCache->specialBuffer(), inlineScales ? nullptr : valScaleCache->specialBuffer(),
+                         useCurrentWindow ? currentKeyWindow->specialBuffer() : nullptr,
+                         useCurrentWindow ? currentValueWindow->specialBuffer() : nullptr,
+                         useCurrentWindow ? currentKvPosition : nullptr, currentSeq,
+                         hasBias ? attentionBias->specialBuffer() : nullptr, output->specialBuffer(),
+                         scoresOut != nullptr ? scoresOut->specialBuffer() : nullptr,
+                         logitsOut != nullptr ? logitsOut->specialBuffer() : nullptr,
+                         batch, seqKV, numQHeads, headDim, numQHeads / numKvHeads, scale,
+                         query->strideAt(0), query->strideAt(2), query->strideAt(3),
+                         quantKeyCache->strideAt(0), quantKeyCache->strideAt(1),
+                         quantKeyCache->strideAt(2), quantKeyCache->strideAt(3),
+                         quantValCache->strideAt(0), quantValCache->strideAt(1),
+                         quantValCache->strideAt(2), quantValCache->strideAt(3),
+                         kScaleStride0, kScaleStride1, kScaleStride2,
+                         vScaleStride0, vScaleStride1, vScaleStride2,
+                         currentKStride0, currentKStride1, currentKStride2, currentKStride3,
+                         currentVStride0, currentVStride1, currentVStride2, currentVStride3,
+                         output->strideAt(0), output->strideAt(2), output->strideAt(3),
+                         biasStride0, biasStride1, biasStride3,
+                         scoresOut != nullptr ? scoresOut->strideAt(0) : 0,
+                         scoresOut != nullptr ? scoresOut->strideAt(1) : 0,
+                         scoresOut != nullptr ? scoresOut->strideAt(3) : 0,
+                         logitsOut != nullptr ? logitsOut->strideAt(0) : 0,
+                         logitsOut != nullptr ? logitsOut->strideAt(1) : 0,
+                         logitsOut != nullptr ? logitsOut->strideAt(3) : 0),
+                        SD_FLOAT_TYPES);
+
+  NDArray::registerSpecialUse(outputs, inputs);
 }
 
 //////////////////////////////////////////////////////////////////////////////

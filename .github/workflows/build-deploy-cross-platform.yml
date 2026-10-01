@@ -14,9 +14,9 @@ on:
         default: none
         required: false
       cacheNamespace:
-        description: Migration namespace; compiler and auxiliary are disjoint. Stop any all-namespace run first.
+        description: Migration namespace; compiler and auxiliary are disjoint. Stop any all-namespace run first. kompile (native AOT cache) is never part of all.
         type: choice
-        options: [all, compiler, auxiliary]
+        options: [all, compiler, auxiliary, kompile]
         default: all
       workflow:
         description: Canonical release workflow matrix to execute. Use all for the full native and Java repository.

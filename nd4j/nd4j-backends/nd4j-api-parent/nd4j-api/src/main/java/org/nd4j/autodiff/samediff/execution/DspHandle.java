@@ -458,9 +458,11 @@ public final class DspHandle {
 
         INDArray result = Nd4j.createUninitialized(dtype, shape, strides, ordering);
 
-        Pointer nativeSpecial = ops.getOpaqueNDArraySpecialBuffer(opaqueOut);
+        // Do not call specialBuffer() here: it synchronizes/migrates storage to the
+        // caller's current GPU, which can invalidate a pointer captured for replay.
+        Pointer nativeSpecial = ops.getOpaqueNDArraySpecialBufferNoSync(opaqueOut);
         Pointer nativePrimary = (nativeSpecial == null || nativeSpecial.isNull())
-                ? ops.getOpaqueNDArrayBuffer(opaqueOut) : null;
+                ? ops.getOpaqueNDArrayPrimaryBufferNoSync(opaqueOut) : null;
 
         OpaqueDataBuffer srcOdb = ops.dbCreateExternalDataBuffer(
                 length, dtype.toInt(), nativePrimary, nativeSpecial);

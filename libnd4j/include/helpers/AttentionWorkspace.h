@@ -25,6 +25,7 @@
 #define LIBND4J_ATTENTION_WORKSPACE_H
 
 #include "array/NDArray.h"
+#include <functional>
 #include <unordered_map>
 #include <vector>
 #include <mutex>
@@ -36,7 +37,8 @@ namespace sd {
  * AttentionWorkspace - Thread-local workspace for attention operations
  *
  * Maintains a pool of reusable buffers to eliminate cudaMalloc/cudaFree overhead.
- * Buffers are keyed by their total size and reused when shapes match.
+ * Buffers are keyed by name within the active scope and the current device, and reused
+ * when shapes match.
  *
  * Usage:
  *   auto workspace = AttentionWorkspace::getInstance();
@@ -96,13 +98,13 @@ class SD_LIB_EXPORT AttentionWorkspace {
   void clear();
 
   /**
-   * Clear only buffers owned by the supplied scope.
+   * Clear only buffers owned by the supplied scope, on every device.
    * This is used when rebuilding or destroying one DSP plan; other plans remain intact.
    */
   void clearScope(void* scope);
 
   /**
-   * Clear buffers for a specific key prefix
+   * Clear the active scope's buffers for a specific key prefix, on every device
    * Useful for clearing related buffers (e.g., all "forward_" buffers)
    */
   void clearPrefix(const std::string& prefix);
@@ -136,8 +138,25 @@ class SD_LIB_EXPORT AttentionWorkspace {
     uint64_t lastUsed;  // For LRU eviction
   };
 
+  // Buffers are owned per (scope, device). A DSP plan that runs segments on several devices
+  // keeps one scope for the whole execution; a buffer shared by those segments would migrate
+  // to whichever device used it last, on every use, and a graph captured on the other device
+  // would still hold the address it had before the move.
+  struct ScopeKey {
+    void* scope;
+    int deviceId;
+    bool operator==(const ScopeKey& other) const {
+      return scope == other.scope && deviceId == other.deviceId;
+    }
+  };
+  struct ScopeKeyHash {
+    size_t operator()(const ScopeKey& key) const {
+      return std::hash<void*>()(key.scope) ^ (static_cast<size_t>(key.deviceId) * 0x9E3779B97F4A7C15ULL);
+    }
+  };
+
   using BufferMap = std::unordered_map<std::string, BufferEntry>;
-  std::unordered_map<void*, BufferMap> buffersByScope_;
+  std::unordered_map<ScopeKey, BufferMap, ScopeKeyHash> buffersByScope_;
   mutable std::mutex mutex_;
   size_t memoryLimit_ = 0;
   size_t currentMemory_ = 0;

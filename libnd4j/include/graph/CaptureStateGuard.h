@@ -61,6 +61,10 @@ class CaptureStateGuard {
     tl_captureWorkspace = captureWs;
     tl_captureWorkspaceSize = captureWsSize;
     tl_captureWorkspaceOffset = 0;
+    tl_captureWorkspaceDataBufferBytes = 0;
+    tl_captureWorkspacePointerBytes = 0;
+    tl_captureWorkspacePoolBytes = 0;
+    tl_captureWorkspaceExtraArgsBytes = 0;
     tl_captureHostWorkspace = hostWs;
     tl_captureHostWorkspaceSize = hostWsSize;
     tl_captureHostWorkspaceOffset = 0;
@@ -74,6 +78,10 @@ class CaptureStateGuard {
     tl_captureWorkspace = nullptr;
     tl_captureWorkspaceSize = 0;
     tl_captureWorkspaceOffset = 0;
+    tl_captureWorkspaceDataBufferBytes = 0;
+    tl_captureWorkspacePointerBytes = 0;
+    tl_captureWorkspacePoolBytes = 0;
+    tl_captureWorkspaceExtraArgsBytes = 0;
     tl_captureHostWorkspace = nullptr;
     tl_captureHostWorkspaceSize = 0;
     tl_captureHostWorkspaceOffset = 0;

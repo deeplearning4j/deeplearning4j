@@ -151,11 +151,6 @@ void NativePlanCache::clear() {
 
   DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: deleting=%zu leasedRemaining=%zu entriesRemaining=%zu",
            toDelete.size(), leasedRemaining, entriesRemaining);
-  // Task-24 teardown bracketing: unconditional fprintf (not level-gated DSP_DIAG)
-  // so a production run always records which cache-clear phase aborted.
-  fprintf(stderr, "[DSP-CLEAR] begin deleting=%zu leasedRemaining=%zu entriesRemaining=%zu this=%p\n",
-          toDelete.size(), leasedRemaining, entriesRemaining, (void*)this);
-  fflush(stderr);
 
   // Teardown is deliberately two-phase. Cached shape plans can share the same
   // external weight DataBuffers and each frozen plan pins those device pointers.
@@ -170,27 +165,23 @@ void NativePlanCache::clear() {
   // pool. Only after all release paths have run is it safe to destroy the plans.
   for (auto* plan : toDelete) {
     if (plan != nullptr) {
-      fprintf(stderr, "[DSP-CLEAR-PLAN] releaseGpuIntermediates plan=%p\n", (void*)plan);
-      fflush(stderr);
+      DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: releaseGpuIntermediates plan=%p", (void*)plan);
       plan->releaseGpuIntermediates();
     }
   }
-  fprintf(stderr, "[DSP-CLEAR] releaseGpuIntermediates done for %zu plans\n", toDelete.size());
-  fflush(stderr);
+  DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: releaseGpuIntermediates done for %zu plans",
+           toDelete.size());
   for (auto* plan : toDelete) {
     // Double-destruction guard: skip plans whose destructor already ran.
     if (plan != nullptr && !plan->isDestructed()) {
-      fprintf(stderr, "[DSP-CLEAR-PLAN] delete plan=%p\n", (void*)plan);
-      fflush(stderr);
+      DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: delete plan=%p", (void*)plan);
       delete plan;
+      DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: delete done plan=%p", (void*)plan);
     } else if (plan != nullptr) {
       DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: SKIPPED already-destructed plan=%p", (void*)plan);
-      fprintf(stderr, "[DSP-CLEAR-PLAN] SKIPPED already-destructed plan=%p\n", (void*)plan);
-      fflush(stderr);
     }
   }
-  fprintf(stderr, "[DSP-CLEAR] done plans=%zu\n", toDelete.size());
-  fflush(stderr);
+  DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: done plans=%zu", toDelete.size());
 }
 
 // ---------------------------------------------------------------------------
@@ -439,14 +430,18 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
     size_t total = 0;
     for (auto& entry : lru_) {
       if (entry.second->isPassivated()) continue;  // holds zero GPU memory
-      // A leased plan can be mutating its slot/handle vectors on another
-      // execution thread. It cannot be evicted anyway, so charge a conservative
-      // configured workspace estimate without dereferencing mutable plan state.
+      // Pinned plans are charged by their REAL retained bytes, not a flat
+      // estimate. The r30 evidence: one pinned 5120-token plan physically held
+      // ~15.7GB while the budget check booked it at ~320MB, so the 25% budget
+      // never triggered and concurrent-plan co-residency starved every later
+      // admission. estimatedOwnedBytes() reads owned-array sizes; a concurrent
+      // execution may grow them between read and use, which is acceptable for
+      // an advisory budget — undercounting by 50x is not.
+      size_t planBytes = entry.second->estimatedOwnedBytes();
       if (pinCounts_.count(entry.second) != 0) {
-        total += pinnedPlanEstimate;
+        total += planBytes > 0 ? planBytes : pinnedPlanEstimate;
         continue;
       }
-      size_t planBytes = entry.second->estimatedOwnedBytes();
       total += (planBytes > 0) ? planBytes : kBytesPerPlanEstimate;
     }
     return total;

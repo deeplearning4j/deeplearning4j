@@ -37,7 +37,6 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
-  NDArray* originalZ = z;  // Save original output pointer for copy-back after reshape
   int iSize = (int)block.getIArguments()->size();
   int transX = iSize > 0 ? INT_ARG(0) : 0;
   int transY = iSize > 1 ? INT_ARG(1) : 0;
@@ -98,84 +97,48 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
                "= %i, y rank = %i !",
                xRank, yRank);
 
-  // Handle rank mismatch for ONNX MatMul broadcast semantics
-  // For x[batch..., M, K] @ y[K, N] -> [batch..., M, N]
-  // For x[M, K] @ y[batch..., K, N] -> [batch..., M, N]
-  NDArray* xReshaped = nullptr;
-  NDArray* yReshaped = nullptr;
-  NDArray* zReshaped = nullptr;
-
-  if (xRank != yRank && xRank > 2 && yRank == 2) {
-    // x is ND [batch..., M, K], y is 2D [K, N]
-    // Flatten x to 2D: [product(batch...) * M, K]
-    LongType xM = transX ? x->sizeAt(-1) : x->sizeAt(-2);
-    LongType xK = transX ? x->sizeAt(-2) : x->sizeAt(-1);
-    LongType batchSize = x->lengthOf() / (xM * xK);
-
-    std::vector<LongType> newXShape = {batchSize * xM, xK};
-    bool xCanView = shape::strideDescendingCAscendingF(x->shapeInfo());
-    xReshaped = x->reshape(x->ordering(), newXShape, !xCanView);
-
-    // Flatten z to 2D: [product(batch...) * M, N]
-    LongType zN = z->sizeAt(-1);
-    std::vector<LongType> newZShape = {batchSize * xM, zN};
-    bool zCanView = shape::strideDescendingCAscendingF(z->shapeInfo());
-    zReshaped = z->reshape(z->ordering(), newZShape, !zCanView);
-
-    x = xReshaped;
-    z = zReshaped;
-  } else if (xRank != yRank && yRank > 2 && xRank == 2) {
-    // x is 2D [M, K], y is ND [batch..., K, N]
-    // Flatten y to 2D: [K, product(batch...) * N]
-    LongType yK = transY ? y->sizeAt(-1) : y->sizeAt(-2);
-    LongType yN = transY ? y->sizeAt(-2) : y->sizeAt(-1);
-    LongType batchSize = y->lengthOf() / (yK * yN);
-
-    std::vector<LongType> newYShape = {yK, batchSize * yN};
-    bool yCanView = shape::strideDescendingCAscendingF(y->shapeInfo());
-    yReshaped = y->reshape(y->ordering(), newYShape, !yCanView);
-
-    // Flatten z to 2D: [M, product(batch...) * N]
-    LongType zM = z->sizeAt(-2);
-    std::vector<LongType> newZShape = {zM, batchSize * yN};
-    bool zCanView = shape::strideDescendingCAscendingF(z->shapeInfo());
-    zReshaped = z->reshape(z->ordering(), newZShape, !zCanView);
-
-    y = yReshaped;
-    z = zReshaped;
-  }
-
-  // Update ranks after potential reshaping
-  const int xRankFinal = x->rankOf();
-  const int yRankFinal = y->rankOf();
-  const int zRankFinal = z->rankOf();
-
-  if (xRankFinal == 1 && yRankFinal == 1) {  // dot case, output is scalar (or vector with length = 1)
+  if (xRank == 1 && yRank == 1) {  // dot case, output is scalar (or vector with length = 1)
     REQUIRE_TRUE(x->lengthOf() == y->lengthOf(), 0,
                  "MATMUL OP: since input arrays are vectors they must have the same length, but got x length = %i, y "
                  "length = %i !",
                  x->lengthOf(), y->lengthOf());
-  } else if (xRankFinal == 1 && yRankFinal == 2) {  // vector x matrix, i.e. [4] x [4,5] = [5], output is vector
+  } else if (xRank == 1 && yRank == 2) {  // vector x matrix, i.e. [4] x [4,5] = [5], output is vector
     REQUIRE_TRUE(x->lengthOf() == y->sizeAt(yLastButOneDim), 0,
                  "MATMUL OP: input arrays have inconsistent shapes for vector-matrix product: x %s, y %s !",
                  ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
-  } else if (xRankFinal == 2 && yRankFinal == 1) {  // matrix x vector , i.e. [4,5] x [5] = [4], output is vector
+  } else if (xRank == 2 && yRank == 1) {  // matrix x vector , i.e. [4,5] x [5] = [4], output is vector
     REQUIRE_TRUE(x->sizeAt(xLastDim) == y->lengthOf(), 0,
                  "MATMUL OP: input arrays have inconsistent shapes for matrix-vector product: x %s, y %s !",
                  ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
+  } else if (xRank != yRank) {  // ONNX MatMul broadcast, i.e. [2,3,4] x [4,5] = [2,3,5] or [3,4] x [2,4,5] = [2,3,5]
+    NDArray* batched = xRank > yRank ? x : y;
+    REQUIRE_TRUE((xRank == 2 || yRank == 2) && batched->rankOf() > 2 && zRank == batched->rankOf(), 0,
+                 "MATMUL OP: inputs of different ranks need one 2D input and an output with the other input's rank, "
+                 "but got instead: x rank = %i, y rank = %i, z rank = %i !",
+                 xRank, yRank, zRank);
+    REQUIRE_TRUE(x->sizeAt(xLastDim) == y->sizeAt(yLastButOneDim) && x->sizeAt(xLastButOneDim) == z->sizeAt(-2) &&
+                 y->sizeAt(yLastDim) == z->sizeAt(-1),
+                 0, "MATMUL OP: input/output arrays have inconsistent shapes for matrix product: x %s, y %s, z %s !",
+                 ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str(),
+                 ShapeUtils::shapeAsString(z).c_str());
+    for (int i = 0; i < zRank - 2; ++i)
+      REQUIRE_TRUE(batched->sizeAt(i) == z->sizeAt(i), 0,
+                   "MATMUL OP: input/output arrays have inconsistent shapes for matrix product: x %s, y %s, z %s !",
+                   ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str(),
+                   ShapeUtils::shapeAsString(z).c_str());
   } else {
-    REQUIRE_TRUE(xRankFinal == yRankFinal && yRankFinal == zRankFinal, 0,
+    REQUIRE_TRUE(xRank == zRank, 0,
                  "MATMUL OP: input and output arrays must have the same rank, but got instead: x rank = %i, y rank = "
                  "%i, z rank = %i !",
-                 xRankFinal, yRankFinal, zRankFinal);
+                 xRank, yRank, zRank);
     REQUIRE_TRUE(x->sizeAt(xLastDim) == y->sizeAt(yLastButOneDim) && x->sizeAt(xLastButOneDim) == z->sizeAt(-2) &&
                  y->sizeAt(yLastDim) == z->sizeAt(-1),
                  0, "MATMUL OP: input/output arrays have inconsistent shapes for matrix product: x %s, y %s, z %s !",
                  ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str(),
                  ShapeUtils::shapeAsString(z).c_str());
 
-    if (xRankFinal > 2)  // outer dims must be the same
-      for (int i = 0; i < xRankFinal - 2; ++i)
+    if (xRank > 2)  // outer dims must be the same
+      for (int i = 0; i < xRank - 2; ++i)
     REQUIRE_TRUE(x->sizeAt(i) == y->sizeAt(i) && y->sizeAt(i) == z->sizeAt(i), 0,
                  "MATMUL OP: input/output arrays have inconsistent shapes for matrix product: x %s, y %s, z %s !",
                  ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str(),
@@ -183,12 +146,42 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
   }
   // ******* end of input validation ******* //
 
-  MmulHelper::matmul(x, y, z, transX, transY, alpha, beta, originalZ);
+  if (xRank > 2 && yRank == 2 && !transX) {
+    // Every row of x meets the same y, so x's batch folds into the rows of one 2D product.
+    // x and z must fold their rows in the same order, so both are reshaped in logical 'c'
+    // order; reshape returns a view when the strides allow one and a copy otherwise.
+    std::vector<LongType> xFoldedShape = {x->lengthOf() / x->sizeAt(-1), x->sizeAt(-1)};
+    NDArray* xFolded = x->reshape('c', xFoldedShape, false);
+    std::vector<LongType> zFoldedShape = {z->lengthOf() / z->sizeAt(-1), z->sizeAt(-1)};
+    NDArray* zFolded = z->reshape('c', zFoldedShape, false);
 
-  // Clean up reshaped arrays
-  delete xReshaped;
-  delete yReshaped;
-  delete zReshaped;
+    MmulHelper::matmul(xFolded, y, zFolded, transX, transY, alpha, beta);
+
+    const bool zCopied = zFolded->getDataBuffer() != z->getDataBuffer();
+    if (zCopied) {
+      // z has no 'c' view of its folded rows, so the product went to a copy. Write it back
+      // through a view of the copy in z's own shape, which keeps the row order.
+      std::vector<LongType>* zShape = z->getShapeAsVector();
+      NDArray* unfolded = zFolded->reshape('c', *zShape, false);
+      delete zShape;
+      z->assign(unfolded);
+      delete unfolded;
+    }
+    // Copies are retired behind the stream that still reads them; views only drop their wrapper.
+    if (xFolded->getDataBuffer() != x->getDataBuffer())
+      MmulHelper::deleteTemporary(xFolded);
+    else
+      delete xFolded;
+    if (zCopied)
+      MmulHelper::deleteTemporary(zFolded);
+    else
+      delete zFolded;
+    return Status::OK;
+  }
+
+  // A transposed batched x, or a batched y, keeps its shape: MmulHelper::matmul transposes
+  // each operand by its own rank and mmulNxN pairs the 2D operand with every batch.
+  MmulHelper::matmul(x, y, z, transX, transY, alpha, beta);
 
   return Status::OK;
 }
@@ -279,11 +272,10 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   int transY = iSize > 1 ? INT_ARG(1) : 0;
   const int transZ = iSize > 2 ? INT_ARG(2) : 0;
 
-  // optional use alpha nad beta
+  // Optional alpha and beta mirror matmul's. The gradient of alpha * op(x) * op(y) + beta * z scales
+  // by alpha and has no beta term, so beta never reaches the gradient products.
   iSize = (int)block.getTArguments()->size();
-
   double alpha = iSize > 0 ? T_ARG(0) : 1.0;
-  double beta = iSize > 1 ? T_ARG(1) : 0.0;
 
   /*
   In: x=[a,b], y=[b,c]
@@ -297,46 +289,19 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   // special case for scalar value
   if (eps->isScalar()) {
     if (x->isVector() && y->isVector()) {
-      if (x->isRowVector() && y->isRowVector()) {
-        float ySum = y->sumNumber().e<float>(0);
-        NDArray *dldxTemp = (*eps) * ySum;
-        dldx->assign(dldxTemp);
-        delete dldxTemp;
-
-        float xSum = x->sumNumber().e<float>(0);
-        NDArray *dldyTemp = (*eps) * xSum;
-        dldy->assign(dldyTemp);
-        delete dldyTemp;
-      } else if (x->isColumnVector() && y->isColumnVector()) {
-        float ySum = y->sumNumber().e<float>(0);
-        NDArray *dldxTemp = (*eps) * ySum;
-        dldx->assign(dldxTemp);
-        delete dldxTemp;
-        float xSum = x->sumNumber().e<float>(0);
-        NDArray *dldyTemp = (*eps) * xSum;
-        dldy->assign(dldyTemp);
-        delete dldyTemp;
-      } else {
-        NDArray *dldxTemp = (*eps) * (*y);
-        dldx->assign(dldxTemp);
-        delete dldxTemp;
-        NDArray *dldyTemp = (*eps) * (*x);
-        dldy->assign(dldyTemp);
-        delete dldyTemp;
-      }
+      // A scalar product of two vectors is alpha * sum_k x_k * y_k whatever their orientations,
+      // so each gradient is the other vector times alpha * eps, element by element.
+      NDArray *dldxTemp = (*eps) * (*y);
+      if (alpha != 1.0) *dldxTemp *= alpha;
+      dldx->assign(dldxTemp);
+      delete dldxTemp;
+      NDArray *dldyTemp = (*eps) * (*x);
+      if (alpha != 1.0) *dldyTemp *= alpha;
+      dldy->assign(dldyTemp);
+      delete dldyTemp;
     } else {
-      // assign all ones to shape as baseline
-      auto alphaBetaBase = 1.0f;
-      if (alpha > 0.0f) {
-        alphaBetaBase *= alpha;
-      }
-
-      if (beta > 0.0f) {
-        alphaBetaBase += beta;
-      }
-
-      dldx->assign(alphaBetaBase);
-      dldy->assign(alphaBetaBase);
+      dldx->assign(alpha);
+      dldy->assign(alpha);
       
       // match the dimensions for reduction for matrix multiply: columns on first input, rows on second input
       // the dimensions should match the matching dimensions to compute proper gradients wrt each input
@@ -374,35 +339,70 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   // Backward: the correct general formulas that handle all 8 combinations of transX/transY/transZ:
   //   dL/dX = matmul(eps, Y, transZ, !transY, transX)
   //   dL/dY = matmul(X, eps, !transX, transZ, transY)
-  op.execute({eps, y}, {dldx}, {alpha, beta}, {transZ, transY ? 0 : 1, transX}, {});
-
-  // Rank-mismatch case: x is rank-N (N>2) and y is rank-2, e.g. x=[B,S,H] @ y=[H,V] -> z=[B,S,V].
-  // dL/dY = xFlat^T @ epsFlat where xFlat=[B*S,H], epsFlat=[B*S,V] → [H,V] directly.
-  // We call MmulHelper::matmul directly (bypassing op shape validation) on the 2D flattened views.
+  // With inputs of different ranks the 2D input met every batch of the other input, so its
+  // gradient sums over the batch. Each factor of that sum is materialized with its batch folded
+  // into rows in the same 'c' order, and the sum is one flat^T * flat product.
   const int xRank = x->rankOf();
   const int yRank = y->rankOf();
-  if (xRank > 2 && yRank == 2 && !transY && !transZ) {
-    // For non-transX: x=[B,S,H], H=x->sizeAt(-1), totalBatch=B*S=x->lengthOf()/H
-    // For transX:     x=[B,H,S], H=x->sizeAt(-2), totalBatch=B*S=x->lengthOf()/H
-    LongType H = transX ? x->sizeAt(xRank - 2) : x->sizeAt(xRank - 1);
-    LongType totalBatch = x->lengthOf() / H;
-    LongType V = y->sizeAt(1);  // y=[H,V], dldy=[H,V]
+  auto lastTwoSwapped = [](NDArray* array) {
+    const int rank = array->rankOf();
+    std::vector<LongType> permut(rank);
+    for (int i = 0; i < rank - 2; ++i) permut[i] = i;
+    permut[rank - 2] = rank - 1;
+    permut[rank - 1] = rank - 2;
+    NDArray* view = array->permute(permut, false, false);
+    NDArray* materialized = view->dup('c');
+    delete view;
+    return materialized;
+  };
+  auto foldRows = [](NDArray* array) {
+    LongType rows = 1;
+    for (int i = 0; i < array->rankOf() - 1; ++i) rows *= array->sizeAt(i);
+    std::vector<LongType> folded = {rows, array->sizeAt(-1)};
+    return array->reshape('c', folded, false);
+  };
+  // Copies are retired behind the stream that still reads them; views only drop their wrapper.
+  auto release = [](NDArray* derived, NDArray* source) {
+    if (derived == source) return;
+    if (derived->getDataBuffer() != source->getDataBuffer())
+      MmulHelper::deleteTemporary(derived);
+    else
+      delete derived;
+  };
+  // Multiplies a^T * b into out when the 2D input is not transposed, else b^T * a.
+  auto batchSummedGradient = [&](NDArray* a, NDArray* b, NDArray* out, const bool transOut) {
+    NDArray* aFlat = foldRows(a);
+    NDArray* bFlat = foldRows(b);
+    if (transOut)
+      MmulHelper::matmul(bFlat, aFlat, out, true, false, alpha, 0.0);
+    else
+      MmulHelper::matmul(aFlat, bFlat, out, true, false, alpha, 0.0);
+    release(aFlat, a);
+    release(bFlat, b);
+  };
 
-    // Flatten to 2D: [totalBatch, H] and [totalBatch, V]
-    std::vector<LongType> xFlatShape = {totalBatch, H};
-    std::vector<LongType> epsFlatShape = {totalBatch, V};
-    NDArray* xFlat = x->reshape('c', xFlatShape);
-    NDArray* epsFlat = eps->reshape('c', epsFlatShape);
-
-    // dL/dY = xFlat^T @ epsFlat = [H, totalBatch] @ [totalBatch, V] = [H, V]
-    // Use MmulHelper directly to avoid op framework shape-validation overhead.
-    // transX_flat=true (we want xFlat^T), transY_flat=false
-    MmulHelper::matmul(xFlat, epsFlat, dldy, true, false, alpha, beta);
-
-    delete xFlat;
-    delete epsFlat;
+  if (xRank == 2 && yRank > 2) {
+    // dL/dop(x) = sum over batches of G * op(y)^T with G = transZ ? eps^T : eps; the batch
+    // folds into the rows of G^T and op(y)^T.
+    NDArray* gradT = transZ ? eps : lastTwoSwapped(eps);
+    NDArray* opYT = transY ? y : lastTwoSwapped(y);
+    batchSummedGradient(gradT, opYT, dldx, transX);
+    release(gradT, eps);
+    release(opYT, y);
   } else {
-    op.execute({x, eps}, {dldy}, {alpha, beta}, {transX ? 0 : 1, transZ, transY}, {});
+    op.execute({eps, y}, {dldx}, {alpha, 0.0}, {transZ, transY ? 0 : 1, transX}, {});
+  }
+
+  if (xRank > 2 && yRank == 2) {
+    // dL/dop(y) = sum over batches of op(x)^T * G with G = transZ ? eps^T : eps; the batch
+    // folds into the rows of op(x) and G.
+    NDArray* opX = transX ? lastTwoSwapped(x) : x;
+    NDArray* grad = transZ ? lastTwoSwapped(eps) : eps;
+    batchSummedGradient(opX, grad, dldy, transY);
+    release(opX, x);
+    release(grad, eps);
+  } else {
+    op.execute({x, eps}, {dldy}, {alpha, 0.0}, {transX ? 0 : 1, transZ, transY}, {});
   }
 
   return Status::OK;

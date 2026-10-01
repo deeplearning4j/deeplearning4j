@@ -40,24 +40,10 @@ public class DataTypeUtil {
      * @return
      */
     public static int lengthForDtype(DataType type) {
-        switch (type) {
-            case DOUBLE:
-                return 8;
-            case FLOAT:
-                return 4;
-            case INT:
-                return 4;
-            case HALF:
-                return 2;
-            case LONG:
-                return 8;
-            case COMPRESSED:
-            default:
-                throw new IllegalArgumentException("Illegal opType for length");
-
-        }
-
-
+        int width = type.width();
+        if (width <= 0)
+            throw new IllegalArgumentException("Illegal opType for length: " + type);
+        return width;
     }
 
     /**

@@ -115,23 +115,24 @@ class OpenVinoGraphBackend : public GraphBackend {
     std::vector<bool> inputIsImmutable;  // true only for SOURCE_CONSTANT externals
     std::vector<int> outputSlotMap;  // OV output index -> outputSlot index
 
-    // Cached promoted tensors for ISA-promotion path (f16 NDArray → f32 OV tensor).
+    // Cached promoted tensors for f16 island inputs that the model reads as f32.
     // Allocated once on first execution, reused on subsequent calls to avoid
     // per-infer() malloc overhead (~500 allocations/token for FP16 models).
     struct PromotedTensor {
       ov::Tensor tensor;           // pre-allocated f32 tensor
       void* lastSourceBuffer = nullptr;  // last NDArray buffer (skip conversion if unchanged)
-      size_t lastNumElems = 0;     // element count at last allocation (detect shape change)
     };
     std::vector<PromotedTensor> cachedPromotedInputs;
-    std::vector<PromotedTensor> cachedPromotedOutputs;
     bool promotionInitialized = false;
+
+    // f32 results of HALF/BFLOAT16 matmul anchors, stored into their arrays
+    // with the eager round-to-nearest-even conversion after infer().
+    std::vector<ov::Tensor> cachedNarrowedOutputs;
 
     // Cached per-island vectors to avoid per-token heap allocations.
     // Populated on first execution, reused on subsequent calls.
     std::vector<ov::Shape> cachedInputShapes;
     std::vector<ov::Shape> cachedOutputShapes;
-    std::vector<bool> cachedNeedsSaturatingCopy;
     bool steadyStateCachesInitialized = false;
   };
 

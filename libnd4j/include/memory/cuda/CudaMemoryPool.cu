@@ -43,6 +43,12 @@
 namespace sd {
 namespace memory {
 
+// Minimum free memory a device must retain after a failover allocation. See the
+// failover-floor check in allocateFailover() — below this floor a device cannot
+// service cuBLAS workspace/module/driver allocations and the consumer cascades
+// into 'cuBLAS handle creation failed [3]'.
+static constexpr size_t kFailoverFloorMinBytes = 512ULL * 1024 * 1024;
+
 namespace {
 struct AllocationReadiness {
   size_t bytes;
@@ -610,6 +616,10 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   if (tl_allocationRequestTrackingDepth > 0 && size > tl_peakAllocationRequestBytes) {
     tl_peakAllocationRequestBytes = size;
   }
+  if (tl_dspWarmupAllocationTracking && !tl_graphExecutionActive && size > 0) {
+    tl_dspWarmupAllocationBytes += static_cast<long long>(size);
+    tl_dspWarmupAllocationCount++;
+  }
 
   // After releaseAll(), the pool is torn down. Return nullptr.
   if (released_.load(std::memory_order_acquire)) {
@@ -631,6 +641,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     if (tl_captureWorkspaceOffset + aligned <= tl_captureWorkspaceSize) {
       void* ptr = static_cast<char*>(tl_captureWorkspace) + tl_captureWorkspaceOffset;
       tl_captureWorkspaceOffset += aligned;
+      tl_captureWorkspacePoolBytes += aligned;
       if (actualDeviceId) *actualDeviceId = deviceId;
       return ptr;
     }
@@ -711,10 +722,21 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   // here, so use its per-thread stream to guarantee the allocation lands in device
   // `deviceId`'s VRAM. Device 0 keeps the resolved DSP stream (single-GPU hot path untouched).
 #if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
-  if (deviceId != 0) {
-    allocStream = cudaStreamPerThread;
+  // Keep the buffer's work on its own device: use the resolved stream only when it
+  // belongs to deviceId (same stream the H2D/kernels use — stays stream-ordered);
+  // fall back to the per-thread stream only for a genuinely foreign stream.
+  if (allocStream != cudaStreamPerThread) {
+    int resolvedDev = -1;
+    if (cudaStreamGetDevice(allocStream, &resolvedDev) != cudaSuccess) {
+      cudaGetLastError();
+      resolvedDev = -1;
+    }
+    if (resolvedDev != deviceId) allocStream = cudaStreamPerThread;
   }
 #endif
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=pool.allocate dev=%d resolved=%p final=%p",
+           deviceId, (void*)resolveNullStream(resolveCaptureStream(stream)), (void*)allocStream);
 
   // ─── Proactive soft-limit check ───────────────────────────────────────────
   // When enabled, check device usage BEFORE attempting local allocation.
@@ -1209,7 +1231,21 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
       continue;
     }
     if (freeMem > size * 1.1) {  // 10% margin
-      candidates.push_back({d, freeMem, isPeer});
+      // Failover floor: a failover allocation must never strand the target device.
+      // CUDA leaves ~600-800MB unreserveable per device for cuBLAS workspaces, module
+      // loads and driver scratch; draining past that produced 'cuBLAS handle creation
+      // failed [3]' cascades (fpna capture 2026-09-22, dev1 driven to 10MB free).
+      // Reserve the larger of 5% of device memory or 512MB before admitting ANY
+      // failover allocation on this device.
+      size_t floorBytes = totalMem / 20;              // 5% of the device
+      if (floorBytes < kFailoverFloorMinBytes) floorBytes = kFailoverFloorMinBytes;
+      if (freeMem - size >= floorBytes) {
+        candidates.push_back({d, freeMem, isPeer});
+      } else {
+        DSP_DIAG(MEMORY,
+                 "ALLOCATE_FAILOVER_CANDIDATE_SKIP: device=%d reason=failover-floor freeMB=%zu totalMB=%zu requestedBytes=%zu floorMB=%zu peer=%d",
+                 d, freeMem / (1024*1024), totalMem / (1024*1024), size, floorBytes / (1024*1024), (int)isPeer);
+      }
     } else {
       DSP_DIAG(MEMORY,
                "ALLOCATE_FAILOVER_CANDIDATE_SKIP: device=%d reason=insufficient-free freeMB=%zu totalMB=%zu requestedBytes=%zu peer=%d",
@@ -1594,10 +1630,20 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   // deviceId here (cudaSetDevice above), so use its per-thread stream. deviceId <= 0 (primary
   // or unknown) keeps the resolved stream so the single-GPU path is untouched.
 #if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
-  if (deviceId > 0) {
-    freeStream = cudaStreamPerThread;
+  // Mirror of allocate: free on the resolved stream when it belongs to deviceId;
+  // per-thread only for a genuinely foreign stream.
+  if (freeStream != cudaStreamPerThread) {
+    int resolvedDev = -1;
+    if (cudaStreamGetDevice(freeStream, &resolvedDev) != cudaSuccess) {
+      cudaGetLastError();
+      resolvedDev = -1;
+    }
+    if (resolvedDev != deviceId) freeStream = cudaStreamPerThread;
   }
 #endif
+  DSP_DIAG(STREAM_SYNC,
+           "STREAM_ROUTE site=pool.free dev=%d resolved=%p final=%p",
+           deviceId, (void*)resolveNullStream(resolveCaptureStream(stream)), (void*)freeStream);
 
   // Persistent capture-safe allocations from allocateDirect() are pool memory
   // (cudaMallocAsync) bound to a dedicated non-capturing allocation stream. Free

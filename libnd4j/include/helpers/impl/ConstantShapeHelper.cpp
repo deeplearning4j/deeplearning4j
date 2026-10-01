@@ -248,6 +248,14 @@ LongType* ConstantShapeHelper::createShapeInfo(DataType dataType, char order, in
 }
 
 LongType* ConstantShapeHelper::createShapeInfo(DataType dataType, LongType* shapeInfo) {
+ // An empty source stays empty: rebuilding from its dimensions alone would drop the empty flag.
+ if (shape::isEmptyConst(shapeInfo)) {
+   auto descriptor = ShapeBuilders::emptyShapeInfo(dataType, shape::order(shapeInfo), shape::rank(shapeInfo),
+                                                   shape::shapeOf(shapeInfo));
+   auto result = bufferForShapeInfo(descriptor)->primary();
+   delete[] descriptor;
+   return result;
+ }
  auto result = createShapeInfo(dataType, shape::order(shapeInfo), shape::rank(shapeInfo),
                         shape::shapeOf(const_cast<LongType*>(shapeInfo)), -1);
  return result;

@@ -21,9 +21,9 @@ on:
   workflow_dispatch:
     inputs:
       namespace:
-        description: Disjoint cache namespace; do not overlap an active all-namespace migration
+        description: Disjoint cache namespace; do not overlap an active all-namespace migration. kompile (native AOT cache) is never part of all.
         type: choice
-        options: [all, compiler, auxiliary]
+        options: [all, compiler, auxiliary, kompile]
         default: all
       mode:
         description: Preview, copy then verify bytes, or verify existing copy
@@ -73,6 +73,7 @@ jobs:
             all) ;;
             compiler) prefixes+=(--prefix deeplearning4j/releases/compiler-cache/v1) ;;
             auxiliary) prefixes+=(--prefix deeplearning4j/releases/dependency-cache/v2 --prefix deeplearning4j/releases/toolchain-cache/v1) ;;
+            kompile) prefixes+=(--prefix deeplearning4j/releases/kompile-native-cache/v1) ;;
             *) printf 'Invalid migration namespace\n' >&2; exit 2 ;;
           esac
           python3 release/github/migrate-cache-to-r2.py --mode "$MIGRATION_MODE" "${prefixes[@]}"

@@ -224,7 +224,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   // grid dimensions, shared memory, and execution patterns.
   auto sections = TritonIRBuilder::identifySections(slots, seg.def.startSlot, seg.def.endSlot,
                                                       outputSlots, totalOutputSlots,
-                                                      externalInputs, numExternalInputs);
+                                                      externalInputs, numExternalInputs,
+                                                      totalSlots, requestedOutputSlotIndices,
+                                                      numRequestedOutputs);
 
   if (sections.empty()) {
     if (dsp::hasNonLegacyMatmulArithmetic(slots, seg.def.startSlot, seg.def.endSlot))

@@ -68,6 +68,7 @@
 #include <cctype>
 #include <chrono>
 #include <cstdlib>
+#include <exception>
 #include <future>
 #include <memory>
 #include <numeric>
@@ -77,6 +78,7 @@
 #include <unordered_set>
 #include <utility>
 #include <system/Environment.h>
+#include <memory/MemoryCounter.h>
 
 
 /*
@@ -281,17 +283,7 @@ static int disableFusedChainsAcrossSegmentBoundaries(
         slots[chainSlot].fusedChain.isFusedChainTail = false;
       }
     }
-    head.fusedChain.isFusedChainHead = false;
-    head.fusedChain.fusedChainLength = 0;
-    std::memset(
-        head.fusedChain.fusedChainOpCodes, 0,
-        sizeof(head.fusedChain.fusedChainOpCodes));
-    std::memset(
-        head.fusedChain.fusedChainSlots, 0,
-        sizeof(head.fusedChain.fusedChainSlots));
-    std::fill(
-        std::begin(head.fusedChain.fusedChainSecondaryInputSources),
-        std::end(head.fusedChain.fusedChainSecondaryInputSources), INT32_MIN);
+    head.fusedChain.clearHead();
     disabled++;
   }
 
@@ -462,8 +454,27 @@ void NativeDynamicShapePlan::flushDeferredSlotDeletes() {
       owningDeletes.push_back(arr);
     }
   }
-  for (NDArray* arr : nonOwningDeletes) delete arr;
-  for (NDArray* arr : owningDeletes) delete arr;
+  // Teardown bracketing (permanent DSP_DIAG MEMORY events): the 2026-09-22
+  // '(out)' abort fires at plan dtor's delete[] outputSlots_ AFTER this flush,
+  // meaning an earlier free inside one of these loops corrupted a neighboring
+  // heap chunk. Each deletion group brackets itself so a future abort's ring
+  // names the group (glibc reports at the detecting free, so the last COMPLETED
+  // bracket identifies the corruptor). At DSP_DIAG level=full these stream to
+  // the surefire dumpstream in real time; at detailed they land in the ring
+  // and the failure summary.
+  DSP_DIAG(MEMORY, "FLUSH: BEGIN plan=%p nonOwning=%zu owning=%zu retained=%zu",
+           this, nonOwningDeletes.size(), owningDeletes.size(), retained);
+  for (NDArray* arr : nonOwningDeletes) {
+    DSP_DIAG(MEMORY, "FLUSH: DEL-NONOWNING arr=%p", (void*)arr);
+    delete arr;
+  }
+  DSP_DIAG(MEMORY, "FLUSH: DEL-NONOWNING DONE");
+  for (NDArray* arr : owningDeletes) {
+    DSP_DIAG(MEMORY, "FLUSH: DEL-OWNING arr=%p db=%p", (void*)arr,
+             (void*)arr->dataBuffer());
+    delete arr;
+  }
+  DSP_DIAG(MEMORY, "FLUSH: DEL-OWNING DONE");
   const size_t deleted = nonOwningDeletes.size() + owningDeletes.size();
   DSP_DIAG(MEMORY,
            "DEFERRED_DELETE_FLUSH: plan=%p queued=%zu unique=%zu deleted=%zu retained=%zu reentrant=%zu",
@@ -1611,16 +1622,14 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // already-torn-down plan (glibc "double free or corruption (out)" source).
   if (destructed_) {
     DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: CANARY double-destruction on plan=%p", (void*)this);
-    fprintf(stderr, "[DSP-CANARY] ~NativeDynamicShapePlan double-destruction plan=%p\n", (void*)this);
-    fflush(stderr);
   }
   destructed_ = true;
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: START plan=%p numSlots=%d totalOutputSlots=%d planOwned=%zu",
            this, numSlots_, totalOutputSlots_, planOwnedArrays_.size());
-  // Task-24 phase bracketing: unconditional fprintf between teardown phases so
-  // the last marker before a glibc abort names the failing release table.
+  // Permanent dtor phase brackets as DSP_DIAG MEMORY events (level-gated like
+  // all diagnostics; full level streams them to the run's captured stdout).
 #define DSP_DTOR_PHASE(label) \
-  do { fprintf(stderr, "[DSP-DTOR] %s plan=%p\n", label, (void*)this); fflush(stderr); } while (0)
+  do { DSP_DIAG(MEMORY, "DTOR: %s plan=%p", label, (void*)this); } while (0)
   DSP_DTOR_PHASE("START");
   // BUF_FP_RING: final fingerprint dump for this plan (covers execs since the
   // last releaseGpuIntermediates dump). Same completion-boundary reasoning as
@@ -1710,6 +1719,15 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing outputSlots_ (%d slots, %zu plan-owned)",
            totalOutputSlots_, planOwnedArrays_.size());
   DSP_DTOR_PHASE("PHASE-OUTSLOTS-BEGIN");
+  // Corruption tripwire (permanent DSP_DIAG): if glibc later aborts AT this plan's
+  // PHASE-OUTSLOTS-ARRAY-DELETE with 'corruption (out)', the size field AFTER this
+  // array was already smashed BEFORE the dtor ran — the corruptor is whatever was
+  // allocated adjacent to it (another plan's allocations included). Emit the array
+  // bounds while the pointer is still valid so cross-plan adjacency can be computed
+  // by address arithmetic from two plans' DTOR_OUTSLOTS_BOUNDS rows.
+  DSP_DIAG(MEMORY, "DTOR_OUTSLOTS_BOUNDS: plan=%p array=%p bytes=%zu ptrs=%d",
+           (void*)this, (void*)outputSlots_,
+           (size_t)totalOutputSlots_ * sizeof(NDArray*), (int)totalOutputSlots_);
   int skippedExternal = 0;
   if (outputSlots_) {
     for (int i = 0; i < totalOutputSlots_; i++) {
@@ -1722,8 +1740,40 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
       outputSlots_[i] = nullptr;
     }
     DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: about to delete[] outputSlots_ array (%p)", (void*)outputSlots_);
-    DSP_DTOR_PHASE("PHASE-OUTSLOTS-ARRAY-DELETE");
-    delete[] outputSlots_;
+  DSP_DIAG(MEMORY, "DTOR: PHASE-OUTSLOTS-ARRAY-DELETE plan=%p", (void*)this);
+    // REDZONE GUARD: check both redzones before freeing. If either was clobbered,
+    // report the offending bytes and free the raw block WITHOUT touching the
+    // corrupted-neighbor state — the guard has already captured the evidence.
+    if (outputSlotsRedzoneRaw_ != nullptr) {
+      constexpr size_t kRedzone = 64;
+      constexpr uint8_t kMagic = 0xA5;
+      const uint8_t* front = outputSlotsRedzoneRaw_;
+      const uint8_t* back = outputSlotsRedzoneRaw_ + kRedzone + outputSlotsRedzoneBytes_;
+      int frontBad = 0, backBad = 0;
+      for (size_t i = 0; i < kRedzone; i++) {
+        if (front[i] != kMagic) frontBad++;
+        if (back[i] != kMagic) backBad++;
+      }
+      if (frontBad != 0 || backBad != 0) {
+        DSP_DIAG(MEMORY,
+                 "REDZONE_VIOLATION: plan=%p array=%p frontBad=%d backBad=%d "
+                 "front[0..7]=%02x %02x %02x %02x %02x %02x %02x %02x "
+                 "back[0..7]=%02x %02x %02x %02x %02x %02x %02x %02x lastOkExec=%d",
+                 (void*)this, (void*)outputSlots_, frontBad, backBad,
+                 front[0], front[1], front[2], front[3],
+                 front[4], front[5], front[6], front[7],
+                 back[0], back[1], back[2], back[3],
+                 back[4], back[5], back[6], back[7],
+                 outputSlotsRedzoneLastOkExec_);
+      } else {
+        DSP_DIAG(MEMORY, "REDZONE_OK: plan=%p array=%p exec=%d",
+                 (void*)this, (void*)outputSlots_, executeCount_);
+      }
+      delete[] outputSlotsRedzoneRaw_;
+      outputSlotsRedzoneRaw_ = nullptr;
+    } else {
+      delete[] outputSlots_;
+    }
     outputSlots_ = nullptr;
     DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: delete[] outputSlots_ done");
   }
@@ -1747,6 +1797,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   retiredRequestedOutputOwnersSet_.clear();
   for (const auto& entry : migrationBuffers_) gatherOwned(entry.second);
   migrationBuffers_.clear();
+  frozenMigrationSources_.clear();
   outputDeliveryBuffers_.clear();
 
   // Classify every live wrapper exactly once before deleting any of them.
@@ -1765,8 +1816,22 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   }
 
   DSP_DTOR_PHASE("PHASE-OWNED-CLASSIFY");
-  for (NDArray* arr : viewArrays) delete arr;
-  for (NDArray* arr : owningArrays) delete arr;
+  // Per-wrapper teardown events (permanent DSP_DIAG): the 2026-09-22 '(out)'
+  // abort fires at PHASE-OUTSLOTS-ARRAY-DELETE with a pointer-sized value in the
+  // chunk header BEFORE the array — the stomp happens during one of the wrapper
+  // deletes in THIS loop (glibc reports at the next free of the corrupted
+  // region, which is exactly delete[] outputSlots_). Emit one event per delete
+  // so the last completed event before an abort names the exact wrapper whose
+  // destructor corrupts its heap neighbor.
+  for (NDArray* arr : viewArrays) {
+    DSP_DIAG(MEMORY, "DTOR_DEL: view arr=%p", (void*)arr);
+    delete arr;
+  }
+  for (NDArray* arr : owningArrays) {
+    DSP_DIAG(MEMORY, "DTOR_DEL: owner arr=%p db=%p", (void*)arr,
+             (void*)(arr->dataBuffer()));
+    delete arr;
+  }
   DSP_DTOR_PHASE("PHASE-OWNED-DELETE-DONE");
   const int freedOwned =
       static_cast<int>(viewArrays.size() + owningArrays.size());
@@ -2314,12 +2379,8 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
 
     // Initialize fusion fields (will be set by FusionPass::applyFusions later)
     slot.disableInPlaceFusion();
-    slot.fusedChain.isFusedChainHead = false;
-    slot.fusedChain.fusedChainLength = 0;
+    slot.fusedChain.clearHead();
     slot.fusedChain.isFusedChainTail = false;
-    std::memset(slot.fusedChain.fusedChainOpCodes, 0, sizeof(slot.fusedChain.fusedChainOpCodes));
-    std::memset(slot.fusedChain.fusedChainSlots, 0, sizeof(slot.fusedChain.fusedChainSlots));
-    std::fill(std::begin(slot.fusedChain.fusedChainSecondaryInputSources), std::end(slot.fusedChain.fusedChainSecondaryInputSources), INT32_MIN);
   }
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -2529,7 +2590,25 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   plan->computeSlotVariableDependency();
 
   // Allocate execution state
-  plan->outputSlots_ = new NDArray*[plan->totalOutputSlots_];
+  // REDZONE GUARD (permanent diagnostics): the 2026-09-22 '(out)' aborts fired at
+  // delete[] outputSlots_ with a corrupted chunk header — a neighbor allocation
+  // overflowing into this array's malloc header. Allocate the array with a 64-byte
+  // front redzone filled with a magic pattern; verifyRedzones() checks it before
+  // delete[] and after every execute, so the clobbering exec is identified and the
+  // stomp is caught regardless of which (possibly uninstrumented) writer did it.
+  constexpr size_t DSP_REDZONE_BYTES = 64;
+  constexpr uint8_t DSP_REDZONE_BYTE = 0xA5;
+  auto allocWithRedzone = [](size_t bytes) -> uint8_t* {
+    uint8_t* raw = new uint8_t[bytes + 2 * DSP_REDZONE_BYTES];
+    std::memset(raw, DSP_REDZONE_BYTE, DSP_REDZONE_BYTES);
+    std::memset(raw + DSP_REDZONE_BYTES + bytes, DSP_REDZONE_BYTE, DSP_REDZONE_BYTES);
+    return raw;
+  };
+  const size_t outSlotsBytes = sizeof(NDArray*) * plan->totalOutputSlots_;
+  uint8_t* outSlotsRaw = allocWithRedzone(outSlotsBytes);
+  plan->outputSlotsRedzoneRaw_ = outSlotsRaw;
+  plan->outputSlotsRedzoneBytes_ = outSlotsBytes;
+  plan->outputSlots_ = reinterpret_cast<NDArray**>(outSlotsRaw + DSP_REDZONE_BYTES);
   std::memset(plan->outputSlots_, 0, sizeof(NDArray*) * plan->totalOutputSlots_);
 
   // outputSlots_ owns all slot arrays
@@ -2640,7 +2719,9 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
                       f.startSlot, f.endSlot, static_cast<int>(f.type), f.chainLength);
       }
 
-      int applied = FusionPass::applyFusions(plan->slots_, plan->numSlots_, fusions);
+      int applied = FusionPass::applyFusions(plan->slots_, plan->numSlots_, fusions,
+                                             plan->requestedOutputSlotIndices_,
+                                             plan->numRequestedOutputs_);
       DSP_DIAG(FUSION, "applied %d of %d fusion candidates (in-place execution)",
                applied, static_cast<int>(fusions.size()));
 
@@ -2900,11 +2981,30 @@ Status NativeDynamicShapePlan::execute(
     bool dismissed;
     PlatformEndGuard(NativeDynamicShapePlan* p, void*& sp, void* s, bool f, int e)
       : plan(p), statePtr(sp), stream(s), frozen(f), execCount(e), dismissed(false) {}
-    ~PlatformEndGuard() {
+    ~PlatformEndGuard() noexcept {
       if (!dismissed && statePtr != nullptr) {
         plan->activeExecCtx_ = nullptr;
-        plan->platformEndExecution(statePtr, stream, frozen, execCount);
+        void* state = statePtr;
         statePtr = nullptr;
+        try {
+          plan->platformEndExecution(state, stream, frozen, execCount);
+        } catch (const std::exception& cleanupError) {
+          // This guard runs during exception unwinding. Preserve the execution
+          // failure; platformEndExecution owns an independent finalizer for its
+          // stream guard and per-device execution count.
+          try {
+            DSP_DIAG(EXECUTE,
+                     "PlatformEndGuard: platformEndExecution also failed during unwinding: %s",
+                     cleanupError.what());
+          } catch (...) {
+          }
+        } catch (...) {
+          try {
+            DSP_DIAG(EXECUTE,
+                     "PlatformEndGuard: platformEndExecution also failed during unwinding with a non-standard exception");
+          } catch (...) {
+          }
+        }
       }
     }
     void dismiss() { dismissed = true; }
@@ -3503,8 +3603,8 @@ Status NativeDynamicShapePlan::execute(
   if (planLifecycle_.isSlotBySlot()) {
     // Reset cast-cache INDEX only — do NOT call clearCastCache() here.
     //
-    // clearCastCache() deletes the cached FP32-upcast NDArray objects (tl_castB[0],
-    // tl_castA[0] etc.) from the thread-local cast cache. This is unsafe when another
+    // clearCastCache() deletes the cached FP32-upcast NDArray objects (slot 0 of
+    // the A/B sides etc.) from the thread-local cast cache. This is unsafe when another
     // plan's CUDA graph is live on the same thread: that graph has cuBLAS kernel nodes
     // with device pointers BAKED AT CAPTURE TIME pointing to these same cast buffers.
     // Deleting the buffers leaves the baked pointers dangling → cuBLAS reads freed
@@ -3751,6 +3851,41 @@ Status NativeDynamicShapePlan::execute(
     flushDeferredSlotDeletes();
     platformEndGuard.dismiss();
     platformEndExecution(executionStatePtr, stream, planLifecycle_.isInFrozenOrReplayState(), executeCount_);
+    // Lifecycle (error-path reclamation): a failed execution leaves every
+    // intermediate it allocated charged against its device's MemoryCounter.
+    // Without releasing them the counters stay wedged — every later admit
+    // (e.g. the lm_logits cast) fails for the rest of the process, and the
+    // failing plan keeps hitting the cache so insert-time budget enforcement
+    // never runs again. Passivate via the same proven release path the cache
+    // eviction uses; the next cache hit reactivates and re-warms automatically.
+    try {
+      // Counter accounting brackets (permanent telemetry): passivate() frees the
+      // plan's intermediates; the device counters MUST drop by the same amount.
+      // A mismatch here is the signature of a release path that frees storage
+      // without countOut — the wedge that starves every later admission.
+      auto& reclaimCounter = sd::memory::MemoryCounter::getInstance();
+      const LongType devBefore = reclaimCounter.allocatedDevice(0);
+      const LongType dev1Before = reclaimCounter.allocatedDevice(1);
+      const LongType groupBefore = reclaimCounter.allocatedGroup(sd::memory::MemoryType::DEVICE);
+      const size_t reclaimed = passivate();
+      const LongType devAfter = reclaimCounter.allocatedDevice(0);
+      const LongType dev1After = reclaimCounter.allocatedDevice(1);
+      const LongType groupAfter = reclaimCounter.allocatedGroup(sd::memory::MemoryType::DEVICE);
+      DSP_DIAG(MEMORY,
+               "EXEC_ERROR_RECLAIM: plan=%p exec=%d status=%d — passivated, reclaimed ~%zuMB; "
+               "counter dev0 %lld->%lldMB dev1 %lld->%lldMB group %lld->%lldMB (freed=%zuMB)",
+               (void*)this, executeCount_, static_cast<int>(phaseStatus), reclaimed / (1024 * 1024),
+               (long long)(devBefore / (1024 * 1024)), (long long)(devAfter / (1024 * 1024)),
+               (long long)(dev1Before / (1024 * 1024)), (long long)(dev1After / (1024 * 1024)),
+               (long long)(groupBefore / (1024 * 1024)), (long long)(groupAfter / (1024 * 1024)),
+               (size_t)((devBefore - devAfter + dev1Before - dev1After) / (1024 * 1024)));
+    } catch (const std::exception& reclaimErr) {
+      // Never mask the original phase failure; report and continue with the
+      // counters as they are (the owner of the failure already saw its detail).
+      DSP_DIAG(MEMORY,
+               "EXEC_ERROR_RECLAIM FAILED: plan=%p exec=%d status=%d — passivation error, counters unchanged: %s",
+               (void*)this, executeCount_, static_cast<int>(phaseStatus), reclaimErr.what());
+    }
     return phaseStatus;
   }
 
@@ -4016,13 +4151,13 @@ Status NativeDynamicShapePlan::execute(
         }
       }
 
-      // Fused elementwise chains install the LAST chain slot's output buffer
-      // into every chain-member output slot (see fused-chain-member writes in
-      // slotexec). Those member output slots are logical aliases, not stable
-      // storage. Snapshotting them as independent frozen outputs creates false
-      // positives when warmup/unfused aliases are replaced by the fused chain's
-      // shared output buffer on later executions. Keep lifecycle validation on
-      // the canonical tail output slot and prune the member aliases.
+      // A fused elementwise chain writes only the LAST chain slot's output.
+      // Earlier members keep private buffers the fused kernel never writes
+      // (see fused-chain-member in slotexec), and the fused path replaces one
+      // an unfused run left in its eager shape. They are not stable storage:
+      // snapshotting them as frozen outputs reports that replacement as drift.
+      // Keep lifecycle validation on the canonical tail output slot and prune
+      // the member outputs.
       std::vector<bool> fusedChainAliasOutputSlot(totalOutputSlots_, false);
       for (int s = 0; s < numSlots_; s++) {
         const auto& slot = slots_[s];
@@ -4164,19 +4299,17 @@ Status NativeDynamicShapePlan::execute(
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::PHASE_TRANSITION,
                          planLifecycle_.toLegacyCode(), static_cast<int>(PlanPhase::SHAPES_FROZEN));
     // legacy sync
-    resegmentForFreeze();
+    const bool resegmented = resegmentForFreeze(true);
     int newSegCount = static_cast<int>(segments_.size());
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::RESEGMENT, oldSegCount, newSegCount);
     planLifecycle_.freezeShapes();
     if (executeCount_ < 1) executeCount_ = 1;
 
-    // Freeze-time resegmentation creates new GraphSegment records, so their
-    // per-segment execution counters start at zero even though this execute()
-    // has already completed the warmup pass. Restore the lifecycle evidence that
-    // makes those records eligible for the eager compiler before the compilation
-    // seal; otherwise precompile skips every freshly rebuilt segment and a
-    // compiler-required mode reaches the seal with unresolved backends.
-    if (executeCount_ == 1) {
+    // A post-warmup rebuild creates fresh GraphSegment records whose execution
+    // counters start at zero, even though this execute() just warmed the plan
+    // for the current shapes. Restore that readiness before the eager compiler
+    // seal; otherwise newly split capture segments are skipped.
+    if (resegmented) {
       int restoredWarmupSegments = 0;
       for (auto& seg : segments_) {
         SegmentLifecycle::initSegmentPhase(seg.exec, seg.def.startSlot, seg.def.endSlot);
@@ -4325,6 +4458,29 @@ Status NativeDynamicShapePlan::execute(
 
   activeExecCtx_ = nullptr;
   flushDeferredSlotDeletes();
+
+  // REDZONE GUARD: verify outputSlots_ redzones after every execution. The first
+  // exec whose check fails brackets the corrupting write to the exec that just
+  // ran; lastOkExec pins the last clean boundary. Permanent diagnostics.
+  if (outputSlotsRedzoneRaw_ != nullptr) {
+    constexpr size_t kRedzone = 64;
+    constexpr uint8_t kMagic = 0xA5;
+    const uint8_t* front = outputSlotsRedzoneRaw_;
+    const uint8_t* back = outputSlotsRedzoneRaw_ + kRedzone + outputSlotsRedzoneBytes_;
+    bool ok = true;
+    for (size_t i = 0; i < kRedzone && ok; i++) {
+      if (front[i] != kMagic || back[i] != kMagic) ok = false;
+    }
+    if (!ok) {
+      DSP_DIAG(MEMORY,
+               "REDZONE_VIOLATION_MIDRUN: plan=%p exec=%d lastOkExec=%d — "
+               "outputSlots_ redzone clobbered during THIS execution",
+               (void*)this, executeCount_, outputSlotsRedzoneLastOkExec_);
+    } else {
+      outputSlotsRedzoneLastOkExec_ = executeCount_;
+    }
+  }
+
   platformEndGuard.dismiss();  // Normal exit — call manually, don't double-call from destructor
   platformEndExecution(executionStatePtr, stream, planLifecycle_.isInFrozenOrReplayState(), executeCount_);
   executionStatePtr = nullptr;
@@ -5194,10 +5350,13 @@ Status NativeDynamicShapePlan::phaseFreeze() {
   if (numSlots_ > 1) {
     auto fusions = FusionPass::detectFusions(slots_, numSlots_, externalInputRanks_,
                                               requestedOutputSlotIndices_, numRequestedOutputs_);
+    // Rebuilds every slot's fused-chain metadata, also when nothing is detected now:
+    // a chain formed at compile time must not outlive the post-warmup detection.
+    int applied = FusionPass::applyFusions(slots_, numSlots_, fusions,
+                                           requestedOutputSlotIndices_, numRequestedOutputs_);
     if (!fusions.empty()) {
       DSP_DIAG(FUSION, "detected %d fusion candidates (post-warmup)",
                (int)fusions.size());
-      int applied = FusionPass::applyFusions(slots_, numSlots_, fusions);
       DSP_DIAG(FUSION, "applied %d of %d fusion candidates",
                applied, (int)fusions.size());
 
@@ -5322,7 +5481,7 @@ Status NativeDynamicShapePlan::phaseFreeze() {
   // Resegment: merge data-dependent ops into capturable segments now that
   // shapes are frozen. This collapses hundreds of fragments into a few large
   // segments, enabling monolithic graph capture/replay.
-  resegmentForFreeze();
+  resegmentForFreeze(true);
   disableFusedChainsAcrossSegmentBoundaries(
       slots_, numSlots_, segments_, "freeze-fusion");
 
@@ -5530,10 +5689,17 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
               std::to_string(segment.def.endSlot) + "] to its target device");
       return Status::KERNEL_FAILURE;
     }
+    MmulHelper::CastCacheScopeGuard castScope(this, segment.def.startSlot);
     auto migrationStatus = platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
     if (migrationStatus != Status::OK) {
+      // ErrorReference is device-context-local. Preserve the target-device cause
+      // before cleanup restores the primary device and hides that reference.
+      const char* message = LaunchContext::defaultContext()->errorReference()->errorMessage();
+      const std::string detail = message != nullptr && message[0] != '\0'
+          ? message : "Segment input migration failed without backend detail";
       platformCleanupMigratedInputs();
       platformRestoreSegmentDevice();
+      recordPlanFailureIfMissing(migrationStatus, detail);
       return migrationStatus;
     }
 
@@ -7126,6 +7292,9 @@ Status NativeDynamicShapePlan::dispatchSegment(
   DspThreadState segmentState(segmentStream, segmentStream,
                               tl_graphExecutionActive, tl_dspReplayActive);
 #endif
+  // Mixed-precision matmuls cast into this segment's own slots: a captured graph
+  // bakes their addresses, so no other segment may re-cast or migrate them.
+  MmulHelper::CastCacheScopeGuard castScope(this, seg.def.startSlot);
   usedGraph = false;
   const GraphCompilationPolicy compilationPolicy =
       makeGraphBackendRequest().compilationPolicy();
@@ -7437,8 +7606,14 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
     }
     auto migrationStatus = platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
     if (migrationStatus != Status::OK) {
+      // ErrorReference is device-context-local. Preserve the target-device cause
+      // before cleanup restores the primary device and hides that reference.
+      const char* message = LaunchContext::defaultContext()->errorReference()->errorMessage();
+      const std::string detail = message != nullptr && message[0] != '\0'
+          ? message : "Segment input migration failed without backend detail";
       platformCleanupMigratedInputs();
       platformRestoreSegmentDevice();
+      recordPlanFailureIfMissing(migrationStatus, detail);
       return migrationStatus;
     }
 
@@ -7447,14 +7622,140 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
     int segSlots = segment.def.endSlot - segment.def.startSlot + 1;
 
     // Consolidated dispatch — single entry point for all segment execution.
-    {
-      auto status = dispatchSegment(segment, externalInputs, numExternalInputs,
-                                    stream, segUsedGraph);
-      if (status != Status::OK) {
+    Status dispatchStatus = Status::OK;
+    try {
+      dispatchStatus = dispatchSegment(segment, externalInputs, numExternalInputs,
+                                       stream, segUsedGraph);
+    } catch (...) {
+      const std::exception_ptr dispatchFailure = std::current_exception();
+      try {
         platformCleanupMigratedInputs();
-        platformRestoreSegmentDevice();
-        return status;
+      } catch (const std::exception& error) {
+        DSP_DIAG(MEMORY,
+                 "phaseReplay dispatch cleanup failed for seg[%d-%d]: %s",
+                 segment.def.startSlot, segment.def.endSlot, error.what());
+      } catch (...) {
+        DSP_DIAG(MEMORY,
+                 "phaseReplay dispatch cleanup failed for seg[%d-%d]",
+                 segment.def.startSlot, segment.def.endSlot);
       }
+      platformRestoreSegmentDevice();
+      std::rethrow_exception(dispatchFailure);
+    }
+
+    if (dispatchStatus == Status::MAYBE &&
+        !segment.exec.captureRehomePending &&
+        segment.exec.captureRehomeSourceDevice >= 0 &&
+        segment.exec.captureRehomeTargetDevice >= 0) {
+      // The source-device capture preflight requested a different runtime
+      // ordinal. The source dispatch has returned, so it is now safe to change
+      // the segment placement and install the target device's own stream/TLS.
+      const int sourceDevice = segment.exec.captureRehomeSourceDevice;
+      const int targetDevice = segment.exec.captureRehomeTargetDevice;
+      std::vector<int> originalTargets;
+      originalTargets.reserve(static_cast<size_t>(segSlots));
+      for (int s = segment.def.startSlot; s <= segment.def.endSlot; s++) {
+        originalTargets.push_back(slots_[s].targetDeviceId);
+      }
+
+      // Retire only the source dispatch's transient input copies before switching.
+      try {
+        platformCleanupMigratedInputs();
+      } catch (...) {
+        segment.exec.captureRehomeSourceDevice = -1;
+        segment.exec.captureRehomeTargetDevice = -1;
+        platformRestoreSegmentDevice();
+        throw;
+      }
+      platformRestoreSegmentDevice();
+
+      for (int s = segment.def.startSlot; s <= segment.def.endSlot; s++) {
+        slots_[s].targetDeviceId = targetDevice;
+      }
+      segment.exec.captureRehomePending = true;
+      segment.exec.captureRehomeCommitted = false;
+
+      auto rollbackRehome = [&]() noexcept {
+        try {
+          // First synchronize the candidate stream and restore slot publications.
+          // Migration retirement is deferred; destroying the graph next releases
+          // its address pins before those staged buffers can be drained.
+          platformCleanupMigratedInputs();
+          if (segment.exec.replayHandle != nullptr)
+            platformCleanupSegmentForRebuild(segment);
+        } catch (const std::exception& error) {
+          DSP_DIAG(MEMORY,
+                   "CAPTURE_DEVICE_REHOME_ROLLBACK: cleanup failed for seg[%d-%d]: %s",
+                   segment.def.startSlot, segment.def.endSlot, error.what());
+        } catch (...) {
+          DSP_DIAG(MEMORY,
+                   "CAPTURE_DEVICE_REHOME_ROLLBACK: cleanup failed for seg[%d-%d]",
+                   segment.def.startSlot, segment.def.endSlot);
+        }
+        for (int i = 0; i < segSlots && i < static_cast<int>(originalTargets.size()); i++) {
+          slots_[segment.def.startSlot + i].targetDeviceId = originalTargets[i];
+        }
+        segment.exec.captureRehomePending = false;
+        segment.exec.captureRehomeCommitted = false;
+        segment.exec.captureRehomeSourceDevice = -1;
+        segment.exec.captureRehomeTargetDevice = -1;
+        platformRestoreSegmentDevice();
+      };
+
+      if (!platformBindSegmentDevice(segment)) {
+        rollbackRehome();
+        recordPlanFailureIfMissing(
+            Status::KERNEL_FAILURE,
+            "phaseReplay could not bind capture-rehome candidate runtime device " +
+                std::to_string(targetDevice) + " for segment [" +
+                std::to_string(segment.def.startSlot) + "-" +
+                std::to_string(segment.def.endSlot) + "]");
+        return Status::KERNEL_FAILURE;
+      }
+      Status rehomeMigrationStatus = Status::KERNEL_FAILURE;
+      try {
+        rehomeMigrationStatus =
+            platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
+      } catch (...) {
+        rollbackRehome();
+        throw;
+      }
+      if (rehomeMigrationStatus != Status::OK) {
+        rollbackRehome();
+        return rehomeMigrationStatus;
+      }
+
+      DSP_DIAG(MULTI_DEVICE,
+               "CAPTURE_DEVICE_REHOME_DISPATCH: seg[%d-%d] runtimeDevice %d -> %d",
+               segment.def.startSlot, segment.def.endSlot, sourceDevice, targetDevice);
+      try {
+        dispatchStatus = dispatchSegment(segment, externalInputs, numExternalInputs,
+                                         stream, segUsedGraph);
+      } catch (...) {
+        rollbackRehome();
+        throw;
+      }
+      if (dispatchStatus != Status::OK || !segment.exec.captureRehomeCommitted) {
+        const Status failure = dispatchStatus == Status::OK ||
+                                       dispatchStatus == Status::MAYBE
+            ? Status::KERNEL_FAILURE : dispatchStatus;
+        rollbackRehome();
+        if (failure == Status::KERNEL_FAILURE) {
+          recordPlanFailureIfMissing(
+              failure,
+              "capture rehome did not commit for segment [" +
+                  std::to_string(segment.def.startSlot) + "-" +
+                  std::to_string(segment.def.endSlot) + "] on runtime device " +
+                  std::to_string(targetDevice));
+        }
+        return failure;
+      }
+    }
+
+    if (dispatchStatus != Status::OK) {
+      platformCleanupMigratedInputs();
+      platformRestoreSegmentDevice();
+      return dispatchStatus;
     }
 
     if (executionTimingEnabled_) {
@@ -7471,6 +7772,44 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
     }
 
     platformCleanupMigratedInputs();
+    if (segment.exec.captureRehomeCommitted) {
+      // Capture committed target-device publications. Rebuild the complete
+      // ownership relation graph before the next segment can consume these
+      // outputs, then move frozen pins/snapshots off the source allocations.
+      if (slotOwnership_ != nullptr && outputSlots_ != nullptr) {
+        for (int i = 0; i < totalOutputSlots_; i++) slotOwnership_[i].reset();
+        for (int i = 0; i < totalOutputSlots_; i++) {
+          if (outputSlots_[i] == nullptr) continue;
+          classifyAndUpdateOwnership(
+              slotOwnership_[i], outputSlots_[i], i,
+              externalInputs, numExternalInputs,
+              outputSlots_, totalOutputSlots_, slotOwnership_);
+        }
+      }
+      for (int s = segment.def.startSlot; s <= segment.def.endSlot && s < numSlots_; s++) {
+        NativeSlot& slot = slots_[s];
+        if (slot.frozenOutputPtrs.empty()) continue;
+        for (int o = 0; o < slot.wiring.numOutputs &&
+                        o < static_cast<int>(slot.frozenOutputPtrs.size()); o++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[o];
+          if (outputSlot < 0 || outputSlot >= totalOutputSlots_) continue;
+          NDArray* output = outputSlots_[outputSlot];
+          slot.frozenOutputPtrs[o] =
+              output != nullptr && output->dataBuffer() != nullptr
+                  ? output->dataBuffer()->primary() : nullptr;
+        }
+      }
+      if (planLifecycle_.isInFrozenOrReplayState() ||
+          hasTrackedPlanFrozenRefs(frozenProtectedRefBuffers_, frozenOutputRefBuffers_)) {
+        replacePlanFrozenRefsForCurrentState(
+            "phaseReplayCaptureRehome", protectedWeightBuffers_, outputSlots_,
+            totalOutputSlots_, frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
+      }
+      if (frozenSnapshot_.valid) frozenSnapshot_.clear();
+      segment.exec.captureRehomeCommitted = false;
+      segment.exec.captureRehomeSourceDevice = -1;
+      segment.exec.captureRehomeTargetDevice = -1;
+    }
     auto postStatus = platformCheckPostSegment(segment);
     // Multi-GPU sharding: restore the plan-primary device + execution TLS after a secondary
     // segment (no-op for single-GPU / primary segments). Must run before the next segment binds.
@@ -8117,12 +8456,20 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     deferredSlotDeletes_.erase(std::remove_if(deferredSlotDeletes_.begin(), deferredSlotDeletes_.end(),
         [&](NDArray* arr) { return warmupRetiringArrays.count(arr) != 0; }), deferredSlotDeletes_.end());
     for (auto* arr : warmupRetiringArrays) planOwnedArrays_.erase(arr);
+    // Teardown bracketing: permanent DSP_DIAG events — same rationale as FLUSH
+    // above — pin the exact deleting sub-phase inside the release window.
+    DSP_DIAG(MEMORY, "WARMUP_RETIRE: BEGIN plan=%p borrowers=%zu owners=%zu",
+             this, warmupBorrowers.size(), warmupOwners.size());
     for (auto* arr : warmupBorrowers) {
+      DSP_DIAG(MEMORY, "WARMUP_RETIRE: DEL-BORROWER arr=%p", (void*)arr);
       deleted.insert(arr);
       delete arr;
       ++freedCount;
     }
+    DSP_DIAG(MEMORY, "WARMUP_RETIRE: DEL-BORROWERS DONE");
     for (auto* arr : warmupOwners) {
+      DSP_DIAG(MEMORY, "WARMUP_RETIRE: DEL-OWNER arr=%p db=%p", (void*)arr,
+               (void*)arr->dataBuffer());
       deleted.insert(arr);
       auto* db = arr->dataBuffer();
       if (db != nullptr && db->isValid() && !db->isClosed()) db->deleteBuffers();
@@ -8130,6 +8477,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       delete arr;
       ++freedCount;
     }
+    DSP_DIAG(MEMORY, "WARMUP_RETIRE: DEL-OWNERS DONE");
     colorMap_.clearWarmupTracking();
 
     if (slotOwnership_) {
@@ -8324,6 +8672,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     }
   }
   migrationBuffers_.clear();
+  frozenMigrationSources_.clear();
 
   // ── Step 4c: Clear ext input pointer caches ─────────────────────────────
   // The NDArray* pointers target Java-owned arrays that become invalid once
@@ -8488,6 +8837,12 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // epoch-boundary reset used at device switch (cudagraph.cu) and on the
   // frozen fast path: the baseline must belong to the current capture epoch.
   prevStagingAddresses_.clear();
+#ifdef SD_CUDA
+  // Captures and staging replicas were released above; baked baselines would
+  // name freed or recycled storage in the next lifetime.
+  managedExtBakedAddrs_.clear();
+  managedExtLastLiveAddrs_.clear();
+#endif
 
   // Clear protected weight buffers so they're rebuilt from the next session's
   // external inputs. Stale DataBuffer pointers from the old session would cause
@@ -8624,6 +8979,14 @@ bool NativeDynamicShapePlan::isDeviceManagedExternalInput(NDArray* input) const 
   return isDeviceManagedExternalInput(-1, input);
 }
 
+void* NativeDynamicShapePlan::residentDeviceAddress(NDArray* array) {
+  auto* db = array != nullptr ? array->dataBuffer() : nullptr;
+  void* base = db != nullptr ? db->special() : nullptr;
+  return base != nullptr
+      ? static_cast<void*>(static_cast<int8_t*>(base) + array->offset() * array->sizeOfT())
+      : nullptr;
+}
+
 bool NativeDynamicShapePlan::isDeviceManagedExternalInput(int extIdx, NDArray* input) const {
   if (extIdx >= 0 && extIdx < static_cast<int>(externalInputIsVariable_.size()) &&
       extIdx < static_cast<int>(externalInputIsPlaceholder_.size()) &&
@@ -8633,21 +8996,14 @@ bool NativeDynamicShapePlan::isDeviceManagedExternalInput(int extIdx, NDArray* i
   if (input == nullptr || input->isEmpty() || input->dataBuffer() == nullptr) return false;
   // Classification must inspect resident addresses without synchronizing or
   // migrating inputs belonging to another segment's device.
-  auto residentAddress = [](NDArray* array) -> void* {
-    auto* db = array != nullptr ? array->dataBuffer() : nullptr;
-    void* base = db != nullptr ? db->special() : nullptr;
-    return base != nullptr
-        ? static_cast<void*>(static_cast<int8_t*>(base) + array->offset() * array->sizeOfT())
-        : nullptr;
-  };
-  void* devAddr = residentAddress(input);
+  void* devAddr = residentDeviceAddress(input);
   if (devAddr == nullptr) return false;
   for (void* existing : deviceManagedExternalInputAddrs_) {
     if (existing == devAddr) return true;
   }
   if (kvScatterConfigured_) {
     for (const auto& entry : kvScatterEntries_) {
-      if (residentAddress(entry.staticBuf) == devAddr) {
+      if (residentDeviceAddress(entry.staticBuf) == devAddr) {
         return true;
       }
     }
@@ -8672,6 +9028,10 @@ void NativeDynamicShapePlan::recordManagedExtBakedAddrsForCapture(
     GraphSegment& seg, NDArray** externalArrays, int numExt) {
   if (externalArrays == nullptr || numExt <= 0) return;
   const int safeNumExt = numExt;
+  // The segment was captured on the bound device; its staging passthrough checks
+  // identity on that same device.
+  const int device = AffinityManager::currentDeviceId();
+  auto& deviceBaked = managedExtBakedAddrs_[device];
   int recorded = 0, updated = 0, cleared = 0;
   for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
     const SlotWiring& w = slots_[s].wiring;
@@ -8681,23 +9041,26 @@ void NativeDynamicShapePlan::recordManagedExtBakedAddrsForCapture(
       if (sourceIndex >= 0) continue;  // prior-slot refs are not external inputs
       const int extIdx = -(sourceIndex + 1);
       if (extIdx < 0 || extIdx >= safeNumExt) continue;
-      auto it = managedExtBakedAddrs_.find(extIdx);
+      auto it = deviceBaked.find(extIdx);
       if (!isDeviceManagedExternalInput(extIdx, externalArrays[extIdx])) {
         // This capture did NOT bake extIdx raw (it staged it). Any stale
-        // baseline from an earlier capture is dead: keeping it would produce
-        // false drift signals and route the slot away from its staging
-        // refresh. Classification flags only change through all-segment
-        // invalidations, so no live capture can still bake this index raw.
-        if (it != managedExtBakedAddrs_.end()) {
-          managedExtBakedAddrs_.erase(it);
+        // baseline from an earlier capture on this device is dead: keeping it
+        // would produce false drift signals and route the slot away from its
+        // staging refresh. Classification flags only change through
+        // all-segment invalidations, so no live capture on this device can
+        // still bake this index raw.
+        if (it != deviceBaked.end()) {
+          deviceBaked.erase(it);
           cleared++;
         }
         continue;
       }
-      void* devAddr = externalArrays[extIdx]->specialBuffer();
+      // The capture baked the resident allocation; specialBuffer() could
+      // migrate a buffer that is resident elsewhere.
+      void* devAddr = residentDeviceAddress(externalArrays[extIdx]);
       if (devAddr == nullptr) continue;
-      if (it == managedExtBakedAddrs_.end()) {
-        managedExtBakedAddrs_[extIdx] = devAddr;
+      if (it == deviceBaked.end()) {
+        deviceBaked[extIdx] = devAddr;
         recorded++;
       } else if (it->second != devAddr) {
         // Re-capture against a NEW address — the new address becomes the baked
@@ -8709,50 +9072,64 @@ void NativeDynamicShapePlan::recordManagedExtBakedAddrsForCapture(
   }
   if (recorded > 0 || updated > 0 || cleared > 0) {
     DSP_DIAG(MEMORY,
-             "MANAGED_EXT_BAKED: seg[%d-%d] recorded=%d updated=%d cleared=%d "
-             "bakedBaselineEntries=%d",
-             seg.def.startSlot, seg.def.endSlot, recorded, updated, cleared,
-             static_cast<int>(managedExtBakedAddrs_.size()));
+             "MANAGED_EXT_BAKED: seg[%d-%d] device=%d recorded=%d updated=%d "
+             "cleared=%d bakedBaselineEntries=%d",
+             seg.def.startSlot, seg.def.endSlot, device, recorded, updated, cleared,
+             static_cast<int>(deviceBaked.size()));
   }
 }
 
 bool NativeDynamicShapePlan::isDeviceManagedExternalInputIdentityChecked(
-    int extIdx, NDArray* input, bool& drifted, void*& bakedAddr,
+    int device, int extIdx, NDArray* input, bool& drifted, void*& bakedAddr,
     bool& reboundEvent) const {
   drifted = false;
   bakedAddr = nullptr;
   reboundEvent = false;
   const bool classified = isDeviceManagedExternalInput(extIdx, input);
-  // Table-driven identity: a baseline entry means the most recent capture of a
-  // segment reading extIdx baked its raw device address. The captured graph
-  // reads that address DIRECTLY, so identity must hold regardless of how the
-  // live input classifies now (classification can lag a relocation that
-  // re-registration has not yet mirrored).
-  const bool hasBaseline = extIdx >= 0 && managedExtBakedAddrs_.count(extIdx) > 0;
-  if (input == nullptr || input->specialBuffer() == nullptr) return classified;
-  if (hasBaseline) {
-    void* baked = managedExtBakedAddrs_.find(extIdx)->second;
-    if (baked != input->specialBuffer()) {
-      drifted = true;
-      bakedAddr = baked;
-    }
-    // REBOUND observability is event-gated: the diagnostic fires only when the
-    // live address changed relative to the previous call (the drift EVENT),
-    // never per call while a drift persists. The refresh copy is the
-    // correctness mechanism and still runs on every drifted call.
-    auto live = managedExtLastLiveAddrs_.find(extIdx);
-    const bool liveChanged = live == managedExtLastLiveAddrs_.end() ||
-                             live->second != input->specialBuffer();
-    if (liveChanged) {
-      if (drifted) reboundEvent = true;
-      managedExtLastLiveAddrs_[extIdx] = input->specialBuffer();
-    }
-    // A baked raw address always routes through the passthrough branch — the
-    // captured graph reads it directly, so the ordinary staging path cannot
-    // refresh it.
-    return true;
+  // Table-driven identity: a baseline entry means the most recent capture on
+  // this device of a segment reading extIdx baked its raw device address. The
+  // captured graph reads that address DIRECTLY, so identity must hold
+  // regardless of how the live input classifies now (classification can lag a
+  // relocation that re-registration has not yet mirrored).
+  if (input == nullptr) return classified;
+  void* live = residentDeviceAddress(input);
+  if (live == nullptr && !input->isEmpty()) {
+    // No device allocation yet: materialize it on this device, as before. A
+    // resident buffer is never migrated by this check.
+    live = input->specialBuffer();
   }
-  return classified;
+  if (live == nullptr || extIdx < 0) return classified;
+  // Writable state resident on another device is served by the segment-bound
+  // replica protocol (platformMigrateSegmentInputs), under this same predicate:
+  // it refreshes the replica this device's captures baked before any launch and
+  // writes it back at cleanup. Plan-level staging runs before that swap, so a
+  // refresh here would repeat the migration's copy on every call.
+  if (isExternalInputVariable(extIdx) && !isExternalInputPlaceholder(extIdx) &&
+      input->dataBuffer()->deviceId() != device) {
+    return classified;
+  }
+  auto deviceBaked = managedExtBakedAddrs_.find(device);
+  if (deviceBaked == managedExtBakedAddrs_.end()) return classified;
+  auto baked = deviceBaked->second.find(extIdx);
+  if (baked == deviceBaked->second.end()) return classified;
+  if (baked->second != live) {
+    drifted = true;
+    bakedAddr = baked->second;
+  }
+  // REBOUND observability is event-gated: the diagnostic fires only when the
+  // live address changed relative to the previous call (the drift EVENT),
+  // never per call while a drift persists. The refresh copy is the
+  // correctness mechanism and still runs on every drifted call.
+  auto& deviceLive = managedExtLastLiveAddrs_[device];
+  auto previous = deviceLive.find(extIdx);
+  if (previous == deviceLive.end() || previous->second != live) {
+    if (drifted) reboundEvent = true;
+    deviceLive[extIdx] = live;
+  }
+  // A baked raw address always routes through the passthrough branch — the
+  // captured graph reads it directly, so the ordinary staging path cannot
+  // refresh it.
+  return true;
 }
 #endif
 
@@ -8937,10 +9314,14 @@ SelectedBackend NativeDynamicShapePlan::resolveBackendForSegment(bool isBackendE
 // invalid (pointer addresses may have changed). This cleans up GPU resources
 // and rebuilds segments so fresh captures can occur with frozen shapes.
 
-void NativeDynamicShapePlan::resegmentForFreeze() {
-  if (!Environment::getInstance().dspFreezeMergeSegments()) return;
+bool NativeDynamicShapePlan::resegmentForFreeze(bool allowCaptureMemoryBudget) {
+  const ModeContract modeContract = ModeContract::forMode(graphExecutionMode_);
+  const bool useCaptureMemoryBudget = allowCaptureMemoryBudget &&
+      modeContract.usesGraphCapture && !modeContract.requiresCompilation;
+  const bool mergeSegments = Environment::getInstance().dspFreezeMergeSegments();
+  if (!mergeSegments && !useCaptureMemoryBudget) return false;
   int oldSegCount = static_cast<int>(segments_.size());
-  if (oldSegCount <= 1) return;
+  if (oldSegCount <= 1 && !useCaptureMemoryBudget) return false;
 
   // Cleanup every segment's platform-owned state before its identity is destroyed.
   // Composite-only/JIT segments may have no monolithic replayHandle but can still own
@@ -8951,10 +9332,13 @@ void NativeDynamicShapePlan::resegmentForFreeze() {
   segments_.clear();
   nativeRangeSegments_.clear();
 
-  buildSegments();
+  buildSegments(useCaptureMemoryBudget);
 
-  DSP_DIAG(SEGMENT, "RESEGMENT: %d -> %d segments (shapes frozen)",
-           oldSegCount, static_cast<int>(segments_.size()));
+  DSP_DIAG(SEGMENT,
+           "RESEGMENT: %d -> %d segments (shapes available; captureMemoryBudget=%d)",
+           oldSegCount, static_cast<int>(segments_.size()),
+           useCaptureMemoryBudget ? 1 : 0);
+  return true;
 }
 
 // ─── Graph segmentation for GPU graph capture ───────────────────────────────
@@ -8974,7 +9358,7 @@ void NativeDynamicShapePlan::refreshDynamicSegmentBoundaryAnalysis() {
   }
 }
 
-void NativeDynamicShapePlan::buildSegments() {
+void NativeDynamicShapePlan::buildSegments(bool captureMemoryBudgetReady) {
   if (numSlots_ == 0) {
     hasDynamicSegmentBoundaries_ = false;
     DSP_DIAG(SEGMENT, "buildSegments: skipped (numSlots=0)");
@@ -9054,13 +9438,17 @@ void NativeDynamicShapePlan::buildSegments() {
   // without JIT compilation (CUDA_GRAPHS). JIT modes handle islands internally.
   const ModeContract modeContract = ModeContract::forMode(graphExecutionMode_);
   const bool useMemoryBudget =
-      !planLifecycle_.isSlotBySlot() &&
+      (captureMemoryBudgetReady || !planLifecycle_.isSlotBySlot()) &&
       modeContract.usesGraphCapture &&
       !modeContract.requiresCompilation;
 
   const size_t captureBudget = useMemoryBudget
       ? platformEstimateCaptureBudget()
       : SIZE_MAX;
+  DSP_DIAG(SEGMENT,
+           "buildSegments: capture-memory-budget=%d warmupReady=%d budget=%zuMB",
+           useMemoryBudget ? 1 : 0, captureMemoryBudgetReady ? 1 : 0,
+           useMemoryBudget ? captureBudget / (1024 * 1024) : 0);
 
   // Helper: estimate the output buffer footprint of a single slot.
   // Uses the current outputSlots_ which are populated after warmup.

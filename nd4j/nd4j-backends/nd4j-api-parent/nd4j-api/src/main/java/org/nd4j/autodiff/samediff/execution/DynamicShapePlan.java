@@ -23,12 +23,12 @@ package org.nd4j.autodiff.samediff.execution;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.device.MultiGpuTracer;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -277,10 +277,6 @@ public class DynamicShapePlan implements Closeable {
             return; // CPU backend or no devices
         }
         if (numDevices <= 1 || slots == null || slots.length == 0) return;
-        if (Boolean.getBoolean(ND4JSystemProperties.DSP_SINGLE_GPU)) {
-            log.debug("DSP single-GPU mode forced via {}=true", ND4JSystemProperties.DSP_SINGLE_GPU);
-            return;
-        }
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
@@ -342,6 +338,25 @@ public class DynamicShapePlan implements Closeable {
         if (deviceMemoryBudgets == null || deviceMemoryBudgets.isEmpty()
                 || slots == null || slots.length == 0) return;
 
+        // RESIDENT-DEVICE GUARD: the device that already holds the model (largest
+        // allocated counter) is the weight-residency anchor. Its REMAINING budget is
+        // small by definition (the model is on it), so remaining-budget math must
+        // never prune it from the split and never redirect weight consumers away
+        // from it. Excluding it inverted the split on the fpna capture host: after
+        // load, dev0's remaining allowance was 653MB vs dev1's 7.8GB, so the 10%
+        // rule dropped the 24GB card and placed ALL slots on the 8GB card, whose cap
+        // then rejected every weight migration. New ops may still land on other
+        // devices via their budgets; the resident device is always viable.
+        int residentDevice = -1;
+        long residentAllocated = -1;
+        for (int d = 0; d < Nd4j.getAffinityManager().getNumberOfDevices(); d++) {
+            long allocated = Nd4j.getEnvironment().getDeviceCounter(d);
+            if (allocated > residentAllocated) {
+                residentAllocated = allocated;
+                residentDevice = d;
+            }
+        }
+
         List<Map.Entry<Integer, Long>> sorted = new ArrayList<>();
         double totalMem = 0.0;
         for (Map.Entry<Integer, Long> entry : deviceMemoryBudgets.entrySet()) {
@@ -368,7 +383,8 @@ public class DynamicShapePlan implements Closeable {
         List<Map.Entry<Integer, Long>> viable = new ArrayList<>(sorted.size());
         for (Map.Entry<Integer, Long> entry : sorted) {
             long budget = entry.getValue();
-            if (budget >= totalMem * MIN_DEVICE_BUDGET_FRACTION || budget == largestBudget) {
+            if (entry.getKey() == residentDevice
+                    || budget >= totalMem * MIN_DEVICE_BUDGET_FRACTION || budget == largestBudget) {
                 viable.add(entry);
             } else {
                 log.info("Device placement: excluding device {} from DSP split — budget {}MB " +
@@ -385,9 +401,38 @@ public class DynamicShapePlan implements Closeable {
             sorted = viable;
         }
 
-        // Sort devices largest-first so the device with the largest usable budget gets
-        // the bulk of ops, minimizing cross-device data transfers.
-        sorted.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
+        // CAPABILITY-STABLE SORT (proc-064 trace): sort by device IDENTITY order, not
+        // remaining budget. Budgets are remaining-FREE memory at compile time, so they
+        // flip between generates as devices fill up — doc2's prefill sorted dev1 first
+        // (7300MB free) after doc1 left dev0 with 3479MB, assigning ALL slots to the
+        // 8GB card, baking that into serialized bytes (breaking park/restore byte
+        // identity), and pushing the capture band onto a device that cannot hold its
+        // margin. Capability must come from what the card CAN hold: total memory,
+        // resident first. This keeps assignments identical across generates, which is
+        // also what makes parked-plan serialization byte-identical.
+        final int residentFinal = residentDevice;
+        final Map<Integer, Long> totalsById = new java.util.HashMap<>();
+        try {
+            NativeOps totalOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            for (Map.Entry<Integer, Long> entry : sorted) {
+                totalsById.put(entry.getKey(), totalOps.getDeviceTotalMemory(entry.getKey()));
+            }
+        } catch (Exception totalQueryFailure) {
+            log.warn("Device placement: total-memory query failed ({}); retaining budget order",
+                    totalQueryFailure.getMessage());
+            for (Map.Entry<Integer, Long> entry : deviceMemoryBudgets.entrySet()) {
+                totalsById.putIfAbsent(entry.getKey(), entry.getValue());
+            }
+        }
+        sorted.sort((a, b) -> {
+            // resident anchor always first
+            if (a.getKey() == residentFinal) return -1;
+            if (b.getKey() == residentFinal) return 1;
+            long totalA = totalsById.getOrDefault(a.getKey(), 0L);
+            long totalB = totalsById.getOrDefault(b.getKey(), 0L);
+            if (totalA != totalB) return Long.compare(totalB, totalA);
+            return Integer.compare(a.getKey(), b.getKey());  // deterministic tiebreak
+        });
 
         // Device-affinity pinning: constants/variables larger than
         // DEVICE_AFFINITY_THRESHOLD_BYTES are copied to the target device when a
@@ -397,7 +442,21 @@ public class DynamicShapePlan implements Closeable {
         // device that physically holds the input. This prevents plan-killing migrations
         // of multi-GB weights to small-capacity devices (e.g. the tied lm-head embedding
         // copy to a 4 GiB secondary device).
-        int anchorDevice = sorted.get(0).getKey();
+        int anchorDevice = residentDevice >= 0 ? residentDevice : sorted.get(0).getKey();
+
+        // Capture-capacity gate (proc-051 contract): native graph capture (cudagraph.cu
+        // pre-capture check) requires 20% of a segment's slot bytes FREE on the capturing
+        // device at capture time. A device whose entire budget is consumed by its own
+        // slot band fails that check at runtime, killing the nested generate with
+        // KERNEL_FAILURE. Band assignment below therefore caps each device's band at
+        // budget/1.2 — leaving 20% of the band as free capture headroom — instead of
+        // allowing the proportional split to fill the budget exactly. Devices that
+        // cannot even hold that margin over a minimal band stay in the split (their
+        // target shrinks to ~0 and they simply receive no band).
+        // NOTE (proc-053 lesson): a gate computed from estimateSlotOutputBytes() here is
+        // inert — slot shapes are unknown before warmup, so the estimate is 0. The
+        // reservation must live in the BAND FILL where budgets are known per device.
+
         boolean[] pinned = new boolean[slots.length];
         int pinnedCount = 0;
         long[] externalInputBytes = getExternalInputBytes();
@@ -452,7 +511,8 @@ public class DynamicShapePlan implements Closeable {
         // known at placement time from static shape-infos (zero-input ops) or the
         // previous invocation's shape cache; unknown-shape slots consume the
         // mean bytes of the known slots (0 when nothing is known — then the
-        // fill degrades exactly to the old count split).
+        // fill falls back to the COUNT-proportional target computed in the band
+        // loop below, matching the pre-byte-aware split).
         int assigned = 0;
         long totalUnpinnedBytes = 0L;
         long[] slotBytes = new long[slots.length];
@@ -482,6 +542,7 @@ public class DynamicShapePlan implements Closeable {
 
         long cumulativeMem = 0L;
         long assignedBytes = 0L;
+        long unpinnedAssignedTotal = 0L;
         int remainingSlots = slots.length - pinnedCount;
         for (int i = 0; i < sorted.size(); i++) {
             int deviceId = sorted.get(i).getKey();
@@ -493,6 +554,31 @@ public class DynamicShapePlan implements Closeable {
                     ? effectiveTotalBytes
                     : (long) Math.round((double) cumulativeMem / totalMem * effectiveTotalBytes);
 
+            // NOTE: a capture-margin band cap (proc-051/053/059) was tried here and
+            // removed: it compared the CUMULATIVE assignedBytes against a PER-DEVICE
+            // allowance, the last device bypassed it via !lastDevice, and with
+            // unknown pre-warmup shapes both sides are ~0 so it never fired
+            // (proc-061/068 traces). Capture-time free memory is enforced by the
+            // native pre-capture check; this Java layer must not guess margins.
+
+            // COUNT-PROPORTIONAL TARGET (parallel to the byte target). Pre-warmup
+            // placement often runs with zero shape-known slots: then avgUnpinnedBytes=0,
+            // slotCost=0 for every slot, and the byte stop condition (assignedBytes +
+            // slotCost > bytesTarget, i.e. 0 > 0) can never fire — so the band never
+            // fills and EVERY slot lands on the first (largest) device. Observed as
+            // DevicePlacement{device0=N ops} on the 2-GPU sharding host
+            // (assertUsesEveryCudaDevice failures, proc-034/035/037): the comment
+            // above claiming a degrade to "the old count split" was wrong — the old
+            // loop (pre-ecdb405f9e) computed slotsForDevice from a count target.
+            // Restore that invariant: when nothing is byte-known, the old loop's
+            // CUMULATIVE count boundary decides each device's band — a device
+            // stops once the running total of unpinned slots reaches
+            // round(cumulativeMem/totalMem * remainingSlots), and the last device
+            // takes the remainder (26/3/3 for 8:1:1 over 32 slots).
+            long cumulativeCountTarget = lastDevice
+                    ? remainingSlots
+                    : (long) Math.round((double) cumulativeMem / totalMem * remainingSlots);
+            boolean byteAware = avgUnpinnedBytes > 0;
             int deviceSlotStart = assigned;
             while (assigned < slots.length) {
                 if (pinned[assigned]) {
@@ -501,12 +587,19 @@ public class DynamicShapePlan implements Closeable {
                     assigned++;
                     continue;
                 }
-                long slotCost = Math.max(slotBytes[assigned], avgUnpinnedBytes);
-                if (!lastDevice && assignedBytes + slotCost > bytesTarget) {
-                    break; // this device's byte band is full; next device takes over
+                if (!lastDevice) {
+                    if (byteAware) {
+                        long slotCost = Math.max(slotBytes[assigned], avgUnpinnedBytes);
+                        if (assignedBytes + slotCost > bytesTarget) {
+                            break; // this device's byte band is full; next device takes over
+                        }
+                    } else if (unpinnedAssignedTotal >= cumulativeCountTarget) {
+                        break; // this device's count band is full; next device takes over
+                    }
                 }
                 slots[assigned].setTargetDeviceId(deviceId);
-                assignedBytes += slotCost;
+                assignedBytes += Math.max(slotBytes[assigned], avgUnpinnedBytes);
+                unpinnedAssignedTotal++;
                 assigned++;
             }
             MultiGpuTracer.traceDeviceAssignment(deviceId, assigned - deviceSlotStart, slots.length,
@@ -520,11 +613,49 @@ public class DynamicShapePlan implements Closeable {
                     avgUnpinnedBytes / (1024 * 1024), knownShapeSlots);
         }
 
+        // OBSERVABILITY (2026-09-23 review): bounded one-line placement trace. The
+        // multi-GPU capture failure (proc-051/053/059/061) cannot be root-caused
+        // without knowing who assigned slots where. This logs the assignment inputs
+        // and outcome for every placement; the reviewer-mandated diagnostic before
+        // any further policy change.
+        StringBuilder placementTrace = new StringBuilder("assignDevices: budgets=[");
+        boolean firstEntry = true;
+        for (Map.Entry<Integer, Long> entry : sorted) {
+            if (!firstEntry) placementTrace.append(", ");
+            placementTrace.append("dev").append(entry.getKey())
+                    .append("=").append(entry.getValue() / (1024 * 1024)).append("MB");
+            firstEntry = false;
+        }
+        placementTrace.append("] resident=").append(residentDevice)
+                .append(" totalBytes=").append(effectiveTotalBytes / (1024 * 1024)).append("MB")
+                .append(" knownShapes=").append(knownShapeSlots).append("/").append(slots.length)
+                .append(" avgSlot=").append(avgUnpinnedBytes / 1024).append("KB")
+                .append(" pinned=").append(pinnedCount)
+                .append(" ranges=");
+        long traceCumulative = 0L;
+        firstEntry = true;
+        for (int i = 0; i < sorted.size(); i++) {
+            int deviceId = sorted.get(i).getKey();
+            long bytesTargetForTrace = lastDeviceTrace(i, sorted)
+                    ? effectiveTotalBytes
+                    : (long) Math.round((double) (traceCumulative += sorted.get(i).getValue())
+                            / totalMem * effectiveTotalBytes);
+            placementTrace.append("dev").append(deviceId).append("->")
+                    .append(bytesTargetForTrace / (1024 * 1024)).append("MB");
+            if (i < sorted.size() - 1) placementTrace.append(", ");
+        }
+        placementTrace.append(" result=").append(getDeviceAssignmentSummary());
+        log.info(placementTrace.toString());
+
         // Compute numDistinctDevices from actual assignments
         computeNumDistinctDevices();
 
         log.debug("Device placement: {} slots across {} devices — {}",
                 slots.length, numDistinctDevices, getDeviceAssignmentSummary());
+    }
+
+    private static boolean lastDeviceTrace(int i, java.util.List<Map.Entry<Integer, Long>> sorted) {
+        return i == sorted.size() - 1;
     }
 
     /**
@@ -554,19 +685,24 @@ public class DynamicShapePlan implements Closeable {
 
     /**
      * Byte length of the array described by a ND4J shape-info buffer
-     * (rank at [0], shape at [1..rank], dtype code at [rank + 2]).
+     * ({@code [rank, shape..., stride..., extras, ews, order]}). The dtype is
+     * encoded in the extras word, so it is decoded with
+     * {@link ArrayOptionsHelper#dataType(long[])}; the word right after the
+     * shape is a stride (the extras word at rank 1). Returns 0 for an unknown
+     * dimension or a dtype without a fixed element width (UTF8/16/32).
      */
     private static long shapeInfoBytes(long[] info) {
-        if (info == null || info.length < 2) return 0L;
+        if (info == null || info.length == 0) return 0L;
         int rank = (int) info[0];
-        if (rank < 0 || info.length < rank + 3) return 0L;
+        if (rank < 0 || info.length < Shape.shapeInfoLength(rank)) return 0L;
         long elements = 1L;
         for (int d = 1; d <= rank; d++) {
             long dim = info[d];
             if (dim <= 0) return 0L; // dynamic placeholder — unknown
             elements *= dim;
         }
-        return elements * DataTypeUtil.lengthForDtype(DataType.fromInt((int) info[rank + 2]));
+        int width = ArrayOptionsHelper.dataType(info).width();
+        return width > 0 ? elements * width : 0L;
     }
 
     /**

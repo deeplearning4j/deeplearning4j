@@ -37,6 +37,8 @@ gh workflow run build-deploy-cross-platform.yml --ref ag_new_release_updates_2 \
 
 After reviewing the preview, use `cacheMigration=copy`. The migration option
 skips all build and publication jobs; ordinary dispatches remain unchanged.
+Kompile's native AOT image cache (`deeplearning4j/releases/kompile-native-cache/v1`)
+is not part of `all`; add `-f cacheNamespace=kompile` to copy it.
 
 This is the **data-copy stage only**: it leaves existing build workers and Azure
 support unchanged. Backend selection, S3-enabled sccache binaries, R2 endpoint

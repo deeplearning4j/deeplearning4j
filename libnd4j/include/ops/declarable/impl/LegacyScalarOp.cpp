@@ -20,14 +20,94 @@
 // Created by raver119 on 16.10.2017.
 //
 #include <array/NDArrayFactory.h>
+#include <execution/AffinityManager.h>
+#include <graph/DspDiagnostics.h>
+#include <helpers/DebugHelper.h>
 #include <ops/declarable/LegacyScalarOp.h>
 
 #include <ops/declarable/OpRegistrator.h>
 #include <legacy/NativeOpExecutioner.h>
 
+#include <cstring>
+
 namespace sd {
+#ifdef SD_CUDA
+SD_LIB_EXPORT bool isCudaGraphCaptureActiveForScalarOps(void *stream);
+#endif
 namespace ops {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+namespace {
+// The cached scalar outlives the device it was built on: a DSP capture rehome
+// warms a plan up on one device and captures it on another, and a kernel that
+// reads a non-peer device's buffer faults (err700). Outside capture migrate()
+// moves the cached buffer in place. During capture migrate() declines so the
+// buffer never moves under recorded work; the call then gets a replica built
+// on the current device, whose capture allocation and H2D staging are
+// graph-owned and stay valid for every replay.
+NDArray *scalarOperandOnCurrentDevice(NDArray *cached, LaunchContext *context) {
+  if (cached == nullptr || cached->dataBuffer() == nullptr)
+    THROW_EXCEPTION("LegacyScalarOp: cached scalar has no valid DataBuffer");
+
+  const int device = AffinityManager::currentDeviceId();
+  auto *cachedBuffer = cached->dataBuffer();
+  const int cachedDevice = cachedBuffer->deviceId();
+#ifdef SD_CUDA
+  auto *stream = context != nullptr ? context->getCudaStream() : nullptr;
+  const bool capturing = isCudaGraphCaptureActiveForScalarOps(static_cast<void *>(stream));
+#else
+  const bool capturing = false;
+#endif
+  if (cachedDevice == device) {
+    DSP_DIAG(MULTI_DEVICE,
+             "SCALAR_OPERAND: cachedDb=%p device=%d targetDevice=%d capture=%d special=%p replica=0",
+             static_cast<void *>(cachedBuffer), cachedDevice, device, capturing ? 1 : 0,
+             cachedBuffer->special());
+    return cached;
+  }
+
+  // Never ask DataBuffer::migrate to move an address while a graph is being
+  // recorded. The migration guard preserves the old allocation for live plans,
+  // but NDArray::syncToDevice still updates its local affinity. During capture,
+  // make a capture-workspace replica from the scalar's authoritative host copy.
+  if (!capturing) {
+    cached->syncToDevice();
+    if (cachedBuffer->deviceId() == device) {
+      DSP_DIAG(MULTI_DEVICE,
+               "SCALAR_OPERAND: cachedDb=%p device=%d targetDevice=%d capture=0 special=%p replica=0",
+               static_cast<void *>(cachedBuffer), cachedBuffer->deviceId(), device,
+               cachedBuffer->special());
+      return cached;
+    }
+    THROW_EXCEPTION("LegacyScalarOp: cached scalar could not be migrated to the execution device");
+  }
+
+  if (!cached->isActualOnHostSide())
+    THROW_EXCEPTION("LegacyScalarOp: cannot rehome a stale host scalar during graph capture");
+  auto replica = new NDArray(cached->dataType(), context);
+  try {
+    std::memcpy(replica->buffer(), cached->buffer(), cached->sizeOfT());
+    replica->tickWriteHost();
+    replica->syncToDevice();
+    auto *replicaBuffer = replica->dataBuffer();
+    if (replicaBuffer == nullptr || replicaBuffer->deviceId() != device)
+      THROW_EXCEPTION("LegacyScalarOp: capture scalar replica was not allocated on the execution device");
+    DSP_DIAG(MULTI_DEVICE,
+             "SCALAR_OPERAND: cachedDb=%p cachedDevice=%d targetDevice=%d capture=1 replicaDb=%p replicaDevice=%d special=%p replica=1",
+             static_cast<void *>(cachedBuffer), cachedDevice, device,
+             static_cast<void *>(replicaBuffer), replicaBuffer->deviceId(), replicaBuffer->special());
+  } catch (...) {
+    delete replica;
+    throw;
+  }
+  return replica;
+}
+
+struct ScalarReplica {
+  NDArray *array;
+  ~ScalarReplica() { delete array; }
+};
+}  // namespace
+
 LegacyScalarOp::LegacyScalarOp() : LegacyOp(1) {
   this->getOpDescriptor()->allowInplace(true);
   this->getOpDescriptor()->addTraits(
@@ -40,7 +120,9 @@ LegacyScalarOp::LegacyScalarOp(int opNum) : LegacyOp(1, opNum) {
       OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
-LegacyOp *LegacyScalarOp::clone() { return new LegacyScalarOp(this->_opNum, *this->_scalar); }
+LegacyOp *LegacyScalarOp::clone() {
+  return _scalar == nullptr ? new LegacyScalarOp(this->_opNum) : new LegacyScalarOp(this->_opNum, *this->_scalar);
+}
 
 LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar) : LegacyOp(1, opNum) {
   this->getOpDescriptor()->allowInplace(true);
@@ -95,24 +177,40 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
       _cachedScalarType = xDt;
     }
 
-    NDArray::prepareSpecialUse({z}, {x, _scalar});
+    auto scalar = scalarOperandOnCurrentDevice(_scalar, block.launchContext());
+    ScalarReplica replica{scalar == _scalar ? nullptr : scalar};
+
+    NDArray::prepareSpecialUse({z}, {x, scalar});
+    DSP_DIAG(STREAM_SYNC,
+             "STREAM_ROUTE site=execScalar.tArgs opNum=%d x=%p z=%p scalar=%p "
+             "xDev=%d zDev=%d scalarDev=%d",
+             opNum, (void*)x->specialBuffer(), (void*)z->specialBuffer(),
+             (void*)scalar->specialBuffer(), x->dataBuffer() ? x->dataBuffer()->deviceId() : -1,
+             z->dataBuffer() ? z->dataBuffer()->deviceId() : -1,
+             scalar->dataBuffer() ? scalar->dataBuffer()->deviceId() : -1);
 
     NativeOpExecutioner::execScalar(
         block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(),
-        _scalar->specialBuffer(), _scalar->specialShapeInfo(),
+        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), scalar->buffer(), scalar->shapeInfo(),
+        scalar->specialBuffer(), scalar->specialShapeInfo(),
         extras.length() > 1 ? extras.argumentsAsT(z->dataType(), 1) : nullptr);
 
-    NDArray::registerSpecialUse({z}, {x, _scalar});
+    NDArray::registerSpecialUse({z}, {x, scalar});
   } else {
-    NDArray::prepareSpecialUse({z}, {x, _scalar});
+    REQUIRE_TRUE(_scalar != nullptr, 0,
+                 "LegacyScalarOp: no scalar value provided (neither via tArgs, input[1], nor pre-set _scalar). "
+                 "OpNum=%d. This typically means the DSP plan compiler did not extract the scalar value.", opNum);
+    auto scalar = scalarOperandOnCurrentDevice(_scalar, block.launchContext());
+    ScalarReplica replica{scalar == _scalar ? nullptr : scalar};
+
+    NDArray::prepareSpecialUse({z}, {x, scalar});
 
     NativeOpExecutioner::execScalar(
         block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(),
-        _scalar->specialBuffer(), _scalar->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
+        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), scalar->buffer(), scalar->shapeInfo(),
+        scalar->specialBuffer(), scalar->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
 
-    NDArray::registerSpecialUse({z}, {x, _scalar});
+    NDArray::registerSpecialUse({z}, {x, scalar});
   }
 
 

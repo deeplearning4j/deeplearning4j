@@ -873,6 +873,14 @@ public class DeviceMemoryManager {
      * fallback is enabled and it can fit). Returns {@code null} when nothing can accommodate the
      * allocation, so the caller can surface a real OOM instead of looping forever.
      *
+     * <p>TRIM-BEFORE-FAILOVER (fpna session v3): before any cross-device failover, the
+     * failing device's memory pool is trimmed — reserved-but-reclaimable blocks are
+     * released to the driver and the environment allocation counter drops with them.
+     * With DSP parked plans resident, pool-reserved memory can dominate the counter
+     * while most of it is dead (proc-070: a 6MB transient failed over to dev1 and the
+     * immediate migrate back was rejected). A cross-device round-trip for a transient
+     * allocation must be the LAST resort, not the first.
+     *
      * @param bytes              allocation size in bytes
      * @param excludeDeviceIndex GPU index that just OOMed (excluded from the GPU search)
      * @return target device to retry on, or {@code null} if none can fit
@@ -880,6 +888,51 @@ public class DeviceMemoryManager {
     public DeviceDescriptor selectFailoverDevice(long bytes, int excludeDeviceIndex) {
         ensureDevicesRegistered();
 
+        // 1. TRIM ALL GPU pools before ranking. Stale reserved-but-reclaimable pool
+        // blocks distort EVERY device's pool-aware free memory, not just the failing
+        // device's. Trimming the failing device alone (fpna session v3, first cut)
+        // answered "can the failing device take it back in place?" but compared the
+        // cross-device candidates against un-trimmed accounting. Trim every GPU,
+        // then run the stay-in-place and cross-device checks against fresh numbers.
+        // Failures are logged and skipped per-device: an un-trimmable GPU falls back
+        // to whatever its pool accounting reports.
+        java.util.Map<Integer, Long> reclaimedByDevice = new java.util.LinkedHashMap<>();
+        for (DeviceDescriptor device : registeredDevices.values()) {
+            if (!device.getDeviceType().isGpu()) continue;
+            int idx = device.getDeviceIndex();
+            try {
+                var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                long usedBefore = getNativePoolUsedMemory(idx);
+                nativeOps.trimMemoryPool(idx);
+                long usedAfter = getNativePoolUsedMemory(idx);
+                long reclaimed = usedBefore - usedAfter;
+                if (reclaimed != 0) {
+                    reclaimedByDevice.put(idx, reclaimed);
+                }
+            } catch (Exception trimFailure) {
+                log.debug("Trim-before-failover: pool trim failed on device {}: {}",
+                        idx, trimFailure.getMessage());
+            }
+        }
+        for (Map.Entry<Integer, Long> e : reclaimedByDevice.entrySet()) {
+            log.info("Trim-before-failover: device {} pool released {} MB",
+                    e.getKey(), e.getValue() / (1024 * 1024));
+        }
+
+        // 2. STAY-IN-PLACE: re-check the failing device after trim. If its counter
+        // now admits the allocation, staying put beats any cross-device hop (a hop
+        // for a transient allocation forces a migrate back — proc-070/072 chain).
+        if (excludeDeviceIndex >= 0) {
+            DeviceDescriptor stay = getRegisteredDevice(excludeDeviceIndex);
+            if (stay != null && getPoolAwareFreeMemory(excludeDeviceIndex) >= bytes) {
+                log.info("Trim-before-failover: device {} can now fit {} bytes in place — no cross-device hop",
+                        excludeDeviceIndex, bytes);
+                return stay;
+            }
+        }
+
+        // 3. Cross-device search over ALL registered GPUs against post-trim numbers
+        // (original behavior, now with fresh accounting).
         DeviceDescriptor best = null;
         long bestFree = -1;
         for (DeviceDescriptor device : registeredDevices.values()) {

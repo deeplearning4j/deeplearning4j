@@ -39,18 +39,18 @@
       "knowledgeBaseId" : "deeplearning4j-knowledge",
       "graphPath" : "data/crawls/deeplearning4j-knowledge/graph.kgraph",
       "codeProjectionVersion" : "4",
-      "codeProjectedAt" : "2026-09-20T21:41:13.121503395Z",
-      "codeIndexGeneration" : "2026-09-20T21:34:22.902245914Z",
-      "codeProjectionEntities" : "257885",
-      "codeProjectionRelations" : "988085",
-      "codeProjectionCodeEntities" : "357780",
+      "codeProjectedAt" : "2026-09-30T12:09:54.674209334Z",
+      "codeIndexGeneration" : "2026-09-30T12:01:03.024727226Z",
+      "codeProjectionEntities" : "260140",
+      "codeProjectionRelations" : "996080",
+      "codeProjectionCodeEntities" : "358360",
       "codeProjectionFolderProjectId" : "deeplearning4j",
       "codeProjectionFactSheetId" : "",
       "codeProjectionIncludes" : "",
       "codeProjectionExcludes" : ""
     },
     "createdAt" : "2026-08-21T20:06:29.082576947Z",
-    "updatedAt" : "2026-09-20T21:41:13.121825080Z"
+    "updatedAt" : "2026-09-30T12:09:54.674504399Z"
   }, {
     "id" : "dl4j-mobile-tooling-final",
     "codeProjectId" : "dl4j-mobile-tooling-final",
@@ -143,18 +143,18 @@
       "knowledgeBaseId" : "deeplearning4j-knowledge",
       "graphPath" : "data/crawls/deeplearning4j-knowledge/graph.kgraph",
       "codeProjectionVersion" : "4",
-      "codeProjectedAt" : "2026-09-14T15:28:17.861139564Z",
-      "codeIndexGeneration" : "2026-09-14T15:08:58.870814927Z",
-      "codeProjectionEntities" : "622867",
-      "codeProjectionRelations" : "1803320",
-      "codeProjectionCodeEntities" : "13035",
+      "codeProjectedAt" : "2026-09-23T03:25:02.799551021Z",
+      "codeIndexGeneration" : "2026-09-23T03:15:05.198277763Z",
+      "codeProjectionEntities" : "244839",
+      "codeProjectionRelations" : "909343",
+      "codeProjectionCodeEntities" : "15137",
       "codeProjectionFolderProjectId" : "deeplearning4j",
       "codeProjectionFactSheetId" : "",
       "codeProjectionIncludes" : "",
       "codeProjectionExcludes" : ""
     },
     "createdAt" : "2026-08-28T00:54:35.194487370Z",
-    "updatedAt" : "2026-09-14T15:28:17.861468545Z"
+    "updatedAt" : "2026-09-23T03:25:02.799845234Z"
   }, {
     "id" : "execution",
     "codeProjectId" : "execution",
@@ -344,5 +344,5 @@
   "workflows" : [ ],
   "metadata" : { },
   "createdAt" : "2026-08-21T20:06:29.083137933Z",
-  "updatedAt" : "2026-09-22T01:26:05.259493254Z"
+  "updatedAt" : "2026-09-30T12:09:54.674964476Z"
 }

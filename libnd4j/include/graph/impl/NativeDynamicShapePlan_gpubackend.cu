@@ -600,6 +600,29 @@ class ScopedCudaAllocationRequestTracking {
   bool active_ = true;
 };
 
+// cuFuncGetParamInfo (CUDA 12.4 driver) is the only way to learn how many
+// entries a captured node's kernelParams array holds: the array has one
+// pointer per kernel parameter and no terminator. Resolved through
+// cuGetProcAddress so this diagnostics-only query does not raise the minimum
+// driver libnd4jcuda loads against. nullptr = the driver lacks it.
+using DspFuncGetParamInfoFn = CUresult (CUDAAPI*)(CUfunction, size_t, size_t*, size_t*);
+
+static DspFuncGetParamInfoFn dspResolveFuncGetParamInfo() {
+#if defined(CUDA_VERSION) && CUDA_VERSION >= 12000
+  static const DspFuncGetParamInfoFn fn = [] {
+    void* pfn = nullptr;
+    CUdriverProcAddressQueryResult status = CU_GET_PROC_ADDRESS_SYMBOL_NOT_FOUND;
+    if (cuGetProcAddress("cuFuncGetParamInfo", &pfn, 12040, CU_GET_PROC_ADDRESS_DEFAULT, &status) != CUDA_SUCCESS ||
+        status != CU_GET_PROC_ADDRESS_SUCCESS)
+      return static_cast<DspFuncGetParamInfoFn>(nullptr);
+    return reinterpret_cast<DspFuncGetParamInfoFn>(pfn);
+  }();
+  return fn;
+#else
+  return nullptr;
+#endif
+}
+
 static bool instantiateAndStoreMergedCapture(
     const char* diagPrefix,
     sd::cuda::CudaGraphHandle* nativeHandle,
@@ -726,35 +749,55 @@ static bool instantiateAndStoreMergedCapture(
           CUresult drvRes = cuGraphKernelNodeGetParams(
               reinterpret_cast<CUgraphNode>(nodeCopy), &dkp);
           if (drvRes == CUDA_SUCCESS) {
+            // -1 = unknown (driver without cuFuncGetParamInfo, or a node that
+            // names its kernel through CUkernel instead of func).
+            const DspFuncGetParamInfoFn getParamInfo = dspResolveFuncGetParamInfo();
+            int paramCount = -1;
+            if (getParamInfo != nullptr && dkp.func != nullptr) {
+              size_t paramOffset = 0, paramSize = 0;
+              paramCount = 0;
+              while (paramCount < 4096 &&
+                     getParamInfo(dkp.func, paramCount, &paramOffset, &paramSize) == CUDA_SUCCESS)
+                paramCount++;
+            }
             DSP_DIAG(EXECUTE,
                      "NODE_AUDIT: group=%d node[%zu] KERNEL(driver) func=%p grid=%ux%ux%u "
-                     "block=%ux%ux%u sharedMem=%u paramCount=%u",
+                     "block=%ux%ux%u sharedMem=%u paramCount=%d",
                      mergedGroupId, ni.nodeIndex, (void*)dkp.func,
                      dkp.gridDimX, dkp.gridDimY, dkp.gridDimZ,
                      dkp.blockDimX, dkp.blockDimY, dkp.blockDimZ,
-                     dkp.sharedMemBytes, dkp.kernelParams != nullptr ? 1u : 0u);
+                     dkp.sharedMemBytes, paramCount);
             // Bake check: dereference the captured param VALUES (kernelParams is
             // an array of pointers to the baked argument values). For indirect-
             // args Triton kernels: [0]=argTable device ptr, [1]=n_elements i32,
             // [2]=global scratch (null), [3]=profile (null). A baked n_elements
             // differing from the live launch's, or a stale argTable pointer,
-            // directly explains replay-vs-live divergence.
+            // directly explains replay-vs-live divergence. Only the first
+            // paramCount entries exist, and each value is read at its real size:
+            // entries past the end are unrelated heap words, and dereferencing
+            // one faulted the serving JVM (SIGSEGV) on a 1-parameter kernel.
             if (dkp.kernelParams != nullptr) {
-              for (unsigned p = 0; p < 4 && dkp.kernelParams[p] != nullptr; p++) {
-                // Heuristic per known Triton launch layout: arg0/arg2/arg3 are
-                // 8-byte pointers, arg1 is a 4-byte i32.
-                if (p == 1) {
+              for (int p = 0; p < paramCount && p < 4; p++) {
+                size_t paramOffset = 0, paramSize = 0;
+                if (getParamInfo(dkp.func, p, &paramOffset, &paramSize) != CUDA_SUCCESS ||
+                    dkp.kernelParams[p] == nullptr)
+                  break;
+                if (paramSize == sizeof(int32_t)) {
                   int32_t ival = 0;
                   memcpy(&ival, dkp.kernelParams[p], sizeof(ival));
                   DSP_DIAG(EXECUTE,
-                           "NODE_AUDIT: group=%d node[%zu] PARAM[%u] i32=%d",
+                           "NODE_AUDIT: group=%d node[%zu] PARAM[%d] i32=%d",
                            mergedGroupId, ni.nodeIndex, p, ival);
-                } else {
+                } else if (paramSize == sizeof(void*)) {
                   void* pval = nullptr;
                   memcpy(&pval, dkp.kernelParams[p], sizeof(pval));
                   DSP_DIAG(EXECUTE,
-                           "NODE_AUDIT: group=%d node[%zu] PARAM[%u] ptr=%p",
+                           "NODE_AUDIT: group=%d node[%zu] PARAM[%d] ptr=%p",
                            mergedGroupId, ni.nodeIndex, p, pval);
+                } else {
+                  DSP_DIAG(EXECUTE,
+                           "NODE_AUDIT: group=%d node[%zu] PARAM[%d] size=%zu (not decoded)",
+                           mergedGroupId, ni.nodeIndex, p, paramSize);
                 }
               }
             }
@@ -887,8 +930,12 @@ static bool instantiateAndStoreMergedCapture(
 
   bool instOk = nativeHandle->instantiate();
   if (!instOk) {
-    cudaError_t instErr = cudaGetLastError();
-    DSP_DIAG(EXECUTE, "%s: group=%d instantiate FAILED — cudaGetLastError=%d (%s) "
+    // instantiate() clears the sticky error and destroys the rejected graph.
+    // Its saved result, not cudaGetLastError(), is the authoritative cause.
+    const auto instErr = static_cast<cudaError_t>(nativeHandle->getLastInstantiateError());
+    if (instErr == cudaErrorMemoryAllocation && captureHeadroomLimited != nullptr)
+      *captureHeadroomLimited = true;
+    DSP_DIAG(COMPILE, "%s: group=%d instantiate FAILED — instantiateError=%d (%s) "
              "wasOom=%d nodes=%zu",
              diagPrefix, mergedGroupId, (int)instErr, cudaGetErrorString(instErr),
              nativeHandle->wasLastInstantiateOom() ? 1 : 0, nodeCount);
@@ -4770,6 +4817,31 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             producedOutputs.insert(slots_[s].wiring.outputSlotIndices[o]);
           }
         }
+        // Snapshot only storage that segment execution can overwrite. Copying
+        // every live-in duplicates immutable cross-segment weights (the LLM
+        // projection alone is ~2 GiB). Compare whole backing allocations, not
+        // logical lengths: strided/offset views may touch a wider byte range.
+        auto mayOverwrite = [&](NDArray* input) {
+          auto* inputBuffer = input->dataBuffer();
+          if (inputBuffer == nullptr || inputBuffer->special() == nullptr) return true;
+          const uintptr_t inputBase = reinterpret_cast<uintptr_t>(inputBuffer->special());
+          const size_t inputBytes = inputBuffer->getLenInBytes();
+          for (int output : producedOutputs) {
+            if (output < 0 || output >= totalOutputSlots_) return true;
+            NDArray* array = outputSlots_[output];
+            if (array == nullptr) return true;  // no warmed storage proof yet
+            if (array->isEmpty()) continue;
+            auto* buffer = array->dataBuffer();
+            if (buffer == nullptr || buffer->special() == nullptr) return true;
+            if (buffer == inputBuffer) return true;
+            const uintptr_t base = reinterpret_cast<uintptr_t>(buffer->special());
+            const size_t bytes = buffer->getLenInBytes();
+            // Difference comparison avoids overflowing an end address.
+            if (base >= inputBase ? base - inputBase < inputBytes
+                                  : inputBase - base < bytes) return true;
+          }
+          return false;
+        };
         ScopedGapStreamOverride liveInputStream(ctx.cudaStr);
         for (int s = seg.def.startSlot; s <= seg.def.endSlot; ++s) {
           for (int i = 0; i < slots_[s].wiring.numInputs; ++i) {
@@ -4777,7 +4849,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             if (source >= 0 && source < totalOutputSlots_ &&
                 producedOutputs.count(source) == 0 && savedInputs.insert(source).second &&
                 outputSlots_[source] != nullptr) {
-              captureLiveInputs.values.emplace_back(source, outputSlots_[source]->dup());
+              const bool snapshot = mayOverwrite(outputSlots_[source]);
+              DSP_DIAG(MEMORY, "CAPTURE_LIVE_INPUT: seg[%d-%d] source=%d bytes=%lld snapshot=%d",
+                       seg.def.startSlot, seg.def.endSlot, source,
+                       (long long)(outputSlots_[source]->lengthOf() * outputSlots_[source]->sizeOfT()),
+                       (int)snapshot);
+              if (snapshot)
+                captureLiveInputs.values.emplace_back(source, outputSlots_[source]->dup());
             }
           }
         }
@@ -5066,76 +5144,82 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                      postWarmupDevice, seg.def.startSlot, seg.def.endSlot);
       }
 
+      // Defers capture when the device lacks capacity for capture-only state
+      // (graph metadata, alias scratch). Capture has not begun at either call
+      // site. The pre-capture warmup above has already produced the correct result.
+      const auto deferCaptureForCapacity = [&](const char* site, const std::string& detail) -> Status {
+        const bool retriesRemain =
+            seg.exec.captureOomRetries < GraphSegment::maxOomRetries();
+        const int retryAfter = retriesRemain
+            ? seg.exec.executionCount + GraphSegment::retryInterval()
+            : INT_MAX;
+        SegmentLifecycle::markOomDeferred(seg.exec, retryAfter);
+
+        DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
+                     "%s DEFERRED: %s for seg[%d-%d] "
+                     "retry=%d/%d retryAfter=%d compiledBy=%s — preserving compiled plan",
+                     site, detail.c_str(),
+                     seg.def.startSlot, seg.def.endSlot,
+                     seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
+                     retryAfter, seg.exec.compiledByBackend.c_str());
+
+        // Complete the queued warmup before releasing its pinned host sources,
+        // then tear down only capture-attempt state: retain compiled Triton
+        // kernels, shape key, composite schedule, output buffers, and shared
+        // workspaces for compiled direct execution.
+        cudaError_t warmupSyncErr = cudaStreamSynchronize(ctx.cudaStr);
+        cleanupCaptureTlsState(true, static_cast<void*>(prevCaptureStream));
+        popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
+        restoreCublasWorkspaceAfterCapture(stream);
+        restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
+        seg.exec.replayHandle.reset();
+
+#if HAVE_TRITON
+        tritonOrderedRangeGuard.active = false;
+        TritonGraphBackend::clearOrderedRangeExecutor();
+#endif
+
+        if (warmupSyncErr != cudaSuccess) {
+          DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
+                       "%s DEFER warmup synchronization failed for seg[%d-%d]: "
+                       "cudaError=%d (%s)",
+                       site, seg.def.startSlot, seg.def.endSlot,
+                       static_cast<int>(warmupSyncErr),
+                       cudaGetErrorString(warmupSyncErr));
+          SegmentLifecycle::markFailed(
+              seg.exec, "capture_defer_warmup_sync_failed",
+              seg.def.startSlot, seg.def.endSlot);
+          return setGpuBackendFailureDetail(
+              seg, "deferred capture warmup synchronization failed with CUDA error " +
+                       std::to_string(static_cast<int>(warmupSyncErr)) + " (" +
+                       cudaGetErrorString(warmupSyncErr) + ")");
+        }
+
+        if (willUseCompositeCapture) {
+          // Composite preparation deliberately leaves warmup outputs intact.
+          // Count this logical invocation once and return those correct outputs.
+          seg.exec.executionCount++;
+          return Status::OK;
+        }
+
+        // Monolithic preparation may have batch-zeroed warmup outputs before this
+        // point. Re-execute natively once so callers never observe zeroed data.
+        SyncOverride deferredCaptureSync(*this, "capture_headroom_deferred_sbs");
+        return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+      };
+
       // POST-ALLOCATION MEMORY GATE: workspace + cuBLAS are allocated. CUDA
       // graph metadata is an optional optimization; insufficient metadata headroom
       // must not invalidate a successfully compiled Triton segment or fail inference.
-      // The pre-capture warmup above has already produced the correct result.
       {
         size_t gpuFree = 0, gpuTotal = 0;
         cudaMemGetInfo(&gpuFree, &gpuTotal);
         size_t safetyBytes = Environment::getInstance().dspGraphMetadataSafetyMb() * 1024ULL * 1024ULL;
         if (gpuFree < safetyBytes) {
-          int deviceId = 0;
-          cudaGetDevice(&deviceId);
-
-          const bool retriesRemain =
-              seg.exec.captureOomRetries < GraphSegment::maxOomRetries();
-          const int retryAfter = retriesRemain
-              ? seg.exec.executionCount + GraphSegment::retryInterval()
-              : INT_MAX;
-          SegmentLifecycle::markOomDeferred(seg.exec, retryAfter);
-
-          DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                       "POST-ALLOC GATE DEFERRED: free=%zuMB < safety=%zuMB for seg[%d-%d] "
-                       "retry=%d/%d retryAfter=%d compiledBy=%s — preserving compiled plan",
-                       gpuFree / (1024*1024), safetyBytes / (1024*1024),
-                       seg.def.startSlot, seg.def.endSlot,
-                       seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
-                       retryAfter, seg.exec.compiledByBackend.c_str());
-
-          // Capture has not begun. Complete the queued warmup before releasing
-          // its pinned host sources, then tear down only capture-attempt state:
-          // retain compiled Triton kernels, shape key, composite schedule, output
-          // buffers, and shared workspaces for compiled direct execution.
-          cudaError_t warmupSyncErr = cudaStreamSynchronize(ctx.cudaStr);
-          cleanupCaptureTlsState(true, static_cast<void*>(prevCaptureStream));
-          popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
-          restoreCublasWorkspaceAfterCapture(stream);
-          restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
-          seg.exec.replayHandle.reset();
-
-#if HAVE_TRITON
-          tritonOrderedRangeGuard.active = false;
-          TritonGraphBackend::clearOrderedRangeExecutor();
-#endif
-
-          if (warmupSyncErr != cudaSuccess) {
-            DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
-                         "POST-ALLOC DEFER warmup synchronization failed for seg[%d-%d]: "
-                         "cudaError=%d (%s)",
-                         seg.def.startSlot, seg.def.endSlot,
-                         static_cast<int>(warmupSyncErr),
-                         cudaGetErrorString(warmupSyncErr));
-            SegmentLifecycle::markFailed(
-                seg.exec, "capture_defer_warmup_sync_failed",
-                seg.def.startSlot, seg.def.endSlot);
-            return setGpuBackendFailureDetail(
-                seg, "deferred capture warmup synchronization failed with CUDA error " +
-                         std::to_string(static_cast<int>(warmupSyncErr)) + " (" +
-                         cudaGetErrorString(warmupSyncErr) + ")");
-          }
-
-          if (willUseCompositeCapture) {
-            // Composite preparation deliberately leaves warmup outputs intact.
-            // Count this logical invocation once and return those correct outputs.
-            seg.exec.executionCount++;
-            return Status::OK;
-          }
-
-          // Monolithic preparation may have batch-zeroed warmup outputs before this
-          // gate. Re-execute natively once so callers never observe zeroed data.
-          SyncOverride deferredCaptureSync(*this, "capture_headroom_deferred_sbs");
-          return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+          return deferCaptureForCapacity(
+              "POST-ALLOC GATE",
+              "free=" + std::to_string(gpuFree / (1024*1024)) + "MB < safety=" +
+                  std::to_string(safetyBytes / (1024*1024)) + "MB");
         }
       }
 
@@ -5207,10 +5291,25 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       // launcher. Resolve views against the staged inputs, not their old raw
       // externals, before preparing scratch and immutable H2D source rows.
       if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend)) {
-        if (refreshStaleViewWrappersInSegment(seg, effectiveExternalsForCapture, numExt) < 0)
+        if (refreshStaleViewWrappersInSegment(seg, effectiveExternalsForCapture, numExt) < 0) {
+          abortCapture(seg, true, didPushCtx, tritonCaptureDevice,
+                       prevCaptureStream, savedSlotPhasesTriton, stream);
+          tritonOrderedRangeGuard.active = false;
+          TritonGraphBackend::clearOrderedRangeExecutor();
+          SegmentLifecycle::markFailed(
+              seg.exec, "capture_view_publication_failed",
+              seg.def.startSlot, seg.def.endSlot);
           return setGpuBackendFailureDetail(seg, "Triton capture alias/view publication failed");
-        backend->prepareAliasBindingsForCapture(seg, effectiveExternalsForCapture,
-            numExt, outputSlots_, totalOutputSlots_, stream);
+        }
+        // A non-OK status is only a device-capacity failure for the alias
+        // scratch arena; every other failure throws.
+        if (backend->prepareAliasBindingsForCapture(seg, effectiveExternalsForCapture,
+                numExt, outputSlots_, totalOutputSlots_, stream) != Status::OK) {
+          auto* errorRef = LaunchContext::defaultContext()->errorReference();
+          const std::string scratchDetail = errorRef->errorMessage();  // consumes the error code
+          errorRef->setErrorMessage("");
+          return deferCaptureForCapacity("CAPTURE-PREP ALIAS SCRATCH", scratchDetail);
+        }
       }
 #endif
 
@@ -5853,6 +5952,16 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                        ? std::string(backendError) + islandContext
                        : std::string("Triton island returned without backend detail") +
                              islandContext);
+               // Backend-returned native failures carry their own message. When the
+               // message records a CUDA allocation refusal (out of memory), this island
+               // failed from capacity exactly like a headroom refusal or an instantiate
+               // OOM: entering OOM_RETRY lets the capacity-recovery path split the work
+               // instead of permanently failing a healthy capture stream. Non-OOM backend
+               // errors (capture-invalidating ops, bad inputs) stay fatal by design.
+               if (backendError != nullptr &&
+                   std::string(backendError).find("out of memory") != std::string::npos) {
+                 captureHeadroomLimited = true;
+               }
                releaseMergedHandle("island_fail");
                break;
              }
@@ -5939,7 +6048,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            // live-gap-only replay requires no native handles.
 
            // Record the cast-cache high-water mark.  During capture, merged
-           // gap matmuls consumed tl_castA.index / tl_castB.index slots.  Those
+           // gap matmuls consumed this segment scope's A/B cast slots.  Those
            // slots contain device pointers baked into the merged CUDA graphs.
            // At replay time, unmerged gap matmuls must NOT reuse those slots —
            // they must start from the high-water mark instead of 0.
@@ -6179,7 +6288,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 
            size_t gpuFreeAtFail = 0, gpuTotalAtFail = 0;
            cudaMemGetInfo(&gpuFreeAtFail, &gpuTotalAtFail);
-           // Capacity deferral is the only path that may enter OOM_RETRY. A gap
+           // Headroom refusal or an actual instantiation OOM may enter OOM_RETRY. A gap
            // capture invalidation (for example, an allocation performed by a view
            // wrapper constructor) is a deterministic capture-safety defect, not an
            // OOM. Misclassifying every capture error as OOM hid the failing slot and
@@ -6201,6 +6310,17 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              // stateful gaps a second time through the direct-dispatch path.
              seg.exec.executionCount++;
              return Status::OK;
+           } else if (captureHeadroomLimited) {
+             SegmentLifecycle::markFailed(
+                 seg.exec, "composite_capture_capacity_retries_exhausted",
+                 seg.def.startSlot, seg.def.endSlot);
+             DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                           "COMPOSITE_CAPTURE_OOM: seg[%d-%d] capture capacity retries exhausted "
+                           "with gpuFree=%zuMB retries=%d. detail=%s",
+                           seg.def.startSlot, seg.def.endSlot, gpuFreeAtFail / (1024*1024),
+                           seg.exec.captureOomRetries,
+                           compositeCaptureFailureDetail.empty()
+                               ? "unspecified" : compositeCaptureFailureDetail.c_str());
            } else {
              SegmentLifecycle::markFailed(
                  seg.exec, "composite_capture_failed_non_oom",

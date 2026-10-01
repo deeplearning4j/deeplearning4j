@@ -1299,6 +1299,16 @@ void TritonIRBuilder::emitFusedTwoLayerMLPKernel(
 
 // ─── Fused attention (Flash Attention) emission ─────────────────────────────
 
+namespace {
+// Attention coordinate for one grid axis: the caller's decoded value when it
+// launches 1D, else this kernel's own program id on that axis.
+mlir::Value attentionProgramId(mlir::OpBuilder& builder, mlir::Location loc,
+                               mlir::Value decoded, mlir::triton::ProgramIDDim axis) {
+  if (decoded) return decoded;
+  return builder.create<mlir::triton::GetProgramIdOp>(loc, builder.getI32Type(), axis);
+}
+}  // namespace
+
 void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::Location loc,
                                                 mlir::Value qPtr, mlir::Value kPtr,
                                                 mlir::Value vPtr, mlir::Value outPtr,
@@ -1311,7 +1321,8 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
                                                 mlir::Value biasPtr,
                                                 const std::vector<LongType>& biasShape,
                                                 mlir::Value curKPtr, mlir::Value curVPtr,
-                                                int pastSeq, int seqKVCur) {
+                                                int pastSeq, int seqKVCur,
+                                                mlir::Value batchHeadPid, mlir::Value qTilePid) {
   DSP_DIAG(JIT, "emitFusedAttentionKernel: batch=%d qHeads=%d kvHeads=%d seqQ=%d seqK=%d headDim=%d "
            "block=(%d,%d) dualBuffer=%d causal=%d", batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
            blockM, blockN, curKPtr ? 1 : 0, isCausal ? 1 : 0);
@@ -1338,10 +1349,8 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   bool needsHdMask = (headDimPadded != headDim);
 
   // Program IDs: pid0 = batch * numQHeads + qHeadIdx, pid1 = query tile index
-  auto pid0 = builder.create<mlir::triton::GetProgramIdOp>(
-      loc, i32Type, mlir::triton::ProgramIDDim::X);
-  auto pid1 = builder.create<mlir::triton::GetProgramIdOp>(
-      loc, i32Type, mlir::triton::ProgramIDDim::Y);
+  auto pid0 = attentionProgramId(builder, loc, batchHeadPid, mlir::triton::ProgramIDDim::X);
+  auto pid1 = attentionProgramId(builder, loc, qTilePid, mlir::triton::ProgramIDDim::Y);
 
   // Decompose pid0 into batch and Q head indices
   auto numQHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numQHeads, 32);
@@ -1587,9 +1596,14 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto mInit = splatConstantF32(builder, loc, f32BmType, -3.4028235e+38f);
   auto lInit = splatConstantF32(builder, loc, f32BmType, 0.0f);
 
-  // K-V loop: for j in range(0, seqK, BLOCK_N) — i32 bounds (Triton convention)
+  // K-V loop: for j in range(0, seqK, BLOCK_N) — i32 bounds (Triton convention).
+  // A 1D sectioned launch sizes the grid for its largest section, so blocks past
+  // the last q tile can reach here; they skip the loop and store nothing.
   auto jStart = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
-  auto jEnd = builder.create<mlir::arith::ConstantIntOp>(loc, seqK, 32);
+  auto hasQueryRows = builder.create<mlir::arith::CmpIOp>(
+      loc, mlir::arith::CmpIPredicate::slt, qOffset, seqQConst);
+  auto jEnd = builder.create<mlir::arith::SelectOp>(
+      loc, hasQueryRows, builder.create<mlir::arith::ConstantIntOp>(loc, seqK, 32), jStart);
   auto jStep = builder.create<mlir::arith::ConstantIntOp>(loc, blockN, 32);
 
   auto forOp = builder.create<mlir::scf::ForOp>(
@@ -1842,10 +1856,11 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   mlir::Value qkWithBias = qkMasked;
   if (biasPtr) {
     int biasRank = static_cast<int>(biasShape.size());
-    // Determine bias strides based on rank:
-    // Rank 4: [B, H, seqQ, seqK] → offset = b*H*seqQ*seqK + h*seqQ*seqK + q*seqK + k
-    // Rank 3: [B, seqQ, seqK]    → offset = b*seqQ*seqK + q*seqK + k (no head dim)
-    // Rank 2: [B, seqK]          → offset = b*seqK + k (broadcasts across all Q and heads)
+    // Bias offsets by rank, with C = the bias's last dim as the row pitch
+    // (describeAttention admits only the batch/head forms indexed correctly here):
+    // Rank 4: [B, H, seqQ, C] → offset = b*H*seqQ*C + h*seqQ*C + q*C + k (H = 1: no head term)
+    // Rank 3: [B, seqQ, C]    → offset = b*seqQ*C + q*C + k (no head dim)
+    // Rank 2: [seqQ, C]       → offset = b*C + q*C + k, so correct for batch 1 only
     int biasNumHeads = (biasRank >= 4) ? static_cast<int>(biasShape[1]) : 0;
     int biasSeqQ, biasSeqK;
     if (biasRank >= 4) {
@@ -1855,7 +1870,8 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
       biasSeqQ = static_cast<int>(biasShape[1]);
       biasSeqK = static_cast<int>(biasShape[2]);
     } else {
-      // Rank 2: [B, seqK] — broadcast across Q positions and heads
+      // Rank 2: [seqQ, C], shared by every head. biasSeqQ = 1 makes the batch
+      // term b*C, which is only right for batch 1.
       biasSeqQ = 1;
       biasSeqK = static_cast<int>(biasShape[biasRank - 1]);
     }
@@ -3066,7 +3082,8 @@ void TritonIRBuilder::emitGgufDecodeAttentionKernel(mlir::OpBuilder& builder, ml
                                                     int headDim, float scale,
                                                     int blockM, int blockN,
                                                     mlir::Value biasPtr,
-                                                    const std::vector<LongType>& biasShape) {
+                                                    const std::vector<LongType>& biasShape,
+                                                    mlir::Value batchHeadPid, mlir::Value qTilePid) {
   DSP_DIAG(JIT, "emitGgufDecodeAttentionKernel: batch=%d qHeads=%d kvHeads=%d seqQ=%d "
            "cacheMaxSeq=%d headDim=%d scale=%f block=(%d,%d) bias=%d",
            batchSize, numQHeads, numKvHeads, seqQ, cacheMaxSeq, headDim, scale,
@@ -3102,15 +3119,16 @@ void TritonIRBuilder::emitGgufDecodeAttentionKernel(mlir::OpBuilder& builder, ml
       mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
   auto cachePos = builder.create<mlir::arith::TruncIOp>(loc, i32Type, posLoaded);
 
-  // Total attention length for this step: seqKTotal = P + W (runtime)
+  // Total attention length for this step: min(P + W, cacheMaxSeq) (runtime). Keys
+  // past the cache end are not attended, as the native in-place write drops them.
   auto seqQConst = builder.create<mlir::arith::ConstantIntOp>(loc, seqQ, 32);
-  auto seqKTotal = builder.create<mlir::arith::AddIOp>(loc, cachePos, seqQConst);
+  auto seqKTotal = builder.create<mlir::arith::MinSIOp>(loc,
+      builder.create<mlir::arith::AddIOp>(loc, cachePos, seqQConst),
+      builder.create<mlir::arith::ConstantIntOp>(loc, cacheMaxSeq, 32));
 
   // ── Program decomposition (same as fused attention) ──
-  auto pid0 = builder.create<mlir::triton::GetProgramIdOp>(
-      loc, i32Type, mlir::triton::ProgramIDDim::X);
-  auto pid1 = builder.create<mlir::triton::GetProgramIdOp>(
-      loc, i32Type, mlir::triton::ProgramIDDim::Y);
+  auto pid0 = attentionProgramId(builder, loc, batchHeadPid, mlir::triton::ProgramIDDim::X);
+  auto pid1 = attentionProgramId(builder, loc, qTilePid, mlir::triton::ProgramIDDim::Y);
   auto numQHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numQHeads, 32);
   auto numKvHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numKvHeads, 32);
   auto kvGroupSizeConst = builder.create<mlir::arith::ConstantIntOp>(loc, kvGroupSize, 32);
@@ -3277,10 +3295,15 @@ void TritonIRBuilder::emitGgufDecodeAttentionKernel(mlir::OpBuilder& builder, ml
                                      biasPtr, biasShape);
   } else {
   // ── KV loop: j in range(0, P + W, BLOCK_N) with RUNTIME bound ──
+  // Blocks past the last q tile (a 1D sectioned grid sized for another section)
+  // skip the loop; their output rows are masked.
   auto jStart = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
   auto jStep = builder.create<mlir::arith::ConstantIntOp>(loc, blockN, 32);
+  auto hasQueryRows = builder.create<mlir::arith::CmpIOp>(
+      loc, mlir::arith::CmpIPredicate::slt, qOffset, seqQConst);
+  auto jEnd = builder.create<mlir::arith::SelectOp>(loc, hasQueryRows, seqKTotal, jStart);
   auto forOp = builder.create<mlir::scf::ForOp>(
-      loc, jStart, seqKTotal, jStep,
+      loc, jStart, jEnd, jStep,
       mlir::ValueRange{accInit, mInit, lInit});
   builder.setInsertionPointToStart(forOp.getBody());
   auto jIdxI32 = forOp.getInductionVar();
@@ -3548,7 +3571,8 @@ void TritonIRBuilder::emitGgufDecodeAttentionKernel(mlir::OpBuilder& builder, ml
   }
 
   // ── KV scatter: cache[b, P+s, kvH, :] = cur[b, s, kvH, :] for s in [0,W) ──
-  // Guarded by pid1 == 0 so each (batch, kvHead-slice) row writes exactly once.
+  // Written by the pid1 == 0 program of each (batch, query head), so the query
+  // heads of a GQA group write identical rows.
   // No intra-launch hazard: past reads masked kIdx < P and the current read
   // used the producer tensors — position P is never read from the cache in
   // this launch, so writing it here only benefits future steps.
@@ -3582,8 +3606,16 @@ void TritonIRBuilder::emitGgufDecodeAttentionKernel(mlir::OpBuilder& builder, ml
     auto sSrcOffsets2D = builder.create<mlir::arith::AddIOp>(loc, sRowBroadcast, hdBroadcastK);
   auto sSrcFinalOffsets = builder.create<mlir::arith::AddIOp>(loc, curBaseSplat, sSrcOffsets2D);
 
-    // Destination row: P + s, clamped into [0, cacheMaxSeq)
+    // Destination row: P + s. Rows outside [0, cacheMaxSeq) are dropped, as the
+    // native in-place write drops them; the clamp only keeps pointers in bounds.
     auto dstRowRaw = builder.create<mlir::arith::AddIOp>(loc, sIdx, cachePosSplat);
+    auto cacheMaxSeqSplatBn = builder.create<mlir::triton::SplatOp>(loc, i32BnType, cacheMaxSeqConst);
+    auto dstInRange1D = builder.create<mlir::arith::AndIOp>(loc,
+        builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge, dstRowRaw, zeroSplatBn),
+        builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, dstRowRaw, cacheMaxSeqSplatBn));
+    auto dstInRangeExp = builder.create<mlir::triton::ExpandDimsOp>(loc, dstInRange1D, 1);
+    auto dstInRange2D = builder.create<mlir::triton::BroadcastOp>(loc, i1BnHdType, dstInRangeExp);
+    auto sStoreMask2D = builder.create<mlir::arith::AndIOp>(loc, sMask2D, dstInRange2D);
     auto dstRowClamped = builder.create<mlir::arith::MinSIOp>(loc, dstRowRaw, cacheMaxSeqMinus1Splat);
     auto dstRowLow = builder.create<mlir::arith::MaxSIOp>(loc, dstRowClamped, zeroSplatBn);
     auto dstRowExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, dstRowLow, 1);
@@ -3595,20 +3627,20 @@ void TritonIRBuilder::emitGgufDecodeAttentionKernel(mlir::OpBuilder& builder, ml
     // Load source tiles from producers
     auto sSrcKPtrs = builder.create<mlir::triton::AddPtrOp>(loc, curKPtrTensorType, curKSplat, sSrcFinalOffsets);
     auto sKRaw = builder.create<mlir::triton::LoadOp>(loc,
-        sSrcKPtrs, sMask2D, mlir::Value(),
+        sSrcKPtrs, sStoreMask2D, mlir::Value(),
         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
     auto sKVal = castTo(builder, loc, sKRaw, kCachePtrType.getPointeeType());
     auto sDstKPtrs = builder.create<mlir::triton::AddPtrOp>(loc, kCachePtrTensorType, kCacheSplat, sDstFinalOffsets);
-    builder.create<mlir::triton::StoreOp>(loc, sDstKPtrs, sKVal, sMask2D,
+    builder.create<mlir::triton::StoreOp>(loc, sDstKPtrs, sKVal, sStoreMask2D,
         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
 
     auto sSrcVPtrs = builder.create<mlir::triton::AddPtrOp>(loc, curVPtrTensorType, curVSplat, sSrcFinalOffsets);
     auto sVRaw = builder.create<mlir::triton::LoadOp>(loc,
-        sSrcVPtrs, sMask2D, mlir::Value(),
+        sSrcVPtrs, sStoreMask2D, mlir::Value(),
         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
     auto sVVal = castTo(builder, loc, sVRaw, vCachePtrType.getPointeeType());
     auto sDstVPtrs = builder.create<mlir::triton::AddPtrOp>(loc, vCachePtrTensorType, vCacheSplat, sDstFinalOffsets);
-    builder.create<mlir::triton::StoreOp>(loc, sDstVPtrs, sVVal, sMask2D,
+    builder.create<mlir::triton::StoreOp>(loc, sDstVPtrs, sVVal, sStoreMask2D,
         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
   }
 
@@ -3636,7 +3668,8 @@ void TritonIRBuilder::emitGgufDecodeAttentionKernel(mlir::OpBuilder& builder, ml
 void TritonIRBuilder::emitPresentKvWrite(mlir::OpBuilder& builder, mlir::Location loc,
                                           mlir::Value curPtr, mlir::Value presentPtr,
                                           int batchSize, int numQHeads, int numKvHeads,
-                                          int pastSeq, int seqKV, int totalSeq, int headDim) {
+                                          int pastSeq, int seqKV, int totalSeq, int headDim,
+                                          mlir::Value batchHeadPid, mlir::Value qTilePid) {
   DSP_DIAG(JIT, "emitPresentKvWrite: batch=%d qHeads=%d kvHeads=%d pastSeq=%d seqKV=%d totalSeq=%d headDim=%d",
            batchSize, numQHeads, numKvHeads, pastSeq, seqKV, totalSeq, headDim);
   // This function is called WITHIN the attention kernel (same tt.func).
@@ -3656,10 +3689,8 @@ void TritonIRBuilder::emitPresentKvWrite(mlir::OpBuilder& builder, mlir::Locatio
   bool needsHdMask = (headDimPadded != headDim);
 
   // Use the attention kernel's program IDs
-  auto pid0 = builder.create<mlir::triton::GetProgramIdOp>(
-      loc, i32Type, mlir::triton::ProgramIDDim::X);
-  auto pid1 = builder.create<mlir::triton::GetProgramIdOp>(
-      loc, i32Type, mlir::triton::ProgramIDDim::Y);
+  auto pid0 = attentionProgramId(builder, loc, batchHeadPid, mlir::triton::ProgramIDDim::X);
+  auto pid1 = attentionProgramId(builder, loc, qTilePid, mlir::triton::ProgramIDDim::Y);
 
   // Only execute on pid1 == 0 to avoid redundant writes across Q tiles
   auto zero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
@@ -3838,7 +3869,8 @@ void TritonIRBuilder::emitFusedAttentionBackwardKernel(
     int batchSize, int numQHeads,
     int seqQ, int seqK,
     int headDim, float scale,
-    int blockM, int blockN) {
+    int blockM, int blockN,
+    mlir::Value batchHeadPid, mlir::Value qTilePid) {
   DSP_DIAG(JIT, "emitFusedAttentionBackwardKernel: batch=%d qHeads=%d seqQ=%d seqK=%d "
            "headDim=%d scale=%f BM=%d BN=%d",
            batchSize, numQHeads, seqQ, seqK, headDim, scale, blockM, blockN);
@@ -3859,10 +3891,8 @@ void TritonIRBuilder::emitFusedAttentionBackwardKernel(
   // ── Program IDs ──────────────────────────────────────────────────────────
   // pid0 = batch * numQHeads + qHeadIdx
   // pid1 = Q-tile index
-  auto pid0 = builder.create<mlir::triton::GetProgramIdOp>(
-      loc, i32Type, mlir::triton::ProgramIDDim::X);
-  auto pid1 = builder.create<mlir::triton::GetProgramIdOp>(
-      loc, i32Type, mlir::triton::ProgramIDDim::Y);
+  auto pid0 = attentionProgramId(builder, loc, batchHeadPid, mlir::triton::ProgramIDDim::X);
+  auto pid1 = attentionProgramId(builder, loc, qTilePid, mlir::triton::ProgramIDDim::Y);
 
   auto numQHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numQHeads, 32);
   auto headIdx  = builder.create<mlir::arith::RemSIOp>(loc, pid0, numQHeadsConst);

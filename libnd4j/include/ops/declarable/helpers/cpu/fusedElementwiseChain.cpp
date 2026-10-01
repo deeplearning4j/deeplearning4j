@@ -21,138 +21,106 @@
 // CPU implementation of the fused element-wise chain kernel.
 //
 
-#include <ops/declarable/helpers/fusedElementwiseChain.h>
-#include <array/NDArray.h>
 #include <execution/Threads.h>
-#include <math/templatemath.h>
-#include <cmath>
-#include <algorithm>
+#include <helpers/shape.h>
+#include <ops/declarable/helpers/fusedElementwiseChain.h>
+#include <ops/declarable/helpers/fusedElementwiseChainMath.h>
 
+#if NOT_EXCLUDED(OP_fused_elementwise_chain)
 namespace sd {
 namespace ops {
 namespace helpers {
 
-// HALF/BFLOAT16 are storage types, not intermediate arithmetic types. Transcendental
-// ops (exp/log/sqrt/tanh-based) must accumulate in float and narrow only once when
-// writing back to T, exactly like the non-fused sd_sigmoid/sd_tanh/... kernels and the
-// CUDA fused chain (FusedChainAccType in helpers/cuda/fusedElementwiseChain.cu). Computing
-// these directly in T (as this file previously did) rounds after every intermediate step
-// (exp, +1, division, ...) instead of once, so the fused-chain result silently diverges
-// by ~1 ULP from the unfused reference path for the exact same math.
 template <typename T>
-struct FusedChainAccType {
-    using type = float;
-};
-template <>
-struct FusedChainAccType<double> {
-    using type = double;
-};
+static void fusedElementwiseChain_(NDArray* input, NDArray* output, const FusedElemOp* ops, int numOps,
+                                   NDArray** secondaryInputs, const double* clipMin, const double* clipMax) {
+  const LongType length = output->lengthOf();
+  const int rank = output->rankOf();
+  const LongType* zShape = output->shapeOf();
+  const LongType* xStrides = input->stridesOf();
+  const LongType* zStrides = output->stridesOf();
+  const T* x = input->bufferAsT<T>();
+  T* z = output->bufferAsT<T>();
 
-template <typename T>
-static T applyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T clipMaxVal) {
-    using AccT = typename FusedChainAccType<T>::type;
-    const AccT x = static_cast<AccT>(val);
+  // Same conversion eager clipbyvalue applies to its double bounds.
+  const T clipLow = clipMin != nullptr ? static_cast<T>(*clipMin) : static_cast<T>(0);
+  const T clipHigh = clipMax != nullptr ? static_cast<T>(*clipMax) : static_cast<T>(0);
 
-    switch (op) {
-        // Binary ops - operands already share T's precision, no promotion needed.
-        case FUSED_ADD:       return val + secondaryVal;
-        case FUSED_SUB:       return val - secondaryVal;
-        case FUSED_MUL:       return val * secondaryVal;
-        case FUSED_DIV:       return secondaryVal != T(0) ? val / secondaryVal : T(0);
+  int codes[FUSED_CHAIN_MAX_OPS] = {};
+  const T* secondary[FUSED_CHAIN_MAX_OPS] = {};
+  bool secondaryScalar[FUSED_CHAIN_MAX_OPS] = {};
+  const LongType* secondaryShape[FUSED_CHAIN_MAX_OPS] = {};
+  const LongType* secondaryStrides[FUSED_CHAIN_MAX_OPS] = {};
+  int secondaryRank[FUSED_CHAIN_MAX_OPS] = {};
 
-        // Unary ops - accumulate in AccT (float for HALF/BFLOAT16/FLOAT, double for DOUBLE),
-        // narrowing to T exactly once, matching sd_sigmoid/sd_tanh/... semantics.
-        case FUSED_RELU:      return val > T(0) ? val : T(0);
-        case FUSED_SIGMOID:   return static_cast<T>(AccT(1) / (AccT(1) + sd::math::sd_exp<AccT, AccT>(-x)));
-        case FUSED_TANH:      return static_cast<T>(sd::math::sd_tanh<AccT, AccT>(x));
-        case FUSED_GELU: {
-            // Approximate GELU: 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
-            AccT c = AccT(0.7978845608); // sqrt(2/pi)
-            AccT inner = c * (x + AccT(0.044715) * x * x * x);
-            return static_cast<T>(AccT(0.5) * x * (AccT(1) + sd::math::sd_tanh<AccT, AccT>(inner)));
+  // Linear mode: every operand holds the element of output index i at offset i (or is a scalar).
+  bool linear = isFusedChainDenseC(input) && isFusedChainDenseC(output);
+  for (int m = 0; m < numOps; m++) {
+    codes[m] = static_cast<int>(ops[m]);
+    if (!isBinaryFusedOp(ops[m])) continue;
+    NDArray* operand = secondaryInputs[m];
+    secondary[m] = operand->bufferAsT<T>();
+    secondaryScalar[m] = operand->lengthOf() == 1;
+    secondaryShape[m] = operand->shapeOf();
+    secondaryStrides[m] = operand->stridesOf();
+    secondaryRank[m] = operand->rankOf();
+    if (!secondaryScalar[m] && !(operand->isSameShape(output) && isFusedChainDenseC(operand))) linear = false;
+  }
+
+  auto func = PRAGMA_THREADS_FOR {
+    LongType coords[SD_MAX_RANK] = {};
+    for (auto i = start; i < stop; i++) {
+      LongType xOffset = i;
+      LongType zOffset = i;
+      if (!linear) {
+        INDEX2COORDS(i, rank, zShape, coords);
+        COORDS2INDEX(rank, xStrides, coords, xOffset);
+        COORDS2INDEX(rank, zStrides, coords, zOffset);
+      }
+
+      T value = x[xOffset];
+      for (int m = 0; m < numOps; m++) {
+        T operand = static_cast<T>(0);
+        if (secondary[m] != nullptr) {
+          LongType sOffset = 0;
+          if (!secondaryScalar[m]) {
+            sOffset = linear ? static_cast<LongType>(i)
+                             : fusedChainBroadcastOffset(coords, rank, secondaryShape[m], secondaryStrides[m],
+                                                         secondaryRank[m]);
+          }
+          operand = secondary[m][sOffset];
         }
-        case FUSED_EXP:       return static_cast<T>(sd::math::sd_exp<AccT, AccT>(x));
-        case FUSED_LOG:       return x > AccT(0) ? static_cast<T>(sd::math::sd_log<AccT, AccT>(x)) : static_cast<T>(AccT(-1e38));
-        case FUSED_ABS:       return sd::math::sd_abs<T, T>(val);
-        case FUSED_NEG:       return -val;
-        case FUSED_SQUARE:    return val * val;
-        case FUSED_SQRT:      return x >= AccT(0) ? static_cast<T>(sd::math::sd_sqrt<AccT, AccT>(x)) : T(0);
-        case FUSED_SWISH: {
-            AccT sig = AccT(1) / (AccT(1) + sd::math::sd_exp<AccT, AccT>(-x));
-            return static_cast<T>(x * sig);
-        }
-        case FUSED_SILU: {
-            AccT sig = AccT(1) / (AccT(1) + sd::math::sd_exp<AccT, AccT>(-x));
-            return static_cast<T>(x * sig);
-        }
-        case FUSED_MISH: {
-            AccT sp = sd::math::sd_log<AccT, AccT>(AccT(1) + sd::math::sd_exp<AccT, AccT>(x)); // softplus
-            return static_cast<T>(x * sd::math::sd_tanh<AccT, AccT>(sp));
-        }
-
-        // Parameterized ops
-        case FUSED_CLIP:      return sd::math::sd_min<T>(sd::math::sd_max<T>(val, clipMinVal), clipMaxVal);
-        case FUSED_LEAKY_RELU: return val >= T(0) ? val : val * secondaryVal;
-
-        default:              return val;
+        value = fusedChainStep<T>(codes[m], value, operand, clipLow, clipHigh);
+      }
+      z[zOffset] = value;
     }
+  };
+
+  samediff::Threads::parallel_for(func, 0, length);
 }
 
-template <typename T>
-static void fusedChainImpl(
-        NDArray* inputArr, NDArray* outputArr, sd::LongType length,
-        const FusedElemOp* ops, int numOps,
-        NDArray** secondaryInputs,
-        const double* clipMin, const double* clipMax) {
+void fusedElementwiseChain(NDArray* input, NDArray* output, const FusedElemOp* ops, int numOps,
+                           NDArray** secondaryInputs, const double* clipMin, const double* clipMax,
+                           LaunchContext* context) {
+  const std::string reason =
+      fusedChainUnsupportedReason(input, output, ops, numOps, secondaryInputs, clipMin, clipMax);
+  if (!reason.empty()) {
+    THROW_EXCEPTION(("fused_elementwise_chain: " + reason).c_str());
+  }
+  if (output->isEmpty()) return;
 
-    const T* input = inputArr->bufferAsT<T>();
-    T* output = outputArr->bufferAsT<T>();
-    T clipMinVal = clipMin ? static_cast<T>(*clipMin) : T(0);
-    T clipMaxVal = clipMax ? static_cast<T>(*clipMax) : T(0);
+  std::vector<NDArray*> reads = {input};
+  for (int m = 0; m < numOps; m++) {
+    if (isBinaryFusedOp(ops[m])) reads.push_back(secondaryInputs[m]);
+  }
 
-    auto func = PRAGMA_THREADS_FOR {
-        for (auto idx = start; idx < stop; idx++) {
-            T val = input[idx];
-            for (int op = 0; op < numOps; op++) {
-                T secondary = T(0);
-                if (isBinaryFusedOp(ops[op]) && secondaryInputs != nullptr && secondaryInputs[op] != nullptr) {
-                    sd::LongType secLen = secondaryInputs[op]->lengthOf();
-                    sd::LongType secIdx = secLen == 1 ? 0 : (idx % secLen);
-                    secondary = secondaryInputs[op]->e<T>(secIdx);
-                }
-                val = applyOp(val, ops[op], secondary, clipMinVal, clipMaxVal);
-            }
-            output[idx] = val;
-        }
-    };
-
-    samediff::Threads::parallel_for(func, 0, length);
-}
-
-void fusedElementwiseChain(
-        NDArray* input,
-        NDArray* output,
-        const FusedElemOp* ops,
-        int numOps,
-        NDArray** secondaryInputs,
-        const double* clipMin,
-        const double* clipMax,
-        LaunchContext* context) {
-
-    if (input == nullptr || output == nullptr || ops == nullptr || numOps <= 0) return;
-    if (numOps > 8) {
-        numOps = 8;
-    }
-
-    auto xType = input->dataType();
-    sd::LongType length = input->lengthOf();
-
-    BUILD_SINGLE_SELECTOR(xType, fusedChainImpl,
-        (input, output, length,
-         ops, numOps, secondaryInputs, clipMin, clipMax),
-        SD_COMMON_TYPES);
+  NDArray::preparePrimaryUse({output}, reads);
+  BUILD_SINGLE_SELECTOR(input->dataType(), fusedElementwiseChain_,
+                        (input, output, ops, numOps, secondaryInputs, clipMin, clipMax), SD_FLOAT_TYPES);
+  NDArray::registerPrimaryUse({output}, reads);
 }
 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

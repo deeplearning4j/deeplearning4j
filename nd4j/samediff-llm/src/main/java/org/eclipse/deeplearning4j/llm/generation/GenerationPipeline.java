@@ -417,6 +417,31 @@ public class GenerationPipeline implements AutoCloseable {
                 disableDsp(embedTokens, "embedTokens");
             }
         }
+
+        // Plan-reuse posture: make the per-call rebuild cost explicit at load time.
+        // maxPrefillLength=0 selects the variable-shape path — every generation whose prompt
+        // length differs tears down and rebuilds/re-warms the DSP prefill+decode plans.
+        // maxPrefillLength>0 selects the fixed-buffer path: one prefill plan and one decode
+        // plan, frozen at the configured length and reused in place across calls (LRU-of-one
+        // retained state in cachedFixedBufferState). Multi-call harnesses and serving loops
+        // almost always want the latter.
+        if (config.getMaxPrefillLength() > 0) {
+            log.info("Plan reuse: FIXED-BUFFER path active (maxPrefillLength={}, maxKvLen={}) — "
+                            + "prefill+decode DSP plans are frozen once and reused in place across "
+                            + "calls (LRU-of-one retained state)",
+                    config.getMaxPrefillLength(), config.getMaxKvCacheLength());
+        } else {
+            log.warn("Plan reuse: DISABLED (maxPrefillLength=0) — every call with a different prompt "
+                            + "length tears down and rebuilds/re-warms the DSP prefill+decode plans "
+                            + "(seconds of overhead per call). If this pipeline serves more than one "
+                            + "generation per load, set maxPrefillLength to the longest expected prompt "
+                            + "length to freeze and reuse the plans.",
+                    (Object) null);
+        }
+        if (!config.isPrefixCacheEnabled()) {
+            log.info("Prefix cache: DISABLED — repeated/extended prompts (e.g. multi-round tool "
+                    + "loops) will re-prefill from scratch each call");
+        }
     }
 
     private static void disableDsp(SameDiff model, String label) {
@@ -803,6 +828,13 @@ public class GenerationPipeline implements AutoCloseable {
 
         String normalized = requested.trim().toUpperCase(Locale.ROOT);
         switch (normalized) {
+            case "AUTO":
+                // Explicit AUTO: identical to the no-BenchmarkConfig default on a
+                // Triton-less backend. Needed when the native advertises Triton but
+                // the workload wants the AUTO graph-mode path (e.g. native decode
+                // loops, whose nested plans cannot satisfy TRITON's strict contract).
+                log.info("Using explicit LLM BenchmarkConfig override: AUTO");
+                return BenchmarkConfig.create("AUTO").executionMode(GraphExecutionMode.AUTO);
             case "SLOT_BY_SLOT":
                 log.warn("Using diagnostic LLM BenchmarkConfig override: SLOT_BY_SLOT");
                 return BenchmarkConfig.cpuSlotBySlot();
@@ -2254,15 +2286,11 @@ public class GenerationPipeline implements AutoCloseable {
                 numLayers, kvInputNames.keyNames.size(), isQuantizedKv, kvQuantFormat);
         Map<String, INDArray> staticKvBuffers = reuseState != null && reuseState.staticKvBuffers != null
                 ? reuseState.staticKvBuffers : new LinkedHashMap<>();
-        // QUANTIZED: separate INT8-compressed buffers + scales, sized only to the active
-        // prefill region (maxKvLen float elements → maxKvLen INT8 elements, 4x smaller).
+        // QUANTIZED: separate INT8-compressed buffers, each row carrying its own FLOAT32 scale
+        // (ADR 0107 V2 row-inline), sized only to the active prefill region.
         Map<String, INDArray> quantizedKvBuffers = isQuantizedKv
                 ? (reuseState != null && reuseState.quantizedKvBuffers != null
                         ? reuseState.quantizedKvBuffers : new LinkedHashMap<>())
-                : null;
-        Map<String, INDArray> kvScaleBuffers = isQuantizedKv
-                ? (reuseState != null && reuseState.kvScaleBuffers != null
-                        ? reuseState.kvScaleBuffers : new LinkedHashMap<>())
                 : null;
         for (int i = 0; i < numLayers; i++) {
             String keyName = kvInputNames.keyNames.get(i);
@@ -2282,10 +2310,9 @@ public class GenerationPipeline implements AutoCloseable {
             // wrappers), but the frozen decode plan and its staging buffers remain typed from
             // the placeholder. Allocating static KV from the output dtype makes a later native
             // handoff substitute a wider buffer into a narrower captured external input.
-            DataType keyDtype = decoder.getVariable(keyName).dataType();
-            DataType valDtype = decoder.getVariable(valName).dataType();
-            if (keyDtype == null || keyDtype == DataType.UNKNOWN) keyDtype = kRoped.dataType();
-            if (valDtype == null || valDtype == DataType.UNKNOWN) valDtype = vHeads.dataType();
+            // Quantised KV is the exception: see kvStagingDtype.
+            DataType keyDtype = kvStagingDtype(keyName, kRoped, isQuantizedKv);
+            DataType valDtype = kvStagingDtype(valName, vHeads, isQuantizedKv);
             if (keyDtype != valDtype) {
                 throw new IllegalStateException("KV input dtype mismatch for layer " + layerIdx
                         + ": " + keyName + "=" + keyDtype + ", " + valName + "=" + valDtype);
@@ -2375,8 +2402,6 @@ public class GenerationPipeline implements AutoCloseable {
                 // Reuse or replace existing quantized buffers on reuse path
                 replaceQuantizedBuffer(quantizedKvBuffers, keyQName, keyCacheInt8);
                 replaceQuantizedBuffer(quantizedKvBuffers, valQName, valCacheInt8);
-                // kvScaleBuffers intentionally NOT populated in V2 row-inline mode — the scale
-                // lives inside each KV row, so the native-op scale side-channel is disabled.
 
                 log.info("[GGUF-KV] Layer {} quantized (row-inline scale): keyCache={} ({}x compression vs float)",
                         layerIdx, Arrays.toString(keyCacheInt8.shape()),
@@ -2392,8 +2417,8 @@ public class GenerationPipeline implements AutoCloseable {
 
         // ── V2 QUANTIZED: free float KV after prefill quantize ────────────────────────────────────
         // ADR 0107 §prefill, §Migration Decision 8: after quantizing the full prefill region into
-        // INT8, free the float staticKvBuffers immediately. The quantizedKvBuffers (INT8) + kvScaleBuffers
-        // (float scales) become the ONLY live KV storage for the decode phase.
+        // INT8, free the float staticKvBuffers immediately. The quantizedKvBuffers (INT8 rows with
+        // their scales inline) become the ONLY live KV storage for the decode phase.
         //
         // V2 wiring: re-index quantizedKvBuffers under the ORIGINAL KV variable names
         // (same as staticKvBuffers keys) so the frozen decode plan's ext-input indices remain valid
@@ -2444,8 +2469,6 @@ public class GenerationPipeline implements AutoCloseable {
             }
 
             // Replace quantizedKvBuffers with the original-name-keyed INT8 map.
-            // The _q and _scale entries remain in kvScaleBuffers / quantizedKvBuffers under
-            // original names for scale lookup in the native decode.
             quantizedKvBuffers = int8KvByOrigName;
 
             log.info("[GGUF-KV-V2] V2 quantized path active: float KV freed, {} INT8 buffers live",
@@ -3062,7 +3085,6 @@ public class GenerationPipeline implements AutoCloseable {
         state.recurrentStateBuffers = recurrentStateBuffers;
         // QUANTIZED KV buffers: in V2, this is the INT8 live store under original variable names.
         state.quantizedKvBuffers = quantizedKvBuffers;
-        state.kvScaleBuffers = kvScaleBuffers;
         state.kvQuantFormat = kvQuantFormat;
         state.isQuantizedV2 = isQuantizedV2;
         state.decodeInputIds = decodeInputIds;
@@ -3225,6 +3247,34 @@ public class GenerationPipeline implements AutoCloseable {
                             + configuredFormat);
         }
         return configuredFormat - 1;
+    }
+
+    /**
+     * Dtype of the buffer that receives one layer's prefill K or V.
+     *
+     * <p>A float cache is handed to the frozen decode plan as-is, so it takes the placeholder
+     * dtype. A quantised cache is handed over as its INT8 row-inline encoding, and by prefill time
+     * its placeholder is already declared INT8. The buffer then only holds the values that
+     * encoding is computed from, so it takes the float dtype the placeholder had before the INT8
+     * declaration, the same dtype a STATIC cache would hold. Staging into the INT8 declaration
+     * truncates every prefill value toward zero before quantisation.</p>
+     */
+    private DataType kvStagingDtype(String kvName, INDArray prefillKv, boolean quantizedKv) {
+        return kvStagingDtype(decoder.getVariable(kvName).dataType(),
+                kvPlaceholderOriginalDtypes != null ? kvPlaceholderOriginalDtypes.get(kvName) : null,
+                prefillKv.dataType(), quantizedKv);
+    }
+
+    /**
+     * The staging-dtype decision of {@link #kvStagingDtype(String, INDArray, boolean)}: the declared
+     * placeholder dtype for a float cache, the dtype recorded before the INT8 declaration for a
+     * quantised one, and the prefill output dtype when neither is known. Package-private for the
+     * staging-dtype regression test.
+     */
+    static DataType kvStagingDtype(DataType declaredDtype, DataType preQuantizationDtype,
+                                   DataType prefillDtype, boolean quantizedKv) {
+        DataType dtype = quantizedKv ? preQuantizationDtype : declaredDtype;
+        return dtype == null || dtype == DataType.UNKNOWN ? prefillDtype : dtype;
     }
 
     /**
@@ -3926,7 +3976,6 @@ public class GenerationPipeline implements AutoCloseable {
         state.staticKvBuffers = staticKvBuffers;
         state.recurrentStateBuffers = recurrentStateBuffers;
         state.quantizedKvBuffers = null;
-        state.kvScaleBuffers = null;
         state.kvQuantFormat = 0;
         state.decodeInputIds = decodeInputIds;
         state.decodeCausalMask = decodeCausalMask;
@@ -4090,18 +4139,64 @@ public class GenerationPipeline implements AutoCloseable {
                     + "While a session is open, decode through the session's generate()/continueGeneration().");
         }
 
-        // ── Prefix cache lookup ──────────────────────────────────────────────────────────────────
-        if (prefixBlockPool != null) {
-            // A prefix-cache hit builds a fresh suffix-prefill (or GDN-fallback full prefill) with its
-            // own executor freeze. Any retained one-shot fixed-buffer state from a PRIOR generate still
-            // holds that prior prompt's frozen CUDA-graph plan/buffers; leaving it live lets the prior
-            // captured decode alias this generate and replay the prior prompt's tokens (observed:
-            // promptB-with-cache reproduced promptA's continuation). Drop it here so the hit path
-            // starts from a clean executor — mirrors the session path (see startSession).
-            if (cachedFixedBufferState != null) {
-                cachedFixedBufferState.close();
-                cachedFixedBufferState = null;
+        // SHAPE-SIGNATURE GUARD (hoisted ABOVE the prefix-cache block): reuse is only sound when the
+        // retained plan matches the incoming request. Both requests here are FIXED-BUFFER, so the
+        // plan's prefill dimension is always maxPrefill — the signature reduces to equal maxKvLen.
+        // This must run BEFORE attemptPrefixCacheHit: on GDN models a partial-boundary prefix hit
+        // falls back to a full prefill internally and previously CLOSED the built state without
+        // retaining it, so cachedFixedBufferState stayed null forever and every generate was a cold
+        // ~15.7GB prefill (the slot-410 capacity wall). When signatures match we reuse in place;
+        // the native plan cache's LRU + real-bytes budget plus error-path reclamation handle any
+        // residual accumulation the old unconditional teardown guarded against.
+        boolean fixedBuffers = config.getMaxPrefillLength() > 0;
+        InGraphKvState reuse = null;
+        if (fixedBuffers && cachedFixedBufferState != null) {
+            // Expected envelope via the SHARED resolver (same contract as startSession's reuse
+            // at ~4840): when maxKvCacheLength is configured the physical plan shape is the FULL
+            // configured envelope regardless of this call's maxNewTokens. The earlier inline
+            // min(prompt+maxNewTokens, cap) computed a smaller number than any retained state
+            // could ever carry (r35: expected ~4700 vs actual 8192) and reuse never fired.
+            long expectedMaxKvLen = resolveFixedBufferMaxKvLen(config, maxNewTokens);
+            InGraphKvState candidate = cachedFixedBufferState;
+            cachedFixedBufferState = null;
+            boolean signatureMatches = !candidate.closed
+                    && candidate.prefillSeqLen == config.getMaxPrefillLength()
+                    && candidate.maxKvLen == expectedMaxKvLen;
+            if (signatureMatches) {
+                // Retained state transfers into this generate: same plan, same buffers,
+                // STEP 1 re-prefills in place. Do NOT close it — prefillWarmupAndFreeze
+                // treats a non-null reuseState as keep-plan/re-bind.
+                reuse = candidate;
+                log.info("[Lifecycle] Fixed-buffer shape signature matches (prefillLen={}, maxKvLen={}) — reusing frozen prefill plan in place",
+                        reuse.prefillSeqLen, reuse.maxKvLen);
+            } else {
+                // Mismatch (or already-closed candidate): close and tear down so the
+                // fresh prefill below builds a replacement for the new signature.
+                candidate.close();
+                // Best-effort teardown: resetSession and the plan-cache clear reclaim the
+                // previous generation's plan. A failure here (session buffers already
+                // released, degraded stream) must not abort this generate — the fresh
+                // prefill below builds a replacement plan either way.
+                try {
+                    decoder.resetSession();
+                } catch (Exception resetFailure) {
+                    log.warn("[Lifecycle] one-shot teardown resetSession failed: {}", resetFailure.getMessage());
+                }
+                try {
+                    decoder.clearDynamicShapePlanCache();
+                } catch (Exception clearFailure) {
+                    log.warn("[Lifecycle] one-shot teardown clearDynamicShapePlanCache failed: {}",
+                            clearFailure.getMessage());
+                }
+                SameDiffMemoryUtils.trimAllDevicePools();
             }
+        }
+
+        // ── Prefix cache lookup ──────────────────────────────────────────────────────────────────
+        if (prefixBlockPool != null && reuse == null) {
+            // A prefix-cache hit builds a fresh suffix-prefill (or GDN-fallback full prefill) with its
+            // own executor freeze. Skipped entirely when the shape signature matched above — the
+            // retained state IS the better reuse (same plan, zero re-warm).
             // Discover recurrent state pairs for the GDN guard in attemptPrefixCacheHit
             List<ModelIOConfig.RecurrentStatePair> recurrentStates =
                     ModelIOConfig.findRecurrentStatePairs(decoder, ioConfig);
@@ -4114,6 +4209,22 @@ public class GenerationPipeline implements AutoCloseable {
                 InGraphKvState state = prefillSuffixOnlyAndFreeze(promptTokenIds, maxNewTokens,
                         kvInputNames, startTime, hit);
                 if (state.terminalResult != null) return state.terminalResult;
+                if (fixedBuffers) {
+                    // RETAIN (was close): on GDN models this branch builds a full prefill via the
+                    // fallback; retaining it lets the next same-signature generate reuse the frozen
+                    // plan instead of paying a cold prefill every chunk. Retain only AFTER decode
+                    // succeeds — a failed decode must not poison the cache.
+                    GenerationResult result;
+                    try {
+                        result = runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+                    } catch (RuntimeException decodeFailure) {
+                        state.close();
+                        throw decodeFailure;
+                    }
+                    cachedFixedBufferState = state;
+                    SameDiffMemoryUtils.trimAllDevicePools();
+                    return result;
+                }
                 try {
                     return runInGraphNativeDecode(state, maxNewTokens, false, startTime);
                 } finally {
@@ -4125,39 +4236,20 @@ public class GenerationPipeline implements AutoCloseable {
         // FORWARD-FIX: on the fixed-buffer path, reuse the cached frozen state across generates so the
         // captured decode plan replays (no per-generate re-warm). The reuse path keeps the plan, refills
         // the retained (stable-address) buffers in place, and skips the re-freeze. Fresh path otherwise.
-        //
-        // ONE-SHOT TEARDOWN: reuse is only sound when the same prompt content recurs. The native
-        // plan cache keys on placeholder CONTENT hashes, so each distinct prompt builds a NEW
-        // GB-scale plan while the retained state keeps the previous one pinned — on multi-prompt
-        // workloads the plans accumulate until a device ceiling rejects 1-3 MB allocations
-        // (observed: device counters pinned at cap, downstream tools failing wholesale). One-shot
-        // generates therefore drop the retained state and clear the native plan cache exactly like
-        // the variable-shape path; resumable sessions keep their reuse semantics via startSession.
-        boolean fixedBuffers = config.getMaxPrefillLength() > 0;
-        InGraphKvState reuse = null;
-        if (fixedBuffers && cachedFixedBufferState != null) {
-            InGraphKvState stale = cachedFixedBufferState;
+        // (The signature guard above already extracted `reuse`; nothing to tear down here.)
+        InGraphKvState state;
+        try {
+            state = prefillWarmupAndFreeze(
+                    promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse, true);
+        } catch (RuntimeException prefillFailure) {
+            // Prefill/warmup/freeze threw: the retained state (if any) may be half-rebound and the
+            // session is in an unknown phase. Drop it — the next generate rebuilds cold rather than
+            // reusing a possibly-poisoned plan. r35 evidence: the reused-session path surfaced
+            // KERNEL_FAILURE on constrained decode after a prior failure.
+            if (reuse != null) reuse.close();
             cachedFixedBufferState = null;
-            stale.close();
-            // Best-effort teardown: resetSession and the plan-cache clear reclaim the
-            // previous generation's plan. A failure here (session buffers already
-            // released, degraded stream) must not abort this generate — the fresh
-            // prefill below builds a replacement plan either way.
-            try {
-                decoder.resetSession();
-            } catch (Exception resetFailure) {
-                log.warn("[Lifecycle] one-shot teardown resetSession failed: {}", resetFailure.getMessage());
-            }
-            try {
-                decoder.clearDynamicShapePlanCache();
-            } catch (Exception clearFailure) {
-                log.warn("[Lifecycle] one-shot teardown clearDynamicShapePlanCache failed: {}",
-                        clearFailure.getMessage());
-            }
-            SameDiffMemoryUtils.trimAllDevicePools();
+            throw prefillFailure;
         }
-        InGraphKvState state = prefillWarmupAndFreeze(
-                promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse, true);
         if (state.terminalResult != null) {
             // Terminal (early-EOS / no plan handle): the reused state is spent — close it and drop the
             // cache so the next generate rebuilds from scratch. (state is a fresh terminal, != reuse.)
@@ -4173,9 +4265,18 @@ public class GenerationPipeline implements AutoCloseable {
                 storePrefillInPrefixCache(promptTokenIds, state.actualPrefillLen,
                         state.staticKvBuffers, kvInputNames, state.recurrentStateBuffers, recurrentStates);
             }
+            GenerationResult result;
+            try {
+                result = runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+            } catch (RuntimeException decodeFailure) {
+                // Do NOT retain a state whose decode just failed: the plan/session may be mid-failure
+                // (passivated plan, torn external views). Close it so the next generate rebuilds cold.
+                state.close();
+                cachedFixedBufferState = null;
+                throw decodeFailure;
+            }
             // Retain for the next generate; do NOT close here — the buffers/plan are reused in place.
             cachedFixedBufferState = state;
-            GenerationResult result = runInGraphNativeDecode(state, maxNewTokens, false, startTime);
             // Return reserved-but-unused pool blocks so the device counters do not ratchet to
             // the peak transient high-water mark across calls. Live state (frozen plans, KV
             // and retained buffers) is still strongly referenced and is untouched; only free
@@ -4360,15 +4461,10 @@ public class GenerationPipeline implements AutoCloseable {
         if (state.decodePositionOffset != null) state.decodePositionOffset.syncToDevice();
         if (state.decodeCachePosition != null) state.decodeCachePosition.syncToDevice();
         if (state.decodeActualSequenceLength != null) state.decodeActualSequenceLength.syncToDevice();
-        // V2 QUANTIZED: sync INT8 live buffers (and their scales); float staticKvBuffers are null.
+        // V2 QUANTIZED: sync INT8 live buffers (scales are inside the rows); float staticKvBuffers are null.
         if (state.isQuantizedV2 && state.quantizedKvBuffers != null) {
             for (INDArray kvBuf : state.quantizedKvBuffers.values()) {
                 if (kvBuf != null && !kvBuf.isEmpty()) kvBuf.syncToDevice();
-            }
-            if (state.kvScaleBuffers != null) {
-                for (INDArray scBuf : state.kvScaleBuffers.values()) {
-                    if (scBuf != null && !scBuf.isEmpty()) scBuf.syncToDevice();
-                }
             }
         } else if (state.staticKvBuffers != null) {
             for (INDArray kvBuf : state.staticKvBuffers.values()) kvBuf.syncToDevice();
@@ -4397,20 +4493,6 @@ public class GenerationPipeline implements AutoCloseable {
             staticKvArray[idx++] = kvLiveMap != null ? kvLiveMap.get(valName) : null;
         }
 
-        // ADR 0107 V2: assemble scale buffer array (key scales then value scales).
-        // Scale arrays are FLOAT32 [batch, maxKvLen, kvHeads] — one float per (token, kv_head).
-        // Null when not in V2 quantized mode.
-        INDArray[] kvScaleArray = null;
-        if (state.isQuantizedV2 && state.kvScaleBuffers != null && !state.kvScaleBuffers.isEmpty()) {
-            kvScaleArray = new INDArray[2 * state.numKvPairs];
-            int si = 0;
-            for (String keyName : state.kvInputNames.keyNames) {
-                kvScaleArray[si++] = state.kvScaleBuffers.get(keyName + "_scale");
-            }
-            for (String valName : state.kvInputNames.valueNames) {
-                kvScaleArray[si++] = state.kvScaleBuffers.get(valName + "_scale");
-            }
-        }
         INDArray[] mtpKvArray = state.mtpKvBuffers != null
                 ? new INDArray[]{
                         state.mtpKvBuffers.get(MTP_KEY_CACHE_NAME),
@@ -4486,8 +4568,6 @@ public class GenerationPipeline implements AutoCloseable {
                             state.sampling.isGreedy() ? 0.0 : state.sampling.getTopP(),
                             state.sampling.getRepetitionPenalty(),
                             state.stopTokenIds);
-                    // ADR 0107 V2: append scale buffers and set bit 7 in optionalMask.
-                    if (kvScaleArray != null) op.withQuantisedKvScales(kvScaleArray);
                     applyNativePolicy(op, decodePolicy, state.sampling, generatedTokenOffset + step,
                             (int) state.decodeInputIds.size(1));
                     // ADR 0106 Phase 2: wire n-gram speculation when the policy uses the window substrate.
@@ -4621,8 +4701,6 @@ public class GenerationPipeline implements AutoCloseable {
                         state.sampling.isGreedy() ? 0.0 : state.sampling.getTopP(),
                         state.sampling.getRepetitionPenalty(),
                         state.stopTokenIds);
-                // ADR 0107 V2: append scale buffers and set bit 7 in optionalMask.
-                if (kvScaleArray != null) op.withQuantisedKvScales(kvScaleArray);
                 int generatedTokenOffset = state.generatedSoFar != null ? state.generatedSoFar.size() : 0;
                 DecodePolicy decodePolicy = resolveDecodePolicy(state.sampling, config);
                 applyNativePolicy(op, decodePolicy, state.sampling, generatedTokenOffset,
@@ -5690,17 +5768,12 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         /**
-         * Total byte count of the KV scale buffers (float32 per-token-per-head scales for V2 INT8).
-         * Returns 0 when not in V2 mode.
+         * Bytes held by KV scale storage outside the KV buffers. Always 0: V2 INT8 rows carry their
+         * FLOAT32 scale inline (ADR 0107), so {@link #getQuantizedKvTotalBytes()} already counts it.
          */
         public long getKvScaleTotalBytes() {
             requireOpen();
-            if (state.kvScaleBuffers == null) return 0L;
-            long total = 0L;
-            for (INDArray a : state.kvScaleBuffers.values()) {
-                if (a != null && !a.wasClosed()) total += a.length() * a.dataType().width();
-            }
-            return total;
+            return 0L;
         }
 
         /**

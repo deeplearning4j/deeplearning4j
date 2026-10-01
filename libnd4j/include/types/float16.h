@@ -85,8 +85,9 @@ static SD_INLINE SD_HOST_DEVICE int ishnan_(unsigned short h) { return (h & 0x7c
 
 static SD_INLINE SD_HOST_DEVICE int ishinf_(unsigned short h) { return (h & 0x7c00U) == 0x7c00U && (h & 0x03ffU) == 0; }
 
+// IEEE equality, as __hequ and float: NaN equals nothing, and -0 equals +0.
 static SD_INLINE SD_HOST_DEVICE int ishequ_(unsigned short x, unsigned short y) {
-  return ishnan_(x) == 0 && ishnan_(y) == 0 && x == y;
+  return ishnan_(x) == 0 && ishnan_(y) == 0 && (x == y || ((x | y) & 0x7fffU) == 0);
 }
 
 static SD_INLINE SD_HOST_DEVICE unsigned short hneg(unsigned short h) {

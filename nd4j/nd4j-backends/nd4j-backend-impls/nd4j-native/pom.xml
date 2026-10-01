@@ -38,6 +38,10 @@
     <properties>
         <skipPublishing>false</skipPublishing>
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/cpu/nativecpu/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
+        <!-- Classifier jar include for javacpp.build.output.path. The Android output profiles
+             override both, so a stale lib/<abi> left in target/classes by an Android build
+             never lands in another platform's jar. -->
+        <javacpp.build.output.include>org/nd4j/linalg/cpu/nativecpu/bindings/${javacpp.platform}${javacpp.platform.extension}/*</javacpp.build.output.include>
         <module.name>nd4j.cpu</module.name>
 
         <compiler.flag.cpp.standard>-std=c++17</compiler.flag.cpp.standard>
@@ -136,10 +140,7 @@
                             <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
                             <skipIfEmpty>true</skipIfEmpty>
                             <includes>
-                                <include>
-                                    org/nd4j/linalg/cpu/nativecpu/bindings/${javacpp.platform}${javacpp.platform.extension}/*
-                                </include>
-                                <include>lib/**</include>
+                                <include>${javacpp.build.output.include}</include>
                                 <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
                             </includes>
                         </configuration>
@@ -833,6 +834,7 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/armeabi-v7a</javacpp.build.output.path>
+                <javacpp.build.output.include>lib/armeabi-v7a/**</javacpp.build.output.include>
             </properties>
         </profile>
         <profile>
@@ -845,6 +847,7 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/arm64-v8a</javacpp.build.output.path>
+                <javacpp.build.output.include>lib/arm64-v8a/**</javacpp.build.output.include>
                 <platform.compiler.output>-D__ANDROID_API__=${libnd4j.android.api} -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -march=armv8-a -Wall -nostdlib++ -fPIC -shared -Wl,--no-undefined -z text -o</platform.compiler.output>
             </properties>
             <build>
@@ -926,6 +929,7 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/x86</javacpp.build.output.path>
+                <javacpp.build.output.include>lib/x86/**</javacpp.build.output.include>
             </properties>
         </profile>
         <profile>
@@ -938,6 +942,7 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/x86_64</javacpp.build.output.path>
+                <javacpp.build.output.include>lib/x86_64/**</javacpp.build.output.include>
                 <!-- Remove -nostartfiles since we need the CRT objects -->
                 <javacpp.compiler.crtoption></javacpp.compiler.crtoption>
                 <!-- Add sysroot configuration for android-x86_64 -->

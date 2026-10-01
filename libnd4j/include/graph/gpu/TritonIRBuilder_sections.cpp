@@ -81,7 +81,8 @@ using namespace ir_builder_internal;
 std::vector<KernelSection> TritonIRBuilder::identifySections(
     NativeSlot* slots, int startSlot, int endSlot,
     NDArray** outputSlots, int totalOutputSlots,
-    NDArray** externalInputs, int numExternalInputs) {
+    NDArray** externalInputs, int numExternalInputs,
+    int totalSlots, const int* requestedOutputSlotIndices, int numRequestedOutputs) {
 
   std::vector<KernelSection> sections;
   int segSize = endSlot - startSlot + 1;
@@ -817,94 +818,31 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       }
     }
 
-    // Extract attention dimensions
+    // Attention dimensions are the emitters' contract, so the planner's grid and
+    // standalone decision see the kernel buildSectionedModule emits. An op outside
+    // the contract leaves them zero; its range is rejected at emit and the op runs
+    // natively.
     if (sectionType == KernelSectionType::FUSED_ATTENTION) {
       currentSection.type = KernelSectionType::FUSED_ATTENTION;
-      std::string attentionOpLower = slots[i].ident.opName;
-      std::transform(attentionOpLower.begin(), attentionOpLower.end(), attentionOpLower.begin(), ::tolower);
-      currentSection.attnIsCausal =
-          attentionOpLower.find("onnx_multi_head_attention") != std::string::npos
-          && slots[i].args.numIArgs > 1 && slots[i].args.iArgs
-          && slots[i].args.iArgs[1] != 0;
-      if (slots[i].wiring.numInputs >= 1) {
-        NDArray* qArr = resolveArray(slots[i].wiring.inputSourceIndices[0]);
-        if (qArr && qArr->rankOf() >= 3) {
-          int rank = qArr->rankOf();
-          if (rank >= 4) {
-            // 4D BHSD: [batch, numHeads, seqQ, headDim]
-            currentSection.headDim = static_cast<int>(qArr->sizeAt(rank - 1));
-            currentSection.seqQ = static_cast<int>(qArr->sizeAt(rank - 2));
-            currentSection.numHeads = static_cast<int>(qArr->sizeAt(rank - 3));
-            currentSection.batchSize = 1;
-            for (int d = 0; d < rank - 3; d++)
-              currentSection.batchSize *= static_cast<int>(qArr->sizeAt(d));
-            currentSection.attnQIsBSHD = false;
-          } else {
-            // 3D BSHD: [batch, seqQ, numHeads*headDim]
-            currentSection.batchSize = static_cast<int>(qArr->sizeAt(0));
-            currentSection.seqQ = static_cast<int>(qArr->sizeAt(1));
-            int hidden = static_cast<int>(qArr->sizeAt(2));
-            int nh = (slots[i].args.numIArgs > 0 && slots[i].args.iArgs) ? static_cast<int>(slots[i].args.iArgs[0]) : 1;
-            if (nh <= 0) nh = 1;
-            currentSection.numHeads = nh;
-            currentSection.headDim = hidden / nh;
-            currentSection.attnQIsBSHD = true;
-          }
-          currentSection.attentionScale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(currentSection.headDim));
+      if (currentSection.batchSize == 0) {
+        const AttentionContract attn = describeAttentionContract(
+            slots, i, totalSlots, outputSlots, totalOutputSlots, externalInputs, numExternalInputs,
+            requestedOutputSlotIndices, numRequestedOutputs);
+        if (attn.supported()) {
+          currentSection.batchSize = attn.batch;
+          currentSection.numHeads = attn.qHeads;
+          currentSection.numKvHeads = attn.kvHeads;
+          currentSection.seqQ = attn.seqQ;
+          currentSection.seqK = attn.seqK;
+          currentSection.headDim = attn.headDim;
+          currentSection.attentionScale = attn.scale;
+          currentSection.attnQIsBSHD = attn.qIsBSHD;
+          currentSection.attnKIsBSHD = attn.kIsBSHD;
+          currentSection.attnIsCausal = attn.causal;
+        } else {
+          DSP_DIAG(COMPILE, "identifySections: attention slot %d op='%s' is outside the emitter contract: %s",
+                   i, slots[i].ident.opName.c_str(), attn.reason.c_str());
         }
-
-        // Determine effective K source by scanning optional inputs for a real KV-cache tensor.
-        // ONNX MHA may carry empty placeholders or other optional tensors after input[3],
-        // so don't assume input[4] is always past_key.
-        bool hasPastKv = false;
-        int effectiveKInputIdx = 1;
-        for (int inp = 3; inp < slots[i].wiring.numInputs && !hasPastKv; inp++) {
-          NDArray* candidateArr = resolveArray(slots[i].wiring.inputSourceIndices[inp]);
-          if (candidateArr && candidateArr->rankOf() == 4) {
-            int candidateHeadDim = static_cast<int>(candidateArr->sizeAt(3));
-            int candidateKvHeads = static_cast<int>(candidateArr->sizeAt(1));
-            int candidateSeqK = static_cast<int>(candidateArr->sizeAt(2));
-            if (candidateHeadDim == currentSection.headDim &&
-                candidateSeqK > 0 &&
-                candidateKvHeads > 0 &&
-                candidateKvHeads <= currentSection.numHeads &&
-                currentSection.numHeads % candidateKvHeads == 0) {
-              hasPastKv = true;
-              effectiveKInputIdx = inp;
-            }
-          }
-        }
-
-        NDArray* kArr = (effectiveKInputIdx < slots[i].wiring.numInputs) ?
-            resolveArray(slots[i].wiring.inputSourceIndices[effectiveKInputIdx]) : nullptr;
-        if (kArr && kArr->rankOf() >= 2) {
-          if (kArr->rankOf() == 3) {
-            currentSection.seqK = static_cast<int>(kArr->sizeAt(1));
-            currentSection.attnKIsBSHD = currentSection.attnQIsBSHD;
-            // ONNX MHA K/V stay 3D for GQA: [B, seqK, kvHeads * headDim].
-            // Infer the real KV head count from kvHidden instead of assuming Q heads.
-            int kvHidden = static_cast<int>(kArr->sizeAt(2));
-            if (currentSection.headDim > 0 && kvHidden > 0 &&
-                kvHidden % currentSection.headDim == 0) {
-              int inferredKvHeads = kvHidden / currentSection.headDim;
-              if (inferredKvHeads > 0 &&
-                  inferredKvHeads <= currentSection.numHeads &&
-                  currentSection.numHeads % inferredKvHeads == 0) {
-                currentSection.numKvHeads = inferredKvHeads;
-              }
-            }
-          } else {
-            currentSection.seqK = static_cast<int>(kArr->sizeAt(kArr->rankOf() - 2));
-            currentSection.attnKIsBSHD = hasPastKv ? false : currentSection.attnQIsBSHD;
-            // GQA: extract KV head count from past_key (4D: [B, KvHeads, seqK, HD])
-            if (hasPastKv && kArr->rankOf() == 4) {
-              currentSection.numKvHeads = static_cast<int>(kArr->sizeAt(1));
-              currentSection.headDim = static_cast<int>(kArr->sizeAt(3));
-            }
-          }
-        }
-        // Default: MHA (numKvHeads = numHeads)
-        if (currentSection.numKvHeads <= 0) currentSection.numKvHeads = currentSection.numHeads;
       }
     }
 

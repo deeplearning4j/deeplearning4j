@@ -88,14 +88,6 @@ class InGraphKvState implements AutoCloseable {
      */
     Map<String, INDArray> quantizedKvBuffers;
 
-    /**
-     * QUANTIZED-strategy scale buffers: per-token-per-head FLOAT32 scales paired with
-     * {@link #quantizedKvBuffers}. Keys follow {@code past_key_values.{L}.key_scale} /
-     * {@code past_key_values.{L}.value_scale}.
-     * Null when {@code kvCacheStrategy != QUANTIZED}. Freed in {@link #close()}.
-     */
-    Map<String, INDArray> kvScaleBuffers;
-
     /** Active KV quantization format (1=INT8, 2=FP8_E4M3, 3=FP8_E5M2, 4=INT4). 0 = not quantized. */
     int kvQuantFormat;
 
@@ -489,7 +481,6 @@ class InGraphKvState implements AutoCloseable {
         closeAll(recurrentStateBuffers);
         closeAll(staticKvBuffers);
         closeAll(quantizedKvBuffers);
-        closeAll(kvScaleBuffers);
         closeAll(prefillInputMap);
         closeAll(reusedScratch);
     }

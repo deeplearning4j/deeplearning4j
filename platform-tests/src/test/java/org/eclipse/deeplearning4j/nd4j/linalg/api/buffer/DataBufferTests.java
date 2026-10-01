@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.custom.BitCast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -468,6 +469,44 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
         target.assign(largeDup);
         Nd4j.getAffinityManager().ensureLocation(target, AffinityManager.Location.HOST);
         assertEquals(largeDup, target);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCopyBufferFp8AtOffsets(Nd4jBackend backend) {
+        // DataBuffer::memcpy (copyBuffer, bitcast, DataBuffer.dup, DSP replica copies) dispatches FP8
+        // outside SD_COMMON_TYPES. Bitcasting through INT8 keeps the check byte-exact, and nonzero
+        // offsets on both sides expose a wrong element size.
+        int length = 16;
+        int count = 6;
+        int sourceOffset = 3;
+        int targetOffset = 5;
+        byte[] sourceBytes = new byte[length];
+        byte[] targetBytes = new byte[length];
+        int[] expected = new int[length];
+        for (int i = 0; i < length; i++) {
+            sourceBytes[i] = (byte) (0x10 + i);
+            targetBytes[i] = (byte) (0x40 + i);
+            expected[i] = targetBytes[i];
+        }
+        for (int i = 0; i < count; i++) {
+            expected[targetOffset + i] = sourceBytes[sourceOffset + i];
+        }
+
+        for (DataType fp8 : new DataType[]{DataType.FLOAT8, DataType.FLOAT8_E5M2}) {
+            INDArray source = Nd4j.create(fp8, length);
+            INDArray target = Nd4j.create(fp8, length);
+            Nd4j.exec(new BitCast(Nd4j.createFromArray(sourceBytes), fp8, source));
+            Nd4j.exec(new BitCast(Nd4j.createFromArray(targetBytes), fp8, target));
+
+            Nd4j.getNativeOps().copyBuffer(target.data().opaqueBuffer(), count,
+                    source.data().opaqueBuffer(), sourceOffset, targetOffset);
+
+            INDArray targetAsBytes = Nd4j.create(DataType.INT8, length);
+            Nd4j.exec(new BitCast(target, DataType.INT8, targetAsBytes));
+            assertArrayEquals(expected, targetAsBytes.toIntVector(),
+                    fp8 + " copy must replace exactly the addressed bytes");
+        }
     }
 
     @Override

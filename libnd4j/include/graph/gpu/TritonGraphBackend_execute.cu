@@ -287,6 +287,17 @@ static void detectBufferAliasing(int ki,
   }
 }
 
+// Shape functions of value-dependent ops read small integral control tensors on the
+// host (reshape's shape operand, slice bounds). Same predicate executeSegmentSlotBySlot
+// uses to decide whether a producer must be drained before host shape inference.
+static bool isSmallIntegralControlArray(NDArray* arr) {
+  if (arr == nullptr) return false;
+  const auto dt = arr->dataType();
+  if (dt != INT32 && dt != INT64 && dt != BOOL) return false;
+  const auto len = arr->lengthOf();
+  return len > 0 && len <= 32;
+}
+
 // ─── executeSegment ─────────────────────────────────────────────────────────
 
 Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
@@ -542,6 +553,13 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     // needed before reading the stable device pointer values.
 
     // ── Phase 2: Populate consolidated arg table with post-sync pointers ──
+    // Size the alias arena for every sub-kernel first: growing it inside the
+    // loop would leave earlier published rows on the previous arena.
+    if (!streamCaptureActive) {
+      auto arenaStatus = reserveAliasArena(*compiledSeg, externalInputs, numExternalInputs,
+                                           outputSlots, totalOutputSlots, actualStream);
+      if (arenaStatus != Status::OK) return arenaStatus;
+    }
     for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
       auto& sk = compiledSeg->subKernels[ki];
       if (!sk.useIndirectArgs || !sk.cachedArgTableHostPinned) continue;
@@ -564,7 +582,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         if (!sbuf) return failSegment("argument pointer is null before consolidated publication");
         preparedPointers[ai] = sbuf;
       }
-      auto aliasStatus = prepareAliasBindings(sk, preparedPointers, externalInputs,
+      auto aliasStatus = prepareAliasBindings(*compiledSeg, sk, preparedPointers, externalInputs,
           numExternalInputs, outputSlots, totalOutputSlots, actualStream, streamCaptureActive);
       if (aliasStatus != Status::OK) return aliasStatus;
       publishArgumentPointers(sk, preparedPointers, streamCaptureActive);
@@ -773,6 +791,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           !streamCaptureActive) {
         // Re-populate host-pinned arg table entries for ALL subsequent sub-kernels
         // (gap may have changed slot pointers that are inputs to any of them).
+        auto arenaStatus = reserveAliasArena(*compiledSeg, externalInputs, numExternalInputs,
+                                             outputSlots, totalOutputSlots, actualStream);
+        if (arenaStatus != Status::OK) return arenaStatus;
         for (size_t rki = i; rki < compiledSeg->subKernels.size(); rki++) {
           auto& rsk = compiledSeg->subKernels[rki];
           if (!rsk.useIndirectArgs || !rsk.cachedArgTableHostPinned) continue;
@@ -794,7 +815,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
             if (!sbuf) return failSegment("post-gap argument pointer is null");
             preparedPointers[ai] = sbuf;
           }
-          auto aliasStatus = prepareAliasBindings(rsk, preparedPointers, externalInputs,
+          auto aliasStatus = prepareAliasBindings(*compiledSeg, rsk, preparedPointers, externalInputs,
               numExternalInputs, outputSlots, totalOutputSlots, actualStream, false);
           if (aliasStatus != Status::OK) return aliasStatus;
           publishArgumentPointers(rsk, preparedPointers, false);
@@ -845,6 +866,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         DSP_DIAG(EXECUTE, "POST_GAP_RESHAPE SKIPPED during capture [gap %d-%d]",
                  nextSlotToRun, subKernel.startSlot_ - 1);
       } else {
+      bool gapProducerDrained = false;
       for (int si = subKernel.startSlot_; si <= subKernel.endSlot_; si++) {
         auto& slot = slots[si];
         // Check if any input comes from the gap range
@@ -871,6 +893,41 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           }
         }
         if (!allInputsAvailable) continue;
+
+        // Value-dependent shape functions read gap-produced control values on the host.
+        // syncToPrimary copies on the legacy stream, which does not order the
+        // non-blocking stream the gap ran on (the ordered range executor routes gap ops
+        // onto this segment's stream), so drain it first: the rule
+        // executeSegmentSlotBySlot applies before its own shape inference.
+        if (slot.flags.outputShapeDependsOnInputValues && !gapProducerDrained) {
+          const bool scansRuntimeTensorValues = slot.hasDynamicOutputSize();
+          int pendingInput = -1;
+          for (int inp = 0; inp < slot.wiring.numInputs && pendingInput < 0; inp++) {
+            if (slot.wiring.inputSourceIndices[inp] < 0 ||
+                (!scansRuntimeTensorValues && !isSmallIntegralControlArray(inputArrays[inp]))) {
+              continue;
+            }
+            auto* controlBuffer = inputArrays[inp]->dataBuffer();
+            if (controlBuffer != nullptr && !controlBuffer->isClosed() &&
+                (scansRuntimeTensorValues ||
+                 (controlBuffer->isSpecialActual() && !controlBuffer->isPrimaryActual()))) {
+              pendingInput = inp;
+            }
+          }
+          if (pendingInput >= 0 && actualStream != nullptr) {
+            auto syncErr = cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(actualStream));
+            if (syncErr != cudaSuccess) {
+              DSP_DIAG(STREAM_SYNC, "POST_GAP_VALUE_SHAPE_SYNC_FAILED: slot %d (%s) input %d: %s",
+                       si, slot.ident.opName.c_str(), pendingInput, cudaGetErrorString(syncErr));
+              cudaGetLastError();
+              return failSegment("post-gap value-shape producer sync failed");
+            }
+            gapProducerDrained = true;
+            DSP_DIAG(STREAM_SYNC, "POST_GAP_VALUE_SHAPE_SYNC: slot %d (%s) input %d drained gap [%d-%d] "
+                     "before host shape inference",
+                     si, slot.ident.opName.c_str(), pendingInput, nextSlotToRun, subKernel.startSlot_ - 1);
+          }
+        }
 
         // Build input shape list and run shape inference
         ShapeList inputShapes;
@@ -899,7 +956,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         ShapeList* inferredShapes = nullptr;
         try {
           inferredShapes = slot.ident.op->calculateOutputShape(&inputShapes, inferCtx);
+        } catch (const std::exception& e) {
+          DSP_DIAG(SHAPE, "POST_GAP_RESHAPE: slot %d (%s) shape inference threw, outputs keep their "
+                   "pre-allocated shapes: %s",
+                   si, slot.ident.opName.c_str(), e.what());
+          continue;
         } catch (...) {
+          DSP_DIAG(SHAPE, "POST_GAP_RESHAPE: slot %d (%s) shape inference threw a non-std exception, "
+                   "outputs keep their pre-allocated shapes",
+                   si, slot.ident.opName.c_str());
           continue;
         }
         if (inferredShapes == nullptr || inferredShapes->size() == 0) {
@@ -1113,7 +1178,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                              slots, seg.def.endSlot);
       }
 
-      auto status = executeSingleKernel(subKernel, slots,
+      auto status = executeSingleKernel(*compiledSeg, subKernel, slots,
                                          externalInputs, numExternalInputs,
                                          outputSlots, totalOutputSlots,
                                          stream,
@@ -1851,6 +1916,7 @@ void TritonGraphBackend::invalidateCache() {
       segDeviceId = seg.subKernels[0].cachedArgTableDeviceId;
 
     for (auto& kernel : seg.subKernels) releaseAliasBindings(kernel);
+    releaseAliasArena(seg);
     // Free consolidated arg table buffers FIRST (before per-kernel cleanup,
     // because per-kernel pointers are offsets into these buffers).
     if (seg.useConsolidatedArgTable) {
@@ -2044,6 +2110,7 @@ void TritonGraphBackend::invalidateCacheForSegments(
     }
 
     for (auto& kernel : seg.subKernels) releaseAliasBindings(kernel);
+    releaseAliasArena(seg);
     // Free resources (same logic as invalidateCache)
     if (seg.useConsolidatedArgTable) {
       if (seg.consolidatedArgTableDevice != nullptr) {

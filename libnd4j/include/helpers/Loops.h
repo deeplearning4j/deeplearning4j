@@ -33,6 +33,7 @@
 
 #include <cstring>
 #include <functional>
+#include <type_traits>
 
 namespace sd {
 
@@ -176,6 +177,54 @@ class  Reduction3Loops {
 };
 
 //////////////////////////////////////////////////////////////////////////
+// Reduction accumulation. Reduce-same ops declare update() over X, so folding a
+// HALF/BF16 reduction through it rounds the running value to storage precision
+// on every element (a bf16 sum stops growing once its ulp exceeds the addend).
+// Those ops expose an InterType (float) accumulation API, which the scalar CPU
+// kernels and the CUDA kernels use; every other reduce family already declares
+// update() over InterType, so it keeps its own API.
+template <typename OpType, typename = void>
+struct ReduceAccumulatesInter : std::false_type {};
+
+template <typename OpType>
+struct ReduceAccumulatesInter<OpType, std::void_t<decltype(&OpType::startingValueInter),
+                                                 decltype(&OpType::opInter),
+                                                 decltype(&OpType::updateInter),
+                                                 decltype(&OpType::postProcessInter)>>
+    : std::true_type {};
+
+// Overloading any of the Inter functions would silently drop the trait back to X accumulation.
+static_assert(ReduceAccumulatesInter<simdOps::Sum<float16>>::value,
+              "reduce-same ops must expose the InterType accumulation API");
+
+template <typename OpType, typename X>
+SD_INLINE typename OpType::InterType reduceStart(const X* x) {
+  if constexpr (ReduceAccumulatesInter<OpType>::value) {
+    return OpType::startingValueInter(x);
+  } else {
+    return static_cast<typename OpType::InterType>(OpType::startingValue(x));
+  }
+}
+
+template <typename OpType, typename X, typename E>
+SD_INLINE typename OpType::InterType reduceStep(typename OpType::InterType accumulated, X value, E* extraParams) {
+  if constexpr (ReduceAccumulatesInter<OpType>::value) {
+    return OpType::updateInter(accumulated, OpType::opInter(value, extraParams), extraParams);
+  } else {
+    return OpType::update(accumulated, OpType::op(value, extraParams), extraParams);
+  }
+}
+
+template <typename OpType, typename E>
+SD_INLINE auto reduceFinish(typename OpType::InterType accumulated, LongType length, E* extraParams) {
+  if constexpr (ReduceAccumulatesInter<OpType>::value) {
+    return OpType::postProcessInter(accumulated, length, extraParams);
+  } else {
+    return OpType::postProcess(accumulated, length, extraParams);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 static void reduceExec21(const X* x, const LongType* xShapeInfo, Z* z, const LongType* zShapeInfo,
                          const LongType* dims, E* extraParams) {
@@ -194,18 +243,18 @@ static void reduceExec21(const X* x, const LongType* xShapeInfo, Z* z, const Lon
       auto x0 = x + i0 * xStrd0;
       auto z0 = z + i0 * zStrd0;
 
-      auto s = static_cast<typename OpType::InterType>(OpType::startingValue(x0));
+      auto s = reduceStart<OpType>(x0);
 
       if (xStrd1 == 1)
         for (LongType i1 = 0; i1 < xAxis1; ++i1) {
-          s = OpType::update(s, OpType::op(x0[i1], compatibleExtraParams), compatibleExtraParams);
+          s = reduceStep<OpType>(s, x0[i1], compatibleExtraParams);
         }
       else
         for (LongType i1 = 0; i1 < xAxis1; ++i1) {
-          s = OpType::update(s, OpType::op(x0[i1 * xStrd1], compatibleExtraParams), compatibleExtraParams);
+          s = reduceStep<OpType>(s, x0[i1 * xStrd1], compatibleExtraParams);
         }
 
-      *z0 = OpType::postProcess(s, static_cast<LongType>(xAxis1), compatibleExtraParams);
+      *z0 = reduceFinish<OpType>(s, static_cast<LongType>(xAxis1), compatibleExtraParams);
     }
   };
 
@@ -234,7 +283,7 @@ static void reduceExec31(const X* x, const LongType* xShapeInfo, Z* z, const Lon
       auto x0 = x + i0 * xStrd0;
       auto z0 = z + i0 * zStrd0;
 
-      auto s = static_cast<typename OpType::InterType>(OpType::startingValue(x0));
+      auto s = reduceStart<OpType>(x0);
 
       if (xStrd1 == 1)
         for (LongType i2 = 0; i2 < xAxis2; ++i2)
@@ -244,7 +293,7 @@ static void reduceExec31(const X* x, const LongType* xShapeInfo, Z* z, const Lon
             shape::printShapeInfo(zShapeInfo);
             printf("Index i0,i1,i2 is %lld,%lld,%lld reduceExec31\n", i0,i1,i2);
 #endif
-            s = OpType::update(s, OpType::op(x0[i1 + i2 * xStrd2], compatibleExtraParams), compatibleExtraParams);
+            s = reduceStep<OpType>(s, x0[i1 + i2 * xStrd2], compatibleExtraParams);
           }
       else if (xStrd2 == 1)
         for (LongType i1 = 0; i1 < xAxis1; ++i1)
@@ -254,7 +303,7 @@ static void reduceExec31(const X* x, const LongType* xShapeInfo, Z* z, const Lon
             shape::printShapeInfo(zShapeInfo);
             printf("Index i0,i1,i2 is %lld,%lld,%lld offset  is %lld reduceExec31\n", i0,i1,i2,i1 * xStrd1 + i2);
 #endif
-            s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2], compatibleExtraParams), compatibleExtraParams);
+            s = reduceStep<OpType>(s, x0[i1 * xStrd1 + i2], compatibleExtraParams);
           }
       else
         for (LongType i1 = 0; i1 < xAxis1; ++i1)
@@ -265,10 +314,10 @@ static void reduceExec31(const X* x, const LongType* xShapeInfo, Z* z, const Lon
             printf("Index i0,i1,i2 is %lld,%lld,%lld offset is %lld reduceExec31\n", i0,i1,i2,i1 * xStrd1 + i2 * xStrd2);
 #endif
 
-            s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2], compatibleExtraParams), compatibleExtraParams);
+            s = reduceStep<OpType>(s, x0[i1 * xStrd1 + i2 * xStrd2], compatibleExtraParams);
           }
 
-      *z0 = OpType::postProcess(s, tadLen, compatibleExtraParams);
+      *z0 = reduceFinish<OpType>(s, tadLen, compatibleExtraParams);
     }
   };
 
@@ -301,7 +350,7 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, co
         auto x1 = x + i0 * xStrd0 + i1 * xStrd1;
         auto z1 = z + i0 * zStrd0 + i1 * zStrd1;
 
-        auto s = static_cast<typename OpType::InterType>(OpType::startingValue(x1));
+        auto s = reduceStart<OpType>(x1);
 
         if (xStrd2 == 1)
           for (LongType i2 = 0; i2 < xAxis2; ++i2) {
@@ -310,7 +359,7 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, co
             shape::printShapeInfo(zShapeInfo);
             printf("Index i0,i1,i2 is %lld,%lld,%lld reduceExec32\n", i0,i1,i2);
 #endif
-            s = OpType::update(s, OpType::op(x1[i2], compatibleExtraParams), compatibleExtraParams);
+            s = reduceStep<OpType>(s, x1[i2], compatibleExtraParams);
           }
         else
           for (LongType i2 = 0; i2 < xAxis2; ++i2) {
@@ -319,9 +368,9 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, co
             shape::printShapeInfo(zShapeInfo);
             printf("Index i0,i1,i2 is %lld,%lld,%lld reduceExec32\n", i0,i1,i2);
 #endif
-            s = OpType::update(s, OpType::op(x1[i2 * xStrd2], compatibleExtraParams), compatibleExtraParams);
+            s = reduceStep<OpType>(s, x1[i2 * xStrd2], compatibleExtraParams);
           }
-        *z1 = OpType::postProcess(s, static_cast<LongType>(xAxis2), compatibleExtraParams);
+        *z1 = reduceFinish<OpType>(s, static_cast<LongType>(xAxis2), compatibleExtraParams);
       }
     }
   };
@@ -362,7 +411,7 @@ SD_LIB_HIDDEN void reduceExec41(const X* x,
       auto x0 = x + i0 * xStrd0;
       auto z0 = z + i0 * zStrd0;
 
-      auto s = static_cast<typename OpType::InterType>(OpType::startingValue(x0));
+      auto s = reduceStart<OpType>(x0);
 
       if (xStrd1 == 1)
         for (LongType i3 = 0; i3 < xAxis3; ++i3)
@@ -373,7 +422,7 @@ SD_LIB_HIDDEN void reduceExec41(const X* x,
               shape::printShapeInfo(zShapeInfo);
               printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 + i2 * xStrd2 + i3 * xStrd3);
 #endif
-              s = OpType::update(s, OpType::op(x0[i1 + i2 * xStrd2 + i3 * xStrd3], compatibleExtraParams), compatibleExtraParams);
+              s = reduceStep<OpType>(s, x0[i1 + i2 * xStrd2 + i3 * xStrd3], compatibleExtraParams);
             }
       else if (xStrd2 == 1)
         for (LongType i1 = 0; i1 < xAxis1; ++i1)
@@ -384,7 +433,7 @@ SD_LIB_HIDDEN void reduceExec41(const X* x,
               shape::printShapeInfo(zShapeInfo);
               printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 * xStrd1 + i2 + i3 * xStrd3);
 #endif
-              s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 + i3 * xStrd3], compatibleExtraParams), compatibleExtraParams);
+              s = reduceStep<OpType>(s, x0[i1 * xStrd1 + i2 + i3 * xStrd3], compatibleExtraParams);
             }
 
       else if (xStrd3 == 1)
@@ -396,7 +445,7 @@ SD_LIB_HIDDEN void reduceExec41(const X* x,
               shape::printShapeInfo(zShapeInfo);
               printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 * xStrd1 + i2 * xStrd2 + i3);
 #endif
-              s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3], compatibleExtraParams), compatibleExtraParams);
+              s = reduceStep<OpType>(s, x0[i1 * xStrd1 + i2 * xStrd2 + i3], compatibleExtraParams);
             }
       else
         for (LongType i1 = 0; i1 < xAxis1; ++i1)
@@ -407,9 +456,9 @@ SD_LIB_HIDDEN void reduceExec41(const X* x,
               shape::printShapeInfo(zShapeInfo);
               printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3);
 #endif
-              s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3], compatibleExtraParams), compatibleExtraParams);
+              s = reduceStep<OpType>(s, x0[i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3], compatibleExtraParams);
             }
-      *z0 = OpType::postProcess(s, tadLen, compatibleExtraParams);
+      *z0 = reduceFinish<OpType>(s, tadLen, compatibleExtraParams);
     }
   };
 
@@ -446,7 +495,7 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const LongType* xShapeInfo, Z* z, co
         auto x1 = x + i0 * xStrd0 + i1 * xStrd1;
         auto z1 = z + i0 * zStrd0 + i1 * zStrd1;
 
-        auto s = static_cast<typename OpType::InterType>(OpType::startingValue(x1));
+        auto s = reduceStart<OpType>(x1);
 
         if (xStrd2 == 1)
           for (LongType i3 = 0; i3 < xAxis3; ++i3)
@@ -456,7 +505,7 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const LongType* xShapeInfo, Z* z, co
               shape::printShapeInfo(zShapeInfo);
               printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld reduceExec42\n", i0,i1,i2,i3);
 #endif
-              s = OpType::update(s, OpType::op(x1[i2 + i3 * xStrd3], compatibleExtraParams), compatibleExtraParams);
+              s = reduceStep<OpType>(s, x1[i2 + i3 * xStrd3], compatibleExtraParams);
             }
         else if (xStrd3 == 1)
           for (LongType i2 = 0; i2 < xAxis2; ++i2)
@@ -466,7 +515,7 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const LongType* xShapeInfo, Z* z, co
               shape::printShapeInfo(zShapeInfo);
               printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset %lld reduceExec42\n", i0,i1,i2,i3,i2 * xStrd2 + i3);
 #endif
-              s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3], compatibleExtraParams), compatibleExtraParams);
+              s = reduceStep<OpType>(s, x1[i2 * xStrd2 + i3], compatibleExtraParams);
             }
         else
           for (LongType i2 = 0; i2 < xAxis2; ++i2)
@@ -476,10 +525,10 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const LongType* xShapeInfo, Z* z, co
               shape::printShapeInfo(zShapeInfo);
               printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset %lld reduceExec42\n", i0,i1,i2,i3,i2 * xStrd2 + i3 * xStrd3);
 #endif
-              s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3 * xStrd3], compatibleExtraParams), compatibleExtraParams);
+              s = reduceStep<OpType>(s, x1[i2 * xStrd2 + i3 * xStrd3], compatibleExtraParams);
             }
 
-        *z1 = OpType::postProcess(s, tadLen, compatibleExtraParams);
+        *z1 = reduceFinish<OpType>(s, tadLen, compatibleExtraParams);
       }
     }
   };
@@ -517,7 +566,7 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const LongType* xShapeInfo, Z* z, co
           auto x2 = x + i0 * xStrd0 + i1 * xStrd1 + i2 * xStrd2;
           auto z2 = z + i0 * zStrd0 + i1 * zStrd1 + i2 * zStrd2;
 
-          auto s = static_cast<typename OpType::InterType>(OpType::startingValue(x2));
+          auto s = reduceStart<OpType>(x2);
 
           if (xStrd3 == 1)
             for (LongType i3 = 0; i3 < xAxis3; ++i3) {
@@ -526,7 +575,7 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const LongType* xShapeInfo, Z* z, co
               shape::printShapeInfo(zShapeInfo);
               printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld reduceExec43\n", i0,i1,i2,i3);
 #endif
-              s = OpType::update(s, OpType::op(x2[i3], compatibleExtraParams), compatibleExtraParams);
+              s = reduceStep<OpType>(s, x2[i3], compatibleExtraParams);
             }
           else
             for (LongType i3 = 0; i3 < xAxis3; ++i3) {
@@ -535,10 +584,10 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const LongType* xShapeInfo, Z* z, co
               shape::printShapeInfo(zShapeInfo);
               printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld reduceExec43\n", i0,i1,i2,i3);
 #endif
-              s = OpType::update(s, OpType::op(x2[i3 * xStrd3], compatibleExtraParams), compatibleExtraParams);
+              s = reduceStep<OpType>(s, x2[i3 * xStrd3], compatibleExtraParams);
             }
 
-          *z2 = OpType::postProcess(s, static_cast<LongType>(xAxis3), compatibleExtraParams);
+          *z2 = reduceFinish<OpType>(s, static_cast<LongType>(xAxis3), compatibleExtraParams);
         }
       }
     }
@@ -578,7 +627,7 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
       auto x0 = x + i0 * xStrd0;
       auto z0 = z + i0 * zStrd0;
 
-      auto s = static_cast<typename OpType::InterType>(OpType::startingValue(x0));
+      auto s = reduceStart<OpType>(x0);
 
       if (xStrd1 == 1)
         for (LongType i4 = 0; i4 < xAxis4; ++i4)
@@ -590,8 +639,7 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
                 shape::printShapeInfo(zShapeInfo);
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld reduceExec51\n", i0,i1,i2,i3,i4);
 #endif
-                s = OpType::update(s, OpType::op(x0[i1 + i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams),
-                                   compatibleExtraParams);
+                s = reduceStep<OpType>(s, x0[i1 + i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams);
               }
       else if (xStrd2 == 1)
         for (LongType i4 = 0; i4 < xAxis4; ++i4)
@@ -603,8 +651,7 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
                 shape::printShapeInfo(zShapeInfo);
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld  offset %lldreduceExec51\n", i0,i1,i2,i3,i4,i1 * xStrd1 + i2 + i3 * xStrd3 + i4 * xStrd4);
 #endif
-                s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 + i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams),
-                                   compatibleExtraParams);
+                s = reduceStep<OpType>(s, x0[i1 * xStrd1 + i2 + i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams);
               }
       else if (xStrd3 == 1)
         for (LongType i1 = 0; i1 < xAxis1; ++i1)
@@ -614,8 +661,7 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld  offset %lld reduceExec51\n", i0,i1,i2,i3,i4,i1 * xStrd1 + i2 * xStrd2 + i3 + i4 * xStrd4);
 #endif
-                s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3 + i4 * xStrd4], compatibleExtraParams),
-                                   compatibleExtraParams);
+                s = reduceStep<OpType>(s, x0[i1 * xStrd1 + i2 * xStrd2 + i3 + i4 * xStrd4], compatibleExtraParams);
               }
       else if (xStrd4 == 1)
         for (LongType i1 = 0; i1 < xAxis1; ++i1)
@@ -625,8 +671,7 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld  offset %lld reduceExec51\n", i0,i1,i2,i3,i4,i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3 + i4);
 #endif
-                s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3 + i4], compatibleExtraParams),
-                                   compatibleExtraParams);
+                s = reduceStep<OpType>(s, x0[i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3 + i4], compatibleExtraParams);
               }
       else
         for (LongType i1 = 0; i1 < xAxis1; ++i1)
@@ -636,10 +681,9 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld  offset %lld reduceExec51\n", i0,i1,i2,i3,i4,i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4);
 #endif
-                s = OpType::update(
-                    s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams), compatibleExtraParams);
+                s = reduceStep<OpType>(s, x0[i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams);
               }
-      *z0 = OpType::postProcess(s, tadLen, compatibleExtraParams);
+      *z0 = reduceFinish<OpType>(s, tadLen, compatibleExtraParams);
     }
   };
 
@@ -679,7 +723,7 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
         auto x1 = x + i0 * xStrd0 + i1 * xStrd1;
         auto z1 = z + i0 * zStrd0 + i1 * zStrd1;
 
-        auto s = static_cast<typename OpType::InterType>(OpType::startingValue(x1));
+        auto s = reduceStart<OpType>(x1);
 
         if (xStrd2 == 1)
           for (LongType i4 = 0; i4 < xAxis4; ++i4)
@@ -690,7 +734,7 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
                 shape::printShapeInfo(zShapeInfo);
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec52\n", i0,i1,i2,i3,i4,i2 + i3 * xStrd3 + i4 * xStrd4);
 #endif
-                s = OpType::update(s, OpType::op(x1[i2 + i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams), compatibleExtraParams);
+                s = reduceStep<OpType>(s, x1[i2 + i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams);
               }
         else if (xStrd3 == 1)
           for (LongType i2 = 0; i2 < xAxis2; ++i2)
@@ -701,7 +745,7 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
                 shape::printShapeInfo(zShapeInfo);
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec52\n", i0,i1,i2,i3,i4,i2 + i3 * xStrd3 + i4 * xStrd4);
 #endif
-                s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3 + i4 * xStrd4], compatibleExtraParams), compatibleExtraParams);
+                s = reduceStep<OpType>(s, x1[i2 * xStrd2 + i3 + i4 * xStrd4], compatibleExtraParams);
               }
         else if (xStrd4 == 1)
           for (LongType i2 = 0; i2 < xAxis2; ++i2)
@@ -712,7 +756,7 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
                 shape::printShapeInfo(zShapeInfo);
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec52\n", i0,i1,i2,i3,i4,i2 * xStrd2 + i3 + i4 * xStrd4);
 #endif
-                s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3 * xStrd3 + i4], compatibleExtraParams), compatibleExtraParams);
+                s = reduceStep<OpType>(s, x1[i2 * xStrd2 + i3 * xStrd3 + i4], compatibleExtraParams);
               }
         else
           for (LongType i2 = 0; i2 < xAxis2; ++i2)
@@ -721,11 +765,10 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec52\n", i0,i1,i2,i3,i4,i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4);
 #endif
-                s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams),
-                                   compatibleExtraParams);
+                s = reduceStep<OpType>(s, x1[i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams);
               }
 
-        *z1 = OpType::postProcess(s, tadLen, compatibleExtraParams);
+        *z1 = reduceFinish<OpType>(s, tadLen, compatibleExtraParams);
       }
     }
   };
@@ -768,7 +811,7 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const LongType* xShapeInfo, Z* z, co
           auto x2 = x + i0 * xStrd0 + i1 * xStrd1 + i2 * xStrd2;
           auto z2 = z + i0 * zStrd0 + i1 * zStrd1 + i2 * zStrd2;
 
-          auto s = static_cast<typename OpType::InterType>(OpType::startingValue(x2));
+          auto s = reduceStart<OpType>(x2);
 
           if (xStrd3 == 1)
             for (LongType i4 = 0; i4 < xAxis4; ++i4)
@@ -778,7 +821,7 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const LongType* xShapeInfo, Z* z, co
                 shape::printShapeInfo(zShapeInfo);
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec53\n", i0,i1,i2,i3,i4,i3 + i4 * xStrd4);
 #endif
-                s = OpType::update(s, OpType::op(x2[i3 + i4 * xStrd4], compatibleExtraParams), compatibleExtraParams);
+                s = reduceStep<OpType>(s, x2[i3 + i4 * xStrd4], compatibleExtraParams);
               }
           else if (xStrd4 == 1)
             for (LongType i3 = 0; i3 < xAxis3; ++i3)
@@ -788,7 +831,7 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const LongType* xShapeInfo, Z* z, co
                 shape::printShapeInfo(zShapeInfo);
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec53\n", i0,i1,i2,i3,i4,i3 * xStrd3 + i4);
 #endif
-                s = OpType::update(s, OpType::op(x2[i3 * xStrd3 + i4], compatibleExtraParams), compatibleExtraParams);
+                s = reduceStep<OpType>(s, x2[i3 * xStrd3 + i4], compatibleExtraParams);
               }
           else
             for (LongType i3 = 0; i3 < xAxis3; ++i3)
@@ -796,9 +839,9 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec53\n", i0,i1,i2,i3,i4,i3 * xStrd3 + i4 * xStrd4);
 #endif
-                s = OpType::update(s, OpType::op(x2[i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams), compatibleExtraParams);
+                s = reduceStep<OpType>(s, x2[i3 * xStrd3 + i4 * xStrd4], compatibleExtraParams);
               }
-          *z2 = OpType::postProcess(s, tadLen, compatibleExtraParams);
+          *z2 = reduceFinish<OpType>(s, tadLen, compatibleExtraParams);
         }
       }
     }
@@ -843,7 +886,7 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const LongType* xShapeInfo, Z* z, co
             auto x3 = x + i0 * xStrd0 + i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3;
             auto z3 = z + i0 * zStrd0 + i1 * zStrd1 + i2 * zStrd2 + i3 * zStrd3;
 
-            auto s = static_cast<typename OpType::InterType>(OpType::startingValue(x3));
+            auto s = reduceStart<OpType>(x3);
 
             if (xStrd4 == 1)
               for (LongType i4 = 0; i4 < xAxis4; ++i4) {
@@ -851,7 +894,7 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const LongType* xShapeInfo, Z* z, co
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
 #endif
-                s = OpType::update(s, OpType::op(x3[i4], compatibleExtraParams), compatibleExtraParams);
+                s = reduceStep<OpType>(s, x3[i4], compatibleExtraParams);
               }
             else
               for (LongType i4 = 0; i4 < xAxis4; ++i4) {
@@ -859,9 +902,9 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const LongType* xShapeInfo, Z* z, co
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
 #endif
-                s = OpType::update(s, OpType::op(x3[i4 * xStrd4], compatibleExtraParams), compatibleExtraParams);
+                s = reduceStep<OpType>(s, x3[i4 * xStrd4], compatibleExtraParams);
               }
-            *z3 = OpType::postProcess(s, static_cast<LongType>(xAxis4), compatibleExtraParams);
+            *z3 = reduceFinish<OpType>(s, static_cast<LongType>(xAxis4), compatibleExtraParams);
           }
         }
       }
@@ -910,7 +953,7 @@ SD_LIB_HIDDEN void reduceDefault(memory::Workspace* workspace, const X* x, const
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; ++i) {
       const auto tad = x + outerXTadOffsets[i];
-      auto s = static_cast<typename OpType::InterType>(OpType::startingValue(tad));
+      auto s = reduceStart<OpType>(tad);
 
       for (LongType j = 0; j < tadLen; j++) {
 #if defined(PRINT_INDICES)
@@ -918,9 +961,9 @@ SD_LIB_HIDDEN void reduceDefault(memory::Workspace* workspace, const X* x, const
         shape::printShapeInfo(innerXTadShapeInfo);
         printf("Index i,j is %lld,%lld  offset %lld reduceDefault\n", i,j,innerXTadOffsets[j]);
 #endif
-        s = OpType::update(s, OpType::op(tad[innerXTadOffsets[j]], compatibleExtraParams), compatibleExtraParams);
+        s = reduceStep<OpType>(s, tad[innerXTadOffsets[j]], compatibleExtraParams);
       }
-      z[zOffsets[i]] = OpType::postProcess(s, tadLen, compatibleExtraParams);
+      z[zOffsets[i]] = reduceFinish<OpType>(s, tadLen, compatibleExtraParams);
     }
   };
 

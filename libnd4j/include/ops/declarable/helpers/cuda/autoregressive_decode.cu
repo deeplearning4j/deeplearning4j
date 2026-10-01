@@ -23,7 +23,6 @@
 #include <ops/declarable/helpers/token_sample.h>
 #include <ops/declarable/helpers/cuda/argmax_row_scan.cuh>
 #include <ops/declarable/helpers/kv_scatter.h>
-#include <ops/declarable/helpers/kv_cache_quantize.h>
 #include <execution/LaunchContext.h>
 #include <graph/Context.h>
 #include <graph/DspDiagnostics.h>
@@ -57,6 +56,115 @@ static std::string nestedPlanFailureDetail() {
     return detail != nullptr && detail[0] != '\0'
                ? std::string(detail)
                : std::string("nested plan returned without native failure detail");
+}
+
+// --- Diagnostic device reads -------------------------------------------------
+// Diagnostics must observe placement, never change it: NDArray::specialBuffer() syncs a buffer
+// whose owner device is not the current device, which moves multi-device placed state (KV caches,
+// GDN/conv state on the second GPU) off its owner. These helpers read the owning device's
+// allocation as-is and copy with cudaMemcpyDefault so the owner is inferred from the address.
+
+// The view's first element on its owning device, or nullptr when there is no live device allocation.
+static const char* diagDeviceAddress(NDArray* array) {
+    auto* db = array != nullptr ? array->dataBuffer() : nullptr;
+    if (db == nullptr || !db->isValid() || db->isClosed() || db->special() == nullptr) {
+        return nullptr;
+    }
+    return static_cast<const char*>(db->special()) + array->offset() * array->sizeOfT();
+}
+
+static int diagDeviceId(NDArray* array) {
+    auto* db = array != nullptr ? array->dataBuffer() : nullptr;
+    return db != nullptr && db->isValid() ? db->deviceId() : -1;
+}
+
+// Bit-exact widening of one stored FLOAT32/HALF/BFLOAT16 element.
+static float diagDecodeFloat(DataType dtype, const uint8_t* elem) {
+    if (dtype == DataType::FLOAT32) {
+        float out;
+        std::memcpy(&out, elem, sizeof(out));
+        return out;
+    }
+    uint16_t bits = 0;
+    std::memcpy(&bits, elem, sizeof(bits));
+    if (dtype == DataType::BFLOAT16) {
+        const uint32_t widened = static_cast<uint32_t>(bits) << 16;
+        float out;
+        std::memcpy(&out, &widened, sizeof(out));
+        return out;
+    }
+    // HALF: 1 sign, 5 exponent (bias 15), 10 mantissa bits; subnormals keep their value.
+    const uint32_t exponent = (bits >> 10) & 0x1Fu;
+    const uint32_t mantissa = bits & 0x3FFu;
+    const float magnitude =
+        exponent == 0 ? std::ldexp(static_cast<float>(mantissa), -24)
+        : exponent == 0x1F ? (mantissa == 0 ? std::numeric_limits<float>::infinity()
+                                            : std::numeric_limits<float>::quiet_NaN())
+        : std::ldexp(static_cast<float>(mantissa | 0x400u), static_cast<int>(exponent) - 25);
+    return (bits & 0x8000u) != 0 ? -magnitude : magnitude;
+}
+
+static constexpr int DIAG_MAX_ELEMENTS = 32;
+
+// Logical elements [first, first + count) in C order, each addressed through the array's own
+// strides. FLOAT32/HALF/BFLOAT16 only; false (out untouched) for any other dtype, an out-of-range
+// read or a failed copy.
+static bool readDiagElements(NDArray* array, LongType first, int count, float* out, cudaStream_t stream) {
+    const char* base = diagDeviceAddress(array);
+    if (base == nullptr || count <= 0 || count > DIAG_MAX_ELEMENTS || first < 0
+            || first + count > array->lengthOf()) {
+        return false;
+    }
+    const DataType dtype = array->dataType();
+    if (dtype != DataType::FLOAT32 && dtype != DataType::HALF && dtype != DataType::BFLOAT16) {
+        return false;
+    }
+    const size_t elemSize = array->sizeOfT();
+    const LongType* shapeInfo = array->shapeInfo();
+    const LongType rank = shape::rank(shapeInfo);
+    uint8_t raw[DIAG_MAX_ELEMENTS * sizeof(float)] = {};
+    for (int i = 0; i < count; i++) {
+        LongType coords[SD_MAX_RANK];
+        const LongType linearIndex = first + i;
+        INDEX2COORDS(linearIndex, rank, shape::shapeOf(shapeInfo), coords);
+        LongType offset;
+        COORDS2INDEX(rank, shape::stride(shapeInfo), coords, offset);
+        if (cudaMemcpyAsync(raw + i * elemSize, base + offset * elemSize, elemSize,
+                            cudaMemcpyDefault, stream) != cudaSuccess) {
+            return false;
+        }
+    }
+    if (cudaStreamSynchronize(stream) != cudaSuccess) return false;
+    for (int i = 0; i < count; i++) out[i] = diagDecodeFloat(dtype, raw + i * elemSize);
+    return true;
+}
+
+// The first `count` values of row `row` (element [0, row, 0, 0..count)) of a rank-4
+// [batch, seq, kvHeads, dim] KV cache. Float caches widen bit-exactly. INT8 decode-loop caches are
+// row-inline [.., headDim + 4] (GenerationPipeline ROW-INLINE): each value is q times the FLOAT32
+// scale in the row's last 4 bytes.
+static bool readKvRowForDiag(NDArray* cache, LongType row, int count, float* out, cudaStream_t stream) {
+    if (cache == nullptr || cache->rankOf() != 4 || row < 0 || row >= cache->sizeAt(1)) return false;
+    if (cache->dataType() != DataType::INT8) {
+        return count <= cache->sizeAt(3)
+               && readDiagElements(cache, row * cache->sizeAt(2) * cache->sizeAt(3), count, out, stream);
+    }
+    const char* base = diagDeviceAddress(cache);
+    const LongType values = cache->sizeAt(3) - 4;
+    if (base == nullptr || cache->strideAt(3) != 1 || count <= 0 || count > DIAG_MAX_ELEMENTS
+            || count > values) {
+        return false;
+    }
+    const char* rowStart = base + row * cache->strideAt(1);
+    int8_t quantized[DIAG_MAX_ELEMENTS] = {};
+    float scale = 0.0f;
+    if (cudaMemcpyAsync(quantized, rowStart, count, cudaMemcpyDefault, stream) != cudaSuccess
+            || cudaMemcpyAsync(&scale, rowStart + values, sizeof(scale), cudaMemcpyDefault, stream) != cudaSuccess
+            || cudaStreamSynchronize(stream) != cudaSuccess) {
+        return false;
+    }
+    for (int i = 0; i < count; i++) out[i] = static_cast<float>(quantized[i]) * scale;
+    return true;
 }
 
 // --- CUDA Kernels ------------------------------------------------------------
@@ -1199,7 +1307,7 @@ void autoregressiveDecode(
         static_cast<size_t>(committedStateCount) * COMMITTED_STATE_FP_SAMPLES;
     uint64_t* pinnedCommittedStateSamples = nullptr;
     std::vector<size_t> committedStateBytes(committedStateCount, 0);
-    std::vector<void*> committedStateDevicePtrs(committedStateCount, nullptr);
+    std::vector<const void*> committedStateDevicePtrs(committedStateCount, nullptr);
     std::vector<char> committedStateQueued(std::max(0, maxNewTokens), 0);
     std::vector<char> committedStateEmitted(std::max(0, maxNewTokens), 0);
     std::vector<char> committedStateSpeculative(std::max(0, maxNewTokens), 0);
@@ -1238,16 +1346,13 @@ void autoregressiveDecode(
         std::fill(record, record + committedStateRecordStride, 0ULL);
         for (int stateIdx = 0; stateIdx < committedStateCount; stateIdx++) {
             NDArray* state = extInputs[committedStateExtIndices[stateIdx]];
-            auto* db = state != nullptr ? state->dataBuffer() : nullptr;
-            if (db == nullptr || !db->isValid() || db->isClosed()
-                    || state->specialBuffer() == nullptr) {
-                continue;
-            }
+            const char* device = diagDeviceAddress(state);
+            if (device == nullptr) continue;
             const size_t bytes =
                 static_cast<size_t>(state->lengthOf()) * state->sizeOfT();
             if (bytes == 0) continue;
             committedStateBytes[stateIdx] = bytes;
-            committedStateDevicePtrs[stateIdx] = state->specialBuffer();
+            committedStateDevicePtrs[stateIdx] = device;
             const size_t sampleWidth = std::min(sizeof(uint64_t), bytes);
             const size_t maxOffset = bytes - sampleWidth;
             for (int sample = 0; sample < COMMITTED_STATE_FP_SAMPLES; sample++) {
@@ -1256,8 +1361,7 @@ void autoregressiveDecode(
                     / static_cast<size_t>(COMMITTED_STATE_FP_SAMPLES - 1);
                 cudaMemcpyAsync(
                     record + static_cast<size_t>(stateIdx) * COMMITTED_STATE_FP_SAMPLES + sample,
-                    static_cast<const char*>(state->specialBuffer()) + offset,
-                    sampleWidth, cudaMemcpyDeviceToHost, *stream);
+                    device + offset, sampleWidth, cudaMemcpyDefault, *stream);
             }
         }
         committedStateQueued[recordStep] = 1;
@@ -1326,11 +1430,8 @@ void autoregressiveDecode(
         std::fill(record, record + committedStateRecordStride, 0ULL);
         for (int stateIdx = 0; stateIdx < committedStateCount; stateIdx++) {
             NDArray* state = extInputs[committedStateExtIndices[stateIdx]];
-            auto* db = state != nullptr ? state->dataBuffer() : nullptr;
-            if (db == nullptr || !db->isValid() || db->isClosed()
-                    || state->specialBuffer() == nullptr) {
-                continue;
-            }
+            const char* device = diagDeviceAddress(state);
+            if (device == nullptr) continue;
             const size_t bytes =
                 static_cast<size_t>(state->lengthOf()) * state->sizeOfT();
             if (bytes == 0) continue;
@@ -1342,8 +1443,7 @@ void autoregressiveDecode(
                     / static_cast<size_t>(COMMITTED_STATE_FP_SAMPLES - 1);
                 cudaMemcpyAsync(
                     record + static_cast<size_t>(stateIdx) * COMMITTED_STATE_FP_SAMPLES + sample,
-                    static_cast<const char*>(state->specialBuffer()) + offset,
-                    sampleWidth, cudaMemcpyDeviceToHost, *stream);
+                    device + offset, sampleWidth, cudaMemcpyDefault, *stream);
             }
         }
         preExecStateQueued[recordStep] = 1;
@@ -1387,25 +1487,24 @@ void autoregressiveDecode(
         if (!DSP_DIAG_ENABLED(KV_CACHE)) return;
         auto dumpMaskSlice = [&](NDArray* mask, const char* name, LongType rowOffset) {
             constexpr LongType DUMP_FROM = 14, DUMP_N = 21;
-            if (mask == nullptr || mask->specialBuffer() == nullptr
-                    || mask->dataType() != DataType::FLOAT32
-                    || rowOffset + DUMP_FROM + DUMP_N > mask->lengthOf()) {
+            if (mask == nullptr || rowOffset + DUMP_FROM + DUMP_N > mask->lengthOf()) {
                 return;
             }
+            const std::string dtype = DataTypeUtils::asString(mask->dataType());
             float vals[DUMP_N] = {};
-            cudaMemcpyAsync(vals,
-                            static_cast<const char*>(mask->specialBuffer())
-                                + (rowOffset + DUMP_FROM) * sizeof(float),
-                            DUMP_N * sizeof(float), cudaMemcpyDeviceToHost, *stream);
-            cudaStreamSynchronize(*stream);
+            if (!readDiagElements(mask, rowOffset + DUMP_FROM, DUMP_N, vals, *stream)) {
+                DSP_DIAG(KV_CACHE, "MASK_SLICE path=%s step=%d base=%lld %s dtype=%s dev=%d unreadable",
+                         path, stepIdx, basePos, name, dtype.c_str(), diagDeviceId(mask));
+                return;
+            }
             char buf[512];
             int off = 0;
             for (LongType i = 0; i < DUMP_N && off < (int)sizeof(buf) - 16; i++) {
                 off += snprintf(buf + off, sizeof(buf) - off, "%s%.3g",
                                 i ? "," : "", vals[i]);
             }
-            DSP_DIAG(KV_CACHE, "MASK_SLICE path=%s step=%d base=%lld %s[%lld..%lld]=[%s]",
-                     path, stepIdx, basePos, name, DUMP_FROM, DUMP_FROM + DUMP_N - 1, buf);
+            DSP_DIAG(KV_CACHE, "MASK_SLICE path=%s step=%d base=%lld %s dtype=%s[%lld..%lld]=[%s]",
+                     path, stepIdx, basePos, name, dtype.c_str(), DUMP_FROM, DUMP_FROM + DUMP_N - 1, buf);
         };
         dumpMaskSlice(attentionMask, "attn01", 0);
         if (causalMask != nullptr && causalMask->rankOf() == 4) {
@@ -1419,28 +1518,24 @@ void autoregressiveDecode(
         // Fixed KV rows 18..21 of layer-0 key and value caches (first 2 values each):
         // same logical positions every call, so W-wide vs W=1 writes are comparable.
         auto dumpKvRows = [&](int extIdx, const char* name) {
-            if (extIdx < 0 || extIdx >= numExtInputs) return;
+            if (extIdx < 0 || extIdx >= numExtInputs || extInputs[extIdx] == nullptr) return;
             NDArray* cache = extInputs[extIdx];
-            if (cache == nullptr || cache->specialBuffer() == nullptr
-                    || cache->rankOf() != 4
-                    || cache->dataType() != DataType::FLOAT32) {
-                return;
-            }
-            LongType kvLen = cache->sizeAt(1);
-            LongType rowStride = cache->sizeAt(2) * cache->sizeAt(3);
-            constexpr LongType ROW_FROM = 18, ROW_TO = 21, VALS = 2;
-            if (ROW_TO >= kvLen) return;
+            constexpr LongType ROW_FROM = 18, ROW_TO = 21;
+            constexpr int VALS = 2;
+            if (cache->rankOf() != 4 || ROW_TO >= cache->sizeAt(1)) return;
+            const std::string dtype = DataTypeUtils::asString(cache->dataType());
             float vals[(ROW_TO - ROW_FROM + 1) * VALS] = {};
             for (LongType r = ROW_FROM; r <= ROW_TO; r++) {
-                cudaMemcpyAsync(vals + (r - ROW_FROM) * VALS,
-                                static_cast<const char*>(cache->specialBuffer())
-                                    + r * rowStride * sizeof(float),
-                                VALS * sizeof(float), cudaMemcpyDeviceToHost, *stream);
+                if (!readKvRowForDiag(cache, r, VALS, vals + (r - ROW_FROM) * VALS, *stream)) {
+                    DSP_DIAG(KV_CACHE, "KV_ROW_SLICE path=%s step=%d base=%lld %s dtype=%s dev=%d unreadable",
+                             path, stepIdx, basePos, name, dtype.c_str(), diagDeviceId(cache));
+                    return;
+                }
             }
-            cudaStreamSynchronize(*stream);
             DSP_DIAG(KV_CACHE,
-                     "KV_ROW_SLICE path=%s step=%d base=%lld %s rows18..21=[%.6g,%.6g|%.6g,%.6g|%.6g,%.6g|%.6g,%.6g]",
-                     path, stepIdx, basePos, name,
+                     "KV_ROW_SLICE path=%s step=%d base=%lld %s dtype=%s dev=%d "
+                     "rows18..21=[%.6g,%.6g|%.6g,%.6g|%.6g,%.6g|%.6g,%.6g]",
+                     path, stepIdx, basePos, name, dtype.c_str(), diagDeviceId(cache),
                      vals[0], vals[1], vals[2], vals[3],
                      vals[4], vals[5], vals[6], vals[7]);
         };
@@ -1450,29 +1545,19 @@ void autoregressiveDecode(
             // Per-layer depth bisection: first 2 values of row 19 of every layer's
             // key cache. The first layer whose row-19 write diverges between the
             // speculative and scalar paths is where corruption enters the stack.
-            char depthBuf[1024];
+            // Each entry is L<layer>@<device>; unreadable layers print n/a, not zeros.
+            char depthBuf[1536];
             int depthOff = 0;
             for (int ki = 0; ki < numKvPairs && depthOff < (int)sizeof(depthBuf) - 48; ki++) {
                 int extIdx = config->kvInputExtIndices[ki];
+                NDArray* cache = extIdx >= 0 && extIdx < numExtInputs ? extInputs[extIdx] : nullptr;
                 float v[2] = {};
-                bool ok = false;
-                if (extIdx >= 0 && extIdx < numExtInputs) {
-                    NDArray* cache = extInputs[extIdx];
-                    if (cache != nullptr && cache->specialBuffer() != nullptr
-                            && cache->rankOf() == 4 && cache->sizeAt(1) > 19
-                            && cache->dataType() == DataType::FLOAT32) {
-                        LongType rowStride = cache->sizeAt(2) * cache->sizeAt(3);
-                        cudaMemcpyAsync(v,
-                                        static_cast<const char*>(cache->specialBuffer())
-                                            + 19 * rowStride * sizeof(float),
-                                        2 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
-                        ok = true;
-                    }
-                }
-                if (ok) cudaStreamSynchronize(*stream);
-                depthOff += snprintf(depthBuf + depthOff, sizeof(depthBuf) - depthOff,
-                                     "%sL%d:%.5g,%.5g", ki ? " " : "", ki,
-                                     ok ? v[0] : 0.0f, ok ? v[1] : 0.0f);
+                const bool ok = readKvRowForDiag(cache, 19, 2, v, *stream);
+                depthOff += ok
+                    ? snprintf(depthBuf + depthOff, sizeof(depthBuf) - depthOff,
+                               "%sL%d@%d:%.5g,%.5g", ki ? " " : "", ki, diagDeviceId(cache), v[0], v[1])
+                    : snprintf(depthBuf + depthOff, sizeof(depthBuf) - depthOff,
+                               "%sL%d@%d:n/a", ki ? " " : "", ki, diagDeviceId(cache));
             }
             DSP_DIAG(KV_CACHE, "KV_DEPTH_ROW19 path=%s step=%d base=%lld [%s]",
                      path, stepIdx, basePos, depthBuf);
@@ -3764,25 +3849,6 @@ void autoregressiveDecode(
         // forced H2D (placeholder behavior) would clobber the fresh device value with
         // stale host data. Staging D2D refreshes each into the captured graph every step.
 
-        // ADR 0107 V2: inject scale buffers into the thread-local registry so that
-        // dot_product_attention_v2 can look them up by INT8 KV cache pointer identity.
-        // The registry is set per-step (before executeSteadyState) and cleared after.
-        // extInputs[kvInputExtIndices[0..N-1]] are the INT8 key cache NDArrays (at original
-        // variable name indices). Scale arrays are parallel (indexed [0..N-1]=key, [N..2N-1]=val).
-        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr
-            && config->kvInputExtIndices != nullptr && config->numGdnStatePairs >= 0) {
-            // Gather the N INT8 key cache NDArray pointers from extInputs
-            static thread_local std::vector<NDArray*> tl_kvQuantPtrs;
-            int N = numKvPairs;
-            tl_kvQuantPtrs.resize(N);
-            for (int ki = 0; ki < N; ki++) {
-                int extIdx = config->kvInputExtIndices[ki];  // first N = key caches
-                tl_kvQuantPtrs[ki] = (extIdx >= 0 && extIdx < numExtInputs)
-                    ? extInputs[extIdx] : nullptr;
-            }
-            setKvScaleRegistry(tl_kvQuantPtrs.data(), config->kvScaleBuffers, N);
-        }
-
         queuePreExecStateSamples(step, currentPosition);
         if (useSpeculative && proposedCount > 0) {
             // DEEP pre-verification snapshot (scalar-binding aliasing fix): copy the
@@ -3878,11 +3944,6 @@ void autoregressiveDecode(
         if (targetPhaseBefore != targetPhaseAfter) p0.planPhaseTransitions++;
         if (targetPhaseAfter == graph::PlanPhase::REPLAYING) p0.planReplayForwards++;
         else p0.planWarmupForwards++;
-
-        // Clear the scale registry immediately after plan execution (no stale refs).
-        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
-            clearKvScaleRegistry();
-        }
 
         // Validate plan output every step - these are O(1) pointer/flag checks,
         // negligible cost compared to the plan execution itself.
@@ -4710,17 +4771,6 @@ void autoregressiveDecode(
                          "consumed=%d geometry=%s - re-executing for authoritative state advance",
                          step, proposedCount, acceptedDrafts, consumedCount,
                          scalarRerun ? "scalar-width-1" : "window");
-                if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr
-                    && config->kvInputExtIndices != nullptr && config->numGdnStatePairs >= 0) {
-                    static thread_local std::vector<NDArray*> tl_kvQuantPtrsRerun;
-                    tl_kvQuantPtrsRerun.resize(numKvPairs);
-                    for (int ki = 0; ki < numKvPairs; ki++) {
-                        int extIdx = config->kvInputExtIndices[ki];
-                        tl_kvQuantPtrsRerun[ki] = (extIdx >= 0 && extIdx < numExtInputs)
-                            ? extInputs[extIdx] : nullptr;
-                    }
-                    setKvScaleRegistry(tl_kvQuantPtrsRerun.data(), config->kvScaleBuffers, numKvPairs);
-                }
                 // The scalar binding supplies width-one arrays for single-row commits.
                 // Multi-row commits route through the WINDOW plan (activeWindow was
                 // set to consumedCount above, independent of the binding); its
@@ -4848,9 +4898,6 @@ void autoregressiveDecode(
                         extInputs, numExtInputs, planOutputs, numPlanOutputs,
                         reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)),
                         planDeliveryAt(step));
-                }
-                if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
-                    clearKvScaleRegistry();
                 }
                 std::string rerunFailureDetail;
                 if (rerunStatus != Status::OK) rerunFailureDetail = nestedPlanFailureDetail();
@@ -5100,17 +5147,6 @@ void autoregressiveDecode(
                                 aslArr->specialBuffer(), static_cast<LongType>(1));
                             NDArray::registerSpecialUse({aslArr}, {});
                         }
-                        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr
-                            && config->kvInputExtIndices != nullptr) {
-                            std::vector<NDArray*> kvQuantPtrsShort(numKvPairs);
-                            for (int ki = 0; ki < numKvPairs; ki++) {
-                                int extIdx = config->kvInputExtIndices[ki];
-                                kvQuantPtrsShort[ki] = (extIdx >= 0 && extIdx < numExtInputs)
-                                    ? extInputs[extIdx] : nullptr;
-                            }
-                            setKvScaleRegistry(kvQuantPtrsShort.data(), config->kvScaleBuffers,
-                                               numKvPairs);
-                        }
                         DSP_DIAG(KV_CACHE,
                                  "RERUN_SHORTEN_REEXEC step=%d oldM=%d - width-1 "
                                  "re-execution so committed state matches the 1-token "
@@ -5121,9 +5157,6 @@ void autoregressiveDecode(
                             extInputs, numExtInputs, planOutputs, numPlanOutputs,
                             reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)),
                             planDeliveryAt(step));
-                        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
-                            clearKvScaleRegistry();
-                        }
                         std::string shortenFailureDetail;
                         if (shortenStatus != Status::OK)
                             shortenFailureDetail = nestedPlanFailureDetail();

@@ -23,14 +23,17 @@
 #include <array/ArrayOptions.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/LegacyOpTypeCodes.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/OpDescriptor.h>
 #include <system/Environment.h>
+#include <system/op_boilerplate.h>
 
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 
 #include <climits>
+#include <cmath>
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
@@ -756,6 +759,14 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         }
         if (divSlot < 0) continue;
 
+        // Only the pattern's own consumers may read the intermediates: exp's
+        // output feeds reduce_sum and divide, the others feed one member each.
+        auto consumersOf = [&consumerCounts](int output) {
+            auto it = consumerCounts.find(output);
+            return it == consumerCounts.end() ? 0 : it->second;
+        };
+        if (consumersOf(outSub) != 1 || consumersOf(outExp) != 2 || consumersOf(outSum) != 1) continue;
+
         // Found softmax compound pattern!
         std::vector<int> chain = {i, subSlot, expSlot, sumSlot, divSlot};
         FusionCandidate candidate;
@@ -792,13 +803,412 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     return candidates;
 }
 
+#if NOT_EXCLUDED(OP_fused_elementwise_chain)
+static_assert(MAX_FUSED_CHAIN == sd::ops::helpers::FUSED_CHAIN_MAX_OPS,
+              "FusedChain metadata and the fused kernel must agree on the chain length");
+
+// A fused member must compute exactly what its slot computes eagerly: the eager
+// op's functor with the eager parameters, the chain value as the functor's first
+// operand, rounded to the storage type. The tables below list only ops whose
+// eager kernel is that functor; every other op keeps its own slot.
+struct FusedMember {
+    int code = -1;
+    int secondarySource = FusionPass::FUSED_NO_SECONDARY_SOURCE;
+    int8_t policy = FUSED_SECONDARY_NONE;
+    bool hasClip = false;
+    double clipMin = 0.0;
+    double clipMax = 0.0;
+};
+
+// Numbering from loops/legacy_ops.h TRANSFORM_{SAME,STRICT,FLOAT}_OPS.
+static int legacyTransformCode(int legacyOpType, int opNum) {
+    using namespace sd::ops::helpers;
+    switch (legacyOpType) {
+        case LEGACY_TRANSFORM_SAME:
+            switch (opNum) {
+                case 0: return FUSED_ABS;
+                case 1: return FUSED_SIGN;
+                case 3: return FUSED_NEG;
+                case 4: return FUSED_ROUND;
+                case 11: return FUSED_RECIPROCAL;
+                case 12: return FUSED_SQUARE;
+                case 17: return FUSED_CEIL;
+                case 18: return FUSED_FLOOR;
+                default: return -1;
+            }
+        case LEGACY_TRANSFORM_STRICT:
+            switch (opNum) {
+                case 22: return FUSED_COS;
+                case 23: return FUSED_EXP;
+                case 24: return FUSED_LOG;
+                case 26: return FUSED_SIGMOID;
+                case 27: return FUSED_SIN;
+                case 28: return FUSED_SOFTPLUS;
+                case 29: return FUSED_TANH;
+                case 33: return FUSED_HARDTANH;
+                case 34: return FUSED_SOFTSIGN;
+                case 36: return FUSED_HARD_SIGMOID;
+                case 42: return FUSED_SELU;
+                case 43: return FUSED_SWISH;
+                case 44: return FUSED_LOG1P;
+                case 45: return FUSED_ERF;
+                case 50: return FUSED_ERFC;
+                case 53: return FUSED_GELU;
+                case 57: return FUSED_MISH;
+                default: return -1;
+            }
+        case LEGACY_TRANSFORM_FLOAT:
+            switch (opNum) {
+                case 1: return FUSED_SQRT;
+                case 3: return FUSED_RSQRT;
+                default: return -1;
+            }
+        default:
+            return -1;
+    }
+}
+
+// SCALAR_OPS with the scalar supplied as input 1 (element 0 is read).
+static int legacyScalarBinaryCode(int opNum) {
+    using namespace sd::ops::helpers;
+    switch (opNum) {
+        case 0: return FUSED_ADD;
+        case 1: return FUSED_SUB;
+        case 2: return FUSED_MUL;
+        case 3: return FUSED_DIV;
+        case 4: return FUSED_REVERSE_DIV;
+        case 5: return FUSED_REVERSE_SUB;
+        case 6: return FUSED_MAX;
+        case 13: return FUSED_MIN;
+        case 15: return FUSED_MOD;
+        case 20: return FUSED_FLOORDIV;
+        case 22: return FUSED_SQUARED_SUB;
+        case 26: return FUSED_ATAN2;
+        case 31: return FUSED_POW;
+        case 35: return FUSED_LEAKY_RELU;
+        default: return -1;
+    }
+}
+
+// SCALAR_OPS with the scalar in tArgs[0]. The fused kernel has no scalar
+// parameter, so only the constants its unary functors hard-code are accepted.
+static int legacyScalarUnaryCode(int opNum, const NativeSlot& slot) {
+    using namespace sd::ops::helpers;
+    if (slot.args.numTArgs != 1 || slot.args.tArgs == nullptr) return -1;
+    const double scalar = slot.args.tArgs[0];
+    switch (opNum) {
+        case 39: return scalar == 0.0 && !std::signbit(scalar) ? FUSED_RELU : -1;
+        case 40: return scalar == 0.0 && !std::signbit(scalar) ? FUSED_RELU6 : -1;
+        case 7: return scalar == 1.0 ? FUSED_ELU : -1;
+        default: return -1;
+    }
+}
+
+// PAIRWISE_TRANSFORM_OPS numbering.
+static int legacyPairwiseCode(int opNum) {
+    using namespace sd::ops::helpers;
+    switch (opNum) {
+        case 0: return FUSED_ADD;
+        case 2: return FUSED_DIV;
+        case 3: return FUSED_MUL;
+        case 4: return FUSED_POW;
+        case 5: return FUSED_REVERSE_SUB;
+        case 6: return FUSED_SUB;
+        case 7: return FUSED_MAX;
+        case 8: return FUSED_MIN;
+        case 11: return FUSED_REVERSE_DIV;
+        case 16: return FUSED_ATAN2;
+        case 18: return FUSED_FLOORDIV;
+        case 20: return FUSED_SQUARED_SUB;
+        case 23: return FUSED_MOD;
+        default: return -1;
+    }
+}
+
+// Broadcastable declarables whose eager kernel is the functor of the code.
+static int declarableBinaryCode(const std::string& name) {
+    using namespace sd::ops::helpers;
+    if (name == "add") return FUSED_ADD;
+    if (name == "subtract") return FUSED_SUB;
+    if (name == "multiply") return FUSED_MUL;
+    if (name == "divide" || name == "realdiv") return FUSED_DIV;
+    if (name == "reversesubtract") return FUSED_REVERSE_SUB;
+    if (name == "reversedivide") return FUSED_REVERSE_DIV;
+    if (name == "squaredsubtract") return FUSED_SQUARED_SUB;
+    if (name == "maximum") return FUSED_MAX;
+    if (name == "minimum") return FUSED_MIN;
+    if (name == "mod") return FUSED_MOD;
+    if (name == "pow") return FUSED_POW;
+    return -1;
+}
+
+// Unary declarables; parameterised ones only with the parameter the fused
+// functor applies.
+static int declarableUnaryCode(const std::string& name, const NativeSlot& slot, FusedMember& member) {
+    using namespace sd::ops::helpers;
+    const int numT = slot.args.tArgs == nullptr ? 0 : slot.args.numTArgs;
+    const double* t = slot.args.tArgs;
+    if (name == "sigmoid") return FUSED_SIGMOID;
+    if (name == "tanh") return FUSED_TANH;
+    if (name == "softsign") return FUSED_SOFTSIGN;
+    if (name == "softplus") return FUSED_SOFTPLUS;
+    if (name == "selu") return FUSED_SELU;
+    if (name == "hardtanh") return FUSED_HARDTANH;
+    if (name == "hardsigmoid") return FUSED_HARD_SIGMOID;
+    if (name == "silu") return FUSED_SILU;
+    if (name == "relu" || name == "relu6") {
+        if (numT > 0 && (t[0] != 0.0 || std::signbit(t[0]))) return -1;
+        return name == "relu" ? FUSED_RELU : FUSED_RELU6;
+    }
+    if (name == "elu") return numT == 0 || t[0] == 1.0 ? FUSED_ELU : -1;
+    if (name == "clipbyvalue") {
+        if (numT < 2 || !(t[0] < t[1])) return -1;
+        member.hasClip = true;
+        member.clipMin = t[0];
+        member.clipMax = t[1];
+        return FUSED_CLIP;
+    }
+    return -1;
+}
+
+/**
+ * Resolves one chain member. chainInput is the input that carries the chain
+ * value, or -1 for a run head (whose chain value is input 0).
+ */
+static bool resolveFusedMember(const NativeSlot& slot, int chainInput, FusedMember& member) {
+    using namespace sd::ops::helpers;
+    member = FusedMember{};
+    if (slot.wiring.numOutputs != 1 || slot.hasValueDependentShape() || !isElementwiseSlot(slot) ||
+        slot.aliasesInput()) {
+        return false;
+    }
+    const int numInputs = slot.wiring.numInputs;
+    if (numInputs < 1 || numInputs > 2 || slot.wiring.inputSourceIndices == nullptr) return false;
+
+    int code = -1;
+    int8_t policy = FUSED_SECONDARY_NONE;
+    const int legacyType = slot.legacy.legacyOpType;
+    if (legacyType != LEGACY_NOT_SET) {
+        const int opNum = slot.legacy.legacyOpNum;
+        switch (legacyType) {
+            case LEGACY_TRANSFORM_SAME:
+            case LEGACY_TRANSFORM_STRICT:
+            case LEGACY_TRANSFORM_FLOAT:
+                if (numInputs == 1) code = legacyTransformCode(legacyType, opNum);
+                break;
+            case LEGACY_SCALAR:
+                if (numInputs == 2) {
+                    code = legacyScalarBinaryCode(opNum);
+                    policy = FUSED_SECONDARY_SCALAR;
+                } else {
+                    code = legacyScalarUnaryCode(opNum, slot);
+                }
+                break;
+            case LEGACY_PAIRWISE_TRANSFORM:
+                if (numInputs == 2) {
+                    code = legacyPairwiseCode(opNum);
+                    policy = FUSED_SECONDARY_SAME_SHAPE;
+                }
+                break;
+            default:
+                break;
+        }
+    } else if (slot.ident.op != nullptr && slot.ident.op->getOpName() != nullptr) {
+        std::string name = *slot.ident.op->getOpName();
+        std::transform(name.begin(), name.end(), name.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        if (numInputs == 2) {
+            code = declarableBinaryCode(name);
+            policy = FUSED_SECONDARY_BROADCAST;
+        } else {
+            code = declarableUnaryCode(name, slot, member);
+        }
+    }
+    if (code < 0 || !isImplementedFusedOp(code)) return false;
+    const bool binary = isBinaryFusedOp(static_cast<FusedElemOp>(code));
+    if (binary != (numInputs == 2)) return false;
+
+    if (binary) {
+        const int src0 = slot.wiring.inputSourceIndices[0];
+        const int src1 = slot.wiring.inputSourceIndices[1];
+        if (chainInput <= 0) {
+            // A non-head member cannot name the chain value as its secondary:
+            // the intermediate is never materialised.
+            if (chainInput == 0 && src0 == src1) return false;
+            member.secondarySource = src1;
+        } else if (chainInput == 1) {
+            // A legacy scalar op reads element 0 of input 1; the chain value
+            // cannot take that role.
+            if (src0 == src1 || policy == FUSED_SECONDARY_SCALAR) return false;
+            code = swappedBinaryFusedCode(code);
+            if (code < 0) return false;
+            member.secondarySource = src0;
+        } else {
+            return false;
+        }
+        member.policy = policy;
+    } else if (chainInput > 0) {
+        return false;
+    }
+    member.code = code;
+    return true;
+}
+
+static void commitFusedRun(NativeSlot* slots, const std::vector<int>& run,
+                           const std::vector<FusedMember>& members) {
+    FusedChain& chain = slots[run.front()].fusedChain;
+    chain.clearHead();
+    chain.isFusedChainHead = true;
+    chain.fusedChainLength = static_cast<int>(run.size());
+    for (size_t i = 0; i < run.size(); i++) {
+        const FusedMember& member = members[i];
+        chain.fusedChainOpCodes[i] = member.code;
+        chain.fusedChainSlots[i] = run[i];
+        chain.fusedChainSecondaryInputSources[i] = member.secondarySource;
+        chain.fusedChainSecondaryPolicy[i] = member.policy;
+        if (member.hasClip) {
+            chain.fusedChainHasClip = true;
+            chain.fusedChainClipMin = member.clipMin;
+            chain.fusedChainClipMax = member.clipMax;
+        }
+    }
+    for (size_t i = 1; i < run.size(); i++) slots[run[i]].fusedChain.isFusedChainTail = true;
+}
+
+/**
+ * Splits a candidate chain into fused runs of 2..MAX_FUSED_CHAIN members. A
+ * member extends the current run only when it consumes the previous member's
+ * sole-consumer output, resolves at that input, keeps the chain's single clip
+ * pair and reads a secondary that already exists when the head executes: the
+ * whole run executes at the head's position, so an internal secondary must be
+ * produced before the head. Anything else ends the run and may start a new one.
+ */
+static int buildFusedRuns(NativeSlot* slots, int numSlots, const std::vector<int>& chain,
+                          const std::unordered_map<int, int>& consumerCounts,
+                          const std::unordered_map<int, int>& producerOf) {
+    int committed = 0;
+    std::vector<int> run;
+    std::vector<FusedMember> members;
+    auto flush = [&]() {
+        if (run.size() >= 2) {
+            commitFusedRun(slots, run, members);
+            committed++;
+            DSP_DIAG(FUSION, "fused kernel dispatch enabled for chain slots %d-%d (%d ops)",
+                     run.front(), run.back(), (int)run.size());
+        }
+        run.clear();
+        members.clear();
+    };
+
+    for (int slotIdx : chain) {
+        if (slotIdx < 0 || slotIdx >= numSlots) {
+            flush();
+            continue;
+        }
+        const NativeSlot& slot = slots[slotIdx];
+        FusedMember member;
+        bool extended = false;
+        if (!run.empty() && run.size() < static_cast<size_t>(MAX_FUSED_CHAIN)) {
+            const int prevOutput = slots[run.back()].wiring.outputSlotIndices[0];
+            auto count = consumerCounts.find(prevOutput);
+            int chainInput = -1;
+            for (int k = 0; k < slot.wiring.numInputs; k++) {
+                if (slot.wiring.inputSourceIndices[k] == prevOutput) {
+                    chainInput = k;
+                    break;
+                }
+            }
+            if (count != consumerCounts.end() && count->second == 1 && chainInput >= 0 &&
+                resolveFusedMember(slot, chainInput, member)) {
+                bool compatible = true;
+                if (member.hasClip) {
+                    for (const FusedMember& earlier : members) {
+                        if (earlier.hasClip &&
+                            (earlier.clipMin != member.clipMin || earlier.clipMax != member.clipMax)) {
+                            compatible = false;
+                        }
+                    }
+                }
+                if (compatible && member.secondarySource >= 0) {
+                    auto producer = producerOf.find(member.secondarySource);
+                    compatible = producer != producerOf.end() && producer->second < run.front();
+                }
+                if (compatible) {
+                    run.push_back(slotIdx);
+                    members.push_back(member);
+                    extended = true;
+                }
+            }
+        }
+        if (!extended) {
+            flush();
+            if (resolveFusedMember(slot, -1, member)) {
+                run.push_back(slotIdx);
+                members.push_back(member);
+            }
+        }
+    }
+    flush();
+    return committed;
+}
+#endif
+
 int FusionPass::applyFusions(
         NativeSlot* slots, int numSlots,
-        const std::vector<FusionCandidate>& candidates) {
+        const std::vector<FusionCandidate>& candidates,
+        const int* requestedOutputSlots, int numRequestedOutputs) {
 
     int applied = 0;
 
     DSP_DIAG(FUSION, "applyFusions: BEGIN numSlots=%d candidates=%d", numSlots, (int)candidates.size());
+    if (slots == nullptr || numSlots <= 0) return 0;
+
+    // Fused-chain metadata is derived only here. A re-freeze must not inherit a
+    // chain an earlier freeze built, even when no candidate survives this time.
+    for (int s = 0; s < numSlots; s++) {
+        slots[s].fusedChain.clearHead();
+        slots[s].fusedChain.isFusedChainTail = false;
+    }
+
+    // Requested outputs are consumers: a chain must neither overwrite nor skip
+    // producing a value the caller reads.
+    auto consumerCounts = buildConsumerCounts(slots, numSlots);
+    if (requestedOutputSlots != nullptr) {
+        for (int i = 0; i < numRequestedOutputs; ++i) {
+            if (requestedOutputSlots[i] >= 0) ++consumerCounts[requestedOutputSlots[i]];
+        }
+    }
+    std::unordered_map<int, int> producerOf;
+    for (int s = 0; s < numSlots; s++) {
+        for (int o = 0; o < slots[s].wiring.numOutputs; o++) producerOf[slots[s].wiring.outputSlotIndices[o]] = s;
+    }
+
+    // Member i may overwrite member i-1's output only when it is that output's
+    // sole consumer, computes elementwise (reads each element before writing
+    // it), and the output is a buffer the producer owns rather than an alias of
+    // its input or a frozen constant.
+    auto enableChainInPlace = [&](const std::vector<int>& chain) {
+        for (size_t i = 1; i < chain.size(); i++) {
+            const int slotIdx = chain[i];
+            const int prevSlotIdx = chain[i - 1];
+            if (slotIdx < 0 || slotIdx >= numSlots || prevSlotIdx < 0 || prevSlotIdx >= numSlots) continue;
+            NativeSlot& slot = slots[slotIdx];
+            const NativeSlot& prev = slots[prevSlotIdx];
+            if (!isElementwiseSlot(slot) || prev.wiring.numOutputs < 1 || prev.aliasesInput() ||
+                prev.frozenConstantSlot()) {
+                continue;
+            }
+            const int prevOutputSlot = prev.wiring.outputSlotIndices[0];
+            auto count = consumerCounts.find(prevOutputSlot);
+            if (count == consumerCounts.end() || count->second != 1) continue;
+            for (int k = 0; k < slot.wiring.numInputs; k++) {
+                if (slot.wiring.inputSourceIndices[k] == prevOutputSlot) {
+                    slot.enableInPlaceFusion(k);
+                    break;
+                }
+            }
+        }
+    };
 
     for (const auto& fusion : candidates) {
         // Multi-GPU: never fuse a chain whose slots span a device boundary. assignDevices()
@@ -827,121 +1237,11 @@ int FusionPass::applyFusions(
         switch (fusion.type) {
 
             case FusionCandidate::ELEMENTWISE_CHAIN: {
-                // Ops after the head reuse the head's output buffer (in-place chain).
                 if (fusion.slotIndices.size() < 2) break;
-
-                for (size_t i = 1; i < fusion.slotIndices.size(); i++) {
-                    int slotIdx = fusion.slotIndices[i];
-                    if (slotIdx < 0 || slotIdx >= numSlots) continue;
-
-                    NativeSlot& slot = slots[slotIdx];
-
-                    // Find which input comes from the previous op in the chain
-                    int prevSlotIdx = fusion.slotIndices[i - 1];
-                    int prevOutputSlot = slots[prevSlotIdx].wiring.outputSlotIndices[0];
-
-                    int fusedInputIdx = -1;
-                    for (int k = 0; k < slot.wiring.numInputs; k++) {
-                        if (slot.wiring.inputSourceIndices[k] == prevOutputSlot) {
-                            fusedInputIdx = k;
-                            break;
-                        }
-                    }
-
-                    if (fusedInputIdx >= 0) {
-                        slot.enableInPlaceFusion(fusedInputIdx);
-                    }
-                }
-
-                // ── Fused kernel dispatch metadata ──────────────────────────
-                // Try to map all ops in the chain to FusedElemOp codes.
-                // If all succeed, mark head for fused kernel dispatch and tails for skip.
-                {
-                    int chainLen = static_cast<int>(fusion.slotIndices.size());
-                    if (chainLen <= 8) {
-                        bool allMapped = true;
-                        int opCodes[8] = {};
-                        int secondarySources[8] = {};
-
-                        for (int ci = 0; ci < chainLen; ci++) {
-                            int si = fusion.slotIndices[ci];
-                            std::string name = getOpName(slots[si]);
-                            int code = sd::ops::helpers::opNameToFusedCode(name);
-                            if (code < 0) {
-                                allMapped = false;
-                                break;
-                            }
-                            opCodes[ci] = code;
-
-                            // For binary ops, find the secondary input source
-                            // (the one that does NOT come from the previous chain slot)
-                            secondarySources[ci] = FusionPass::FUSED_NO_SECONDARY_SOURCE;
-                            if (slotHasTrait(slots[si], sd::ops::OP_TRAIT_BINARY_ELEMENTWISE) && slots[si].wiring.numInputs == 2) {
-                                int prevOutputSlotIdx = -1;
-                                if (ci > 0) {
-                                    prevOutputSlotIdx = slots[fusion.slotIndices[ci - 1]].wiring.outputSlotIndices[0];
-                                }
-
-                                if (ci == 0) {
-                                    // Head binary op: check if both inputs come from the same source
-                                    // (e.g., mul(y,y) for squaring). In that case, secondary = primary.
-                                    int src0 = slots[si].wiring.inputSourceIndices[0];
-                                    int src1 = slots[si].wiring.inputSourceIndices[1];
-                                    if (src0 == src1) {
-                                        // Self-op (e.g., x*x): secondary is the same as primary
-                                        secondarySources[ci] = src0;
-                                    } else {
-                                        // Head binary op: secondary is the external input (srcIdx < 0)
-                                        // or the non-primary internal input
-                                        for (int k = 0; k < slots[si].wiring.numInputs; k++) {
-                                            int srcIdx = slots[si].wiring.inputSourceIndices[k];
-                                            if (srcIdx < 0) {
-                                                secondarySources[ci] = srcIdx;
-                                                break;
-                                            }
-                                        }
-                                        // If no external found, use the non-primary internal source
-                                        if (secondarySources[ci] == FusionPass::FUSED_NO_SECONDARY_SOURCE) {
-                                            // Primary is input 0 by default; secondary is input 1
-                                            secondarySources[ci] = src1;
-                                        }
-                                    }
-                                } else {
-                                    // Non-head: secondary is whichever input is NOT from prev chain slot
-                                    for (int k = 0; k < slots[si].wiring.numInputs; k++) {
-                                        int srcIdx = slots[si].wiring.inputSourceIndices[k];
-                                        if (srcIdx != prevOutputSlotIdx) {
-                                            secondarySources[ci] = srcIdx;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (allMapped) {
-                            // Populate head slot
-                            int headIdx = fusion.slotIndices[0];
-                            NativeSlot& headSlot = slots[headIdx];
-                            headSlot.fusedChain.isFusedChainHead = true;
-                            headSlot.fusedChain.fusedChainLength = chainLen;
-                            std::memcpy(headSlot.fusedChain.fusedChainOpCodes, opCodes, sizeof(int) * chainLen);
-                            std::memcpy(headSlot.fusedChain.fusedChainSecondaryInputSources, secondarySources, sizeof(int) * chainLen);
-                            for (int ci = 0; ci < chainLen; ci++) {
-                                headSlot.fusedChain.fusedChainSlots[ci] = fusion.slotIndices[ci];
-                            }
-
-                            // Mark tail slots (all except head)
-                            for (int ci = 1; ci < chainLen; ci++) {
-                                slots[fusion.slotIndices[ci]].fusedChain.isFusedChainTail = true;
-                            }
-
-                            DSP_DIAG(FUSION, "fused kernel dispatch enabled for chain slots %d-%d (%d ops)",
-                                      headIdx, fusion.slotIndices.back(), chainLen);
-                        }
-                    }
-                }
-
+                enableChainInPlace(fusion.slotIndices);
+#if NOT_EXCLUDED(OP_fused_elementwise_chain)
+                buildFusedRuns(slots, numSlots, fusion.slotIndices, consumerCounts, producerOf);
+#endif
                 applied++;
                 DSP_DIAG(FUSION, "applied ELEMENTWISE_CHAIN fusion, slots %d-%d (%d ops)",
                           fusion.startSlot, fusion.endSlot, fusion.chainLength);
@@ -949,29 +1249,12 @@ int FusionPass::applyFusions(
             }
 
             case FusionCandidate::BIAS_ACTIVATION: {
-                // add(x, bias) → activation(result)
-                // The activation op reuses the add's output buffer.
+                // add(x, bias) → activation(result): the activation reuses the add's buffer.
                 if (fusion.slotIndices.size() != 2) break;
-
-                int addSlotIdx = fusion.slotIndices[0];
-                int actSlotIdx = fusion.slotIndices[1];
+                const int actSlotIdx = fusion.slotIndices[1];
                 if (actSlotIdx < 0 || actSlotIdx >= numSlots) break;
-                if (addSlotIdx < 0 || addSlotIdx >= numSlots) break;
-
-                NativeSlot& actSlot = slots[actSlotIdx];
-                int addOutputSlot = slots[addSlotIdx].wiring.outputSlotIndices[0];
-
-                // Find which input of the activation comes from the add
-                int fusedInputIdx = -1;
-                for (int k = 0; k < actSlot.wiring.numInputs; k++) {
-                    if (actSlot.wiring.inputSourceIndices[k] == addOutputSlot) {
-                        fusedInputIdx = k;
-                        break;
-                    }
-                }
-
-                if (fusedInputIdx >= 0) {
-                    actSlot.enableInPlaceFusion(fusedInputIdx);
+                enableChainInPlace(fusion.slotIndices);
+                if (slots[actSlotIdx].isInPlaceFused()) {
                     applied++;
                     DSP_DIAG(FUSION, "applied BIAS_ACTIVATION fusion, slots %d-%d",
                               fusion.startSlot, fusion.endSlot);
@@ -980,66 +1263,17 @@ int FusionPass::applyFusions(
             }
 
             case FusionCandidate::MATMUL_BIAS_ACTIVATION: {
-                // matmul → add(bias) → optional activation
-                // Use cublasLt epilogue to fuse bias+activation INTO the matmul kernel.
+                // matmul → add(bias) → optional activation. The add and the activation
+                // still execute, so they only reuse the matmul's buffer. A cuBLASLt bias
+                // epilogue on the matmul would apply the bias a second time.
                 if (fusion.slotIndices.size() < 2) break;
-
-                int matmulSlotIdx = fusion.slotIndices[0];
-                int addSlotIdx = fusion.slotIndices[1];
-                NativeSlot& matmulSlot = slots[matmulSlotIdx];
-                NativeSlot& addSlot = slots[addSlotIdx];
-                if (!isDenseMmulSlot(matmulSlot)) break;
-
-                // Find the bias input source index on the add slot
-                // (the input that is NOT from the matmul output)
-                int biasSourceIdx = -1;
-                int matmulOutputSlot = matmulSlot.wiring.outputSlotIndices[0];
-                for (int k = 0; k < addSlot.wiring.numInputs; k++) {
-                    if (addSlot.wiring.inputSourceIndices[k] != matmulOutputSlot) {
-                        biasSourceIdx = addSlot.wiring.inputSourceIndices[k];
-                        break;
-                    }
-                }
-
-                // Determine epilogue type based on optional activation
-                int epilogueType = 1;  // bias only
-                if (fusion.slotIndices.size() >= 3) {
-                    int actSlotIdx = fusion.slotIndices[2];
-                    std::string actName = getOpName(slots[actSlotIdx]);
-                    if (actName == "relu") epilogueType = 2;        // bias + relu
-                    else if (actName == "gelu") epilogueType = 3;   // bias + gelu
-                    // else: unknown activation, just fuse bias
-                }
-
-                matmulSlot.flags.ltEpilogueType = epilogueType;
-                matmulSlot.flags.ltEpilogueBiasSourceIdx = biasSourceIdx;
-
-                // Mark subsequent ops (add, activation) to be SKIPPED entirely
-                // since the matmul will handle them via cublasLt epilogue
-                for (size_t i = 1; i < fusion.slotIndices.size(); i++) {
-                    int slotIdx = fusion.slotIndices[i];
-                    if (slotIdx < 0 || slotIdx >= numSlots) continue;
-
-                    NativeSlot& slot = slots[slotIdx];
-                    int prevSlotIdx = fusion.slotIndices[i - 1];
-                    int prevOutputSlot = slots[prevSlotIdx].wiring.outputSlotIndices[0];
-
-                    int fusedInputIdx = -1;
-                    for (int k = 0; k < slot.wiring.numInputs; k++) {
-                        if (slot.wiring.inputSourceIndices[k] == prevOutputSlot) {
-                            fusedInputIdx = k;
-                            break;
-                        }
-                    }
-
-                    if (fusedInputIdx >= 0) {
-                        slot.enableInPlaceFusion(fusedInputIdx);
-                    }
-                }
-
+                const int matmulSlotIdx = fusion.slotIndices[0];
+                if (matmulSlotIdx < 0 || matmulSlotIdx >= numSlots) break;
+                if (!isDenseMmulSlot(slots[matmulSlotIdx])) break;
+                enableChainInPlace(fusion.slotIndices);
                 applied++;
-                DSP_DIAG(FUSION, "applied MATMUL_BIAS_ACTIVATION Lt epilogue fusion type=%d biasSource=%d, slots %d-%d",
-                          epilogueType, biasSourceIdx, fusion.startSlot, fusion.endSlot);
+                DSP_DIAG(FUSION, "applied MATMUL_BIAS_ACTIVATION in-place fusion, slots %d-%d",
+                          fusion.startSlot, fusion.endSlot);
                 break;
             }
         }

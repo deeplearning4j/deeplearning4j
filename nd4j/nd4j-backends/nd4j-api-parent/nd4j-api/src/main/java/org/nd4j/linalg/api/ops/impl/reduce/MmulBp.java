@@ -49,6 +49,20 @@ public class MmulBp extends DynamicCustomOp {
     }
 
 
+    /**
+     * Gradients of {@code alpha * op(x) * op(y)}: both are scaled by the forward alpha.
+     */
+    public MmulBp(SameDiff sameDiff,
+                  SDVariable x,
+                  SDVariable y,
+                  SDVariable eps,
+                  MMulTranspose mt,
+                  double alpha) {
+        this(sameDiff, x, y, eps, mt);
+        addTArgument(alpha);
+    }
+
+
     public MmulBp(SameDiff sameDiff,
                   SDVariable x,
                   SDVariable y,

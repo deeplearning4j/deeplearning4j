@@ -24,12 +24,22 @@
 #include <helpers/StringUtils.h>
 #if NOT_EXCLUDED(OP_assign)
 
+#include <helpers/ConstantShapeHelper.h>
 #include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
-#include <ops/declarable/helpers/assign.h>
 
 namespace sd {
 namespace ops {
+#if defined(HAS_FLOAT8) && defined(HAS_UINT8)
+static bool isFp8(DataType dtype) { return dtype == FLOAT8 || dtype == FLOAT8_E5M2; }
+
+// A one-byte UINT8 view of the array's own storage: same buffer, offset, shape and strides.
+static NDArray* storageBytes(NDArray* array) {
+  return new NDArray(array->dataBuffer(), ConstantShapeHelper::getInstance().castToDataType(array->shapeInfo(), UINT8),
+                     array->getContext(), array->offset());
+}
+#endif
+
 BROADCASTABLE_OP_IMPL(assign, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = block.width() < 2 ? x: INPUT_VARIABLE(1);
@@ -42,29 +52,42 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     return Status::OK;
   }
 
+#if defined(HAS_FLOAT8) && defined(HAS_UINT8)
+  // FP8 has no arithmetic kernels in the pairwise/scalar/broadcast type lists, so an assign into an
+  // FP8 output is a storage copy between arrays of that one FP8 dtype. It runs over UINT8 views of
+  // the same storage, which copies every encoding (NaN, -0) bit for bit. An FP8 input with a
+  // common-type output takes the cast below instead, whose TransformAny FP8 pairs convert it.
+  if (isFp8(z->dataType())) {
+    REQUIRE_TRUE(x->dataType() == z->dataType() && y->dataType() == z->dataType(), 0,
+                 "ASSIGN OP: an FP8 output copies storage and needs its dtype for every operand (cast converts "
+                 "into FP8), got x=%s, y=%s, z=%s",
+                 DataTypeUtils::asString(x->dataType()).c_str(), DataTypeUtils::asString(y->dataType()).c_str(),
+                 DataTypeUtils::asString(z->dataType()).c_str());
+    if (x->isEmpty() || y->isEmpty()) return Status::OK;
+
+    NDArray* xBytes = storageBytes(x);
+    NDArray* yBytes = storageBytes(y);
+    NDArray* zBytes = storageBytes(z);
+    auto result = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Assign(), xBytes, yBytes, zBytes);
+    // Any other non-null result is a new byte array of y's shape (scalar x, larger y, z of another shape).
+    const bool wroteOutput = result == zBytes;
+    if (result != nullptr && !wroteOutput) delete result;
+    delete xBytes;
+    delete yBytes;
+    delete zBytes;
+    if (result == nullptr) return Status::KERNEL_FAILURE;
+    REQUIRE_TRUE(wroteOutput, 0, "ASSIGN OP: FP8 assign needs an output of the broadcast shape %s, got %s",
+                 ShapeUtils::shapeAsString(y).c_str(), ShapeUtils::shapeAsString(z).c_str());
+    return Status::OK;
+  }
+#endif
+
   NDArray *castedX = x->dataType() == z->dataType() ? x : x->cast(z->dataType());
   NDArray *castedY = y->dataType() == z->dataType() ? y : y->cast(z->dataType());
 
   ArrayOptions::validateSingleDataType(ArrayOptions::dataType(castedX->shapeInfo()));
   ArrayOptions::validateSingleDataType(ArrayOptions::extra(castedY->shapeInfo()));
   ArrayOptions::validateSingleDataType(ArrayOptions::extra(z->shapeInfo()));
-
-  // FLOAT8/FLOAT8_E5M2 are deliberately excluded from SD_COMMON_TYPES (see
-  // helpers/cpu/assign.cpp, helpers/cuda/assign.cu) to avoid instantiating every
-  // broadcastable op's PairwiseTransform/BroadcastHelper templates for both FP8
-  // encodings. They are handled via the dedicated helpers::assign() dispatch
-  // instead (already used by the "cast" op for the same reason). A straight,
-  // non-broadcast copy - e.g. dup()/assign() onto a reordered ('f') view, which
-  // has no PairwiseTransform_THRICE<FLOAT8,...> instantiation - must go through
-  // that helper rather than BroadcastHelper::broadcastApply.
-  if (castedX->isSameShape(z) &&
-      (castedX->dataType() == DataType::FLOAT8 || castedX->dataType() == DataType::FLOAT8_E5M2 ||
-       z->dataType() == DataType::FLOAT8 || z->dataType() == DataType::FLOAT8_E5M2)) {
-    helpers::assign(block.launchContext(), z, castedX);
-    if (castedX != x) delete castedX;
-    if (castedY != y) delete castedY;
-    return Status::OK;
-  }
 
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Assign(), castedX, castedY, z);
 
@@ -82,18 +105,17 @@ DECLARE_SYN(set, assign);
 DECLARE_SYN(copy, assign);
 
 DECLARE_TYPES(assign) {
-  // ALL_FLOATS deliberately excludes the FP8 storage types (FLOAT8/FLOAT8_E5M2):
-  // most float transforms (sigmoid, tanh, exp, ...) are not meaningful on them.
-  // assign is a plain copy/type-pun though, and both the CPU and CUDA assign
-  // helpers (helpers/cpu/assign.cpp, helpers/cuda/assign.cu) already implement
-  // every FLOAT8/FLOAT8_E5M2 <-> FLOAT8/FLOAT8_E5M2 combination correctly - only
-  // this op-descriptor type gate was rejecting them before the kernel ever ran,
-  // which is what made dup('f')/view layout on FLOAT8 fail on CPU (and would
-  // fail identically on CUDA if it every routed FLOAT8 dup through this op).
   getOpDescriptor()
-      ->setAllowedInputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL,sd::DataType::FLOAT8,sd::DataType::FLOAT8_E5M2})
-      ->setAllowedInputTypes(1, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL,sd::DataType::FLOAT8,sd::DataType::FLOAT8_E5M2})
-      ->setAllowedOutputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL,sd::DataType::FLOAT8,sd::DataType::FLOAT8_E5M2});
+      ->setAllowedInputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL})
+      ->setAllowedInputTypes(1, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL})
+      ->setAllowedOutputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL});
+#if defined(HAS_FLOAT8) && defined(HAS_UINT8)
+  // ALL_FLOATS excludes the FP8 storage types. An FP8 output is a same-dtype storage copy, which is
+  // what dup('f') and view layout on FP8 need; an FP8 input converts into a common-type output.
+  for (auto fp8 : {FLOAT8, FLOAT8_E5M2}) {
+    getOpDescriptor()->setAllowedInputTypes(0, fp8)->setAllowedInputTypes(1, fp8)->setAllowedOutputTypes(0, fp8);
+  }
+#endif
   getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 

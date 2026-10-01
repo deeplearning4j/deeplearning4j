@@ -573,12 +573,8 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
 
     slot.disableInPlaceFusion();
-    slot.fusedChain.isFusedChainHead = false;
-    slot.fusedChain.fusedChainLength = 0;
+    slot.fusedChain.clearHead();
     slot.fusedChain.isFusedChainTail = false;
-    std::memset(slot.fusedChain.fusedChainOpCodes, 0, sizeof(slot.fusedChain.fusedChainOpCodes));
-    std::memset(slot.fusedChain.fusedChainSlots, 0, sizeof(slot.fusedChain.fusedChainSlots));
-    std::fill(std::begin(slot.fusedChain.fusedChainSecondaryInputSources), std::end(slot.fusedChain.fusedChainSecondaryInputSources), INT32_MIN);
 
     // Build input wiring from exact paired identities or legacy node IDs.
 
@@ -944,10 +940,6 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   plan->externalInputIsPlaceholder_.resize(plan->numExternalInputs_, false);
   for (int s = 0; s < numSteps; s++) {
     auto& slot = plan->slots_[s];
-    const bool inPlaceOnnxMha =
-        slot.ident.op != nullptr && slot.ident.op->getOpName() != nullptr
-            && *slot.ident.op->getOpName() == "onnx_multi_head_attention"
-            && slot.wiring.numInputs >= 7;
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx < 0) {
@@ -956,15 +948,6 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
           if (slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
             plan->externalInputIsVariable_[extIdx] = true;
             plan->externalInputIsPlaceholder_[extIdx] = true;
-          }
-          // Seven-input ONNX MHA writes past_key/past_value in-place when
-          // cache_position is present. Those canonical external buffers are
-          // both inputs and persistent state: staging them would strand the
-          // captured write in a plan-owned copy and the next decode would read
-          // stale KV. Classify them before the first prefill execution.
-          if (inPlaceOnnxMha && (i == 4 || i == 5)) {
-            plan->externalInputIsVariable_[extIdx] = true;
-            plan->externalInputIsPlaceholder_[extIdx] = false;
           }
           // NOTE: SOURCE_VARIABLE inputs (trainable weights) are NOT marked
           // variable here. During inference (generation), weights are constants —
@@ -979,6 +962,35 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
           // This is the correct entry point — it handles invalidation properly.
         }
       }
+    }
+  }
+
+  // In-place attention state is not an input-only placeholder. Seven-input ONNX
+  // MHA writes past_key/past_value (inputs 4/5), and dot_product_attention_v2
+  // with cache_position writes its key/value caches (inputs 5/6) and INT8 scale
+  // caches (9/10). Those canonical external buffers are both inputs and
+  // persistent state: staging them would strand the captured write in a
+  // plan-owned copy and the next decode would read stale KV. Classify them
+  // AFTER all readers, so a later read-only consumer cannot undo the writer's
+  // classification — the same pass fromSerializedPlan runs, so a compiled and
+  // a disk-cached plan agree.
+  for (int s = 0; s < numSteps; s++) {
+    const auto& slot = plan->slots_[s];
+    const std::string* opName =
+        slot.ident.op != nullptr ? slot.ident.op->getOpName() : nullptr;
+    const bool onnxKv = opName != nullptr && *opName == "onnx_multi_head_attention"
+                        && slot.wiring.numInputs >= 7;
+    const bool dpaKv = opName != nullptr && *opName == "dot_product_attention_v2"
+                       && slot.wiring.numInputs >= 8;
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      if (!((onnxKv && (i == 4 || i == 5)) ||
+            (dpaKv && (i == 5 || i == 6 || i == 9 || i == 10)))) continue;
+      const int srcIdx = slot.wiring.inputSourceIndices[i];
+      if (srcIdx >= 0) continue;
+      const int extIdx = -(srcIdx + 1);
+      if (extIdx >= plan->numExternalInputs_) continue;
+      plan->externalInputIsVariable_[extIdx] = true;
+      plan->externalInputIsPlaceholder_[extIdx] = false;
     }
   }
 

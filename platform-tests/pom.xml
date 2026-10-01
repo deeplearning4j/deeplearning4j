@@ -1746,8 +1746,9 @@
                             <goal>compile</goal>
                         </goals>
                     </execution>
+                    <!-- Same id as the parent's execution, so the tests compile once -->
                     <execution>
-                        <id>java-test-compile</id>
+                        <id>java-testCompile</id>
                         <phase>test-compile</phase>
                         <goals>
                             <goal>testCompile</goal>

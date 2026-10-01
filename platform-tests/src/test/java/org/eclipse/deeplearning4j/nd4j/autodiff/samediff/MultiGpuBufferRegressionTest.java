@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.BitCast;
 import org.nd4j.linalg.api.ops.impl.reduce.same.Sum;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - DataBuffer::expand() via reallocate() — primary path for the handleNonPeerFailover fix
  * - DataBuffer::allocateSpecial() via normal array creation
  * - DataBuffer::migrate() via replicateToDevice
+ * - DataBuffer::memcpy() of FP8 storage across GPUs (DSP writable replicas)
  * - Multiple data types through allocation paths
  * - View safety after buffer operations
  * - Environment flag round-trips for fusion scoring configuration
@@ -315,6 +317,59 @@ public class MultiGpuBufferRegressionTest {
         } finally {
             DeviceMemoryManager.getInstance().switchDevice(sourceDevice,
                     "MultiGpuBufferRegressionTest", "restore-seal-before-host-read-source");
+        }
+    }
+
+    /**
+     * Verify DataBuffer::memcpy moves FP8 storage between GPUs. DSP stages writable FP8 KV
+     * caches on the consuming device and writes them back with this copy, so both formats
+     * must copy byte-exactly at element offsets.
+     */
+    @ParameterizedTest
+    @EnumSource(value = DataType.class, names = {"FLOAT8", "FLOAT8_E5M2"})
+    public void testFp8BufferCopyAcrossGpusPreservesBytes(DataType fp8) {
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        org.junit.jupiter.api.Assumptions.assumeTrue(numDevices > 1,
+                "Requires at least two automatically discovered GPU devices");
+
+        int sourceDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        int targetDevice = (sourceDevice + 1) % numDevices;
+        int length = 32;
+        int count = 12;
+        int sourceOffset = 7;
+        int targetOffset = 9;
+        byte[] sourceBytes = new byte[length];
+        byte[] targetBytes = new byte[length];
+        int[] expected = new int[length];
+        for (int i = 0; i < length; i++) {
+            sourceBytes[i] = (byte) (0x01 + i);
+            targetBytes[i] = (byte) (0x40 + i);
+            expected[i] = targetBytes[i];
+        }
+        for (int i = 0; i < count; i++) {
+            expected[targetOffset + i] = sourceBytes[sourceOffset + i];
+        }
+
+        INDArray source = Nd4j.create(fp8, length);
+        Nd4j.exec(new BitCast(Nd4j.createFromArray(sourceBytes), fp8, source));
+        try {
+            DeviceMemoryManager.getInstance().switchDevice(targetDevice,
+                    "MultiGpuBufferRegressionTest", "fp8-copy-target");
+            INDArray target = Nd4j.create(fp8, length);
+            Nd4j.exec(new BitCast(Nd4j.createFromArray(targetBytes), fp8, target));
+            assertEquals(targetDevice, Nd4j.getAffinityManager().getDeviceForArray(target),
+                    "FP8 destination must be allocated on the selected target device");
+
+            Nd4j.getNativeOps().copyBuffer(target.data().opaqueBuffer(), count,
+                    source.data().opaqueBuffer(), sourceOffset, targetOffset);
+
+            INDArray targetAsBytes = Nd4j.create(DataType.INT8, length);
+            Nd4j.exec(new BitCast(target, DataType.INT8, targetAsBytes));
+            assertArrayEquals(expected, targetAsBytes.toIntVector(),
+                    fp8 + " cross-device copy must replace exactly the addressed bytes");
+        } finally {
+            DeviceMemoryManager.getInstance().switchDevice(sourceDevice,
+                    "MultiGpuBufferRegressionTest", "restore-fp8-copy-source");
         }
     }
 

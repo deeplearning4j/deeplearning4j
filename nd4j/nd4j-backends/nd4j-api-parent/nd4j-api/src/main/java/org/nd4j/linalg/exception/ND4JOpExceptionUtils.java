@@ -55,6 +55,8 @@ public class ND4JOpExceptionUtils {
 
     private static final int MAX_STACK_FRAMES = 15;
     private static final int MAX_DATA_PREVIEW = 10;
+    /** Set while this thread reads array data for a diagnostic preview. */
+    private static final ThreadLocal<Boolean> PREVIEWING = ThreadLocal.withInitial(() -> false);
 
     /**
      * Creates a detailed exception for an op execution failure.
@@ -440,15 +442,30 @@ public class ND4JOpExceptionUtils {
                     sb.append("  DataBuffer.pointer: [error: ").append(e.getMessage()).append("]\n");
                 }
 
-                // Data preview (only for small arrays or if funcTrace is enabled)
-                if (array.length() <= MAX_DATA_PREVIEW && !array.isEmpty()) {
+                // Data preview (only for small arrays or if funcTrace is enabled). Element reads map
+                // each index through the array's own strides, so a preview runs no op: a view's
+                // toDoubleVector() dups it, and when the failed op was that copy the diagnostics
+                // recursed until the stack overflowed. The guard covers any op a read still triggers.
+                boolean small = array.length() <= MAX_DATA_PREVIEW && !array.isEmpty();
+                boolean traced = !small && Nd4j.getEnvironment().isFuncTracePrintAllocate() && array.length() > 0;
+                if ((small || traced) && PREVIEWING.get()) {
+                    sb.append("  DataPreview: [skipped: op failed while previewing another op's data]\n");
+                } else if (small) {
+                    PREVIEWING.set(true);
                     try {
-                        sb.append("  DataPreview: ").append(Arrays.toString(array.toDoubleVector())).append("\n");
+                        double[] preview = new double[(int) array.length()];
+                        for (int i = 0; i < preview.length; i++) {
+                            preview[i] = array.getDouble(i);
+                        }
+                        sb.append("  DataPreview: ").append(Arrays.toString(preview)).append("\n");
                     } catch (Exception e) {
                         sb.append("  DataPreview: [error reading data: ").append(e.getMessage()).append("]\n");
+                    } finally {
+                        PREVIEWING.set(false);
                     }
-                } else if (Nd4j.getEnvironment().isFuncTracePrintAllocate() && array.length() > 0) {
+                } else if (traced) {
                     // For larger arrays in debug mode, show first few values
+                    PREVIEWING.set(true);
                     try {
                         double[] preview = new double[Math.min((int)array.length(), MAX_DATA_PREVIEW)];
                         for (int i = 0; i < preview.length; i++) {
@@ -458,6 +475,8 @@ public class ND4JOpExceptionUtils {
                           .append(Arrays.toString(preview)).append("...\n");
                     } catch (Exception e) {
                         sb.append("  DataPreview: [error: ").append(e.getMessage()).append("]\n");
+                    } finally {
+                        PREVIEWING.set(false);
                     }
                 }
             } else {

@@ -86,19 +86,27 @@ public:
     /**
      * Apply detected fusions by marking slots for in-place execution.
      *
-     * For ELEMENTWISE_CHAIN: Each op after the first reuses the previous
-     * op's output buffer, eliminating intermediate allocations.
+     * For ELEMENTWISE_CHAIN: Each elementwise op after the first reuses the previous
+     * op's output buffer when it is that output's only consumer. Runs of members with
+     * an eager-equivalent fused kernel code become fused-chain heads and tails.
      *
      * For BIAS_ACTIVATION: The activation op reuses the add op's output buffer.
+     *
+     * Every slot's fused-chain metadata is rebuilt from the candidates, so a chain
+     * formed by an earlier call never outlives this one.
      *
      * @param slots Array of NativeSlot (modified in place)
      * @param numSlots Number of slots
      * @param candidates Fusion candidates from detectFusions()
+     * @param requestedOutputSlots Flat output indices the caller reads (may be null);
+     *                             each counts as one more consumer
+     * @param numRequestedOutputs Length of requestedOutputSlots
      * @return Number of fusions successfully applied
      */
     static int applyFusions(
         NativeSlot* slots, int numSlots,
-        const std::vector<FusionCandidate>& candidates);
+        const std::vector<FusionCandidate>& candidates,
+        const int* requestedOutputSlots = nullptr, int numRequestedOutputs = 0);
 
     /**
      * Maximum chain length for element-wise in-place buffer chaining.

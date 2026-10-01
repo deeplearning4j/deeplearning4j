@@ -16,9 +16,11 @@
 #include <cuda_runtime.h>
 #include <limits>
 #include <mutex>
+#include <set>
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
 
 namespace sd {
 namespace ops {
@@ -253,12 +255,14 @@ SD_KERNEL static void modelOptLinearTiledKernel(
   }
 }
 
-// The content stamp's rule (ContentPredicate::MODELOPT_SCALES_VALID) is "every
-// E4M3 block scale is positive and finite". A stamp does not record the element
-// type it was read as, so only scale tensors stored as E4M3 are stamped; other
-// scale tensors (the FP8 format's one FP32 weight scale) are scanned each call.
+// Neither a content stamp nor a view's cache key records the element type the
+// scales were read as, and the stamp's rule (ContentPredicate::
+// MODELOPT_SCALES_VALID) is "every E4M3 block scale is positive and finite", so
+// only scale tensors stored as E4M3 remember a successful scan; other scale
+// tensors (the FP8 format's one FP32 weight scale) are scanned each call.
 template <typename Format>
-static constexpr bool kModelOptScalesStamped = std::is_same<typename Format::ScaleStorage, float8_e4m3>::value;
+static constexpr bool kModelOptScaleScansRemembered =
+    std::is_same<typename Format::ScaleStorage, float8_e4m3>::value;
 
 // Host-current scales are validated here, before any launch, so invalid input
 // fails with an exception instead of a device trap; the compute kernels also
@@ -266,24 +270,58 @@ static constexpr bool kModelOptScalesStamped = std::is_same<typename Format::Sca
 //  - The format's scalar scale (NVFP4 global scale, FP8 input scale) is
 //    checked whenever its host copy is current: one comparison per call.
 //  - The format's scale tensor is scanned when its host copy is current. NVFP4
-//    block-scale tensors (megabytes for a large model) record the result as a
-//    content stamp on their DataBuffer, so a model's constant scales are
-//    scanned once. The stamp dies with the buffer and with any write to it; the
-//    previous cache, keyed on host addresses, vouched for new buffers the
-//    allocator placed at a validated buffer's freed address.
+//    block scales are constants loaded with the model, and rescanning them per
+//    call was pure overhead (measured 24.3 ms/call on the 27B, 3.1 s/token
+//    across 129 calls/token), so a successful scan is remembered by the version
+//    of the contents, never by address: the allocator reuses addresses, and a
+//    released valid scale must not vouch for an invalid one placed in the same
+//    storage. A tensor covering its whole DataBuffer records a content stamp on
+//    it; a view of part of a buffer is remembered by the buffer's content
+//    version plus the elements the view covers, since views of one buffer cover
+//    different elements. Any write to the buffer, or new storage attached to
+//    it, retires both. Failures are never remembered: an invalid tensor
+//    re-scans and re-throws on every call.
 template <typename Format>
 static void validateHostCurrentScales(NDArray* scale, NDArray* secondScale) {
   if (secondScale->isActualOnHostSide()) modelOptCheckSecondScale<Format>(secondScale);
   if (scale->isEmpty() || !scale->isActualOnHostSide()) return;
+  DataBuffer* buffer = scale->dataBuffer();
+  if (buffer == nullptr || buffer->primary() == nullptr) return;
+  // Content versions exist only where the backend records every write.
+  if (!kModelOptScaleScansRemembered<Format> || !buffer->tracksContentWrites()) {
+    modelOptCheckScaleTensor<Format>(scale);
+    return;
+  }
   // A stamp describes the whole buffer, so it is only read or written when the
   // array covers every byte of it.
-  DataBuffer* buffer = scale->dataBuffer();
-  const bool coversBuffer = kModelOptScalesStamped<Format> && buffer != nullptr && scale->offset() == 0 &&
-                            shape::isDenseRowMajor(scale->shapeInfo()) &&
-                            scale->lengthOf() * static_cast<LongType>(scale->sizeOfT()) == buffer->getLenInBytes();
-  if (coversBuffer && buffer->isContentValidated(ContentPredicate::MODELOPT_SCALES_VALID)) return;
+  if (scale->offset() == 0 && shape::isDenseRowMajor(scale->shapeInfo()) &&
+      scale->lengthOf() * static_cast<LongType>(scale->sizeOfT()) == buffer->getLenInBytes()) {
+    if (buffer->isContentValidated(ContentPredicate::MODELOPT_SCALES_VALID)) return;
+    modelOptCheckScaleTensor<Format>(scale);
+    buffer->stampContentValidated(ContentPredicate::MODELOPT_SCALES_VALID);
+    return;
+  }
+  // The key is sampled before the scan, so a write during it retires the key.
+  const LongType* strides = scale->stridesOf();
+  std::vector<uint64_t> key = {buffer->contentGeneration(), static_cast<uint64_t>(buffer->lastWriteTick()),
+                               static_cast<uint64_t>(scale->offset())};
+  for (int d = 0; d < scale->rankOf(); ++d) {
+    key.push_back(static_cast<uint64_t>(scale->sizeAt(d)));
+    key.push_back(static_cast<uint64_t>(strides[d]));
+  }
+  // Entries of released buffers are never looked up again; the bound keeps
+  // them from accumulating, and overflowing it only costs rescans.
+  static constexpr size_t kMaxValidatedViews = 4096;
+  static std::mutex mutex;
+  static std::set<std::vector<uint64_t>> validated;
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    if (validated.count(key) != 0) return;
+  }
   modelOptCheckScaleTensor<Format>(scale);
-  if (coversBuffer) buffer->stampContentValidated(ContentPredicate::MODELOPT_SCALES_VALID);
+  std::lock_guard<std::mutex> lock(mutex);
+  if (validated.size() >= kMaxValidatedViews) validated.clear();
+  validated.insert(key);
 }
 
 // Fast-path proof. Every precondition is explicit; no ews() shortcut. Each

@@ -25,6 +25,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -34,15 +35,19 @@ import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
+import org.nd4j.nativeblas.OpaqueNDArray;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +57,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -179,6 +186,116 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
+    /** Physical space on the secondary must not hide a tighter allocation cap. */
+    @Test
+    public void testMigrationCapacityShiftHonorsDeviceLimit() {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two CUDA devices");
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        long originalLimit = Nd4j.getEnvironment().getDeviceLimit(1);
+        SameDiff graph = null;
+        INDArray input = null;
+        try {
+            SameDiffMemoryUtils.reclaimClosedGraphResources();
+            nativeOps.trimMemoryPool(1);
+            // Prior tests can leave reusable reservations even after trimming.
+            // Size the transfer above that credit rather than relying on an empty pool.
+            final long quantum = 128L * 1024 * 1024;
+            long transferBytes;
+            try (LongPointer used = new LongPointer(1);
+                 LongPointer reserved = new LongPointer(1)) {
+                nativeOps.getMemoryPoolStats(1, used, reserved);
+                long reusable = Math.max(0L, reserved.get() - used.get());
+                transferBytes = (reusable / quantum + 2) * quantum;
+            }
+            assertTrue(transferBytes <= 1024L * 1024 * 1024,
+                    "unexpected retained pool credit would make this fixture exceed its 1 GiB safety bound");
+            final int width = Math.toIntExact(transferBytes / Float.BYTES);
+            assumeTrue(nativeOps.getDeviceFreeMemory(1) > transferBytes,
+                    "physical capacity must not be the reason for rejection");
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+            input = Nd4j.ones(DataType.FLOAT, 1, width);
+            nativeOps.dbSyncToSpecial(input.data().opaqueBuffer());
+            graph = SameDiff.create();
+            SDVariable x = graph.placeHolder("x", DataType.FLOAT, 1, width);
+            x.add("producer", 1.0).sum("out", 1);
+            DynamicShapePlan plan = graph.compileDynamicShapePlan("out");
+            for (var slot : plan.getSlots()) {
+                slot.setTargetDeviceId(Arrays.asList(slot.getOutputVarNames()).contains("out") ? 1 : 0);
+            }
+            graph.compileNativeDynamicShapePlan("out");
+            long limit = Nd4j.getEnvironment().getDeviceCounter(1) + 8L * 1024 * 1024;
+            if (originalLimit > 0) limit = Math.min(limit, originalLimit);
+            Nd4j.getEnvironment().setDeviceLimit(1, limit);
+            try (LongPointer used = new LongPointer(1);
+                 LongPointer reserved = new LongPointer(1)) {
+                nativeOps.getMemoryPoolStats(1, used, reserved);
+                long reusable = Math.max(0L, reserved.get() - used.get());
+                assertTrue((long) width * Float.BYTES > reusable
+                                + Math.max(0L, limit - Nd4j.getEnvironment().getDeviceCounter(1)),
+                        "fixture must exceed allocation allowance INCLUDING reusable pool credit");
+            }
+            for (int iteration = 0; iteration < 4; iteration++) {
+                input.assign(iteration + 1.0);
+                INDArray output = graph.output(Map.of("x", input), "out").get("out");
+                try {
+                    assertEquals((iteration + 2.0) * width, output.getDouble(0), 0.0);
+                    assertTrue(Nd4j.getEnvironment().getDeviceCounter(1) <= limit,
+                            "capacity shift must not increase the configured cap");
+                } finally {
+                    SameDiffMemoryUtils.safeClose(output);
+                }
+            }
+        } finally {
+            try {
+                if (graph != null) graph.close();
+            } finally {
+                SameDiffMemoryUtils.safeClose(input);
+                Nd4j.getEnvironment().setDeviceLimit(1, originalLimit);
+                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+                SameDiffMemoryUtils.reclaimClosedGraphResources();
+            }
+        }
+    }
+
+    @Test
+    public void testReusablePoolDoesNotDiscountLiveAllocationCap() {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        int device = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        long originalLimit = Nd4j.getEnvironment().getDeviceLimit(device);
+        NativeOps ops = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        final long bytes = 8L * 1024 * 1024;
+        try {
+            // Return a real allocation to the pool, retaining physical reservation.
+            try (INDArray seed = Nd4j.ones(DataType.FLOAT, 4 * 1024 * 1024)) {
+                ops.dbSyncToSpecial(seed.data().opaqueBuffer());
+                assertEquals(1.0, seed.getDouble(0), 0.0);
+            }
+            long limit = Nd4j.getEnvironment().getDeviceCounter(device) + 1024 * 1024;
+            if (originalLimit > 0) limit = Math.min(limit, originalLimit);
+            Nd4j.getEnvironment().setDeviceLimit(device, limit);
+            try (LongPointer used = new LongPointer(1);
+                 LongPointer reserved = new LongPointer(1)) {
+                ops.getMemoryPoolStats(device, used, reserved);
+                assertTrue(reserved.get() - used.get() >= bytes,
+                        "fixture must have physical pool credit available");
+            }
+            assertThrows(RuntimeException.class, () -> {
+                try (INDArray forbidden = Nd4j.create(DataType.FLOAT, bytes / Float.BYTES)) {
+                    ops.dbSyncToSpecial(forbidden.data().opaqueBuffer());
+                }
+            }, "free pool blocks must not bypass the live-byte device cap");
+            assertTrue(Nd4j.getEnvironment().getDeviceCounter(device) <= limit);
+        } finally {
+            Nd4j.getEnvironment().setDeviceLimit(device, originalLimit);
+            SameDiffMemoryUtils.reclaimClosedGraphResources();
+        }
+    }
+
     private static int countAssignedSlots(DynamicShapePlan plan, int deviceId) {
         int count = 0;
         for (var slot : plan.getSlots()) {
@@ -197,17 +314,17 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
     }
 
     /**
-     * Run {@code sd} once with DSP enabled. Automatic multi-GPU placement is the default;
-     * {@code singleGpu} exercises the explicit opt-out used for a reference result.
-     * Returns a {@code dup()} of the output (avoids CUDA view-staleness on the caller side).
-     * Saves and restores both the DSP-enabled flag and the single-GPU system property.
+     * Run {@code sd} once. {@code useStandardPath} executes through the standard
+     * (non-DSP) path as the parity reference; otherwise DSP runs with automatic
+     * multi-GPU placement. Returns a {@code dup()} of the output (avoids CUDA
+     * view-staleness on the caller side). Saves and restores the DSP-enabled flag.
      */
-    private static INDArray runOnce(SameDiff sd, INDArray x, boolean singleGpu) {
+    private static INDArray runOnce(SameDiff sd, INDArray x, boolean useStandardPath) {
         boolean prevDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String prevSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-        InferenceSession.setDynamicShapePlanEnabled(true);
-        if (singleGpu) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, "true");
-        else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
+        // The single-GPU DSP mode (nd4j.dsp.singleGpu) was removed intentionally.
+        // The reference run now executes through the standard non-DSP path, which
+        // keeps the parity comparison meaningful without resurrecting that mode.
+        InferenceSession.setDynamicShapePlanEnabled(!useStandardPath);
         try {
             Map<String, INDArray> res = sd.output(Collections.singletonMap("x", x), "out");
             // output(), unlike outputDirect(), returns an independently owned copy.
@@ -218,8 +335,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             }
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDsp);
-            if (prevSingleGpu != null) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, prevSingleGpu);
-            else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         }
     }
 
@@ -295,7 +410,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
 
         INDArray x = Nd4j.rand(DataType.FLOAT, 8, 64);
 
-        // Single-GPU reference evaluated once — its output is stable.
+        // Standard-path reference evaluated once — its output is stable.
         SameDiff single = buildMlp(64, 128, 6, 16, 42L);
         INDArray ref = runOnce(single, x.dup(), true);
 
@@ -303,9 +418,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         SameDiff sharded = buildMlp(64, 128, 6, 16, 42L);
 
         boolean prevDsp   = InferenceSession.isDynamicShapePlanEnabled();
-        String prevSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         InferenceSession.setDynamicShapePlanEnabled(true);
-        System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         try {
             for (int i = 0; i < REPLAY_ITERATIONS; i++) {
                 Map<String, INDArray> res = sharded.output(Collections.singletonMap("x", x.dup()), "out");
@@ -325,8 +438,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             }
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDsp);
-            if (prevSingleGpu != null) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, prevSingleGpu);
-            else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         }
     }
 
@@ -342,10 +453,8 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         INDArray input = null;
         INDArray reference = null;
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             input = Nd4j.rand(DataType.FLOAT, 8, 64);
             single = buildViewMlp(64, 128, 6, 16, 42L);
@@ -373,8 +482,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 SameDiffMemoryUtils.safeClose(input);
             } finally {
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingleGpu == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingleGpu);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
@@ -405,7 +512,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two CUDA devices");
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         SameDiff graph = null;
         java.util.List<INDArray> owned = new java.util.ArrayList<>();
         boolean originalAllocationLogging = Nd4j.getEnvironment().isLogNativeNDArrayCreation();
@@ -414,7 +520,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 Nd4j.getEnvironment().setLogNativeNDArrayCreation(true);
             }
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             graph = SameDiff.create();
             graph.setGraphExecutionMode(GraphExecutionMode.TRITON);
@@ -516,8 +621,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             } finally {
                 Nd4j.getEnvironment().setLogNativeNDArrayCreation(originalAllocationLogging);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingleGpu == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingleGpu);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
@@ -615,28 +718,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
     }
 
     // -----------------------------------------------------------------------
-    // Test 5 — explicit single-GPU override is deterministic
-    // -----------------------------------------------------------------------
-
-    /**
-     * Behavior 5 (safety): the explicit single-GPU override remains deterministic.
-     */
-    @Test
-    public void testSingleGpuOverrideIsDeterministic() {
-        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() > 1,
-                "requires >1 CUDA device");
-
-        INDArray x = Nd4j.rand(DataType.FLOAT, 8, 64);
-        SameDiff a = buildMlp(64, 128, 6, 16, 999L);
-        SameDiff b = buildMlp(64, 128, 6, 16, 999L);
-
-        INDArray r1 = runOnce(a, x.dup(), true);
-        INDArray r2 = runOnce(b, x.dup(), true);
-
-        assertTrue(r1.equalsWithEps(r2, 1e-6), "single-GPU runs must be deterministic/identical");
-    }
-
-    // -----------------------------------------------------------------------
     // Test 6 — VIEW ops across the device boundary (aliasing lifetime)
     // -----------------------------------------------------------------------
 
@@ -673,7 +754,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
 
     /**
      * Behavior 6: a sharded model containing view-capable ops (transpose) at layer
-     * boundaries must match the single-GPU reference across {@value #REPLAY_ITERATIONS}
+     * boundaries must match the standard-path reference across {@value #REPLAY_ITERATIONS}
      * iterations — i.e. a view aliasing a cross-device migrated input must not dangle
      * after per-segment migration cleanup, in either slot-by-slot warmup or captured replay.
      */
@@ -690,9 +771,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         SameDiff sharded = buildViewMlp(64, 128, 6, 16, 7L);
 
         boolean prevDsp  = InferenceSession.isDynamicShapePlanEnabled();
-        String prevSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         InferenceSession.setDynamicShapePlanEnabled(true);
-        System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         try {
             for (int i = 0; i < REPLAY_ITERATIONS; i++) {
                 Map<String, INDArray> res = sharded.output(Collections.singletonMap("x", x.dup()), "out");
@@ -711,8 +790,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             }
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDsp);
-            if (prevSingleGpu != null) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, prevSingleGpu);
-            else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         }
     }
 
@@ -759,7 +836,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         final int warmupLast = 4;
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         long[] originalLimits = new long[deviceCount];
         long[] limits = new long[deviceCount];
         long[] plateau = new long[deviceCount];
@@ -774,7 +850,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         try {
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             for (int device = 0; device < deviceCount; device++) {
                 limits[device] = Nd4j.getEnvironment().getDeviceCounter(device) + allowance;
                 Nd4j.getEnvironment().setDeviceLimit(device, limits[device]);
@@ -856,8 +931,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                         Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
                     }
                     InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                    if (originalSingleGpu == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                    else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingleGpu);
                     Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
                 }
             }
@@ -883,14 +956,12 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         final long slack = 256L * 1024; // smaller than either single leaked migration buffer
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         List<INDArray> callerRoots = new ArrayList<>();
         INDArray[] gdnInputs = new INDArray[3];
         INDArray[] kvInputs = new INDArray[3];
         SameDiff sd = null;
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             sd = SameDiff.create();
             SDVariable gdn = sd.placeHolder("mutableGdn", DataType.FLOAT, -1, gdnWidth);
@@ -1067,8 +1138,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             } finally {
                 for (INDArray root : callerRoots) SameDiffMemoryUtils.safeClose(root);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingleGpu == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingleGpu);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
@@ -1083,12 +1152,10 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
         String property = "nd4j.dsp.planLeaseBudgetFraction";
         String originalBudget = System.getProperty(property);
-        String originalSingle = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         SameDiff graph = null;
         List<INDArray> callers = new ArrayList<>();
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             System.setProperty(property, "0.000001");
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             graph = SameDiff.create();
@@ -1120,8 +1187,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 for (INDArray caller : callers) SameDiffMemoryUtils.safeClose(caller);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
                 if (originalBudget == null) System.clearProperty(property); else System.setProperty(property, originalBudget);
-                if (originalSingle == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingle);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
@@ -1227,6 +1292,161 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
+    /**
+     * Mixed-precision matmuls (FLOAT activations x HALF weights) upcast each weight into a
+     * cast-cache slot. When every segment shared one thread-wide slot list, each device's
+     * composite replay rewound it and re-cast or migrated the other device's slots, so every
+     * decode step retained new cast arrays (SmolDocling: ~160 MB per step).
+     *
+     * <p>The graph is a chain of gated MLP blocks. The gate x up product reads two separate
+     * matmul sections, so Triton compiles it as an island and replays the matmuls around it as
+     * live gaps: the steady-state path that consults the cast cache on every step. A bias-only
+     * chain would not cover it, because Triton folds each bias into its matmul section, finds no
+     * island and replays one monolithic graph. CUDA_GRAPHS always replays monolithically, so it
+     * covers only the capture-time casts and parity. Device 0 runs the F=1024 blocks and
+     * device 1 the F=512 blocks, so the two halves differ in weight shape at every slot position
+     * and a shared slot list re-casts on every step.
+     */
+    @ParameterizedTest
+    @EnumSource(value = GraphExecutionMode.class, names = {"TRITON", "CUDA_GRAPHS"})
+    public void testMixedPrecisionCastSlotsStayPerSegmentAcrossDevices(GraphExecutionMode mode) {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
+        assumeTrue(deviceCount == 2, "requires two CUDA devices");
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        boolean poolEnabled = nativeOps.isMemoryPoolEnabled();
+        int hidden = 256;
+        int[] blockWidths = {1024, 1024, 512, 512};
+        int firstSecondaryBlock = 2;
+        float bias = 0.125f;
+        int iterations = 20;
+        int warmupLast = 8;
+        long slack = 64L * 1024;
+        int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        long[] counterPlateau = new long[deviceCount];
+        long[] poolPlateau = new long[deviceCount];
+        SameDiff graph = null;
+        INDArray x = null;
+        try {
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+            graph = SameDiff.create();
+            graph.setGraphExecutionMode(mode);
+            SDVariable h = graph.placeHolder("x", DataType.FLOAT, 1, hidden);
+            for (int block = 0; block < blockWidths.length; block++) {
+                int width = blockWidths[block];
+                // Every weight value is a power of two, so it is exact in HALF. With h = v
+                // everywhere: gate = v, up = 2v, act = 2v^2, down = 2 * scale * v^2.
+                SDVariable gate = graph.mmul("gate_" + block, h, graph.constant("gateWeight_" + block,
+                        Nd4j.valueArrayOf(new long[]{hidden, width}, 1f / hidden, DataType.HALF)));
+                SDVariable up = graph.mmul("up_" + block, h, graph.constant("upWeight_" + block,
+                        Nd4j.valueArrayOf(new long[]{hidden, width}, 2f / hidden, DataType.HALF)));
+                SDVariable act = gate.mul("act_" + block, up);
+                SDVariable down = graph.mmul("down_" + block, act, graph.constant("downWeight_" + block,
+                        Nd4j.valueArrayOf(new long[]{width, hidden}, mixedPrecisionLayerScale(block) / width,
+                                DataType.HALF)));
+                h = down.add(block + 1 == blockWidths.length ? "out" : "h_" + block, graph.constant(
+                        "bias_" + block, Nd4j.valueArrayOf(new long[]{1, hidden}, bias, DataType.FLOAT)));
+            }
+            String[] outputs = {"out"};
+            DynamicShapePlan plan = graph.compileDynamicShapePlan(outputs);
+            for (var slot : plan.getSlots()) slot.setTargetDeviceId(
+                    mixedPrecisionBlockDevice(slot.getOutputVarNames(), firstSecondaryBlock));
+            graph.compileNativeDynamicShapePlan(outputs);
+
+            x = Nd4j.create(DataType.FLOAT, 1, hidden);
+            for (int iteration = 0; iteration < iterations; iteration++) {
+                double expected = (4 + iteration % 8) / 32.0;
+                x.assign(expected);
+                for (int block = 0; block < blockWidths.length; block++) {
+                    expected = 2 * mixedPrecisionLayerScale(block) * expected * expected + bias;
+                }
+                try (INDArray got = runOnce(graph, x, false)) {
+                    assertArrayEquals(new long[]{1, hidden}, got.shape());
+                    for (float value : got.data().asFloat()) {
+                        assertEquals(expected, value, 1e-3, mode + " parity at iteration " + iteration);
+                    }
+                }
+                if (iteration == 0) assertUsesEveryCudaDevice(graph);
+                assertEquals(0, nativeOps.lastErrorCode(), "native error at iteration " + iteration);
+                if (iteration == warmupLast) {
+                    DspPlanAssertions.assertPhaseReached(graph, PlanPhase.SHAPES_FROZEN,
+                            "memory sample must come from frozen execution");
+                    DspPlanAssertions.assertAllCapturableSegmentsReachedPhase(
+                            graph, ExecutionPhase.REPLAYING, "mixed-precision cast sample");
+                }
+                Nd4j.getExecutioner().commit();
+                for (int device = 0; device < deviceCount; device++) {
+                    long counter = Nd4j.getEnvironment().getDeviceCounter(device);
+                    long poolUsed = -1;
+                    if (poolEnabled) {
+                        nativeOps.trimMemoryPool(device);
+                        try (LongPointer used = new LongPointer(1);
+                             LongPointer reserved = new LongPointer(1)) {
+                            nativeOps.getMemoryPoolStats(device, used, reserved);
+                            poolUsed = used.get();
+                        }
+                    }
+                    log.info("Mixed-precision cast mode={} iteration={} device={} counter={} poolUsed={}",
+                            mode, iteration, device, counter, poolUsed);
+                    if (iteration == warmupLast) {
+                        counterPlateau[device] = counter;
+                        poolPlateau[device] = poolUsed;
+                    } else if (iteration > warmupLast) {
+                        assertTrue(counter <= counterPlateau[device] + slack,
+                                mode + ": device " + device + " allocations grew at iteration " + iteration
+                                        + " (baseline=" + counterPlateau[device] + " now=" + counter + ")");
+                        assertTrue(!poolEnabled || poolUsed <= poolPlateau[device] + slack,
+                                mode + ": device " + device + " pool usage grew at iteration " + iteration
+                                        + " (baseline=" + poolPlateau[device] + " now=" + poolUsed + ")");
+                    }
+                }
+            }
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > 0, "must exercise replay");
+            DspPlanAssertions.assertNoCaptureFailures(graph, "mixed-precision cast slots across devices");
+            if (mode == GraphExecutionMode.TRITON) {
+                // Each device half must replay Triton islands around live gap matmuls;
+                // a monolithic replay never consults the cast cache.
+                int segments = nativeOps.getPlanSegmentCount(DspPlanAssertions.getPlanHandleForQuery(graph));
+                int liveGapSegments = 0;
+                for (int segment = 0; segment < segments; segment++) {
+                    if (DspPlanAssertions.getSegmentReplayMode(graph, segment) == DspPlanAssertions.REPLAY_MODE_COMPOSITE
+                            && DspPlanAssertions.getSegmentIslandUnitCount(graph, segment) > 0
+                            && DspPlanAssertions.getSegmentGapUnitCount(graph, segment) > 0
+                            && DspPlanAssertions.getSegmentReplayCount(graph, segment) > 0) {
+                        liveGapSegments++;
+                    }
+                }
+                log.info("Mixed-precision cast plan: {}", DspPlanAssertions.snapshotPlanState(graph));
+                assertTrue(liveGapSegments >= deviceCount, "expected a composite island + gap replay per device, got "
+                        + liveGapSegments + ": " + DspPlanAssertions.snapshotPlanState(graph));
+            }
+        } finally {
+            try { if (graph != null) graph.close(); }
+            finally {
+                SameDiffMemoryUtils.safeClose(x);
+                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+            }
+        }
+    }
+
+    /** 0.5, 1, 2, 0.5, ...: each block of the mixed-precision chain scales differently. */
+    private static float mixedPrecisionLayerScale(int block) {
+        return (float) Math.pow(2, block % 3 - 1);
+    }
+
+    /** Blocks from {@code firstSecondaryBlock} on, and the output, run on device 1. */
+    private static int mixedPrecisionBlockDevice(String[] outputNames, int firstSecondaryBlock) {
+        for (String name : outputNames) {
+            if (name.equals("out")) return 1;
+            Matcher block = Pattern.compile("(gate|up|act|down|h)_([0-9]+)").matcher(name);
+            if (block.matches() && Integer.parseInt(block.group(2)) >= firstSecondaryBlock) return 1;
+        }
+        return 0;
+    }
+
     /** Eviction must return logical headroom BEFORE incoming allocation or execution. */
     @Test
     public void testMutableReplicaEvictionFreesBeforeAdmission() throws Exception {
@@ -1236,7 +1456,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingle = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         String budgetProperty = "nd4j.dsp.planLeaseBudgetFraction";
         String originalBudget = System.getProperty(budgetProperty);
         long[] originalLimits = {Nd4j.getEnvironment().getDeviceLimit(0),
@@ -1245,7 +1464,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         SameDiff sd = null;
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             System.setProperty(budgetProperty, "0.000001");
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             sd = SameDiff.create();
@@ -1338,7 +1556,17 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                         Nd4j.getEnvironment().getDeviceCounter(device) <= tightLimits[device]);
             }
             // A's captured addresses survived B's context detachment. Caps remain unchanged.
+            // Live-byte admission intentionally refuses pool-credit workarounds, so the
+            // survivorship re-run restores the original limits first: this pass only
+            // proves B's eviction did not corrupt A's captured graph bindings, and the
+            // tight-cap admission was already verified by the try-with-resources block above.
+            for (int device = 0; device < 2; device++) {
+                Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
+            }
             runMutableReplicaInputs(sd, aGdn, aKv, 2.0);
+            for (int device = 0; device < 2; device++) {
+                Nd4j.getEnvironment().setDeviceLimit(device, tightLimits[device]);
+            }
         } finally {
             try {
                 if (sd != null) sd.close();
@@ -1346,8 +1574,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 for (int device = 0; device < 2; device++) Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
                 for (INDArray caller : callers) SameDiffMemoryUtils.safeClose(caller);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingle == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingle);
                 if (originalBudget == null) System.clearProperty(budgetProperty);
                 else System.setProperty(budgetProperty, originalBudget);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
@@ -1363,14 +1589,12 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         final int width = 262144;
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingle = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         long[] originalLimits = {Nd4j.getEnvironment().getDeviceLimit(0),
                 Nd4j.getEnvironment().getDeviceLimit(1)};
         List<INDArray> callers = new ArrayList<>();
         SameDiff sd = null;
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             sd = SameDiff.create();
             configureMutableReplicaGraph(sd, width);
@@ -1521,8 +1745,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 for (int device = 0; device < 2; device++) Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
                 for (INDArray caller : callers) SameDiffMemoryUtils.safeClose(caller);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingle == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingle);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
@@ -1534,14 +1756,12 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two real CUDA devices");
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String originalSingle = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         SameDiff sd = null;
         INDArray gdn = null;
         INDArray kv = null;
         var releaser = java.util.concurrent.Executors.newSingleThreadExecutor();
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
-            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             sd = SameDiff.create();
             configureOutputReadbackGraph(sd, 262144);
@@ -1613,8 +1833,6 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 SameDiffMemoryUtils.safeClose(gdn);
                 SameDiffMemoryUtils.safeClose(kv);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
-                if (originalSingle == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
-                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingle);
                 Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
             }
         }
@@ -1741,6 +1959,219 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 // in the successful pool-measurement path.
                 assertEquals(expectedValue, values[index], 0.0,
                         "fresh mutable input at iteration " + iteration + " index=" + index);
+            }
+        }
+    }
+
+    /** Borrowed, non-migrating device storage of a native plan output slot. */
+    private static Pointer planSlotSpecialPointer(NativeOps nativeOps, Pointer planHandle, int outputSlot) {
+        OpaqueNDArray slotArray = nativeOps.getPlanSlotOutputArray(planHandle, outputSlot);
+        assertTrue(slotArray != null && !slotArray.isNull(),
+                "native plan output slot " + outputSlot + " must hold an array");
+        Pointer special = nativeOps.getOpaqueNDArraySpecialBufferNoSync(slotArray);
+        assertTrue(special != null && !special.isNull(),
+                "native plan output slot " + outputSlot + " must have device storage");
+        return special;
+    }
+
+    /** CUDA device that physically owns a borrowed device pointer. */
+    private static int deviceOwningPointer(NativeOps nativeOps, Pointer special, long elements, DataType dataType) {
+        OpaqueDataBuffer probe = nativeOps.dbCreateExternalDataBuffer(elements, dataType.toInt(), null, special);
+        assertNotNull(probe, "non-owning device pointer probe must be created");
+        try {
+            return nativeOps.dbDeviceId(probe);
+        } finally {
+            nativeOps.deleteDataBuffer(probe);
+        }
+    }
+
+    /**
+     * Capture rehome must stage an in-place producer once and keep its exact
+     * output/source wrapper alias through capture, commit, and replay.
+     *
+     * <p>This uses bounded physical pressure on the source GPU to force the real
+     * capture-admission path. Keep it in the serialized multi-GPU test lane.</p>
+     */
+    @Test
+    public void testCaptureRehomePreservesExactInPlaceAlias() {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2,
+                "requires exactly two CUDA devices");
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int sourceDevice = nativeOps.getDeviceFreeMemory(0) < nativeOps.getDeviceFreeMemory(1) ? 0 : 1;
+        int candidateDevice = 1 - sourceDevice;
+        final long elements = 67_108_864L; // 256 MiB FLOAT input and producer output
+        final long tensorBytes = elements * DataType.FLOAT.width();
+        final long mib = 1024L * 1024L;
+        // Leave a 64 MiB margin after the default 256 MiB cuBLAS workspace,
+        // while staying below this graph's ~358 MiB capture-admission estimate.
+        final long leaveFreeBytes = 320L * mib;
+        final long candidateReserveBytes = 1024L * mib;
+        final long candidateFree = nativeOps.getDeviceFreeMemory(candidateDevice);
+        assumeTrue(candidateFree > 2 * tensorBytes + candidateReserveBytes,
+                "candidate GPU lacks conservative space for input/output staging and capture workspace");
+
+        final int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        final boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        final long[] originalLimits = {
+                Nd4j.getEnvironment().getDeviceLimit(0),
+                Nd4j.getEnvironment().getDeviceLimit(1)
+        };
+        SameDiff graph = null;
+        INDArray input = null;
+        INDArray pressure = null;
+        try {
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            for (int device = 0; device < 2; device++) {
+                long physicalFree = nativeOps.getDeviceFreeMemory(device);
+                long counter = Nd4j.getEnvironment().getDeviceCounter(device);
+                Nd4j.getEnvironment().setDeviceLimit(device, counter + physicalFree);
+            }
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(sourceDevice);
+
+            graph = SameDiff.create();
+            graph.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
+            SDVariable x = graph.placeHolder("x", DataType.FLOAT, 1, elements);
+            SDVariable producer = x.add("producer", 1.0f);
+            graph.nn.relu("out", producer, 0.0);
+            DynamicShapePlan plan = graph.compileDynamicShapePlan("out");
+            for (var slot : plan.getSlots()) slot.setTargetDeviceId(sourceDevice);
+            graph.compileNativeDynamicShapePlan("out");
+
+            input = Nd4j.ones(DataType.FLOAT, 1, elements);
+            nativeOps.dbSyncToSpecial(input.data().opaqueBuffer());
+            assertEquals(sourceDevice, nativeOps.dbDeviceId(input.data().opaqueBuffer()),
+                    "input must be resident on the initially assigned source device");
+
+            int producerStep = -1;
+            int inPlaceStep = -1;
+            for (int i = 0; i < plan.getSlots().length; i++) {
+                if ("relu".equals(plan.getSlots()[i].getOpName())) inPlaceStep = i;
+                String[] names = plan.getSlots()[i].getOutputVarNames();
+                if (names != null && Arrays.asList(names).contains("producer")) producerStep = i;
+            }
+            assertTrue(inPlaceStep >= 0, "test graph must contain a relu slot");
+            assertTrue(producerStep >= 0, "test graph must contain the scalar-add producer slot");
+
+            // The first call is the documented initial slot-by-slot warmup.
+            // Apply pressure only after the producer has a real source allocation,
+            // immediately before its first eligible capture attempt.
+            input.assign(1.0);
+            Nd4j.getExecutioner().commit();
+            assertEquals(1.0f, input.getFloat(0), 0.0f,
+                    "host-side warmup input must contain the assigned value");
+            Map<String, INDArray> warmup = graph.outputDirect(Map.of("x", input), "out");
+            assertEquals(2.0f, warmup.get("out").getFloat(0), 0.0f);
+            assertEquals(2.0f, warmup.get("out").getFloat(elements - 1), 0.0f,
+                    "warmup scalar-add result must reach the final element before capture pressure");
+            DspPlanAssertions.assertSlotHasTrait(graph, inPlaceStep, 4,
+                    "relu must use in-place fusion for this regression");
+            assertEquals(0, DspPlanAssertions.getTotalGraphReplays(graph),
+                    "the initial warmup must not capture before pressure is applied");
+
+            // Return only reusable pool reservations before sizing pressure, so
+            // capture's own preflight trim cannot create unexpected source headroom.
+            nativeOps.trimMemoryPool(sourceDevice);
+            // Drain only unused reservation so the pressure size corresponds to
+            // actual CUDA free bytes; the warmup input/output remain live.
+            nativeOps.trimMemoryPool(sourceDevice);
+            long freeAfterWarmup = nativeOps.getDeviceFreeMemory(sourceDevice);
+            long pressureBytes = freeAfterWarmup - leaveFreeBytes;
+            assumeTrue(pressureBytes > 64L * mib,
+                    "not enough source-device headroom to force a bounded capture rejection");
+            pressure = Nd4j.create(DataType.BYTE, 1, pressureBytes);
+            nativeOps.dbSyncToSpecial(pressure.data().opaqueBuffer());
+            assertEquals(sourceDevice, nativeOps.dbDeviceId(pressure.data().opaqueBuffer()),
+                    "pressure reservation must stay on the source device");
+            assertTrue(nativeOps.getDeviceFreeMemory(sourceDevice) < 384L * mib,
+                    "pressure reservation must leave <384 MiB free before capture is attempted");
+
+            for (int iteration = 2; iteration <= 5; iteration++) {
+                input.assign(iteration);
+                Nd4j.getExecutioner().commit();
+                Map<String, INDArray> output = graph.outputDirect(Map.of("x", input), "out");
+                assertEquals(iteration + 1.0f, output.get("out").getFloat(0), 0.0f,
+                        "capture/replay parity at iteration " + iteration);
+                assertEquals(iteration + 1.0f,
+                        output.get("out").getFloat(elements - 1), 0.0f,
+                        "capture/replay tail parity at iteration " + iteration);
+            }
+
+            // Native placement and aliasing are read from the plan's own output
+            // slots. The Java result is a detached readback copy whose placement
+            // follows the executor's input-locality contract, so its device alone
+            // proves nothing about where the captured segment executes.
+            Pointer planHandle = DspPlanAssertions.getPlanHandleForQuery(graph);
+            int producerOutputSlot = plan.getSlots()[producerStep].getOutputSlotIndices()[0];
+            int reluOutputSlot = plan.getSlots()[inPlaceStep].getOutputSlotIndices()[0];
+            long replayedStorage = planSlotSpecialPointer(nativeOps, planHandle, reluOutputSlot).address();
+            int replaysBeforeFinal = DspPlanAssertions.getTotalGraphReplays(graph);
+
+            Map<String, INDArray> finalOutput = graph.outputDirect(Map.of("x", input), "out");
+            INDArray finalResult = finalOutput.get("out");
+
+            // 1. The committed segment replays on the admitted candidate device.
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > replaysBeforeFinal,
+                    "the final call must replay the committed capture");
+            Pointer producerStorage = planSlotSpecialPointer(nativeOps, planHandle, producerOutputSlot);
+            Pointer reluStorage = planSlotSpecialPointer(nativeOps, planHandle, reluOutputSlot);
+            assertEquals(candidateDevice,
+                    deviceOwningPointer(nativeOps, reluStorage, elements, DataType.FLOAT),
+                    "captured relu storage must live on the admitted candidate device");
+
+            // 2. The exact in-place alias and the captured address survive replay.
+            assertEquals(producerStorage.address(), reluStorage.address(),
+                    "in-place relu must keep writing the producer's exact rehomed storage");
+            assertEquals(replayedStorage, reluStorage.address(),
+                    "replay must reuse the captured output storage");
+            DspPlanAssertions.assertPointersStable(graph, "exact in-place alias capture rehome");
+
+            // 3. Java delivery is a detached copy on the input-locality device,
+            //    and the caller's device affinity is restored.
+            OpaqueDataBuffer resultBuffer = finalResult.data().opaqueBuffer();
+            Pointer resultStorage = nativeOps.dbSpecialBuffer(resultBuffer);
+            assertTrue(resultStorage != null && !resultStorage.isNull(),
+                    "Java output must own device storage");
+            assertNotEquals(reluStorage.address(), resultStorage.address(),
+                    "Java output must be detached from the captured plan storage");
+            assertEquals(sourceDevice, nativeOps.dbDeviceId(resultBuffer),
+                    "Java output must be delivered on the input-locality device");
+            assertEquals(sourceDevice, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
+                    "outputDirect must restore the caller's device affinity");
+
+            // 4. Every element is relu(5 + 1), and the alias never reaches the caller input.
+            assertEquals(6.0f, finalResult.minNumber().floatValue(), 0.0f, "final replay minimum");
+            assertEquals(6.0f, finalResult.maxNumber().floatValue(), 0.0f, "final replay maximum");
+            assertEquals(5.0f, input.minNumber().floatValue(), 0.0f,
+                    "in-place alias must not write the caller input");
+            assertEquals(5.0f, input.maxNumber().floatValue(), 0.0f,
+                    "in-place alias must not write the caller input");
+            DspPlanAssertions.assertAllCapturableSegmentsReachedPhase(graph,
+                    ExecutionPhase.REPLAYING, "exact in-place alias capture rehome");
+            DspPlanAssertions.assertNoCaptureFailures(graph, "exact in-place alias capture rehome");
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > 0,
+                    "the segment must capture and replay, never fall back to slot-by-slot");
+        } finally {
+            try {
+                if (graph != null) graph.close();
+            } finally {
+                try {
+                    Nd4j.getExecutioner().commit();
+                } finally {
+                    try {
+                        SameDiffMemoryUtils.safeClose(pressure);
+                    } finally {
+                        try {
+                            SameDiffMemoryUtils.safeClose(input);
+                        } finally {
+                            for (int device = 0; device < 2; device++)
+                                Nd4j.getEnvironment().setDeviceLimit(device, originalLimits[device]);
+                            InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                            Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+                        }
+                    }
+                }
             }
         }
     }
@@ -1879,5 +2310,86 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
         assertEquals(originalDevice, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
                 "test must restore the original caller device");
+    }
+
+    /**
+     * Byte-aware placement must decode each static output's dtype from the shape-info
+     * extras word. It read {@code info[rank + 2]} instead — a stride at rank >= 2, the
+     * extras word itself at rank 1 — so a C-order BOOL [64, 64] output decoded its last
+     * stride of 1 as BOOL, the legacy width table rejected BOOL, and every DSP compile of
+     * the SmolDocling vision encoder failed with "Illegal opType for length".
+     */
+    @Test
+    public void testBytePlacementDecodesStaticOutputDtypes() {
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() > 1,
+                "per-device DSP placement requires >1 CUDA device");
+
+        // Every fixed-width output is 4096 bytes. UTF8 has no fixed width, so each
+        // UTF8 output is sized as the average known slot (also 4096 bytes). An even
+        // two-device split therefore puts slots 0-2 on one device and 3-5 on the other.
+        // The 4096-element outputs lead, so sizing by element count (BFLOAT16 and FLOAT
+        // hold fewer elements than bytes) or by one fixed width moves the boundary.
+        INDArray[] outputs = {
+                Nd4j.create(DataType.BOOL, 64, 64),
+                Nd4j.createUninitialized(DataType.INT8, new long[]{64, 64}, 'f'),
+                Nd4j.create("a", "b"),
+                Nd4j.create("c", "d"),
+                Nd4j.create(DataType.BFLOAT16, 2, 32, 32),
+                Nd4j.create(DataType.FLOAT, 1024)
+        };
+        // A scalar's shape info has its own layout (extras at index 3).
+        INDArray[] scalarSet = {
+                Nd4j.scalar(DataType.DOUBLE, 1.0),
+                Nd4j.create(DataType.FLOAT, 1),
+                Nd4j.create(DataType.FLOAT, 1),
+                Nd4j.create(DataType.FLOAT, 1)
+        };
+        DynamicShapePlan plan = staticOutputPlan(outputs);
+        DynamicShapePlan scalarPlan = staticOutputPlan(scalarSet);
+        try {
+            plan.assignDevices(Map.of(0, 1L, 1, 1L));
+            DynamicShapeSlot[] slots = plan.getSlots();
+            int first = slots[0].getTargetDeviceId();
+            int second = slots[3].getTargetDeviceId();
+            assertTrue(first >= 0 && second >= 0 && first != second,
+                    "an even byte split must use both devices: " + plan.getDeviceAssignmentSummary());
+            for (int s = 0; s < slots.length; s++) {
+                assertEquals(s < 3 ? first : second, slots[s].getTargetDeviceId(),
+                        "slot " + s + " is on the wrong side of the byte split: "
+                                + plan.getDeviceAssignmentSummary());
+            }
+
+            // The three 4-byte outputs are costed at the 5-byte average, so the total is
+            // 23 and the first device's half is 12: the 8-byte scalar fits, the next 5
+            // bytes do not. A scalar sized smaller (unknown, or decoded from the wrong
+            // word) lets slot 1 in too.
+            scalarPlan.assignDevices(Map.of(0, 1L, 1, 1L));
+            DynamicShapeSlot[] scalarSlots = scalarPlan.getSlots();
+            assertTrue(scalarSlots[0].getTargetDeviceId() >= 0
+                            && scalarSlots[1].getTargetDeviceId() >= 0
+                            && scalarSlots[0].getTargetDeviceId() != scalarSlots[1].getTargetDeviceId(),
+                    "the 8-byte scalar alone must fill the first device's half: "
+                            + scalarPlan.getDeviceAssignmentSummary());
+        } finally {
+            plan.close();
+            scalarPlan.close();
+            for (INDArray output : outputs) SameDiffMemoryUtils.safeClose(output);
+            for (INDArray output : scalarSet) SameDiffMemoryUtils.safeClose(output);
+        }
+    }
+
+    /** A plan of zero-input slots, one per array, each declaring that array's shape info. */
+    private static DynamicShapePlan staticOutputPlan(INDArray[] outputs) {
+        DynamicShapeSlot[] slots = new DynamicShapeSlot[outputs.length];
+        for (int s = 0; s < outputs.length; s++) {
+            slots[s] = DynamicShapeSlot.builder()
+                    .opName("static_output_" + s)
+                    .outputSlotIndices(new int[]{s})
+                    .staticOutputShapeInfos(new long[][]{outputs[s].shapeInfoJava()})
+                    .build();
+        }
+        int[][] releaseAtStep = new int[slots.length][0];
+        return new DynamicShapePlan(slots, slots.length, releaseAtStep, new OpContext[slots.length],
+                new String[0], Collections.emptySet(), Collections.emptyMap(), false);
     }
 }
