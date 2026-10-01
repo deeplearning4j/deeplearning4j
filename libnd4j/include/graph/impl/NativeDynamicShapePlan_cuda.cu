@@ -5334,31 +5334,53 @@ int NativeDynamicShapePlan::copyStagingToBuffer(int extIdx, sd::DataBuffer* dstD
   auto* srcDb = staging->dataBuffer();
   if (srcDb == nullptr || srcDb->isClosed()) return -2;
   if (dstDataBuffer == nullptr) return -3;
+  // The destination is a dense array with the staging's shape, order and type.
+  const LongType length = staging->lengthOf();
+  if (length <= 0 || dstDataBuffer->getDataType() != staging->dataType() ||
+      dstDataBuffer->getLenInBytes() < static_cast<size_t>(length) * staging->sizeOfT())
+    return -3;
 
   // Just-in-time staging sync: during warmup after markExternalInputVariable,
   // the staging buffer is pre-allocated but zero-filled (ensureAndSyncStagingBuffers
   // only runs during capture/replay, not during warmup slot-by-slot). Sync from the
   // last external input to the staging buffer now so the caller reads fresh data.
-  NDArray* lastExt = getLastExternalInput(extIdx);
-  if (lastExt != nullptr && !lastExt->isEmpty() && lastExt->lengthOf() > 0) {
-    std::vector<NDArray*> writes{staging};
-    std::vector<NDArray*> reads{lastExt};
-    NDArray::prepareSpecialUse(writes, reads);
-    void* stagingDev = staging->dataBuffer() != nullptr ? staging->dataBuffer()->special() : nullptr;
-    void* extDev = lastExt->dataBuffer() != nullptr ? lastExt->dataBuffer()->special() : nullptr;
-    if (stagingDev != nullptr && extDev != nullptr && stagingDev != extDev) {
-      size_t bytes = static_cast<size_t>(lastExt->lengthOf()) * lastExt->sizeOfT();
-      if (bytes > 0) {
-        auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
-        cudaStream_t cudaStr = (streamPtr != nullptr) ? *streamPtr : nullptr;
-        cudaMemcpyAsync(stagingDev, extDev, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+  // The binding that supplied that input may already have deleted its NDArray
+  // wrapper, so read through the recorded buffer and layout. The buffer itself
+  // stays valid while the caller holds the array, which this test API requires.
+  if (extIdx < static_cast<int>(lastExternalInputRecords_.size())) {
+    ExternalInputRecord& record = lastExternalInputRecords_[extIdx];
+    DataBuffer* buffer = record.buffer;
+    if (!record.shapeInfo.empty() && buffer != nullptr && buffer != srcDb && buffer->isValid() &&
+        static_cast<size_t>(buffer->getLenInBytes()) == record.bufferBytes &&
+        (buffer->special() == nullptr || buffer->special() != srcDb->special())) {
+      NDArray source(buffer, record.shapeInfo.data(), LaunchContext::defaultContext(), record.offset);
+      if (!source.isEmpty() && source.dataType() == staging->dataType() &&
+          shape::shapeEquals(source.shapeInfo(), staging->shapeInfo())) {
+        // Same rule as ensureAndSyncStagingBuffers: only a contiguous source may be
+        // copied as raw bytes; a strided view is gathered by its strides.
+        if (shape::strideDescendingCAscendingF(source.shapeInfo()) &&
+            shape::strideDescendingCAscendingF(staging->shapeInfo()) &&
+            source.ordering() == staging->ordering()) {
+          sd::DataBuffer::memcpy(srcDb, buffer, source.offset(), staging->offset(), length);
+        } else {
+          staging->assign(&source);
+        }
       }
     }
-    NDArray::registerSpecialUse(writes, reads);
   }
 
-  // DataBuffer::memcpy does async D2D via cudaMemcpyAsync on captureSafeStreamOrDefault().
-  sd::DataBuffer::memcpy(dstDataBuffer, srcDb, 0, 0, staging->lengthOf());
+  // Staging keeps the external's storage contract, so it can be an offset or
+  // strided view of its storage. Copy only its logical elements, densely.
+  if (shape::strideDescendingCAscendingF(staging->shapeInfo())) {
+    // DataBuffer::memcpy does async D2D on the LC default stream outside capture.
+    sd::DataBuffer::memcpy(dstDataBuffer, srcDb, staging->offset(), 0, length);
+  } else {
+    const LongType* stagingShape = shape::shapeOf(staging->shapeInfo());
+    std::vector<LongType> dimensions(stagingShape, stagingShape + staging->rankOf());
+    NDArray dense(dstDataBuffer, staging->ordering(), dimensions, staging->dataType(),
+                  LaunchContext::defaultContext(), false, false, 0);
+    dense.assign(staging);
+  }
 
   // The async copy is on LaunchContext::defaultContext()->getCudaStream().
   // Order stream-0 consumers after it without blocking the host.

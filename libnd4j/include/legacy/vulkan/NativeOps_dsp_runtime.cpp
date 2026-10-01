@@ -121,10 +121,10 @@ const char* getPlanSegmentTrackedPointers(sd::Pointer planHandle,
   json << '[';
   for (size_t i = 0; i < captured.size(); ++i) {
     if (i != 0) json << ',';
+    // The recorded allocation identity: the input's wrapper may already be deleted.
     void* current = nullptr;
     if (i < static_cast<size_t>(plan->getNumExternalInputs())) {
-      auto* input = plan->getLastExternalInput(static_cast<int>(i));
-      if (input != nullptr) current = input->specialBuffer();
+      current = plan->getLastExternalInputSpecial(static_cast<int>(i));
     }
     json << "{\"inputIdx\":" << i
          << ",\"capturedAddr\":\"0x" << std::hex

@@ -2057,7 +2057,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   /**
    * Get the last external inputs array passed to execute().
    * Only valid after at least one execute() call. Returns nullptr before first call.
-   * The returned pointer is owned by the caller of execute() — the plan does NOT own it.
+   * The arrays are owned by the caller of execute() and are only guaranteed live during
+   * that call; between executes compare these pointers, never dereference them.
    */
   NDArray** getLastExternalInputs() const { return lastExternalInputs_; }
   int getLastNumExternalInputs() const { return lastNumExternalInputs_; }
@@ -2201,7 +2202,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    */
   int copyStagingToBuffer(int extIdx, sd::DataBuffer* dstDataBuffer);
 
-  /** Get the last external input NDArray* at index, or nullptr. Stable after execute(). */
+  /**
+   * Get the last external input NDArray* at index, or nullptr.
+   * Dereference it only inside execute(): callers may delete the wrapper once the call
+   * returns (execution bindings close theirs with the lease). Code that runs between
+   * executes reads lastExternalInputRecords_ instead.
+   */
   NDArray* getLastExternalInput(int extIdx) const {
     if (lastExternalInputs_ == nullptr || extIdx < 0 || extIdx >= lastNumExternalInputs_)
       return nullptr;
@@ -2829,6 +2835,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     return lastExternalInputAddrs_[extIdx];
   }
 
+  /** DataBuffer::special() of the last external input at index as recorded at execute time,
+   *  or nullptr. Like getLastExternalInputAddress, it never dereferences the caller's array. */
+  void* getLastExternalInputSpecial(int extIdx) const {
+    if (extIdx < 0 || extIdx >= static_cast<int>(lastExternalInputRecords_.size())) return nullptr;
+    return lastExternalInputRecords_[extIdx].special;
+  }
+
   /** Get the output NDArray* at a specific slot index, or nullptr. */
   NDArray* getSlotOutputArray(int slotIdx) const {
     if (outputSlots_ == nullptr || slotIdx < 0 || slotIdx >= totalOutputSlots_)
@@ -2903,19 +2916,23 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void snapshotExecStats(void* execCtxPtr);
 
   // ── Cross-stream testing API (CUDA only) ────────────────────────────────
+  // These read the external DataBuffer recorded at the last execute, so the caller must
+  // still hold the array it bound there. Staging is built from the recorded layout.
 
-  /** Write host data to a staging buffer's device memory on the default stream. */
+  /** Write host data to a staging buffer's device memory on the default stream.
+   *  Returns 0 = success, -1 = no staging and no recorded layout to build it from,
+   *  -2 = invalid staging, -3 = write rejected or failed. */
   int writeDeviceBufferOnDefaultStream(int extIdx, void* srcHost, long long numBytes);
 
-  /** Write host data to a staging buffer's device memory on an explicit stream. */
+  /** Write host data to a staging buffer's device memory on an explicit stream.
+   *  Return codes as writeDeviceBufferOnDefaultStream. */
   int writeDeviceBufferOnExplicitStream(int extIdx, void* srcHost, long long numBytes, void* stream);
 
   /** Check if ext input at index has device-authoritative data. */
   int isExtInputDeviceAuthoritative(int extIdx) const {
-    NDArray* arr = getLastExternalInput(extIdx);
-    if (arr == nullptr) return 0;
-    auto* db = arr->dataBuffer();
-    if (db == nullptr) return 0;
+    if (extIdx < 0 || extIdx >= static_cast<int>(lastExternalInputRecords_.size())) return 0;
+    DataBuffer* db = lastExternalInputRecords_[extIdx].buffer;
+    if (db == nullptr || !db->isValid()) return 0;
     return db->isPrimaryActual() ? 0 : 1;  // device-authoritative = special is actual, primary is NOT
   }
 
@@ -3285,8 +3302,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int numSlots_;
   int totalOutputSlots_;
   int numExternalInputs_;
-  std::vector<NDArray*> lastExternalInputsCopy_;  // owned copy of ext input pointer array
-  NDArray** lastExternalInputs_ = nullptr;       // points to lastExternalInputsCopy_.data() (stable after execute)
+  // Copy of the caller's ext input pointer array. The arrays stay caller-owned and are only
+  // guaranteed live during the execute that recorded them: compare, never dereference, after.
+  std::vector<NDArray*> lastExternalInputsCopy_;
+  NDArray** lastExternalInputs_ = nullptr;       // points to lastExternalInputsCopy_.data()
   bool externalViewReacquirePending_ = false;    // validate external-fed views at next execute()
   // Buffer addresses of the ext inputs, recorded at execute time while the Java-owned
   // NDArrays are guaranteed live. JNI queries (getLastExternalInputAddress) read THESE —
@@ -3294,6 +3313,27 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // when the caller frees/replaces its input arrays between steps.
   std::vector<long long> lastExternalInputAddrs_;
   int lastNumExternalInputs_ = 0;               // size of lastExternalInputs_
+  // What execute() learned about each ext input while the caller's array was live. Code
+  // that runs between executes (markExternalInputVariable, the cross-stream testing API,
+  // staging copies) builds from these, never from lastExternalInputs_.
+  struct ExternalInputRecord {
+    std::vector<LongType> shapeInfo;  // owned copy; empty when no array was bound
+    LongType offset = 0;
+    size_t bufferBytes = 0;           // DataBuffer length, which views can exceed lengthOf()
+    void* special = nullptr;          // raw DataBuffer::special() (no allocation side effects)
+    // The caller's DataBuffer, shared with its Java array, so it outlives the wrapper the
+    // caller bound. Not owned: only the cross-stream testing API and staging reads use it,
+    // and they require the caller still hold the array it bound.
+    DataBuffer* buffer = nullptr;
+  };
+  std::vector<ExternalInputRecord> lastExternalInputRecords_;
+  // Record the inputs of the current call; every execute entry point calls this first.
+  void recordExternalInputs(NDArray** externalInputs, int numExternalInputs);
+  // placeholderStagingBuffers_[extIdx], allocated from the recorded layout if missing.
+  // nullptr when nothing usable was recorded for extIdx.
+  NDArray* ensurePlaceholderStagingFromRecord(int extIdx);
+  // Shared body of writeDeviceBufferOn{Default,Explicit}Stream.
+  int writeDeviceBufferOnStream(int extIdx, void* srcHost, long long numBytes, void* stream);
   std::vector<std::string> externalInputNames_;  // name for each external input index
   std::vector<bool> externalInputIsVariable_;    // true if VARIABLE or PLACEHOLDER (needs forced H2D before replay)
   std::vector<bool> externalInputIsPlaceholder_; // true if host-written placeholder (force H2D); false if device-written (respect actuality)

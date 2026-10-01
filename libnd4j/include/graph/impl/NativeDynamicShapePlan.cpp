@@ -1857,6 +1857,9 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
       if (staging == nullptr) continue;
       DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: %s staging[%d] ptr=%p",
                label, i, (void*)staging);
+      // Staging owns its buffer even when it mirrors a view's shapeInfo, whose view
+      // flag would make ~NDArray skip the delete. Same order as releaseGpuIntermediates.
+      staging->setShapeInfo((sd::LongType*)nullptr);
       delete staging;
       buffers[i] = nullptr;
       freedStaging++;
@@ -2915,28 +2918,10 @@ Status NativeDynamicShapePlan::execute(
   // Clear dirty bitmap.
   std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
 
-  // Store a persistent copy of external input pointers so they remain valid
-  // after execute() returns. The NDArray* pointers themselves are Java-owned
-  // and live beyond the call, but the array-of-pointers may be stack-allocated.
-  lastExternalInputsCopy_.assign(externalInputs, externalInputs + numExternalInputs);
-  lastExternalInputs_ = lastExternalInputsCopy_.data();
-  lastNumExternalInputs_ = numExternalInputs;
-  // Record the ext-input buffer addresses NOW, while the Java-owned NDArrays are guaranteed
-  // live (the duration of this JNI call). The JNI address query (getLastExternalInputAddress)
-  // reads these recorded values — it must NOT dereference the stored NDArray* later, because
-  // callers pass fresh inputs each step and free the old ones (query-time deref = UAF:
-  // garbage magic number → DataBuffer integrity-check throw). Raw db pointers only — no
-  // specialBuffer() self-heal side effects at record time.
-  lastExternalInputAddrs_.resize(numExternalInputs);
-  for (int _e = 0; _e < numExternalInputs; _e++) {
-    NDArray* _a = externalInputs[_e];
-    void* _p = nullptr;
-    if (_a != nullptr && _a->dataBuffer() != nullptr) {
-      _p = _a->dataBuffer()->special();
-      if (_p == nullptr) _p = _a->dataBuffer()->primary();
-    }
-    lastExternalInputAddrs_[_e] = reinterpret_cast<long long>(_p);
-  }
+  // Record the inputs while the caller's arrays are guaranteed live (this call).
+  // Callers pass fresh wrappers each step and may delete the old ones, so code
+  // that runs between executes reads the records, never these NDArray*.
+  recordExternalInputs(externalInputs, numExternalInputs);
 
   // Capture external input ranks on first call — used by FusionPass pass 5
   // to distinguish 1D bias vectors from N-D residual operands.
@@ -4604,26 +4589,8 @@ Status NativeDynamicShapePlan::executeSteadyState(
     std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
   }
 
-  // Store a persistent copy of external input pointers (see execute() comment)
-  lastExternalInputsCopy_.assign(externalInputs, externalInputs + numExternalInputs);
-  lastExternalInputs_ = lastExternalInputsCopy_.data();
-  lastNumExternalInputs_ = numExternalInputs;
-  // Record the ext-input buffer addresses NOW, while the Java-owned NDArrays are guaranteed
-  // live (the duration of this JNI call). The JNI address query (getLastExternalInputAddress)
-  // reads these recorded values — it must NOT dereference the stored NDArray* later, because
-  // callers pass fresh inputs each step and free the old ones (query-time deref = UAF:
-  // garbage magic number → DataBuffer integrity-check throw). Raw db pointers only — no
-  // specialBuffer() self-heal side effects at record time.
-  lastExternalInputAddrs_.resize(numExternalInputs);
-  for (int _e = 0; _e < numExternalInputs; _e++) {
-    NDArray* _a = externalInputs[_e];
-    void* _p = nullptr;
-    if (_a != nullptr && _a->dataBuffer() != nullptr) {
-      _p = _a->dataBuffer()->special();
-      if (_p == nullptr) _p = _a->dataBuffer()->primary();
-    }
-    lastExternalInputAddrs_[_e] = reinterpret_cast<long long>(_p);
-  }
+  // Record the inputs while the caller's arrays are live (see execute()).
+  recordExternalInputs(externalInputs, numExternalInputs);
 
   // Reuse cached PlanExecutionContext — avoid heap alloc/free per step.
   // On first call, create the context and a reusable cross-stream event.
@@ -4952,6 +4919,76 @@ void NativeDynamicShapePlan::setBackendPriority(const std::vector<std::string>& 
 // Retired slot/view wrappers are drained at plan-execution boundaries by
 // flushDeferredSlotDeletes(); never delete them during slot traversal.
 
+void NativeDynamicShapePlan::recordExternalInputs(NDArray** externalInputs, int numExternalInputs) {
+  const int count = (externalInputs != nullptr && numExternalInputs > 0) ? numExternalInputs : 0;
+  // The array-of-pointers may be stack-allocated by the caller, so keep a copy.
+  lastExternalInputsCopy_.assign(externalInputs, externalInputs + count);
+  lastExternalInputs_ = count > 0 ? lastExternalInputsCopy_.data() : nullptr;
+  lastNumExternalInputs_ = count;
+  // The caller only guarantees its arrays for this call, so record what later
+  // queries need now. Raw DataBuffer pointers only: no specialBuffer() side effects.
+  lastExternalInputAddrs_.resize(count);
+  lastExternalInputRecords_.resize(count);
+  for (int e = 0; e < count; e++) {
+    NDArray* arr = externalInputs[e];
+    DataBuffer* db = arr != nullptr ? arr->dataBuffer() : nullptr;
+    void* special = db != nullptr ? db->special() : nullptr;
+    void* address = special != nullptr ? special : (db != nullptr ? db->primary() : nullptr);
+    lastExternalInputAddrs_[e] = reinterpret_cast<long long>(address);
+
+    ExternalInputRecord& record = lastExternalInputRecords_[e];
+    record.buffer = db;
+    record.special = special;
+    record.offset = arr != nullptr ? arr->offset() : 0;
+    record.bufferBytes = db != nullptr ? db->getLenInBytes() : 0;
+    const LongType* shapeInfo = arr != nullptr ? arr->shapeInfo() : nullptr;
+    if (shapeInfo != nullptr) {
+      record.shapeInfo.assign(shapeInfo, shapeInfo + shape::shapeInfoLength(shapeInfo));
+    } else {
+      record.shapeInfo.clear();
+    }
+  }
+}
+
+NDArray* NativeDynamicShapePlan::ensurePlaceholderStagingFromRecord(int extIdx) {
+  if (extIdx < 0 || extIdx >= numExternalInputs_) return nullptr;
+  if (placeholderStagingBuffers_ != nullptr && placeholderStagingBuffers_[extIdx] != nullptr) {
+    return placeholderStagingBuffers_[extIdx];
+  }
+  if (extIdx >= static_cast<int>(lastExternalInputRecords_.size())) return nullptr;
+  ExternalInputRecord& record = lastExternalInputRecords_[extIdx];
+  if (record.shapeInfo.empty() || record.bufferBytes == 0) return nullptr;
+  LongType* shapeInfo = record.shapeInfo.data();
+  if (shape::isEmptyConst(shapeInfo) || shape::length(shapeInfo) <= 0) return nullptr;
+
+  if (placeholderStagingBuffers_ == nullptr) {
+    placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
+  }
+  if (effectiveExternals_ == nullptr) {
+    effectiveExternals_ = new NDArray*[numExternalInputs_]();
+  }
+  // Preserve the backing layout and offset, not just the logical shape: offset
+  // views and quantized caches can have storage outside lengthOf(). Writable state
+  // is checked against this complete storage contract, including singleton
+  // strides, padding and offset, on the next execution.
+  const DataType dtype = ArrayOptions::dataType(shapeInfo);
+  std::vector<LongType> dimensions(shape::shapeOf(shapeInfo),
+                                   shape::shapeOf(shapeInfo) + shape::rank(shapeInfo));
+  auto* storage = new DataBuffer(static_cast<LongType>(record.bufferBytes), dtype, nullptr, false);
+  NDArray* staging = nullptr;
+  try {
+    staging = new NDArray(storage, shape::order(shapeInfo), dimensions, dtype,
+                          LaunchContext::defaultContext(), true, false, record.offset);
+    staging->setShapeInfo(shapeInfo);
+  } catch (...) {
+    if (staging != nullptr) delete staging;
+    else delete storage;
+    throw;
+  }
+  placeholderStagingBuffers_[extIdx] = staging;
+  return staging;
+}
+
 void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
   DSP_DIAG(EXECUTE, "markExternalInputVariable: CALLED extIdx=%d numExt=%d",
            extIdx, numExternalInputs_);
@@ -5033,35 +5070,12 @@ void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
   // Pre-allocate staging buffer for the marked input so getStagingBufferAddress()
   // returns non-zero immediately after markVariable (before the plan re-enters
   // composite replay where ensureAndSyncStagingBuffers normally allocates).
-  NDArray* lastExt = getLastExternalInput(extIdx);
-  // The record may point at an array its owner already closed (borrower switch
-  // clears these, but a same-borrower close can also stale it). Probe with the
-  // non-throwing check; with no valid last input, staging is allocated later by
-  // ensureAndSyncStagingBuffers from the current execute's array (normal path).
-  if (lastExt != nullptr && lastExt->hasValidShapeInfo() && !lastExt->isEmpty()) {
-    if (placeholderStagingBuffers_ == nullptr) {
-      placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
-      effectiveExternals_ = new NDArray*[numExternalInputs_]();
-    }
-    if (placeholderStagingBuffers_[extIdx] == nullptr) {
-      // Writable state is checked against the complete source storage contract,
-      // including singleton strides, padding and offset, on the next execution.
-      auto* storage = new DataBuffer(lastExt->dataBuffer()->getLenInBytes(),
-                                     lastExt->dataType(), nullptr, false);
-      NDArray* staging = nullptr;
-      try {
-        staging = new NDArray(storage, lastExt->ordering(), *lastExt->getShapeAsVector(),
-                              lastExt->dataType(), LaunchContext::defaultContext(),
-                              true, false, lastExt->offset());
-        staging->setShapeInfo(lastExt->shapeInfo());
-      } catch (...) {
-        if (staging != nullptr) delete staging;
-        else delete storage;
-        throw;
-      }
-      placeholderStagingBuffers_[extIdx] = staging;
-    }
-  }
+  // Build it from the layout recorded at the last execute, never from the array
+  // that execute was given: its owner may already have deleted that wrapper (an
+  // execution binding deletes its wrappers when its lease closes). With nothing
+  // recorded, ensureAndSyncStagingBuffers allocates staging from the next
+  // execute's array.
+  ensurePlaceholderStagingFromRecord(extIdx);
 
   // Re-detect frozen constants since the variable set changed — ops that
   // were frozen because their transitive inputs appeared constant may now
@@ -6297,13 +6311,7 @@ Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numE
   // execute() has populated the persistent external-wrapper snapshot. Publish
   // the current borrowed wrappers first so warmup never enrolls caller arrays
   // in planOwnedArrays_.
-  lastExternalInputsCopy_.clear();
-  if (externalInputs != nullptr && numExternalInputs > 0) {
-    lastExternalInputsCopy_.assign(externalInputs, externalInputs + numExternalInputs);
-  }
-  lastExternalInputs_ = lastExternalInputsCopy_.empty()
-                            ? nullptr : lastExternalInputsCopy_.data();
-  lastNumExternalInputs_ = numExternalInputs;
+  recordExternalInputs(externalInputs, numExternalInputs);
 
   DSP_DIAG(COMPILE,
            "precompilePlan: BEGIN segments=%d extInputs=%d frozen=%d executeCount=%d sealed=%d",
@@ -8039,12 +8047,13 @@ void NativeDynamicShapePlan::reactivate() {
 
 void NativeDynamicShapePlan::invalidateExternalViewSlotsOnReacquire() {
   externalViewReacquirePending_ = true;
-  // NOTE: the retained lastExternalInputs_ records are intentionally KEPT across
-  // borrower switches — live records feed staging pre-allocation for legitimate
-  // reacquires (wholesale clearing here regressed mixed-gaps capture). Consumers
-  // that dereference the records (markExternalInputVariable pre-alloc, JNI
-  // staging writes) validate with hasValidShapeInfo() before any member call,
-  // which is what actually protects against a previous borrower's dead arrays.
+  // NOTE: the retained external-input records are intentionally KEPT across
+  // borrower switches — they feed staging pre-allocation for legitimate
+  // reacquires (wholesale clearing here regressed mixed-gaps capture). A previous
+  // borrower's binding may already have deleted its NDArray wrappers, so the
+  // between-execute consumers (markExternalInputVariable pre-alloc, JNI staging
+  // writes, JIT staging copies) read the owned lastExternalInputRecords_ copies
+  // and never dereference the recorded NDArray pointers.
   DSP_DIAG(EXECUTE,
            "NEW_BORROWER: queued external-fed view validation plan=%p phase=%s execCount=%d",
            (void*)this, planLifecycle_.displayName(), executeCount_);
@@ -8681,6 +8690,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   lastExternalInputs_ = nullptr;
   lastNumExternalInputs_ = 0;
   lastExternalInputAddrs_.clear();
+  lastExternalInputRecords_.clear();
   externalInputRanks_.clear();
 
   // ── Step 4d: Free placeholder staging buffers ──────────────────────────
@@ -9881,72 +9891,58 @@ void NativeDynamicShapePlan::snapshotExecStats(void* execCtxPtr) {
 }
 
 int NativeDynamicShapePlan::writeDeviceBufferOnDefaultStream(int extIdx, void* srcHost, long long numBytes) {
-  if (extIdx < 0 || extIdx >= numExternalInputs_) return -1;
-  // Lazily allocate staging buffers if ensureAndSyncStagingBuffers hasn't run yet
-  // (plan may still be in warmup when JNI write is called after initial output())
-  if (placeholderStagingBuffers_ == nullptr) {
-    NDArray* lastExt = getLastExternalInput(extIdx);
-    if (lastExt == nullptr || !lastExt->hasValidShapeInfo() || lastExt->isEmpty()) return -1;
-    placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
-    effectiveExternals_ = new NDArray*[numExternalInputs_]();
-  }
-  if (placeholderStagingBuffers_[extIdx] == nullptr) {
-    NDArray* lastExt = getLastExternalInput(extIdx);
-    if (lastExt == nullptr || !lastExt->hasValidShapeInfo() || lastExt->isEmpty()) return -2;
-    placeholderStagingBuffers_[extIdx] = new NDArray(
-        lastExt->ordering(), *lastExt->getShapeAsVector(),
-        lastExt->dataType(), LaunchContext::defaultContext());
-  }
-  NDArray* staging = placeholderStagingBuffers_[extIdx];
-  if (staging == nullptr || sd::graph::dspBuffer(staging) == nullptr) return -2;
-  int err = sd::graph::dspMemcpyH2DAsync(sd::graph::dspBuffer(staging), srcHost,
-                                         static_cast<size_t>(numBytes), nullptr);
-  if (err != 0) return -3;
-  // Also write to the external array's device buffer so warmup execution
-  // (which reads from externalArrays directly, not staging) sees the data.
-  NDArray* ext = getLastExternalInput(extIdx);
-  if (ext != nullptr && sd::graph::dspBuffer(ext) != nullptr) {
-    sd::graph::dspMemcpyH2DAsync(sd::graph::dspBuffer(ext), srcHost,
-                                 static_cast<size_t>(numBytes), nullptr);
-    // Mark device as authoritative so performPreReplaySync H2D doesn't
-    // overwrite our write with stale host data.
-    ext->dataBuffer()->writeSpecial();
-  }
-  // Mark staging as JNI-written so ensureAndSyncStagingBuffers skips D2D overwrite
-  if (static_cast<int>(deviceWritePending_.size()) <= extIdx)
-    deviceWritePending_.resize(numExternalInputs_, false);
-  deviceWritePending_[extIdx] = true;
-  return 0;
+  return writeDeviceBufferOnStream(extIdx, srcHost, numBytes, nullptr);
 }
 
 int NativeDynamicShapePlan::writeDeviceBufferOnExplicitStream(int extIdx, void* srcHost, long long numBytes, void* stream) {
+  return writeDeviceBufferOnStream(extIdx, srcHost, numBytes, stream);
+}
+
+int NativeDynamicShapePlan::writeDeviceBufferOnStream(int extIdx, void* srcHost, long long numBytes, void* stream) {
   if (extIdx < 0 || extIdx >= numExternalInputs_) return -1;
-  // Lazily allocate staging buffers if ensureAndSyncStagingBuffers hasn't run yet
-  if (placeholderStagingBuffers_ == nullptr) {
-    NDArray* lastExt = getLastExternalInput(extIdx);
-    if (lastExt == nullptr || !lastExt->hasValidShapeInfo() || lastExt->isEmpty()) return -1;
-    placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
-    effectiveExternals_ = new NDArray*[numExternalInputs_]();
+  // Lazily allocate staging if ensureAndSyncStagingBuffers hasn't run yet (the plan
+  // may still be in warmup when the JNI write follows the first output()).
+  const bool hadStagingTable = placeholderStagingBuffers_ != nullptr;
+  NDArray* staging = ensurePlaceholderStagingFromRecord(extIdx);
+  if (staging == nullptr) return hadStagingTable ? -2 : -1;
+  void* stagingDevice = sd::graph::dspBuffer(staging);
+  if (stagingDevice == nullptr) return -2;
+  const size_t bytes = static_cast<size_t>(numBytes);
+  if (srcHost == nullptr || numBytes <= 0 ||
+      bytes > static_cast<size_t>(staging->lengthOf()) * staging->sizeOfT()) {
+    return -3;
   }
-  if (placeholderStagingBuffers_[extIdx] == nullptr) {
-    NDArray* lastExt = getLastExternalInput(extIdx);
-    if (lastExt == nullptr || !lastExt->hasValidShapeInfo() || lastExt->isEmpty()) return -2;
-    placeholderStagingBuffers_[extIdx] = new NDArray(
-        lastExt->ordering(), *lastExt->getShapeAsVector(),
-        lastExt->dataType(), LaunchContext::defaultContext());
+  // Each write follows the DataBuffer::memcpy contract: wait for the buffer's last
+  // recorded write, then record this one, so copies and host reads on other streams
+  // are ordered after a write issued on an explicit stream.
+  DataBuffer* stagingBuffer = staging->dataBuffer();
+  stagingBuffer->waitForSpecialWriteEvent(stream);
+  if (sd::graph::dspMemcpyH2DAsync(stagingDevice, srcHost, bytes, stream) != 0) return -3;
+  stagingBuffer->recordSpecialWriteEvent(stream);
+
+  // Also write the external array, because warmup execution reads the external
+  // arrays directly rather than staging. Its wrapper may already be deleted, so
+  // address it through the recorded buffer and layout; the caller still holds the
+  // array, and an unchanged byte length means the record still describes it.
+  if (extIdx < static_cast<int>(lastExternalInputRecords_.size())) {
+    ExternalInputRecord& record = lastExternalInputRecords_[extIdx];
+    DataBuffer* buffer = record.buffer;
+    if (!record.shapeInfo.empty() && buffer != nullptr && buffer->isValid() &&
+        static_cast<size_t>(buffer->getLenInBytes()) == record.bufferBytes) {
+      NDArray target(buffer, record.shapeInfo.data(), LaunchContext::defaultContext(), record.offset);
+      void* targetDevice = sd::graph::dspBuffer(&target);
+      if (targetDevice != nullptr) {
+        if (bytes > static_cast<size_t>(target.lengthOf()) * target.sizeOfT()) return -3;
+        buffer->waitForSpecialWriteEvent(stream);
+        if (sd::graph::dspMemcpyH2DAsync(targetDevice, srcHost, bytes, stream) != 0) return -3;
+        buffer->recordSpecialWriteEvent(stream);
+        // Mark the device authoritative so performPreReplaySync's H2D doesn't
+        // overwrite this write with stale host data.
+        buffer->writeSpecial();
+      }
+    }
   }
-  NDArray* staging = placeholderStagingBuffers_[extIdx];
-  if (staging == nullptr || sd::graph::dspBuffer(staging) == nullptr) return -2;
-  int err = sd::graph::dspMemcpyH2DAsync(sd::graph::dspBuffer(staging), srcHost,
-                                         static_cast<size_t>(numBytes), stream);
-  if (err != 0) return -3;
-  // Also write to external array so warmup execution sees the data.
-  NDArray* ext = getLastExternalInput(extIdx);
-  if (ext != nullptr && sd::graph::dspBuffer(ext) != nullptr) {
-    sd::graph::dspMemcpyH2DAsync(sd::graph::dspBuffer(ext), srcHost,
-                                 static_cast<size_t>(numBytes), stream);
-    ext->dataBuffer()->writeSpecial();
-  }
+  // Mark staging as JNI-written so ensureAndSyncStagingBuffers skips its D2D overwrite.
   if (static_cast<int>(deviceWritePending_.size()) <= extIdx)
     deviceWritePending_.resize(numExternalInputs_, false);
   deviceWritePending_[extIdx] = true;
