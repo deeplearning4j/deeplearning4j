@@ -668,25 +668,310 @@ DECLARE_CUSTOM_OP(selective_scan, 5, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(multi_lora_matmul, 5, 1, false, 0, 0);
 #endif
 
+/*
+ * The quantized GEMM, normalization, sampling and attention ops below execute
+ * on empty inputs: an empty optional input stands for an absent one, and empty
+ * extents produce empty (or zero-filled) outputs instead of unwritten ones.
+ */
+
 /**
- * smooth_quant - SmoothQuant W8A8 quantized matmul
+ * smooth_quant - SmoothQuant quantized matmul (W8A8 with integer or FP8 codes)
  *
  * Implements the SmoothQuant technique: Y = (X * diag(s)^-1) @ (diag(s) * W)
- * where s is a per-channel smoothing scale computed offline via calibration.
+ * where s is a per-channel smoothing scale computed offline via calibration
+ * and folded into the weight codes. The smoothed activation quantizes onto the
+ * grid of the weight's data type and the product dequantizes by both scales:
+ *   Xq = q(X / (s * actScale))
+ *   Y = ((Xq * actScale) @ op(W)) * weightScale + bias
+ * With two inputs the op only smooths: Y = X / s.
  *
- * Input arrays:
- *   0: input [M, K] - FP16/FP32 input activations
- *   1: weightQuant [K, N] - INT8 pre-quantized smoothed weights
- *   2: smoothScale [K] - per-channel smoothing scale
- *   3: weightScale scalar or [N] - dequant scale for weights
- *   4: (optional) actScale - per-channel activation scale
- *   5: (optional) bias [N]
+ * Input:
+ *   0: X [..., K] floating activations
+ *   1: W [N, K] ([K, N] when transposeWeight) signed integer or floating codes,
+ *      INT8 or FP8; with two inputs, the smoothing scale s [K]
+ *   2: s [K] per-channel smoothing scale
+ *   3: actScale, one value or one per channel [K]
+ *   4: weightScale, one value or one per output channel [N]
+ *   5: bias [N] (optional)
  *
- * Output arrays:
- *   0: output [M, N]
+ * Output:
+ *   0: Y [..., N] in X's data type ([..., K] with two inputs)
+ *
+ * Integer arguments:
+ *   0: transposeWeight (default 0: W is [N, K])
  */
 #if NOT_EXCLUDED(OP_smooth_quant)
-DECLARE_CUSTOM_OP(smooth_quant, 4, 1, false, 0, 0);
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT smooth_quant : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+ public:
+  smooth_quant();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(smooth_quant)
+#endif
+
+/**
+ * fp8_matmul - scaled GEMM over FP8 operands
+ *
+ * C = (op(A) @ op(B)) * scaleA * scaleB + bias. A and B keep their storage
+ * types, FLOAT8 (E4M3) or FLOAT8_E5M2 or a wider floating type: the storage
+ * type carries the format. The product accumulates in the aggregate type of C.
+ *
+ * Input:
+ *   0: A [M, K] ([K, M] when transposeA), floating storage
+ *   1: B [K, N] ([N, K] when transposeB), floating storage
+ *   2: scaleA, one value or one per row of C [M]
+ *   3: scaleB, one value or one per column of C [N]
+ *   4: bias [N] (optional)
+ *
+ * Output:
+ *   0: C [M, N], in the data type argument when given, else scaleA's data type
+ *
+ * Integer arguments:
+ *   0: transposeA (default 0)
+ *   1: transposeB (default 0)
+ */
+#if NOT_EXCLUDED(OP_fp8_matmul)
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT fp8_matmul : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+ public:
+  fp8_matmul();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(fp8_matmul)
+#endif
+
+/**
+ * awq_matmul - matmul with AWQ group-quantized weights
+ *
+ * Y = X @ W + bias for a weight W [K, N] stored as numBits-wide unsigned codes
+ * packed along K: byte (c, n) of the packed weights holds the codes of rows
+ * c * (8 / numBits) + j in bits [j * numBits, (j + 1) * numBits). The rows
+ * group by groupSize, and each group dequantizes per output channel:
+ *   W[k, n] = (code(k, n) - zeros[k / groupSize, n]) * scales[k / groupSize, n]
+ * Without zeros the zero point is the middle of the code range, 2^(numBits - 1).
+ *
+ * Input:
+ *   0: X [..., K] floating activations
+ *   1: packed weights [ceil(K * numBits / 8), N], one-byte integer codes
+ *   2: scales [ceil(K / groupSize), N]
+ *   3: zeros, the scales' shape and data type (optional)
+ *   4: bias [N] (optional)
+ *
+ * Output:
+ *   0: Y [..., N] in X's data type
+ *
+ * Integer arguments:
+ *   0: groupSize (default 128)
+ *   1: numBits, 1, 2, 4 or 8 (default 4)
+ */
+#if NOT_EXCLUDED(OP_awq_matmul)
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT awq_matmul : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+ public:
+  awq_matmul();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(awq_matmul)
+#endif
+
+/**
+ * fused_norm_quantize - normalization followed by per-row symmetric quantization
+ *
+ * The rows of the last axis normalize, by RMSNorm (normType 0) or LayerNorm
+ * (normType 1), scale by gamma and shift by the optional beta. Each normalized
+ * row then quantizes symmetrically onto the grid of the codes' data type:
+ *   scale = max|row| / qmax,  code = snap(clamp(row / scale, -qmax, qmax))
+ * so code * scale reconstructs the row.
+ *
+ * Input:
+ *   0: X [..., F] floating
+ *   1: gamma [F]
+ *   2: beta [F] (optional)
+ *
+ * Output:
+ *   0: codes [..., F], INT8 unless the data type argument chooses another
+ *      signed integer or floating type (FP8 included)
+ *   1: scales [...] (the input's shape without its last axis), X's data type
+ *
+ * Integer arguments:
+ *   0: normType (0 = RMSNorm, default; 1 = LayerNorm)
+ *
+ * Float arguments:
+ *   0: epsilon (default 1e-5)
+ */
+#if NOT_EXCLUDED(OP_fused_norm_quantize)
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT fused_norm_quantize : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+ public:
+  fused_norm_quantize();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(fused_norm_quantize)
+#endif
+
+/**
+ * gpu_top_k_sample - top-k token sampling
+ *
+ * Draws one token per row from the softmax of the logits scaled by
+ * 1 / temperature, truncated to the k most likely tokens, and reports the
+ * probability of each drawn token under the kept distribution. The draws come
+ * from the given uniforms, else from the generator of the seed (a positive
+ * seed fixes them). Temperature <= 0 with k <= 0 selects the argmax.
+ *
+ * Input:
+ *   0: logits [vocab], [batch, vocab] or [batch, seqLen, vocab] (the last
+ *      position is sampled)
+ *   1: uniforms [batch] in [0, 1) (optional)
+ *
+ * Output:
+ *   0: token ids [batch] (a scalar for rank-1 logits), INT64
+ *   1: probabilities, the token ids' shape, in the logits' data type
+ *
+ * Integer arguments:
+ *   0: k (default 50)
+ *   1: seed (default 0: fresh entropy)
+ *
+ * Float arguments:
+ *   0: temperature (default 1.0)
+ */
+#if NOT_EXCLUDED(OP_gpu_top_k_sample)
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT gpu_top_k_sample : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+ public:
+  gpu_top_k_sample();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(gpu_top_k_sample)
+#endif
+
+/**
+ * gpu_top_p_sample - nucleus (top-p) token sampling
+ *
+ * Draws one token per row from the smallest set of the most likely tokens that
+ * holds p of the softmax of the logits scaled by 1 / temperature, and reports
+ * the probability of each drawn token under the kept distribution. Given the
+ * token history, the repetition, frequency and presence penalties first
+ * rewrite a copy of the sampled position's logits. Temperature <= 0 with
+ * p <= 0 selects the argmax.
+ *
+ * Input:
+ *   0: logits [vocab], [batch, vocab] or [batch, seqLen, vocab] (the last
+ *      position is sampled)
+ *   1: uniforms [batch] in [0, 1) (optional)
+ *   2: token history [seqLen], shared by every row, or [batch, seqLen],
+ *      integer ids (optional)
+ *
+ * Output:
+ *   0: token ids [batch] (a scalar for rank-1 logits), INT64
+ *   1: probabilities, the token ids' shape, in the logits' data type
+ *
+ * Integer arguments:
+ *   0: seed (default 0: fresh entropy)
+ *
+ * Float arguments:
+ *   0: p (default 0.9)
+ *   1: temperature (default 1.0)
+ *   2: repetition penalty (default 1.0: off)
+ *   3: frequency penalty (default 0.0)
+ *   4: presence penalty (default 0.0)
+ */
+#if NOT_EXCLUDED(OP_gpu_top_p_sample)
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT gpu_top_p_sample : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+ public:
+  gpu_top_p_sample();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(gpu_top_p_sample)
+#endif
+
+/**
+ * decoder_masked_mha - masked multi-head attention for autoregressive decoders
+ *
+ * Five inputs: the hidden states project through the fused [q | k | v] weight,
+ * the queries and keys rotate by their absolute positions (past + s), the
+ * current keys and values append to the past into the present cache, and the
+ * queries attend causally over the present cache before the output projection.
+ *
+ * Three inputs: the queries attend over the keys and values (causally when
+ * requested), and the keys and values return per head as the present cache.
+ *
+ * Masked scores are biased by the mask filter value, saturated into the finite
+ * range of the attention type.
+ *
+ * Input (five-input form):
+ *   0: hidden [B, S, H] floating
+ *   1: fused QKV weight [H, (heads + 2 * kvHeads) * headDim]
+ *   2: output weight [heads * headDim, outputHidden]
+ *   3: past keys [B, kvHeads, past, headDim]
+ *   4: past values [B, kvHeads, past, headDim]
+ * Input (three-input form):
+ *   0: queries [B, S, heads * headDim] floating
+ *   1: keys [B, Skv, kvHeads * headDim]
+ *   2: values [B, Skv, kvHeads * headDim]
+ * Inputs 1-4 take any floating storage type, FP8 included.
+ *
+ * Output (in input 0's data type):
+ *   0: attention output [B, S, outputHidden] ([B, S, heads * headDim] for three inputs)
+ *   1: present keys [B, kvHeads, total, headDim] (total = past + S, or Skv)
+ *   2: present values [B, kvHeads, total, headDim]
+ *
+ * Integer arguments:
+ *   0: heads (required)
+ *   1: kvHeads (default 0: derived from the past keys for five inputs, from
+ *      the keys for three)
+ *   2: headDim (default 0: derived from the weights or queries)
+ *   3: three inputs: causal (default 0); five inputs: useRoPE (default 1;
+ *      0 = none, 1 = rotate halves, 2 = rotate interleaved pairs)
+ *   4: five inputs: RoPE base (default 10000)
+ *
+ * Float arguments:
+ *   0: mask filter value (default -FLT_MAX)
+ */
+#if NOT_EXCLUDED(OP_decoder_masked_mha)
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT decoder_masked_mha : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+ public:
+  decoder_masked_mha();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(decoder_masked_mha)
 #endif
 
 /**

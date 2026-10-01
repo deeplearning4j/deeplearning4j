@@ -42,6 +42,7 @@
 #include <loops/special_kernels.h>
 #include <loops/summarystatsreduce.h>
 #include <loops/transform_any.h>
+#include <loops/transform_any_fp8.h>
 #include <loops/transform_bool.h>
 #include <loops/transform_float.h>
 #include <loops/transform_same.h>
@@ -160,6 +161,38 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext *lc, int opNum, co
                         SD_COMMON_TYPES, SD_BOOL_TYPES);
 }
 
+#if defined(HAS_FLOAT8)
+////////////////////////////////////////////////////////////////////////
+// Copies x of any storage type into the FP8 storage type F8 of z.
+template <typename F8>
+static void execTransformAnyToFp8(sd::DataType xType, dim3 launchDims, cudaStream_t *stream, int opNum, const void *dX,
+                                  const sd::LongType *dXShapeInfo, sd::LongType xRank, void *extraParams, void *dZ,
+                                  const sd::LongType *dZShapeInfo, sd::LongType zRank) {
+  if (xType == sd::DataType::FLOAT8) {
+    functions::transform::TransformAnyFp8<F8>::template executeToFp8<sd::float8>(
+        launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank);
+  } else if (xType == sd::DataType::FLOAT8_E5M2) {
+    functions::transform::TransformAnyFp8<F8>::template executeToFp8<sd::float8_e5m2>(
+        launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank);
+  } else {
+    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformAnyFp8<F8>::template executeToFp8,
+                          (launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank),
+                          SD_COMMON_TYPES);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////
+// Copies x of the FP8 storage type F8 into z of a common type.
+template <typename F8>
+static void execTransformAnyFromFp8(sd::DataType zType, dim3 launchDims, cudaStream_t *stream, int opNum,
+                                    const void *dX, const sd::LongType *dXShapeInfo, sd::LongType xRank,
+                                    void *extraParams, void *dZ, const sd::LongType *dZShapeInfo, sd::LongType zRank) {
+  BUILD_SINGLE_SELECTOR(zType, functions::transform::TransformAnyFp8<F8>::template executeFromFp8,
+                        (launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank),
+                        SD_COMMON_TYPES);
+}
+#endif
+
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, const void *hX,
                                            const sd::LongType *hXShapeInfo, const void *dX,
@@ -181,17 +214,26 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
   dim3 launchDims = getLaunchDims("transformScan");
 #if defined(HAS_FLOAT8)
   // FP8 is deliberately excluded from the arithmetic SD_COMMON_TYPES matrix.
-  // Dispatch copies to the FP8 storage types without a floating-point round trip.
-  if (xType == sd::DataType::FLOAT8 && zType == xType) {
-    functions::transform::TransformAny<float8, float8>::executeTransformShaped(
-        launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
-        dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr);
+  // A copy into or out of an FP8 storage type fixes that side and dispatches
+  // the other; same-dtype copies stay storage copies.
+  if (zType == sd::DataType::FLOAT8) {
+    execTransformAnyToFp8<sd::float8>(xType, launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
+                                      dZShapeInfo, zRank);
     return;
   }
-  if (xType == sd::DataType::FLOAT8_E5M2 && zType == xType) {
-    functions::transform::TransformAny<float8_e5m2, float8_e5m2>::executeTransformShaped(
-        launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
-        dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr);
+  if (zType == sd::DataType::FLOAT8_E5M2) {
+    execTransformAnyToFp8<sd::float8_e5m2>(xType, launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams,
+                                           dZ, dZShapeInfo, zRank);
+    return;
+  }
+  if (xType == sd::DataType::FLOAT8) {
+    execTransformAnyFromFp8<sd::float8>(zType, launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
+                                        dZShapeInfo, zRank);
+    return;
+  }
+  if (xType == sd::DataType::FLOAT8_E5M2) {
+    execTransformAnyFromFp8<sd::float8_e5m2>(zType, launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams,
+                                             dZ, dZShapeInfo, zRank);
     return;
   }
 #endif

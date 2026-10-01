@@ -1729,14 +1729,18 @@ fun NN() = Namespace("NN") {
     Op("fusedNormQuantize") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "FusedNormQuantize"
-        Input(NUMERIC, "input") { description = "Input tensor" }
-        Input(NUMERIC, "gamma") { description = "Norm scale parameter" }
-        Arg(FLOATING_POINT, "epsilon") { description = "Epsilon for normalization" }
-        Arg(INT, "quantType") { description = "Quantization type" }
-        Output(NUMERIC, "output") { description = "Normalized and quantized output" }
+        Input(NUMERIC, "input") { description = "Input tensor; the last axis holds the features" }
+        Input(NUMERIC, "gamma") { description = "Normalization scale, one value per feature" }
+        Arg(FLOATING_POINT, "epsilon") { description = "Epsilon added to the mean square of each row" }
+        Arg(DATA_TYPE, "quantizedType") { description = "Data type of the codes: a signed integer or floating type, FP8 included" }
+        Output(NUMERIC, "codes") { description = "Quantized codes, in the input's shape" }
+        Output(NUMERIC, "scales") { description = "Per-row dequantization scales, in the input's shape without the last axis" }
         Doc(Language.ANY, DocScope.ALL) {
             """
-                Fused normalization + quantization in a single kernel.
+                RMSNorm over the last axis, scaled by gamma, followed by per-row symmetric quantization onto the grid
+                of the quantized data type: scale = max|row| / qmax, where qmax is the largest finite value of the
+                quantized type, and each code is row / scale rounded to the nearest value of the quantized type.
+                codes * scales reconstructs the normalized rows.
             """.trimIndent()
         }
     }
@@ -1828,6 +1832,64 @@ fun NN() = Namespace("NN") {
              Used in Gated Delta Networks (GDN) and Mamba architectures.
              The state output preserves the last (kernelSize-1) input elements
              for use as initial state in the next autoregressive step.
+            """.trimIndent()
+        }
+    }
+
+    Op("causalConv1dWithPrefix") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "CausalConv1dWithPrefix"
+        Input(NUMERIC, "x") { description = "Input sequence [batch, seqLen, dim]" }
+        Input(NUMERIC, "weight") { description = "Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1)" }
+        Input(NUMERIC, "bias") { description = "Bias [dim]"; defaultValue = null }
+        Input(NUMERIC, "convStateIn") { description = "Conv state for autoregressive decode [batch, dim, kernelSize-1]"; defaultValue = null }
+        Input(NUMERIC, "actualSequenceLength") { description = "Scalar INT64 tensor containing the unpadded sequence length (required)" }
+        Arg(INT, "activation") { description = "Activation function (0=none, 1=silu)"; defaultValue = 0 }
+        Arg(INT, "wFormat") { description = "Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)"; defaultValue = 0 }
+
+        Output(NUMERIC, "output") { description = "Convolved output [batch, seqLen, dim]" }
+        Output(NUMERIC, "stateOut") { description = "Updated conv state [batch, dim, kernelSize-1]" }
+        Output(NUMERIC, "prefix") { description = "Per-prefix histories [seqLen, batch, dim, kernelSize-1]" }
+
+        AllParamSignature()
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Causal depthwise 1D convolution with per-prefix history checkpoints (accepted-prefix capture).
+
+             Same convolution as causalConv1d, but requires the actualSequenceLength scalar and also produces a
+             time-leading prefix tensor whose slot t holds the retained raw-input history after consuming input
+             rows 0..t: the last (kernelSize-1) elements of concat(convStateIn, x[0:t+1]).
+             Used by bundled-MTP accepted-prefix state selection.
+            """.trimIndent()
+        }
+    }
+
+    Op("gatedDeltaRuleWithPrefix") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "GatedDeltaRuleWithPrefix"
+        Input(NUMERIC, "q") { description = "Query tensor [batch, seqLen, numHeads, headDimK]" }
+        Input(NUMERIC, "k") { description = "Key tensor [batch, seqLen, numHeads, headDimK] (L2-normalized)" }
+        Input(NUMERIC, "v") { description = "Value tensor [batch, seqLen, numHeads, headDimV]" }
+        Input(NUMERIC, "beta") { description = "Per-step learning rate [batch, seqLen, numHeads]" }
+        Input(NUMERIC, "gate") { description = "Decay gate (pre-exp) [batch, seqLen, numHeads]" }
+        Input(NUMERIC, "stateIn") { description = "Previous recurrent state [batch, numHeads, headDimK, headDimV]"; defaultValue = null }
+        Input(NUMERIC, "actualSequenceLength") { description = "Scalar INT64 tensor containing the unpadded sequence length (required)" }
+
+        Output(NUMERIC, "output") { description = "Attention output [batch, seqLen, numHeads, headDimV]" }
+        Output(NUMERIC, "stateOut") { description = "Final recurrent state [batch, numHeads, headDimK, headDimV]" }
+        Output(NUMERIC, "prefix") { description = "Per-timestep states [seqLen, batch, numHeads, headDimK, headDimV]" }
+
+        AllParamSignature()
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Gated Delta Rule with per-timestep state checkpoints (accepted-prefix capture).
+
+             Same recurrence as gatedDeltaRule, but requires the actualSequenceLength scalar and also produces a
+             time-leading prefix tensor whose slot t holds the recurrent state after consuming input rows 0..t,
+             for t from 0 through actualSequenceLength - 2. The state after the last consumed row is stateOut.
+             Used by bundled-MTP accepted-prefix state selection.
             """.trimIndent()
         }
     }

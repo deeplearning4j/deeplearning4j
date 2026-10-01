@@ -21,6 +21,7 @@
 #include <helpers/DebugHelper.h>
 #include <loops/legacy_ops.h>
 #include <loops/transform_any.h>
+#include <loops/transform_any_fp8.h>
 #include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
@@ -185,12 +186,25 @@ SD_HOST void TransformAny<X, Z>::intermediateShaped(
   sd::DebugHelper::checkErrorCode(stream, "transformAny(...) cached kernel failed");
 }
 
-// Match the targeted same-dtype FP8 dispatch in NativeOpExecutioner. Keep
-// these pairs out of the arithmetic matrix and emit them once in split builds.
-#if defined(HAS_FLOAT8) && (!defined(SD_SPLIT_TYPE_INDEX) || SD_SPLIT_TYPE_INDEX == 0)
-template class TransformAny<sd::float8, sd::float8>;
-template class TransformAny<sd::float8_e5m2, sd::float8_e5m2>;
-#endif
+////////////////////////////////////////////////////////////////////////////////
+template <typename F8>
+template <typename T>
+SD_HOST void TransformAnyFp8<F8>::executeToFp8(dim3 launchDims, cudaStream_t* stream, int opNum, const void* x,
+                                               const sd::LongType* xShape, sd::LongType xRank, void* extraParams,
+                                               void* z, const sd::LongType* zShape, sd::LongType zRank) {
+  TransformAny<T, F8>::executeTransformShaped(launchDims, stream, opNum, x, xShape, xRank, extraParams, z, zShape,
+                                              zRank, nullptr, nullptr, nullptr, nullptr);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template <typename F8>
+template <typename T>
+SD_HOST void TransformAnyFp8<F8>::executeFromFp8(dim3 launchDims, cudaStream_t* stream, int opNum, const void* x,
+                                                 const sd::LongType* xShape, sd::LongType xRank, void* extraParams,
+                                                 void* z, const sd::LongType* zShape, sd::LongType zRank) {
+  TransformAny<F8, T>::executeTransformShaped(launchDims, stream, opNum, x, xShape, xRank, extraParams, z, zShape,
+                                              zRank, nullptr, nullptr, nullptr, nullptr);
+}
 
 #ifdef SD_SPLIT_TYPE_INDEX
 #if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
@@ -198,6 +212,45 @@ BUILD_DOUBLE_TEMPLATE( class TransformAny, , SD_SPLIT_TYPE_LIST, SD_COMMON_TYPES
 #endif
 #else
 BUILD_DOUBLE_TEMPLATE( class TransformAny, , SD_COMMON_TYPES, SD_COMMON_TYPES);
+#endif
+
+#if defined(HAS_FLOAT8)
+// Conversions between FP8 and the common types split with the arithmetic
+// matrix; conversions between the FP8 encodings are emitted once.
+#define SD_TRANSFORM_ANY_FP8_ARGS                                                                             \
+  (dim3 launchDims, cudaStream_t * stream, int opNum, const void* x, const sd::LongType* xShape,             \
+   sd::LongType xRank, void* extraParams, void* z, const sd::LongType* zShape, sd::LongType zRank)
+
+#if !defined(SD_SPLIT_TYPE_INDEX) || SD_SPLIT_TYPE_INDEX == 0
+template void TransformAnyFp8<sd::float8>::executeToFp8<sd::float8> SD_TRANSFORM_ANY_FP8_ARGS;
+template void TransformAnyFp8<sd::float8>::executeToFp8<sd::float8_e5m2> SD_TRANSFORM_ANY_FP8_ARGS;
+template void TransformAnyFp8<sd::float8_e5m2>::executeToFp8<sd::float8> SD_TRANSFORM_ANY_FP8_ARGS;
+template void TransformAnyFp8<sd::float8_e5m2>::executeToFp8<sd::float8_e5m2> SD_TRANSFORM_ANY_FP8_ARGS;
+#endif
+
+#ifdef SD_SPLIT_TYPE_INDEX
+#if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8>::executeToFp8, SD_TRANSFORM_ANY_FP8_ARGS,
+                      SD_SPLIT_TYPE_LIST);
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8>::executeFromFp8, SD_TRANSFORM_ANY_FP8_ARGS,
+                      SD_SPLIT_TYPE_LIST);
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8_e5m2>::executeToFp8, SD_TRANSFORM_ANY_FP8_ARGS,
+                      SD_SPLIT_TYPE_LIST);
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8_e5m2>::executeFromFp8, SD_TRANSFORM_ANY_FP8_ARGS,
+                      SD_SPLIT_TYPE_LIST);
+#endif
+#else
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8>::executeToFp8, SD_TRANSFORM_ANY_FP8_ARGS,
+                      SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8>::executeFromFp8, SD_TRANSFORM_ANY_FP8_ARGS,
+                      SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8_e5m2>::executeToFp8, SD_TRANSFORM_ANY_FP8_ARGS,
+                      SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8_e5m2>::executeFromFp8, SD_TRANSFORM_ANY_FP8_ARGS,
+                      SD_COMMON_TYPES);
+#endif
+
+#undef SD_TRANSFORM_ANY_FP8_ARGS
 #endif
 
 }  // namespace transform

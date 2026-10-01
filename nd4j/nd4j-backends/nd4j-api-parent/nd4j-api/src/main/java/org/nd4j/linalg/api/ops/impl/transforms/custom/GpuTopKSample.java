@@ -24,39 +24,40 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * GPU-accelerated Top-K sampling for LLM token generation.
+ * Top-k token sampling for LLM token generation.
  * <p>
- * Performs top-K filtering, softmax, and multinomial sampling entirely on the GPU,
- * eliminating the device-to-host transfer overhead for logits. Uses CUB radix sort
- * for efficient top-K selection.
- * <p>
- * Pipeline: logits -&gt; temperature scaling -&gt; top-K filter -&gt; softmax -&gt; multinomial sample
+ * Draws one token per row from the softmax of the logits scaled by 1 / temperature, truncated to the k most likely
+ * tokens, and reports the probability of each drawn token under the kept, renormalized distribution. Tokens of equal
+ * weight are kept or dropped together. With temperature &lt;= 0 and k &lt;= 0 the selection is greedy: the argmax of
+ * each row, lowest index on ties, with probability 1. Otherwise a temperature &lt;= 0 leaves the logits unscaled.
  * <p>
  * Inputs:
  * <ul>
- *   <li>0: logits [batch, vocab_size]</li>
- *   <li>1: random values [batch] (uniform [0,1) for multinomial, optional)</li>
+ *   <li>0: logits (floating) [vocab], [batch, vocab] or [batch, seqLen, vocab] (the last position is sampled)</li>
+ *   <li>1: uniforms (optional, floating) [batch] in [0, 1), the draw of each row; an empty array stands for absent
+ *   uniforms</li>
  * </ul>
  * <p>
  * Outputs:
  * <ul>
- *   <li>0: sampled token IDs [batch] (INT64)</li>
- *   <li>1: sampled probabilities [batch] (FLOAT, optional)</li>
+ *   <li>0: sampled token IDs (INT64) [batch], a scalar for rank-1 logits</li>
+ *   <li>1: probabilities of the sampled tokens [batch], a scalar for rank-1 logits, in the type of the logits</li>
  * </ul>
  * <p>
  * Integer arguments:
  * <ul>
- *   <li>0: k (number of top tokens to consider, default: 50)</li>
- *   <li>1: seed (RNG seed, used if no random values input, default: 0)</li>
+ *   <li>0: k (number of most likely tokens to keep; k &lt;= 0 or k &gt;= vocab keeps every token; default: 50)</li>
+ *   <li>1: seed (without uniforms, a positive seed makes the draws reproducible, otherwise they take fresh entropy;
+ *   default: 0)</li>
  * </ul>
  * <p>
  * Float arguments:
@@ -88,7 +89,7 @@ public class GpuTopKSample extends DynamicCustomOp {
      * @param logits      input logits [batch, vocab_size]
      * @param k           number of top tokens to consider
      * @param temperature temperature for scaling
-     * @param seed        RNG seed (0 for random)
+     * @param seed        RNG seed (a positive seed is reproducible, otherwise the draws take fresh entropy)
      */
     public GpuTopKSample(INDArray logits, int k, double temperature, long seed) {
         super(new INDArray[]{logits}, null);
@@ -100,10 +101,10 @@ public class GpuTopKSample extends DynamicCustomOp {
     }
 
     /**
-     * INDArray constructor with explicit random values.
+     * INDArray constructor with explicit random values (null draws from fresh entropy).
      */
     public GpuTopKSample(INDArray logits, INDArray randomValues, int k, double temperature) {
-        super(new INDArray[]{logits, randomValues}, null);
+        super(randomValues == null ? new INDArray[]{logits} : new INDArray[]{logits, randomValues}, null);
         this.k = k;
         this.temperature = temperature;
         addIArgument((long) k, seed);
@@ -130,11 +131,12 @@ public class GpuTopKSample extends DynamicCustomOp {
     }
 
     /**
-     * SameDiff constructor with random values input.
+     * SameDiff constructor with random values input (null draws from fresh entropy).
      */
     public GpuTopKSample(SameDiff sameDiff, SDVariable logits, SDVariable randomValues,
                          int k, double temperature) {
-        super(null, sameDiff, new SDVariable[]{logits, randomValues}, false);
+        super(null, sameDiff, randomValues == null ? new SDVariable[]{logits} : new SDVariable[]{logits, randomValues},
+                false);
         this.k = k;
         this.temperature = temperature;
         addIArgument((long) k, seed);
@@ -164,8 +166,10 @@ public class GpuTopKSample extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
-        // Output 0: token IDs (INT64), Output 1: probabilities (FLOAT)
-        return Arrays.asList(DataType.INT64, DataType.FLOAT);
+        Preconditions.checkState(inputDataTypes != null && !inputDataTypes.isEmpty(),
+                "Expected the logits data type for gpu_top_k_sample, got %s", inputDataTypes);
+        // Output 0: token IDs (INT64), Output 1: probabilities in the type of the logits
+        return Arrays.asList(DataType.INT64, inputDataTypes.get(0));
     }
 
     @Override

@@ -33,27 +33,32 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * SmoothQuant W8A8 Quantized Matrix Multiplication.
+ * SmoothQuant W8A8 quantized matrix multiplication.
  * <p>
- * Implements the SmoothQuant algorithm which migrates quantization difficulty
+ * Implements the SmoothQuant algorithm, which migrates quantization difficulty
  * from activations to weights by applying a per-channel smoothing factor:
  * <pre>
- *   Y = deq( quant(X * diag(s)^{-1}) @ quant(diag(s) * W) )
+ *   Y = ((q(X * diag(s)^{-1} / act_scale) * act_scale) @ op(W)) * weight_scale + bias
  * </pre>
  * where {@code s} is a per-channel smoothing factor that balances the dynamic
- * ranges of activations and weights.
+ * ranges of activations and weights, {@code W} holds the codes of the smoothed
+ * weights {@code diag(s) * W}, and {@code q} rounds and saturates onto the grid
+ * of the weight codes (signed integer or FP8).
  * <p>
- * Inputs:
+ * Inputs (full mode, 5 or 6 inputs):
  * <ul>
- *   <li>0: X (FLOAT) - input activations [batch, in_features]</li>
- *   <li>1: W_quantized (INT8) - pre-quantized smoothed weights [out_features, in_features]</li>
- *   <li>2: smooth_scale (FLOAT) - per-channel smoothing factors [in_features]</li>
- *   <li>3: act_scale (FLOAT) - activation quantization scale (scalar or per-channel)</li>
- *   <li>4: weight_scale (FLOAT) - weight quantization scale (per-channel) [out_features]</li>
- *   <li>5: bias (optional) [out_features]</li>
+ *   <li>0: X (floating) - input activations [..., in_features]</li>
+ *   <li>1: W_quantized (signed integer or floating codes) - smoothed weights [out_features, in_features],
+ *   or [in_features, out_features] when transposing the weight</li>
+ *   <li>2: smooth_scale (floating) - per-channel smoothing factors [in_features]</li>
+ *   <li>3: act_scale (floating) - activation quantization scale, one or one per channel [in_features]</li>
+ *   <li>4: weight_scale (floating) - weight dequantization scale, one or one per output channel [out_features]</li>
+ *   <li>5: bias (optional, floating) [out_features]; an empty array stands for an absent bias</li>
  * </ul>
+ * Output: Y - X's shape with out_features in the last axis, in X's type.
  * <p>
- * Output: Y (FLOAT) - dequantized output [batch, out_features]
+ * Inputs (smoothing mode, 2 inputs): X [..., in_features] and smooth_scale [in_features].
+ * Output: X * diag(s)^{-1}, in X's shape and type.
  * <p>
  * Integer arguments:
  * <ul>
@@ -154,8 +159,8 @@ public class SmoothQuant extends DynamicCustomOp {
         }
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() >= 5,
                 "Expected at least 5 input data types for smooth_quant, got %s", inputDataTypes);
-        // Full W8A8 mode: output is always FLOAT (dequantized result)
-        return Collections.singletonList(DataType.FLOAT);
+        // Full W8A8 mode: the dequantized result takes the type of the activations
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 
     @Override

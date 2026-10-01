@@ -29,6 +29,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.PadMode;
+import org.nd4j.linalg.api.buffer.DataType;
 
 public class SDNN extends SDOps {
   public SDNN(SameDiff sameDiff) {
@@ -543,6 +544,75 @@ public class SDNN extends SDOps {
       SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     }
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, null, activation, wFormat).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Causal depthwise 1D convolution with per-prefix history checkpoints (accepted-prefix capture).
+   *
+   * Same convolution as causalConv1d, but requires the actualSequenceLength scalar and also produces a
+   * time-leading prefix tensor whose slot t holds the retained raw-input history after consuming input
+   * rows 0..t: the last (kernelSize-1) elements of concat(convStateIn, x[0:t+1]).
+   * Used by bundled-MTP accepted-prefix state selection.
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @param actualSequenceLength Scalar INT64 tensor containing the unpadded sequence length (required) (NUMERIC type)
+   * @param activation Activation function (0=none, 1=silu)
+   * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
+   * @return prefix Per-prefix histories [seqLen, batch, dim, kernelSize-1] (NUMERIC type)
+   */
+  public SDVariable[] causalConv1dWithPrefix(SDVariable x, SDVariable weight, SDVariable bias,
+      SDVariable convStateIn, SDVariable actualSequenceLength, int activation, int wFormat) {
+    SDValidation.validateNumerical("causalConv1dWithPrefix", "x", x);
+    SDValidation.validateNumerical("causalConv1dWithPrefix", "weight", weight);
+    if (bias != null) {
+      SDValidation.validateNumerical("causalConv1dWithPrefix", "bias", bias);
+    }
+    if (convStateIn != null) {
+      SDValidation.validateNumerical("causalConv1dWithPrefix", "convStateIn", convStateIn);
+    }
+    SDValidation.validateNumerical("causalConv1dWithPrefix", "actualSequenceLength", actualSequenceLength);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1dWithPrefix(sd,x, weight, bias, convStateIn, actualSequenceLength, activation, wFormat).outputVariables();
+  }
+
+  /**
+   * Causal depthwise 1D convolution with per-prefix history checkpoints (accepted-prefix capture).
+   *
+   * Same convolution as causalConv1d, but requires the actualSequenceLength scalar and also produces a
+   * time-leading prefix tensor whose slot t holds the retained raw-input history after consuming input
+   * rows 0..t: the last (kernelSize-1) elements of concat(convStateIn, x[0:t+1]).
+   * Used by bundled-MTP accepted-prefix state selection.
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @param actualSequenceLength Scalar INT64 tensor containing the unpadded sequence length (required) (NUMERIC type)
+   * @param activation Activation function (0=none, 1=silu)
+   * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
+   * @return prefix Per-prefix histories [seqLen, batch, dim, kernelSize-1] (NUMERIC type)
+   */
+  public SDVariable[] causalConv1dWithPrefix(String[] names, SDVariable x, SDVariable weight,
+      SDVariable bias, SDVariable convStateIn, SDVariable actualSequenceLength, int activation,
+      int wFormat) {
+    SDValidation.validateNumerical("causalConv1dWithPrefix", "x", x);
+    SDValidation.validateNumerical("causalConv1dWithPrefix", "weight", weight);
+    if (bias != null) {
+      SDValidation.validateNumerical("causalConv1dWithPrefix", "bias", bias);
+    }
+    if (convStateIn != null) {
+      SDValidation.validateNumerical("causalConv1dWithPrefix", "convStateIn", convStateIn);
+    }
+    SDValidation.validateNumerical("causalConv1dWithPrefix", "actualSequenceLength", actualSequenceLength);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1dWithPrefix(sd,x, weight, bias, convStateIn, actualSequenceLength, activation, wFormat).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -2120,37 +2190,45 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused normalization + quantization in a single kernel.
+   * RMSNorm over the last axis, scaled by gamma, followed by per-row symmetric quantization onto the grid
+   * of the quantized data type: scale = max|row| / qmax, where qmax is the largest finite value of the
+   * quantized type, and each code is row / scale rounded to the nearest value of the quantized type.
+   * codes * scales reconstructs the normalized rows.
    *
-   * @param input Input tensor (NUMERIC type)
-   * @param gamma Norm scale parameter (NUMERIC type)
-   * @param epsilon Epsilon for normalization
-   * @param quantType Quantization type
-   * @return output Normalized and quantized output (NUMERIC type)
+   * @param input Input tensor; the last axis holds the features (NUMERIC type)
+   * @param gamma Normalization scale, one value per feature (NUMERIC type)
+   * @param epsilon Epsilon added to the mean square of each row
+   * @param quantizedType Data type of the codes: a signed integer or floating type, FP8 included
+   * @return codes Quantized codes, in the input's shape (NUMERIC type)
+   * @return scales Per-row dequantization scales, in the input's shape without the last axis (NUMERIC type)
    */
-  public SDVariable fusedNormQuantize(SDVariable input, SDVariable gamma, double epsilon,
-      int quantType) {
+  public SDVariable[] fusedNormQuantize(SDVariable input, SDVariable gamma, double epsilon,
+      DataType quantizedType) {
     SDValidation.validateNumerical("fusedNormQuantize", "input", input);
     SDValidation.validateNumerical("fusedNormQuantize", "gamma", gamma);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize(sd,input, gamma, epsilon, quantType).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize(sd,input, gamma, epsilon, quantizedType).outputVariables();
   }
 
   /**
-   * Fused normalization + quantization in a single kernel.
+   * RMSNorm over the last axis, scaled by gamma, followed by per-row symmetric quantization onto the grid
+   * of the quantized data type: scale = max|row| / qmax, where qmax is the largest finite value of the
+   * quantized type, and each code is row / scale rounded to the nearest value of the quantized type.
+   * codes * scales reconstructs the normalized rows.
    *
-   * @param name name May be null. Name for the output variable
-   * @param input Input tensor (NUMERIC type)
-   * @param gamma Norm scale parameter (NUMERIC type)
-   * @param epsilon Epsilon for normalization
-   * @param quantType Quantization type
-   * @return output Normalized and quantized output (NUMERIC type)
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param input Input tensor; the last axis holds the features (NUMERIC type)
+   * @param gamma Normalization scale, one value per feature (NUMERIC type)
+   * @param epsilon Epsilon added to the mean square of each row
+   * @param quantizedType Data type of the codes: a signed integer or floating type, FP8 included
+   * @return codes Quantized codes, in the input's shape (NUMERIC type)
+   * @return scales Per-row dequantization scales, in the input's shape without the last axis (NUMERIC type)
    */
-  public SDVariable fusedNormQuantize(String name, SDVariable input, SDVariable gamma,
-      double epsilon, int quantType) {
+  public SDVariable[] fusedNormQuantize(String[] names, SDVariable input, SDVariable gamma,
+      double epsilon, DataType quantizedType) {
     SDValidation.validateNumerical("fusedNormQuantize", "input", input);
     SDValidation.validateNumerical("fusedNormQuantize", "gamma", gamma);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize(sd,input, gamma, epsilon, quantType).outputVariable();
-    return sd.updateVariableNameAndReference(out, name);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize(sd,input, gamma, epsilon, quantizedType).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
   }
 
   /**
@@ -2677,15 +2755,23 @@ public class SDNN extends SDOps {
   /**
    * Gated Delta Rule with per-timestep state checkpoints (accepted-prefix capture).
    *
-   * Same recurrence as {@link #gatedDeltaRule(String[], SDVariable, SDVariable, SDVariable,
-   * SDVariable, SDVariable, SDVariable, SDVariable)} but requires the actualLength scalar and
-   * additionally produces a time-leading prefix tensor whose slot t holds the recurrent state
-   * AFTER consuming input rows 0..t. Used by bundled-MTP accepted-prefix state selection.
+   * Same recurrence as gatedDeltaRule, but requires the actualSequenceLength scalar and also produces a
+   * time-leading prefix tensor whose slot t holds the recurrent state after consuming input rows 0..t,
+   * for t from 0 through actualSequenceLength - 2. The state after the last consumed row is stateOut.
+   * Used by bundled-MTP accepted-prefix state selection.
    *
-   * @param names names for [output, stateOut, prefix]
-   * @return output [B,L,H,D_v], stateOut [B,H,D_k,D_v], prefix [W,B,H,D_k,D_v]
+   * @param q Query tensor [batch, seqLen, numHeads, headDimK] (NUMERIC type)
+   * @param k Key tensor [batch, seqLen, numHeads, headDimK] (L2-normalized) (NUMERIC type)
+   * @param v Value tensor [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
+   * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
+   * @param stateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @param actualSequenceLength Scalar INT64 tensor containing the unpadded sequence length (required) (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return prefix Per-timestep states [seqLen, batch, numHeads, headDimK, headDimV] (NUMERIC type)
    */
-  public SDVariable[] gatedDeltaRuleWithPrefix(String[] names, SDVariable q, SDVariable k, SDVariable v,
+  public SDVariable[] gatedDeltaRuleWithPrefix(SDVariable q, SDVariable k, SDVariable v,
       SDVariable beta, SDVariable gate, SDVariable stateIn, SDVariable actualSequenceLength) {
     SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "q", q);
     SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "k", k);
@@ -2695,40 +2781,43 @@ public class SDNN extends SDOps {
     if (stateIn != null) {
       SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "stateIn", stateIn);
     }
-    if (actualSequenceLength == null) {
-      throw new IllegalArgumentException("gatedDeltaRuleWithPrefix requires actualSequenceLength");
-    }
-    SDVariable[] out = new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRuleWithPrefix(
-        sd, q, k, v, beta, gate, stateIn, actualSequenceLength).outputVariables();
-    return sd.updateVariableNamesAndReferences(out, names);
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "actualSequenceLength", actualSequenceLength);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRuleWithPrefix(sd,q, k, v, beta, gate, stateIn, actualSequenceLength).outputVariables();
   }
 
   /**
-   * Causal depthwise 1D convolution with per-prefix history checkpoints
-   * (accepted-prefix capture). Same convolution as
-   * {@link #causalConv1d(String[], SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, int, int)}
-   * but requires the actualLength scalar and additionally produces a time-leading prefix tensor
-   * whose slot t holds the retained raw-input history AFTER consuming input rows 0..t.
+   * Gated Delta Rule with per-timestep state checkpoints (accepted-prefix capture).
    *
-   * @param names names for [output, stateOut, prefix]
-   * @return output [B,L,D], stateOut [B,D,K-1], prefix [W,B,D,K-1]
+   * Same recurrence as gatedDeltaRule, but requires the actualSequenceLength scalar and also produces a
+   * time-leading prefix tensor whose slot t holds the recurrent state after consuming input rows 0..t,
+   * for t from 0 through actualSequenceLength - 2. The state after the last consumed row is stateOut.
+   * Used by bundled-MTP accepted-prefix state selection.
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param q Query tensor [batch, seqLen, numHeads, headDimK] (NUMERIC type)
+   * @param k Key tensor [batch, seqLen, numHeads, headDimK] (L2-normalized) (NUMERIC type)
+   * @param v Value tensor [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
+   * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
+   * @param stateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @param actualSequenceLength Scalar INT64 tensor containing the unpadded sequence length (required) (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return prefix Per-timestep states [seqLen, batch, numHeads, headDimK, headDimV] (NUMERIC type)
    */
-  public SDVariable[] causalConv1dWithPrefix(String[] names, SDVariable x, SDVariable weight,
-      SDVariable bias, SDVariable convStateIn, SDVariable actualSequenceLength,
-      int activation, int wFormat) {
-    SDValidation.validateNumerical("causalConv1dWithPrefix", "x", x);
-    SDValidation.validateNumerical("causalConv1dWithPrefix", "weight", weight);
-    if (bias != null) {
-      SDValidation.validateNumerical("causalConv1dWithPrefix", "bias", bias);
+  public SDVariable[] gatedDeltaRuleWithPrefix(String[] names, SDVariable q, SDVariable k,
+      SDVariable v, SDVariable beta, SDVariable gate, SDVariable stateIn,
+      SDVariable actualSequenceLength) {
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "q", q);
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "k", k);
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "v", v);
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "beta", beta);
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "gate", gate);
+    if (stateIn != null) {
+      SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "stateIn", stateIn);
     }
-    if (convStateIn != null) {
-      SDValidation.validateNumerical("causalConv1dWithPrefix", "convStateIn", convStateIn);
-    }
-    if (actualSequenceLength == null) {
-      throw new IllegalArgumentException("causalConv1dWithPrefix requires actualSequenceLength");
-    }
-    SDVariable[] out = new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1dWithPrefix(
-        sd, x, weight, bias, convStateIn, actualSequenceLength, activation, wFormat).outputVariables();
+    SDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "actualSequenceLength", actualSequenceLength);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRuleWithPrefix(sd,q, k, v, beta, gate, stateIn, actualSequenceLength).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 

@@ -52,26 +52,74 @@ SD_LIB_HIDDEN void int8ScaledGemm(LaunchContext* context,
                                     NDArray* bias);
 
 /**
- * FP8 scaled GEMM for W8A8 FP8 inference pipelines.
+ * Scaled GEMM over operands of any storage type: FP8 and wider floating
+ * types, and integer codes (INT8 weights) whose values the scales dequantize.
  *
- * Performs: output = (A_fp8 * B_fp8) * scaleA * scaleB
+ * Performs: output = (op(A) * op(B)) * scaleA * scaleB + bias
  *
- * Uses CUTLASS FP8 tensor core GEMM (SM89+) with per-tensor scale
- * factors. Output is FP16 or FP32.
+ * A and B keep their own storage types; each converts into the aggregate type
+ * of the output (FP8 and INT8 exactly, a copy made only when the type or layout
+ * differs) and is multiplied there, and the scaled, biased product converts
+ * once into the output's type.
  *
  * @param context       launch context
- * @param A             [M, K] FP8 E4M3 input (stored as int8)
- * @param B             [K, N] FP8 E4M3 input (stored as int8)
- * @param scaleA        [1] per-tensor scale for A
- * @param scaleB        [1] per-tensor scale for B
- * @param output        [M, N] output in FP16 or FP32
+ * @param A             [..., K] input whose leading axes flatten into the M rows
+ *                      of the product, or [K, M] when transposeA
+ * @param B             [K, N] input, or [N, K] when transposeB
+ * @param scaleA        nullptr, one scale for the tensor, or one per row of the product ([M])
+ * @param scaleB        nullptr, one scale for the tensor, or one per column of the product ([N])
+ * @param bias          nullptr, or [N] added to every row
+ * @param output        floating output holding the M x N product in c order ([M, N] or [..., N])
+ * @param transposeA    multiply by the transpose of A
+ * @param transposeB    multiply by the transpose of B
  */
-SD_LIB_HIDDEN void fp8ScaledGemm(LaunchContext* context,
-                                   NDArray* A,
-                                   NDArray* B,
-                                   NDArray* scaleA,
-                                   NDArray* scaleB,
-                                   NDArray* output);
+SD_LIB_HIDDEN void scaledGemm(LaunchContext* context,
+                              NDArray* A,
+                              NDArray* B,
+                              NDArray* scaleA,
+                              NDArray* scaleB,
+                              NDArray* bias,
+                              NDArray* output,
+                              bool transposeA,
+                              bool transposeB);
+
+/**
+ * SmoothQuant smoothing: output = input / smoothScale along the last axis,
+ * computed in the aggregate type of the output.
+ *
+ * @param context       launch context
+ * @param input         [..., K] floating activations
+ * @param smoothScale   [K] per-channel smoothing scale
+ * @param output        floating output of input's shape
+ */
+SD_LIB_HIDDEN void smoothActivation(LaunchContext* context, NDArray* input, NDArray* smoothScale, NDArray* output);
+
+/**
+ * SmoothQuant GEMM: the smoothed activation quantizes onto the weight's grid
+ * (A8 with W8, integer or FP8 codes) and the product dequantizes by both scales:
+ *
+ *   Xq = q(input / (smoothScale * actScale))
+ *   output = ((Xq * actScale) @ op(weight)) * weightScale + bias
+ *
+ * @param context          launch context
+ * @param input            [..., K] floating activations
+ * @param weight           [N, K] signed integer or floating weight codes, or [K, N] when transposeWeight
+ * @param smoothScale      [K] per-channel smoothing scale
+ * @param actScale         one activation scale, or one per channel ([K])
+ * @param weightScale      one weight scale, or one per output channel ([N])
+ * @param bias             nullptr, or [N] added to every row
+ * @param output           floating output [..., N]
+ * @param transposeWeight  weight is stored as [K, N]
+ */
+SD_LIB_HIDDEN void smoothQuantGemm(LaunchContext* context,
+                                   NDArray* input,
+                                   NDArray* weight,
+                                   NDArray* smoothScale,
+                                   NDArray* actScale,
+                                   NDArray* weightScale,
+                                   NDArray* bias,
+                                   NDArray* output,
+                                   bool transposeWeight);
 
 }  // namespace helpers
 }  // namespace ops

@@ -26,6 +26,7 @@ import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.PadMode;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.custom.LinearCopy;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
@@ -42,6 +43,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1dWithPrefix;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.ColumnParallelLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.DecoderMaskedMha;
@@ -63,6 +65,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLU;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRuleWithPrefix;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLora;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopKSample;
@@ -433,6 +436,39 @@ public class NDNN {
       NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     }
     return Nd4j.exec(new CausalConv1d(x, weight, bias, convStateIn, null, activation, wFormat));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with per-prefix history checkpoints (accepted-prefix capture).
+   *
+   * Same convolution as causalConv1d, but requires the actualSequenceLength scalar and also produces a
+   * time-leading prefix tensor whose slot t holds the retained raw-input history after consuming input
+   * rows 0..t: the last (kernelSize-1) elements of concat(convStateIn, x[0:t+1]).
+   * Used by bundled-MTP accepted-prefix state selection.
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @param actualSequenceLength Scalar INT64 tensor containing the unpadded sequence length (required) (NUMERIC type)
+   * @param activation Activation function (0=none, 1=silu)
+   * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
+   * @return prefix Per-prefix histories [seqLen, batch, dim, kernelSize-1] (NUMERIC type)
+   */
+  public INDArray[] causalConv1dWithPrefix(INDArray x, INDArray weight, INDArray bias,
+      INDArray convStateIn, INDArray actualSequenceLength, int activation, int wFormat) {
+    NDValidation.validateNumerical("causalConv1dWithPrefix", "x", x);
+    NDValidation.validateNumerical("causalConv1dWithPrefix", "weight", weight);
+    if (bias != null) {
+      NDValidation.validateNumerical("causalConv1dWithPrefix", "bias", bias);
+    }
+    if (convStateIn != null) {
+      NDValidation.validateNumerical("causalConv1dWithPrefix", "convStateIn", convStateIn);
+    }
+    NDValidation.validateNumerical("causalConv1dWithPrefix", "actualSequenceLength", actualSequenceLength);
+    return Nd4j.exec(new CausalConv1dWithPrefix(x, weight, bias, convStateIn, actualSequenceLength, activation, wFormat));
   }
 
   /**
@@ -1494,29 +1530,23 @@ public class NDNN {
   }
 
   /**
-   * Fused normalization + quantization in a single kernel.
+   * RMSNorm over the last axis, scaled by gamma, followed by per-row symmetric quantization onto the grid
+   * of the quantized data type: scale = max|row| / qmax, where qmax is the largest finite value of the
+   * quantized type, and each code is row / scale rounded to the nearest value of the quantized type.
+   * codes * scales reconstructs the normalized rows.
    *
-   * @param input Input tensor (NUMERIC type)
-   * @param gamma Norm scale parameter (NUMERIC type)
-   * @param epsilon Epsilon for normalization
-   * @param quantType Quantization type
-   * @return output Normalized and quantized output (NUMERIC type)
+   * @param input Input tensor; the last axis holds the features (NUMERIC type)
+   * @param gamma Normalization scale, one value per feature (NUMERIC type)
+   * @param epsilon Epsilon added to the mean square of each row
+   * @param quantizedType Data type of the codes: a signed integer or floating type, FP8 included
+   * @return codes Quantized codes, in the input's shape (NUMERIC type)
+   * @return scales Per-row dequantization scales, in the input's shape without the last axis (NUMERIC type)
    */
-  public INDArray fusedNormQuantize(INDArray input, INDArray gamma, double epsilon, int quantType) {
+  public INDArray[] fusedNormQuantize(INDArray input, INDArray gamma, double epsilon,
+      DataType quantizedType) {
     NDValidation.validateNumerical("fusedNormQuantize", "input", input);
     NDValidation.validateNumerical("fusedNormQuantize", "gamma", gamma);
-    INDArray[] __tmp = Nd4j.exec(new FusedNormQuantize(input, gamma, epsilon, quantType));
-    try {
-      return __tmp[0];
-    } finally {
-      if(__tmp != null) {
-        for(int __i = 1; __i < __tmp.length; __i++) {
-          if(__tmp[__i] != null) {
-            __tmp[__i].close();
-          }
-        }
-      }
-    }
+    return Nd4j.exec(new FusedNormQuantize(input, gamma, epsilon, quantizedType));
   }
 
   /**
@@ -1801,6 +1831,39 @@ public class NDNN {
     NDValidation.validateNumerical("gatedDeltaRule", "beta", beta);
     NDValidation.validateNumerical("gatedDeltaRule", "gate", gate);
     return Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate, null, null));
+  }
+
+  /**
+   * Gated Delta Rule with per-timestep state checkpoints (accepted-prefix capture).
+   *
+   * Same recurrence as gatedDeltaRule, but requires the actualSequenceLength scalar and also produces a
+   * time-leading prefix tensor whose slot t holds the recurrent state after consuming input rows 0..t,
+   * for t from 0 through actualSequenceLength - 2. The state after the last consumed row is stateOut.
+   * Used by bundled-MTP accepted-prefix state selection.
+   *
+   * @param q Query tensor [batch, seqLen, numHeads, headDimK] (NUMERIC type)
+   * @param k Key tensor [batch, seqLen, numHeads, headDimK] (L2-normalized) (NUMERIC type)
+   * @param v Value tensor [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
+   * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
+   * @param stateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @param actualSequenceLength Scalar INT64 tensor containing the unpadded sequence length (required) (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return prefix Per-timestep states [seqLen, batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   */
+  public INDArray[] gatedDeltaRuleWithPrefix(INDArray q, INDArray k, INDArray v, INDArray beta,
+      INDArray gate, INDArray stateIn, INDArray actualSequenceLength) {
+    NDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "q", q);
+    NDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "k", k);
+    NDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "v", v);
+    NDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "beta", beta);
+    NDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "gate", gate);
+    if (stateIn != null) {
+      NDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "stateIn", stateIn);
+    }
+    NDValidation.validateNumerical("gatedDeltaRuleWithPrefix", "actualSequenceLength", actualSequenceLength);
+    return Nd4j.exec(new GatedDeltaRuleWithPrefix(q, k, v, beta, gate, stateIn, actualSequenceLength));
   }
 
   /**

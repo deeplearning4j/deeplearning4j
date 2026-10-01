@@ -19,158 +19,171 @@
  */
 
 #include <ops/declarable/helpers/token_sample.h>
+#include <ops/declarable/helpers/reproducible_math.h>
 #include <ops/declarable/helpers/sampling_penalties.h>
+#include <array/DataTypeUtils.h>
 #include <math/templatemath.h>
+#include <ops/op_types.h>
 #include <system/op_boilerplate.h>
 #include <algorithm>
-#include <numeric>
-#include <random>
+#include <functional>
 #include <vector>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-template <typename T>
-static void tokenSample_(NDArray* logits, NDArray* output,
-                             double temperature, int topK, double topP,
-                             LongType seed, LaunchContext* context) {
-  auto rank = logits->rankOf();
-  LongType batch = 1;
-  LongType vocabSize;
-  LongType seqLen = 1;
-
-  if (rank == 1) {
-    vocabSize = logits->sizeAt(0);
-  } else if (rank == 2) {
-    batch = logits->sizeAt(0);
-    vocabSize = logits->sizeAt(1);
-  } else {
-    // rank 3: [batch, seqLen, vocabSize]
-    batch = logits->sizeAt(0);
-    seqLen = logits->sizeAt(1);
-    vocabSize = logits->sizeAt(2);
+// Selects the token of one row at the draw u (see tokenSampleDraw) and the probability of that
+// selection. row addresses token v at row[v * elemStride].
+template <typename T, typename AccT>
+static void tokenSampleDrawRow(const T* row, LongType vocabSize, LongType elemStride, bool greedy, AccT invTemp,
+                               int topK, AccT topP, AccT u, LongType& token, AccT& probability) {
+  if (greedy) {
+    // Strict comparison keeps the lowest index of a tie and never takes NaN or -inf.
+    AccT best = -DataTypeUtils::infOrMax<AccT>();
+    LongType bestIndex = -1;
+    for (LongType v = 0; v < vocabSize; v++) {
+      const AccT value = static_cast<AccT>(row[v * elemStride]);
+      if (value > best) {
+        best = value;
+        bestIndex = v;
+      }
+    }
+    token = bestIndex >= 0 ? bestIndex : 0;
+    probability = static_cast<AccT>(bestIndex >= 0 ? 1 : 0);
+    return;
   }
 
-  bool greedy = (temperature <= 0.0 && topK <= 0 && topP <= 0.0);
+  // The maximum starts at the lowest finite value, so a row of -inf weighs 0 throughout.
+  std::vector<AccT> weights(vocabSize);
+  AccT rowMax = -DataTypeUtils::max<AccT>();
+  for (LongType v = 0; v < vocabSize; v++) {
+    weights[v] = tokenSampleScaled<AccT>(static_cast<AccT>(row[v * elemStride]), invTemp);
+    if (weights[v] > rowMax) rowMax = weights[v];
+  }
+  for (LongType v = 0; v < vocabSize; v++) weights[v] = tokenSampleWeight<AccT>(weights[v], rowMax);
 
-  PRAGMA_OMP_PARALLEL_FOR
-  for (LongType b = 0; b < batch; b++) {
-    // Find the start of the logits row for this batch
-    // For rank 3, use the last sequence position
-    LongType seqPos = seqLen - 1;
+  const AccT zero = static_cast<AccT>(0);
+  AccT threshold = zero;
+  if (topK > 0 && topK < vocabSize) {
+    std::vector<AccT> positive;
+    for (LongType v = 0; v < vocabSize; v++) {
+      if (weights[v] > zero) positive.push_back(weights[v]);
+    }
+    if (static_cast<LongType>(positive.size()) >= topK) {
+      std::nth_element(positive.begin(), positive.begin() + (topK - 1), positive.end(), std::greater<AccT>());
+      threshold = positive[topK - 1];
+    }
+  }
 
-    if (greedy) {
-      // Argmax
-      float maxVal = -std::numeric_limits<float>::infinity();
-      LongType maxIdx = 0;
-      for (LongType v = 0; v < vocabSize; v++) {
-        float val;
-        if (rank == 1) {
-          val = static_cast<float>(logits->e<T>(v));
-        } else if (rank == 2) {
-          val = static_cast<float>(logits->e<T>(b, v));
-        } else {
-          val = static_cast<float>(logits->e<T>(b, seqPos, v));
-        }
-        if (val > maxVal) {
-          maxVal = val;
-          maxIdx = v;
-        }
-      }
-      if (rank == 1) {
-        output->p(0, maxIdx);
-      } else {
-        output->p(b, maxIdx);
-      }
-    } else {
-      // Full sampling pipeline: temperature -> topK -> softmax -> topP -> sample
-      std::vector<float> logitsVec(vocabSize);
-      PRAGMA_OMP_PARALLEL_FOR_SIMD
-      for (LongType v = 0; v < vocabSize; v++) {
-        if (rank == 1) {
-          logitsVec[v] = static_cast<float>(logits->e<T>(v));
-        } else if (rank == 2) {
-          logitsVec[v] = static_cast<float>(logits->e<T>(b, v));
-        } else {
-          logitsVec[v] = static_cast<float>(logits->e<T>(b, seqPos, v));
-        }
-      }
-
-      // Temperature scaling
-      if (temperature > 0.0) {
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (LongType v = 0; v < vocabSize; v++) logitsVec[v] /= static_cast<float>(temperature);
-      }
-
-      // TopK filtering
-      std::vector<int> indices(vocabSize);
-      std::iota(indices.begin(), indices.end(), 0);
-
-      if (topK > 0 && topK < vocabSize) {
-        std::partial_sort(indices.begin(), indices.begin() + topK, indices.end(),
-                         [&](int a, int b2) { return logitsVec[a] > logitsVec[b2]; });
-        float threshold = logitsVec[indices[topK - 1]];
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (LongType v = 0; v < vocabSize; v++) {
-          if (logitsVec[v] < threshold) logitsVec[v] = -std::numeric_limits<float>::infinity();
-        }
-      }
-
-      // Softmax
-      float maxLogit = *std::max_element(logitsVec.begin(), logitsVec.end());
-      float sumExp = 0.0f;
-      for (LongType v = 0; v < vocabSize; v++) {
-        logitsVec[v] = sd::math::sd_exp<float, float>(logitsVec[v] - maxLogit);
-        sumExp += logitsVec[v];
-      }
-      PRAGMA_OMP_PARALLEL_FOR_SIMD
-      for (LongType v = 0; v < vocabSize; v++) logitsVec[v] /= sumExp;
-
-      // TopP (nucleus) filtering
-      if (topP > 0.0 && topP < 1.0) {
-        std::sort(indices.begin(), indices.end(),
-                 [&](int a, int b2) { return logitsVec[a] > logitsVec[b2]; });
-        float cumProb = 0.0f;
-        int cutoff = vocabSize;
-        for (int k = 0; k < vocabSize; k++) {
-          cumProb += logitsVec[indices[k]];
-          if (cumProb >= topP) {
-            cutoff = k + 1;
-            break;
-          }
-        }
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (int k = cutoff; k < vocabSize; k++) {
-          logitsVec[indices[k]] = 0.0f;
-        }
-        // Re-normalize
-        sumExp = 0.0f;
-        for (LongType v = 0; v < vocabSize; v++) sumExp += logitsVec[v];
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (LongType v = 0; v < vocabSize; v++) logitsVec[v] /= sumExp;
-      }
-
-      // Sample from distribution
-      std::mt19937 rng(seed > 0 ? static_cast<unsigned>(seed + b) : std::random_device{}());
-      std::discrete_distribution<LongType> dist(logitsVec.begin(), logitsVec.end());
-      LongType sampled = dist(rng);
-
-      if (rank == 1) {
-        output->p(0, sampled);
-      } else {
-        output->p(b, sampled);
+  if (topP > zero && topP < static_cast<AccT>(1)) {
+    // Walking the kept weights from the largest, the first prefix reaching topP of the kept mass
+    // ends at the largest threshold that still holds it: every larger threshold keeps a shorter
+    // prefix. The mass sums in the walk's order, so the full prefix equals it.
+    std::vector<AccT> kept;
+    for (LongType v = 0; v < vocabSize; v++) {
+      if (weights[v] > zero && weights[v] >= threshold) kept.push_back(weights[v]);
+    }
+    std::sort(kept.begin(), kept.end(), std::greater<AccT>());
+    AccT mass = zero;
+    for (const AccT weight : kept) mass = reproducible::add<AccT>(mass, weight);
+    const AccT need = reproducible::multiply<AccT>(topP, mass);
+    AccT prefix = zero;
+    for (const AccT weight : kept) {
+      prefix = reproducible::add<AccT>(prefix, weight);
+      if (prefix >= need) {
+        threshold = weight;
+        break;
       }
     }
   }
+
+  AccT total = zero;
+  LongType last = -1;
+  for (LongType v = 0; v < vocabSize; v++) {
+    if (weights[v] > zero && weights[v] >= threshold) {
+      total = reproducible::add<AccT>(total, weights[v]);
+      last = v;
+    }
+  }
+  if (last < 0) {
+    token = 0;
+    probability = zero;
+    return;
+  }
+  const AccT target = reproducible::multiply<AccT>(u, total);
+  AccT cumulative = zero;
+  token = last;
+  for (LongType v = 0; v < last; v++) {
+    if (weights[v] > zero && weights[v] >= threshold) {
+      cumulative = reproducible::add<AccT>(cumulative, weights[v]);
+      if (cumulative > target) {
+        token = v;
+        break;
+      }
+    }
+  }
+  probability = reproducible::divide<AccT>(weights[token], total);
+}
+
+// Rows are independent: each draws at its own u_b and writes its own token and probability.
+// Per-row operands of other data types (FP8 included) convert through the central assign.
+template <typename T>
+static void tokenSampleDraw_(NDArray* logits, NDArray* output, NDArray* probabilities, NDArray* uniforms,
+                             graph::RandomGenerator rng, double temperature, int topK, double topP,
+                             LaunchContext* context) {
+  using AccT = typename simdOps::AggregateType<T>::type;
+  const DataType accType = DataTypeUtils::fromT<AccT>();
+  const TokenSampleRows rows = tokenSampleRows(logits);
+  const bool greedy = tokenSampleIsGreedy(temperature, topK, topP);
+  const AccT invTemp = static_cast<AccT>(temperature > 0.0 ? 1.0 / temperature : 1.0);
+  const AccT keepMass = static_cast<AccT>(topP);
+  std::vector<LongType> batchShape = {rows.batch};
+
+  std::vector<AccT> draws(rows.batch, static_cast<AccT>(0));
+  if (!greedy) {
+    if (uniforms != nullptr) {
+      NDArray staged('c', batchShape, accType, context);
+      staged.assign(uniforms);
+      const AccT* values = staged.bufferAsT<AccT>();
+      for (LongType b = 0; b < rows.batch; b++) draws[b] = values[b];
+    } else {
+      for (LongType b = 0; b < rows.batch; b++) draws[b] = rng.relativeT<AccT>(b);
+    }
+  }
+
+  const T* x = logits->bufferAsT<T>();
+  std::vector<LongType> tokens(rows.batch, 0);
+  NDArray chosen('c', batchShape, accType, context);
+  AccT* chosenProbability = chosen.bufferAsT<AccT>();
+  PRAGMA_OMP_PARALLEL_FOR
+  for (LongType b = 0; b < rows.batch; b++) {
+    tokenSampleDrawRow<T, AccT>(x + b * rows.rowStride + rows.rowOffset, rows.vocabSize, rows.elemStride, greedy,
+                                invTemp, topK, keepMass, draws[b], tokens[b], chosenProbability[b]);
+  }
+
+  for (LongType b = 0; b < rows.batch; b++) output->p(b, tokens[b]);
+  if (probabilities != nullptr) probabilities->assign(&chosen);
+}
+
+void tokenSampleDraw(NDArray* logits, NDArray* output, NDArray* probabilities, NDArray* uniforms,
+                     graph::RandomGenerator rng, double temperature, int topK, double topP,
+                     LaunchContext* context) {
+  tokenSampleDrawCheck(logits, output, probabilities, uniforms);
+  if (logits->lengthOf() == 0) return;
+  BUILD_SINGLE_SELECTOR(logits->dataType(), tokenSampleDraw_,
+                        (logits, output, probabilities, uniforms, rng, temperature, topK, topP, context),
+                        SD_FLOAT_TYPES);
 }
 
 void tokenSample(NDArray* logits, NDArray* output,
                     double temperature, int topK, double topP,
                     LongType seed, LaunchContext* context) {
-  BUILD_SINGLE_SELECTOR(logits->dataType(), tokenSample_,
-                        (logits, output, temperature, topK, topP, seed, context),
-                        SD_FLOAT_TYPES);
+  // A greedy selection draws nothing, so it takes no entropy.
+  const bool greedy = tokenSampleIsGreedy(temperature, topK, topP);
+  tokenSampleDraw(logits, output, nullptr, nullptr,
+                  greedy ? graph::RandomGenerator(1, 1) : tokenSampleGenerator(seed),
+                  temperature, topK, topP, context);
 }
 
 void tokenSampleWithPenalties(NDArray* logits, NDArray* output,
@@ -281,8 +294,7 @@ static void suppressStopTokens_(NDArray* logits, const TokenSampleConfig& config
         for (int i = 0; i < config.stopTokenCount; i++) {
             int stopId = config.stopTokenIds[i];
             if (stopId >= 0 && stopId < vocabSize) {
-                buf[base + static_cast<LongType>(stopId) * elemStride] =
-                    static_cast<T>(-std::numeric_limits<float>::infinity());
+                buf[base + static_cast<LongType>(stopId) * elemStride] = static_cast<T>(-DataTypeUtils::infOrMax<T>());
             }
         }
     }

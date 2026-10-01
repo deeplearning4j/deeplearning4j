@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -101,6 +102,7 @@ public class GatedDeltaRuleWithPrefix extends DynamicCustomOp {
 
     private static INDArray[] buildInputs(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate,
                                           INDArray stateIn, INDArray actualLen) {
+        Preconditions.checkArgument(actualLen != null, "gated_delta_rule_with_prefix requires the actualLen scalar");
         List<INDArray> inputs = new ArrayList<>();
         inputs.add(q);
         inputs.add(k);
@@ -115,6 +117,7 @@ public class GatedDeltaRuleWithPrefix extends DynamicCustomOp {
     private static SDVariable[] buildSdInputs(SDVariable q, SDVariable k, SDVariable v,
                                               SDVariable beta, SDVariable gate,
                                               SDVariable stateIn, SDVariable actualLen) {
+        Preconditions.checkArgument(actualLen != null, "gated_delta_rule_with_prefix requires the actualLen scalar");
         List<SDVariable> inputs = new ArrayList<>();
         inputs.add(q);
         inputs.add(k);

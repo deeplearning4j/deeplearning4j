@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.ColumnParallelLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.DecoderMaskedMha;
@@ -41,6 +42,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.RowParallelLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Map;
 
@@ -50,7 +53,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for TRT-LLM feature parity ops using the SameDiff API.
  *
  * Each test builds a SameDiff graph with the op, executes it, and verifies
- * output shapes and basic correctness (non-null, expected dimensions).
+ * the output shapes and, where the op has a closed form for its inputs, the
+ * output values.
  *
  * These ops correspond to TensorRT-LLM kernel fusions and quantized inference
  * patterns: FP8 matmul, SmoothQuant, AWQ, GPU sampling, decoder MHA,
@@ -65,22 +69,22 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
     }
 
     private boolean isCudaBackend() {
-        return Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda");
+        return Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA;
     }
 
     @Test
     public void testFp8Matmul() {
         Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
-        // FP8 matmul: INT8 tensors as FP8 stand-ins with per-tensor scales
-        // C = (scaleA * A_fp8) @ (scaleB * B_fp8)
+        // FP8 matmul over E4M3 operands with per-tensor scales
+        // C = (A_fp8 @ B_fp8) * scaleA * scaleB
         SameDiff sd = SameDiff.create();
 
         int M = 4, K = 8, N = 6;
-        // FP8 quantized stored as INT8
-        SDVariable a = sd.var("a", Nd4j.ones(DataType.INT8, M, K));
-        SDVariable b = sd.var("b", Nd4j.ones(DataType.INT8, K, N));
-        SDVariable scaleA = sd.var("scaleA", Nd4j.scalar(DataType.FLOAT, 0.1f));
-        SDVariable scaleB = sd.var("scaleB", Nd4j.scalar(DataType.FLOAT, 0.2f));
+        float scaleAValue = 0.1f, scaleBValue = 0.2f;
+        SDVariable a = sd.var("a", Nd4j.ones(DataType.FLOAT, M, K).castTo(DataType.FLOAT8));
+        SDVariable b = sd.var("b", Nd4j.ones(DataType.FLOAT, K, N).castTo(DataType.FLOAT8));
+        SDVariable scaleA = sd.var("scaleA", Nd4j.scalar(DataType.FLOAT, scaleAValue));
+        SDVariable scaleB = sd.var("scaleB", Nd4j.scalar(DataType.FLOAT, scaleBValue));
 
         SDVariable output = new Fp8Matmul(sd, a, b, scaleA, scaleB).outputVariable();
 
@@ -90,6 +94,11 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
         assertNotNull(result, "FP8 matmul output should not be null");
         assertArrayEquals(new long[]{M, N}, result.shape(),
                 "FP8 matmul output shape should be [M, N]");
+        assertEquals(DataType.FLOAT, result.dataType(), "FP8 matmul output should take the type of scaleA");
+        // Each element sums K products of ones, then scales by both scales.
+        INDArray expected = Nd4j.valueArrayOf(new long[]{M, N}, K * scaleAValue * scaleBValue, DataType.FLOAT);
+        assertTrue(expected.equalsWithEps(result, 1e-5),
+                "FP8 matmul should equal K * scaleA * scaleB everywhere, got " + result);
     }
 
     @Test
@@ -114,6 +123,19 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
         assertNotNull(result, "SmoothQuant output should not be null");
         assertArrayEquals(new long[]{batch, outFeatures}, result.shape(),
                 "SmoothQuant output shape should be [batch, outFeatures]");
+        // With unit scales each activation rounds (ties to even) to its INT8 code, and the
+        // weight codes of one sum every code of the row into each output channel.
+        INDArray xValues = x.getArr();
+        for (int m = 0; m < batch; m++) {
+            double rowSum = 0;
+            for (int k = 0; k < inFeatures; k++) {
+                rowSum += Math.rint(xValues.getDouble(m, k));
+            }
+            for (int n = 0; n < outFeatures; n++) {
+                assertEquals(rowSum, result.getDouble(m, n), 1e-5,
+                        "SmoothQuant output [" + m + ", " + n + "] should sum the rounded activations");
+            }
+        }
     }
 
     @Test
@@ -139,6 +161,20 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
         assertNotNull(result, "AWQ matmul output should not be null");
         assertArrayEquals(new long[]{M, N}, result.shape(),
                 "AWQ matmul output shape should be [M, N]");
+        // Each packed byte 0x01 holds code 1 for the even row (low nibble) and code 0 for the
+        // odd row (high nibble); with zero points of 0 and scales of 1, W[k, n] = 1 - k % 2,
+        // so every output channel sums the even channels of the input row.
+        INDArray inputValues = input.getArr();
+        for (int m = 0; m < M; m++) {
+            double evenSum = 0;
+            for (int k = 0; k < K; k += 2) {
+                evenSum += inputValues.getDouble(m, k);
+            }
+            for (int n = 0; n < N; n++) {
+                assertEquals(evenSum, result.getDouble(m, n), 1e-4,
+                        "AWQ matmul output [" + m + ", " + n + "] should sum the even input channels");
+            }
+        }
     }
 
     @Test
@@ -166,6 +202,21 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
         INDArray probs = results.get(outputs[1].name());
         assertNotNull(probs, "Top-K sampled probabilities should not be null");
         assertEquals(batch, probs.shape()[0], "Probabilities batch dimension should match");
+
+        // The drawn token is one of the k most likely: fewer than k logits rank above it.
+        INDArray logitValues = logits.getArr();
+        assertEquals(DataType.INT64, tokenIds.dataType(), "Token IDs should be INT64");
+        long token = tokenIds.getLong(0);
+        assertTrue(token >= 0 && token < vocabSize, "Sampled token " + token + " should be in the vocabulary");
+        double sampledLogit = logitValues.getDouble(0, token);
+        int ranked = 0;
+        for (int v = 0; v < vocabSize; v++) {
+            if (logitValues.getDouble(0, v) > sampledLogit) ranked++;
+        }
+        assertTrue(ranked < k, "Sampled token " + token + " ranks below " + ranked + " tokens, outside the top " + k);
+        double probability = probs.getDouble(0);
+        assertTrue(probability > 0 && probability <= 1,
+                "The probability of the sampled token should be in (0, 1], got " + probability);
     }
 
     @Test
@@ -193,6 +244,27 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
         INDArray probs = results.get(outputs[1].name());
         assertNotNull(probs, "Top-P sampled probabilities should not be null");
         assertEquals(batch, probs.shape()[0], "Probabilities batch dimension should match");
+
+        // The drawn token lies in the nucleus: the tokens more likely than it hold less than p of
+        // the softmax (temperature 1), up to the float accumulation of the kernel.
+        INDArray logitValues = logits.getArr();
+        assertEquals(DataType.INT64, tokenIds.dataType(), "Token IDs should be INT64");
+        long token = tokenIds.getLong(0);
+        assertTrue(token >= 0 && token < vocabSize, "Sampled token " + token + " should be in the vocabulary");
+        double maxLogit = logitValues.maxNumber().doubleValue();
+        double sampledLogit = logitValues.getDouble(0, token);
+        double total = 0, above = 0;
+        for (int v = 0; v < vocabSize; v++) {
+            double logit = logitValues.getDouble(0, v);
+            double weight = Math.exp(logit - maxLogit);
+            total += weight;
+            if (logit > sampledLogit) above += weight;
+        }
+        assertTrue(above / total < p + 1e-6,
+                "Sampled token " + token + " lies outside the nucleus: " + (above / total) + " of the mass ranks above it");
+        double probability = probs.getDouble(0);
+        assertTrue(probability > 0 && probability <= 1,
+                "The probability of the sampled token should be in (0, 1], got " + probability);
     }
 
     @Test
@@ -234,6 +306,12 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
         assertNotNull(presentValue, "Present value should not be null");
         assertEquals(pastSeqLen + 1, presentValue.shape()[2],
                 "Present value seq length should be pastSeqLen + 1");
+
+        // The present cache starts with the past cache unchanged.
+        INDArrayIndex[] past = {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, pastSeqLen),
+                NDArrayIndex.all()};
+        assertEquals(pastKey.getArr(), presentKey.get(past).dup(), "Present key should start with the past key");
+        assertEquals(pastValue.getArr(), presentValue.get(past).dup(), "Present value should start with the past value");
     }
 
     @Test
@@ -284,6 +362,31 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
         assertNotNull(scale, "FusedNormQuantize scale output should not be null");
         assertEquals(DataType.FLOAT, scale.dataType(),
                 "Scale output should be FLOAT");
+        assertArrayEquals(new long[]{B}, scale.shape(), "Scale output shape should be [B]");
+
+        // Each row normalizes to x / sqrt(mean(x^2) + eps) (unit gamma) and quantizes onto the
+        // INT8 grid with scale = max|row| / 127: the codes reconstruct the row to within half a
+        // step, and the largest magnitude takes the code 127.
+        INDArray inputValues = input.getArr();
+        for (int row = 0; row < B; row++) {
+            double meanSquare = 0;
+            for (int h = 0; h < H; h++) {
+                double v = inputValues.getDouble(row, h);
+                meanSquare += v * v;
+            }
+            double inv = 1.0 / Math.sqrt(meanSquare / H + FusedNormQuantize.DEFAULT_EPSILON);
+            double rowScale = scale.getDouble(row);
+            assertTrue(rowScale > 0, "Row " + row + " should have a positive scale, got " + rowScale);
+            long maxCode = 0;
+            for (int h = 0; h < H; h++) {
+                long code = quantized.getLong(row, h);
+                maxCode = Math.max(maxCode, Math.abs(code));
+                double normalized = inputValues.getDouble(row, h) * inv;
+                assertEquals(normalized, code * rowScale, rowScale * 0.5 + 1e-5,
+                        "Code " + code + " at [" + row + ", " + h + "] should reconstruct " + normalized);
+            }
+            assertEquals(127, maxCode, "The largest magnitude of row " + row + " should take the code 127");
+        }
     }
 
     @Test

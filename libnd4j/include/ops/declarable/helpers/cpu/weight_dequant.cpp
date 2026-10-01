@@ -24,49 +24,50 @@
 #include <execution/Threads.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/weight_dequant.h>
+#include <ops/op_types.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////////
-// AWQ INT4 group dequantization (CPU)
+// AWQ group dequantization (CPU)
 //////////////////////////////////////////////////////////////////////////////
-template <typename T>
-static void awqDequantizeCpu_(NDArray* packedWeights, NDArray* scales,
-                               NDArray* zeros, NDArray* output, int groupSize) {
-    const LongType outFeatures = output->sizeAt(0);
-    const LongType inFeatures = output->sizeAt(1);
-    const LongType numGroups = (inFeatures + groupSize - 1) / groupSize;
+// One output row per work item. Every operand is addressed through its own
+// strides, so transposed or sliced views need no copy; values are computed in
+// the aggregate type of the output and converted once.
+template <typename S, typename Z>
+static void awqDequantizeCpu_(NDArray* packedWeights, NDArray* scales, NDArray* zeros, NDArray* output,
+                              int groupSize, int numBits) {
+  using AccT = typename simdOps::AggregateType<Z>::type;
+  const LongType outFeatures = output->sizeAt(0);
+  const LongType inFeatures = output->sizeAt(1);
+  const int codesPerByte = 8 / numBits;
+  const AccT midpoint = static_cast<AccT>(1 << (numBits - 1));
 
-    const uint8_t* packed = reinterpret_cast<const uint8_t*>(packedWeights->buffer());
-    const T* scalesPtr = scales->bufferAsT<T>();
-    const T* zerosPtr = zeros->bufferAsT<T>();
-    T* outPtr = output->bufferAsT<T>();
+  const uint8_t* packed = static_cast<const uint8_t*>(packedWeights->buffer());
+  const S* scale = scales->bufferAsT<S>();
+  const S* zero = zeros != nullptr ? zeros->bufferAsT<S>() : nullptr;
+  Z* out = output->bufferAsT<Z>();
+  const LongType* packedStrides = packedWeights->stridesOf();
+  const LongType* scaleStrides = scales->stridesOf();
+  const LongType* zeroStrides = zeros != nullptr ? zeros->stridesOf() : nullptr;
+  const LongType* outStrides = output->stridesOf();
 
-    auto func = PRAGMA_THREADS_FOR {
-        for (auto row = start; row < stop; ++row) {
-            for (LongType col = 0; col < inFeatures; ++col) {
-                LongType group = col / groupSize;
-                LongType packedIdx = row * (inFeatures / 2) + col / 2;
-                uint8_t packedByte = packed[packedIdx];
-
-                int intVal;
-                if (col % 2 == 0) {
-                    intVal = packedByte & 0x0F;
-                } else {
-                    intVal = (packedByte >> 4) & 0x0F;
-                }
-
-                float scale = static_cast<float>(scalesPtr[row * numGroups + group]);
-                float zero = static_cast<float>(zerosPtr[row * numGroups + group]);
-                float dequant = (static_cast<float>(intVal) - zero) * scale;
-
-                outPtr[row * inFeatures + col] = static_cast<T>(dequant);
-            }
-        }
-    };
-    samediff::Threads::parallel_tad(func, 0, outFeatures);
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto n = start; n < stop; n += increment) {
+      for (LongType k = 0; k < inFeatures; ++k) {
+        const LongType group = k / groupSize;
+        const uint8_t byte = packed[n * packedStrides[0] + (k / codesPerByte) * packedStrides[1]];
+        const AccT code = static_cast<AccT>(awqCode(byte, static_cast<int>(k % codesPerByte), numBits));
+        const AccT groupScale = static_cast<AccT>(scale[n * scaleStrides[0] + group * scaleStrides[1]]);
+        const AccT groupZero =
+            zero != nullptr ? static_cast<AccT>(zero[n * zeroStrides[0] + group * zeroStrides[1]]) : midpoint;
+        out[n * outStrides[0] + k * outStrides[1]] = static_cast<Z>((code - groupZero) * groupScale);
+      }
+    }
+  };
+  samediff::Threads::parallel_for(func, 0, outFeatures);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -127,17 +128,14 @@ static void gptqDequantizeCpu_(NDArray* packedWeights, NDArray* scales,
 //////////////////////////////////////////////////////////////////////////////
 // Public: awqDequantize
 //////////////////////////////////////////////////////////////////////////////
-void awqDequantize(LaunchContext* context,
-                    NDArray* packedWeights,
-                    NDArray* scales,
-                    NDArray* zeros,
-                    NDArray* output,
-                    int groupSize) {
-    BUILD_SINGLE_SELECTOR(output->dataType(), awqDequantizeCpu_,
-                          (packedWeights, scales, zeros, output, groupSize),
-                          SD_FLOAT_TYPES);
-
-    output->tickWriteHost();
+void awqDequantize(LaunchContext* context, NDArray* packedWeights, NDArray* scales, NDArray* zeros, NDArray* output,
+                   int groupSize, int numBits) {
+  awqDequantizeCheck(packedWeights, scales, zeros, output, groupSize, numBits);
+  if (output->isEmpty()) return;
+  NDArray::preparePrimaryUse({output}, {packedWeights, scales, zeros});
+  BUILD_DOUBLE_SELECTOR(scales->dataType(), output->dataType(), awqDequantizeCpu_,
+                        (packedWeights, scales, zeros, output, groupSize, numBits), SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+  NDArray::registerPrimaryUse({output}, {packedWeights, scales, zeros});
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -18,6 +18,7 @@
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/transform_any.h>
+#include <loops/transform_any_fp8.h>
 #include <loops/transform_bool.h>
 #include <loops/transform_float.h>
 #include <loops/transform_same.h>
@@ -62,6 +63,38 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext *lc, int opNum, co
                                                            sd::env_maxMasterThreads())));
 }
 
+#if defined(HAS_FLOAT8)
+////////////////////////////////////////////////////////////////////////
+// Copies x of any storage type into the FP8 storage type F8 of z.
+template <typename F8>
+static void execTransformAnyToFp8(sd::DataType xType, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
+                                  void *hZ, const sd::LongType *hZShapeInfo, void *extraParams, sd::LongType threadId,
+                                  sd::LongType numThreads) {
+  if (xType == sd::DataType::FLOAT8) {
+    functions::transform::TransformAnyFp8<F8>::template execToFp8<sd::float8>(
+        opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, threadId, numThreads);
+  } else if (xType == sd::DataType::FLOAT8_E5M2) {
+    functions::transform::TransformAnyFp8<F8>::template execToFp8<sd::float8_e5m2>(
+        opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, threadId, numThreads);
+  } else {
+    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformAnyFp8<F8>::template execToFp8,
+                          (opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, threadId, numThreads),
+                          SD_COMMON_TYPES);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////
+// Copies x of the FP8 storage type F8 into z of a common type.
+template <typename F8>
+static void execTransformAnyFromFp8(sd::DataType zType, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
+                                    void *hZ, const sd::LongType *hZShapeInfo, void *extraParams,
+                                    sd::LongType threadId, sd::LongType numThreads) {
+  BUILD_SINGLE_SELECTOR(zType, functions::transform::TransformAnyFp8<F8>::template execFromFp8,
+                        (opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, threadId, numThreads),
+                        SD_COMMON_TYPES);
+}
+#endif
+
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, const void *hX,
                                            const sd::LongType *hXShapeInfo, const void *dX,
@@ -76,15 +109,26 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
     auto func = PRAGMA_THREADS_DO {
 #if defined(HAS_FLOAT8)
       // FP8 is deliberately excluded from the arithmetic SD_COMMON_TYPES matrix.
-      // Same-dtype assignment is a storage copy, including for different layouts.
-      if (xType == sd::DataType::FLOAT8 && zType == xType) {
-        functions::transform::TransformAny<float8, float8>::exec(
-            opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads);
+      // A copy into or out of an FP8 storage type fixes that side and dispatches
+      // the other; same-dtype copies stay storage copies.
+      if (zType == sd::DataType::FLOAT8) {
+        execTransformAnyToFp8<sd::float8>(xType, opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id,
+                                          numThreads);
         return;
       }
-      if (xType == sd::DataType::FLOAT8_E5M2 && zType == xType) {
-        functions::transform::TransformAny<float8_e5m2, float8_e5m2>::exec(
-            opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads);
+      if (zType == sd::DataType::FLOAT8_E5M2) {
+        execTransformAnyToFp8<sd::float8_e5m2>(xType, opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams,
+                                               thread_id, numThreads);
+        return;
+      }
+      if (xType == sd::DataType::FLOAT8) {
+        execTransformAnyFromFp8<sd::float8>(zType, opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id,
+                                            numThreads);
+        return;
+      }
+      if (xType == sd::DataType::FLOAT8_E5M2) {
+        execTransformAnyFromFp8<sd::float8_e5m2>(zType, opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams,
+                                                 thread_id, numThreads);
         return;
       }
 #endif

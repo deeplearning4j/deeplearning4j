@@ -17,7 +17,7 @@
  ******************************************************************************/
 
 //
-// INT8 and FP8 scaled GEMM — CUDA implementation.
+// INT8 scaled GEMM — CUDA implementation.
 // Uses cublasLtMatmul with CUBLAS_COMPUTE_32I for native INT8 tensor cores.
 //
 
@@ -203,96 +203,6 @@ void int8ScaledGemm(LaunchContext* context,
     delete accumulator;
 
     DebugHelper::checkGlobalErrorCode("int8ScaledGemm failed");
-    NDArray::registerSpecialUse({output}, {scaleA, scaleB});
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Public: fp8ScaledGemm
-// Uses per-token quantization + FP8 GEMM, then dequantize.
-// For now, casts FP8 → FP16 and runs FP16 GEMM with scale post-multiply.
-// Native FP8 GEMM path uses CutlassGemmHelper when SM89+.
-//////////////////////////////////////////////////////////////////////////////
-void fp8ScaledGemm(LaunchContext* context,
-                    NDArray* A,
-                    NDArray* B,
-                    NDArray* scaleA,
-                    NDArray* scaleB,
-                    NDArray* output) {
-    // For FP8, the primary path should go through CutlassGemmHelper::gemm()
-    // which now has native FP8 E4M3 support on SM89+.
-    // This function handles the scale post-multiplication.
-
-    const LongType M = A->sizeAt(0);
-    const LongType K = A->sizeAt(1);
-    const LongType N = B->sizeAt(1);
-
-    NDArray::prepareSpecialUse({output}, {A, B, scaleA, scaleB});
-
-    auto stream = context->getCudaStream();
-
-    // Create FP32 intermediate for GEMM output
-    std::vector<LongType> mnShape = {M, N};
-    auto gemmOut = NDArrayFactory::create_('c', mnShape, FLOAT32, context);
-    NDArray::prepareSpecialUse({gemmOut}, {});
-
-    // Cast FP8 inputs to FP16 for GEMM
-    // (On SM89+, this should be replaced by native CutlassGemmHelper FP8 path)
-    std::vector<LongType> mkShape = {M, K};
-    std::vector<LongType> knShape = {K, N};
-    auto aFp16 = NDArrayFactory::create_('c', mkShape, HALF, context);
-    auto bFp16 = NDArrayFactory::create_('c', knShape, HALF, context);
-    aFp16->assign(A);
-    bFp16->assign(B);
-
-    // FP16 GEMM via cuBLAS
-    NDArray::prepareSpecialUse({gemmOut}, {aFp16, bFp16});
-
-    cublasHandle_t handle = *reinterpret_cast<cublasHandle_t*>(context->getCublasHandle());
-    cublasSetStream(handle, *stream);
-
-    float alpha = 1.0f;
-    float beta = 0.0f;
-
-    // Row-major GEMM: C = A * B → C^T = B^T * A^T
-    cublasSgemmEx(handle,
-                  CUBLAS_OP_T, CUBLAS_OP_N,
-                  N, M, K,
-                  &alpha,
-                  bFp16->specialBuffer(), CUDA_R_16F, K,
-                  aFp16->specialBuffer(), CUDA_R_16F, K,
-                  &beta,
-                  gemmOut->specialBuffer(), CUDA_R_32F, N);
-
-    NDArray::registerSpecialUse({gemmOut}, {aFp16, bFp16});
-
-    // Apply scales: output = gemmOut * scaleA * scaleB
-    bool perTokenA = (scaleA->lengthOf() > 1);
-    bool perChannelB = (scaleB->lengthOf() > 1);
-
-    // Reuse the dequantize kernel with int32 → float reinterpret
-    // Actually, just do simple element-wise scale
-    int threads = 256;
-    int blocks = static_cast<int>((M * N + threads - 1) / threads);
-
-    auto outDtype = output->dataType();
-    if (outDtype == DataType::FLOAT32) {
-        dequantizeInt32Kernel<float><<<blocks, threads, 0, *stream>>>(
-            reinterpret_cast<const int32_t*>(gemmOut->specialBuffer()),
-            reinterpret_cast<const float*>(scaleA->specialBuffer()),
-            reinterpret_cast<const float*>(scaleB->specialBuffer()),
-            nullptr,  // no bias
-            reinterpret_cast<float*>(output->specialBuffer()),
-            M, N, perTokenA, perChannelB);
-    } else {
-        // For FP16 output, copy and scale
-        output->assign(gemmOut);
-    }
-
-    delete aFp16;
-    delete bFp16;
-    delete gemmOut;
-
-    DebugHelper::checkGlobalErrorCode("fp8ScaledGemm failed");
     NDArray::registerSpecialUse({output}, {scaleA, scaleB});
 }
 

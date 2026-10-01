@@ -18,7 +18,7 @@
 
 //
 // Weight dequantization CUDA kernels for AWQ, GPTQ, and Marlin formats.
-// Enables INT4/INT8 weight-only quantized model inference.
+// Enables low-bit weight-only quantized model inference.
 //
 
 #include <cuda_runtime.h>
@@ -27,55 +27,62 @@
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
 #include <types/float16.h>
+#include <execution/cuda/LaunchDims.h>
 #include <ops/declarable/helpers/weight_dequant.h>
+#include <ops/op_types.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////////
-// AWQ INT4 group dequantization kernel
-// packed_weights stores two INT4 values per byte (low nibble, high nibble).
-// Each group of groupSize elements shares one scale+zero pair.
-// output = (int4_val - zero) * scale
+// AWQ group dequantization kernel
+// One output element per thread over a grid-stride loop. Every operand is
+// addressed through its own strides, so transposed or sliced views need no
+// copy; values are computed in the aggregate type of the output.
 //////////////////////////////////////////////////////////////////////////////
-template <typename T>
-SD_KERNEL void awqDequantizeKernel(
-    const uint8_t* __restrict__ packedWeights,  // [outF, inF/2]
-    const T* __restrict__ scales,               // [outF, numGroups]
-    const T* __restrict__ zeros,                // [outF, numGroups]
-    T* __restrict__ output,                     // [outF, inF]
-    const LongType outFeatures,
-    const LongType inFeatures,
-    const int groupSize) {
+template <typename S, typename Z>
+SD_KERNEL static void awqDequantizeKernel(const uint8_t* packedWeights, const LongType* packedShapeInfo,
+                                          const S* scales, const LongType* scalesShapeInfo, const S* zeros,
+                                          const LongType* zerosShapeInfo, Z* output, const LongType* outputShapeInfo,
+                                          int groupSize, int numBits) {
+  using AccT = typename simdOps::AggregateType<Z>::type;
+  const LongType inFeatures = shape::shapeOf(outputShapeInfo)[1];
+  const LongType length = shape::length(outputShapeInfo);
+  const LongType* packedStrides = shape::stride(packedShapeInfo);
+  const LongType* scaleStrides = shape::stride(scalesShapeInfo);
+  const LongType* zeroStrides = zeros != nullptr ? shape::stride(zerosShapeInfo) : nullptr;
+  const LongType* outStrides = shape::stride(outputShapeInfo);
+  const int codesPerByte = 8 / numBits;
+  const AccT midpoint = static_cast<AccT>(1 << (numBits - 1));
+  for (LongType linear = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; linear < length;
+       linear += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const LongType n = linear / inFeatures;
+    const LongType k = linear % inFeatures;
+    const LongType group = k / groupSize;
+    const uint8_t byte = packedWeights[n * packedStrides[0] + (k / codesPerByte) * packedStrides[1]];
+    const AccT code = static_cast<AccT>(awqCode(byte, static_cast<int>(k % codesPerByte), numBits));
+    const AccT scale = static_cast<AccT>(scales[n * scaleStrides[0] + group * scaleStrides[1]]);
+    const AccT zero =
+        zeros != nullptr ? static_cast<AccT>(zeros[n * zeroStrides[0] + group * zeroStrides[1]]) : midpoint;
+    output[n * outStrides[0] + k * outStrides[1]] = static_cast<Z>((code - zero) * scale);
+  }
+}
 
-    const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const LongType totalElements = outFeatures * inFeatures;
-    if (idx >= totalElements) return;
-
-    const LongType row = idx / inFeatures;
-    const LongType col = idx % inFeatures;
-    const LongType numGroups = (inFeatures + groupSize - 1) / groupSize;
-    const LongType group = col / groupSize;
-
-    // Read packed byte
-    const LongType packedIdx = row * (inFeatures / 2) + col / 2;
-    uint8_t packed = packedWeights[packedIdx];
-
-    // Extract INT4 value (0-15, unsigned)
-    int intVal;
-    if (col % 2 == 0) {
-        intVal = packed & 0x0F;
-    } else {
-        intVal = (packed >> 4) & 0x0F;
-    }
-
-    // Dequantize: (int4 - zero) * scale
-    float scale = static_cast<float>(scales[row * numGroups + group]);
-    float zero = static_cast<float>(zeros[row * numGroups + group]);
-    float dequant = (static_cast<float>(intVal) - zero) * scale;
-
-    output[idx] = static_cast<T>(dequant);
+template <typename S, typename Z>
+static void awqDequantizeLauncher_(LaunchContext* context, NDArray* packedWeights, NDArray* scales, NDArray* zeros,
+                                   NDArray* output, int groupSize, int numBits) {
+  auto* stream = context->getCudaStream();
+  const dim3 dims = getLaunchDims("awq_dequantize");
+  const LongType needed = (output->lengthOf() - 1) / dims.y + 1;
+  const unsigned int blocks = needed < dims.x ? static_cast<unsigned int>(needed) : dims.x;
+  awqDequantizeKernel<S, Z><<<blocks, dims.y, dims.z, *stream>>>(
+      static_cast<const uint8_t*>(packedWeights->specialBuffer()), packedWeights->specialShapeInfo(),
+      static_cast<const S*>(scales->specialBuffer()), scales->specialShapeInfo(),
+      zeros != nullptr ? static_cast<const S*>(zeros->specialBuffer()) : nullptr,
+      zeros != nullptr ? zeros->specialShapeInfo() : nullptr, static_cast<Z*>(output->specialBuffer()),
+      output->specialShapeInfo(), groupSize, numBits);
+  DebugHelper::checkGlobalErrorCode("awqDequantize launch failed");
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -193,44 +200,15 @@ SD_KERNEL void marlinDequantizeKernel(
 //////////////////////////////////////////////////////////////////////////////
 // Public: awqDequantize
 //////////////////////////////////////////////////////////////////////////////
-void awqDequantize(LaunchContext* context,
-                    NDArray* packedWeights,
-                    NDArray* scales,
-                    NDArray* zeros,
-                    NDArray* output,
-                    int groupSize) {
-    const LongType outFeatures = output->sizeAt(0);
-    const LongType inFeatures = output->sizeAt(1);
-    const LongType totalElements = outFeatures * inFeatures;
-
-    NDArray::prepareSpecialUse({output}, {packedWeights, scales, zeros});
-
-    auto stream = context->getCudaStream();
-    auto dtype = output->dataType();
-
-    int threads = 256;
-    int blocks = static_cast<int>((totalElements + threads - 1) / threads);
-
-    if (dtype == DataType::FLOAT32) {
-        awqDequantizeKernel<float><<<blocks, threads, 0, *stream>>>(
-            reinterpret_cast<const uint8_t*>(packedWeights->specialBuffer()),
-            reinterpret_cast<const float*>(scales->specialBuffer()),
-            reinterpret_cast<const float*>(zeros->specialBuffer()),
-            reinterpret_cast<float*>(output->specialBuffer()),
-            outFeatures, inFeatures, groupSize);
-    } else if (dtype == DataType::HALF) {
-        awqDequantizeKernel<float16><<<blocks, threads, 0, *stream>>>(
-            reinterpret_cast<const uint8_t*>(packedWeights->specialBuffer()),
-            reinterpret_cast<const float16*>(scales->specialBuffer()),
-            reinterpret_cast<const float16*>(zeros->specialBuffer()),
-            reinterpret_cast<float16*>(output->specialBuffer()),
-            outFeatures, inFeatures, groupSize);
-    } else {
-        THROW_EXCEPTION("awqDequantize: unsupported output data type");
-    }
-
-    DebugHelper::checkGlobalErrorCode("awqDequantize failed");
-    NDArray::registerSpecialUse({output}, {packedWeights, scales, zeros});
+void awqDequantize(LaunchContext* context, NDArray* packedWeights, NDArray* scales, NDArray* zeros, NDArray* output,
+                   int groupSize, int numBits) {
+  awqDequantizeCheck(packedWeights, scales, zeros, output, groupSize, numBits);
+  if (output->isEmpty()) return;
+  NDArray::prepareSpecialUse({output}, {packedWeights, scales, zeros});
+  BUILD_DOUBLE_SELECTOR(scales->dataType(), output->dataType(), awqDequantizeLauncher_,
+                        (context, packedWeights, scales, zeros, output, groupSize, numBits), SD_FLOAT_TYPES,
+                        SD_FLOAT_TYPES);
+  NDArray::registerSpecialUse({output}, {packedWeights, scales, zeros});
 }
 
 //////////////////////////////////////////////////////////////////////////////

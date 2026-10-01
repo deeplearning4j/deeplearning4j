@@ -34,37 +34,47 @@ import java.util.List;
 /**
  * Decoder masked multi-head attention for autoregressive inference.
  * <p>
- * Performs fused QKV projection, rotary positional encoding, and
- * masked multi-head attention in a single op for decoder-only models.
+ * With five inputs the op projects the hidden states through the fused QKV weight, rotates the queries and keys by
+ * their absolute positions (past + s), appends the current keys and values to the past into the present cache, and
+ * attends causally over the present cache before the output projection. With three inputs the queries attend over
+ * the given keys and values, causally when requested, and the keys and values return per head as the present cache.
  * <p>
- * Inputs:
+ * Inputs, five-input form:
  * <ul>
- *   <li>0: hiddenStates [B, 1, H] - current step hidden states</li>
- *   <li>1: qkvWeight [H, 3H] - fused QKV projection weight</li>
- *   <li>2: outWeight [H, H] - output projection weight</li>
- *   <li>3: pastKey [B, heads, seq, dim] - cached keys from previous steps</li>
- *   <li>4: pastValue [B, heads, seq, dim] - cached values from previous steps</li>
+ *   <li>0: hiddenStates [B, S, H] - current step hidden states</li>
+ *   <li>1: qkvWeight [H, (heads + 2 * kvHeads) * headDim] - fused [q | k | v] projection weight</li>
+ *   <li>2: outWeight [heads * headDim, outH] - output projection weight</li>
+ *   <li>3: pastKey [B, kvHeads, past, headDim] - cached keys from previous steps</li>
+ *   <li>4: pastValue [B, kvHeads, past, headDim] - cached values from previous steps</li>
+ * </ul>
+ * Inputs, three-input form:
+ * <ul>
+ *   <li>0: query [B, S, heads * headDim]</li>
+ *   <li>1: key [B, T, kvHeads * headDim]</li>
+ *   <li>2: value [B, T, kvHeads * headDim]</li>
  * </ul>
  * <p>
  * Integer arguments:
  * <ul>
  *   <li>0: numHeads (default 32)</li>
- *   <li>1: numKvHeads - number of key/value heads (for GQA/MQA)</li>
- *   <li>2: headDim - dimension per head</li>
- *   <li>3: useRoPE (0=no, 1=yes, default 1)</li>
+ *   <li>1: numKvHeads - number of key/value heads for GQA/MQA; 0 infers them from the shapes</li>
+ *   <li>2: headDim - dimension per head; 0 infers it from the shapes</li>
+ *   <li>3: five inputs: useRoPE (0 = none, 1 = rotate halves, 2 = rotate interleaved pairs, default 1);
+ *       three inputs: causal (0 = no, 1 = yes)</li>
  *   <li>4: ropeBase (default 10000)</li>
  * </ul>
  * <p>
  * Float arguments:
  * <ul>
- *   <li>0: maskFilterValue (default -3.4028235e+38f)</li>
+ *   <li>0: maskFilterValue, the bias of a masked score (default -3.4028235e+38f, saturated into the attention
+ *       type)</li>
  * </ul>
  * <p>
- * Outputs:
+ * Outputs, all in the type of input 0:
  * <ul>
- *   <li>0: output [B, 1, H]</li>
- *   <li>1: presentKey [B, heads, seq+1, dim]</li>
- *   <li>2: presentValue [B, heads, seq+1, dim]</li>
+ *   <li>0: output [B, S, outH], or [B, S, heads * headDim] with three inputs</li>
+ *   <li>1: presentKey [B, kvHeads, past + S, headDim], or [B, kvHeads, T, headDim] with three inputs</li>
+ *   <li>2: presentValue, in the shape of presentKey</li>
  * </ul>
  *
  * Adam Gibson

@@ -17,7 +17,7 @@
  ******************************************************************************/
 
 //
-// INT8 and FP8 scaled GEMM — CPU implementation.
+// INT8 scaled GEMM — CPU implementation.
 // Reference implementation for correctness verification.
 //
 
@@ -102,47 +102,6 @@ void int8ScaledGemm(LaunchContext* context,
         };
         samediff::Threads::parallel_tad(func, 0, M);
     }
-
-    output->tickWriteHost();
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// FP8 scaled GEMM (CPU)
-// Treats FP8 as INT8 bytes, dequantizes, does FP32 GEMM.
-//////////////////////////////////////////////////////////////////////////////
-void fp8ScaledGemm(LaunchContext* context,
-                    NDArray* A,
-                    NDArray* B,
-                    NDArray* scaleA,
-                    NDArray* scaleB,
-                    NDArray* output) {
-    const LongType M = A->sizeAt(0);
-    const LongType K = A->sizeAt(1);
-    const LongType N = B->sizeAt(1);
-
-    // On CPU, FP8 is stored as int8 with scale factors.
-    // Dequantize then do FP32 matmul.
-    const int8_t* aPtr = reinterpret_cast<const int8_t*>(A->buffer());
-    const int8_t* bPtr = reinterpret_cast<const int8_t*>(B->buffer());
-    float sA = reinterpret_cast<const float*>(scaleA->buffer())[0];
-    float sB = reinterpret_cast<const float*>(scaleB->buffer())[0];
-
-    float* outPtr = output->bufferAsT<float>();
-
-    auto func = PRAGMA_THREADS_FOR {
-        for (auto m = start; m < stop; ++m) {
-            for (LongType n = 0; n < N; ++n) {
-                float acc = 0.0f;
-                for (LongType k = 0; k < K; ++k) {
-                    float aVal = static_cast<float>(aPtr[m * K + k]) * sA;
-                    float bVal = static_cast<float>(bPtr[k * N + n]) * sB;
-                    acc += aVal * bVal;
-                }
-                outPtr[m * N + n] = acc;
-            }
-        }
-    };
-    samediff::Threads::parallel_tad(func, 0, M);
 
     output->tickWriteHost();
 }

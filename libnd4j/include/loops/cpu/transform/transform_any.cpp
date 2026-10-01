@@ -31,6 +31,7 @@
 #include <helpers/Loops.h>
 #include <loops/legacy_ops.h>
 #include <loops/transform_any.h>
+#include <loops/transform_any_fp8.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
@@ -61,11 +62,39 @@ void SD_HOST TransformAny<X, Z>::exec(const void *vx, const sd::LongType *xShape
                                                               numThreads);
 }
 
-// Match the targeted same-dtype FP8 dispatch in NativeOpExecutioner. These
-// storage-copy pairs are not part of the generated arithmetic type matrix.
+/////////////////////////////////////////////////////////////////////
+template <typename F8>
+template <typename T>
+void TransformAnyFp8<F8>::execToFp8(int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
+                                    const sd::LongType *zShapeInfo, void *extraParams, sd::LongType threadId,
+                                    sd::LongType numThreads) {
+  TransformAny<T, F8>::exec(opNum, x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads);
+}
+
+/////////////////////////////////////////////////////////////////////
+template <typename F8>
+template <typename T>
+void TransformAnyFp8<F8>::execFromFp8(int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
+                                      const sd::LongType *zShapeInfo, void *extraParams, sd::LongType threadId,
+                                      sd::LongType numThreads) {
+  TransformAny<F8, T>::exec(opNum, x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads);
+}
+
 #if defined(HAS_FLOAT8)
-template class TransformAny<sd::float8, sd::float8>;
-template class TransformAny<sd::float8_e5m2, sd::float8_e5m2>;
+// Conversions between the FP8 encodings, and between FP8 and the common types.
+#define SD_TRANSFORM_ANY_FP8_ARGS                                                                    \
+  (int opNum, const void *x, const sd::LongType *xShapeInfo, void *z, const sd::LongType *zShapeInfo, \
+   void *extraParams, sd::LongType threadId, sd::LongType numThreads)
+template void TransformAnyFp8<sd::float8>::execToFp8<sd::float8> SD_TRANSFORM_ANY_FP8_ARGS;
+template void TransformAnyFp8<sd::float8>::execToFp8<sd::float8_e5m2> SD_TRANSFORM_ANY_FP8_ARGS;
+template void TransformAnyFp8<sd::float8_e5m2>::execToFp8<sd::float8> SD_TRANSFORM_ANY_FP8_ARGS;
+template void TransformAnyFp8<sd::float8_e5m2>::execToFp8<sd::float8_e5m2> SD_TRANSFORM_ANY_FP8_ARGS;
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8>::execToFp8, SD_TRANSFORM_ANY_FP8_ARGS, SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8>::execFromFp8, SD_TRANSFORM_ANY_FP8_ARGS, SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8_e5m2>::execToFp8, SD_TRANSFORM_ANY_FP8_ARGS, SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(void TransformAnyFp8<sd::float8_e5m2>::execFromFp8, SD_TRANSFORM_ANY_FP8_ARGS,
+                      SD_COMMON_TYPES);
+#undef SD_TRANSFORM_ANY_FP8_ARGS
 #endif
 
 BUILD_DOUBLE_TEMPLATE(class TransformAny, , SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);

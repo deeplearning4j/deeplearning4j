@@ -964,6 +964,16 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
 #define BLOCK_SIZE_MODELOPT_FP8_QUANTIZE getEnvVariable("BLOCK_SIZE_MODELOPT_FP8_QUANTIZE", 256)
 #define SHARED_MEM_SIZE_MODELOPT_FP8_QUANTIZE getEnvVariable("SHARED_MEM_SIZE_MODELOPT_FP8_QUANTIZE", 0)
 
+// Symmetric quantization onto a data type's grid: one element per thread (grid-stride).
+#define GRID_SIZE_SYMMETRIC_QUANTIZE getEnvVariable("GRID_SIZE_SYMMETRIC_QUANTIZE", 256)
+#define BLOCK_SIZE_SYMMETRIC_QUANTIZE getEnvVariable("BLOCK_SIZE_SYMMETRIC_QUANTIZE", 256)
+#define SHARED_MEM_SIZE_SYMMETRIC_QUANTIZE getEnvVariable("SHARED_MEM_SIZE_SYMMETRIC_QUANTIZE", 0)
+
+// AWQ weight dequantization: one output weight per thread (grid-stride).
+#define GRID_SIZE_AWQ_DEQUANTIZE getEnvVariable("GRID_SIZE_AWQ_DEQUANTIZE", 256)
+#define BLOCK_SIZE_AWQ_DEQUANTIZE getEnvVariable("BLOCK_SIZE_AWQ_DEQUANTIZE", 256)
+#define SHARED_MEM_SIZE_AWQ_DEQUANTIZE getEnvVariable("SHARED_MEM_SIZE_AWQ_DEQUANTIZE", 0)
+
 // ggml_qmatmul — runtime quantized matmul (fused dequant-dot kernels).
 // Q8_0: grid=(ceil(N/4), M), block=128 (4 warps, one warp per n element).
 //   Shared memory: 128 * sizeof(float) = 512 bytes for warp reduction scratch.

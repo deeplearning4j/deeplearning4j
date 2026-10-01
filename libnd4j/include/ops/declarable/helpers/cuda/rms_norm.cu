@@ -17,7 +17,8 @@
  ******************************************************************************/
 
 #include <system/op_boilerplate.h>
-#if NOT_EXCLUDED(OP_rms_norm) || NOT_EXCLUDED(OP_skip_rms_norm) || NOT_EXCLUDED(OP_rms_norm_linear)
+#if NOT_EXCLUDED(OP_rms_norm) || NOT_EXCLUDED(OP_skip_rms_norm) || NOT_EXCLUDED(OP_rms_norm_linear) || \
+    NOT_EXCLUDED(OP_fused_norm_quantize)
 #include <algorithm>
 #include <stdexcept>
 #include <cuda_runtime.h>
@@ -130,7 +131,7 @@ static void launchRmsNorm(LaunchContext* context, NDArray* input, NDArray* gamma
     if (!DebugHelper::inGraphCapture(stream)) DebugHelper::checkGlobalErrorCode("rmsNormKernel failed");
 }
 
-#if NOT_EXCLUDED(OP_rms_norm)
+#if NOT_EXCLUDED(OP_rms_norm) || NOT_EXCLUDED(OP_fused_norm_quantize)
 void rmsNorm(LaunchContext* context, NDArray* input, NDArray* gamma, NDArray* output, double epsilon) {
     if (input->isEmpty()) return;
     NDArray::prepareSpecialUse({output}, {input, gamma});

@@ -17,7 +17,8 @@
  ******************************************************************************/
 
 #include <system/op_boilerplate.h>
-#if NOT_EXCLUDED(OP_rms_norm) || NOT_EXCLUDED(OP_skip_rms_norm) || NOT_EXCLUDED(OP_rms_norm_linear)
+#if NOT_EXCLUDED(OP_rms_norm) || NOT_EXCLUDED(OP_skip_rms_norm) || NOT_EXCLUDED(OP_rms_norm_linear) || \
+    NOT_EXCLUDED(OP_fused_norm_quantize)
 #include <algorithm>
 #include <execution/Threads.h>
 #include <math/templatemath.h>
@@ -72,7 +73,7 @@ static void rmsNorm_(NDArray* input, NDArray* gamma, NDArray* output, double eps
     samediff::Threads::parallel_tad(func, 0, numRows);
 }
 
-#if NOT_EXCLUDED(OP_rms_norm)
+#if NOT_EXCLUDED(OP_rms_norm) || NOT_EXCLUDED(OP_fused_norm_quantize)
 void rmsNorm(LaunchContext* context, NDArray* input, NDArray* gamma, NDArray* output, double epsilon) {
     if (input->isEmpty()) return;
     NDArray::preparePrimaryUse({output}, {input, gamma});
