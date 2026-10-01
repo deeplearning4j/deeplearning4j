@@ -115,7 +115,7 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Disabled
     public void testTrackerCpu_1(Nd4jBackend backend) {
-        if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("native"))
+        if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.NATIVE_CPU)
             return;
 
         float[] fa = new float[100000000];

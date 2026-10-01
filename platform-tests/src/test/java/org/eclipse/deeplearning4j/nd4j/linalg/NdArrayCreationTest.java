@@ -33,6 +33,7 @@ import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -152,7 +153,7 @@ public class NdArrayCreationTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHalfStuff(Nd4jBackend backend) {
-        assumeTrue(Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"),
+        assumeTrue(Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA,
             "Half-precision ops require a CUDA backend");
 
         val dtype = Nd4j.dataType();

@@ -25,6 +25,7 @@ import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -205,7 +206,7 @@ public class CudaMixedPrecisionMatmulTest extends BaseNd4jTestWithBackends {
     }
 
     private static boolean isCudaBackend() {
-        return Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda");
+        return Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA;
     }
 
     private static void runMatmul(INDArray a, INDArray b, INDArray out) {

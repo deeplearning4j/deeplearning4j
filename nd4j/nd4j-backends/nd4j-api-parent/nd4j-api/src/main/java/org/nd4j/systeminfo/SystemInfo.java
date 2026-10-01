@@ -42,6 +42,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.versioncheck.VersionCheck;
@@ -173,7 +174,7 @@ public class SystemInfo {
             sb.append("Cores: [").append(props.get("cores")).append("]; Memory: [").append(fm).append("GB];\n");
             sb.append("Blas vendor: [").append(props.get("blas.vendor")).append("]\n");
 
-            if (Nd4j.getExecutioner().getClass().getSimpleName().equals("CudaExecutioner")) {
+            if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA) {
                 isCUDA = true;
 
                 List<Map<String, Object>> devicesList = (List<Map<String, Object>>) props.get(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY);

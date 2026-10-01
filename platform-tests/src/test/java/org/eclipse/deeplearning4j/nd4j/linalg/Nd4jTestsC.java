@@ -6835,7 +6835,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHalfStuff(Nd4jBackend backend) {
-        if (!Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val dtype = Nd4j.dataType();

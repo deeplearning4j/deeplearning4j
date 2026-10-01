@@ -30,6 +30,7 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -57,7 +58,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     public void testBlasGemm1(Nd4jBackend backend) {
 
         // we're skipping blas here
-        if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
@@ -84,7 +85,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     public void testBlasGemm2(Nd4jBackend backend) {
 
         // we're skipping blas here
-        if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3).dup('f');
@@ -111,7 +112,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     public void testBlasGemm3(Nd4jBackend backend) {
 
         // we're skipping blas here
-        if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3).dup('f');
@@ -138,7 +139,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     public void testBlasGemm4(Nd4jBackend backend) {
 
         // we're skipping blas here
-        if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3);
@@ -165,7 +166,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     public void testBlasGemm5(Nd4jBackend backend) {
 
         // we're skipping blas here
-        if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3).dup('f');
@@ -191,7 +192,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     public void testBlasGemm6(Nd4jBackend backend) {
 
         // we're skipping blas here
-        if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3).dup('f');
@@ -218,7 +219,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     public void testBlasGemm7(Nd4jBackend backend) {
 
         // we're skipping blas here
-        if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3);
@@ -247,7 +248,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     public void testBlasGemv1(Nd4jBackend backend) {
 
         // we're skipping blas here
-        if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
@@ -276,7 +277,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     public void testBlasGemv2(Nd4jBackend backend) {
 
         // we're skipping blas here
-        if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3).dup('f');
@@ -305,7 +306,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     public void testBlasGemv3(Nd4jBackend backend) {
 
         // we're skipping blas here
-        if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val A = Nd4j.linspace(1, 20, 20, DataType.FLOAT).reshape('c', 4, 5);
