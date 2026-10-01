@@ -7,7 +7,9 @@ The workflow must retain the merged tree before calling deploy, serialize deploy
 and call verify --remote afterwards. Receipts attest workflow-supplied provenance;
 they do not independently prove that an installed artifact came from that commit.
 No JAR is repacked. linux-x86_64 explicitly owns all main JARs; libtokenizers may
-vary only in its own native subtree, whose headers/API must remain identical.
+vary only in validated host objects/duplicate installs and the staged pkg-config
+prefix. Headers/API stay identical; bounded Javadoc packaging noise is compared
+without altering the canonical published bytes.
 Credentials belong in Maven settings, never command arguments or receipts.
 """
 from __future__ import annotations
@@ -15,6 +17,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 import hashlib
+import io
 import json
 from pathlib import Path, PurePosixPath
 import re
@@ -188,6 +191,183 @@ def native_name(name):
     return bool(re.search(r"\.(so(?:\.[0-9.]+)?|dll|dylib|jnilib|vso)$", name))
 
 
+def import_archive_name(name, artifact, host):
+    if host != "windows-x86_64":
+        return False
+    suffixes = {
+        "libtokenizers": ("windows-x86_64/libtokenizers_wrapper.dll.a", "lib/libtokenizers_wrapper.dll.a"),
+        "tokenizers-native": ("bindings/windows-x86_64/libtokenizers_wrapper.dll.a",),
+    }.get(artifact, ())
+    return name in {root + suffix for root in RESOURCE_ROOTS for suffix in suffixes}
+
+
+def import_archive(data):
+    """Bounded GNU ar with AMD64 COFF import objects, not arbitrary static archives."""
+    require(len(data) <= MAX_XML and data.startswith(b"!<arch>\n"), "invalid import archive")
+    members, offset = [], 8
+    while offset < len(data):
+        require(len(members) < 4096 and offset + 60 <= len(data), "invalid import archive header")
+        header = data[offset:offset+60]
+        require(header[58:] == b"`\n" and re.fullmatch(rb"[0-9]+ *", header[48:58]),
+                "invalid import archive header")
+        size = int(header[48:58])
+        end = offset + 60 + size
+        require(size > 0 and end <= len(data), "invalid import archive member size")
+        name = header[:16].decode("ascii").rstrip()
+        members.append((offset, name, data[offset+60:end]))
+        if size % 2:
+            require(data[end:end+1] == b"\n", "invalid import archive padding")
+        offset = end + size % 2
+    require(offset == len(data) and members, "invalid import archive envelope")
+    tables = {n: b for _, n, b in members if n in ("/", "//")}
+    require(len(tables) == sum(n in ("/", "//") for _, n, _ in members),
+            "duplicate import archive table")
+    long_names = {}
+    names = tables.get("//", b"")
+    start = 0
+    while start < len(names):
+        # GNU ar pads an odd-length long-name table with one internal newline.
+        if start % 2 and names[start:] == b"\n":
+            break
+        end = names.find(b"/\n", start)
+        require(end > start, "invalid import archive name table")
+        long_names[start] = names[start:end].decode("ascii")
+        start = end + 2
+    objects, descriptor = set(), False
+    for location, name, body in members:
+        if name in ("/", "//"):
+            continue
+        if name.startswith("/"):
+            require(name[1:].isdigit() and int(name[1:]) in long_names,
+                    "invalid import archive long name")
+            name = long_names[int(name[1:])]
+        else:
+            require(name.endswith("/"), "invalid import archive member name")
+            name = name[:-1]
+        require(re.fullmatch(r"libtokenizers_wrapper_dll_[A-Za-z0-9_]+\.o", name),
+                "unrelated import archive object")
+        require(len(body) >= 20 and body[:2] == b"\x64\x86" and body[16:18] == b"\0\0",
+                "wrong import archive COFF architecture")
+        count = int.from_bytes(body[2:4], "little")
+        table_end = 20 + count * 40
+        require(1 <= count <= 16 and table_end <= len(body), "invalid COFF section table")
+        has_import = False
+        for i in range(count):
+            section = body[20+i*40:60+i*40]
+            section_name = section[:8].rstrip(b"\0")
+            has_import |= section_name.startswith(b".idata$")
+            for size_pos, pointer_pos, unit in ((16, 20, 1), (32, 24, 10), (34, 28, 6)):
+                size = int.from_bytes(section[size_pos:size_pos+(4 if unit == 1 else 2)], "little") * unit
+                pointer = int.from_bytes(section[pointer_pos:pointer_pos+4], "little")
+                require(not size or table_end <= pointer <= len(body) - size,
+                        "invalid COFF section range")
+            size = int.from_bytes(section[16:20], "little")
+            pointer = int.from_bytes(section[20:24], "little")
+            if section_name == b".idata$7":
+                payload = body[pointer:pointer+size]
+                if b".dll\0" in payload:
+                    require(payload.rstrip(b"\0") == b"libtokenizers_wrapper.dll",
+                            "unrelated import archive DLL")
+                    descriptor = True
+        require(has_import, "non-import COFF object")
+        symbols = int.from_bytes(body[8:12], "little")
+        count = int.from_bytes(body[12:16], "little")
+        strings = symbols + count * 18
+        require(count > 0 and symbols >= table_end and strings + 4 <= len(body),
+                "invalid COFF symbol table")
+        length = int.from_bytes(body[strings:strings+4], "little")
+        require(length >= 4 and strings + length == len(body), "invalid COFF string table")
+        index = 0
+        while index < count:
+            record = body[symbols+index*18:symbols+(index+1)*18]
+            if record[:4] == bytes(4):
+                position = int.from_bytes(record[4:8], "little")
+                require(4 <= position < length
+                        and body.find(b"\0", strings + position, strings + length) >= 0,
+                        "invalid COFF symbol name")
+            auxiliary = record[17]
+            require(index + auxiliary < count, "invalid COFF auxiliary records")
+            index += 1 + auxiliary
+        objects.add(location)
+    require(objects and descriptor, "missing wrapper import descriptor")
+    if "/" in tables:
+        table = tables["/"]
+        require(len(table) >= 4, "invalid import archive symbol table")
+        count = int.from_bytes(table[:4], "big")
+        end = 4 + count * 4
+        require(count > 0 and end <= len(table), "invalid import archive symbol table")
+        require(all(int.from_bytes(table[i:i+4], "big") in objects for i in range(4, end, 4)),
+                "invalid import archive symbol target")
+        require(len(table[end:].split(b"\0")) == count + 1 and table.endswith(b"\0"),
+                "invalid import archive symbol names")
+
+
+def legacy_wrappers(host):
+    if host.startswith("linux-"):
+        suffixes = ("lib/libtokenizers_wrapper.so", "lib/libtokenizers_wrapper.so.1",
+                    "lib/libtokenizers_wrapper.so.1.0.0")
+    elif host == "macosx-arm64":
+        suffixes = ("lib/libtokenizers_wrapper.dylib", "lib/libtokenizers_wrapper.1.dylib",
+                    "lib/libtokenizers_wrapper.1.0.0.dylib")
+    else:
+        suffixes = ("bin/libtokenizers_wrapper.dll", "lib/libtokenizers_wrapper.dll.a")
+    return {root + suffix: root + host + "/" + PurePosixPath(suffix).name
+            for root in RESOURCE_ROOTS for suffix in suffixes}
+
+
+def pkgconfig_prefix(data):
+    """Only the producer's first absolute staged prefix varies; all other bytes stay strict."""
+    require(len(data) <= MAX_XML, "oversized pkg-config")
+    text = data.decode("utf-8").replace("\r\n", "\n")
+    lines = text.splitlines(keepends=True)
+    require(lines and lines[0].startswith("prefix=")
+            and sum(line.startswith("prefix=") for line in lines) == 1, "invalid pkg-config prefix")
+    prefix = lines[0][7:].removesuffix("\n").removesuffix("\r")
+    require(re.fullmatch(r"(?:/|[A-Za-z]:/)[A-Za-z0-9_./-]+", prefix)
+            and ".." not in prefix.split("/") and prefix.endswith(
+                "/nd4j/nd4j-tokenizers/libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers"),
+            "unexpected pkg-config install prefix")
+    return ("prefix=<staged-install>\n" + "".join(lines[1:])).encode("utf-8")
+
+
+def javadoc_index(name, data):
+    """JDK 11 embeds a single JSON in each search ZIP with build-time timestamps."""
+    expected = name.removesuffix(".zip") + ".json"
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        infos = archive.infolist()
+        require(len(infos) == 1 and infos[0].filename == expected,
+                "unexpected Javadoc search ZIP members")
+        item = infos[0]
+        require(not item.is_dir() and not item.flag_bits & 1
+                and not stat.S_ISLNK(item.external_attr >> 16)
+                and item.file_size <= MAX_XML, "unsafe Javadoc search ZIP")
+        payload = archive.read(item)
+        require(isinstance(json.loads(payload), list), "invalid Javadoc search JSON")
+        return payload  # JSON bytes remain strict; only the ZIP envelope is irrelevant.
+
+
+def compare_javadoc_legal(path, canonical, incoming, expected, host):
+    """Windows Temurin packages exact forwarders; publish Linux's complete notices."""
+    if host != "windows-x86_64" or not path.name.endswith("-javadoc.jar"):
+        return
+    prefixes = {
+        "ADDITIONAL_LICENSE_INFO": b"                      ADDITIONAL INFORMATION ABOUT LICENSING",
+        "ASSEMBLY_EXCEPTION": b"\nOPENJDK ASSEMBLY EXCEPTION",
+        "LICENSE": b"The GNU General Public License (GPL)",
+    }
+    with zipfile.ZipFile(canonical) as archive:
+        for filename, prefix in prefixes.items():
+            name = "legal/" + filename
+            stub = ("Please see ..\\java.base\\" + filename + "\n").encode()
+            if incoming.get(name) != hashlib.sha256(stub).hexdigest():
+                continue
+            require(name in expected, "missing canonical Javadoc license")
+            content = archive.read(name).replace(b"\r\n", b"\n")
+            require(len(content) > 1000 and content.startswith(prefix),
+                    "canonical Javadoc license is not a full notice")
+            incoming[name] = expected[name]
+
+
 def jar_entries(path, artifact, host=None, *, main=False):
     """Validate ZIP members/CRC and native host payloads; return normalized content hashes."""
     entries = {}
@@ -207,7 +387,16 @@ def jar_entries(path, artifact, host=None, *, main=False):
                 if item.is_dir():
                     continue
                 data = archive.read(item)  # also checks CRC
-                entries[name] = hashlib.sha256(data).hexdigest()
+                compared = data
+                if name == f"META-INF/maven/{GROUP}/{artifact}/pom.properties":
+                    compared = data.replace(b"\r\n", b"\n")
+                if path.name == f"{artifact}-{VERSION}-javadoc.jar":
+                    if name in ("member-search-index.zip", "package-search-index.zip", "type-search-index.zip"):
+                        compared = javadoc_index(name, data)
+                    elif name.endswith((".html", ".css", ".js")) or name == "element-list" or name.startswith("legal/"):
+                        data.decode("utf-8")  # Do not normalize arbitrary binary members.
+                        compared = data.replace(b"\r\n", b"\n")
+                entries[name] = hashlib.sha256(compared).hexdigest()
                 if host:
                     # Reject other host/accelerator subtrees, including native-image metadata.
                     for root in RESOURCE_ROOTS:
@@ -218,6 +407,13 @@ def jar_entries(path, artifact, host=None, *, main=False):
                                 require(segment == host, "foreign native platform in JAR")
                     if name.startswith("META-INF/native-image/"):
                         require(name.split("/")[2] == host, "foreign native-image platform")
+                if name.endswith(".dll.a"):
+                    require(import_archive_name(name, artifact, host),
+                            f"unexpected import archive path: {artifact}:{host}:{name}")
+                    import_archive(data)
+                if main and artifact == "libtokenizers" and name in {
+                        r + "lib/pkgconfig/tokenizers.pc" for r in RESOURCE_ROOTS}:
+                    entries[name] = hashlib.sha256(pkgconfig_prefix(data)).hexdigest()
                 if native_name(name):
                     require(host is not None, "native in platform-independent JAR")
                     require(native_header(data, host), "wrong native architecture: " + name)
@@ -252,12 +448,23 @@ def jar_entries(path, artifact, host=None, *, main=False):
         if artifact == "libtokenizers":
             require(any(n.startswith(tuple(r + "include/" for r in RESOURCE_ROOTS))
                         and n.endswith((".h", ".hpp")) for n in entries), "missing public headers")
-        if main and artifact == "libtokenizers":
-            # Explicitly ignore only native objects and the producer's per-host build manifest.
-            # Classes/POM/API/header/unknown entries are NEVER exempted from comparison.
-            for name in list(entries):
-                if name.startswith(prefix) and (native_name(name) or name.endswith("/manifest.properties")):
-                    del entries[name]
+        if artifact == "libtokenizers":
+            aliases = legacy_wrappers(host)
+            for name, scoped in aliases.items():
+                if name in entries:
+                    require(entries.get(scoped) == entries[name], "legacy/scoped wrapper content conflict")
+            if main:
+                # Each alias also matches the producer's classifier in validate_files.
+                # No directories, classes, headers or unknown members are excluded.
+                ffi = ("libtokenizers_ffi.so" if host.startswith("linux-") else
+                       "libtokenizers_ffi.dylib" if host == "macosx-arm64" else "tokenizers_ffi.dll")
+                # buildnativetokenizers.sh copies this exact optional Rust runtime.
+                # validate_files requires its bytes in both main and own classifier.
+                excluded = set(aliases) | set(aliases.values()) | {
+                    r + host + "/" + name for r in RESOURCE_ROOTS
+                    for name in (ffi, "manifest.properties")}
+                for name in excluded:
+                    entries.pop(name, None)
     return entries
 
 
@@ -361,9 +568,18 @@ def validate_files(root, files, hosts, version):
     headers = lambda entries: {n: h for n, h in entries.items()
                                if n.startswith(tuple(r + "include/" for r in RESOURCE_ROOTS))}
     require(headers(lib_main) == headers(lib_classifier), "main/classifier public header conflict")
+    aliases = legacy_wrappers(main_host)
+    scoped_native = lambda entries: {n: h for n, h in entries.items()
+                                    if n not in aliases and (native_name(n)
+                                        or import_archive_name(n, "libtokenizers", main_host))}
+    require(scoped_native(lib_main) == scoped_native(lib_classifier),
+            "main/classifier native/API content conflict")
     for name, digest in lib_classifier.items():
-        if native_name(name) or name.endswith(".class"):
+        if name.endswith(".class"):
             require(lib_main.get(name) == digest, "main/classifier native/API content conflict")
+    for alias, scoped in legacy_wrappers(main_host).items():
+        if alias in lib_main:
+            require(lib_main[alias] == lib_classifier.get(scoped), "legacy/classifier wrapper content conflict")
     # Every classifier's optional JVM API entries must match the corresponding shared main.
     for artifact in ARTIFACTS:
         main_entries = jar_entries(root / artifact_path(artifact, "", version), artifact,
@@ -372,6 +588,13 @@ def validate_files(root, files, hosts, version):
             classified = jar_entries(root / artifact_path(artifact, host, version), artifact, host)
             if artifact == "libtokenizers":
                 require(headers(classified) == headers(main_entries), "classifier public header conflict")
+            if artifact == "tokenizers-native" and host == "windows-x86_64":
+                wrapper_entries = jar_entries(root / artifact_path("libtokenizers", host, version),
+                                              "libtokenizers", host)
+                for name, digest in classified.items():
+                    if import_archive_name(name, artifact, host):
+                        require(wrapper_entries.get(name.replace("/bindings/", "/", 1)) == digest,
+                                "binding/wrapper import archive content conflict")
             for name, digest in classified.items():
                 if name.endswith(".class"):
                     require(main_entries.get(name) == digest, "classifier JVM API content conflict")
@@ -404,6 +627,7 @@ def merge(inputs, output, commit, run_id, run_attempt, version=VERSION):
                                        main=is_main)
                 expected = jar_entries(canonical / name, artifact, CANONICAL if artifact == "libtokenizers" and is_main else None,
                                        main=is_main)
+                compare_javadoc_legal(root / name, canonical / name, incoming, expected, host)
                 require(incoming == expected, "shared JAR content conflict: " + name)
             else:
                 require((root / name).read_bytes() == (canonical / name).read_bytes(), "POM content conflict: " + name)

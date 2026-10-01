@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import shutil
 import stat
+import struct
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -47,6 +48,30 @@ def binary(host):
         result[64:70] = b"PE\0\0\x64\x86"
         return bytes(result)
     return b"\xcf\xfa\xed\xfe" + (0x0100000c).to_bytes(4, "little") + b"native bytes"
+
+
+def gnu_import_archive(machine=0x8664, table_tail=None, dll=b"libtokenizers_wrapper.dll", object_name=None,
+                       symbol_name=b".idata$7", string_data=b"", auxiliary=0):
+    """Small ordinary GNU ar/AMD64 COFF import descriptor, including GNU alignment."""
+    name = object_name or b"libtokenizers_wrapper_dll_d000001.o"
+    names = name + b"/\n"
+    names += (b"\n" if len(names) % 2 else b"") if table_tail is None else table_tail
+    payload = dll + b"\0"
+    symbols = 60 + len(payload)
+    header = struct.pack("<HHIIIHH", machine, 1, 0, symbols, 1, 0, 0)
+    section = struct.pack("<8sIIIIIIHHI", b".idata$7", 0, 0, len(payload), 60, 0, 0, 0, 0, 0)
+    symbol = struct.pack("<8sIhHBB", symbol_name, 0, 1, 0, 3, auxiliary)
+    body = header + section + payload + symbol + (4 + len(string_data)).to_bytes(4, "little") + string_data
+
+    def member(n, data):
+        h = (n.ljust(16) + b"0".ljust(12) + b"0".ljust(6) + b"0".ljust(6)
+             + b"644".ljust(8) + str(len(data)).encode().ljust(10) + b"`\n")
+        return h + data + (b"\n" if len(data) % 2 else b"")
+
+    index = (1).to_bytes(4, "big") + bytes(4) + b"tokenize\0"
+    location = 8 + len(member(b"/", index)) + len(member(b"//", names))
+    index = index[:4] + location.to_bytes(4, "big") + index[8:]
+    return b"!<arch>\n" + member(b"/", index) + member(b"//", names) + member(b"/0", body)
 
 
 def natives(artifact, host, root=pub.RESOURCE_ROOTS[0]):
@@ -98,6 +123,32 @@ def installed(root, host, docs=True):
     extra.write_bytes(b"unrelated dependency")
 
 
+def search_index(host, payload=b'[{"label":"same API"}]', member="type-search-index.json"):
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w") as archive:
+        info = zipfile.ZipInfo(member, (2025, 1, 1 if host == pub.CANONICAL else 2, 0, 0, 0))
+        archive.writestr(info, payload)
+    return output.getvalue()
+
+
+def documented(host):
+    entries = {"type-search-index.zip": search_index(host),
+               "index.html": b"<html>same API\n</html>\n", "element-list": b"same.package\n"}
+    for filename, prefix in {
+        "ADDITIONAL_LICENSE_INFO": b"                      ADDITIONAL INFORMATION ABOUT LICENSING",
+        "ASSEMBLY_EXCEPTION": b"\nOPENJDK ASSEMBLY EXCEPTION",
+        "LICENSE": b"The GNU General Public License (GPL)",
+    }.items():
+        entries["legal/" + filename] = prefix + b"\nfull canonical notice\n" * 80
+    if host == "windows-x86_64":
+        for name in entries:
+            if name.startswith("legal/"):
+                entries[name] = ("Please see ..\\java.base\\" + name.split("/")[-1] + "\r\n").encode()
+            elif not name.endswith(".zip"):
+                entries[name] = entries[name].replace(b"\n", b"\r\n")
+    return entries
+
+
 def metadata(artifact, identities=None, namespace=""):
     if identities is None:
         identities = [("", "pom")]
@@ -114,6 +165,72 @@ def metadata(artifact, identities=None, namespace=""):
         for name, value in (("extension", extension), ("value", STAMP), ("updated", "20260814123456")):
             ET.SubElement(entry, name).text = value
     return ET.tostring(root)
+
+
+class ImportArchiveTests(unittest.TestCase):
+    def test_gnu_long_name_alignment_and_amd64_descriptor(self):
+        pub.import_archive(gnu_import_archive())
+        # GNU ar may instead use its normal external member padding.
+        pub.import_archive(gnu_import_archive(table_tail=b""))
+
+    def test_invalid_name_table_padding(self):
+        for tail in (b"\n\n", b"x", b"\0", b"\nextra"):
+            with self.subTest(tail=tail), self.assertRaisesRegex(ValueError, "name table"):
+                pub.import_archive(gnu_import_archive(table_tail=tail))
+
+    def test_architecture_object_and_dll_identity(self):
+        for kwargs in ({"machine": 0x14c}, {"machine": 0xaa64},
+                       {"object_name": b"unrelated.o"}, {"dll": b"other.dll"}):
+            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
+                pub.import_archive(gnu_import_archive(**kwargs))
+
+    def test_malformed_envelope_sections_symbols_and_trailing_data(self):
+        original = gnu_import_archive()
+        coff = original.index(b"\x64\x86")
+        variants = [b"!<thin>\n" + original[8:], original[:-1], original + b"x",
+                    original[:coff+2] + b"\xff\xff" + original[coff+4:],
+                    original[:coff+8] + b"\xff" * 4 + original[coff+12:],
+                    original[:coff+40] + b"\xff" * 4 + original[coff+44:],
+                    original[:72] + bytes(4) + original[76:],
+                    original.replace(b".idata$7", b".text\0\0\0")]
+        for value in variants:
+            with self.subTest(value=value[:80]), self.assertRaises(ValueError):
+                pub.import_archive(value)
+
+    def test_long_symbol_name_and_auxiliary_records_are_bounded(self):
+        long_name = bytes(4) + (4).to_bytes(4, "little")
+        pub.import_archive(gnu_import_archive(symbol_name=long_name, string_data=b"valid_symbol\0"))
+        for position, data in ((0, b"valid\0"), (3, b"valid\0"), (1000, b"valid\0"),
+                               (4, b"unterminated"), (10, b"valid\0")):
+            with self.subTest(position=position, data=data), self.assertRaisesRegex(ValueError, "symbol name"):
+                pub.import_archive(gnu_import_archive(
+                    symbol_name=bytes(4) + position.to_bytes(4, "little"), string_data=data))
+        for count in (1, 255):
+            with self.subTest(auxiliary=count), self.assertRaisesRegex(ValueError, "auxiliary records"):
+                pub.import_archive(gnu_import_archive(auxiliary=count))
+
+    def test_import_path_is_exact_and_not_a_required_dll(self):
+        root = pub.RESOURCE_ROOTS[0]
+        self.assertTrue(pub.import_archive_name(root + "lib/libtokenizers_wrapper.dll.a", "libtokenizers", "windows-x86_64"))
+        for path, artifact, host in ((root + "lib/other.dll.a", "libtokenizers", "windows-x86_64"),
+                                     (root + "other/libtokenizers_wrapper.dll.a", "libtokenizers", "windows-x86_64"),
+                                     (root + "lib/libtokenizers_wrapper.dll.a", "tokenizers-native-preset", "windows-x86_64"),
+                                     (root + "lib/libtokenizers_wrapper.dll.a", "libtokenizers", "linux-x86_64")):
+            self.assertFalse(pub.import_archive_name(path, artifact, host))
+        self.assertFalse(pub.native_name(root + "lib/libtokenizers_wrapper.dll.a"))
+
+    def test_pkgconfig_only_staged_prefix_and_crlf_vary(self):
+        suffix = b"/nd4j/nd4j-tokenizers/libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers"
+        body = b"\nexec_prefix=${prefix}\nVersion: 1.0.0\nLibs: -ltokenizers_wrapper\n"
+        a = pub.pkgconfig_prefix(b"prefix=/home/runner/work/repo" + suffix + body)
+        b = pub.pkgconfig_prefix((b"prefix=D:/a/repo" + suffix + body).replace(b"\n", b"\r\n"))
+        self.assertEqual(a, b)
+        self.assertNotEqual(a, pub.pkgconfig_prefix(b"prefix=/home/repo" + suffix + body.replace(b"1.0.0", b"2.0.0")))
+        for prefix in (b"relative", b"/repo/../bad", b"/repo/wrong-module", b""):
+            with self.subTest(prefix=prefix), self.assertRaises(ValueError):
+                pub.pkgconfig_prefix(b"prefix=" + prefix + body)
+        with self.assertRaises(ValueError):
+            pub.pkgconfig_prefix(b"prefix=/home/repo" + suffix + body + b"prefix=/duplicate\n")
 
 
 class PublicationTests(unittest.TestCase):
@@ -179,6 +296,228 @@ class PublicationTests(unittest.TestCase):
             name = pub.artifact_path(artifact)
             self.assertEqual((self.output / name).read_bytes(), (self.inputs / pub.CANONICAL / name).read_bytes())
         self.assertEqual(pub.verify(self.output, **PROVENANCE), receipt)
+
+    def add_producer_packaging(self):
+        root = pub.RESOURCE_ROOTS[0]
+        for host in pub.HOSTS:
+            additions = {}
+            aliases = {}
+            for alias, scoped in pub.legacy_wrappers(host).items():
+                if not alias.startswith(root):
+                    continue
+                data = gnu_import_archive() if alias.endswith(".dll.a") else binary(host)
+                additions[scoped] = data
+                aliases[alias] = data
+            ffi = ("libtokenizers_ffi.so" if host.startswith("linux-") else
+                   "libtokenizers_ffi.dylib" if host == "macosx-arm64" else "tokenizers_ffi.dll")
+            additions[root + host + "/" + ffi] = binary(host)
+            self.rewrite_jar(host, "libtokenizers", lambda e: e.update(additions), host)
+            prefix = {"windows-x86_64": "D:/a/repo", "macosx-arm64": "/Users/runner/repo"}.get(host, "/home/runner/repo")
+            pc = ("prefix=" + prefix + "/nd4j/nd4j-tokenizers/libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers\n"
+                  "exec_prefix=${prefix}\nVersion: 1.0.0\nLibs: -ltokenizers_wrapper\n").encode()
+            if host == "windows-x86_64":
+                pc = pc.replace(b"\n", b"\r\n")
+                self.rewrite_jar(host, "tokenizers-native", lambda e: e.update({
+                    root + "bindings/windows-x86_64/libtokenizers_wrapper.dll.a": gnu_import_archive()}), host)
+            self.rewrite_jar(host, "libtokenizers", lambda e: e.update({
+                **additions, **aliases, root + "lib/pkgconfig/tokenizers.pc": pc}))
+
+    def test_exact_producer_aliases_import_archive_and_pkgconfig_no_repack(self):
+        self.add_producer_packaging()
+        receipt = self.do_merge()
+        self.assertEqual(pub.verify(self.output, **PROVENANCE), receipt)
+        for host in pub.HOSTS:
+            p = pub.artifact_path("libtokenizers", host)
+            self.assertEqual((self.output / p).read_bytes(), (self.inputs / host / p).read_bytes())
+        p = pub.artifact_path("libtokenizers")
+        self.assertEqual((self.output / p).read_bytes(), (self.inputs / pub.CANONICAL / p).read_bytes())
+
+    def test_legacy_alias_wrong_architecture_and_bytes_fail(self):
+        self.add_producer_packaging()
+        alias = pub.RESOURCE_ROOTS[0] + "lib/libtokenizers_wrapper.so"
+        p = self.inputs / "linux-arm64" / pub.artifact_path("libtokenizers")
+        original = p.read_bytes()
+        for data, error in ((binary(pub.CANONICAL), "wrong native architecture"),
+                            (binary("linux-arm64") + b"changed", "legacy/scoped")):
+            with self.subTest(error=error):
+                self.rewrite_jar("linux-arm64", "libtokenizers", lambda e: e.update({alias: data}))
+                with self.assertRaisesRegex(ValueError, error):
+                    self.do_merge()
+                p.write_bytes(original)
+                self.refresh("linux-arm64", p)
+
+    def test_legacy_alias_requires_same_named_scoped_counterpart(self):
+        self.add_producer_packaging()
+        scoped = pub.RESOURCE_ROOTS[0] + "linux-arm64/libtokenizers_wrapper.so.1"
+        self.rewrite_jar("linux-arm64", "libtokenizers", lambda e: e.pop(scoped))
+        with self.assertRaisesRegex(ValueError, "legacy/scoped"):
+            self.do_merge()
+
+    def test_binding_import_archive_must_match_wrapper_classifier(self):
+        self.add_producer_packaging()
+        data = bytearray(gnu_import_archive())
+        position = data.index(b"\x64\x86") + 4  # valid COFF timestamp difference
+        data[position] = 1
+        name = pub.RESOURCE_ROOTS[0] + "bindings/windows-x86_64/libtokenizers_wrapper.dll.a"
+        self.rewrite_jar("windows-x86_64", "tokenizers-native", lambda e: e.update({name: bytes(data)}), "windows-x86_64")
+        with self.assertRaisesRegex(ValueError, "binding/wrapper"):
+            self.do_merge()
+
+    def test_unknown_lib_bin_host_metadata_are_not_exempt(self):
+        for name in ("lib/unknown.a", "bin/extra.txt", "linux-arm64/deep/manifest.properties"):
+            path = pub.RESOURCE_ROOTS[0] + name
+            p = self.inputs / "linux-arm64" / pub.artifact_path("libtokenizers")
+            original = p.read_bytes()
+            self.rewrite_jar("linux-arm64", "libtokenizers", lambda e: e.update({path: b"different"}))
+            with self.subTest(path=path), self.assertRaisesRegex(ValueError, "shared JAR content conflict"):
+                self.do_merge()
+            p.write_bytes(original)
+            self.refresh("linux-arm64", p)
+
+    def test_main_only_scoped_native_additions_are_rejected(self):
+        for host in (pub.CANONICAL, "linux-arm64"):
+            for tail in ("unknown.so", "deep/unknown.so", "deep/libtokenizers_wrapper.so",
+                         "libtokenizers_ffi.so", "deep/libtokenizers_ffi.so"):
+                name = pub.RESOURCE_ROOTS[0] + host + "/" + tail
+                p = self.inputs / host / pub.artifact_path("libtokenizers")
+                original = p.read_bytes()
+                self.rewrite_jar(host, "libtokenizers", lambda e: e.update({name: binary(host)}))
+                with self.subTest(host=host, tail=tail), self.assertRaisesRegex(ValueError, "main/classifier"):
+                    self.do_merge()
+                p.write_bytes(original)
+                self.refresh(host, p)
+
+    def test_unknown_scoped_native_in_both_jars_stays_in_shared_comparison(self):
+        host = "linux-arm64"
+        name = pub.RESOURCE_ROOTS[0] + host + "/deep/unknown.so"
+        for classifier in ("", host):
+            self.rewrite_jar(host, "libtokenizers", lambda e: e.update({name: binary(host)}), classifier)
+        with self.assertRaisesRegex(ValueError, "shared JAR content conflict"):
+            self.do_merge()
+
+    def test_exact_ffi_wrong_architecture_and_mismatch_fail(self):
+        self.add_producer_packaging()
+        host = "linux-arm64"
+        name = pub.RESOURCE_ROOTS[0] + host + "/libtokenizers_ffi.so"
+        p = self.inputs / host / pub.artifact_path("libtokenizers")
+        original = p.read_bytes()
+        for data, error in ((binary(pub.CANONICAL), "wrong native architecture"),
+                            (binary(host) + b"changed", "main/classifier")):
+            self.rewrite_jar(host, "libtokenizers", lambda e: e.update({name: data}))
+            with self.subTest(error=error), self.assertRaisesRegex(ValueError, error):
+                self.do_merge()
+            p.write_bytes(original)
+            self.refresh(host, p)
+
+    def test_nested_ffi_in_both_jars_is_not_exempt(self):
+        host = "linux-arm64"
+        name = pub.RESOURCE_ROOTS[0] + host + "/deep/libtokenizers_ffi.so"
+        for classifier in ("", host):
+            self.rewrite_jar(host, "libtokenizers", lambda e: e.update({name: binary(host)}), classifier)
+        with self.assertRaisesRegex(ValueError, "shared JAR content conflict"):
+            self.do_merge()
+
+    def test_unknown_import_archive_path_is_rejected(self):
+        root = pub.RESOURCE_ROOTS[0]
+        self.rewrite_jar("windows-x86_64", "libtokenizers", lambda e: e.update({
+            root + "lib/other.dll.a": gnu_import_archive()}))
+        with self.assertRaisesRegex(ValueError, "unexpected import archive path"):
+            self.do_merge()
+
+    def test_pkgconfig_changed_version_flags_or_duplicate_prefix_fail(self):
+        self.add_producer_packaging()
+        p = self.inputs / "linux-arm64" / pub.artifact_path("libtokenizers")
+        original = p.read_bytes()
+        pc = pub.RESOURCE_ROOTS[0] + "lib/pkgconfig/tokenizers.pc"
+        for old, new in ((b"Version: 1.0.0", b"Version: 2.0.0"),
+                         (b"Libs: -ltokenizers_wrapper", b"Libs: -ldifferent"),
+                         (b"exec_prefix=", b"prefix=")):
+            self.rewrite_jar("linux-arm64", "libtokenizers", lambda e: e.update({pc: e[pc].replace(old, new)}))
+            with self.subTest(new=new), self.assertRaises(ValueError):
+                self.do_merge()
+            p.write_bytes(original)
+            self.refresh("linux-arm64", p)
+
+    def add_documented_hosts(self):
+        for host in pub.HOSTS:
+            self.rewrite_jar(host, "tokenizers-native", lambda e: e.update(documented(host)), "javadoc")
+
+    def test_javadoc_packaging_noise_and_own_properties_preserve_canonical_bytes(self):
+        self.add_documented_hosts()
+        for host in pub.HOSTS:
+            for classifier in ("", "sources", "javadoc"):
+                properties = b"artifactId=tokenizers-native\ngroupId=org.eclipse.deeplearning4j\nversion=1.0.0-SNAPSHOT\n"
+                if host == "windows-x86_64":
+                    properties = properties.replace(b"\n", b"\r\n")
+                self.rewrite_jar(host, "tokenizers-native", lambda e: e.update({
+                    f"META-INF/maven/{pub.GROUP}/tokenizers-native/pom.properties": properties}), classifier)
+        receipt = self.do_merge()
+        self.assertEqual(pub.verify(self.output, **PROVENANCE), receipt)
+        doc = pub.artifact_path("tokenizers-native", "javadoc")
+        self.assertEqual((self.output / doc).read_bytes(), (self.inputs / pub.CANONICAL / doc).read_bytes())
+        with zipfile.ZipFile(self.output / doc) as archive:
+            self.assertGreater(len(archive.read("legal/LICENSE")), 1000)
+
+    def test_javadoc_real_html_and_search_json_conflicts_still_fail(self):
+        for name, data in (("index.html", b"<html>different API</html>"),
+                           ("type-search-index.zip", search_index("windows-x86_64", b'[{"label":"different API"}]'))):
+            with self.subTest(name=name):
+                self.add_documented_hosts()
+                self.rewrite_jar("windows-x86_64", "tokenizers-native", lambda e: e.update({name: data}), "javadoc")
+                with self.assertRaisesRegex(ValueError, "shared JAR content conflict"):
+                    self.do_merge()
+
+    def test_nested_javadoc_zip_rejects_unknown_paths_extra_members_and_symlinks(self):
+        for member in ("../type-search-index.json", "other.json"):
+            with self.subTest(member=member):
+                self.rewrite_jar("linux-arm64", "tokenizers-native", lambda e: e.update({
+                    "type-search-index.zip": search_index("linux-arm64", member=member)}), "javadoc")
+                with self.assertRaisesRegex(ValueError, "search ZIP members"):
+                    self.do_merge()
+        output = io.BytesIO()
+        with zipfile.ZipFile(output, "w") as archive:
+            archive.writestr("type-search-index.json", b"[]")
+            archive.writestr("extra", b"hidden")
+        self.rewrite_jar("linux-arm64", "tokenizers-native", lambda e: e.update({"type-search-index.zip": output.getvalue()}), "javadoc")
+        with self.assertRaisesRegex(ValueError, "search ZIP members"):
+            self.do_merge()
+        output = io.BytesIO()
+        with zipfile.ZipFile(output, "w") as archive:
+            info = zipfile.ZipInfo("type-search-index.json")
+            info.external_attr = (stat.S_IFLNK | 0o777) << 16
+            archive.writestr(info, b"[]")
+        self.rewrite_jar("linux-arm64", "tokenizers-native", lambda e: e.update({"type-search-index.zip": output.getvalue()}), "javadoc")
+        with self.assertRaisesRegex(ValueError, "unsafe Javadoc search ZIP"):
+            self.do_merge()
+
+    def test_license_exemption_only_exact_windows_forwarders_and_full_canonical_notice(self):
+        for host, content in (("windows-x86_64", b"Please see ..\\elsewhere\\LICENSE\r\n"),
+                              ("linux-arm64", b"Please see ..\\java.base\\LICENSE\n")):
+            with self.subTest(host=host):
+                self.add_documented_hosts()
+                self.rewrite_jar(host, "tokenizers-native", lambda e: e.update({"legal/LICENSE": content}), "javadoc")
+                with self.assertRaisesRegex(ValueError, "shared JAR content conflict"):
+                    self.do_merge()
+        self.add_documented_hosts()
+        self.rewrite_jar(pub.CANONICAL, "tokenizers-native", lambda e: e.update({"legal/LICENSE": b"short notice"}), "javadoc")
+        # Other Unix hosts also match so the Windows full-notice gate is exercised.
+        for host in ("linux-arm64", "macosx-arm64"):
+            self.rewrite_jar(host, "tokenizers-native", lambda e: e.update({"legal/LICENSE": b"short notice"}), "javadoc")
+        with self.assertRaisesRegex(ValueError, "not a full notice"):
+            self.do_merge()
+
+    def test_non_javadoc_binary_sources_and_foreign_properties_remain_byte_strict(self):
+        for classifier, name in (("sources", "type-search-index.zip"),
+                                 ("", "other.properties"), ("", "API.class")):
+            with self.subTest(name=name):
+                for host in pub.HOSTS:
+                    content = (search_index(host) if name.endswith(".zip") else
+                               (b"unchanged\r\n" if host == "windows-x86_64" else b"unchanged\n"))
+                    self.rewrite_jar(host, "tokenizers-native", lambda e: e.update({name: content}), classifier)
+                with self.assertRaisesRegex(ValueError, "shared JAR content conflict"):
+                    self.do_merge()
+                for host in pub.HOSTS:
+                    self.rewrite_jar(host, "tokenizers-native", lambda e: e.pop(name), classifier)
 
     def test_preset_classifiers_are_metadata_only_on_all_four_hosts(self):
         for host in pub.HOSTS:
