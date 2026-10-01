@@ -122,6 +122,53 @@ Each test runs with exactly one feature enabled or disabled against a baseline a
 - **Feature isolation is the debugging workflow.** The 14 decode loop isolation tests form a template for future divergence investigations. When a new DSP feature causes divergence, the first step is to add it to the isolation test matrix and run the binary-search to the failing feature.
 - **Reusable fixed-address buffers are a footgun.** This ADR establishes the rule: fresh buffer per step is the default; fixed-address buffers are allowed only when the write is demonstrably on the same stream as the subsequent graph launch and the cross-stream event is recorded.
 
+## Amendment (2026-10-01) — One Execution, One Stream
+
+### Context
+
+The Qwen3.5 MTP repair plan is a frozen plan entered through `executeSteadyState()`. Until the plan is eligible for steady-state replay, including its first composite replay after capture, `executeSteadyState()` delegates to `execute()`.
+
+`execute()` runs on the plan-owned stream. `platformBeginExecution` installs `ownedStream_` as:
+
+- the thread's DSP execution stream (`DspStreamGuard`);
+- the execution context's `dspStream`;
+- the gap-op stream pin.
+
+The frozen fast path ignored all three. It took the raw stream argument, which is the caller's decode-loop stream, installed its own `DspStreamGuard` on it, and replayed the captured graphs there.
+
+Output delivery (`platformGetOutputForDevice0`) completes the execution context's stream before it copies a view output into a detached buffer. That stream was the idle plan-owned stream, so the completion ordered nothing. The repair's V output is an identity view, and it was gathered on the per-thread stream while the replay was still running or before it had started. The MTP KV row written from that copy then held one of:
+
+- the previous repair's V: row 20 equal to row 18 in most sessions;
+- a torn mix: one 32-element warp store in an occasional session.
+
+Fresh sessions usually agreed because they repeated the same race, so `testFreshSessionsProduceBitIdenticalState` failed only intermittently. Its passing runs had retained the same stale row in every session.
+
+### Decision
+
+1. **All of one execution's work runs on the stream its entry point installed.** That is `ownedStream_` under `execute()`, and the caller's stream under `executeSteadyState()`.
+   - The frozen fast path resolves `dspGetExecutionStream()` first. It falls back to the stream argument only when no execution stream is installed.
+   - Pre-replay sync, segment dispatch, slot tracing and the logits diagnostic all receive that same stream.
+   - Section 5's entry and exit events still order the caller's stream against it.
+2. **Output delivery completes the stream that wrote the output.** `executionWriterStream` names the producer:
+   - the execution context's `dspStream` on the execution device;
+   - the per-thread stream on a secondary device.
+
+   Delivery throws when no execution context is active, rather than copying on an unordered stream. Segment-input migration completes the same producer stream.
+
+### Consequences
+
+- MTP KV caches no longer retain a stale or torn V row. Ten fresh sessions are bit-identical at K=1 and at K=4.
+- `testFreshSessionsProduceBitIdenticalState` also rejects any retained KV row that bit-equals another sequence slot's row. A race that every session repeats can no longer pass as agreement. Each row is projected from its own position's context, so a legitimate repeat does not occur.
+- Delivery of a view or secondary-device output still blocks the host on the producer stream for each output. An asynchronous copy ordered on the producer stream would remove that wait.
+
+### Files
+
+- `libnd4j/include/graph/impl/NativeDynamicShapePlan_cuda.cu`:
+  - `executionWriterStream`;
+  - `platformTryFrozenFastPath` stream resolution;
+  - producer completion in `platformGetOutputForDevice0` and `platformMigrateSegmentInputs`.
+- `platform-tests/.../llm/generation/TestQwen35MtpDecode.java`: the repeated-row check in the fresh-session test.
+
 ## Files Added/Modified
 
 ### Modified Files

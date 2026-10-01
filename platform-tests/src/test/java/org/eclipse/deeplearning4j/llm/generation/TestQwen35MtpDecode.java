@@ -739,57 +739,196 @@ public class TestQwen35MtpDecode {
         assertEquals("1", System.getenv("SD_MTP_MULTI_ROW_COMMIT"),
                 "This comparison requires multi-row commit. Run with -Dnd4j.mtp.multiRowCommit=1.");
         final int t = TOKENS + 2 * Math.max(8, TOKENS / 3);
-        final int sessions = 3;
+        final int sessions = Math.max(2, Integer.getInteger("mtp.freshSessions", 3));
         int[] referenceTokens = null;
         Map<String, float[]> referenceState = null;
+        String referenceSpeculation = null;
+        List<String> divergentSessions = new ArrayList<>();
+        List<String> staleSessions = new ArrayList<>();
         for (int run = 0; run < sessions; run++) {
             int[] tokens;
             Map<String, float[]> state = new java.util.TreeMap<>();
+            Map<String, long[]> shapes = new java.util.TreeMap<>();
+            String speculation;
             try (GenerationPipeline pipeline = GenerationPipeline.create(baseSeamConfig(t, speculativeDepth));
                  GenerationSession session = pipeline.startSession(PROMPT, t)) {
                 session.setSpeculativeDepth(speculativeDepth);
                 GenerationResult result = session.generate(t);
                 assertEquals(t, result.getTokenIds().length, "session " + run + " must emit its full budget");
+                speculation = "proposed=" + result.getTotalSpeculativeTokens() + " accepted="
+                        + result.getTotalAcceptedTokens() + " steps=" + result.getSpeculativeSteps();
                 tokens = session.getAllTokens();
                 InGraphKvState retained = session.retainedStateForInspection();
-                copyStateForComparison("recurrent", retained.recurrentStateBuffers, state);
-                copyStateForComparison("kv", retained.staticKvBuffers, state);
-                copyStateForComparison("mtpKv", retained.mtpKvBuffers, state);
+                copyStateForComparison("recurrent", retained.recurrentStateBuffers, state, shapes);
+                copyStateForComparison("kv", retained.staticKvBuffers, state, shapes);
+                copyStateForComparison("mtpKv", retained.mtpKvBuffers, state, shapes);
             }
             assertFalse(state.isEmpty(), "session " + run + " exposed no retained state to compare");
+            List<String> repeats = repeatedCacheRows(state, shapes);
+            if (!repeats.isEmpty()) {
+                staleSessions.add("session " + run + " (" + speculation + "): " + String.join("; ", repeats));
+            }
             if (referenceTokens == null) {
                 referenceTokens = tokens;
                 referenceState = state;
+                referenceSpeculation = speculation;
                 continue;
             }
             assertArrayEquals(referenceTokens, tokens, "K=" + speculativeDepth + " session " + run + " tokens differ from session 0");
             assertEquals(referenceState.keySet(), state.keySet(), "session " + run + " state layout differs");
+            List<String> mismatches = new ArrayList<>();
             for (Map.Entry<String, float[]> entry : referenceState.entrySet()) {
-                float[] actual = state.get(entry.getKey());
-                float[] expected = entry.getValue();
-                int firstDiff = -1;
-                for (int i = 0; i < expected.length; i++) {
-                    if (Float.floatToRawIntBits(expected[i]) != Float.floatToRawIntBits(actual[i])) {
-                        firstDiff = i;
+                String mismatch = describeBitMismatch(entry.getValue(), state.get(entry.getKey()),
+                        shapes.get(entry.getKey()));
+                if (mismatch != null) mismatches.add("'" + entry.getKey() + "' " + mismatch);
+            }
+            if (!mismatches.isEmpty()) {
+                divergentSessions.add("session " + run + " (" + speculation + "): " + String.join("; ", mismatches));
+            }
+        }
+        // Sessions that agree can still agree on a stale row: every session
+        // repeating the same delivery race retains the same wrong cache row.
+        assertTrue(staleSessions.isEmpty(), "K=" + speculativeDepth + " " + staleSessions.size() + "/" + sessions
+                + " sessions retained a cache row that repeats another position's row: "
+                + String.join(" | ", staleSessions));
+        assertTrue(divergentSessions.isEmpty(), "K=" + speculativeDepth + " " + divergentSessions.size() + "/"
+                + (sessions - 1) + " sessions are not bit-identical to session 0 (session 0 " + referenceSpeculation
+                + "): " + String.join(" | ", divergentSessions));
+    }
+
+    /**
+     * Rows of each retained KV cache that are bit-identical to an earlier
+     * dimension-1 row (the sequence slots of a BSHD cache). Each written row is
+     * projected from its own position's context, so a repeat means a write stored
+     * another position's row, as when a cache update reads a producer's output
+     * before the producer has rewritten it. Unwritten (all-zero) rows are skipped;
+     * recurrent state has no sequence axis and is not checked.
+     */
+    private static List<String> repeatedCacheRows(Map<String, float[]> state, Map<String, long[]> shapes) {
+        List<String> repeats = new ArrayList<>();
+        for (Map.Entry<String, float[]> entry : state.entrySet()) {
+            long[] shape = shapes.get(entry.getKey());
+            if (entry.getKey().startsWith("recurrent:") || shape.length != 4) continue;
+            float[] data = entry.getValue();
+            long dim1Stride = shape[2] * shape[3];
+            long block = shape[1] * dim1Stride;
+            Map<Integer, List<Long>> slotsByHash = new HashMap<>();
+            for (long slot = 0; slot < shape[1]; slot++) {
+                int hash = 1;
+                boolean written = false;
+                for (long outer = 0; outer < data.length / block; outer++) {
+                    for (long i = 0; i < dim1Stride; i++) {
+                        float value = data[(int) (outer * block + slot * dim1Stride + i)];
+                        written |= value != 0.0f;
+                        hash = 31 * hash + Float.floatToRawIntBits(value);
+                    }
+                }
+                if (!written) continue;
+                List<Long> candidates = slotsByHash.computeIfAbsent(hash, h -> new ArrayList<>());
+                for (long earlier : candidates) {
+                    if (rowsBitEqual(data, earlier, data, slot, shape, dim1Stride)) {
+                        repeats.add("'" + entry.getKey() + "' slot " + slot + " repeats slot " + earlier);
                         break;
                     }
                 }
-                assertEquals(-1, firstDiff, "K=" + speculativeDepth + " session " + run + " state '" + entry.getKey()
-                        + "' is not bit-identical to session 0 (first differing element " + firstDiff + ")");
+                candidates.add(slot);
             }
         }
+        return repeats;
     }
 
     private static void copyStateForComparison(String prefix, Map<String, INDArray> buffers,
-                                                Map<String, float[]> into) {
+                                                Map<String, float[]> into, Map<String, long[]> shapes) {
         if (buffers == null) return;
         for (Map.Entry<String, INDArray> entry : buffers.entrySet()) {
             INDArray buffer = entry.getValue();
             if (buffer == null || buffer.isEmpty()) continue;
             try (INDArray asFloat = buffer.castTo(DataType.FLOAT).dup()) {
                 into.put(prefix + ":" + entry.getKey(), asFloat.data().asFloat());
+                shapes.put(prefix + ":" + entry.getKey(), buffer.shape());
             }
         }
+    }
+
+    /**
+     * Describes where two retained-state snapshots differ: how many elements,
+     * the first and last differing coordinates with their values, the largest
+     * absolute difference, and which dimension-1 indices (the sequence slots of
+     * a BSHD cache) are affected. Returns null when they are bit-identical.
+     */
+    private static String describeBitMismatch(float[] expected, float[] actual, long[] shape) {
+        if (actual == null || actual.length != expected.length) {
+            return "has length " + (actual == null ? "null" : String.valueOf(actual.length)) + ", expected "
+                    + expected.length;
+        }
+        int count = 0;
+        int first = -1;
+        int last = -1;
+        double maxAbsDiff = 0;
+        java.util.SortedSet<Long> dim1 = new java.util.TreeSet<>();
+        long dim1Stride = 1;
+        for (int d = 2; d < shape.length; d++) dim1Stride *= shape[d];
+        for (int i = 0; i < expected.length; i++) {
+            if (Float.floatToRawIntBits(expected[i]) == Float.floatToRawIntBits(actual[i])) continue;
+            if (first < 0) first = i;
+            last = i;
+            count++;
+            maxAbsDiff = Math.max(maxAbsDiff, Math.abs((double) expected[i] - actual[i]));
+            if (shape.length >= 2) dim1.add((i / dim1Stride) % shape[1]);
+        }
+        if (count == 0) return null;
+        StringBuilder origins = new StringBuilder();
+        if (shape.length >= 2) {
+            int reported = 0;
+            for (long slot : dim1) {
+                if (reported++ == 4) {
+                    origins.append("; ...");
+                    break;
+                }
+                origins.append("; slot ").append(slot).append(": actual row equals expected slots ")
+                        .append(slotsEqualTo(expected, actual, slot, shape, dim1Stride))
+                        .append(", expected row equals actual slots ")
+                        .append(slotsEqualTo(actual, expected, slot, shape, dim1Stride));
+            }
+        }
+        return count + "/" + expected.length + " elements differ; first " + Arrays.toString(coordinates(first, shape))
+                + " expected " + expected[first] + " actual " + actual[first] + "; last "
+                + Arrays.toString(coordinates(last, shape)) + " expected " + expected[last] + " actual "
+                + actual[last] + "; max |diff| " + maxAbsDiff + "; dim-1 indices " + dim1 + origins;
+    }
+
+    /**
+     * Dimension-1 indices whose row in {@code candidates} is bit-identical to the
+     * row at {@code slot} of {@code row}. A stale or misrouted cache write shows up
+     * as a row that equals some other slot's row.
+     */
+    private static String slotsEqualTo(float[] candidates, float[] row, long slot, long[] shape, long dim1Stride) {
+        List<Long> equal = new ArrayList<>();
+        for (long candidate = 0; candidate < shape[1]; candidate++) {
+            if (rowsBitEqual(candidates, candidate, row, slot, shape, dim1Stride)) equal.add(candidate);
+        }
+        return equal.size() > 8 ? equal.subList(0, 8) + "... (" + equal.size() + " total)" : equal.toString();
+    }
+
+    private static boolean rowsBitEqual(float[] a, long slotA, float[] b, long slotB, long[] shape, long dim1Stride) {
+        long block = shape[1] * dim1Stride;
+        for (long outer = 0; outer < a.length / block; outer++) {
+            for (long i = 0; i < dim1Stride; i++) {
+                int ia = (int) (outer * block + slotA * dim1Stride + i);
+                int ib = (int) (outer * block + slotB * dim1Stride + i);
+                if (Float.floatToRawIntBits(a[ia]) != Float.floatToRawIntBits(b[ib])) return false;
+            }
+        }
+        return true;
+    }
+
+    private static long[] coordinates(long flat, long[] shape) {
+        long[] coordinates = new long[shape.length];
+        for (int d = shape.length - 1; d >= 0; d--) {
+            coordinates[d] = flat % shape[d];
+            flat /= shape[d];
+        }
+        return coordinates;
     }
 
     /** Visible-column pattern of a [1,1,rows,maxKvLen] mask: "v0/total-v1/total..." for the first two rows. */

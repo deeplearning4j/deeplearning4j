@@ -374,6 +374,32 @@ struct SegmentDeviceSavedState {
   decltype(tl_cublasWorkspaceSize) wsSize = 0;
 };
 static thread_local SegmentDeviceSavedState tl_segDevSaved;
+
+// The stream holding the running execution's writes on `device`. Segments on
+// the execution device dispatch on its DSP stream: the plan-owned stream under
+// execute(), the caller's stream under executeSteadyState(). The plan-owned
+// stream is idle during a steady-state replay, so completing it orders nothing.
+// Without an execution context (precompilePlan through the C API, the replay
+// verifier's reference plan) dispatchSegment uses the thread's installed DSP
+// stream, else the LaunchContext stream. Secondary-device segments run on that
+// device's per-thread stream; binding one parks the execution device and its
+// stream in tl_segDevSaved. `boundDevice` is the device bound before the
+// caller switched to `device`.
+cudaStream_t executionWriterStream(const PlanExecutionContext* execCtx, int boundDevice, int device) {
+  int executionDevice = boundDevice;
+  auto executionStream = reinterpret_cast<cudaStream_t>(tl_dspExecutionStream);
+  if (execCtx != nullptr) {
+    executionDevice = execCtx->deviceId;
+    executionStream = reinterpret_cast<cudaStream_t>(execCtx->dspStream);
+  } else if (tl_segDevSaved.active) {
+    executionDevice = tl_segDevSaved.primaryDevice;
+    executionStream = reinterpret_cast<cudaStream_t>(tl_segDevSaved.execStream);
+  }
+  if (device != executionDevice) return cudaStreamPerThread;
+  if (executionStream != nullptr) return executionStream;
+  auto* launchStream = LaunchContext::defaultContext()->getCudaStream();
+  return launchStream != nullptr ? *launchStream : cudaStreamPerThread;
+}
 }  // namespace
 
 }  // namespace
@@ -452,8 +478,15 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
   cudaGetLastError();  // Clear stale CUDA error
 
-  cudaStream_t cudaStr = (stream != nullptr)
-      ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  // Replay on the stream this execution installed: the plan-owned stream under
+  // execute(), the caller's stream under executeSteadyState(). The execution
+  // context, output delivery and the completion event all name that stream,
+  // and entry/exit events order the caller's stream against it. Replaying on
+  // the raw caller stream under execute() left delivery completing the idle
+  // plan stream and gathering view outputs before the replay wrote them.
+  cudaStream_t cudaStr = reinterpret_cast<cudaStream_t>(dspGetExecutionStream());
+  if (cudaStr == nullptr && stream != nullptr) cudaStr = *static_cast<cudaStream_t*>(stream);
+  stream = &cudaStr;
   sd::graph::DspStreamGuard dspStreamGuard(cudaStr);
 
   // Unified pre-replay sync for all segments: cross-stream ordering + H2D
@@ -1599,9 +1632,8 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     }
 
     // Complete only this plan's producer, not unrelated captures on its GPU.
-    cudaStream_t sourceProducerStream = ownedStream_ != nullptr && ownedStreamDeviceId_ == sourceDevice
-        ? *ownedStream_ : cudaStreamPerThread;
-    const auto producerReady = cudaStreamSynchronize(sourceProducerStream);
+    const auto producerReady = cudaStreamSynchronize(executionWriterStream(
+        static_cast<const PlanExecutionContext*>(activeExecCtx_), savedDevice, sourceDevice));
     if (producerReady != cudaSuccess) {
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
       return cudaPlanFailure("CUDA migration producer completion failed: slot=%d device=%d: %s",
@@ -2174,13 +2206,16 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   // -- Async copy from sourceDevice to device-0 --------------------------------
   // 1. Switch to sourceDevice and ensure its stream has committed the write.
   checkCuda(cudaSetDevice(sourceDevice), "bind producer device");
-  // Primary segments use the plan-owned stream; secondary-device segments use
-  // this execution thread's per-thread stream (platformBindSegmentDevice).
   // Never drain the whole device here: another plan may be capturing on it,
   // and cudaDeviceSynchronize both fails and invalidates that peer capture.
-  cudaStream_t producerStream = ownedStream_ != nullptr && ownedStreamDeviceId_ == sourceDevice
-      ? *ownedStream_ : cudaStreamPerThread;
-  checkCuda(cudaStreamSynchronize(producerStream), "complete producer stream");
+  // The delivery streams above replaced this thread's DSP streams, so only the
+  // execution context still names the producer's stream.
+  auto* execCtx = static_cast<const PlanExecutionContext*>(activeExecCtx_);
+  if (execCtx == nullptr) {
+    THROW_EXCEPTION("DSP output delivery failed: no execution produced the output");
+  }
+  checkCuda(cudaStreamSynchronize(executionWriterStream(execCtx, callerDevice, sourceDevice)),
+            "complete producer stream");
   {
     std::vector<NDArray*> reads{arr};
     NDArray::prepareSpecialUse({}, reads);
