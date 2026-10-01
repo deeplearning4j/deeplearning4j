@@ -245,11 +245,12 @@ The compiled recipe now expresses the same thing:
 - The accumulation order is untouched: bit-identity tests cover K spanning many
   chunks and a scalar tail, 1 and 5 rows, partly masked programs, and [N,K] view,
   [N,K] transpose-B and [K,N] storage.
-- Deeper rings do not pay, so the stage count stays at 4. A CUDA probe at 4
-  programs and 32 lanes took the same time (about 36.5 µs) with 4 to 12
-  stages. Sizing the ring to the shared memory a few-program launch leaves
-  free (12 stages for the 4-program 27B GDN pair) slowed that kernel in the
-  model from a median of 28.1 µs to 30.5 µs.
+- Deeper rings do not pay for 32-lane programs, so word-pair loads keep 4
+  stages. A CUDA probe at 4 programs and 32 lanes took the same time (about
+  36.5 µs) with 4 to 12 stages. Sizing the ring to the shared memory a
+  few-program launch leaves free (12 stages for the 4-program 27B GDN pair)
+  slowed that kernel in the model from a median of 28.1 µs to 30.5 µs.
+  One-lane thread-row programs (below) are the exception and hold 16.
 
 The per-lane path needs K-contiguous storage, while the coalesced [K,N] form is
 better once a matmul is bandwidth-bound. `QuantizedLinear` therefore builds a
@@ -266,6 +267,51 @@ storage above. Measured on Qwen3.6-27B (per call, 4/16-program kernels vs 80+):
 
 Greedy width-1 decode went from 10.36 to 10.70 tok/s and MTP from about 23.3 to
 23.6 tok/s at 250 tokens, with identical greedy tokens and 0/250 MTP deltas.
+
+#### Narrow decode matmuls over every SM
+
+The 27B's GDN in_proj_a/b matmuls have 48 outputs each. At one output per lane
+the fused pair ran as four 32-lane programs, so four of the 48 SMs each issued
+a single warp's 5120-step chain: the kernel was bound by one warp's issue rate,
+not by bandwidth.
+
+- **Block size.** For a segment of only matmuls whose outputs cannot give every
+  SM a 32-lane program, `selectTileConfig` takes the widest power-of-two block
+  that still gives every SM a program, down to one lane (the serial clamp
+  admits it). All sections of a segment share the block size, so a segment
+  that mixes matmuls with other ops keeps the 32-lane minimum.
+- **Thread rows.** A one-lane block loads each chunk of a pair-aligned operand
+  as one `[1, words]` tile marked `nd4j.thread_row`. `MarkedLoadCoalescePass`
+  keeps it in a single thread, so an operand's chunk is one group of 16-byte
+  asynchronous copies. When both operands load as rows the ring holds
+  `kThreadRowStages` (16) chunks instead of 4. Wider blocks keep word pairs:
+  the pipeliner's shared buffers are unswizzled, so lanes reading whole rows
+  128 bytes apart would share banks.
+- **Coalescing.** A marked load keeps its lane's whole vector even when the
+  tile has fewer elements than the warp has threads (Triton replicates the tile
+  across the spare threads). The cap that split the vector across threads is
+  gone.
+- **Placement widening.** `placesInAccumulator` compares the element and
+  accumulator formats' APFloat semantics. An IEEE-like format with the
+  accumulator's exponent range and a mantissa shorter by exactly the width
+  difference (BFLOAT16 under FLOAT) widens by placing its bits at the top of an
+  accumulator-wide field over zeros: one shift, or one mask for an element
+  already at the top. The value is bit for bit the extension's.
+
+Measured per call in the 27B model (nsys node trace, 48 calls per token), with
+the greedy tokens unchanged at every step (hash 594409916):
+
+| Step | matmul_matmul pair |
+|---|---|
+| four 32-lane programs, 4-stage ring | 30.59 µs |
+| narrow blocks over every SM, coalesce cap removed | 23.94 µs |
+| one-lane thread rows, 16-stage ring | 22.04 µs |
+| placement widening | 20.03 µs |
+
+The cached kernel's K loop went from 331 to 267 SASS instructions per 64-step
+chunk (64 FFMA, 64 IMAD.U32, 64 LOP3, 16 LDS.128, 16 LDGSTS), at 42 registers
+with no spills. The accumulation order is unchanged: one accumulator per
+output, ascending K.
 
 The initial compiled admission domain is NVIDIA, matching HALF/BFLOAT16/FLOAT/
 DOUBLE storage, nonempty rank>=2 matrices, equal-rank batches and ND/2D or 2D/ND,
@@ -540,6 +586,36 @@ flagless op with `stateIn` untouched; flag 1 commits the identical state for
 decode, window, chunked-prefill and BFLOAT16 paths, activation and written
 checkpoints unchanged); Qwen3.6-27B greedy tokens unchanged, inter-token GPU gap
 ~1.6 -> ~0.86 ms.
+
+### State tile copies in the split GDN kernel
+
+`gatedDeltaRuleSplitSequenceKernel` gives each state column four lanes
+(`kGdrParts`), each owning a quarter of its D_k rows, and stages the
+[D_k, columns] state tile in shared memory. It loaded and stored that tile one
+element per lane per row, so a warp moved one 32-byte sector per part. It now
+copies the tile in 16-byte words, consecutive threads taking consecutive words
+of a row, so a warp moves whole lines.
+
+- `gatedDeltaStoreSharedWord` and `gatedDeltaLoadSharedWord` convert a word's
+  elements to and from the accumulator type (`AggregateType<T>`) as the element
+  copy does, so the shared tile keeps its layout and values for every
+  ALL_FLOATS type.
+- Each thread owns one word column and every rowStep-th tile row, the part
+  blocks keep their `kGdrPartPad` skew, and loads batch `kGdrWordBatch` (8)
+  words per thread. The store waits on a barrier, since a word gathers rows
+  that other lanes wrote.
+- The word path needs a tile of whole words, a D_v pitch of whole words and
+  16-byte-aligned state pointers. Anything else (a state view one element into
+  its buffer) takes the element copy.
+
+On Qwen3.6-27B (48 heads, D_k = D_v = 128, 48 calls per token) the kernel fell
+from 37.45 to 27.71 µs per call. With the narrow serial matmuls above, the
+per-token GPU time under nsys fell from 80,898.5 to 79,269.6 µs, and the greedy
+tokens are unchanged (hash 594409916).
+`GatedDeltaRuleReproducibleReferenceTest#stateTileCopyIsIndependentOfAlignment`
+runs HALF, FLOAT, DOUBLE and BFLOAT16 against an aligned state and a state view
+one element into its buffer, each with and without the in-place commit; every
+output and state must equal the aligned run bit for bit.
 
 ## Optional NVFP4 MTP predictor
 
