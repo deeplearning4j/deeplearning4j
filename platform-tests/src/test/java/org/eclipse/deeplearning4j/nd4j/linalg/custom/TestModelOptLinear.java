@@ -2,6 +2,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.custom;
 
 import org.bytedeco.javacpp.BytePointer;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.Arguments;
@@ -33,6 +34,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -909,7 +913,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
     public void testTiledRowPassesMatchLaneContract(Nd4jBackend backend) {
         assumeFalse(Nd4j.getEnvironment().isCPU(), "lane-split fold is the CUDA tiled kernel's contract");
         int[][] shapes = {{1, 2048, 37}, {5, 5120, 33}, {8, 256, 65}, {9, 512, 17}, {17, 1024, 9}, {128, 256, 11}};
-        java.util.Random random = new java.util.Random(20260927L);
+        Random random = new Random(20260927L);
         for (boolean nv : new boolean[]{true, false}) {
             for (DataType dtype : ACTIVATION_TYPES) {
                 DataType acc = aggregate(dtype);
@@ -1009,7 +1013,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
     public void testFp8TensorCorePathMatchesReference(Nd4jBackend backend) {
         int[][] shapes = {{1, 512, 64}, {5, 5120, 48}, {16, 512, 40}, {17, 1024, 24}, {128, 256, 1040},
                 {2, 96, 8}, {3, 8192, 64}, {5, 16, 16}};
-        java.util.Random random = new java.util.Random(20260928L);
+        Random random = new Random(20260928L);
         float inputScale = .3f, weightScale = .7f;
         boolean tensorCores = !Nd4j.getEnvironment().isCPU() && Nd4j.getNativeOps()
                 .getDeviceMajor(Nd4j.getAffinityManager().getDeviceForCurrentThread()) >= 8;
@@ -1092,7 +1096,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNvfp4TensorCorePathMatchesReference(Nd4jBackend backend) {
         int[][] shapes = {{1, 32, 8}, {5, 5120, 64}, {16, 512, 40}, {17, 1024, 24}, {128, 256, 136}, {5, 17408, 8}};
-        java.util.Random random = new java.util.Random(20260930L);
+        Random random = new Random(20260930L);
         float global = .1003f;
         for (DataType dtype : ACTIVATION_TYPES) {
             for (int[] shape : shapes) {
@@ -1148,7 +1152,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRowResultsIndependentOfRowCount(Nd4jBackend backend) {
-        java.util.Random random = new java.util.Random(20260929L);
+        Random random = new Random(20260929L);
         int k = 5120;
         for (boolean nv : new boolean[]{true, false})
         for (int n : new int[]{64, 6144})
@@ -1234,7 +1238,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
                 {3968, 32768, 1, DIRECT},
                 {5120, 64, 1, DIRECT},
                 {96, 4096, 3, DIRECT}};
-        java.util.Random random = new java.util.Random(20260930L);
+        Random random = new Random(20260930L);
         INDArray global = scalar(.1003f);
         DspDiagnostics.setCategories(DspDiagnostics.BACKEND);
         try {
@@ -1326,7 +1330,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
                 {2176, 32768, 1, DIRECT},
                 {6144, 5120, 1, EITHER, 4, EITHER, 5, EITHER, 9, DIRECT},
                 {17408, 5120, 1, EITHER, 3, EITHER, 9, DIRECT}};
-        java.util.Random random = new java.util.Random(20261001L);
+        Random random = new Random(20261001L);
         INDArray weightScale = scalar(.7f), inputScale = scalar(.3f);
         DspDiagnostics.setCategories(DspDiagnostics.BACKEND);
         try {
@@ -1408,7 +1412,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
         INDArray weightScale = scalar(1f);
         float[] scales = {.3f, 1f, 0x1p-4f, .0123f, 3.7f, 1.7e-5f, 2.3e4f, 0x1p-130f, 1.5e38f};
         int[] rowCounts = {1, 2, 5, 8, 9, 16, 17};
-        java.util.Random random = new java.util.Random(20261001L);
+        Random random = new Random(20261001L);
         if (tensorCores) DspDiagnostics.setCategories(DspDiagnostics.BACKEND);
         try {
             for (float s : scales) {
@@ -1480,7 +1484,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
     // The path a ModelOpt linear took since the last DspDiagnostics.clear(),
     // from its BACKEND event.
     private static String modelOptPath(String context) {
-        java.util.regex.Matcher path = java.util.regex.Pattern.compile("ModelOpt (?:FP8|NVFP4) linear path=([a-z-]+) ")
+        Matcher path = Pattern.compile("ModelOpt (?:FP8|NVFP4) linear path=([a-z-]+) ")
                 .matcher(DspDiagnostics.getJsonReport());
         assertTrue(path.find(), context + ": no ModelOpt linear path was recorded");
         String taken = path.group(1);
@@ -1491,7 +1495,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
     // The weight-only GEMM kernel a ModelOpt linear launched since the last
     // DspDiagnostics.clear(), from its BACKEND event.
     private static String weightOnlyKernel(String context) {
-        java.util.regex.Matcher launch = java.util.regex.Pattern.compile("WeightOnlyGemm (bulk|direct) ")
+        Matcher launch = Pattern.compile("WeightOnlyGemm (bulk|direct) ")
                 .matcher(DspDiagnostics.getJsonReport());
         assertTrue(launch.find(), context + ": no weight-only GEMM launch was recorded");
         String kernel = launch.group(1);
@@ -1509,7 +1513,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "modelopt.gemvBench", matches = "true")
+    @EnabledIfSystemProperty(named = "modelopt.gemvBench", matches = "true")
     public void benchDecodeGemvShapes(Nd4jBackend backend) {
         // {nvfp4 ? 1 : 0, N, K}
         int[][] shapes = {{1, 17408, 5120}, {1, 5120, 17408}, {0, 6144, 5120}, {0, 10240, 5120}, {0, 5120, 6144}};
@@ -1524,9 +1528,9 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
             }
         }
         int iterations = Integer.getInteger("modelopt.gemvBench.iterations", 50);
-        int[] rowCounts = java.util.Arrays.stream(System.getProperty("modelopt.gemvBench.rows", "1,5").split(","))
+        int[] rowCounts = Arrays.stream(System.getProperty("modelopt.gemvBench.rows", "1,5").split(","))
                 .map(String::trim).mapToInt(Integer::parseInt).toArray();
-        java.util.Random random = new java.util.Random(7);
+        Random random = new Random(7);
         for (int[] shape : shapes) {
             boolean nv = shape[0] == 1;
             int n = shape[1], k = shape[2];
@@ -1567,12 +1571,12 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "modelopt.mlpBench", matches = "true")
+    @EnabledIfSystemProperty(named = "modelopt.mlpBench", matches = "true")
     public void benchDecodeMlpSequence(Nd4jBackend backend) {
         int hidden = 5120, intermediate = 17408;
         int layers = Integer.getInteger("modelopt.mlpBench.layers", 8);
         int iterations = Integer.getInteger("modelopt.mlpBench.iterations", 20);
-        java.util.Random random = new java.util.Random(11);
+        Random random = new Random(11);
         DynamicCustomOp[][] ops = new DynamicCustomOp[layers][];
         INDArray x = Nd4j.rand(DataType.FLOAT, 1, hidden).subi(0.5).castTo(DataType.BFLOAT16);
         for (int layer = 0; layer < layers; layer++) {
@@ -1615,7 +1619,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "modelopt.mlpDspBench", matches = "true")
+    @EnabledIfSystemProperty(named = "modelopt.mlpDspBench", matches = "true")
     public void benchDecodeMlpDsp(Nd4jBackend backend) {
         int hidden = 5120, intermediate = 17408, value = 6144;
         int layers = Integer.getInteger("modelopt.mlpBench.layers", 8);
@@ -1623,7 +1627,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
         String interlude = System.getProperty("modelopt.mlpBench.fp8Interlude", "");
         boolean runInterlude = interlude.equals("true");
         boolean allocateInterlude = runInterlude || interlude.equals("allocate");
-        java.util.Random random = new java.util.Random(11);
+        Random random = new Random(11);
         try (SameDiff source = SameDiff.create()) {
             SDVariable x = source.placeHolder("x", DataType.BFLOAT16, 1, hidden);
             for (int layer = 0; layer < layers; layer++) {
@@ -1659,7 +1663,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
         }
     }
 
-    private static SDVariable nvfp4Projection(SameDiff sd, java.util.Random random, String name, SDVariable x,
+    private static SDVariable nvfp4Projection(SameDiff sd, Random random, String name, SDVariable x,
                                               int n, int k) {
         DynamicCustomOp op = nvfp4Projection(random, Nd4j.create(DataType.BFLOAT16, 1, k), n, k);
         INDArray[] arguments = op.inputArguments().toArray(new INDArray[0]);
@@ -1670,7 +1674,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
 
     // A random FP8 projection [n, k] of x: weight magnitudes 0.5 to 1 (E4M3
     // exponent 6, random sign and mantissa), scaled so outputs keep x's range.
-    private static SDVariable fp8Projection(SameDiff sd, java.util.Random random, String name, SDVariable x,
+    private static SDVariable fp8Projection(SameDiff sd, Random random, String name, SDVariable x,
                                             int n, int k) {
         byte[] bytes = new byte[n * k];
         random.nextBytes(bytes);
@@ -1681,7 +1685,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
     }
 
     // A random NVFP4 projection [n, k] of x, scales in the decoded-value range the model uses.
-    private static DynamicCustomOp nvfp4Projection(java.util.Random random, INDArray x, int n, int k) {
+    private static DynamicCustomOp nvfp4Projection(Random random, INDArray x, int n, int k) {
         byte[] bytes = new byte[n * (k / 2)];
         random.nextBytes(bytes);
         byte[] blocks = new byte[n * (k / 16)];
