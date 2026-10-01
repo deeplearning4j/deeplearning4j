@@ -14,6 +14,7 @@
 #include <ops/op_types.h>
 #include <ops/declarable/helpers/cuda/device_primitives.cuh>
 #include <cuda_runtime.h>
+#include <limits>
 #include <mutex>
 #include <stdexcept>
 #include <type_traits>
@@ -480,13 +481,21 @@ struct ModelOptTensorCores;
 template <>
 struct ModelOptTensorCores<ModelOptNvfp4> {
   static constexpr WeightOnlyFormat kWeightOnly = WeightOnlyFormat::MODELOPT_NVFP4;
-  static constexpr bool kScaledGemm = false;  // E2M1 weights dequantize inside the MMA kernel
+  // Every row count: E2M1 weights dequantize inside the MMA kernel.
+  static constexpr LongType kWeightOnlyRows = std::numeric_limits<LongType>::max();
+  static constexpr bool kScaledGemm = false;
 };
 
 template <>
 struct ModelOptTensorCores<ModelOptFp8> {
   static constexpr WeightOnlyFormat kWeightOnly = WeightOnlyFormat::MODELOPT_FP8;
-  static constexpr bool kScaledGemm = true;  // quantize once, then one cuBLASLt scaled GEMM
+  // Decode-class row counts (cuBLASLt's decode class, MmulHelper) stream the
+  // weights once through the weight-only MMA, which quantizes the activations
+  // in registers and accumulates every row count in one fixed order. Longer
+  // row counts quantize once and take one cuBLASLt scaled GEMM, whose FP8
+  // tensor cores reuse each weight tile across the rows.
+  static constexpr LongType kWeightOnlyRows = 16;
+  static constexpr bool kScaledGemm = true;
 };
 
 template <typename Format>
@@ -520,7 +529,8 @@ void modelOptLinear(LaunchContext* context, NDArray* x, NDArray* w, NDArray* sca
   NDArray::prepareSpecialUse({z}, {x, w, scale, secondScale});
   const LongType depth = x->sizeAt(-1);
   const LongType rows = depth > 0 ? x->lengthOf() / depth : 0;
-  const bool weightOnly = WeightOnlyGemm::isAdmitted(Route::kWeightOnly, x, w, scale, z);
+  const bool weightOnly =
+      rows <= Route::kWeightOnlyRows && WeightOnlyGemm::isAdmitted(Route::kWeightOnly, x, w, scale, z);
   bool scaledGemm = false;
   if constexpr (Route::kScaledGemm) {
     if (!weightOnly) {

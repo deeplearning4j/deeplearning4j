@@ -981,62 +981,96 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
     }
 
     /**
-     * FP8 linears whose shapes meet the cuBLASLt alignment rules (K and
-     * N * sizeof(output) multiples of 16 bytes) run as one scaled FP8 GEMM on
-     * tensor cores. Every product equals the native path's exact FP32 product
-     * quant(x) * quant(w); only the FP32 accumulation order belongs to the
-     * library, so the result is checked against an exact double reference with
-     * an accumulation-error bound (K * 2^-24 * sum|terms|) plus the output
-     * dtype's rounding. The GEMM admits only activations whose aggregate type
-     * is FP32 (FLOAT, HALF, BFLOAT16); DOUBLE activations take the native FP64
-     * kernels and must meet the same bound. Covers decode (1, 5) and prefill
-     * (128) row counts.
+     * FP8 linears run on tensor cores where their shapes allow. Decode-class
+     * calls (at most 16 rows) whose shapes the weight-only GEMM admits (K a
+     * multiple of 32, whole 8-column tiles) run on mma.m16n8k16 with each
+     * activation quantized to E4M3 in registers exactly as the native kernels
+     * quantize it. Longer calls, and shapes the weight-only GEMM does not
+     * admit, run as one scaled FP8 cuBLASLt GEMM when they meet its alignment
+     * rules (K and N * sizeof(output) multiples of 16 bytes). Both multiply the
+     * codes exactly and scale each output's FP32 sum once by
+     * inputScale * weightScale; only the FP32 accumulation order differs from
+     * the native kernels, so the result is checked against an exact double
+     * reference with an accumulation-error bound (K * 2^-24 * sum|terms|) plus
+     * the output dtype's rounding. Both admit only activations whose aggregate
+     * type is FP32 (FLOAT, HALF, BFLOAT16); DOUBLE activations take the native
+     * FP64 kernels and must meet the same bound. Covers decode (1, 5), one full
+     * MMA tile (16), the first call past the decode class (17), prefill (128),
+     * a K shorter than one chunk (96), a K split across blocks (8192 over 64
+     * columns) and a K the weight-only GEMM does not admit (16). On CUDA the
+     * path is read from the BACKEND diagnostics; no shape here has enough units
+     * to stage its weights on any device, so each takes the direct kernel
+     * unless -Dnd4j.weightOnly.staging=bulk forces staging.
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFp8TensorCorePathMatchesReference(Nd4jBackend backend) {
-        int[][] shapes = {{1, 512, 64}, {5, 5120, 48}, {128, 256, 1040}, {5, 16, 16}};
+        int[][] shapes = {{1, 512, 64}, {5, 5120, 48}, {16, 512, 40}, {17, 1024, 24}, {128, 256, 1040},
+                {2, 96, 8}, {3, 8192, 64}, {5, 16, 16}};
         java.util.Random random = new java.util.Random(20260928L);
         float inputScale = .3f, weightScale = .7f;
-        for (DataType dtype : ACTIVATION_TYPES) {
-            for (int[] shape : shapes) {
-                int rows = shape[0], k = shape[1], n = shape[2];
-                float[] values = new float[rows * k];
-                for (int i = 0; i < values.length; i++) values[i] = (random.nextInt(4097) - 2048) / 1024.0f;
-                INDArray x = Nd4j.create(values, new long[]{rows, k}, DataType.FLOAT).castTo(dtype);
-                double[] xs = x.castTo(DataType.DOUBLE).data().asDouble();
-                byte[] bytes = new byte[n * k];
-                for (int i = 0; i < bytes.length; i++)
-                    bytes[i] = (byte) ((random.nextInt(0x60) + 0x10) | (random.nextBoolean() ? 128 : 0));
-                INDArray w = raw(DataType.FLOAT8, bytes, n, k);
-                DataType acc = aggregate(dtype);
-                double[] a = new double[xs.length];
-                for (int i = 0; i < xs.length; i++) a[i] = fp8Activation(acc, xs[i], inputScale);
-                for (boolean floatOutput : new boolean[]{false, true}) {
-                    INDArray z = Nd4j.exec(new ModelOptFp8Linear(x, w, scalar(weightScale), scalar(inputScale),
-                            floatOutput))[0];
-                    DataType outType = floatOutput ? DataType.FLOAT : dtype;
-                    assertEquals(outType, z.dataType());
-                    double outputEpsilon = outType == DataType.HALF ? 0x1p-11 : outType == DataType.BFLOAT16 ? 0x1p-8 : 0;
-                    double[] actual = z.castTo(DataType.DOUBLE).data().asDouble();
-                    for (int row = 0; row < rows; row++) {
-                        for (int col = 0; col < n; col++) {
-                            double exact = 0, magnitude = 0;
-                            for (int kk = 0; kk < k; kk++) {
-                                double term = a[row * k + kk] * fp8Weight(acc, bytes[col * k + kk] & 255, weightScale);
-                                exact += term;
-                                magnitude += Math.abs(term);
+        boolean tensorCores = !Nd4j.getEnvironment().isCPU() && Nd4j.getNativeOps()
+                .getDeviceMajor(Nd4j.getAffinityManager().getDeviceForCurrentThread()) >= 8;
+        // Set from -Dnd4j.weightOnly.staging; "bulk" stages every shape that fits.
+        boolean forcedBulk = "bulk".equals(System.getenv("SD_WEIGHT_ONLY_STAGING"));
+        if (tensorCores) DspDiagnostics.setCategories(DspDiagnostics.BACKEND);
+        try {
+            for (DataType dtype : ACTIVATION_TYPES) {
+                for (int[] shape : shapes) {
+                    int rows = shape[0], k = shape[1], n = shape[2];
+                    float[] values = new float[rows * k];
+                    for (int i = 0; i < values.length; i++) values[i] = (random.nextInt(4097) - 2048) / 1024.0f;
+                    INDArray x = Nd4j.create(values, new long[]{rows, k}, DataType.FLOAT).castTo(dtype);
+                    double[] xs = x.castTo(DataType.DOUBLE).data().asDouble();
+                    byte[] bytes = new byte[n * k];
+                    for (int i = 0; i < bytes.length; i++)
+                        bytes[i] = (byte) ((random.nextInt(0x60) + 0x10) | (random.nextBoolean() ? 128 : 0));
+                    INDArray w = raw(DataType.FLOAT8, bytes, n, k);
+                    DataType acc = aggregate(dtype);
+                    double[] a = new double[xs.length];
+                    for (int i = 0; i < xs.length; i++) a[i] = fp8Activation(acc, xs[i], inputScale);
+                    boolean weightOnly = tensorCores && dtype != DataType.DOUBLE && rows <= 16 && k % 32 == 0
+                            && n % 8 == 0;
+                    for (boolean floatOutput : new boolean[]{false, true}) {
+                        String context = dtype + "/floatOutput=" + floatOutput + "/rows=" + rows + "/k=" + k
+                                + "/n=" + n;
+                        DspDiagnostics.clear();
+                        INDArray z = Nd4j.exec(new ModelOptFp8Linear(x, w, scalar(weightScale), scalar(inputScale),
+                                floatOutput))[0];
+                        if (tensorCores) {
+                            assertEquals(weightOnly, "weight-only-mma".equals(modelOptPath(context)), context
+                                    + ": decode-class calls the weight-only GEMM admits must take it, others not");
+                            if (weightOnly && !forcedBulk)
+                                assertEquals("direct", weightOnlyKernel(context),
+                                        context + ": too few units to stage on any device");
+                        }
+                        DataType outType = floatOutput ? DataType.FLOAT : dtype;
+                        assertEquals(outType, z.dataType());
+                        double outputEpsilon =
+                                outType == DataType.HALF ? 0x1p-11 : outType == DataType.BFLOAT16 ? 0x1p-8 : 0;
+                        double[] actual = z.castTo(DataType.DOUBLE).data().asDouble();
+                        for (int row = 0; row < rows; row++) {
+                            for (int col = 0; col < n; col++) {
+                                double exact = 0, magnitude = 0;
+                                for (int kk = 0; kk < k; kk++) {
+                                    double term =
+                                            a[row * k + kk] * fp8Weight(acc, bytes[col * k + kk] & 255, weightScale);
+                                    exact += term;
+                                    magnitude += Math.abs(term);
+                                }
+                                double tolerance = k * 0x1p-24 * magnitude + outputEpsilon * Math.abs(exact) + 1e-30;
+                                double got = actual[row * n + col];
+                                assertTrue(Math.abs(got - exact) <= tolerance,
+                                        dtype + "/floatOutput=" + floatOutput + "/rows=" + rows + "/k=" + k + "/n=" + n
+                                                + " at [" + row + "," + col + "]: exact " + exact + " got " + got
+                                                + " tolerance " + tolerance);
                             }
-                            double tolerance = k * 0x1p-24 * magnitude + outputEpsilon * Math.abs(exact) + 1e-30;
-                            double got = actual[row * n + col];
-                            assertTrue(Math.abs(got - exact) <= tolerance,
-                                    dtype + "/floatOutput=" + floatOutput + "/rows=" + rows + "/k=" + k + "/n=" + n
-                                            + " at [" + row + "," + col + "]: exact " + exact + " got " + got
-                                            + " tolerance " + tolerance);
                         }
                     }
                 }
             }
+        } finally {
+            if (tensorCores) DspDiagnostics.setCategories(DspDiagnostics.NONE);
         }
     }
 
@@ -1157,25 +1191,26 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
      * for bit. Block scales 2 bytes into their buffer are admitted (the kernels
      * read scale pairs) but cannot be bulk-copied, so they take the direct
      * kernel. The same scales 16-byte aligned take the bulk kernel where it was
-     * measured faster: a unit spans at least 4096 of K, the shape has at least
-     * four waves of units, and a unit's activation slice (rows by its K range)
-     * is at most 64 KB. BULK shapes meet that on every sm_90+ device with up to
-     * 256 SMs (at least 4096 units, tiles of 24 KB or less); DIRECT shapes fail
-     * it on every device; EITHER shapes depend on the SM count and only have to
-     * match. The launched kernel is read from the BACKEND diagnostics. Covers
-     * the Qwen3.6-27B projections' K ranges at decode widths 1 and 5 (the gate
-     * and up projections' K = 5120, at twice their 17408 columns so that every
-     * device has four waves; the down projection, K = 17408 over 5120 columns,
-     * split across four blocks), the 64 KB activation
-     * bound from both sides (K = 5120 at 6 and 7 rows, K = 4096 at 8 and 9),
-     * several units per block (65544 columns exceed the 8192-block grid, so
-     * blocks restage their tile), a partial last chunk with scale rows that are
-     * not 16-byte multiples (K = 5152), an uneven split whose K ranges start mid
-     * scale row and end in a partial chunk (K = 17696), a K shorter than one
-     * chunk (96), and shapes failing only the depth (K = 3968) or only the wave
-     * count (64 columns). With -Dnd4j.weightOnly.staging=direct every run must
-     * take the direct kernel; with =bulk the choice is not asserted, and every
-     * shape whose tile fits is compared staged against direct.
+     * measured faster: a unit's weight tile is at least 18 KB (K = 4096 for
+     * NVFP4), the shape has at least four waves of units, and the call has at
+     * most 8 rows (the MMA's lower half). BULK shapes meet that on every sm_90+
+     * device with up to 256 SMs (at least 4096 units, tiles of 24 KB or less);
+     * DIRECT shapes fail it on every device; EITHER shapes depend on the SM
+     * count and only have to match. The launched kernel is read from the
+     * BACKEND diagnostics. Covers the Qwen3.6-27B projections' K ranges at
+     * decode widths 1 and 5 (the gate and up projections' K = 5120, at twice
+     * their 17408 columns so that every device has four waves; the down
+     * projection, K = 17408 over 5120 columns, split across four blocks on
+     * GB10), the row bound from both sides (8 and 9 rows at K = 5120, 4096 and
+     * 17408), several units per block (65544 columns exceed the 8192-block
+     * grid, so blocks restage their tile), a partial last chunk with scale rows
+     * that are not 16-byte multiples (K = 5152), an uneven split whose K ranges
+     * start mid scale row and end in a partial chunk (K = 17696), a K shorter
+     * than one chunk (96), and shapes failing only the tile size (K = 3968, an
+     * 18,112-byte tile) or only the wave count (64 columns). With
+     * -Dnd4j.weightOnly.staging=direct every run must take the direct kernel;
+     * with =bulk the choice is not asserted, and every shape whose tile fits is
+     * compared staged against direct.
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -1189,10 +1224,10 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
         final int BULK = 1, DIRECT = 0, EITHER = -1;
         // {K, N, then (rows, kernel on sm_90+) pairs}
         int[][] shapes = {
-                {5120, 34816, 1, BULK, 5, BULK, 6, BULK, 7, DIRECT, 17, DIRECT},
+                {5120, 34816, 1, BULK, 5, BULK, 8, BULK, 9, DIRECT, 17, DIRECT},
                 {4096, 65544, 3, BULK, 8, BULK, 9, DIRECT},
                 {5152, 32768, 2, BULK, 6, BULK},
-                {17408, 5120, 1, EITHER, 5, EITHER, 8, DIRECT},
+                {17408, 5120, 1, EITHER, 5, EITHER, 8, EITHER, 9, DIRECT},
                 {17696, 5120, 3, EITHER, 7, EITHER},
                 {3968, 32768, 1, DIRECT},
                 {5120, 64, 1, DIRECT},
@@ -1252,7 +1287,106 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
         }
     }
 
-    // The weight-only GEMM kernel the NVFP4 linear launched since the last
+    /**
+     * The FP8 weight-only GEMM's bulk kernel must give the direct kernel's bits.
+     * FP8's weight scale is a scalar, so no call can be forced onto the direct
+     * kernel the way misaligned NVFP4 block scales are; each shape is compared
+     * across row counts instead. Every call's rows must equal the same rows of a
+     * 16-row call, which takes the direct kernel (staging stops at 8 rows), and
+     * a row does not depend on the call's width
+     * (testRowResultsIndependentOfRowCount). Besides the NVFP4 bounds (an 18 KB
+     * tile, four waves of units, at most 8 rows), FP8 stages a unit only while
+     * its activation slice, rows by its K range, fits the L1 that the resident
+     * bulk blocks leave, because every unit quantizes its slice again. At
+     * K = 5120 that is 2 rows on every sm_90+ device (GB10 keeps 28 KB beside two
+     * blocks), 3 rows only where more L1 remains, and 7 rows nowhere. BULK,
+     * DIRECT and EITHER mean what they mean in
+     * testNvfp4BulkStagingMatchesDirectKernel. Covers the tile bound from both
+     * sides (K = 2304, an 18,496-byte tile, and K = 2176, 17,472 bytes), the
+     * Qwen3.6-27B FP8 output projection (K = 6144 over 5120 columns, split in two
+     * on GB10) and a K split in four (17408 over 5120 columns).
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testFp8BulkStagingMatchesDirectKernel(Nd4jBackend backend) {
+        assumeFalse(Nd4j.getEnvironment().isCPU(), "the weight-only tensor-core GEMM is a CUDA kernel");
+        boolean bulkCopies = Nd4j.getNativeOps()
+                .getDeviceMajor(Nd4j.getAffinityManager().getDeviceForCurrentThread()) >= 9;
+        // Set from -Dnd4j.weightOnly.staging; empty selects the measured rule.
+        String staging = System.getenv("SD_WEIGHT_ONLY_STAGING");
+        boolean measuredRule = staging == null || staging.isEmpty();
+        final int BULK = 1, DIRECT = 0, EITHER = -1;
+        final int widest = 16;
+        // {K, N, then (rows, kernel on sm_90+) pairs}
+        int[][] shapes = {
+                {5120, 32768, 1, BULK, 2, BULK, 3, EITHER, 7, DIRECT, 9, DIRECT},
+                {2304, 32768, 1, BULK, 5, BULK},
+                {2176, 32768, 1, DIRECT},
+                {6144, 5120, 1, EITHER, 4, EITHER, 5, EITHER, 9, DIRECT},
+                {17408, 5120, 1, EITHER, 3, EITHER, 9, DIRECT}};
+        java.util.Random random = new java.util.Random(20261001L);
+        INDArray weightScale = scalar(.7f), inputScale = scalar(.3f);
+        DspDiagnostics.setCategories(DspDiagnostics.BACKEND);
+        try {
+            for (int[] shape : shapes) {
+                int k = shape[0], n = shape[1];
+                byte[] bytes = new byte[n * k];
+                for (int i = 0; i < bytes.length; i++)
+                    bytes[i] = (byte) ((random.nextInt(0x60) + 0x10) | (random.nextBoolean() ? 128 : 0));
+                INDArray w = raw(DataType.FLOAT8, bytes, n, k);
+                for (DataType dtype : new DataType[]{DataType.BFLOAT16, DataType.HALF}) {
+                    float[] values = new float[widest * k];
+                    for (int i = 0; i < values.length; i++) values[i] = (random.nextInt(4097) - 2048) / 1024.0f;
+                    INDArray all = Nd4j.create(values, new long[]{widest, k}, DataType.FLOAT).castTo(dtype);
+                    for (boolean floatOutput : new boolean[]{false, true}) {
+                        String context = dtype + "/floatOutput=" + floatOutput + "/k=" + k + "/n=" + n;
+                        DspDiagnostics.clear();
+                        INDArray reference =
+                                Nd4j.exec(new ModelOptFp8Linear(all, w, weightScale, inputScale, floatOutput))[0];
+                        if (!"bulk".equals(staging))
+                            assertEquals("direct", weightOnlyKernel(context + "/rows=" + widest),
+                                    context + ": a 16-row call must take the direct kernel");
+                        for (int pair = 2; pair < shape.length; pair += 2) {
+                            int rows = shape[pair], expected = shape[pair + 1];
+                            String call = context + "/rows=" + rows;
+                            INDArray x = all.get(NDArrayIndex.interval(0, rows), NDArrayIndex.all()).dup('c');
+                            DspDiagnostics.clear();
+                            INDArray z = Nd4j.exec(new ModelOptFp8Linear(x, w, weightScale, inputScale, floatOutput))[0];
+                            String kernel = weightOnlyKernel(call);
+                            if (!bulkCopies)
+                                assertEquals("direct", kernel, call + ": bulk copies need sm_90");
+                            else if ("direct".equals(staging))
+                                assertEquals("direct", kernel, call + ": staging is forced off");
+                            else if (measuredRule && expected == BULK)
+                                assertEquals("bulk", kernel, call + ": this shape must be staged");
+                            else if (measuredRule && expected == DIRECT)
+                                assertEquals("direct", kernel, call + ": staging this shape was measured slower");
+                            INDArray rowsOfReference =
+                                    reference.get(NDArrayIndex.interval(0, rows), NDArrayIndex.all()).dup('c');
+                            assertArrayEquals(rowsOfReference.castTo(DataType.FLOAT).data().asFloat(),
+                                    z.castTo(DataType.FLOAT).data().asFloat(),
+                                    call + ": the " + kernel + " kernel differs from the 16-row direct call");
+                        }
+                    }
+                }
+            }
+        } finally {
+            DspDiagnostics.setCategories(DspDiagnostics.NONE);
+        }
+    }
+
+    // The path a ModelOpt linear took since the last DspDiagnostics.clear(),
+    // from its BACKEND event.
+    private static String modelOptPath(String context) {
+        java.util.regex.Matcher path = java.util.regex.Pattern.compile("ModelOpt (?:FP8|NVFP4) linear path=([a-z-]+) ")
+                .matcher(DspDiagnostics.getJsonReport());
+        assertTrue(path.find(), context + ": no ModelOpt linear path was recorded");
+        String taken = path.group(1);
+        assertFalse(path.find(), context + ": more than one ModelOpt linear path was recorded");
+        return taken;
+    }
+
+    // The weight-only GEMM kernel a ModelOpt linear launched since the last
     // DspDiagnostics.clear(), from its BACKEND event.
     private static String weightOnlyKernel(String context) {
         java.util.regex.Matcher launch = java.util.regex.Pattern.compile("WeightOnlyGemm (bulk|direct) ")
@@ -1267,7 +1401,8 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
      * Throughput probe for the decode GEMVs of Qwen3.6-27B NVFP4 (shapes taken
      * from the imported graph), run in isolation so kernel work can be measured
      * in seconds instead of a full model run. Reports microseconds per call and
-     * effective weight bandwidth for the W=1 and W=5 row counts. Opt-in:
+     * effective weight bandwidth for the W=1 and W=5 row counts
+     * (-Dmodelopt.gemvBench.rows=r,... overrides them). Opt-in:
      * -Dmodelopt.gemvBench=true (not a correctness test).
      */
     @ParameterizedTest
@@ -1287,6 +1422,8 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
             }
         }
         int iterations = Integer.getInteger("modelopt.gemvBench.iterations", 50);
+        int[] rowCounts = java.util.Arrays.stream(System.getProperty("modelopt.gemvBench.rows", "1,5").split(","))
+                .map(String::trim).mapToInt(Integer::parseInt).toArray();
         java.util.Random random = new java.util.Random(7);
         for (int[] shape : shapes) {
             boolean nv = shape[0] == 1;
@@ -1301,7 +1438,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
             INDArray scale = nv ? raw(DataType.FLOAT8, blocks, n, k / 16) : scalar(.7f);
             INDArray global = scalar(nv ? .1003f : .3f);
             long weightBytes = (long) bytes.length + blocks.length;
-            for (int rows : new int[]{1, 5}) {
+            for (int rows : rowCounts) {
                 INDArray x = Nd4j.rand(DataType.FLOAT, rows, k).subi(0.5).castTo(DataType.BFLOAT16);
                 INDArray z = Nd4j.create(DataType.BFLOAT16, rows, n);
                 DynamicCustomOp op = nv ? new ModelOptNvfp4Linear(x, w, scale, global, false)

@@ -300,41 +300,63 @@ This batch is source-only. No build, test, device parity, capture/replay, or
 performance validation has run. The parent owns the consolidated SM121 build,
 focused window-parity test and wider DSP regression gates.
 
-## FP8 linears on tensor cores (cuBLASLt)
+## FP8 linears on tensor cores
 
-`modelopt_fp8_linear` runs, when admitted, as one scaled cuBLASLt FP8 GEMM. The
-activation is quantized once per call into a dense scratch operand, with the
-same saturated quantizer as the native kernels
-(`modelOptQuantize<ModelOptFp8::Activation>`). `MmulHelper::ltMatmulScaled`
-then computes `(inputScale * weightScale) * E4M3(X) . E4M3(W)^T` with FP32
-accumulation.
+`modelopt_fp8_linear` runs on tensor cores whenever it is admitted. Both
+tensor-core paths compute `(inputScale * weightScale) * E4M3(X) . E4M3(W)^T`
+with FP32 accumulation. They quantize the activation with the native kernels'
+saturated quantizer (`modelOptQuantize<ModelOptFp8::Activation>`).
+- **Up to 16 rows** (the decode class below): ADR 0123's weight-only GEMM. It
+  streams the weights once and quantizes the activations in registers. Its
+  accumulation order is fixed by the kernel and does not depend on the row
+  count.
+- **More than 16 rows**: one scaled cuBLASLt FP8 GEMM. The activation is
+  quantized once per call into a dense scratch operand, and
+  `MmulHelper::ltMatmulScaled` multiplies it. The FP8 tensor cores reuse each
+  weight tile across the rows, which the weight-only GEMM does not. The
+  accumulation order is the library's.
+
+`ModelOptTensorCores<ModelOptFp8>` (`modelopt_linear.cu`) holds the 16-row
+bound.
 
 Every E4M3 x E4M3 product is exact in FP32, and the scale product multiplies
-each output's sum once. The accumulation order is the library's. The native
-kernels instead multiply the dequantized operands, (E4M3(x) * inputScale) *
-(w * weightScale). The two paths therefore agree within an FP32
-accumulation-error bound, not bit for bit
-(`TestModelOptLinear#testFp8TensorCorePathMatchesReference`).
+each output's sum once. The native kernels instead multiply the dequantized
+operands, (E4M3(x) * inputScale) * (w * weightScale). The paths therefore agree
+within an FP32 accumulation-error bound, not bit for bit
+(`TestModelOptLinear#testFp8TensorCorePathMatchesReference`, which also checks
+which path each call takes).
 
 Admission has two parts:
-- **Accumulator.** The activation's aggregate type must be the GEMM's FP32
-  accumulator. HALF, BFLOAT16 and FLOAT are admitted; DOUBLE keeps the native
-  FP64 kernels.
-- **Shape.** K * sizeof(E4M3) and N * sizeof(output) are multiples of 16
-  bytes, W and Z are dense row-major, and their bases are 16-byte aligned.
+- **Accumulator.** The activation's aggregate type must be the FP32
+  accumulator that both paths use. HALF, BFLOAT16 and FLOAT are admitted;
+  DOUBLE keeps the native FP64 kernels.
+- **Shape.** The weight-only GEMM needs K a multiple of 32, N a multiple of 8,
+  dense row-major X, W and Z, and 16-byte-aligned bases (sm_80+). cuBLASLt
+  needs K * sizeof(E4M3) and N * sizeof(output) to be multiples of 16 bytes,
+  W and Z dense row-major, and 16-byte-aligned bases.
 
-Anything else stays on the native kernels. FLOAT activations took this path
+A decode-class call that the weight-only GEMM does not admit tries cuBLASLt.
+Admission depends on the shape, types and layout, not on the row count. Every
+call of a linear up to 16 rows therefore takes the same path. Anything else
+stays on the native kernels. FLOAT activations took this path
 before too: the earlier statement that they never did did not match the gate,
 which checked no activation dtype.
 
-Algorithm selection is a pure function of the problem: no split-K reduction, no
-workspace, and no dependence on capture mode or workspace availability, so
-results are bit-reproducible under graph capture and replay. Calls of up to 16
-rows share the algorithm selected for 16 rows, so a row's result does not depend
-on the call's width (the W=1/W=5 concern above); `TestModelOptLinear#
-testRowResultsIndependentOfRowCount` pins this at the 27B shapes. The native
-tiled kernel's bit-exact lane contract stays pinned for the FP8 shapes that do
-not meet the alignment rules.
+Both paths are bit-reproducible under graph capture and replay, and in both a
+row's result does not depend on the call's width up to 16 rows (the W=1/W=5
+concern above):
+- The weight-only GEMM's accumulation order follows from its tile shape, K
+  ranges and K split. These depend only on the shape and the device's SM
+  count. Its bulk-staged and direct kernels give the same bits, so row-based
+  staging changes only timing.
+- cuBLASLt's algorithm selection is a pure function of the problem: no split-K
+  reduction, no workspace, and no dependence on capture mode or workspace
+  availability. Calls of up to 16 rows that reach it share the algorithm
+  selected for 16 rows.
+
+`TestModelOptLinear#testRowResultsIndependentOfRowCount` pins this at the 27B
+shapes. The native tiled kernel's bit-exact lane contract stays pinned for the
+FP8 shapes that do not meet the alignment rules.
 
 Measured on GB10 (Qwen3.6-27B shapes, 5 rows): 3.2-5.4 ms per call on the
 original native kernel, 0.18-0.28 ms on cuBLASLt. The 27B losslessness gate
@@ -531,9 +553,11 @@ exactly (`LargeSameDiffSerializationTest#testInlineLowPrecisionConstantsSurviveD
 
 ## Consequences and validation
 
-The CUDA NVFP4 implementations are packed FMA kernels, NOT FP4 Tensor Core
-kernels (see ADR 0123); FP8 runs on tensor cores through cuBLASLt as described
-above. No complete model support is claimed by their existence. The reference checkpoint is W4A16; changing its
+The CUDA NVFP4 linears dequantize the E2M1 weights in registers and multiply
+them on BF16/FP16 tensor cores where ADR 0123 admits them, and on packed FMA
+kernels otherwise. They are NOT FP4 Tensor Core kernels. FP8 runs on tensor
+cores, through the weight-only GEMM up to 16 rows and cuBLASLt beyond, as
+described above. No complete model support is claimed by their existence. The reference checkpoint is W4A16; changing its
 activation quantizer to obtain W4A4 acceleration is not a compatible optimization.
 A dedicated optimized implementation must preserve the same numerical contract.
 

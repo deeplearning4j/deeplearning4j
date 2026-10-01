@@ -6,7 +6,8 @@ Accepted, step 1 in progress. ModelOpt NVFP4 with BF16/FP16 activations is
 implemented (`helpers/cuda/WeightOnlyGemm.cu`); the FP32-activation (3xTF32)
 policy and the GGML/AWQ/GPTQ formats are not yet implemented. Until then, FLOAT
 and DOUBLE activations take the native kernels of their operator (ADR 0122).
-`WeightOnlyFormat::MODELOPT_FP8` is declared but not yet admitted.
+ModelOpt FP8 (W8A8) is admitted for every activation type that accumulates in
+FP32 (BF16, FP16 and FLOAT), at up to 16 rows (see Weight-format policy).
 
 Measured on GB10, sm_121, 2026-09-27, kernel time under nsys:
 
@@ -25,6 +26,15 @@ through L2:
 - 5120x17408: 241 us direct, 226 us staged (222 GB/s).
 - Greedy, back-to-back at 250 tokens: 10.92 tok/s direct, 11.52 tok/s staged,
   with identical tokens (after the split combine moved to release/acquire).
+
+2026-10-01, after FP8 (W8A8) moved onto this kernel for calls of up to 16 rows
+and the split and staging rules were re-measured (see the few-wave split and
+Bulk-copy staging). On Qwen3.6-27B-NVFP4 at 250 tokens:
+- Greedy: 11.87 and 12.12 tok/s, against 11.58 at the previous commit.
+- MTP: 29.87 tok/s, 0 emission deltas against greedy.
+- The greedy tokens differ from the previous commit's: the FP8 linears now
+  sum in this kernel's fixed order, with out_proj and o_proj split in two,
+  instead of cuBLASLt's. Both runs of the new build gave the same tokens.
 
 ## Context
 
@@ -86,14 +96,20 @@ the primitive through a helper API (alongside `MmulHelper::ltMatmulScaled`).
   ranges and reduction order are compile-time constants independent of the row
   count: results are bit-reproducible under capture/replay and a row's result
   never depends on how many rows the call carries.
-- Few-wave shapes split K across blocks. When a shape's column groups fill
-  fewer than 4 waves of resident blocks and K leaves every split warp at least
-  two chunks, `kSplitBlocks = 4` blocks share a column group. Each block reduces
-  its warps as above and stores its partial tile, in the accumulator type, in
-  persistent per-device scratch sized in bytes. The group's last block to
-  arrive (an atomic ticket, reset by that
-  block) adds the partials in ascending block order. There is no extra launch
-  and no per-call allocation. The scratch grows only outside stream capture.
+- Few-wave shapes split K across blocks. A shape whose column groups fill
+  fewer than 4 waves of resident blocks (`kSplitWaveLimit`) may share each
+  group among 2 or 4 blocks (`kSplitBlocks` caps it at 4).
+  - Only splits that leave every split warp at least two chunks to pipeline
+    qualify.
+  - Of those, the split whose units best fill the waves they occupy wins, the
+    larger on a tie (shorter units shorten the last wave).
+  - It must fill its waves strictly better than the unsplit groups, because
+    the combine costs time.
+  - Each block reduces its warps as above and stores its partial tile, in the
+    accumulator type, in persistent per-device scratch sized in bytes. The
+    group's last block to arrive (an atomic ticket, reset by that block) adds
+    the partials in ascending block order. There is no extra launch and no
+    per-call allocation. The scratch grows only outside stream capture.
   - The ticket orders the partials with release/acquire, as a grid barrier
     does. After the block's closing barrier, thread 0 takes the ticket with a
     release RMW (`atom.release.gpu`). Only the last arrival issues an acquire
@@ -111,9 +127,16 @@ the primitive through a helper API (alongside `MmulHelper::ltMatmulScaled`).
     bit-identical results. Without the preceding reads: 230 and 224 µs.
   - The split depends only on the shape and the device's SM count, so row
     invariance and replay determinism hold.
-  - On GB10 this covers only the Qwen3.6-27B down projection (N=5120,
-    K=17408): 640 column groups against 192 resident blocks, whose partial
-    last wave cost about 19% of that kernel.
+  - On GB10 (192 resident blocks), three Qwen3.6-27B shapes have few waves:
+    - The NVFP4 down projection (N=5120, K=17408, 640 column groups) fills
+      83% of its waves unsplit and 95% split in 2 or 4. It splits in 4, which
+      ran 3% faster than 2. Unsplit, its partial last wave cost about 19% of
+      the kernel.
+    - The FP8 out_proj and o_proj (N=5120, K=6144) also fill 83% unsplit and
+      95% split in 2. They split in 2 (4 would leave a split warp fewer than
+      two chunks) and ran 6% faster.
+    - k_proj and v_proj (N=1024, K=5120, 128 column groups) fill two thirds
+      of a wave either way and stay unsplit; split in 2 they ran 7% slower.
   - Measured back-to-back at 250 tokens, greedy went from 10.66 to 10.89 tok/s
     (+2.2%). The earlier separate-launch split-K with per-call scratch was ~2%
     slower. `SD_WEIGHT_ONLY_SPLIT_BLOCKS` (1, 2 or 4; platform-tests
@@ -164,17 +187,31 @@ combine, but stages each unit's weights in shared memory before its MMAs.
   affecting row invariance or replay.
 
 **Selection.** Measured on GB10 (48 SMs, 128 KB of L1 and shared memory per
-SM). The bulk kernel runs only when all four conditions hold:
+SM) as interleaved direct/bulk pairs at 1, 2 and 5 rows unless noted. The bulk
+kernel runs only when every condition holds (`bulkStagingPays`):
 
 | Condition | Reason | Bulk against direct |
 |---|---|---|
-| A unit spans >= 4096 of K | A unit waits for its copy once; short ranges do not amortize the wait | N=17408, 1 row: K=2048 and 3072 1-2% slower, 4096 4% faster, 5120 11% faster |
+| The tile is >= 18 KB (`kBulkMinTileBytes`) | A staged unit has a fixed cost: the copy's issue, the barrier wait and the restage sync. A short tile does not amortize it | 8-9 KB tiles 7-20% slower (FP8 N=12288, K=1024; NVFP4 N=17408, K=2048). 14-16 KB tiles go either way from one run to the next (FP8 N=12288, K=2048: 22% slower to 6% faster; NVFP4 N=17408, K=3072 and 3584: 1% slower to 8% faster). From 18 KB every pair is faster or within 2% (NVFP4 K=4096 up to 6% faster, K=5120 11%; FP8 N=12288, K=2560 and 3072 up to 8%; FP8 5120x6144 split in two: 2% slower to 5% faster) |
 | >= 4 waves of units (kSplitWaveLimit x resident blocks) | One block's copy overlaps other blocks' MMAs only while every SM keeps cycling units | K=5120, 1 row: 512 units 11% slower, 640 5% slower, 768 2% faster, 2176 11% faster |
-| rows x the unit's K range x activation bytes <= 64 KB | The tile's shared memory is carved out of L1, which must still hold the activation slice | N=17408, K=5120: 6 rows (60 KB) 1% faster, 7 rows (70 KB) 13% slower, 16 rows 49% slower |
+| At most 8 rows (the MMA's lower half, `kMmaRows / 2`) | A block's warps start a unit only once its whole tile has landed, so only the other resident blocks hide its copy, and the upper half's activations lengthen every unit | NVFP4 N=17408, K=5120: 2 to 8 rows 4-6% faster, 12 rows 8% slower, 16 rows 4% slower |
+| Formats that quantize their activations (`kQuantizesActivations`, FP8): rows x the unit's K range x activation bytes fits the L1 beside the resident bulk blocks' shared memory (`bulkL1`) | Each unit requantizes its activation slice; past L1 it rereads the slice from L2 | FP8, two blocks per SM beside 28 KB of L1, N=10240, K=5120: 1 and 2 rows 3-5% faster, 3 rows even, 6 to 8 rows 8-10% slower, 12 and 16 rows 41-47% slower. N=12288, K=2560, three blocks per SM: 1 to 4 rows 4-6% faster, 6 and 8 rows within 3% |
 | Tile fits two resident blocks per SM | Staging pays only while a second block computes during the first one's copies | Unsplit K=12288 and 17408 (one block per SM) 5-7% slower; K=9216 (two per SM) 14% faster |
 
-At 8 rows, the direct kernel alone, forced to the same carve-out, runs 33%
-slower. That supports L1 as the cause of the third condition.
+`bulkL1` takes the occupancy of the bulk kernel at the tile's size and the
+smallest shared-memory carve-out that holds those blocks. Compute capability
+8.0 and later carve 0, 8, 16, 32, 64, 100, 132, 164, 196 or 228 KB, up to the
+device's largest, out of a unified cache 28 KB larger than that largest. On
+GB10 that is 128 KB beside a 100 KB carve-out.
+
+The rule replaces the one of 2026-09-30, which asked for a unit of at least
+4096 of K and an activation slice of at most 64 KB. That limit rested on a
+single measurement of NVFP4 at N=17408, K=5120, where 7 rows (70 KB) ran 13%
+slower. In the interleaved pairs of 2026-10-01 the same shape runs 4-6% faster
+through 8 rows. NVFP4 staging also pays beside 28 KB of L1 (N=12288, K=9216,
+two blocks per SM: 1 row 12% faster, 8 rows 2% faster). NVFP4 activations pass
+to the MMA as they are, so only formats that requantize the slice per unit
+depend on L1.
 
 **Qwen3.6-27B-NVFP4.** At decode (1 and 5 rows), every NVFP4 projection
 stages. Kernel medians for 1 row, direct against bulk:
@@ -186,6 +223,14 @@ stages. Kernel medians for 1 row, direct against bulk:
 | lm_head | 31,040 units | 3290 µs (217 GB/s) | 2944 µs (243 GB/s) |
 
 Prefill takes the direct kernel.
+
+FP8 stages fewer shapes, because each unit requantizes its activation slice
+(Selection):
+- N=10240, 6144 and 12288 with K=5120 (unsplit 41,024-byte tiles, two blocks
+  per SM beside 28 KB of L1): bulk at 1 and 2 rows, direct from 3 rows.
+- N=5120, K=6144 (split in 2, 24,640-byte tiles, three blocks per SM beside
+  28 KB): bulk through 4 rows.
+- N=1024, K=5120: 128 units, under 4 waves, so direct.
 
 Measured back-to-back at 250 tokens, alternating the two kernels twice (see
 Override), greedy went from 10.87 and 10.97 to 11.53 and 11.51 tok/s. That is
@@ -223,6 +268,29 @@ arithmetic exactly, so dequantized weights are bit-identical to today's:
 
 - NVFP4 (ADR 0122): FP32 block x global scale, FP32 E2M1 x scale, round to the
   activation dtype. One MMA K-step is exactly one scale block.
+- ModelOpt FP8 (ADR 0122), W8A8. Each activation is quantized to E4M3 with the
+  static input scale, as every native FP8 path quantizes it
+  (`modelOptQuantize`), and multiplies the weights' E4M3 codes. Every E4M3
+  value is exact in FP16, so codes enter an FP16 MMA and every product is exact
+  in the FP32 accumulator. Each output's sum is scaled once by inputScale x
+  weightScale, as the cuBLASLt scaled GEMM scales it.
+  - The weights need no dequantization, so the format sets
+    `kQuantizesActivations` instead. A lane quantizes its activation fragment
+    in registers at every MMA step.
+  - A lane's 32 codes of a chunk are two runs of 16. Member m's run r starts at
+    K offset 64r + 16m, so each 16-byte load of a lane group's four members
+    reads 64 contiguous bytes of their row: two whole 32-byte sectors.
+    Contiguous 32-code ranges per lane made every load touch half of each of
+    four sectors, so a chunk's two loads requested every sector twice.
+  - `ModelOptTensorCores<ModelOptFp8>` (`modelopt_linear.cu`) sends calls of up
+    to 16 rows here and longer calls to cuBLASLt's scaled FP8 GEMM. Those
+    calls are ADR 0122's decode class: a row's result does not depend on how
+    many rows up to 16 the call carries. Past 16 rows the tensor cores' reuse
+    of each weight tile across rows pays. Per call at N=10240, K=5120,
+    2026-10-01: cuBLASLt at 17 rows takes 303 µs, and this kernel 265 µs at
+    1 row, 281 µs at 8 and 324 µs at 16. The 16-row bound is the decode
+    class's contract, not a crossover. Rows 9 to 16 cost more here because
+    every lane quantizes two rows of activations at every MMA step.
 - GGML Q8_0 / Q4_K / Q6_K: the ggml block formulas as implemented by the current
   `ggml_qmatmul` kernels.
 - AWQ / GPTQ INT4: (q - zero) * scale per group, as in `weight_dequant`.
@@ -237,6 +305,10 @@ arithmetic exactly, so dequantized weights are bit-identical to today's:
   float type, converted once from the accumulator.
 - BF16 and FP16 activations enter the MMA unchanged; with weights rounded to the
   same dtype, every product is exact in FP32.
+- A format that quantizes its activations names its MMA element itself. FP8
+  multiplies E4M3 codes as FP16 elements for every admitted X, so it admits
+  each type whose aggregate type is FP32: BF16, FP16 and FLOAT. DOUBLE
+  aggregates in FP64 and takes the operator's native kernels.
 - FP32 activations use a split-precision MMA (3xTF32: hi*hi + hi*lo + lo*hi, the
   scheme CUTLASS calls fast-accurate FP32). Products are FP32-accurate rather
   than bit-exact FP32 (the lo*lo term is dropped); the extra MMAs are free in a
@@ -257,6 +329,8 @@ configuration is registered in `LaunchDims.h`/`.cu` and validated before launch.
 ## Rollout
 
 1. Mainloop + activation policies + NVFP4 format; `modelopt_nvfp4_linear` uses it.
+   ModelOpt FP8 follows on the same mainloop for `modelopt_fp8_linear`'s
+   decode-class calls.
 2. GGML Q8_0 / Q4_K / Q6_K in `ggml_qmatmul`.
 3. AWQ / GPTQ INT4, replacing dequantize-then-dense.
 
@@ -288,6 +362,19 @@ Per format, in `platform-tests`:
   selection condition. They include several units per block, partial chunks,
   unaligned scale rows, uneven splits, and block scales that are only 2-byte
   aligned, which must take the direct kernel.
+- FP8:
+  - `testFp8TensorCorePathMatchesReference` reads the path from the BACKEND
+    diagnostics. The weight-only GEMM must run exactly for admitted calls of up
+    to 16 rows; cuBLASLt or the native kernels run the rest. Every path is
+    checked against the exact double reference.
+  - `testFp8BulkStagingMatchesDirectKernel` cannot force a call onto the
+    direct kernel, because the weight scale is a scalar. It compares each
+    call's rows with the same rows of a 16-row call, which always takes the
+    direct kernel. Its shapes cover the 18 KB tile bound from both sides, the
+    L1 condition at K=5120 (1-2 rows staged, 7 and 9 rows not), the 27B output
+    projection split in 2, and a K split in 4.
+  - `testRowResultsIndependentOfRowCount` includes FP8 6144x5120 at 1 to 16
+    rows.
 - Non-admitted layouts still produce the native kernels' results.
 - Microbenchmark at real shapes: >= 200 GB/s for decode (NVFP4 17408x5120 and
   5120x17408, rows 1 and 5; scalar kernel today: 49-78 GB/s).
