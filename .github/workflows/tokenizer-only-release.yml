@@ -1,0 +1,212 @@
+name: Tokenizer-only coherent snapshot
+
+on:
+  workflow_call:
+    inputs:
+      dryRun:
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# This deliberately does NOT invoke _release-worker, backend builds or SDX.
+jobs:
+  preflight:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: Require hosted runner and configured publication credentials
+        shell: bash
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          DRY_RUN: ${{ inputs.dryRun }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+        run: |
+          set -Eeuo pipefail
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          required=(R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY)
+          if [[ "$DRY_RUN" == false ]]; then
+            required+=(CENTRAL_SONATYPE_TOKEN_USERNAME CENTRAL_SONATYPE_TOKEN_PASSWORD)
+          fi
+          for name in "${required[@]}"; do
+            [[ -n "${!name}" ]] || { printf 'Required secret missing: %s\n' "$name" >&2; exit 2; }
+          done
+
+  produce:
+    needs: preflight
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {classifier: linux-x86_64, runner: ubuntu-22.04, os: linux}
+          - {classifier: linux-arm64, runner: ubuntu-24.04-arm, os: linux}
+          - {classifier: windows-x86_64, runner: windows-2022, os: windows}
+          - {classifier: macosx-arm64, runner: macos-14, os: macosx}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - name: Require hosted runner
+        shell: bash
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: test "$RUNNER_ENVIRONMENT" = github-hosted
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '11'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          msystem: MINGW64
+          release: false
+          update: true
+          install: >-
+            base-devel git pkg-config mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-gcc mingw-w64-x86_64-make
+            mingw-w64-x86_64-libwinpthread-git
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ runner.os == 'Windows' && 'stable-x86_64-pc-windows-gnu' || 'stable' }}
+      - name: Linux build prerequisites
+        if: runner.os == 'Linux'
+        shell: bash
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake pkg-config libssl-dev
+      - name: Install only tokenizer reactor
+        shell: bash
+        env:
+          DL4J_PLATFORM: ${{ matrix.classifier }}
+          DL4J_OS: ${{ matrix.os }}
+          DL4J_MAVEN_GOAL: install
+          DL4J_BUILD_SDX: '0'
+          DL4J_TOKENIZERS_JAVA: '0'
+          DL4J_RELEASE_METADATA: '1'
+          # Stable shared documentation/JAR metadata across all four producers.
+          MAVEN_OPTS: '-Dproject.build.outputTimestamp=2026-01-01T00:00:00Z -Dnotimestamp=true -Dfile.encoding=UTF-8'
+        run: |
+          set -Eeuo pipefail
+          export DL4J_MAVEN_REPOSITORY="$RUNNER_TEMP/tokenizer-m2"
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            export PATH="/c/msys64/mingw64/bin:/c/msys64/usr/bin:$PATH"
+            export DL4J_MINGW_BIN=/c/msys64/mingw64/bin
+            export RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-gnu
+            export DL4J_MAVEN_REPOSITORY="$(cygpath -m "$DL4J_MAVEN_REPOSITORY")"
+          fi
+          bash build-scripts/release/cross-platform.sh --run-tokenizers
+          python release/github/tokenizer-publication.py collect \
+            --repository "$DL4J_MAVEN_REPOSITORY" --output tokenizer-payload \
+            --classifier "$DL4J_PLATFORM" --commit "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --version 1.0.0-SNAPSHOT
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tokenizer-${{ matrix.classifier }}
+          path: tokenizer-payload/
+          if-no-files-found: error
+          retention-days: 90
+
+  merge-retain:
+    needs: produce
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: tokenizer-*
+          path: payloads
+      - name: Verify complete source/run-matched four-host repository
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test '${{ runner.environment }}' = github-hosted
+          python release/github/tokenizer-publication.py merge \
+            --inputs payloads --output merged --commit "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --version 1.0.0-SNAPSHOT
+      - name: Retain and read-back verify before publication queue
+        shell: bash
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          DL4J_CACHE_BACKEND: r2
+          DL4J_S3_ENDPOINT: https://318204901782458555a243ad96f80e3f.r2.cloudflarestorage.com
+          DL4J_S3_REGION: auto
+        run: |
+          set -Eeuo pipefail
+          python -m pip install 'boto3==1.40.76'
+          archive="$RUNNER_TEMP/tokenizer-payload.tar"
+          tar -cf "$archive" -C merged .
+          digest=$(sha256sum "$archive"); digest=${digest%% *}
+          prefix="deeplearning4j/releases/tokenizers/1.0.0-SNAPSHOT/$GITHUB_SHA/github-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          python release/aws/cloud-io.py upload --bucket dl4j-cache --object "$prefix/payload.tar" --file "$archive"
+          rm "$archive"
+          python release/aws/cloud-io.py download --bucket dl4j-cache --object "$prefix/payload.tar" --file "$archive"
+          actual=$(sha256sum "$archive"); test "${actual%% *}" = "$digest"
+          checksum="$RUNNER_TEMP/payload.tar.sha256"
+          printf '%s  tokenizer-payload.tar\n' "$digest" > "$checksum"
+          python release/aws/cloud-io.py upload --bucket dl4j-cache --object "$prefix/payload.tar.sha256" --file "$checksum"
+          rm "$archive" "$checksum"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tokenizer-verified-merged
+          path: merged/
+          if-no-files-found: error
+          retention-days: 90
+
+  publish:
+    needs: merge-retain
+    if: ${{ !inputs.dryRun }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    concurrency:
+      group: ossrh-upload-snapshots
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '11'
+          server-id: central-portal-snapshots
+          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
+          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - uses: actions/download-artifact@v8
+        with:
+          name: tokenizer-verified-merged
+          path: merged
+      - name: Reverify handoff and publish all classifiers together
+        shell: bash
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+        run: |
+          set -Eeuo pipefail
+          test '${{ runner.environment }}' = github-hosted
+          python release/github/tokenizer-publication.py verify \
+            --repository merged --commit "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" --version 1.0.0-SNAPSHOT
+          python release/github/tokenizer-publication.py deploy \
+            --repository merged --version 1.0.0-SNAPSHOT
+          python release/github/tokenizer-publication.py verify --remote \
+            --repository merged --commit "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" --version 1.0.0-SNAPSHOT
