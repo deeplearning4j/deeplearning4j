@@ -261,6 +261,23 @@ class InGraphKvState implements AutoCloseable {
         }
     }
 
+    /**
+     * Ends the execution leases at a generation boundary: the scalar target lease with its owned
+     * inputs, then both MTP repair leases. The repair sessions stay for the next capture. A failed
+     * release keeps its lease, so the call can be retried.
+     */
+    void closeExecutionLeases() {
+        closeScalarTarget();
+        if (mtpRepairBinding != null) {
+            mtpRepairBinding.close();
+            mtpRepairBinding = null;
+        }
+        if (mtpRepairBatchBinding != null) {
+            mtpRepairBatchBinding.close();
+            mtpRepairBatchBinding = null;
+        }
+    }
+
     // ── Running decode state ─────────────────────────────────────────────────────────────────────
     /** Absolute position at which the next-fed token ({@link #lastGeneratedToken}) is written: {@code P + G - 1}. */
     volatile int cachePosition;
@@ -408,14 +425,7 @@ class InGraphKvState implements AutoCloseable {
         if (closed) return;
         // Lease/context wrappers must be released before any borrowed buffers or sessions.
         // Leave ownership retryable if binding teardown fails.
-        closeScalarTarget();
-        if (mtpRepairBinding != null) {
-            try {
-                mtpRepairBinding.close();
-            } finally {
-                mtpRepairBinding = null;
-            }
-        }
+        closeExecutionLeases();
         if (mtpRepairSession != null) {
             try {
                 mtpRepairSession.clearAllCaches();
@@ -423,13 +433,6 @@ class InGraphKvState implements AutoCloseable {
                 log.warn("[GenerationSession] error clearing MTP repair session: {}", e.getMessage());
             } finally {
                 mtpRepairSession = null;
-            }
-        }
-        if (mtpRepairBatchBinding != null) {
-            try {
-                mtpRepairBatchBinding.close();
-            } finally {
-                mtpRepairBatchBinding = null;
             }
         }
         if (mtpRepairBatchSession != null) {

@@ -24,8 +24,8 @@
  *
  *   Case 3 (F2a) BOOTSTRAP_NO_ZERO_ROW: the committed prefill rows contain NO
  *     all-zero row — row t is the (x_(t+1), h_t) pair, so the prefill cache
- *     holds exactly N meaningful rows (the warmup pair overwrites the last
- *     row's continuation at cache slot N).
+ *     holds exactly N meaningful rows (the warmup REWRITES the tail row N-1
+ *     with the (firstGen, h_(N-1)) pair; the pending slot N stays unwritten).
  *
  *   Case 4 (F2b) IDS_SHIFTED_LEFT: the predictor prefill ids are the prompt
  *     ids shifted LEFT by one (x1..xN-1) with the first target-sampled token
@@ -40,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -255,29 +257,30 @@ public class TestMtpPredictorContract {
                                 + "cache = exactly " + N + " meaningful rows)");
             }
 
-            // The predictor K/V cache must hold exactly N+1 meaningful rows: rows
-            // 0..N-1 = the shifted prefill pairs (x_(t+1), h_t), and row N (= the
-            // warmup cache slot firstDecodePos == N) = the (firstGen, h_(N-1)) pair.
-            // Anything beyond N+1 nonzero would mean the warmup pair was APPENDED
-            // behind a junk zero row instead of replacing the last shifted slot.
+            // The predictor K/V cache must hold exactly N meaningful rows: row t
+            // (slot t) = the shifted prefill pair (x_(t+1), h_t), whose tail row N-1
+            // is the (firstGen, h_(N-1)) pair the scalar warmup rewrites in place.
+            // Row N is the pending slot the first native draft writes, so it and
+            // every later row stay zero; a nonzero row N would mean the warmup pair
+            // was APPENDED instead of rewriting the tail slot.
             INDArray keyCache = harness.keyCache();
             assertNotNull(keyCache, "[F2a] predictor K cache was not created");
             assertEquals(harness.maxKvLen, keyCache.size(1),
                     "[F2a] predictor K cache must be allocated for the production maxKvLen envelope");
-            for (int t = 0; t <= N; t++) {
+            for (int t = 0; t < N; t++) {
                 double keyRowMax = keyCache.get(NDArrayIndex.all(), NDArrayIndex.point(t),
                         NDArrayIndex.all(), NDArrayIndex.all()).maxNumber().doubleValue();
                 assertTrue(keyRowMax != 0.0,
-                        "[F2a] predictor K cache row " + t + " is zero after prepareBundledMtp"
-                                + (t < N ? ": the shifted prefill rows were not all committed"
-                                         : ": the warmup pair must commit (firstGen, h_(N-1)) at slot N"));
+                        "[F2a] predictor K cache row " + t + " is zero after prepareBundledMtp:"
+                                + " the shifted prefill rows were not all committed");
             }
-            for (int t = N + 1; t < harness.maxKvLen; t++) {
+            for (int t = N; t < harness.maxKvLen; t++) {
                 double keyRowMax = keyCache.get(NDArrayIndex.all(), NDArrayIndex.point(t),
                         NDArrayIndex.all(), NDArrayIndex.all()).maxNumber().doubleValue();
                 assertEquals(0.0, keyRowMax,
                         "[F2a] predictor K cache row " + t + " must stay untouched: the bootstrap"
-                                + " committed more than the N shifted prefill rows + 1 warmup row");
+                                + " committed more than the N shifted prefill rows"
+                                + (t == N ? " (the warmup appended at the pending slot N)" : ""));
             }
         } finally {
             harness.close();
@@ -311,8 +314,9 @@ public class TestMtpPredictorContract {
      * constructor (the same 15-arg shape create() uses), and a pre-populated
      * InGraphKvState reuseState whose session/inputs/KV maps the method adopts —
      * the exact adoption path prepareBundledMtp implements for session reuse.
-     * prepareBundledMtp is invoked reflectively with synthetic target prefill/warmup
-     * hiddens; the adopted maps then carry the assertion surface for F2a/F2b.
+     * prepareBundledMtp is invoked reflectively with a fresh MtpPreparedState to fill
+     * and synthetic target prefill/warmup hiddens; the adopted maps then carry the
+     * assertion surface for F2a/F2b.
      *
      * <p>On a CPU harness the method legitimately terminates at its final gate
      * ("Native MTP DSP plan handle is unavailable") AFTER both the prefill and the
@@ -365,7 +369,12 @@ public class TestMtpPredictorContract {
                     NDArrayIndex.all()).assign(Nd4j.valueArrayOf(new long[]{HIDDEN_SIZE}, 99.0f));
 
             Method prepare = resolvePrepareMethod();
+            // The caller allocates the prepared state, as production does, so the method's
+            // results land in it even when it throws.
+            Constructor<?> preparedConstructor = prepare.getParameterTypes()[0].getDeclaredConstructor();
+            preparedConstructor.setAccessible(true);
             Object[] args = new Object[]{
+                    preparedConstructor.newInstance(),
                     reuseState,
                     promptIds,
                     prefillSeqLen,
@@ -418,12 +427,12 @@ public class TestMtpPredictorContract {
         }
 
         private static Tokenizer stubTokenizer() {
-            return (Tokenizer) java.lang.reflect.Proxy.newProxyInstance(
+            return (Tokenizer) Proxy.newProxyInstance(
                     Tokenizer.class.getClassLoader(), new Class<?>[]{Tokenizer.class},
                     (proxy, method, args) -> {
                         switch (method.getName()) {
-                            case "getSpecialTokenIds": return java.util.Collections.emptySet();
-                            case "getAddedTokens": return java.util.Collections.emptyMap();
+                            case "getSpecialTokenIds": return Collections.emptySet();
+                            case "getAddedTokens": return Collections.emptyMap();
                             default: throw new AssertionError(
                                     "Unexpected tokenizer access: " + method.getName());
                         }
@@ -434,13 +443,15 @@ public class TestMtpPredictorContract {
             for (Method m : GenerationPipeline.class.getDeclaredMethods()) {
                 if (!"prepareBundledMtp".equals(m.getName())) continue;
                 Class<?>[] p = m.getParameterTypes();
-                if (p.length == 10 && p[0] == InGraphKvState.class && p[1] == int[].class
-                        && p[2] == int.class && p[4] == long.class && p[5] == int.class
-                        && p[8] == INDArray.class && p[9] == INDArray.class) {
+                if (p.length == 11 && p[0].getEnclosingClass() == GenerationPipeline.class
+                        && "MtpPreparedState".equals(p[0].getSimpleName())
+                        && p[1] == InGraphKvState.class && p[2] == int[].class
+                        && p[3] == int.class && p[5] == long.class && p[6] == int.class
+                        && p[9] == INDArray.class && p[10] == INDArray.class) {
                     return m;
                 }
             }
-            throw new NoSuchMethodException("GenerationPipeline.prepareBundledMtp(10-arg production signature)");
+            throw new NoSuchMethodException("GenerationPipeline.prepareBundledMtp(11-arg production signature)");
         }
 
         INDArray prefillIds() {

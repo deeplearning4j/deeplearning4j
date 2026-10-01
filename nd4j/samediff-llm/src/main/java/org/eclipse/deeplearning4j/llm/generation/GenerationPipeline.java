@@ -1741,13 +1741,14 @@ public class GenerationPipeline implements AutoCloseable {
                                                   ModelIOConfig.KVCacheNames kvInputNames,
                                                   long startTime, InGraphKvState reuseState,
                                                   boolean finishOneShotAfterPrefill) {
-        // A new prompt replaces the old scalar execution lease before any lifecycle reset.
-        // Continuation bypasses prefill and retains this binding unchanged.
+        // A new prompt replaces the old scalar and MTP repair execution leases before any
+        // lifecycle reset; the repair sessions stay for the recapture. Continuation bypasses
+        // prefill and retains these bindings unchanged.
         if (pendingScalarTargetCleanup != null) {
-            pendingScalarTargetCleanup.closeScalarTarget();
+            pendingScalarTargetCleanup.closeExecutionLeases();
             pendingScalarTargetCleanup = null;
         }
-        if (reuseState != null) reuseState.closeScalarTarget();
+        if (reuseState != null) reuseState.closeExecutionLeases();
         // Continuation sessions retain their warmup and future-decode state.
         final boolean prefillExhaustsBudget = finishOneShotAfterPrefill && maxNewTokens == 1;
 
@@ -3037,17 +3038,26 @@ public class GenerationPipeline implements AutoCloseable {
 
         MtpPreparedState preparedMtp = null;
         if (useNativeMtp) {
-            preparedMtp = prepareBundledMtp(
-                    reuseState,
-                    effectiveTokenIds,
-                    prefillSeqLen,
-                    actualPrefillLen,
-                    maxKvLen,
-                    firstDecodePos,
-                    firstTokenId,
-                    secondTokenId,
-                    targetPrefillHidden,
-                    targetWarmupHidden);
+            preparedMtp = new MtpPreparedState();
+            try {
+                prepareBundledMtp(
+                        preparedMtp,
+                        reuseState,
+                        effectiveTokenIds,
+                        prefillSeqLen,
+                        actualPrefillLen,
+                        maxKvLen,
+                        firstDecodePos,
+                        firstTokenId,
+                        secondTokenId,
+                        targetPrefillHidden,
+                        targetWarmupHidden);
+            } finally {
+                // The retained state owns the repair leases from capture on, so a failure here or
+                // later in this boundary releases them in this method's catch.
+                scalarOwner.mtpRepairBinding = preparedMtp.repairBinding;
+                scalarOwner.mtpRepairBatchBinding = preparedMtp.repairBatchBinding;
+            }
             // This source backs the queued h_P → MTP carry copy. The native decode's returned token
             // count is the next natural completion boundary, so retain it with the other warmup donors.
             warmupRecurrentCopyDonors.add(targetWarmupHidden);
@@ -3138,7 +3148,6 @@ public class GenerationPipeline implements AutoCloseable {
             state.mtpHiddenOutputIdx = preparedMtp.hiddenOutputIdx;
             state.mtpNumPlanExternalInputs = preparedMtp.numPlanExternalInputs;
             state.mtpNumPlanOutputs = preparedMtp.numPlanOutputs;
-            state.mtpRepairBinding = preparedMtp.repairBinding;
             state.mtpRepairSession = preparedMtp.repairSession;
             state.mtpRepairInputIdsExtIdx = preparedMtp.repairInputIdsExtIdx;
             state.mtpRepairTargetHiddenExtIdx = preparedMtp.repairTargetHiddenExtIdx;
@@ -3150,7 +3159,6 @@ public class GenerationPipeline implements AutoCloseable {
             state.mtpRepairValueOutputIdx = preparedMtp.repairValueOutputIdx;
             state.mtpRepairNumPlanExternalInputs = preparedMtp.repairNumPlanExternalInputs;
             state.mtpRepairNumPlanOutputs = preparedMtp.repairNumPlanOutputs;
-            state.mtpRepairBatchBinding = preparedMtp.repairBatchBinding;
             state.mtpRepairBatchSession = preparedMtp.repairBatchSession;
             state.mtpRepairBatchInputIds = preparedMtp.repairBatchInputIds;
             state.mtpRepairBatchTargetHiddenStates = preparedMtp.repairBatchTargetHiddenStates;
@@ -3230,7 +3238,7 @@ public class GenerationPipeline implements AutoCloseable {
         } catch (RuntimeException | Error failure) {
             try {
                 Nd4j.getExecutioner().commit();
-                scalarOwner.closeScalarTarget();
+                scalarOwner.closeExecutionLeases();
             } catch (RuntimeException | Error cleanup) {
                 pendingScalarTargetCleanup = scalarOwner;
                 failure.addSuppressed(cleanup);
@@ -6286,8 +6294,12 @@ public class GenerationPipeline implements AutoCloseable {
      * all-zero bootstrap row. Before returning, the retained target-hidden input
      * is advanced to the target warmup hidden and the retained id to the second
      * sampled token so native drafting starts from the second sampled token.</p>
+     *
+     * <p>The plans, buffers and repair leases land in {@code prepared}. A repair lease is live
+     * from its capture, so the caller takes the leases even when this method throws.</p>
      */
-    private MtpPreparedState prepareBundledMtp(
+    private void prepareBundledMtp(
+            MtpPreparedState prepared,
             InGraphKvState reuseState,
             int[] effectiveTokenIds,
             int prefillSeqLen,
@@ -6313,7 +6325,6 @@ public class GenerationPipeline implements AutoCloseable {
                     + actualPrefillLen);
         }
 
-        MtpPreparedState prepared = new MtpPreparedState();
         // PREDICTOR COORDINATES (packet J1): the predictor's final live prefill row
         // (rewritten by the scalar warmup) and the post-warmup pending row. The
         // target's firstDecodePos == actualPrefillLen stays untouched; target
@@ -6343,15 +6354,11 @@ public class GenerationPipeline implements AutoCloseable {
         // last live row paired with a prompt/pad id instead of the first generated
         // token — a concrete padded-bootstrap misalignment that degrades draft
         // quality independently of the decode-loop state machinery.
-        // SINGLE-SOURCE BOOTSTRAP (review round 3, finding 4): the pair
-        // (firstGen, h_(N-1)) is supplied EXCLUSIVELY by the scalar warmup
-        // (which writes it at cache slot firstDecodePos == N, the slot the
-        // first native draft row attends). The prefill therefore fills only
-        // the SHIFTED rows [0, actualPrefillLen-1) with real live pairs; its
-        // final live row actualPrefillLen-1 is still WRITTEN (so the prefill
-        // execution has a causal end) but is immediately masked back inert in
-        // the retained mask below, and the warmup row is the single retained
-        // occurrence of the (firstGen, h_(N-1)) pair.
+        // SINGLE-OCCURRENCE BOOTSTRAP (packet 1, superseding review round 3): the
+        // pair (firstGen, h_(N-1)) is the prefill's tail row actualPrefillLen-1, and
+        // the scalar warmup rewrites that same slot instead of appending at slot N,
+        // so the pair is retained exactly once and slot N stays the unwritten
+        // pending row the first native draft writes.
         if (prefillSeqLen > 1) {
             try (INDArray sourceIds = Nd4j.createFromArray(effectiveTokenIds)
                     .reshape(1, prefillSeqLen).castTo(DataType.INT64);
@@ -6926,7 +6933,6 @@ public class GenerationPipeline implements AutoCloseable {
         targetPrefillHidden.close();
         mtpLogits.close();
         mtpHidden.close();
-        return prepared;
     }
 
     private static void closePrefillOutputs(Map<String, INDArray> outputs, String logitsName) {
@@ -9740,7 +9746,7 @@ public class GenerationPipeline implements AutoCloseable {
      */
     public void suspend() {
         if (pendingScalarTargetCleanup != null) {
-            pendingScalarTargetCleanup.closeScalarTarget();
+            pendingScalarTargetCleanup.closeExecutionLeases();
             pendingScalarTargetCleanup = null;
         }
         if (cachedFixedBufferState != null) {
@@ -9807,7 +9813,7 @@ public class GenerationPipeline implements AutoCloseable {
             return;
         }
         if (pendingScalarTargetCleanup != null) {
-            pendingScalarTargetCleanup.closeScalarTarget();
+            pendingScalarTargetCleanup.closeExecutionLeases();
             pendingScalarTargetCleanup = null;
         }
 
