@@ -162,6 +162,21 @@ SD_INLINE bool tokenSampleIsGreedy(double temperature, int topK, double topP) {
   return temperature <= 0.0 && topK <= 0 && topP <= 0.0;
 }
 
+// The strategy tokenSamplePolicy runs for a config: AUTO selects GREEDY at temperature <= 0 or when
+// nothing past the top token can be kept (topK <= 1 and topP <= 0), SAMPLE otherwise.
+SD_INLINE int tokenSampleScalarStrategy(const TokenSampleConfig& config) {
+  if (config.strategy != TOKEN_SAMPLE_AUTO) return config.strategy;
+  return config.temperature <= 0.0 || (config.topK <= 1 && config.topP <= 0.0) ? TOKEN_SAMPLE_GREEDY
+                                                                               : TOKEN_SAMPLE_SAMPLE;
+}
+
+// Whether tokenSamplePolicy reads its token history (inputIds): only the repetition, frequency and
+// presence penalties of a SAMPLE do. A caller may pass no history when this is false.
+SD_INLINE bool tokenSamplePolicyReadsHistory(const TokenSampleConfig& config) {
+  return tokenSampleScalarStrategy(config) == TOKEN_SAMPLE_SAMPLE &&
+         (config.repPenalty != 1.0 || config.freqPenalty != 0.0 || config.presPenalty != 0.0);
+}
+
 // A logit scaled by the inverse temperature. The product and the difference of tokenSampleWeight
 // round on their own (never fused), so a weight recomputed in any pass or on any backend compares
 // equal to itself.

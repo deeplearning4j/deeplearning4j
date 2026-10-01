@@ -1715,11 +1715,21 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Returns Status::BAD_ARGUMENTS if preconditions are not met (falls back to
    * full execute()). This is NOT an error — it means the plan has not yet
    * reached steady state.
+   *
+   * deliverOutputs: optional per-requested-output delivery mask, one entry per
+   * requested output. Every output is still computed and stays resident in its
+   * plan slot; only the publication to requestedOutputs is skipped for false
+   * entries, which are returned as nullptr. Publication is what costs host time:
+   * a view or secondary-device output is gathered into a detached device-0
+   * buffer behind host stream synchronizations, which blocks the host on the
+   * whole replay. A caller that reads only some outputs back (the native decode
+   * loop) passes the outputs it reads. nullptr delivers every output; the
+   * ordered execute() fallbacks deliver every output regardless of the mask.
    */
   Status executeSteadyState(
       NDArray** externalInputs, int numExternalInputs,
       NDArray** requestedOutputs, int numRequestedOutputs,
-      void* stream);
+      void* stream, const std::vector<bool>* deliverOutputs = nullptr);
 
   /**
    * True when the next executeSteadyState() takes its steady fast path: one
@@ -3847,9 +3857,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Replays all segments via platform handles or sealed direct graph-backend
   // artifacts. Returns OK on success, KERNEL_FAILURE on replay error.
-  // Precondition: allSegmentsReplayReady() must be true.
+  // Precondition: allSegmentsReplayReady() must be true. deliverOutputs follows
+  // executeSteadyState(): nullptr publishes every requested output.
   Status platformTryFrozenFastPath(NDArray** externalInputs, int numExternalInputs,
-                                    NDArray** requestedOutputs, int numRequestedOutputs, void* stream);
+                                    NDArray** requestedOutputs, int numRequestedOutputs, void* stream,
+                                    const std::vector<bool>* deliverOutputs = nullptr);
   void platformPreExecuteSetup(NDArray** externalInputs, int numExternalInputs, void* stream);
   bool platformShouldKeepSegmentCache(const GraphSegment& seg) const;
   void platformPrecompileSegments(NDArray** externalInputs, int numExternalInputs);

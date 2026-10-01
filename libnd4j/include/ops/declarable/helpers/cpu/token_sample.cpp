@@ -239,14 +239,6 @@ void tokenSampleWithPenalties(NDArray* logits, NDArray* output,
     tokenSample(logits, output, temperature, topK, topP, seed, context);
 }
 
-static int resolveScalarStrategy(const TokenSampleConfig& config) {
-    if (config.strategy == TOKEN_SAMPLE_AUTO) {
-        return (config.temperature <= 0.0 || (config.topK <= 1 && config.topP <= 0.0))
-               ? TOKEN_SAMPLE_GREEDY : TOKEN_SAMPLE_SAMPLE;
-    }
-    return config.strategy;
-}
-
 static bool shouldSuppressStopTokens(const TokenSampleConfig& config) {
     return config.minNewTokens > 0
         && config.generatedTokenOffset < config.minNewTokens
@@ -310,7 +302,7 @@ void tokenSamplePolicy(NDArray* logits, NDArray* output,
                        const TokenSampleConfig& config,
                        TokenSampleResult* result,
                        LaunchContext* context) {
-    const int strategy = resolveScalarStrategy(config);
+    const int strategy = tokenSampleScalarStrategy(config);
     const bool scalar = config.batchMax == 1 && config.windowMax == 1
                         && config.activeBatch == 1 && config.activeWindow == 1;
     if (!scalar || (strategy != TOKEN_SAMPLE_GREEDY && strategy != TOKEN_SAMPLE_SAMPLE)) {
@@ -332,8 +324,7 @@ void tokenSamplePolicy(NDArray* logits, NDArray* output,
     if (strategy == TOKEN_SAMPLE_GREEDY) {
         tokenSample(logits, output, 0.0, 0, 0.0, config.seed, context);
     } else {
-        const bool hasPenalties = inputIds != nullptr
-            && (config.repPenalty != 1.0 || config.freqPenalty != 0.0 || config.presPenalty != 0.0);
+        const bool hasPenalties = inputIds != nullptr && tokenSamplePolicyReadsHistory(config);
         const bool hasExtendedSamplers = config.minP > 0.0
             || (config.typicalP > 0.0 && config.typicalP < 1.0)
             || config.xtcProbability > 0.0;

@@ -169,6 +169,68 @@ Fresh sessions usually agreed because they repeated the same race, so `testFresh
   - producer completion in `platformGetOutputForDevice0` and `platformMigrateSegmentInputs`.
 - `platform-tests/.../llm/generation/TestQwen35MtpDecode.java`: the repeated-row check in the fresh-session test.
 
+## Amendment (2026-10-01) — Deliver What the Caller Reads
+
+### Context
+
+The frozen Qwen3.6-27B target decode plan requests these outputs:
+
+- the logits;
+- the 48 GDN and 48 conv recurrent state outputs;
+- `k_rope_N` and `v_heads_N` for each of the 16 attention layers.
+
+With the KV cache written inside the graph, the native decode loop never reads the 32 KV outputs. They are requested only so that warmup can max-pin their slots (`configureMaxAllocationForKvCache`).
+
+The frozen fast path still published every requested output on every step. The 16 `v_heads_N` outputs are BF16 identity views of 2 KB each. `platformGetOutputForDevice0` delivers a view by gathering it into a detached device-0 buffer:
+
+1. It completes the producer stream, which blocks the host until the replay finishes.
+2. It runs a `dup` and a D2D copy into `outputDeliveryBuffers_`.
+3. It synchronizes several more times.
+
+An nsys trace measured about 33 µs of host time per delivery. That is roughly 0.5 ms of GPU-idle time per token for data nothing reads.
+
+The sampler had a similar cost. Each step, the loop built a view of the tokens generated so far and passed it to the sampler as the token history. The view has a new length every step, so every step paid for a new device shape buffer: a 32,816-byte H2D copy plus a synchronization. Only the sampling penalties read the history. Greedy decoding and plain sampling ignore it.
+
+### Decision
+
+1. **`executeSteadyState()` takes an optional delivery mask:** `const std::vector<bool>* deliverOutputs`, with one entry per requested output.
+   - Every output is still computed and stays resident in its plan slot. A false entry only skips publication, and that output is returned as nullptr.
+   - A mask whose size differs from the requested-output count returns `BAD_ARGUMENTS`.
+   - nullptr delivers every output.
+   - The frozen fast path and the steady fallback honour the mask. Before steady state, `executeSteadyState()` delegates to `execute()`, which delivers every output.
+   - CUDA, Vulkan and the CPU stubs implement the same contract.
+2. **The native CUDA decode loop passes the outputs it reads:**
+   - the logits and the MTP target hidden rows;
+   - the GDN and conv state outputs;
+   - the KV outputs, when the loop scatters them itself;
+   - the MTP accepted-prefix outputs.
+
+   When the plan-output fingerprint diagnostic is on, the first two steps deliver every output, because the diagnostic samples all of them.
+3. **The sampler receives a history only when its policy reads one.** `tokenSamplePolicyReadsHistory` is true for strategy SAMPLE with a repetition, frequency or presence penalty.
+   - The history spans every generated token (`tokensGenerated`). The step count it used before undercounts once a speculative step has accepted several tokens.
+   - The CUDA and CPU decode loops and `SdxGenerationSession` follow this rule.
+
+### Consequences
+
+- Greedy Qwen3.6-27B NVFP4 decode on GB10 went from 12.22 to 12.34 tok/s with an unchanged token hash.
+- A graph-level nsys capture of the steady state shows:
+  - per-token cycle p50 81.15 ms, of which the GPU is busy 80.41 ms;
+  - GPU idle between graph replays p50 0.60 ms;
+  - `cudaGraphLaunch` host time p50 136 µs, during which the GPU has already started.
+
+  The remaining idle time is host work between a graph's end and the next launch: token readback, sampling and the state commit.
+- Node-level nsys tracing (`--cuda-graph-trace=node`) inflates `cudaGraphLaunch` host time to 1.6-2.3 ms on this 1,701-kernel graph. Measure launch cost and idle time with graph-level tracing, and use node-level tracing only for per-kernel times.
+- An undelivered output is nullptr in the caller's array. A caller that starts reading another output must add it to the mask it passes.
+
+### Files
+
+- `libnd4j/include/graph/NativeDynamicShapePlan.h`: the `deliverOutputs` parameter of `executeSteadyState` and `platformTryFrozenFastPath`.
+- `libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp`: mask validation, and the steady fallback's skipped publication.
+- `libnd4j/include/graph/impl/NativeDynamicShapePlan_cuda.cu`, `graph/vulkan/NativeDynamicShapePlan.cpp`, `graph/cpu/NativeDynamicShapePlan_cuda_stubs.cpp`: publication under the mask.
+- `libnd4j/include/ops/declarable/helpers/cuda/autoregressive_decode.cu`: `planOutputsRead`, and the history rule.
+- `libnd4j/include/ops/declarable/helpers/cpu/autoregressive_decode.cpp`, `legacy/impl/SdxGenerationSession.cpp`: the history rule.
+- `libnd4j/include/ops/declarable/helpers/token_sample.h`: `tokenSampleScalarStrategy`, `tokenSamplePolicyReadsHistory`.
+
 ## Files Added/Modified
 
 ### Modified Files

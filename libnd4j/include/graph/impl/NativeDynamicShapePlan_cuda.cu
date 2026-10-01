@@ -410,7 +410,8 @@ cudaStream_t executionWriterStream(const PlanExecutionContext* execCtx, int boun
 
 Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     NDArray** externalInputs, int numExternalInputs,
-    NDArray** requestedOutputs, int numRequestedOutputs, void* stream) {
+    NDArray** requestedOutputs, int numRequestedOutputs, void* stream,
+    const std::vector<bool>* deliverOutputs) {
 
   // Soft preconditions - return MAYBE so the caller falls through to normal execution.
   if (ModeContract::forMode(graphExecutionMode_).isSlotBySlot || planLifecycle_.isSlotBySlot()) {
@@ -832,7 +833,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   }
 
   // All segments replayed successfully. Deliver detached views without changing
-  // any internal producer address captured by those segments.
+  // any internal producer address captured by those segments. An output the
+  // caller does not read stays resident in its slot: delivering a view blocks
+  // the host on the replay, so undelivered outputs are returned as nullptr.
   auto tPublish0 = stamp();
   for (int i = 0; i < numRequestedOutputs_; i++) {
     int slotIdx = requestedOutputSlotIndices_[i];
@@ -842,6 +845,10 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
                "FROZEN_FAST_PATH: required output unpublished index=%d slot=%d",
                i, slotIdx);
       return Status::BAD_OUTPUT;
+    }
+    if (deliverOutputs != nullptr && !(*deliverOutputs)[i]) {
+      requestedOutputs[i] = nullptr;
+      continue;
     }
     // Match normal/steady-fallback publication: Java reads on device 0.
     // Returning a secondary-device producer directly lets specialBuffer() at

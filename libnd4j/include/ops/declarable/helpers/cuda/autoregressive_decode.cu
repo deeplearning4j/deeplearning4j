@@ -1130,6 +1130,42 @@ void autoregressiveDecode(
         if (fpPinErr != cudaSuccess) pinnedPlanOutputSamples = nullptr;
     }
 
+    // Plan outputs this loop reads back. The plan computes every requested output
+    // each step; only these are published into planOutputs and the rest (present-KV
+    // views when the graph writes its own cache, for example) stay resident in their
+    // plan slots. Publishing a view gathers it into a detached buffer behind host
+    // stream synchronizations, which would block the host on every replay for data
+    // nothing here reads. The fingerprint diagnostic samples every output of the
+    // first two steps, so those steps publish everything.
+    std::vector<bool> planOutputsRead(numPlanOutputs, false);
+    auto markPlanOutputRead = [&](int idx) {
+        if (idx >= 0 && idx < numPlanOutputs) planOutputsRead[idx] = true;
+    };
+    markPlanOutputRead(config->logitsOutputIdx);
+    markPlanOutputRead(config->targetHiddenOutputIdx);
+    for (int s = 0; config->gdnStateOutputIndices != nullptr && s < config->numGdnStatePairs; s++)
+        markPlanOutputRead(config->gdnStateOutputIndices[s]);
+    for (int s = 0; config->convStateOutputIndices != nullptr && s < config->numConvStatePairs; s++)
+        markPlanOutputRead(config->convStateOutputIndices[s]);
+    if (!config->planOwnsKvScatter && config->kvOutputIndices != nullptr &&
+        staticKvBuffers != nullptr && numKvPairs > 0) {
+        for (int kv = 0; kv < 2 * numKvPairs; kv++) markPlanOutputRead(config->kvOutputIndices[kv]);
+    }
+    if (config->mtpPrefixSelectMode != 0) {
+        const int maxLayers = AutoregressiveDecodeConfig::MTP_PREFIX_MAX_LAYERS;
+        for (int s = 0; s < config->mtpPrefixGdnLayerCount && s < maxLayers; s++) {
+            markPlanOutputRead(config->mtpPrefixGdnStateOutputIndices[s]);
+            markPlanOutputRead(config->mtpPrefixGdnOutputIndices[s]);
+        }
+        for (int s = 0; s < config->mtpPrefixConvLayerCount && s < maxLayers; s++) {
+            markPlanOutputRead(config->mtpPrefixConvStateOutputIndices[s]);
+            markPlanOutputRead(config->mtpPrefixConvOutputIndices[s]);
+        }
+    }
+    auto planDeliveryAt = [&](int s) -> const std::vector<bool>* {
+        return pinnedPlanOutputSamples != nullptr && s < 2 ? nullptr : &planOutputsRead;
+    };
+
     // Accepted-prefix state discriminator. Samples are queued after the authoritative
     // state commit and consumed only at an existing token synchronization (or the final
     // synchronization). A per-step pinned ring prevents a later replay from overwriting
@@ -3835,7 +3871,8 @@ void autoregressiveDecode(
         Status planStatus = plan->executeSteadyState(
             extInputs, numExtInputs,
             planOutputs, numPlanOutputs,
-            reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+            reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)),
+            planDeliveryAt(step));
         if (inPlaceRecurrentCommit) setRecurrentCommitFlag(0);
         const auto targetPhaseAfter = plan->getPlanPhase();
         if (targetPhaseBefore != targetPhaseAfter) p0.planPhaseTransitions++;
@@ -4809,7 +4846,8 @@ void autoregressiveDecode(
                              step, rerunActiveWindow, config->windowMax);
                     rerunStatus = plan->executeSteadyState(
                         extInputs, numExtInputs, planOutputs, numPlanOutputs,
-                        reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+                        reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)),
+                        planDeliveryAt(step));
                 }
                 if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
                     clearKvScaleRegistry();
@@ -5081,7 +5119,8 @@ void autoregressiveDecode(
                         p0.shortenedRecoveryForwards++;
                         Status shortenStatus = plan->executeSteadyState(
                             extInputs, numExtInputs, planOutputs, numPlanOutputs,
-                            reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+                            reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)),
+                            planDeliveryAt(step));
                         if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
                             clearKvScaleRegistry();
                         }
@@ -5689,17 +5728,18 @@ void autoregressiveDecode(
         stepSampleConfig.stopTokenIds = stopTokenIds.empty() ? nullptr : stopTokenIds.data();
         stepSampleConfig.stopTokenCount = static_cast<int>(stopTokenIds.size());
 
+        // Only sampling penalties read the token history. A view of the tokens so far has a new
+        // length every step, and each new shape costs a device shape buffer (alloc, H2D, sync),
+        // so the view is built only when the policy reads it.
         TokenSampleResult sampleResult;
-        if (step > 0) {
-            std::vector<LongType> range = {0, static_cast<LongType>(step)};
-            NDArray* tokensSoFar = (*generatedTokenIds)(range, true);
-            tokenSamplePolicy(logitsForSample, sampledToken, tokensSoFar,
-                              stepSampleConfig, &sampleResult, context);
-            delete tokensSoFar;
-        } else {
-            tokenSamplePolicy(logitsForSample, sampledToken, inputIds,
-                              stepSampleConfig, &sampleResult, context);
+        NDArray* history = nullptr;
+        if (tokenSamplePolicyReadsHistory(stepSampleConfig)) {
+            std::vector<LongType> range = {0, static_cast<LongType>(tokensGenerated)};
+            history = tokensGenerated > 0 ? (*generatedTokenIds)(range, true) : inputIds;
         }
+        tokenSamplePolicy(logitsForSample, sampledToken, history,
+                          stepSampleConfig, &sampleResult, context);
+        if (history != inputIds) delete history;
 
         if (logitsSliceCuda != nullptr) {
             delete logitsSliceCuda;

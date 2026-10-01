@@ -4390,7 +4390,7 @@ bool NativeDynamicShapePlan::steadyStateFastPathReady() {
 Status NativeDynamicShapePlan::executeSteadyState(
     NDArray** externalInputs, int numExternalInputs,
     NDArray** requestedOutputs, int numRequestedOutputs,
-    void* stream) {
+    void* stream, const std::vector<bool>* deliverOutputs) {
 
   // One-shot consolidated state for the native-decode hot path. Tagged with plan=%p
   // so it correlates with the Java-side redispatchForCurrentShapes multi-plan switch
@@ -4415,6 +4415,10 @@ Status NativeDynamicShapePlan::executeSteadyState(
     return Status::BAD_ARGUMENTS;
   }
   if (numRequestedOutputs != numRequestedOutputs_) {
+    return Status::BAD_ARGUMENTS;
+  }
+  if (deliverOutputs != nullptr &&
+      deliverOutputs->size() != static_cast<size_t>(numRequestedOutputs)) {
     return Status::BAD_ARGUMENTS;
   }
 
@@ -4567,7 +4571,8 @@ Status NativeDynamicShapePlan::executeSteadyState(
   // accuracy issues because the ext input sync flow differs from the frozen fast path.
   bool usedFrozenFastPath = false;
   auto result = platformTryFrozenFastPath(
-      externalInputs, numExternalInputs, requestedOutputs, numRequestedOutputs, stream);
+      externalInputs, numExternalInputs, requestedOutputs, numRequestedOutputs, stream,
+      deliverOutputs);
 
   if (result == Status::MAYBE) {
     // Frozen fast path not applicable — fall back to full phaseReplay.
@@ -4600,6 +4605,10 @@ Status NativeDynamicShapePlan::executeSteadyState(
                    i, slotIdx);
           return Status::BAD_OUTPUT;
         }
+        if (deliverOutputs != nullptr && !(*deliverOutputs)[i]) {
+          requestedOutputs[i] = nullptr;
+          continue;
+        }
 #if defined(SD_VULKAN)
         if (outputSlots_[slotIdx]->isView()) {
           materializeViewSlot(slotIdx, "plan-output-view-boundary-steady-fallback");
@@ -4618,6 +4627,7 @@ Status NativeDynamicShapePlan::executeSteadyState(
     int callerPopulatedAfter = 0;
     int mappedSlotsLive = 0;
     int mappedPointerMismatches = 0;
+    int undelivered = 0;
     for (int i = 0; i < numRequestedOutputs; i++) {
       NDArray* callerOutput = requestedOutputs != nullptr ? requestedOutputs[i] : nullptr;
       if (callerOutput != nullptr) callerPopulatedAfter++;
@@ -4625,15 +4635,20 @@ Status NativeDynamicShapePlan::executeSteadyState(
       int slotIdx = requestedOutputSlotIndices_ != nullptr ? requestedOutputSlotIndices_[i] : -1;
       NDArray* mappedOutput = (slotIdx >= 0 && slotIdx < totalOutputSlots_)
                                  ? outputSlots_[slotIdx] : nullptr;
+      if (deliverOutputs != nullptr && !(*deliverOutputs)[i]) {
+        undelivered++;
+        if (mappedOutput != nullptr) mappedSlotsLive++;
+        continue;
+      }
       if (mappedOutput != nullptr) {
         mappedSlotsLive++;
         if (callerOutput != mappedOutput) mappedPointerMismatches++;
       }
     }
     DSP_DIAG(EXECUTE,
-             "STEADY_FALLBACK_OUTPUTS: plan=%p exec=%d requested=%d "
+             "STEADY_FALLBACK_OUTPUTS: plan=%p exec=%d requested=%d undelivered=%d "
              "callerBefore=%d callerAfter=%d mappedLive=%d mismatched=%d status=%s (%d)",
-             (void*)this, executeCount_, numRequestedOutputs,
+             (void*)this, executeCount_, numRequestedOutputs, undelivered,
              callerPopulatedBefore, callerPopulatedAfter, mappedSlotsLive,
              mappedPointerMismatches, dsp::dspStatusName(result),
              static_cast<int>(result));

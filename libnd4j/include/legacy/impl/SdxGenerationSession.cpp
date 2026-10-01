@@ -393,12 +393,9 @@ TokenSampleConfig sampleConfig(
 std::unique_ptr<NDArray> historyArray(
     const std::vector<LongType>& history) {
   if (history.empty()) return nullptr;
-  auto result = createArray(
-      {1, static_cast<LongType>(history.size())}, DataType::INT64);
-  for (size_t i = 0; i < history.size(); ++i) {
-    result->p(static_cast<LongType>(i), history[i]);
-  }
-  return result;
+  return std::unique_ptr<NDArray>(NDArrayFactory::create<LongType>(
+      'c', {1, static_cast<LongType>(history.size())}, history,
+      sd::LaunchContext::defaultContext()));
 }
 
 bool sampleFromLogits(
@@ -459,9 +456,13 @@ bool sampleFromLogits(
 
   logitsForSample->syncToHost();
   auto sampled = createArray({1}, DataType::INT64);
-  auto prior = historyArray(history);
   TokenSampleConfig config =
       sampleConfig(policy, metadata, generatedOffset);
+  // Only sampling penalties read the history.
+  std::unique_ptr<NDArray> prior;
+  if (sd::ops::helpers::tokenSamplePolicyReadsHistory(config)) {
+    prior = historyArray(history);
+  }
   TokenSampleResult result;
   sd::ops::helpers::tokenSamplePolicy(
       logitsForSample,

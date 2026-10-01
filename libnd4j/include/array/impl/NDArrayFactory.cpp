@@ -91,14 +91,10 @@ NDArray* NDArrayFactory::create(const char order,
     THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
   }
 
-  T *hostData = nullptr;
-  ALLOCATE(hostData, context->getWorkspace(), data.size(), T);
-  std::copy(data.begin(), data.end(), hostData);
-
   //note here we use data.size() to work around the scalar case. If the shape is zero but the data is actually length 1 we need this reflected
-  //to create a correct length data buffer
+  //to create a correct length data buffer. The buffer copies the values into memory of its own.
   DataBuffer *  buffer = new DataBuffer(
-      hostData, DataTypeUtils::fromT<T>(), data.size() * sizeof(T), context->getWorkspace());
+      data.data(), DataTypeUtils::fromT<T>(), data.size() * sizeof(T), context->getWorkspace());
 
   NDArray *result = new NDArray(buffer, shapeInfo, context);
   return result;

@@ -2042,16 +2042,16 @@ void autoregressiveDecode(
         stepSampleConfig.stopTokenIds = stopTokenIds.empty() ? nullptr : stopTokenIds.data();
         stepSampleConfig.stopTokenCount = static_cast<int>(stopTokenIds.size());
 
+        // Only sampling penalties read the token history, so the view of the tokens so far
+        // (a new shape every step) is built only when the policy reads it.
         TokenSampleResult sampleResult;
-        if (step > 0) {
-            NDArray* tokensSoFar = (*generatedTokenIds)({0, step}, true);
-            tokenSamplePolicy(logitsForSample, sampledToken, tokensSoFar,
-                              stepSampleConfig, &sampleResult, context);
-            delete tokensSoFar;
-        } else {
-            tokenSamplePolicy(logitsForSample, sampledToken, inputIds,
-                              stepSampleConfig, &sampleResult, context);
+        NDArray* history = nullptr;
+        if (tokenSamplePolicyReadsHistory(stepSampleConfig)) {
+            history = tokensGenerated > 0 ? (*generatedTokenIds)({0, tokensGenerated}, true) : inputIds;
         }
+        tokenSamplePolicy(logitsForSample, sampledToken, history,
+                          stepSampleConfig, &sampleResult, context);
+        if (history != inputIds) delete history;
         if (logitsSlice != nullptr) {
             delete logitsSlice;
             logitsSlice = nullptr;

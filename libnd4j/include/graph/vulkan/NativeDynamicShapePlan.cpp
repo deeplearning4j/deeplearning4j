@@ -141,7 +141,8 @@ void* NativeDynamicShapePlan::platformGetExecutionStream() const {
 
 Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     NDArray** externalInputs, int numExternalInputs,
-    NDArray** requestedOutputs, int numRequestedOutputs, void* stream) {
+    NDArray** requestedOutputs, int numRequestedOutputs, void* stream,
+    const std::vector<bool>* deliverOutputs) {
   const auto& contract = ModeContract::forMode(graphExecutionMode_);
   if (contract.isSlotBySlot || !contract.allowsFrozenFastPath ||
       !planLifecycle_.isInFrozenOrReplayState() || !allSegmentsReplayReady() ||
@@ -205,8 +206,13 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
   // Match CUDA's requested-output boundary contract. A replayed view still
   // aliases an internal/external buffer; materialize it before returning so the
-  // next replay cannot mutate a previously returned Java result.
+  // next replay cannot mutate a previously returned Java result. Outputs the
+  // caller does not read are neither materialized nor published.
+  auto delivered = [deliverOutputs](int i) {
+    return deliverOutputs == nullptr || (*deliverOutputs)[i];
+  };
   for (int i = 0; i < numRequestedOutputs; ++i) {
+    if (!delivered(i)) continue;
     const int slot = requestedOutputSlotIndices_[i];
     if (slot >= 0 && slot < totalOutputSlots_) {
       NDArray* slotArray = outputSlots_[slot];
@@ -218,8 +224,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
   for (int i = 0; i < numRequestedOutputs; ++i) {
     const int slot = requestedOutputSlotIndices_[i];
-    requestedOutputs[i] =
-        slot >= 0 && slot < totalOutputSlots_ ? outputSlots_[slot] : nullptr;
+    requestedOutputs[i] = delivered(i) && slot >= 0 && slot < totalOutputSlots_
+                              ? outputSlots_[slot] : nullptr;
   }
   incrementExecuteCount("native_replay");
   return Status::OK;

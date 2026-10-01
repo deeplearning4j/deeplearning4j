@@ -85,7 +85,8 @@ using SegmentLifecycleState = GraphSegmentExec::SegmentLifecycleState;
 
 Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     NDArray** externalInputs, int numExternalInputs,
-    NDArray** requestedOutputs, int numRequestedOutputs, void* stream) {
+    NDArray** requestedOutputs, int numRequestedOutputs, void* stream,
+    const std::vector<bool>* deliverOutputs) {
 
   // Soft preconditions — return MAYBE so the caller falls through to normal execution.
   if (ModeContract::forMode(graphExecutionMode_).isSlotBySlot || planLifecycle_.isSlotBySlot()) {
@@ -165,10 +166,14 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
   // Populate requestedOutputs from outputSlots_ — mirrors the CUDA fast path
   // (NativeDynamicShapePlan_cuda.cu lines 361-368). Without this, the caller
-  // receives all-nullptr outputs and Java sees all-zero arrays.
+  // receives all-nullptr outputs and Java sees all-zero arrays. Outputs outside
+  // the caller's delivery mask stay in their slots and are returned as nullptr,
+  // the same contract as the CUDA and Vulkan fast paths.
   for (int i = 0; i < numRequestedOutputs; i++) {
     int slotIdx = requestedOutputSlotIndices_[i];
-    if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+    if (deliverOutputs != nullptr && !(*deliverOutputs)[i]) {
+      requestedOutputs[i] = nullptr;
+    } else if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
       requestedOutputs[i] = outputSlots_[slotIdx];
     } else {
       requestedOutputs[i] = nullptr;
