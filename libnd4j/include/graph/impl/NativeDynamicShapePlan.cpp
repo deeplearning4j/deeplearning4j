@@ -172,7 +172,8 @@ static void releasePlanFrozenRefsForTeardown(
     bool shouldRelease,
     std::vector<DataBuffer*>& frozenProtectedRefBuffers,
     std::vector<DataBuffer*>& frozenOutputRefBuffers,
-    std::unordered_set<DataBuffer*>* protectedWeightBuffers = nullptr) {
+    std::unordered_set<DataBuffer*>* protectedWeightBuffers = nullptr,
+    std::unordered_set<DataBuffer*>* pinProvenProtectedBuffers = nullptr) {
   if (!shouldRelease) return;
 
   int protectedRemoved = 0;
@@ -182,6 +183,8 @@ static void releasePlanFrozenRefsForTeardown(
       if (untrackFrozenPin(db)) {
         db->removeFrozenRef();
         protectedRemoved++;
+        // The registry still held the pin, so the buffer is alive.
+        if (pinProvenProtectedBuffers != nullptr) pinProvenProtectedBuffers->insert(db);
       } else {
         protectedDead++;  // destroyed externally while pinned — must not touch
         // The same raw pointer also participates in teardown weight migration.
@@ -8780,12 +8783,13 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   int freedCount = 0;
   std::unordered_set<NDArray*> deleted;
   bool frozenRefsReleasedForTeardown = false;
+  std::unordered_set<DataBuffer*> pinProvenProtectedBuffers;
   auto releaseFrozenRefsForTeardown = [&]() {
     if (frozenRefsReleasedForTeardown) return;
     frozenRefsReleasedForTeardown = true;
     releasePlanFrozenRefsForTeardown("releaseGpuIntermediates", hadFrozenRefsOnEntry,
                                      frozenProtectedRefBuffers_, frozenOutputRefBuffers_,
-                                     &protectedWeightBuffers_);
+                                     &protectedWeightBuffers_, &pinProvenProtectedBuffers);
   };
 
   std::unordered_set<DataBuffer*> requestedOutputDataBuffers;
@@ -9083,6 +9087,25 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // If there were no output slots, protected external refs still need to be
   // dropped before platformMigrateWeightsAndClearCaches() replaces pointers.
   releaseFrozenRefsForTeardown();
+  // Teardown runs between executes, so every protected input is the caller's
+  // object and may already be deleted: a generation closes its in-place KV
+  // caches when it ends while this plan stays cached, and a rebound variable's
+  // previous array may be closed. Only a frozen pin tells a live buffer from a
+  // deleted one without reading it, so weight migration may touch only the
+  // buffers whose pins were released above. A plan that never pinned
+  // (slot-by-slot execution) migrates nothing.
+  const size_t protectedBeforePinFilter = protectedWeightBuffers_.size();
+  for (auto it = protectedWeightBuffers_.begin(); it != protectedWeightBuffers_.end();) {
+    if (pinProvenProtectedBuffers.count(*it) == 0) {
+      it = protectedWeightBuffers_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  DSP_DIAG(MEMORY,
+           "releaseGpuIntermediates: weight migration limited to %zu pin-proven of %zu "
+           "protected buffers",
+           protectedWeightBuffers_.size(), protectedBeforePinFilter);
   platformMigrateWeightsAndClearCaches();
 
   // ── Step 4b: Clear context pool input AND output pointers ───────────────
