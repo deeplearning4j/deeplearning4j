@@ -4,7 +4,9 @@
 
 Accepted, step 1 in progress. ModelOpt NVFP4 with BF16/FP16 activations is
 implemented (`helpers/cuda/WeightOnlyGemm.cu`); the FP32-activation (3xTF32)
-policy and the GGML/AWQ/GPTQ formats are not yet implemented.
+policy and the GGML/AWQ/GPTQ formats are not yet implemented. Until then, FLOAT
+and DOUBLE activations take the native kernels of their operator (ADR 0122).
+`WeightOnlyFormat::MODELOPT_FP8` is declared but not yet admitted.
 
 Measured on GB10, sm_121, 2026-09-27, kernel time under nsys:
 
@@ -76,7 +78,9 @@ the primitive through a helper API (alongside `MmulHelper::ltMatmulScaled`).
   ahead of the MMAs. On sm_90+ the bulk kernel stages them in shared memory
   instead (see Bulk-copy staging). Each warp reads its activations from global
   memory.
-- FP32 accumulation. A CTA owns a fixed block of output columns and the whole
+- Accumulation in the activation's aggregate type (`WeightOnlyAccumulator<X>`,
+  i.e. `simdOps::AggregateType<X>`), which is FP32 for the admitted BF16 and
+  FP16 activations. A CTA owns a fixed block of output columns and the whole
   K; its warps split K into fixed ranges and reduce partial tiles through shared
   memory in a fixed order (see below for the few-wave cross-CTA split). Tile shape, K
   ranges and reduction order are compile-time constants independent of the row
@@ -85,8 +89,9 @@ the primitive through a helper API (alongside `MmulHelper::ltMatmulScaled`).
 - Few-wave shapes split K across blocks. When a shape's column groups fill
   fewer than 4 waves of resident blocks and K leaves every split warp at least
   two chunks, `kSplitBlocks = 4` blocks share a column group. Each block reduces
-  its warps as above and stores an FP32 partial tile in persistent per-device
-  scratch. The group's last block to arrive (an atomic ticket, reset by that
+  its warps as above and stores its partial tile, in the accumulator type, in
+  persistent per-device scratch sized in bytes. The group's last block to
+  arrive (an atomic ticket, reset by that
   block) adds the partials in ascending block order. There is no extra launch
   and no per-call allocation. The scratch grows only outside stream capture.
   - The ticket orders the partials with release/acquire, as a grid barrier
@@ -114,6 +119,14 @@ the primitive through a helper API (alongside `MmulHelper::ltMatmulScaled`).
     slower. `SD_WEIGHT_ONLY_SPLIT_BLOCKS` (1, 2 or 4; platform-tests
     `-Dnd4j.weightOnly.splitBlocks`) overrides the split; 1 restores the
     unsplit order.
+- Both kernels launch 256 threads and ask for four resident blocks per SM
+  (`kMinBlocksPerSm`), which caps them at 64 registers. The cap costs a few
+  spills, all outside the loop that issues the MMAs (SASS of the BF16
+  instantiations, sm_121):
+  - The direct kernel keeps 24 bytes on its stack and touches them only
+    before and after its loops.
+  - The bulk kernel keeps 40 bytes and touches them about 20 times per unit,
+    in the staging code.
 
 ### Bulk-copy staging (sm_90+)
 
@@ -216,6 +229,12 @@ arithmetic exactly, so dequantized weights are bit-identical to today's:
 
 ### Activation-precision policy
 
+- Types come from the framework's type system, not from a list kept by the
+  primitive. `isAdmitted` and `run` dispatch the activation and output types
+  over the central `SD_FLOAT_TYPES`. The trait `TensorCoreElement<X>` names the
+  MMA element with X's bits (`bfloat16` -> `cutlass::bfloat16_t`, `float16` ->
+  `cutlass::half_t`); a type without it is not admitted. The output may be any
+  float type, converted once from the accumulator.
 - BF16 and FP16 activations enter the MMA unchanged; with weights rounded to the
   same dtype, every product is exact in FP32.
 - FP32 activations use a split-precision MMA (3xTF32: hi*hi + hi*lo + lo*hi, the
@@ -228,7 +247,9 @@ arithmetic exactly, so dequantized weights are bit-identical to today's:
 
 Per format and activation dtype: dense row-major operands (the stride proof
 already used by the ModelOpt tiled path), K a whole number of blocks, 16-byte
-aligned activation, weight and output bases. Admission depends only on shapes,
+aligned activation, weight and output bases. The weight and scale dtypes must
+be the format's storage types (`DataTypeUtils::fromT<Weights::Storage>()` and
+`fromT<Weights::ScaleStorage>()`). Admission depends only on shapes,
 dtypes and layout, never on runtime state, so a given linear never alternates
 between paths. Everything else keeps the existing native kernels. Launch
 configuration is registered in `LaunchDims.h`/`.cu` and validated before launch.
@@ -258,8 +279,8 @@ Per format, in `platform-tests`:
 - Dequantization parity: dequantized weights bit-identical to the existing
   kernel's.
 - GEMM against an exact double reference with an FP32 accumulation-error bound;
-  BF16, FP16 and FP32 activations; rows 1/5/16/17/128; K spanning several CTA
-  K-ranges.
+  every float activation type (FLOAT and DOUBLE take the native kernels and
+  meet the same bound); rows 1/5/16/17/128; K spanning several CTA K-ranges.
 - Row invariance at real model shapes (`testRowResultsIndependentOfRowCount`).
 - Bulk against direct kernel, bit for bit
   (`testNvfp4BulkStagingMatchesDirectKernel`). The test reads which kernel

@@ -4,96 +4,160 @@
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_modelopt_nvfp4_linear) || NOT_EXCLUDED(OP_modelopt_fp8_linear)
-#include <ops/declarable/helpers/helpers.h>
+#include <array/DataTypeUtils.h>
+#include <helpers/shape.h>
 #include <math/templatemath.h>
-#include <types/float8.h>
+#include <ops/declarable/helpers/helpers.h>
+#include <ops/declarable/helpers/reproducible_math.h>
+
+#include <stdexcept>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-// X dtype is the only independently dispatched type. W/scales have fixed storage
-// and the output is either X's type or FLOAT32. Preserve selective type gates.
-#define SD_MODELOPT_LINEAR_TYPES SKIP_FIRST_COMMA(TTYPE_FLOAT32 TTYPE_HALF TTYPE_BFLOAT)
-
-SD_LIB_HIDDEN void modelOptLinear(LaunchContext* context, NDArray* x, NDArray* w,
-                                 NDArray* scale, NDArray* secondScale, NDArray* z,
-                                 bool nvfp4, bool floatOutput);
-
-SD_HOST_DEVICE SD_INLINE bool modelOptValidScale(float value) {
-  return value > 0.0f && math::sd_isfin<float>(value);
+template <typename T>
+SD_HOST_DEVICE SD_INLINE bool modelOptValidScale(T value) {
+  return value > static_cast<T>(0) && math::sd_isfin<T>(value);
 }
 
-#if defined(__CUDACC__)
 // Per-element scale validation fused into the device kernels that read the
 // scales: the single on-stream source of truth (captured, replayed, and observed
 // at the caller's stream completion boundary). The device trap remains active in
-// release builds (plain assert() disappears under NDEBUG).
-SD_DEVICE SD_INLINE float modelOptScaleChecked(float value) {
-  if (!modelOptValidScale(value))
-    asm("trap;");
+// release builds (plain assert() disappears under NDEBUG). Host callers validate
+// every scale, with exceptions, before reading any.
+template <typename T>
+SD_HOST_DEVICE SD_INLINE T modelOptScaleChecked(T value) {
+#if defined(__CUDA_ARCH__)
+  if (!modelOptValidScale<T>(value)) __trap();
+#endif
   return value;
 }
-#endif
 
-// ModelOpt NVFP4QTensor.dequantize: FP32(blockScale * globalScale), then
-// FP32(e2m1 * scale), THEN conversion to the original activation dtype.
+// ModelOpt NVFP4QTensor.dequantize: S(blockScale * globalScale), then
+// S(e2m1 * scale), THEN one conversion to Z (the activation dtype, or its
+// tensor-core element). Every E2M1 code is exact in S.
 // Source: NVIDIA/Model-Optimizer modelopt/torch/quantization/qtensor/nvfp4_tensor.py.
-//
-// E2M1 codes are exact FP32 values, built from bits without branches (this runs
-// once per weight in every NVFP4 kernel): magnitudes 2..7 (1, 1.5, 2, 3, 4, 6)
-// are the FP32 patterns (magnitude << 22) + bits(0.5); 1 is 0.5 and 0 is +0;
-// bit 3 is the sign (so code 8 is -0).
-SD_HOST_DEVICE SD_INLINE float modelOptE2M1(unsigned char nibble) {
-  constexpr uint32_t kHalfBits = 0x3F000000u;  // FP32 0.5
-  const uint32_t magnitude = nibble & 7u;
-  const uint32_t magnitudeBits = magnitude >= 2u ? (magnitude << 22) + kHalfBits
-                                                 : (magnitude == 1u ? kHalfBits : 0u);
-  const uint32_t bits = magnitudeBits | (static_cast<uint32_t>(nibble & 8u) << 28);
-  float value;
-  memcpy(&value, &bits, sizeof(value));
-  return value;
+template <typename Z, typename S>
+SD_HOST_DEVICE SD_INLINE Z modelOptNvfp4Weight(float4_e2m1 code, S blockScale, S globalScale) {
+  const S scale = reproducible::multiply<S>(blockScale, globalScale);
+  return static_cast<Z>(reproducible::multiply<S>(static_cast<S>(code), scale));
 }
 
-// The FP32 weight before the conversion to the activation dtype. Callers that
-// convert with a hardware round-to-nearest-even into an X-equivalent type (the
-// tensor-core element) get the same bits as modelOptNvfp4Weight<X>.
-SD_HOST_DEVICE SD_INLINE float modelOptNvfp4WeightFp32(unsigned char nibble, float blockScale,
-                                                      float globalScale) {
-#if defined(__CUDA_ARCH__)
-  // Keep both roundings explicit even under CUDA fast-math compilation.
-  const float scale = __fmul_rn(blockScale, globalScale);
-  return __fmul_rn(modelOptE2M1(nibble), scale);
-#else
-  const float scale = blockScale * globalScale;
-  return modelOptE2M1(nibble) * scale;
-#endif
+// ModelOpt tensor_quant.py _fp8_eager: x / inputScale clamped to Q's finite
+// range, then converted to Q (sd_saturate: saturating round to nearest even,
+// NaN stays NaN). inputScale is the exported dequantization scale, NOT amax or
+// its reciprocal.
+template <typename Q, typename AccT>
+SD_HOST_DEVICE SD_INLINE Q modelOptQuantize(AccT x, AccT inputScale) {
+  return math::sd_saturate<AccT, Q>(reproducible::divide<AccT>(x, inputScale));
 }
 
-template <typename X>
-SD_HOST_DEVICE SD_INLINE float modelOptNvfp4Weight(unsigned char nibble, float blockScale,
-                                                   float globalScale) {
-  return static_cast<float>(static_cast<X>(modelOptNvfp4WeightFp32(nibble, blockScale, globalScale)));
+// The quantized activation re-expanded: Q(x) * inputScale.
+template <typename Q, typename AccT>
+SD_HOST_DEVICE SD_INLINE AccT modelOptFakeQuantize(AccT x, AccT inputScale) {
+  return reproducible::multiply<AccT>(static_cast<AccT>(modelOptQuantize<Q, AccT>(x, inputScale)), inputScale);
 }
 
-// ModelOpt tensor_quant.py _fp8_eager clamps before its E4M3FN cast. Explicit
-// comparisons preserve NaN and saturate infinities (the raw float8 cast does not).
-// inputScale is the exported dequantization scale, NOT amax or its reciprocal.
-SD_HOST_DEVICE SD_INLINE float8 modelOptFp8Quantize(float x, float inputScale) {
-#if defined(__CUDA_ARCH__)
-  float scaled = __fdiv_rn(x, inputScale);
-#else
-  float scaled = x / inputScale;
-#endif
-  if (scaled > 448.0f) scaled = 448.0f;
-  if (scaled < -448.0f) scaled = -448.0f;
-  return float8(scaled);
+// Format policies: each format's storage types plus the per-element arithmetic
+// every native kernel shares (the general and tiled kernels here, the CPU
+// kernel, and WeightOnlyGemm):
+//  - weightScale(scale, second): the per-tensor weight factor;
+//  - activation<AccT>(x, second): the activation as the format consumes it;
+//  - weight<X, AccT>(...): the dequantized weight (n, k) of a strided view.
+// second is the format's scalar FP32 scale: the NVFP4 global scale, or the FP8
+// static input scale.
+
+// W [N, K/2] packed E2M1 (even k in the low nibble); block scales [N, K/16]
+// E4M3; FP32 global scale.
+struct ModelOptNvfp4 {
+  using Weight = float4_e2m1;
+  using Storage = uint8_t;
+  using ScaleStorage = float8_e4m3;
+  using Scale = float;
+  static constexpr int kWeightsPerStorage = Weight::codesPer<Storage>();
+  static constexpr int kBlockLength = 16;
+  static_assert(kBlockLength % kWeightsPerStorage == 0, "an NVFP4 block covers whole storage words");
+  static constexpr const char* kName = "NVFP4";
+  static constexpr const char* kInvalidScale = "ModelOpt NVFP4 linear: every block scale must be positive and finite";
+
+  SD_HOST_DEVICE SD_INLINE static Scale weightScale(const ScaleStorage*, Scale globalScale) { return globalScale; }
+
+  template <typename AccT>
+  SD_HOST_DEVICE SD_INLINE static AccT activation(AccT value, Scale) {
+    return value;
+  }
+
+  template <typename X, typename AccT>
+  SD_HOST_DEVICE SD_INLINE static AccT weight(const Storage* w, const LongType* ws, const ScaleStorage* scale,
+                                              const LongType* ss, Scale globalScale, LongType n, LongType k) {
+    const Weight code = Weight::unpack(w[n * ws[0] + (k / kWeightsPerStorage) * ws[1]],
+                                       static_cast<int>(k % kWeightsPerStorage));
+    const Scale blockScale = modelOptScaleChecked(static_cast<Scale>(scale[n * ss[0] + (k / kBlockLength) * ss[1]]));
+    return static_cast<AccT>(modelOptNvfp4Weight<X, Scale>(code, blockScale, globalScale));
+  }
+};
+
+// W [N, K] E4M3; FP32 per-tensor weight scale; FP32 static input scale, the
+// activations quantized to E4M3 per element.
+struct ModelOptFp8 {
+  using Weight = float8_e4m3;
+  using Activation = float8_e4m3;
+  using Storage = float8_e4m3;
+  using ScaleStorage = float;
+  using Scale = float;
+  static constexpr const char* kName = "FP8";
+  static constexpr const char* kInvalidScale = "ModelOpt FP8 linear: weight scale must be positive and finite";
+
+  SD_HOST_DEVICE SD_INLINE static Scale weightScale(const ScaleStorage* scale, Scale) {
+    return modelOptScaleChecked(static_cast<Scale>(scale[0]));
+  }
+
+  template <typename AccT>
+  SD_HOST_DEVICE SD_INLINE static AccT activation(AccT value, Scale inputScale) {
+    return modelOptFakeQuantize<Activation, AccT>(value, static_cast<AccT>(inputScale));
+  }
+
+  template <typename X, typename AccT>
+  SD_HOST_DEVICE SD_INLINE static AccT weight(const Storage* w, const LongType* ws, const ScaleStorage*,
+                                              const LongType*, Scale weightScale, LongType n, LongType k) {
+    return reproducible::multiply<AccT>(static_cast<AccT>(w[n * ws[0] + k * ws[1]]), static_cast<AccT>(weightScale));
+  }
+};
+
+// Host validation of host-current scales, throwing std::invalid_argument: the
+// format's scalar scale, and every element of its scale tensor (any rank or view).
+template <typename Format>
+void modelOptCheckSecondScale(NDArray* secondScale) {
+  using Scale = typename Format::Scale;
+  if (!modelOptValidScale<Scale>(secondScale->bufferAsT<Scale>()[0]))
+    throw std::invalid_argument("ModelOpt linear: global/input scale must be positive and finite");
 }
 
-// The quantized activation re-expanded to FP32 (the E4M3 value, unscaled).
-SD_HOST_DEVICE SD_INLINE float modelOptFp8Activation(float x, float inputScale) {
-  return static_cast<float>(modelOptFp8Quantize(x, inputScale));
+template <typename Format>
+void modelOptCheckScaleTensor(NDArray* scale) {
+  using Scale = typename Format::Scale;
+  if (scale->isEmpty()) return;
+  const auto* values = scale->bufferAsT<typename Format::ScaleStorage>();
+  const int rank = scale->rankOf();
+  const LongType* shapeOf = scale->shapeOf();
+  const LongType* strides = scale->stridesOf();
+  const LongType length = scale->lengthOf();
+  for (LongType linear = 0; linear < length; ++linear) {
+    LongType coords[SD_MAX_RANK];
+    INDEX2COORDS(linear, rank, shapeOf, coords);
+    LongType offset = 0;
+    COORDS2INDEX(rank, strides, coords, offset);
+    if (!modelOptValidScale<Scale>(static_cast<Scale>(values[offset]))) throw std::invalid_argument(Format::kInvalidScale);
+  }
 }
+
+// z = x . dequantize(w)^T in Format. x and z dispatch over the float types
+// (SD_FLOAT_TYPES); z's dtype (x's, or FLOAT32) is the output type. scale is the
+// format's scale tensor and secondScale its scalar scale.
+template <typename Format>
+SD_LIB_HIDDEN void modelOptLinear(LaunchContext* context, NDArray* x, NDArray* w, NDArray* scale,
+                                  NDArray* secondScale, NDArray* z);
 
 }  // namespace helpers
 }  // namespace ops

@@ -13,11 +13,12 @@ import java.util.List;
 
 /**
  * ModelOpt FP8 inference linear: X[...,K] times FLOAT8 E4M3 W[N,K] transposed.
- * X is FLOAT, HALF or BFLOAT16. The third input is weightScale and the fourth
- * is inputScale: both positive finite FLOAT rank-zero dequantization scales.
+ * X is floating point. The third input is weightScale and the fourth is
+ * inputScale: both positive finite FLOAT rank-zero dequantization scales.
  * Activations are quantized using saturated E4M3 round-to-nearest-even of
  * X/inputScale. Products of (quantized X * inputScale) and (W * weightScale)
- * accumulate in FP32. Output [...,N] has X's dtype, or FLOAT when requested.
+ * accumulate in X's aggregate type (FP32, or FP64 for DOUBLE). Output [...,N]
+ * has X's dtype, or FLOAT when requested.
  * Native validation owns shapes, scale values and output alias rejection.
  */
 public class ModelOptFp8Linear extends DynamicCustomOp {
@@ -47,8 +48,7 @@ public class ModelOptFp8Linear extends DynamicCustomOp {
         Preconditions.checkArgument(inputDataTypes != null && inputDataTypes.size() == 4,
                 "ModelOptFp8Linear requires four input dtypes");
         DataType x = inputDataTypes.get(0);
-        Preconditions.checkArgument(x == DataType.FLOAT || x == DataType.HALF || x == DataType.BFLOAT16,
-                "ModelOptFp8Linear activation must be FLOAT, HALF or BFLOAT16");
+        Preconditions.checkArgument(x.isFPType(), "ModelOptFp8Linear activation must be floating point, got %s", x);
         Preconditions.checkArgument(inputDataTypes.get(1) == DataType.FLOAT8
                         && inputDataTypes.get(2) == DataType.FLOAT && inputDataTypes.get(3) == DataType.FLOAT,
                 "ModelOptFp8Linear requires FLOAT8 weights and FLOAT scales");

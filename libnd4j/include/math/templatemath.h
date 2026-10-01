@@ -230,6 +230,17 @@ SD_HOST_DEVICE SD_INLINE Z sd_fmod(X num, Y denom);
 template <typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_fma(Z a, Z b, Z c);
 
+// value rounded to the floating-point type Z, saturating: finite values beyond
+// Z's finite range and infinities become Z's largest finite value of that sign.
+// NaN stays NaN.
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_saturate(X value);
+
+// out[i] = static_cast<Z>(in[i]) for N consecutive elements, which some type
+// pairs convert together (packed hardware conversions).
+template <typename X, typename Z, int N>
+SD_HOST_DEVICE SD_INLINE void sd_convert_n(const X* in, Z* out);
+
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_erf(T num);
 
@@ -1188,6 +1199,48 @@ SD_HOST_DEVICE SD_INLINE Z sd_fma(Z a, Z b, Z c) {
   Z result = p_fma<Z>(a, b, c);
   SD_PRINT_MATH_FUNC2("sd_fma", a, b, result,Z);
   return result;
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_saturate(X value) {
+  static_assert(!std::is_integral<Z>::value, "sd_saturate rounds to a floating-point type");
+  // Clamping first is exact: rounding to nearest keeps the clamped limit, and
+  // the comparisons pass NaN through.
+  const X limit = static_cast<X>(DataTypeUtils::max<Z>());
+  const X clamped = value > limit ? limit : (value < -limit ? -limit : value);
+  Z result = static_cast<Z>(clamped);
+  SD_PRINT_MATH_FUNC("sd_saturate", static_cast<Z>(value), result, Z);
+  return result;
+}
+
+// The FP8 types saturate in the conversion itself (cvt.rn.satfinite on sm_89+).
+template <>
+SD_HOST_DEVICE SD_INLINE float8_e4m3 sd_saturate<float, float8_e4m3>(float value) {
+  float8_e4m3 result = float8_e4m3::from_float_satfinite(value);
+  SD_PRINT_MATH_FUNC("sd_saturate", static_cast<float8_e4m3>(value), result, float8_e4m3);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE float8_e5m2 sd_saturate<float, float8_e5m2>(float value) {
+  float8_e5m2 result = float8_e5m2::from_float_satfinite(value);
+  SD_PRINT_MATH_FUNC("sd_saturate", static_cast<float8_e5m2>(value), result, float8_e5m2);
+  return result;
+}
+
+template <typename X, typename Z, int N>
+SD_HOST_DEVICE SD_INLINE void sd_convert_n(const X* in, Z* out) {
+  for (int i = 0; i < N; i++) out[i] = static_cast<Z>(in[i]);
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE void sd_convert_n<float8_e4m3, float, 2>(const float8_e4m3* in, float* out) {
+  float8_e4m3::to_float2(in, out);
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE void sd_convert_n<float8_e5m2, float, 2>(const float8_e5m2* in, float* out) {
+  float8_e5m2::to_float2(in, out);
 }
 
 template <typename X, typename Z>

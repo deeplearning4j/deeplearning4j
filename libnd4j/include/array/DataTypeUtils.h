@@ -31,7 +31,10 @@
 #include <system/op_boilerplate.h>
 #include <types/bfloat16.h>
 #include <types/float16.h>
+#include <types/float4.h>
 #include <types/float8.h>
+
+#include <cfloat>
 
 #include <helpers/logger.h>
 
@@ -58,6 +61,10 @@ class SD_LIB_EXPORT DataTypeUtils {
   template <typename T>
   SD_INLINE static SD_HOST_DEVICE T max();
 
+  // returns the largest finite value of the given data type that a double can hold; throws for
+  // data types without a numeric range
+  static double max(DataType dataType);
+
   /**
    * returns inf for float/double and max for everything else
    */
@@ -69,7 +76,7 @@ class SD_LIB_EXPORT DataTypeUtils {
 
   // returns the difference between 1.0 and the next representable value of the given floating-point type
   template <typename T>
-  SD_INLINE static T eps();
+  SD_INLINE static SD_HOST_DEVICE T eps();
 
   SD_INLINE static SD_HOST_DEVICE size_t sizeOf(DataType type);
   SD_INLINE static SD_HOST_DEVICE size_t sizeOf(const LongType *shapeInfo);
@@ -395,7 +402,7 @@ SD_INLINE SD_HOST_DEVICE int16_t DataTypeUtils::min_positive<int16_t>() {
 #ifdef HAS_FLOAT32
 template <>
 SD_INLINE SD_HOST_DEVICE float DataTypeUtils::min<float>() {
-  return (float)1.175494e-38;
+  return FLT_MIN;
 }
 
 template <>
@@ -425,6 +432,28 @@ SD_INLINE SD_HOST_DEVICE bfloat16 DataTypeUtils::min<bfloat16>() {
 template <>
 SD_INLINE SD_HOST_DEVICE bfloat16 DataTypeUtils::min_positive<bfloat16>() {
   return bfloat16::min_positive();
+}
+#endif
+
+#ifdef HAS_FLOAT8
+template <>
+SD_INLINE SD_HOST_DEVICE float8 DataTypeUtils::min<float8>() {
+  return float8::min();
+}
+
+template <>
+SD_INLINE SD_HOST_DEVICE float8 DataTypeUtils::min_positive<float8>() {
+  return float8::min_positive();
+}
+
+template <>
+SD_INLINE SD_HOST_DEVICE float8_e5m2 DataTypeUtils::min<float8_e5m2>() {
+  return float8_e5m2::min();
+}
+
+template <>
+SD_INLINE SD_HOST_DEVICE float8_e5m2 DataTypeUtils::min_positive<float8_e5m2>() {
+  return float8_e5m2::min_positive();
 }
 #endif
 
@@ -513,7 +542,7 @@ SD_INLINE SD_HOST_DEVICE UnsignedLong DataTypeUtils::max<UnsignedLong>() {
 #ifdef HAS_FLOAT32
 template <>
 SD_INLINE SD_HOST_DEVICE float DataTypeUtils::max<float>() {
-  return 3.402823e+38;
+  return FLT_MAX;
 }
 #endif
 
@@ -538,6 +567,18 @@ SD_INLINE SD_HOST_DEVICE bfloat16 DataTypeUtils::max<bfloat16>() {
 }
 #endif
 
+#ifdef HAS_FLOAT8
+template <>
+SD_INLINE SD_HOST_DEVICE float8 DataTypeUtils::max<float8>() {
+  return float8::max();
+}
+
+template <>
+SD_INLINE SD_HOST_DEVICE float8_e5m2 DataTypeUtils::max<float8_e5m2>() {
+  return float8_e5m2::max();
+}
+#endif
+
 #ifdef HAS_FLOAT32
 template <>
 SD_INLINE SD_HOST_DEVICE float DataTypeUtils::infOrMax<float>() {
@@ -549,6 +590,13 @@ SD_INLINE SD_HOST_DEVICE float DataTypeUtils::infOrMax<float>() {
 template <>
 SD_INLINE SD_HOST_DEVICE double DataTypeUtils::infOrMax<double>() {
   return std::numeric_limits<double>::infinity();
+}
+#endif
+
+#ifdef HAS_FLOAT8
+template <>
+SD_INLINE SD_HOST_DEVICE float8_e5m2 DataTypeUtils::infOrMax<float8_e5m2>() {
+  return float8_e5m2::infinity();
 }
 #endif
 
@@ -749,6 +797,13 @@ SD_INLINE SD_HOST_DEVICE T DataTypeUtils::eps() {
 #ifdef HAS_BFLOAT16
   if constexpr (std::is_same_v<T, bfloat16>) {
     return bfloat16(0.0078125);  // Approximate bfloat16 epsilon
+  } else
+#endif
+#ifdef HAS_FLOAT8
+  if constexpr (std::is_same_v<T, float8>) {
+    return float8::epsilon();
+  } else if constexpr (std::is_same_v<T, float8_e5m2>) {
+    return float8_e5m2::epsilon();
   } else
 #endif
   {

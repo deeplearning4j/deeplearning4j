@@ -2873,7 +2873,7 @@ public class VulkanKernelEmitterStrictReplayTest {
                     op.addIArgument(DataType.FLOAT.toInt(), 0);
                     return op.outputVariable();
                 },
-                step -> new float[]{1.175494e-38f},
+                step -> new float[]{Float.MIN_NORMAL},
                 DataType.FLOAT,
                 new long[0],
                 0.0f,

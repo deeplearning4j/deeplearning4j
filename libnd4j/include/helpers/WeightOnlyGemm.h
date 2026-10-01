@@ -19,9 +19,16 @@ namespace sd {
  */
 enum class WeightOnlyFormat {
   // ModelOpt NVFP4 (ADR 0122): W [N, K/2] packed E2M1 (even K in the low
-  // nibble), block scales [N, K/16] E4M3, FP32 global scale; each weight is
-  // rounded to the activation dtype before the product.
+  // nibble); scale: the block scales [N, K/16] E4M3; secondScale: the FP32
+  // global scale. Each weight is rounded to the activation dtype before the
+  // product.
   MODELOPT_NVFP4,
+  // ModelOpt FP8 W8A8 (ADR 0122): W [N, K] E4M3; scale: the FP32 per-tensor
+  // weight scale; secondScale: the FP32 static input scale. Activations are
+  // quantized to E4M3 exactly as ops::helpers::modelOptQuantize<
+  // ModelOptFp8::Activation>, the exact E4M3 x E4M3 products accumulate in
+  // FP32, and the product of the two scales multiplies each output's sum once.
+  MODELOPT_FP8,
 };
 
 class SD_LIB_HIDDEN WeightOnlyGemm {
@@ -31,14 +38,15 @@ class SD_LIB_HIDDEN WeightOnlyGemm {
    * format, dtypes, shapes, layouts and base alignment — never on runtime
    * state — so a given linear always takes the same path.
    */
-  static bool isAdmitted(WeightOnlyFormat format, NDArray* x, NDArray* w, NDArray* blockScales, NDArray* z);
+  static bool isAdmitted(WeightOnlyFormat format, NDArray* x, NDArray* w, NDArray* scale, NDArray* z);
 
   /**
    * Enqueues the GEMM on the context stream. The operands must be admitted.
-   * z has x's dtype, or FLOAT32 when floatOutput is set.
+   * x and z dispatch over the float types; z's dtype is the output type. scale
+   * and secondScale are the format's (WeightOnlyFormat).
    */
-  static void run(LaunchContext* context, WeightOnlyFormat format, NDArray* x, NDArray* w, NDArray* blockScales,
-                  NDArray* globalScale, NDArray* z, bool floatOutput);
+  static void run(LaunchContext* context, WeightOnlyFormat format, NDArray* x, NDArray* w, NDArray* scale,
+                  NDArray* secondScale, NDArray* z);
 };
 
 }  // namespace sd

@@ -22,6 +22,12 @@
 // E4M3FN: 1 sign, 4 exponent, 3 mantissa bits. Bias=7. Range ±448. No Inf (NaN = 0x7F/0xFF).
 // E5M2:   1 sign, 5 exponent, 2 mantissa bits. Bias=15. Range ±57344. Has Inf and NaN.
 //
+// NaN is canonical, as in float16 and bfloat16: every FP32 NaN converts to the
+// positive NaN 0x7F, and every FP8 NaN converts to the FP32 NaN 0x7FFFFFFF.
+// These are the encodings the sm_89+ hardware conversions produce (they drop
+// the NaN sign), so on device the types convert in hardware (SD_NATIVE_FP8)
+// with results identical to the software conversions below.
+//
 
 #ifndef LIBND4J_FLOAT8_H
 #define LIBND4J_FLOAT8_H
@@ -29,6 +35,11 @@
 #include <system/op_boilerplate.h>
 #include <cmath>
 #include <cstring>
+#include <limits>
+
+#if defined(__CUDACC__)
+#include <cuda_fp8.h>
+#endif
 
 // CUTLASS interop: on CUDA builds with CUTLASS, include cutlass float8 types
 #if defined(HAVE_CUTLASS) && HAVE_CUTLASS && defined(__CUDACC__)
@@ -36,6 +47,15 @@
 #endif
 
 namespace sd {
+
+// The FP32 value of every FP8 NaN encoding: the canonical NaN that float16
+// decodes NaN to, and that the hardware FP8 -> FP16 -> FP32 conversion yields.
+SD_INLINE SD_HOST_DEVICE float cpu_fp8_nan_2float() {
+  const unsigned bits = 0x7FFFFFFF;
+  float ret;
+  memcpy(&ret, &bits, sizeof(float));
+  return ret;
+}
 
 // ============================================================================
 // E4M3FN format: 1-sign, 4-exp (bias=7), 3-mantissa, no Inf, NaN=0x7F/0xFF
@@ -49,6 +69,7 @@ typedef __quarter_e4m3 quarter_e4m3;
 
 // Forward declarations
 quarter_e4m3 SD_INLINE SD_HOST_DEVICE cpu_float2e4m3_rn(float f);
+quarter_e4m3 SD_INLINE SD_HOST_DEVICE cpu_float2e4m3_rn_satfinite(float f);
 float SD_INLINE SD_HOST_DEVICE cpu_e4m3_2float(quarter_e4m3 b);
 
 // ---- E4M3FN -> float ----
@@ -59,12 +80,7 @@ float cpu_e4m3_2float(quarter_e4m3 b) {
   unsigned mantissa = val & 0x7;           // 3-bit mantissa
 
   // NaN: exponent=0xF, mantissa=0x7 (E4M3FN has no Inf)
-  if (exponent == 0xF && mantissa == 0x7) {
-    unsigned result = (sign << 31) | 0x7FC00000;  // quiet NaN
-    float ret;
-    memcpy(&ret, &result, sizeof(float));
-    return ret;
-  }
+  if (exponent == 0xF && mantissa == 0x7) return cpu_fp8_nan_2float();
 
   float fval;
   if (exponent == 0) {
@@ -87,6 +103,9 @@ float cpu_e4m3_2float(quarter_e4m3 b) {
 }
 
 // ---- float -> E4M3FN (round to nearest even) ----
+// Finite values beyond the largest finite value saturate to it. E4M3FN has no
+// infinity: infinities convert to NaN of the same sign (as NVIDIA's conversion
+// without saturation does), and every NaN to the canonical NaN.
 quarter_e4m3 cpu_float2e4m3_rn(float f) {
   quarter_e4m3 ret;
 
@@ -98,25 +117,17 @@ quarter_e4m3 cpu_float2e4m3_rn(float f) {
 
   // Handle special cases
   if (f_exp == 0xFF) {
-    // Inf or NaN -> E4M3 NaN
-    ret.x = (sign << 7) | 0x7F;
+    ret.x = f_mant != 0 ? 0x7F : ((sign << 7) | 0x7F);
     return ret;
   }
 
   // Compute the float value magnitude for clamping
   float abs_f = sign ? -f : f;
 
-  // E4M3FN max normal = 448.0
+  // E4M3FN max = 2^(15-7) * (1 + 6/8) = 448 (exponent 15, mantissa 6; exponent
+  // 15 with mantissa 7 is NaN)
   if (abs_f > 448.0f) {
-    // Clamp to max representable value (exponent=0xE=14, mantissa=0x7=7)
-    // value = 2^(14-7) * (1 + 7/8) = 128 * 1.875 = 240... wait
-    // Actually max = 2^8 * (1 + 6/8) = 256 * 1.75 = 448
-    // exponent=15 is NaN row, so max exponent=14 -> 2^(14-7)=2^7=128
-    // max mantissa without NaN at exp=15: at exp=14, mantissa=7 -> 128*(1+7/8)=128*1.875=240
-    // Hmm, let me recalculate. E4M3FN: exp=14, mant=7 is NOT NaN (only exp=15,mant=7 is NaN)
-    // Wait, E4M3FN has no infinity. NaN = 0x7F (exp=15, mant=7).
-    // Max = exp=15, mant=6 -> 2^(15-7) * (1+6/8) = 256*1.75 = 448. Yes.
-    ret.x = (sign << 7) | 0x7E;  // exp=15, mant=6 = 448
+    ret.x = (sign << 7) | 0x7E;
     return ret;
   }
 
@@ -151,9 +162,10 @@ quarter_e4m3 cpu_float2e4m3_rn(float f) {
   } else {
     e4m3_exp = unbiased_exp + 7;  // bias=7
     if (e4m3_exp > 15) e4m3_exp = 15;
-    // Normal: mantissa = (abs_f / 2^unbiased_exp - 1) * 8
-    float power = powf(2.0f, static_cast<float>(unbiased_exp));
-    mant_f = (abs_f / power - 1.0f) * 8.0f;
+    // Normal: mantissa = (abs_f / 2^unbiased_exp - 1) * 8, the FP32 mantissa
+    // field in units of the 3-bit mantissa (exact: f_mant < 2^24, scaled by a
+    // power of two).
+    mant_f = static_cast<float>(f_mant) * (1.0f / (1 << 20));
   }
 
   // Round to nearest even
@@ -191,6 +203,19 @@ quarter_e4m3 cpu_float2e4m3_rn(float f) {
   return ret;
 }
 
+// ---- float -> E4M3FN, saturating (cvt.rn.satfinite) ----
+// cpu_float2e4m3_rn, except that infinities saturate to ±448 too.
+quarter_e4m3 cpu_float2e4m3_rn_satfinite(float f) {
+  unsigned x;
+  memcpy(&x, &f, sizeof(float));
+  if ((x & 0x7FFFFFFF) == 0x7F800000) {
+    quarter_e4m3 ret;
+    ret.x = ((x >> 24) & 0x80) | 0x7E;
+    return ret;
+  }
+  return cpu_float2e4m3_rn(f);
+}
+
 // ============================================================================
 // E5M2 format: 1-sign, 5-exp (bias=15), 2-mantissa, has Inf and NaN
 // (IEEE 754 binary8 variant — same as BF16/FP16 pattern but 8-bit)
@@ -203,6 +228,7 @@ typedef struct {
 typedef __quarter_e5m2 quarter_e5m2;
 
 quarter_e5m2 SD_INLINE SD_HOST_DEVICE cpu_float2e5m2_rn(float f);
+quarter_e5m2 SD_INLINE SD_HOST_DEVICE cpu_float2e5m2_rn_satfinite(float f);
 float SD_INLINE SD_HOST_DEVICE cpu_e5m2_2float(quarter_e5m2 b);
 
 // ---- E5M2 -> float ----
@@ -215,10 +241,7 @@ float cpu_e5m2_2float(quarter_e5m2 b) {
   if (exponent == 0x1F) {
     if (mantissa != 0) {
       // NaN
-      unsigned result = (sign << 31) | 0x7FC00000;
-      float ret;
-      memcpy(&ret, &result, sizeof(float));
-      return ret;
+      return cpu_fp8_nan_2float();
     } else {
       // Infinity
       unsigned result = (sign << 31) | 0x7F800000;
@@ -248,6 +271,7 @@ float cpu_e5m2_2float(quarter_e5m2 b) {
 }
 
 // ---- float -> E5M2 (round to nearest even) ----
+// Overflow rounds to infinity; every NaN converts to the canonical NaN.
 quarter_e5m2 cpu_float2e5m2_rn(float f) {
   quarter_e5m2 ret;
 
@@ -260,7 +284,7 @@ quarter_e5m2 cpu_float2e5m2_rn(float f) {
   if (f_exp == 0xFF) {
     if (f_mant != 0) {
       // NaN
-      ret.x = (sign << 7) | 0x7F;  // exp=31, mant=3
+      ret.x = 0x7F;  // exp=31, mant=3
     } else {
       // Inf
       ret.x = (sign << 7) | 0x7C;  // exp=31, mant=0
@@ -270,8 +294,10 @@ quarter_e5m2 cpu_float2e5m2_rn(float f) {
 
   float abs_f = sign ? -f : f;
 
-  // E5M2 max = 2^(30-15) * (1 + 3/4) = 2^15 * 1.75 = 57344
-  if (abs_f > 57344.0f) {
+  // E5M2 max = 2^(30-15) * (1 + 3/4) = 2^15 * 1.75 = 57344. Rounding to nearest
+  // even overflows from the midpoint between it and 2^16: 61440 ties to the even
+  // encoding, which is infinity.
+  if (abs_f >= 61440.0f) {
     // Overflow -> Inf
     ret.x = (sign << 7) | 0x7C;
     return ret;
@@ -286,7 +312,9 @@ quarter_e5m2 cpu_float2e5m2_rn(float f) {
   int e5m2_exp;
   float mant_f;
 
-  if (unbiased_exp < -16) {
+  if (unbiased_exp < -17) {
+    // Below half the smallest subnormal (2^-17), rounds to zero.
+    // Exponent -17 must reach ties-to-even rounding below.
     ret.x = (sign << 7);
     return ret;
   }
@@ -297,8 +325,8 @@ quarter_e5m2 cpu_float2e5m2_rn(float f) {
   } else {
     e5m2_exp = unbiased_exp + 15;
     if (e5m2_exp > 30) e5m2_exp = 30;
-    float power = powf(2.0f, static_cast<float>(unbiased_exp));
-    mant_f = (abs_f / power - 1.0f) * 4.0f;
+    // The FP32 mantissa field in units of the 2-bit mantissa (exact).
+    mant_f = static_cast<float>(f_mant) * (1.0f / (1 << 21));
   }
 
   int mant_int = static_cast<int>(mant_f);
@@ -329,6 +357,14 @@ quarter_e5m2 cpu_float2e5m2_rn(float f) {
   return ret;
 }
 
+// ---- float -> E5M2, saturating (cvt.rn.satfinite) ----
+// cpu_float2e5m2_rn, except that overflow and infinities saturate to ±57344.
+quarter_e5m2 cpu_float2e5m2_rn_satfinite(float f) {
+  quarter_e5m2 ret = cpu_float2e5m2_rn(f);
+  if ((ret.x & 0x7F) == 0x7C) ret.x = (ret.x & 0x80) | 0x7B;
+  return ret;
+}
+
 // ============================================================================
 // float8_e4m3 struct (primary FP8 type)
 // ============================================================================
@@ -338,7 +374,10 @@ struct float8_e4m3 {
 
   quarter_e4m3 data;
 
-  SD_INLINE SD_HOST_DEVICE float8_e4m3();
+  SD_INLINE SD_HOST_DEVICE constexpr float8_e4m3() : data{0} {}
+
+  // Wraps an encoding: no numeric conversion.
+  SD_INLINE SD_HOST_DEVICE constexpr explicit float8_e4m3(quarter_e4m3 bits) : data(bits) {}
 
   template <class T>
   SD_INLINE SD_HOST_DEVICE float8_e4m3(const T& rhs);
@@ -350,6 +389,46 @@ struct float8_e4m3 {
 
   SD_INLINE SD_HOST_DEVICE void assign(double rhs);
   SD_INLINE SD_HOST_DEVICE void assign(float rhs);
+
+  // Round to nearest even that also saturates infinities (cvt.rn.satfinite):
+  // the conversion of the value clamped to [lowest(), max()], NaN kept.
+  SD_INLINE SD_HOST_DEVICE static float8_e4m3 from_float_satfinite(float value);
+
+  // in[0] and in[1] to FP32: one packed conversion in hardware.
+  SD_INLINE SD_HOST_DEVICE static void to_float2(const float8_e4m3* in, float* out);
+
+  // std::numeric_limits semantics. E4M3FN has no infinity and no signaling NaN.
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e4m3 min() {
+    return float8_e4m3(quarter_e4m3{0x08});  // 2^-6
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e4m3 lowest() {
+    return float8_e4m3(quarter_e4m3{0xFE});  // -448
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e4m3 max() {
+    return float8_e4m3(quarter_e4m3{0x7E});  // 448
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e4m3 epsilon() {
+    return float8_e4m3(quarter_e4m3{0x20});  // 2^-3
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e4m3 round_error() {
+    return float8_e4m3(quarter_e4m3{0x30});  // 0.5
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e4m3 quiet_NaN() {
+    return float8_e4m3(quarter_e4m3{0x7F});
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e4m3 denorm_min() {
+    return float8_e4m3(quarter_e4m3{0x01});  // 2^-9
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e4m3 min_positive() {
+    return denorm_min();
+  }
 
 #if defined(HAVE_CUTLASS) && HAVE_CUTLASS && defined(__CUDACC__)
   SD_INLINE SD_HOST_DEVICE operator cutlass::float_e4m3_t() const {
@@ -364,7 +443,7 @@ struct float8_e4m3 {
 #endif
 };
 
-float8_e4m3::float8_e4m3() { data = cpu_float2e4m3_rn(0.0f); }
+static_assert(sizeof(float8_e4m3) == 1, "float8_e4m3 must be 1 byte");
 
 template <class T>
 float8_e4m3::float8_e4m3(const T& rhs) {
@@ -377,11 +456,48 @@ float8_e4m3& float8_e4m3::operator=(const T& rhs) {
   return *this;
 }
 
-float8_e4m3::operator float() const { return cpu_e4m3_2float(data); }
+float8_e4m3::operator float() const {
+#if defined(SD_NATIVE_FP8)
+  return __half2float(__half(__nv_cvt_fp8_to_halfraw(data.x, __NV_E4M3)));
+#else
+  return cpu_e4m3_2float(data);
+#endif
+}
 
 void float8_e4m3::assign(double rhs) { assign(static_cast<float>(rhs)); }
 
-void float8_e4m3::assign(float rhs) { data = cpu_float2e4m3_rn(rhs); }
+void float8_e4m3::assign(float rhs) {
+#if defined(SD_NATIVE_FP8)
+  // The hardware conversion saturates, and E4M3FN converts infinities to NaN.
+  const unsigned bits = __float_as_uint(rhs);
+  if ((bits & 0x7FFFFFFF) == 0x7F800000)
+    data.x = ((bits >> 24) & 0x80) | 0x7F;
+  else
+    data.x = __nv_cvt_float_to_fp8(rhs, __NV_SATFINITE, __NV_E4M3);
+#else
+  data = cpu_float2e4m3_rn(rhs);
+#endif
+}
+
+float8_e4m3 float8_e4m3::from_float_satfinite(float value) {
+#if defined(SD_NATIVE_FP8)
+  return float8_e4m3(quarter_e4m3{__nv_cvt_float_to_fp8(value, __NV_SATFINITE, __NV_E4M3)});
+#else
+  return float8_e4m3(cpu_float2e4m3_rn_satfinite(value));
+#endif
+}
+
+void float8_e4m3::to_float2(const float8_e4m3* in, float* out) {
+#if defined(SD_NATIVE_FP8)
+  const __nv_fp8x2_storage_t pair = static_cast<__nv_fp8x2_storage_t>(in[0].data.x | (in[1].data.x << 8));
+  const float2 values = __half22float2(__half2(__nv_cvt_fp8x2_to_halfraw2(pair, __NV_E4M3)));
+  out[0] = values.x;
+  out[1] = values.y;
+#else
+  out[0] = static_cast<float>(in[0]);
+  out[1] = static_cast<float>(in[1]);
+#endif
+}
 
 // ============================================================================
 // float8_e5m2 struct (gradient/accumulation FP8 type)
@@ -392,7 +508,10 @@ struct float8_e5m2 {
 
   quarter_e5m2 data;
 
-  SD_INLINE SD_HOST_DEVICE float8_e5m2();
+  SD_INLINE SD_HOST_DEVICE constexpr float8_e5m2() : data{0} {}
+
+  // Wraps an encoding: no numeric conversion.
+  SD_INLINE SD_HOST_DEVICE constexpr explicit float8_e5m2(quarter_e5m2 bits) : data(bits) {}
 
   template <class T>
   SD_INLINE SD_HOST_DEVICE float8_e5m2(const T& rhs);
@@ -404,6 +523,54 @@ struct float8_e5m2 {
 
   SD_INLINE SD_HOST_DEVICE void assign(double rhs);
   SD_INLINE SD_HOST_DEVICE void assign(float rhs);
+
+  // Round to nearest even that saturates instead of overflowing to infinity
+  // (cvt.rn.satfinite): the conversion of the value clamped to [lowest(), max()].
+  SD_INLINE SD_HOST_DEVICE static float8_e5m2 from_float_satfinite(float value);
+
+  // in[0] and in[1] to FP32: one packed conversion in hardware.
+  SD_INLINE SD_HOST_DEVICE static void to_float2(const float8_e5m2* in, float* out);
+
+  // std::numeric_limits semantics.
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e5m2 min() {
+    return float8_e5m2(quarter_e5m2{0x04});  // 2^-14
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e5m2 lowest() {
+    return float8_e5m2(quarter_e5m2{0xFB});  // -57344
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e5m2 max() {
+    return float8_e5m2(quarter_e5m2{0x7B});  // 57344
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e5m2 epsilon() {
+    return float8_e5m2(quarter_e5m2{0x34});  // 2^-2
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e5m2 round_error() {
+    return float8_e5m2(quarter_e5m2{0x38});  // 0.5
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e5m2 infinity() {
+    return float8_e5m2(quarter_e5m2{0x7C});
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e5m2 quiet_NaN() {
+    return float8_e5m2(quarter_e5m2{0x7F});
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e5m2 signaling_NaN() {
+    return float8_e5m2(quarter_e5m2{0x7D});
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e5m2 denorm_min() {
+    return float8_e5m2(quarter_e5m2{0x01});  // 2^-16
+  }
+
+  SD_INLINE SD_HOST_DEVICE static constexpr float8_e5m2 min_positive() {
+    return denorm_min();
+  }
 
 #if defined(HAVE_CUTLASS) && HAVE_CUTLASS && defined(__CUDACC__)
   SD_INLINE SD_HOST_DEVICE operator cutlass::float_e5m2_t() const {
@@ -418,7 +585,7 @@ struct float8_e5m2 {
 #endif
 };
 
-float8_e5m2::float8_e5m2() { data = cpu_float2e5m2_rn(0.0f); }
+static_assert(sizeof(float8_e5m2) == 1, "float8_e5m2 must be 1 byte");
 
 template <class T>
 float8_e5m2::float8_e5m2(const T& rhs) {
@@ -431,11 +598,50 @@ float8_e5m2& float8_e5m2::operator=(const T& rhs) {
   return *this;
 }
 
-float8_e5m2::operator float() const { return cpu_e5m2_2float(data); }
+float8_e5m2::operator float() const {
+#if defined(SD_NATIVE_FP8)
+  return __half2float(__half(__nv_cvt_fp8_to_halfraw(data.x, __NV_E5M2)));
+#else
+  return cpu_e5m2_2float(data);
+#endif
+}
 
 void float8_e5m2::assign(double rhs) { assign(static_cast<float>(rhs)); }
 
-void float8_e5m2::assign(float rhs) { data = cpu_float2e5m2_rn(rhs); }
+void float8_e5m2::assign(float rhs) {
+#if defined(SD_NATIVE_FP8)
+  // The hardware conversion saturates; rounding to nearest even overflows to
+  // infinity from 61440 (bits 0x47700000), infinities included.
+  const unsigned bits = __float_as_uint(rhs);
+  const unsigned magnitude = bits & 0x7FFFFFFF;
+  if (magnitude >= 0x47700000 && magnitude <= 0x7F800000)
+    data.x = ((bits >> 24) & 0x80) | 0x7C;
+  else
+    data.x = __nv_cvt_float_to_fp8(rhs, __NV_SATFINITE, __NV_E5M2);
+#else
+  data = cpu_float2e5m2_rn(rhs);
+#endif
+}
+
+float8_e5m2 float8_e5m2::from_float_satfinite(float value) {
+#if defined(SD_NATIVE_FP8)
+  return float8_e5m2(quarter_e5m2{__nv_cvt_float_to_fp8(value, __NV_SATFINITE, __NV_E5M2)});
+#else
+  return float8_e5m2(cpu_float2e5m2_rn_satfinite(value));
+#endif
+}
+
+void float8_e5m2::to_float2(const float8_e5m2* in, float* out) {
+#if defined(SD_NATIVE_FP8)
+  const __nv_fp8x2_storage_t pair = static_cast<__nv_fp8x2_storage_t>(in[0].data.x | (in[1].data.x << 8));
+  const float2 values = __half22float2(__half2(__nv_cvt_fp8x2_to_halfraw2(pair, __NV_E5M2)));
+  out[0] = values.x;
+  out[1] = values.y;
+#else
+  out[0] = static_cast<float>(in[0]);
+  out[1] = static_cast<float>(in[1]);
+#endif
+}
 
 // ============================================================================
 // Backward compatibility: float8 = float8_e4m3 (the primary inference type)
@@ -450,5 +656,83 @@ SD_INLINE SD_HOST_DEVICE quarter cpu_float2quarter_rn(float f) { return cpu_floa
 SD_INLINE SD_HOST_DEVICE float cpu_quarter2float(quarter b) { return cpu_e4m3_2float(b); }
 
 }  // namespace sd
+
+// Limits only: the FP8 types are storage formats, deliberately not arithmetic
+// or floating-point types (arithmetic happens in a wider accumulation type).
+namespace std {
+template <>
+struct numeric_limits<sd::float8_e4m3> {
+  static constexpr bool is_specialized = true;
+  static constexpr bool is_signed = true;
+  static constexpr bool is_integer = false;
+  static constexpr bool is_exact = false;
+  static constexpr bool has_infinity = false;
+  static constexpr bool has_quiet_NaN = true;
+  static constexpr bool has_signaling_NaN = false;
+  static constexpr float_denorm_style has_denorm = denorm_present;
+  static constexpr bool has_denorm_loss = false;
+  static constexpr float_round_style round_style = round_to_nearest;
+  static constexpr bool is_iec559 = false;
+  static constexpr bool is_bounded = true;
+  static constexpr bool is_modulo = false;
+  static constexpr int digits = 4;
+  static constexpr int digits10 = 0;
+  static constexpr int max_digits10 = 3;
+  static constexpr int radix = 2;
+  static constexpr int min_exponent = -5;
+  static constexpr int min_exponent10 = -1;
+  static constexpr int max_exponent = 9;
+  static constexpr int max_exponent10 = 2;
+  static constexpr bool traps = false;
+  static constexpr bool tinyness_before = false;
+
+  SD_HOST_DEVICE static constexpr sd::float8_e4m3 min() noexcept { return sd::float8_e4m3::min(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e4m3 lowest() noexcept { return sd::float8_e4m3::lowest(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e4m3 max() noexcept { return sd::float8_e4m3::max(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e4m3 epsilon() noexcept { return sd::float8_e4m3::epsilon(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e4m3 round_error() noexcept { return sd::float8_e4m3::round_error(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e4m3 infinity() noexcept { return sd::float8_e4m3(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e4m3 quiet_NaN() noexcept { return sd::float8_e4m3::quiet_NaN(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e4m3 signaling_NaN() noexcept { return sd::float8_e4m3(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e4m3 denorm_min() noexcept { return sd::float8_e4m3::denorm_min(); }
+};
+
+template <>
+struct numeric_limits<sd::float8_e5m2> {
+  static constexpr bool is_specialized = true;
+  static constexpr bool is_signed = true;
+  static constexpr bool is_integer = false;
+  static constexpr bool is_exact = false;
+  static constexpr bool has_infinity = true;
+  static constexpr bool has_quiet_NaN = true;
+  static constexpr bool has_signaling_NaN = true;
+  static constexpr float_denorm_style has_denorm = denorm_present;
+  static constexpr bool has_denorm_loss = false;
+  static constexpr float_round_style round_style = round_to_nearest;
+  static constexpr bool is_iec559 = false;
+  static constexpr bool is_bounded = true;
+  static constexpr bool is_modulo = false;
+  static constexpr int digits = 3;
+  static constexpr int digits10 = 0;
+  static constexpr int max_digits10 = 2;
+  static constexpr int radix = 2;
+  static constexpr int min_exponent = -13;
+  static constexpr int min_exponent10 = -4;
+  static constexpr int max_exponent = 16;
+  static constexpr int max_exponent10 = 4;
+  static constexpr bool traps = false;
+  static constexpr bool tinyness_before = false;
+
+  SD_HOST_DEVICE static constexpr sd::float8_e5m2 min() noexcept { return sd::float8_e5m2::min(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e5m2 lowest() noexcept { return sd::float8_e5m2::lowest(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e5m2 max() noexcept { return sd::float8_e5m2::max(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e5m2 epsilon() noexcept { return sd::float8_e5m2::epsilon(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e5m2 round_error() noexcept { return sd::float8_e5m2::round_error(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e5m2 infinity() noexcept { return sd::float8_e5m2::infinity(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e5m2 quiet_NaN() noexcept { return sd::float8_e5m2::quiet_NaN(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e5m2 signaling_NaN() noexcept { return sd::float8_e5m2::signaling_NaN(); }
+  SD_HOST_DEVICE static constexpr sd::float8_e5m2 denorm_min() noexcept { return sd::float8_e5m2::denorm_min(); }
+};
+}  // namespace std
 
 #endif  // LIBND4J_FLOAT8_H

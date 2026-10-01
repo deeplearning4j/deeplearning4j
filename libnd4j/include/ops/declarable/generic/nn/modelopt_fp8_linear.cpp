@@ -27,6 +27,7 @@ static bool modelOptFp8StorageAliases(NDArray* a, NDArray* b) {
 }
 
 CUSTOM_OP_IMPL(modelopt_fp8_linear, 4, 1, false, 0, 1) {
+  using Format = helpers::ModelOptFp8;
   REQUIRE_TRUE(block.width() == 4, 0, "modelopt_fp8_linear: exactly four inputs required");
   auto x = INPUT_VARIABLE(0);
   auto w = INPUT_VARIABLE(1);
@@ -42,8 +43,10 @@ CUSTOM_OP_IMPL(modelopt_fp8_linear, 4, 1, false, 0, 1) {
   REQUIRE_TRUE(weightScale->rankOf() == 0 && inputScale->rankOf() == 0 &&
                weightScale->lengthOf() == 1 && inputScale->lengthOf() == 1, 0,
                "modelopt_fp8_linear: scales must be nonempty scalars");
-  REQUIRE_TRUE((x->dataType() == FLOAT32 || x->dataType() == HALF || x->dataType() == BFLOAT16) &&
-               w->dataType() == FLOAT8 && weightScale->dataType() == FLOAT32 && inputScale->dataType() == FLOAT32, 0,
+  REQUIRE_TRUE(DataTypeUtils::isR(x->dataType()) &&
+               w->dataType() == DataTypeUtils::fromT<Format::Storage>() &&
+               weightScale->dataType() == DataTypeUtils::fromT<Format::ScaleStorage>() &&
+               inputScale->dataType() == DataTypeUtils::fromT<Format::Scale>(), 0,
                "modelopt_fp8_linear: invalid input dtypes");
   REQUIRE_TRUE(z->dataType() == (INT_ARG(0) ? FLOAT32 : x->dataType()) && z->rankOf() == x->rankOf() &&
                z->sizeAt(-1) == w->sizeAt(0), 0, "modelopt_fp8_linear: incorrect output shape or dtype");
@@ -52,18 +55,22 @@ CUSTOM_OP_IMPL(modelopt_fp8_linear, 4, 1, false, 0, 1) {
   for (auto input : {x, w, weightScale, inputScale})
     REQUIRE_TRUE(!modelOptFp8StorageAliases(z, input), 0,
                  "modelopt_fp8_linear: output must not alias an input");
-  helpers::modelOptLinear(block.launchContext(), x, w, weightScale, inputScale, z, false, INT_ARG(0) == 1);
+  helpers::modelOptLinear<Format>(block.launchContext(), x, w, weightScale, inputScale, z);
   return Status::OK;
 }
 
 DECLARE_TYPES(modelopt_fp8_linear) {
-  getOpDescriptor()->setAllowedInputTypes(0, {FLOAT32, HALF, BFLOAT16})
-      ->setAllowedInputTypes(1, {FLOAT8})->setAllowedInputTypes(2, {FLOAT32})
-      ->setAllowedInputTypes(3, {FLOAT32})->setAllowedOutputTypes({FLOAT32, HALF, BFLOAT16})
+  using Format = helpers::ModelOptFp8;
+  getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
+      ->setAllowedInputTypes(1, {DataTypeUtils::fromT<Format::Storage>()})
+      ->setAllowedInputTypes(2, {DataTypeUtils::fromT<Format::ScaleStorage>()})
+      ->setAllowedInputTypes(3, {DataTypeUtils::fromT<Format::Scale>()})
+      ->setAllowedOutputTypes({ALL_FLOATS})
       ->setShapeValueInputs({})->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(modelopt_fp8_linear) {
+  using Format = helpers::ModelOptFp8;
   REQUIRE_TRUE(block.numI() == 1 && block.numT() == 0 && block.numB() == 0 && block.numD() == 0 &&
                (INT_ARG(0) == 0 || INT_ARG(0) == 1), 0,
                "modelopt_fp8_linear: floatOutput must be 0 or 1 (one IArg)");
@@ -72,10 +79,11 @@ DECLARE_SHAPE_FN(modelopt_fp8_linear) {
   auto w = inputShape->at(1);
   auto ws = inputShape->at(2);
   auto xs = inputShape->at(3);
-  const auto xType = ArrayOptions::dataType(x);
-  REQUIRE_TRUE((xType == FLOAT32 || xType == HALF || xType == BFLOAT16) &&
-               ArrayOptions::dataType(w) == FLOAT8 && ArrayOptions::dataType(ws) == FLOAT32 &&
-               ArrayOptions::dataType(xs) == FLOAT32, 0, "modelopt_fp8_linear: invalid input dtypes");
+  REQUIRE_TRUE(DataTypeUtils::isR(ArrayOptions::dataType(x)) &&
+               ArrayOptions::dataType(w) == DataTypeUtils::fromT<Format::Storage>() &&
+               ArrayOptions::dataType(ws) == DataTypeUtils::fromT<Format::ScaleStorage>() &&
+               ArrayOptions::dataType(xs) == DataTypeUtils::fromT<Format::Scale>(), 0,
+               "modelopt_fp8_linear: invalid input dtypes");
   const int rank = shape::rank(x);
   REQUIRE_TRUE(rank >= 1 && shape::rank(w) == 2 && shape::rank(ws) == 0 && shape::rank(xs) == 0 &&
                !shape::isEmptyConst(ws) && !shape::isEmptyConst(xs), 0,

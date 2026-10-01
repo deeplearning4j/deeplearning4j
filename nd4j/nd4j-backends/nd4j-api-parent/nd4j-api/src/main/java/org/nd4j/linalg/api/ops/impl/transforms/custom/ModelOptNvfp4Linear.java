@@ -13,12 +13,13 @@ import java.util.List;
 
 /**
  * ModelOpt NVFP4 inference linear: X[...,K] times packed W[N,K/2] transposed.
- * X is FLOAT, HALF or BFLOAT16; W is UBYTE with the even K element in the low
- * nibble. Block scales are FLOAT8 E4M3 [N,K/16], and the global scale is a
- * positive finite FLOAT rank-zero scalar. K must be divisible by 16.
- * Dequantization multiplies block/global scales in FP32, then E2M1 in FP32,
- * then rounds the weight to X's dtype before FP32 accumulation.
- * The output is [...,N], with X's dtype unless floatOutput requests FLOAT.
+ * X is floating point; W is UBYTE with the even K element in the low nibble.
+ * Block scales are FLOAT8 E4M3 [N,K/16], and the global scale is a positive
+ * finite FLOAT rank-zero scalar. K must be divisible by 16. Dequantization
+ * multiplies block/global scales in FP32, then E2M1 in FP32, then rounds the
+ * weight to X's dtype; products accumulate in X's aggregate type (FP32, or
+ * FP64 for DOUBLE). The output is [...,N], with X's dtype unless floatOutput
+ * requests FLOAT.
  * Native validation owns shapes, scale values and output alias rejection.
  */
 public class ModelOptNvfp4Linear extends DynamicCustomOp {
@@ -48,8 +49,7 @@ public class ModelOptNvfp4Linear extends DynamicCustomOp {
         Preconditions.checkArgument(inputDataTypes != null && inputDataTypes.size() == 4,
                 "ModelOptNvfp4Linear requires four input dtypes");
         DataType x = inputDataTypes.get(0);
-        Preconditions.checkArgument(x == DataType.FLOAT || x == DataType.HALF || x == DataType.BFLOAT16,
-                "ModelOptNvfp4Linear activation must be FLOAT, HALF or BFLOAT16");
+        Preconditions.checkArgument(x.isFPType(), "ModelOptNvfp4Linear activation must be floating point, got %s", x);
         Preconditions.checkArgument(inputDataTypes.get(1) == DataType.UBYTE
                         && inputDataTypes.get(2) == DataType.FLOAT8 && inputDataTypes.get(3) == DataType.FLOAT,
                 "ModelOptNvfp4Linear requires UBYTE weights, FLOAT8 blocks and FLOAT global scale");

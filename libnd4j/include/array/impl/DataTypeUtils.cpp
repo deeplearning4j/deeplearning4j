@@ -25,7 +25,91 @@
 #include <types/float16.h>
 #include <system/selective_rendering.h>
 
+#include <cmath>
+#include <limits>
+#include <string>
+
 namespace sd {
+namespace {
+// Integer maxima wider than double's significand round up on conversion; step back to the double
+// just below so a clamp to the returned bound never yields a value the type cannot hold.
+template <typename T>
+double finiteMaxAsDouble() {
+  const double bound = static_cast<double>(DataTypeUtils::max<T>());
+  if (std::numeric_limits<T>::is_integer && bound >= std::ldexp(1.0, std::numeric_limits<T>::digits))
+    return std::nextafter(bound, 0.0);
+  return bound;
+}
+}  // namespace
+
+double DataTypeUtils::max(DataType dataType) {
+  switch (dataType) {
+#ifdef HAS_BOOL
+    case BOOL:
+      return finiteMaxAsDouble<bool>();
+#endif
+#ifdef HAS_INT8
+    case INT8:
+      return finiteMaxAsDouble<int8_t>();
+#endif
+#ifdef HAS_UINT8
+    case UINT8:
+      return finiteMaxAsDouble<uint8_t>();
+#endif
+#ifdef HAS_INT16
+    case INT16:
+      return finiteMaxAsDouble<int16_t>();
+#endif
+#ifdef HAS_UINT16
+    case UINT16:
+      return finiteMaxAsDouble<uint16_t>();
+#endif
+#ifdef HAS_INT32
+    case INT32:
+      return finiteMaxAsDouble<int>();
+#endif
+#ifdef HAS_UINT32
+    case UINT32:
+      return finiteMaxAsDouble<uint32_t>();
+#endif
+#ifdef HAS_LONG
+    case INT64:
+      return finiteMaxAsDouble<LongType>();
+#endif
+#ifdef HAS_UNSIGNEDLONG
+    case UINT64:
+      return finiteMaxAsDouble<UnsignedLong>();
+#endif
+#ifdef HAS_FLOAT16
+    case HALF:
+      return finiteMaxAsDouble<float16>();
+#endif
+#ifdef HAS_BFLOAT16
+    case BFLOAT16:
+      return finiteMaxAsDouble<bfloat16>();
+#endif
+#ifdef HAS_FLOAT32
+    case FLOAT32:
+      return finiteMaxAsDouble<float>();
+#endif
+#ifdef HAS_DOUBLE
+    case DOUBLE:
+      return finiteMaxAsDouble<double>();
+#endif
+#ifdef HAS_FLOAT8
+    case FLOAT8:
+      return finiteMaxAsDouble<float8>();
+    case FLOAT8_E5M2:
+      return finiteMaxAsDouble<float8_e5m2>();
+#endif
+    default: {
+      const std::string message = "DataTypeUtils::max: data type " + asString(dataType) + " has no numeric range";
+      THROW_EXCEPTION(message.c_str());
+      return 0.0;
+    }
+  }
+}
+
 DataType DataTypeUtils::fromInt(int val) { return (DataType)val; }
 
 DataType DataTypeUtils::fromFlatDataType(graph::DType dtype) { return (DataType)dtype; }

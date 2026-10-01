@@ -159,6 +159,11 @@
 #define NATIVE_HALFS
 #endif
 
+// sm_89+ converts FP32 to and from both FP8 formats in hardware (cvt.*.e4m3x2/e5m2x2).
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+#define SD_NATIVE_FP8
+#endif
+
 #endif
 
 // Include openmp_pragmas.h AFTER SD_INLINE is defined

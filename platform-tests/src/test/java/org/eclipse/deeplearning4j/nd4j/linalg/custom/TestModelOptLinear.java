@@ -41,7 +41,8 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 /** Independent numerical and native ABI contracts, shared by CPU and CUDA. */
 @NativeTag
 public class TestModelOptLinear extends BaseNd4jTestWithBackends {
-    private static final DataType[] ACTIVATION_TYPES = {DataType.FLOAT, DataType.HALF, DataType.BFLOAT16};
+    // The float types the native ops declare for X (ALL_FLOATS).
+    private static final DataType[] ACTIVATION_TYPES = {DataType.FLOAT, DataType.DOUBLE, DataType.HALF, DataType.BFLOAT16};
     private static final float[] E2M1 = {0, .5f, 1, 1.5f, 2, 3, 4, 6};
 
     @Override
@@ -563,7 +564,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
                             c.assign(beta == 0 ? Double.NaN : 64);
                             Nd4j.exec(new Mmul(a, b, c, 1.003, beta, MMulTranspose.allFalse()));
                             assertEquals(dtype, c.dataType());
-                            float expected = round((float) 1.003 * 8192 + (float) beta * 64, dtype);
+                            float expected = (float) round((float) 1.003 * 8192 + (float) beta * 64, dtype);
                             for (int i = 0; i < c.length(); i++) assertEquals(expected, c.getFloat(i), 0,
                                     dtype + "/" + order + "/rank=" + rank + "/beta=" + beta);
                         }
@@ -584,7 +585,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
                         NDArrayIndex.interval(1, 3), NDArrayIndex.interval(1, 2, 7));
                 c.assign(64);
                 Nd4j.exec(new Mmul(a, b, c, 1.003, .7, MMulTranspose.allFalse()));
-                float expected = round((float) 1.003 * 8192 + .7f * 64, DataType.BFLOAT16);
+                float expected = (float) round((float) 1.003 * 8192 + .7f * 64, DataType.BFLOAT16);
                 for (int batch = 0; batch < 2; batch++)
                     for (int m = 0; m < 4; m++)
                         for (int n = 0; n < 8; n++)
@@ -662,13 +663,13 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
                 for (int i = 0; i < 3; i++)
                     for (int j = 0; j < 2; j++)
                         for (int n = 0; n < 3; n++)
-                            assertEquals(reference(f, j * 3 + i, n), z.getFloat(i, j, n), 2e-5f);
+                            assertEquals(reference(f, j * 3 + i, n), z.getDouble(i, j, n), 2e-5);
                 INDArray vector = f.x.getRow(2).reshape(32);
                 INDArray v = Nd4j.exec(eager(nv, vector, f.w, f.scale, f.second, false))[0];
                 assertArrayEquals(new long[]{3}, v.shape());
                 assertEquals(dtype, v.dataType());
                 for (int n = 0; n < 3; n++)
-                    assertEquals(round(reference(f, 2, n), dtype), v.getFloat(n), 2e-5f);
+                    assertEquals(round(reference(f, 2, n), dtype), v.getDouble(n), 2e-5);
             }
         }
     }
@@ -786,8 +787,9 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
             reject(nv, good, new long[]{0}, Nd4j.create(DataType.FLOAT, 6, 4));
             reject(nv, good, new long[]{0}, Nd4j.create(DataType.HALF, 6, 3));
             for (int input = 0; input < 4; input++) {
+                // X admits every float type; each storage and scale input has one.
                 INDArray[] wrong = good.clone();
-                wrong[input] = good[input].castTo(DataType.DOUBLE);
+                wrong[input] = good[input].castTo(input == 0 ? DataType.INT : DataType.DOUBLE);
                 reject(nv, wrong, new long[]{0}, null);
             }
             INDArray[] wrongStorage = good.clone();
@@ -886,7 +888,8 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
 
     /**
      * CUDA tiled-kernel arithmetic contract, bit for bit: every output is 32
-     * lane-strided fmaf chains (lane l owns the 8-element words l, l+32, ...,
+     * lane-strided fused multiply-add chains in the activation's aggregate type
+     * (FP32, or FP64 for DOUBLE; lane l owns the 8-element words l, l+32, ...,
      * ascending), then the ascending-offset shuffle fold. The kernel processes
      * rows in register passes of 8 and dequantizes each weight word once per
      * pass, so row counts inside, at and across the pass boundary (1, 5, 8, 9,
@@ -907,13 +910,14 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
         java.util.Random random = new java.util.Random(20260927L);
         for (boolean nv : new boolean[]{true, false}) {
             for (DataType dtype : ACTIVATION_TYPES) {
+                DataType acc = aggregate(dtype);
                 for (int[] shape : shapes) {
                     int rows = shape[0], k = shape[1], n = shape[2];
                     float[] values = new float[rows * k];
                     for (int i = 0; i < values.length; i++) values[i] = (random.nextInt(4097) - 2048) / 1024.0f;
                     INDArray x = Nd4j.create(values, new long[]{rows, k}, DataType.FLOAT).castTo(dtype);
                     // Reference activations are the dtype-rounded values the kernel reads.
-                    float[] xs = x.castTo(DataType.FLOAT).data().asFloat();
+                    double[] xs = x.castTo(DataType.DOUBLE).data().asDouble();
                     byte[] bytes = new byte[n * (nv ? k / 2 : k)];
                     for (int i = 0; i < bytes.length; i++)
                         bytes[i] = nv ? (byte) random.nextInt(256)
@@ -924,46 +928,47 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
                     float weightScale = .7f;
                     INDArray w = raw(nv ? DataType.UBYTE : DataType.FLOAT8, bytes, n, nv ? k / 2 : k);
                     INDArray scale = nv ? raw(DataType.FLOAT8, blocks, n, k / 16) : scalar(weightScale);
-                    float[] a = xs;
+                    double[] a = xs;
                     if (!nv) {
-                        a = new float[xs.length];
-                        for (int i = 0; i < xs.length; i++) a[i] = quantizeE4m3(xs[i] / global) * global;
+                        a = new double[xs.length];
+                        for (int i = 0; i < xs.length; i++) a[i] = fp8Activation(acc, xs[i], global);
                     }
                     for (boolean floatOutput : new boolean[]{false, true}) {
                         INDArray z = nv ? Nd4j.exec(new ModelOptNvfp4Linear(x, w, scale, scalar(global), floatOutput))[0]
                                 : Nd4j.exec(new ModelOptFp8Linear(x, w, scale, scalar(global), floatOutput))[0];
                         DataType outType = floatOutput ? DataType.FLOAT : dtype;
                         assertEquals(outType, z.dataType());
-                        float[] actual = z.castTo(DataType.FLOAT).data().asFloat();
+                        double[] actual = z.castTo(DataType.DOUBLE).data().asDouble();
                         for (int row = 0; row < rows; row++) {
                             for (int col = 0; col < n; col++) {
-                                float[] lanes = new float[32];
+                                double[] lanes = new double[32];
                                 for (int lane = 0; lane < 32; lane++) {
-                                    float sum = 0;
+                                    double sum = 0;
                                     for (int word = lane; word < k / 8; word += 32) {
                                         for (int j = 0; j < 8; j++) {
                                             int kk = word * 8 + j;
-                                            float b;
+                                            double b;
                                             if (nv) {
                                                 int bits = bytes[col * (k / 2) + kk / 2] & 255;
                                                 float blockScale = decodeE4m3(blocks[col * (k / 16) + kk / 16] & 255) * global;
                                                 b = round(signedNibble((bits >>> (4 * (kk & 1))) & 15) * blockScale, dtype);
                                             } else {
-                                                b = decodeE4m3(bytes[col * k + kk] & 255) * weightScale;
+                                                b = fp8Weight(acc, bytes[col * k + kk] & 255, weightScale);
                                             }
-                                            sum = Math.fma(a[row * k + kk], b, sum);
+                                            sum = fma(acc, a[row * k + kk], b, sum);
                                         }
                                     }
                                     lanes[lane] = sum;
                                 }
                                 for (int offset = 1; offset < 32; offset <<= 1) {
-                                    float[] next = lanes.clone();
-                                    for (int lane = 0; lane + offset < 32; lane++) next[lane] = lanes[lane] + lanes[lane + offset];
+                                    double[] next = lanes.clone();
+                                    for (int lane = 0; lane + offset < 32; lane++)
+                                        next[lane] = add(acc, lanes[lane], lanes[lane + offset]);
                                     lanes = next;
                                 }
-                                float expected = round(lanes[0], outType);
-                                float got = actual[row * n + col];
-                                assertEquals(Float.floatToIntBits(expected), Float.floatToIntBits(got),
+                                double expected = round(lanes[0], outType);
+                                double got = actual[row * n + col];
+                                assertEquals(Double.doubleToLongBits(expected), Double.doubleToLongBits(got),
                                         (nv ? "nvfp4" : "fp8") + "/" + dtype + "/floatOutput=" + floatOutput
                                                 + "/rows=" + rows + "/k=" + k + "/n=" + n
                                                 + " at [" + row + "," + col + "]: expected " + expected + " got " + got);
@@ -982,7 +987,10 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
      * quant(x) * quant(w); only the FP32 accumulation order belongs to the
      * library, so the result is checked against an exact double reference with
      * an accumulation-error bound (K * 2^-24 * sum|terms|) plus the output
-     * dtype's rounding. Covers decode (1, 5) and prefill (128) row counts.
+     * dtype's rounding. The GEMM admits only activations whose aggregate type
+     * is FP32 (FLOAT, HALF, BFLOAT16); DOUBLE activations take the native FP64
+     * kernels and must meet the same bound. Covers decode (1, 5) and prefill
+     * (128) row counts.
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -996,25 +1004,26 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
                 float[] values = new float[rows * k];
                 for (int i = 0; i < values.length; i++) values[i] = (random.nextInt(4097) - 2048) / 1024.0f;
                 INDArray x = Nd4j.create(values, new long[]{rows, k}, DataType.FLOAT).castTo(dtype);
-                float[] xs = x.castTo(DataType.FLOAT).data().asFloat();
+                double[] xs = x.castTo(DataType.DOUBLE).data().asDouble();
                 byte[] bytes = new byte[n * k];
                 for (int i = 0; i < bytes.length; i++)
                     bytes[i] = (byte) ((random.nextInt(0x60) + 0x10) | (random.nextBoolean() ? 128 : 0));
                 INDArray w = raw(DataType.FLOAT8, bytes, n, k);
+                DataType acc = aggregate(dtype);
                 double[] a = new double[xs.length];
-                for (int i = 0; i < xs.length; i++) a[i] = quantizeE4m3(xs[i] / inputScale) * inputScale;
+                for (int i = 0; i < xs.length; i++) a[i] = fp8Activation(acc, xs[i], inputScale);
                 for (boolean floatOutput : new boolean[]{false, true}) {
                     INDArray z = Nd4j.exec(new ModelOptFp8Linear(x, w, scalar(weightScale), scalar(inputScale),
                             floatOutput))[0];
                     DataType outType = floatOutput ? DataType.FLOAT : dtype;
                     assertEquals(outType, z.dataType());
-                    double outputEpsilon = outType == DataType.FLOAT ? 0 : outType == DataType.HALF ? 0x1p-11 : 0x1p-8;
-                    float[] actual = z.castTo(DataType.FLOAT).data().asFloat();
+                    double outputEpsilon = outType == DataType.HALF ? 0x1p-11 : outType == DataType.BFLOAT16 ? 0x1p-8 : 0;
+                    double[] actual = z.castTo(DataType.DOUBLE).data().asDouble();
                     for (int row = 0; row < rows; row++) {
                         for (int col = 0; col < n; col++) {
                             double exact = 0, magnitude = 0;
                             for (int kk = 0; kk < k; kk++) {
-                                double term = a[row * k + kk] * (decodeE4m3(bytes[col * k + kk] & 255) * weightScale);
+                                double term = a[row * k + kk] * fp8Weight(acc, bytes[col * k + kk] & 255, weightScale);
                                 exact += term;
                                 magnitude += Math.abs(term);
                             }
@@ -1038,10 +1047,10 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
      * native kernels do; every product is exact in FP32 and only the FP32
      * accumulation order differs. Checked against an exact double reference with
      * an accumulation-error bound (K * 2^-24 * sum|terms|) plus the output
-     * dtype's rounding. FLOAT activations take the native kernels and must meet
-     * the same bound. Covers decode (1, 5), one full MMA tile (16), a partial
-     * second tile (17), prefill (128), and K ranges shorter than, equal to and
-     * longer than one split-K chunk per warp.
+     * dtype's rounding. FLOAT and DOUBLE activations take the native kernels and
+     * must meet the same bound. Covers decode (1, 5), one full MMA tile (16), a
+     * partial second tile (17), prefill (128), and K ranges shorter than, equal
+     * to and longer than one split-K chunk per warp.
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -1055,7 +1064,7 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
                 float[] values = new float[rows * k];
                 for (int i = 0; i < values.length; i++) values[i] = (random.nextInt(4097) - 2048) / 1024.0f;
                 INDArray x = Nd4j.create(values, new long[]{rows, k}, DataType.FLOAT).castTo(dtype);
-                float[] xs = x.castTo(DataType.FLOAT).data().asFloat();
+                double[] xs = x.castTo(DataType.DOUBLE).data().asDouble();
                 byte[] bytes = new byte[n * k / 2];
                 for (int i = 0; i < bytes.length; i++) bytes[i] = (byte) random.nextInt(256);
                 byte[] blocks = new byte[n * (k / 16)];
@@ -1066,8 +1075,8 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
                     INDArray z = Nd4j.exec(new ModelOptNvfp4Linear(x, w, scale, scalar(global), floatOutput))[0];
                     DataType outType = floatOutput ? DataType.FLOAT : dtype;
                     assertEquals(outType, z.dataType());
-                    double outputEpsilon = outType == DataType.FLOAT ? 0 : outType == DataType.HALF ? 0x1p-11 : 0x1p-8;
-                    float[] actual = z.castTo(DataType.FLOAT).data().asFloat();
+                    double outputEpsilon = outType == DataType.HALF ? 0x1p-11 : outType == DataType.BFLOAT16 ? 0x1p-8 : 0;
+                    double[] actual = z.castTo(DataType.DOUBLE).data().asDouble();
                     for (int row = 0; row < rows; row++) {
                         for (int col = 0; col < n; col++) {
                             double exact = 0, magnitude = 0;
@@ -1448,25 +1457,53 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
         assertEquals(dtype, z.dataType(), context);
         for (int row = 0; row < 6; row++)
             for (int n = 0; n < 3; n++)
-                assertEquals(round(reference(f, row, n), dtype), z.getFloat(row, n), 2e-5f, context);
+                assertEquals(round(reference(f, row, n), dtype), z.getDouble(row, n), 2e-5, context);
     }
 
-    private static float reference(Fixture f, int row, int n) {
-        float sum = 0;
+    private static double reference(Fixture f, int row, int n) {
+        DataType acc = aggregate(f.x.dataType());
+        double sum = 0;
         for (int k = 0; k < 32; k++) {
-            float a = f.x.getFloat(row, k);
-            float b;
+            double a = f.x.getDouble(row, k);
+            double b;
             if (f.nv) {
                 int bits = f.bytes[n * 16 + k / 2] & 255;
                 float scale = decodeE4m3(f.blocks[n * 2 + k / 16] & 255) * .1003f;
                 b = round(signedNibble((bits >>> (4 * (k & 1))) & 15) * scale, f.x.dataType());
             } else {
-                a = quantizeE4m3(a / .3f) * .3f;
-                b = decodeE4m3(f.bytes[n * 32 + k] & 255) * .7f;
+                a = fp8Activation(acc, a, .3f);
+                b = fp8Weight(acc, f.bytes[n * 32 + k] & 255, .7f);
             }
-            sum = Math.fma(a, b, sum);
+            sum = fma(acc, a, b, sum);
         }
         return sum;
+    }
+
+    // simdOps::AggregateType, the native kernels' accumulator: FP64 for DOUBLE
+    // activations, FP32 for every narrower float type.
+    private static DataType aggregate(DataType dtype) {
+        return dtype == DataType.DOUBLE ? DataType.DOUBLE : DataType.FLOAT;
+    }
+
+    // a * b + c with one rounding in the accumulator type.
+    private static double fma(DataType acc, double a, double b, double c) {
+        return acc == DataType.DOUBLE ? Math.fma(a, b, c) : Math.fma((float) a, (float) b, (float) c);
+    }
+
+    private static double add(DataType acc, double a, double b) {
+        return acc == DataType.DOUBLE ? a + b : (float) a + (float) b;
+    }
+
+    // ModelOpt FP8 activation in the accumulator type: E4M3(x / inputScale) * inputScale.
+    // E4M3 conversion from FP64 rounds through FP32, as every narrow float type converts from double.
+    private static double fp8Activation(DataType acc, double x, float inputScale) {
+        return acc == DataType.DOUBLE ? (double) quantizeE4m3((float) (x / inputScale)) * inputScale
+                : quantizeE4m3((float) x / inputScale) * inputScale;
+    }
+
+    // ModelOpt FP8 weight in the accumulator type: E4M3 * weightScale.
+    private static double fp8Weight(DataType acc, int bits, float weightScale) {
+        return acc == DataType.DOUBLE ? (double) decodeE4m3(bits) * weightScale : decodeE4m3(bits) * weightScale;
     }
 
     private static float signedNibble(int bits) {
@@ -1497,8 +1534,10 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
         return Math.copySign(decodeE4m3(best), x);
     }
 
-    private static float round(float x, DataType dtype) {
-        if (dtype == DataType.FLOAT || x == 0) return x;
+    // x rounded to nearest even in dtype: DOUBLE keeps x, FLOAT rounds once to FP32.
+    private static double round(double x, DataType dtype) {
+        if (dtype == DataType.DOUBLE || x == 0) return x;
+        if (dtype == DataType.FLOAT) return (float) x;
         int fractionBits = dtype == DataType.HALF ? 10 : 7;
         int minExponent = dtype == DataType.HALF ? -14 : -126;
         double step = Math.scalb(1.0, Math.max(Math.getExponent(Math.abs(x)), minExponent) - fractionBits);

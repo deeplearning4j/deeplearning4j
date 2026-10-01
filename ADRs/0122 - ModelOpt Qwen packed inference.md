@@ -19,12 +19,14 @@ BF16 auxiliary weights and a dense MTP predictor. GB10 reports compute capabilit
   Decode even K elements from low nibbles and odd elements from high nibbles.
 - `modelopt_nvfp4_linear(X,W,blockScale,globalScale)` implements W4A16, not W4A4.
   Form FP32 block/global scale products, multiply decoded E2M1 values, round
-  weights to activation dtype, and accumulate products in FP32. No whole-weight
-  dense intermediate or GGUF requantization.
+  weights to activation dtype, and accumulate products in the activation's
+  aggregate type (FP32, or FP64 for DOUBLE). No whole-weight dense intermediate
+  or GGUF requantization.
 - `modelopt_fp8_linear(X,W,weightScale,inputScale)` implements static saturated
-  E4M3 activation quantization and scaled FP32 products. FP8 and NVFP4 policies
-  must not be conflated. Both ops have one integer argument: output FLOAT when
-  1, otherwise activation dtype when 0. Activations support FLOAT/HALF/BFLOAT16.
+  E4M3 activation quantization and scaled products in the aggregate type. FP8
+  and NVFP4 policies must not be conflated. Both ops have one integer argument:
+  output FLOAT when 1, otherwise activation dtype when 0. Activations are any
+  float type (see Element types).
 - Supply CPU reference and CUDA implementations, stride-aware non-aliasing
   outputs, op-local traits and ordinary DSP native execution/capture admission.
   Dense matmul fusion requires the dense operand ABI, not merely a MATMUL trait.
@@ -37,6 +39,64 @@ BF16 auxiliary weights and a dense MTP predictor. GB10 reports compute capabilit
   generation metadata, not interchangeable with text_config training EOS.
 - Import large tensors with bounded raw-byte staging and long offsets;
   low-precision storage must not undergo accidental numerical casts.
+
+## Element types and format policies
+
+The ops, helpers and kernels take their types from the framework's type system.
+No op, helper or kernel keeps its own type list.
+
+- **Activations and outputs.** `DECLARE_TYPES` admits `ALL_FLOATS` for X and Z.
+  The op bodies and shape functions check X with `DataTypeUtils::isR`, and the
+  Java wrappers with `DataType.isFPType()`. The helpers dispatch (X, Z) over the
+  central `SD_FLOAT_TYPES`, so a selective build keeps exactly the float types
+  it renders. Z is X's dtype, or FLOAT when the integer argument is 1. The
+  helpers accept any float Z, so that rule lives only in the op; the helpers'
+  former `nvfp4` and `floatOutput` flags are gone.
+- **Accumulation.** Every native kernel (CPU, CUDA general and tiled) and
+  WeightOnlyGemm accumulate in `simdOps::AggregateType<X>`: FP32 for HALF,
+  BFLOAT16 and FLOAT, FP64 for DOUBLE. The tiled kernel's staged activation
+  tile has a fixed byte budget (32 KB), so its K tile is 1024 elements for an
+  FP32 accumulator and 512 for FP64.
+- **Storage types.** Weights, scales and quantized activations are framework
+  element types: `float4_e2m1` (new, `types/float4.h`), `float8_e4m3` and
+  `float8_e5m2`. `float4_e2m1` is a storage type: codes are packed two per
+  byte, and it converts to FP32 only, exactly. `DataTypeUtils.h` includes it
+  with the other type headers. The ops compare storage dtypes with
+  `DataTypeUtils::fromT<Format::Storage>()` (likewise `ScaleStorage` and
+  `Scale`), not with enum literals.
+- **Format policies** (`helpers/modelopt_linear.h`). `ModelOptNvfp4` and
+  `ModelOptFp8` hold each format's storage types and block length. They also
+  hold the per-element arithmetic (`weightScale`, `activation<AccT>`,
+  `weight<X, AccT>`) that the CPU kernel, both CUDA kernels and WeightOnlyGemm
+  share. The format is a template argument of the helper.
+- **Conversions** use templatemath.
+  - `sd_saturate<X, Z>` clamps to `±DataTypeUtils::max<Z>()`, keeps NaN, then
+    rounds once. For FP32 to FP8 it is the conversion `cvt.rn.satfinite`.
+    ModelOpt's activation quantizer is `sd_saturate<AccT, Format::Activation>`.
+  - `sd_convert_n<X, Z, N>` converts N consecutive values. FP8 to FP32 pairs
+    use one packed conversion.
+  - The FP8 limits (448, 57344) come from the types (`float8_e4m3::max()`,
+    `std::numeric_limits`), not from literals.
+- **FP8 conversion bits.** On sm_89+ (`SD_NATIVE_FP8`) the float8 types
+  convert in hardware. Elsewhere the software conversions run, and they now give
+  the same bits:
+  - NaN is canonical, as in float16 and bfloat16. Every FP32 NaN converts to
+    FP8 0x7F, and every FP8 NaN to FP32 0x7FFFFFFF.
+  - An E4M3 infinity converts to NaN of the same sign. The saturating
+    conversion gives ±448 instead.
+  - E5M2 overflows to infinity only from 61440, the round-to-nearest-even
+    midpoint above 57344; values in between round to 57344.
+  - E5M2 values between 2^-17 and 2^-16 now round to nearest even instead of
+    flushing to zero.
+  - `DataTypeUtils::min`, `min_positive`, `max` and `eps` and
+    `std::numeric_limits` are defined for both FP8 formats.
+    `DataTypeUtils::max<float8>()` used to return 0.
+- **DOUBLE activations.** An FP8 activation quantized from DOUBLE is divided
+  in FP64, clamped to the E4M3 range and converted through FP32 (float8's
+  `assign(double)`). float16, bfloat16 and PyTorch convert double to a narrow
+  float the same way. That double rounding can differ from a single rounding
+  at FP32 midpoints. Correct single rounding for every narrow float type
+  (round to odd) is a follow-up.
 
 ## Dense projection arithmetic: SERIAL_FMA
 
@@ -242,15 +302,30 @@ focused window-parity test and wider DSP regression gates.
 
 ## FP8 linears on tensor cores (cuBLASLt)
 
-`modelopt_fp8_linear` runs, when its shape admits it, as one scaled cuBLASLt
-FP8 GEMM: the activation is quantized once per call (the same saturated E4M3
-quantizer, `modelOptFp8Quantize`) into a dense scratch operand, and
-`MmulHelper::ltMatmulScaled` computes
-`(inputScale * weightScale) * E4M3(X) . E4M3(W)^T` with FP32 accumulation. Every
-product is the same exact FP32 product as before; the FP32 accumulation order is
-the library's. Admission is shape-only (K and N * sizeof(output) multiples of 16
-bytes, dense row-major W and Z, 16-byte aligned bases); anything else, and
-FLOAT32 activations never, stay on the native kernels.
+`modelopt_fp8_linear` runs, when admitted, as one scaled cuBLASLt FP8 GEMM. The
+activation is quantized once per call into a dense scratch operand, with the
+same saturated quantizer as the native kernels
+(`modelOptQuantize<ModelOptFp8::Activation>`). `MmulHelper::ltMatmulScaled`
+then computes `(inputScale * weightScale) * E4M3(X) . E4M3(W)^T` with FP32
+accumulation.
+
+Every E4M3 x E4M3 product is exact in FP32, and the scale product multiplies
+each output's sum once. The accumulation order is the library's. The native
+kernels instead multiply the dequantized operands, (E4M3(x) * inputScale) *
+(w * weightScale). The two paths therefore agree within an FP32
+accumulation-error bound, not bit for bit
+(`TestModelOptLinear#testFp8TensorCorePathMatchesReference`).
+
+Admission has two parts:
+- **Accumulator.** The activation's aggregate type must be the GEMM's FP32
+  accumulator. HALF, BFLOAT16 and FLOAT are admitted; DOUBLE keeps the native
+  FP64 kernels.
+- **Shape.** K * sizeof(E4M3) and N * sizeof(output) are multiples of 16
+  bytes, W and Z are dense row-major, and their bases are 16-byte aligned.
+
+Anything else stays on the native kernels. FLOAT activations took this path
+before too: the earlier statement that they never did did not match the gate,
+which checked no activation dtype.
 
 Algorithm selection is a pure function of the problem: no split-K reduction, no
 workspace, and no dependence on capture mode or workspace availability, so
@@ -464,7 +539,9 @@ A dedicated optimized implementation must preserve the same numerical contract.
 
 Isolated tests live in platform-tests/TestModelOptLinear and cover layouts,
 raw encodings, output types, serialization, scale validation and FP8 subnormal
-rounding. TestQwenNvfp4Import has separate opt-ins for storage import, generation
+rounding, for every float activation type. The DOUBLE reference reproduces the
+FP64 kernel arithmetic, including E4M3 quantization through FP32.
+TestQwenNvfp4Import has separate opt-ins for storage import, generation
 and native predictor MTP. MTP validation requires positive proposals/acceptance
 and token equality to greedy on identical prompts, not n-gram substitution.
 The DSP regression gate and model-level validation must pass before acceptance.

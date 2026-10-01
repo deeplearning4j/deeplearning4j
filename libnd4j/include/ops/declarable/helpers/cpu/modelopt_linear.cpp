@@ -4,44 +4,24 @@
 #include <ops/declarable/helpers/modelopt_linear.h>
 #include <execution/Threads.h>
 #include <helpers/shape.h>
-#include <stdexcept>
-#include <cmath>
+#include <ops/op_types.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-static void validateScales(NDArray* scale, NDArray* secondScale, bool nvfp4) {
-  if (!modelOptValidScale(secondScale->bufferAsT<float>()[0]))
-    throw std::invalid_argument("ModelOpt linear: global/input scale must be positive and finite");
-  if (!nvfp4) {
-    if (!modelOptValidScale(scale->bufferAsT<float>()[0]))
-      throw std::invalid_argument("ModelOpt FP8 linear: weight scale must be positive and finite");
-    return;
-  }
-  if (scale->isEmpty()) return;
-  const auto* values = scale->bufferAsT<float8>();
-  const auto* strides = scale->stridesOf();
-  const LongType rows = scale->sizeAt(0), cols = scale->sizeAt(1);
-  for (LongType row = 0; row < rows; ++row)
-    for (LongType col = 0; col < cols; ++col)
-      if (!modelOptValidScale(static_cast<float>(values[row * strides[0] + col * strides[1]])))
-        throw std::invalid_argument("ModelOpt NVFP4 linear: every block scale must be positive and finite");
-}
-
 // One independent output per worker. We deliberately do not use dense MmulHelper:
 // its operand ABI cannot express nibble decoding and per-block scales in registers.
 // No intermediate grows with N*K; all indexing is relative to the shifted view bases.
-template <typename X>
-static void modelOptLinear_(NDArray* x, NDArray* w, NDArray* scale, NDArray* secondScale,
-                            NDArray* z, bool nvfp4, bool floatOutput) {
+template <typename X, typename Z, typename Format>
+static void modelOptLinear_(Format, NDArray* x, NDArray* w, NDArray* scale, NDArray* secondScale, NDArray* z) {
+  using AccT = typename simdOps::AggregateType<X>::type;
   const X* input = x->isEmpty() ? nullptr : x->bufferAsT<X>();
-  const auto* packed = nvfp4 && !w->isEmpty() ? w->bufferAsT<uint8_t>() : nullptr;
-  const auto* fp8 = !nvfp4 && !w->isEmpty() ? w->bufferAsT<float8>() : nullptr;
-  const auto* blockScales = nvfp4 && !scale->isEmpty() ? scale->bufferAsT<float8>() : nullptr;
-  const float second = secondScale->bufferAsT<float>()[0];
-  const float weightScale = nvfp4 ? 1.0f : scale->bufferAsT<float>()[0];
-  void* output = z->buffer();
+  const auto* weights = w->isEmpty() ? nullptr : w->bufferAsT<typename Format::Storage>();
+  const auto* scales = scale->isEmpty() ? nullptr : scale->bufferAsT<typename Format::ScaleStorage>();
+  const typename Format::Scale second = secondScale->bufferAsT<typename Format::Scale>()[0];
+  const auto weightScale = Format::weightScale(scales, second);
+  Z* output = z->bufferAsT<Z>();
   const int rank = x->rankOf();
   const LongType kLength = x->sizeAt(-1), length = z->lengthOf();
   const auto* xs = x->stridesOf();
@@ -58,44 +38,36 @@ static void modelOptLinear_(NDArray* x, NDArray* w, NDArray* scale, NDArray* sec
       COORDS2INDEX(rank, zs, coords, zo);
       coords[rank - 1] = 0;
       COORDS2INDEX(rank, xs, coords, xo);
-      using AccT = float;
-      AccT sum = 0.0f;
+      AccT sum = static_cast<AccT>(0);
       for (LongType k = 0; k < kLength; ++k) {
-        float a = static_cast<float>(input[xo + k * xs[rank - 1]]);
-        float b;
-        if (nvfp4) {
-          const uint8_t byte = packed[n * ws[0] + (k / 2) * ws[1]];
-          const uint8_t nibble = (byte >> ((k & 1) * 4)) & 15;
-          b = modelOptNvfp4Weight<X>(nibble,
-              static_cast<float>(blockScales[n * ss[0] + (k / 16) * ss[1]]), second);
-        } else {
-          a = modelOptFp8Activation(a, second) * second;
-          b = static_cast<float>(fp8[n * ws[0] + k * ws[1]]) * weightScale;
-        }
-        sum = std::fma(a, b, sum);
+        const AccT a = Format::template activation<AccT>(static_cast<AccT>(input[xo + k * xs[rank - 1]]), second);
+        const AccT b = Format::template weight<X, AccT>(weights, ws, scales, ss, weightScale, n, k);
+        sum = math::sd_fma<AccT>(a, b, sum);
       }
-      if (floatOutput) static_cast<float*>(output)[zo] = sum;
-      else static_cast<X*>(output)[zo] = static_cast<X>(sum);
+      output[zo] = static_cast<Z>(sum);
     }
   };
   samediff::Threads::parallel_for(work, 0, length);
 }
 
-BUILD_SINGLE_TEMPLATE(void modelOptLinear_,
-    (NDArray* x, NDArray* w, NDArray* scale, NDArray* secondScale, NDArray* z,
-     bool nvfp4, bool floatOutput), SD_MODELOPT_LINEAR_TYPES);
-
-void modelOptLinear(LaunchContext* context, NDArray* x, NDArray* w, NDArray* scale,
-                    NDArray* secondScale, NDArray* z, bool nvfp4, bool floatOutput) {
+template <typename Format>
+void modelOptLinear(LaunchContext* context, NDArray* x, NDArray* w, NDArray* scale, NDArray* secondScale,
+                    NDArray* z) {
   NDArray::preparePrimaryUse({}, {scale, secondScale});
-  validateScales(scale, secondScale, nvfp4);
+  modelOptCheckSecondScale<Format>(secondScale);
+  modelOptCheckScaleTensor<Format>(scale);
   NDArray::registerPrimaryUse({}, {scale, secondScale});
   if (z->isEmpty()) return;
   NDArray::preparePrimaryUse({z}, {x, w, scale, secondScale});
-  BUILD_SINGLE_SELECTOR(x->dataType(), modelOptLinear_,
-      (x, w, scale, secondScale, z, nvfp4, floatOutput), SD_MODELOPT_LINEAR_TYPES);
+  BUILD_DOUBLE_SELECTOR(x->dataType(), z->dataType(), modelOptLinear_, (Format{}, x, w, scale, secondScale, z),
+                        SD_FLOAT_TYPES, SD_FLOAT_TYPES);
   NDArray::registerPrimaryUse({z}, {x, w, scale, secondScale});
 }
+
+template void modelOptLinear<ModelOptNvfp4>(LaunchContext* context, NDArray* x, NDArray* w, NDArray* scale,
+                                            NDArray* secondScale, NDArray* z);
+template void modelOptLinear<ModelOptFp8>(LaunchContext* context, NDArray* x, NDArray* w, NDArray* scale,
+                                          NDArray* secondScale, NDArray* z);
 
 }  // namespace helpers
 }  // namespace ops
