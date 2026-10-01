@@ -47,6 +47,14 @@ class TokenizerWorkflowTests(unittest.TestCase):
         self.assertFalse(any('_release-worker' in s.get('uses', '') or
                              'run-release-worker' in s.get('uses', '') for s in steps))
 
+    def test_windows_path_cannot_switch_the_invoking_shell(self):
+        producer = workflow('tokenizer-only-release.yml')['jobs']['produce']
+        build = next(s for s in producer['steps'] if s.get('name') == 'Install only tokenizer reactor')
+        self.assertEqual(build['shell'], 'bash')
+        self.assertIn('/c/msys64/usr/bin:', build['run'])
+        self.assertIn('"$BASH" build-scripts/release/cross-platform.sh --run-tokenizers', build['run'])
+        self.assertNotRegex(build['run'], r'(?m)^\s*bash build-scripts/release/cross-platform.sh')
+
     def test_retention_precedes_serialized_non_canceling_upload(self):
         doc = workflow('tokenizer-only-release.yml')
         retain = doc['jobs']['merge-retain']

@@ -101,7 +101,9 @@ jobs:
             export RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-gnu
             export DL4J_MAVEN_REPOSITORY="$(cygpath -m "$DL4J_MAVEN_REPOSITORY")"
           fi
-          bash build-scripts/release/cross-platform.sh --run-tokenizers
+          # Keep the invoking Git Bash runtime: PATH now also contains MSYS2 bash,
+          # whose runtime boundary can discard the inherited DL4J_* environment.
+          "$BASH" build-scripts/release/cross-platform.sh --run-tokenizers
           python release/github/tokenizer-publication.py collect \
             --repository "$DL4J_MAVEN_REPOSITORY" --output tokenizer-payload \
             --classifier "$DL4J_PLATFORM" --commit "$GITHUB_SHA" \

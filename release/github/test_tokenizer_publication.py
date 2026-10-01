@@ -50,6 +50,9 @@ def binary(host):
 
 
 def natives(artifact, host, root=pub.RESOURCE_ROOTS[0]):
+    # The preset's classified JAR is metadata-only in the actual reactor.
+    if artifact == "tokenizers-native-preset":
+        return {}
     prefix = root + ("" if artifact == "libtokenizers" else "bindings/") + host + "/"
     ext = ".so" if host.startswith("linux-") else (".dll" if host.startswith("windows-") else ".dylib")
     result = {prefix + "libtokenizers_wrapper" + ext: binary(host)}
@@ -176,6 +179,39 @@ class PublicationTests(unittest.TestCase):
             name = pub.artifact_path(artifact)
             self.assertEqual((self.output / name).read_bytes(), (self.inputs / pub.CANONICAL / name).read_bytes())
         self.assertEqual(pub.verify(self.output, **PROVENANCE), receipt)
+
+    def test_preset_classifiers_are_metadata_only_on_all_four_hosts(self):
+        for host in pub.HOSTS:
+            path = self.inputs / host / pub.artifact_path("tokenizers-native-preset", host)
+            entries = pub.jar_entries(path, "tokenizers-native-preset", host)
+            self.assertEqual(set(entries), {f"META-INF/maven/{pub.GROUP}/tokenizers-native-preset/pom.xml"})
+        self.do_merge()
+        pub.verify(self.output, **PROVENANCE)
+
+    def test_preset_classifier_requires_matching_pom_metadata(self):
+        embedded = f"META-INF/maven/{pub.GROUP}/tokenizers-native-preset/pom.xml"
+        self.rewrite_jar("linux-arm64", "tokenizers-native-preset", lambda e: e.pop(embedded), "linux-arm64")
+        with self.assertRaisesRegex(ValueError, "missing preset classifier POM"):
+            self.do_merge()
+
+    def test_preset_classifier_rejects_native_payload(self):
+        self.rewrite_jar("linux-arm64", "tokenizers-native-preset",
+                         lambda e: e.update(natives("tokenizers-native", "linux-arm64")), "linux-arm64")
+        with self.assertRaisesRegex(ValueError, "metadata-only preset"):
+            self.do_merge()
+
+    def test_native_owners_still_require_wrapper(self):
+        for artifact in ("libtokenizers", "tokenizers-native"):
+            with self.subTest(artifact=artifact):
+                path = self.inputs / "linux-arm64" / pub.artifact_path(artifact, "linux-arm64")
+                original = path.read_bytes()
+                self.rewrite_jar("linux-arm64", artifact,
+                                 lambda e: e.pop(next(n for n in e if n.endswith("libtokenizers_wrapper.so"))),
+                                 "linux-arm64")
+                with self.assertRaisesRegex(ValueError, "missing native payload"):
+                    self.do_merge()
+                path.write_bytes(original)
+                self.refresh("linux-arm64", path)
 
     def test_merge_missing_host(self):
         shutil.rmtree(self.inputs / "macosx-arm64")

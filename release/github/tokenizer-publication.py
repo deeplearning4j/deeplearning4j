@@ -232,7 +232,13 @@ def jar_entries(path, artifact, host=None, *, main=False):
     except (zipfile.BadZipFile, RuntimeError) as exc:
         raise ValueError("invalid JAR") from exc
     entries.pop("META-INF/MANIFEST.MF", None)
-    if host:
+    if host and artifact == "tokenizers-native-preset":
+        # Presets supply JavaCPP Java metadata, not the wrapper or JNI objects.
+        # Maven still attaches a classifier JAR containing its own POM metadata.
+        require(not native, "native payload in metadata-only preset classifier")
+        require(f"META-INF/maven/{GROUP}/{artifact}/pom.xml" in entries,
+                "missing preset classifier POM metadata")
+    elif host:
         prefix = tuple(root + ("" if artifact == "libtokenizers" else "bindings/")
                        + host + "/" for root in RESOURCE_ROOTS)
         extension = ".so" if host.startswith("linux-") else (
