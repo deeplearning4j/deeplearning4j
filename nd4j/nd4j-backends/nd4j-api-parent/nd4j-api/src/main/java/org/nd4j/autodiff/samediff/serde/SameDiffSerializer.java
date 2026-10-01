@@ -174,8 +174,8 @@ public class SameDiffSerializer {
                 }
             }
         }
-        log.info("Calculated total appendable data size for auto-sharding: {} bytes (~{:.2f} GB) from {} arrays.",
-                totalAppendableBytes, totalAppendableBytes / (1024.0 * 1024.0 * 1024.0), appendableCount);
+        log.info("Calculated total appendable data size for auto-sharding: {} bytes (~{} GB) from {} arrays.",
+                totalAppendableBytes, String.format("%.2f", totalAppendableBytes / (1024.0 * 1024.0 * 1024.0)), appendableCount);
 
         // Estimate base metadata size + size needed for manifest entries if saved as single file
         long estimatedOverhead = calculateBaseMetadataSizeEstimate(sameDiff)
@@ -204,9 +204,9 @@ public class SameDiffSerializer {
         // Decide sharding based on estimated total size vs. limit
         boolean requiresSharding = estimatedTotalSizeSingleFile > MAX_SHARD_FILE_BYTES;
 
-        log.info("Auto-shard calculation: Estimated total size for single file: {} bytes (~{:.2f} GB). Shard limit: {} bytes. Requires sharding? {}",
+        log.info("Auto-shard calculation: Estimated total size for single file: {} bytes (~{} GB). Shard limit: {} bytes. Requires sharding? {}",
                 estimatedTotalSizeSingleFile >= 0 ? estimatedTotalSizeSingleFile : "Overflow",
-                estimatedTotalSizeSingleFile >= 0 ? estimatedTotalSizeSingleFile / (1024.0 * 1024.0 * 1024.0) : Double.POSITIVE_INFINITY,
+                String.format("%.2f", estimatedTotalSizeSingleFile >= 0 ? estimatedTotalSizeSingleFile / (1024.0 * 1024.0 * 1024.0) : Double.POSITIVE_INFINITY),
                 MAX_SHARD_FILE_BYTES,
                 requiresSharding);
 

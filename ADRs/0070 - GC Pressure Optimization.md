@@ -72,6 +72,8 @@ private void processQueue() {
 
 **Window increase**: 100ms → 5000ms. The 100ms window was far too aggressive — GC benefits are amortized over seconds, not milliseconds. The 5000ms window provides adequate GC frequency for long-running workloads while eliminating the 10 GC/second overhead.
 
+**The window times the check, never the queue.** The worker that owns the timer (thread 0) blocks on its reference queue with a one-second wake-up and runs the heap-pressure check once `autoGcWindow` has passed idle since its last check. It must not sleep the window when its queue is empty. An implementation that did left every reference enqueued meanwhile waiting up to the whole window. The `Integer.MAX_VALUE` suppression window below also parked the thread in a ~25-day sleep, so restoring the window never woke it. From then on, buffers routed to thread 0's queue were freed only by `forceFlushAll()`. The 5-second default is harmful on its own. A GB10 serialization test that never runs a graph tripped JavaCPP's physical-bytes limit because JavaCPP's GC-and-retry loop gives up after about a second, while collected buffers were still waiting on the sleeping thread's queue. In a probe of that test, five back-to-back GCs after a 17 GB comparison stage left 10.9 GB held. With the worker waking on enqueue, the same GCs return the process to its 0.7 GB baseline.
+
 ### DSP Auto-GC Suppression
 
 During DynamicShapePlan execution, GC is suppressed entirely because DSP manages array lifecycle explicitly:

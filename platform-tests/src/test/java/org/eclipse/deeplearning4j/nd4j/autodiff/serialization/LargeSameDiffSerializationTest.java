@@ -21,7 +21,8 @@
 package org.eclipse.deeplearning4j.nd4j.autodiff.serialization;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
@@ -42,12 +43,13 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Test for SameDiff serialization using the ZIP archive format, especially for models larger than 2GB.
@@ -83,7 +85,7 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
     @Test
     public void testShardedSdnbSparseManifestOffsetDoesNotInflateMetadataLength() throws IOException {
         File tempDir = new File(System.getProperty("java.io.tmpdir"), "sdnb-sparse-manifest-" + UUID.randomUUID());
-        assertTrue("Could not create temporary directory: " + tempDir.getAbsolutePath(), tempDir.mkdirs());
+        assertTrue(tempDir.mkdirs(), "Could not create temporary directory: " + tempDir.getAbsolutePath());
         File baseFile = new File(tempDir, "sparse-layout.sd");
 
         try {
@@ -94,19 +96,19 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
 
             SameDiffSerializer.saveSharded(sd, baseFile, false, 2, Collections.emptyMap());
             File variableShard = new File(tempDir, "sparse-layout.shard1-of-2.sdnb");
-            assertTrue("Variable shard was not created: " + variableShard.getAbsolutePath(), variableShard.isFile());
+            assertTrue(variableShard.isFile(), "Variable shard was not created: " + variableShard.getAbsolutePath());
 
             long inflatedMetadataLength = moveManifestPast2GB(variableShard);
-            assertTrue("Test setup must make manifestOffset - metadataOffset exceed Integer.MAX_VALUE",
-                    inflatedMetadataLength > Integer.MAX_VALUE);
+            assertTrue(inflatedMetadataLength > Integer.MAX_VALUE,
+                    "Test setup must make manifestOffset - metadataOffset exceed Integer.MAX_VALUE");
 
             SameDiff loaded = SameDiffSerializer.loadSharded(baseFile, false);
-            assertTrue("Loaded graph is missing variable", loaded.hasVariable("large"));
+            assertTrue(loaded.hasVariable("large"), "Loaded graph is missing variable");
             INDArray loadedArray = loaded.getVariable("large").getArr();
-            assertNotNull("Loaded appended array is null", loadedArray);
-            assertArrayEquals("Loaded appended array shape mismatch", original.shape(), loadedArray.shape());
-            assertEquals("Loaded appended array data type mismatch", original.dataType(), loadedArray.dataType());
-            assertTrue("Loaded appended array values changed", original.equalsWithEps(loadedArray, 1e-5));
+            assertNotNull(loadedArray, "Loaded appended array is null");
+            assertArrayEquals(original.shape(), loadedArray.shape(), "Loaded appended array shape mismatch");
+            assertEquals(original.dataType(), loadedArray.dataType(), "Loaded appended array data type mismatch");
+            assertTrue(original.equalsWithEps(loadedArray, 1e-5), "Loaded appended array values changed");
         } finally {
             deleteShardFiles(baseFile);
             baseFile.delete();
@@ -117,7 +119,7 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
     @Test
     public void testShardedAppenderWritesNativeFlatArrayDescriptorForMetadataStub() throws IOException {
         File tempDir = new File(System.getProperty("java.io.tmpdir"), "sdnb-native-descriptor-" + UUID.randomUUID());
-        assertTrue("Could not create temporary directory: " + tempDir.getAbsolutePath(), tempDir.mkdirs());
+        assertTrue(tempDir.mkdirs(), "Could not create temporary directory: " + tempDir.getAbsolutePath());
         File baseFile = new File(tempDir, "native-descriptor.sd");
 
         try {
@@ -128,7 +130,7 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
 
             SameDiffSerializer.saveSharded(sd, baseFile, false, 2, Collections.emptyMap());
             File variableShard = new File(tempDir, "native-descriptor.shard1-of-2.sdnb");
-            assertTrue("Variable shard was not created: " + variableShard.getAbsolutePath(), variableShard.isFile());
+            assertTrue(variableShard.isFile(), "Variable shard was not created: " + variableShard.getAbsolutePath());
 
             long metadataOffset;
             try (RandomAccessFile raf = new RandomAccessFile(variableShard, "r")) {
@@ -136,8 +138,8 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
                 metadataOffset = raf.readLong();
             }
             byte[] fileBytes = Files.readAllBytes(variableShard.toPath());
-            assertTrue("Metadata offset is outside the SDNB file",
-                    metadataOffset >= 32 && metadataOffset < fileBytes.length);
+            assertTrue(metadataOffset >= 32 && metadataOffset < fileBytes.length,
+                    "Metadata offset is outside the SDNB file");
 
             ByteBuffer metadata = ByteBuffer.wrap(fileBytes);
             metadata.position((int) metadataOffset);
@@ -151,14 +153,14 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
                 }
             }
 
-            assertNotNull("Variable metadata is missing from the variable shard", flatVariable);
-            assertNotNull("Native FlatArray descriptor is missing for the appended tensor",
-                    flatVariable.ndarray());
-            assertEquals("The first tensor must use raw-data-relative offset zero",
-                    0L, flatVariable.ndarray().appendedDataOffset());
-            assertEquals("Native FlatArray descriptor has the wrong byte length",
-                    original.length() * original.dataType().width(),
-                    flatVariable.ndarray().appendedDataLength());
+            assertNotNull(flatVariable, "Variable metadata is missing from the variable shard");
+            assertNotNull(flatVariable.ndarray(),
+                    "Native FlatArray descriptor is missing for the appended tensor");
+            assertEquals(0L, flatVariable.ndarray().appendedDataOffset(),
+                    "The first tensor must use raw-data-relative offset zero");
+            assertEquals(original.length() * original.dataType().width(),
+                    flatVariable.ndarray().appendedDataLength(),
+                    "Native FlatArray descriptor has the wrong byte length");
         } finally {
             deleteShardFiles(baseFile);
             baseFile.delete();
@@ -169,7 +171,7 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
     @Test
     public void testFinalInlineShardManifestHeaderIsValid() throws IOException {
         File tempDir = new File(System.getProperty("java.io.tmpdir"), "sdnb-final-inline-manifest-" + UUID.randomUUID());
-        assertTrue("Could not create temporary directory: " + tempDir.getAbsolutePath(), tempDir.mkdirs());
+        assertTrue(tempDir.mkdirs(), "Could not create temporary directory: " + tempDir.getAbsolutePath());
         File baseFile = new File(tempDir, "inline-final.sd");
 
         try {
@@ -181,14 +183,14 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
 
             SameDiffSerializer.saveSharded(sd, baseFile, false, 2, Collections.emptyMap());
             File finalShard = new File(tempDir, "inline-final.shard1-of-2.sdnb");
-            assertTrue("Final inline shard was not created: " + finalShard.getAbsolutePath(), finalShard.isFile());
+            assertTrue(finalShard.isFile(), "Final inline shard was not created: " + finalShard.getAbsolutePath());
             assertShardManifestMagic(finalShard);
 
             SameDiff loaded = SameDiffSerializer.loadSharded(baseFile, false);
-            assertTrue("Loaded final inline shard value changed for small_a",
-                    smallA.equalsWithEps(loaded.getVariable("small_a").getArr(), 1e-5));
-            assertTrue("Loaded final inline shard value changed for small_b",
-                    smallB.equalsWithEps(loaded.getVariable("small_b").getArr(), 1e-5));
+            assertTrue(smallA.equalsWithEps(loaded.getVariable("small_a").getArr(), 1e-5),
+                    "Loaded final inline shard value changed for small_a");
+            assertTrue(smallB.equalsWithEps(loaded.getVariable("small_b").getArr(), 1e-5),
+                    "Loaded final inline shard value changed for small_b");
         } finally {
             deleteShardFiles(baseFile);
             baseFile.delete();
@@ -198,13 +200,13 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
 
 
     @Test
-    public void testLargeModelSerialization() throws IOException {
+    public void testLargeModelSerialization(@TempDir Path tempDir) throws IOException {
         // Parameters to create a model larger than 2GB
         int numLayers = 10;
         int layerSize = 10000;
         Nd4j.getEnvironment().setCudaDeviceLimit(Environment.CUDA_LIMIT_MALLOC_HEAP_SIZE,9999999999L);
         System.out.println("Current malloc heap size limit: " + Nd4j.getEnvironment().cudaMallocHeapSize());
-        File tempFile = new File("large-samediff-model.bin");
+        File tempFile = tempDir.resolve("large-samediff-model.bin").toFile();
         log.info("Will save model to: {}", tempFile.getAbsolutePath());
         // Create the model
         SameDiff sd = SameDiff.create();
@@ -260,7 +262,7 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         System.out.println("Estimated model size in GB " + estimatedGB);
 
         // Make sure we're creating a model that's larger than 2GB
-        assertTrue("Model should be larger than 2GB", estimatedBytes > 2L * 1024 * 1024 * 1024);
+        assertTrue(estimatedBytes > 2L * 1024 * 1024 * 1024, "Model should be larger than 2GB");
 
         // Get a list of all variable names for later verification
         Set<String> originalVariableNames = new HashSet<>(sd.variableNames());
@@ -299,29 +301,29 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         endTime = System.currentTimeMillis();
 
         // Verify the model loaded correctly - basic checks
-        assertEquals("Variable count mismatch", sd.variables().size(), loadedModel.variables().size());
-        assertEquals("Op count mismatch", sd.ops().length, loadedModel.ops().length);
+        assertEquals(sd.variables().size(), loadedModel.variables().size(), "Variable count mismatch");
+        assertEquals(sd.ops().length, loadedModel.ops().length, "Op count mismatch");
 
         // Verify all variable names were preserved
         Set<String> loadedVariableNames = new HashSet<>(loadedModel.variableNames());
-        assertEquals("Variable names mismatch", originalVariableNames, loadedVariableNames);
+        assertEquals(originalVariableNames, loadedVariableNames, "Variable names mismatch");
 
         // Verify all operation names were preserved
         Set<String> loadedOpNames = new HashSet<>();
         for (SameDiffOp op : loadedModel.getOps().values()) {
             loadedOpNames.add(op.getName());
             String originalOpType = opTypeMap.get(op.getName());
-            assertEquals("Op type mismatch for " + op.getName(), originalOpType, op.getOp().opName());
+            assertEquals(originalOpType, op.getOp().opName(), "Op type mismatch for " + op.getName());
         }
-        assertEquals("Operation names mismatch", originalOpNames, loadedOpNames);
+        assertEquals(originalOpNames, loadedOpNames, "Operation names mismatch");
 
         // Verify variable shapes and data types
         for (SDVariable var : loadedModel.variables()) {
             String name = var.name();
-            assertArrayEquals("Shape mismatch for variable " + name,
-                    originalShapes.get(name), var.getShape());
-            assertEquals("Data type mismatch for variable " + name,
-                    originalDataTypes.get(name), var.dataType());
+            assertArrayEquals(originalShapes.get(name), var.getShape(),
+                    "Shape mismatch for variable " + name);
+            assertEquals(originalDataTypes.get(name), var.dataType(),
+                    "Data type mismatch for variable " + name);
         }
 
         // Verify array contents for a subset of variables (checking all would be too expensive)
@@ -338,31 +340,31 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
             INDArray originalArray = originalArrays.get(varName);
             INDArray loadedArray = loadedModel.getVariable(varName).getArr();
             INDArray originalSdArray = sd.getVariable(varName).getArr();
-            assertNotNull("Original array is null for " + varName, originalArray);
-            assertNotNull("Loaded array is null for " + varName, loadedArray);
-            assertArrayEquals("Array shape mismatch for " + varName,
-                    originalArray.shape(), loadedArray.shape());
-            assertEquals("Array data type mismatch for " + varName,
-                    originalArray.dataType(), loadedArray.dataType());
+            assertNotNull(originalArray, "Original array is null for " + varName);
+            assertNotNull(loadedArray, "Loaded array is null for " + varName);
+            assertArrayEquals(originalArray.shape(), loadedArray.shape(),
+                    "Array shape mismatch for " + varName);
+            assertEquals(originalArray.dataType(), loadedArray.dataType(),
+                    "Array data type mismatch for " + varName);
 
             // Check if arrays are equal - use a distance metric with tolerance
             // for floating point comparisons
             boolean arraysEqual = originalArray.equalsWithEps(loadedArray,1e-5);
-            assertTrue("Array contents mismatch for " + varName, arraysEqual);
+            assertTrue(arraysEqual, "Array contents mismatch for " + varName);
 
             // Additionally check sum, min, max as quick indicators of array content integrity
-            assertEquals("Array sum mismatch for " + varName,
-                    originalArray.sumNumber().doubleValue(),
+            assertEquals(originalArray.sumNumber().doubleValue(),
                     loadedArray.sumNumber().doubleValue(),
-                    1e-3);
-            assertEquals("Array min mismatch for " + varName,
-                    originalArray.minNumber().doubleValue(),
+                    1e-3,
+                    "Array sum mismatch for " + varName);
+            assertEquals(originalArray.minNumber().doubleValue(),
                     loadedArray.minNumber().doubleValue(),
-                    1e-5);
-            assertEquals("Array max mismatch for " + varName,
-                    originalArray.maxNumber().doubleValue(),
+                    1e-5,
+                    "Array min mismatch for " + varName);
+            assertEquals(originalArray.maxNumber().doubleValue(),
                     loadedArray.maxNumber().doubleValue(),
-                    1e-5);
+                    1e-5,
+                    "Array max mismatch for " + varName);
         }
 
         // Verify graph structure integrity by checking a few connections
@@ -372,20 +374,14 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
             String layerBiasName = "layer_" + i + "_b";
 
             // Verify these variables exist in both original and loaded model
-            assertTrue("Missing weight variable in original model: " + layerWeightName,
-                    sd.hasVariable(layerWeightName));
-            assertTrue("Missing bias variable in original model: " + layerBiasName,
-                    sd.hasVariable(layerBiasName));
-            assertTrue("Missing weight variable in loaded model: " + layerWeightName,
-                    loadedModel.hasVariable(layerWeightName));
-            assertTrue("Missing bias variable in loaded model: " + layerBiasName,
-                    loadedModel.hasVariable(layerBiasName));
-        }
-
-        // Clean up the temp file
-        boolean deleted = tempFile.delete();
-        if (!deleted) {
-            log.warn("Failed to delete temporary model file: {}", tempFile.getAbsolutePath());
+            assertTrue(sd.hasVariable(layerWeightName),
+                    "Missing weight variable in original model: " + layerWeightName);
+            assertTrue(sd.hasVariable(layerBiasName),
+                    "Missing bias variable in original model: " + layerBiasName);
+            assertTrue(loadedModel.hasVariable(layerWeightName),
+                    "Missing weight variable in loaded model: " + layerWeightName);
+            assertTrue(loadedModel.hasVariable(layerBiasName),
+                    "Missing bias variable in loaded model: " + layerBiasName);
         }
 
         System.out.println("Test completed successfully!");
@@ -414,13 +410,13 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         for (Map.Entry<String, INDArray> entry : originals.entrySet()) {
             INDArray expected = entry.getValue();
             INDArray actual = copy.getArrForVarName(entry.getKey());
-            assertNotNull("array lost in dup(): " + entry.getKey(), actual);
-            assertEquals(entry.getKey(), expected.dataType(), actual.dataType());
-            assertArrayEquals(entry.getKey(), expected.shape(), actual.shape());
+            assertNotNull(actual, "array lost in dup(): " + entry.getKey());
+            assertEquals(expected.dataType(), actual.dataType(), entry.getKey());
+            assertArrayEquals(expected.shape(), actual.shape(), entry.getKey());
             if (expected.dataType() == DataType.FLOAT8 || expected.dataType() == DataType.FLOAT8_E5M2) {
-                assertArrayEquals(entry.getKey(), storageBytes(expected), storageBytes(actual));
+                assertArrayEquals(storageBytes(expected), storageBytes(actual), entry.getKey());
             } else {
-                assertEquals(entry.getKey(), expected.getDouble(0), actual.getDouble(0), 0.0);
+                assertEquals(expected.getDouble(0), actual.getDouble(0), 0.0, entry.getKey());
             }
         }
     }
@@ -440,7 +436,7 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
     }
 
     @Test
-    public void testMultipleDataTypeSerialization() throws IOException {
+    public void testMultipleDataTypeSerialization(@TempDir Path tempDir) throws IOException {
         // Parameters for model with multiple data types
         int numLayers = 3;
         int layerSize = 1000;
@@ -450,7 +446,7 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         System.out.println("Current malloc heap size limit: " + Nd4j.getEnvironment().cudaMallocHeapSize());
 
         // Set up temp file
-        File tempFile = new File("multi-datatype-samediff-model.bin");
+        File tempFile = tempDir.resolve("multi-datatype-samediff-model.bin").toFile();
         log.info("Will save model to: {}", tempFile.getAbsolutePath());
 
         // Create the model
@@ -576,7 +572,7 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         System.out.println("Save completed in " + (endTime - startTime) + " ms");
 
         // Verify file was created
-        assertTrue("Model file or shards should exist", tempFile.exists() || isSharded(tempFile));
+        assertTrue(tempFile.exists() || isSharded(tempFile), "Model file or shards should exist");
 
         // Check if file was sharded
         boolean isSharded = isSharded(tempFile);
@@ -597,14 +593,14 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         System.out.println("Load completed in " + (endTime - startTime) + " ms");
 
         // Basic validation
-        assertNotNull("Loaded model should not be null", loadedModel);
-        assertEquals("Variable count mismatch", sd.variables().size(), loadedModel.variables().size());
-        assertEquals("Op count mismatch", sd.ops().length, loadedModel.ops().length);
+        assertNotNull(loadedModel, "Loaded model should not be null");
+        assertEquals(sd.variables().size(), loadedModel.variables().size(), "Variable count mismatch");
+        assertEquals(sd.ops().length, loadedModel.ops().length, "Op count mismatch");
 
         // Verify all variable names were preserved
         Set<String> originalVariableNames = new HashSet<>(sd.variableNames());
         Set<String> loadedVariableNames = new HashSet<>(loadedModel.variableNames());
-        assertEquals("Variable names mismatch", originalVariableNames, loadedVariableNames);
+        assertEquals(originalVariableNames, loadedVariableNames, "Variable names mismatch");
 
         // Verify all layers
         for (int i = 0; i < numLayers; i++) {
@@ -620,20 +616,13 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         verifyVariable(loadedModel, originalArrays, "output_w", DataType.FLOAT, 'c', layerSize, 10);
         verifyVariable(loadedModel, originalArrays, "output_b", DataType.FLOAT, 'c', 1, 10);
 
-        // Clean up
-        if (isSharded) {
-            deleteShardFiles(tempFile);
-        } else {
-            tempFile.delete();
-        }
-
         System.out.println("Multi-datatype serialization test completed successfully");
     }
 
 
     @Test
     //@Ignore // Uncomment if test consistently fails due to resource limits
-    public void testLargeModelSerializationZip() throws IOException {
+    public void testLargeModelSerializationZip(@TempDir Path tempDir) throws IOException {
         // --- This test verifies the ZIP format (.sdz) ---
         // --- It should use SDZSerializer ---
 
@@ -645,13 +634,12 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         double estimatedGB = estimatedBytes / (1024.0 * 1024.0 * 1024.0);
         log.info("Estimated model size: {:.2f} GB", estimatedGB);
         // Adjust memory check and assumption as needed
-        assumeTrue("Skipping large ZIP test: Insufficient memory or model size requirement not met",
-                estimatedBytes > 1.5 * 1024 * 1024 * 1024 && hasEnoughMemory(estimatedBytes)); // Example: 1.5GB threshold
+        assumeTrue(estimatedBytes > 1.5 * 1024 * 1024 * 1024 && hasEnoughMemory(estimatedBytes),
+                "Skipping large ZIP test: Insufficient memory or model size requirement not met"); // Example: 1.5GB threshold
         Nd4j.getEnvironment().setCudaDeviceLimit(Environment.CUDA_LIMIT_MALLOC_HEAP_SIZE, estimatedBytes * 2); // Request double memory
         System.out.println("Attempting CUDA malloc heap size limit: " + Nd4j.getEnvironment().cudaMallocHeapSize());
 
-        // Use TemporaryFolder rule to manage the final ZIP file
-        File targetZipFile = new File("large-samediff-model.sdz"); // Ensure .sdz extension
+        File targetZipFile = tempDir.resolve("large-samediff-model.sdz").toFile();
         log.info("Target final ZIP file: {}", targetZipFile.getAbsolutePath());
 
         // Create the model (same as before)
@@ -699,17 +687,17 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         log.info("SDZSerializer save completed in {} ms.", (endTime - startTime));
 
         // --- Verification ---
-        assertTrue("Output ZIP file should exist", targetZipFile.exists());
-        assertTrue("Output file should be a valid ZIP", isZipFile(targetZipFile));
+        assertTrue(targetZipFile.exists(), "Output ZIP file should exist");
+        assertTrue(isZipFile(targetZipFile), "Output file should be a valid ZIP");
         long zipSizeBytes = targetZipFile.length();
         log.info("Actual ZIP file size: {:.2f} GB ({} bytes)", zipSizeBytes / (1024.0 * 1024.0 * 1024.0), zipSizeBytes);
-        assertTrue("ZIP file size should be substantial", zipSizeBytes > 1024 * 1024); // Basic sanity check
+        assertTrue(zipSizeBytes > 1024 * 1024, "ZIP file size should be substantial"); // Basic sanity check
 
         // Verify internal structure (optional but good)
         try(ZipFile zf = new ZipFile(targetZipFile)) {
-            assertTrue("ZIP file should not be empty", zf.size() > 0);
+            assertTrue(zf.size() > 0, "ZIP file should not be empty");
             boolean hasModelEntry = zf.stream().anyMatch(entry -> entry.getName().startsWith("model."));
-            assertTrue("ZIP file must contain at least one entry starting with 'model.'", hasModelEntry);
+            assertTrue(hasModelEntry, "ZIP file must contain at least one entry starting with 'model.'");
             // Optionally check for shard pattern if expected
             boolean looksSharded = zf.stream().anyMatch(entry -> entry.getName().matches("model\\.shard\\d+-of-\\d+\\.sdnb"));
             log.info("ZIP archive appears to contain {} internal shards.", looksSharded ? "multiple" : "a single");
@@ -724,19 +712,19 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
 
 
         // --- Post-load Verification ---
-        assertNotNull("Loaded model should not be null", loadedModel);
-        assertEquals("Variable count mismatch", originalVariableNames.size(), loadedModel.variables().size());
-        assertEquals("Op count mismatch", originalOpNames.size(), loadedModel.getOps().size());
-        assertEquals("Variable names mismatch", originalVariableNames, loadedModel.variableNames().stream().collect(Collectors.toSet()));
+        assertNotNull(loadedModel, "Loaded model should not be null");
+        assertEquals(originalVariableNames.size(), loadedModel.variables().size(), "Variable count mismatch");
+        assertEquals(originalOpNames.size(), loadedModel.getOps().size(), "Op count mismatch");
+        assertEquals(originalVariableNames, loadedModel.variableNames().stream().collect(Collectors.toSet()), "Variable names mismatch");
 
         // Verify shapes and data types using the collected maps
         for (SDVariable var : loadedModel.variables()) {
             String name = var.name();
-            assertNotNull("Loaded variable has null name", name);
-            assertTrue("Original data type missing for loaded var " + name, originalDataTypes.containsKey(name));
-            assertEquals("Data type mismatch for variable " + name, originalDataTypes.get(name), var.dataType());
+            assertNotNull(name, "Loaded variable has null name");
+            assertTrue(originalDataTypes.containsKey(name), "Original data type missing for loaded var " + name);
+            assertEquals(originalDataTypes.get(name), var.dataType(), "Data type mismatch for variable " + name);
         }
-        assertEquals("Operation names mismatch", originalOpNames, loadedModel.getOps().values().stream().map(SameDiffOp::getName).collect(Collectors.toSet()));
+        assertEquals(originalOpNames, loadedModel.getOps().values().stream().map(SameDiffOp::getName).collect(Collectors.toSet()), "Operation names mismatch");
 
 
         // Verify array contents for a subset of variables (as before)
@@ -750,29 +738,28 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         for (String varName : samplesToCheck) {
             if (!originalArrays.containsKey(varName)) { log.warn("Skipping check for sample '{}', key missing in original map", varName); continue; }
             INDArray originalArray = originalArrays.get(varName);
-            assertNotNull("Original array map contains null for " + varName, originalArray);
-            SDVariable loadedVar = loadedModel.getVariable(varName); assertNotNull("Loaded var is null for " + varName, loadedVar);
-            INDArray loadedArray = loadedVar.getArr(); assertNotNull("Loaded array is null for " + varName, loadedArray);
+            assertNotNull(originalArray, "Original array map contains null for " + varName);
+            SDVariable loadedVar = loadedModel.getVariable(varName); assertNotNull(loadedVar, "Loaded var is null for " + varName);
+            INDArray loadedArray = loadedVar.getArr(); assertNotNull(loadedArray, "Loaded array is null for " + varName);
 
-            assertEquals("Array data type mismatch for " + varName, originalArray.dataType(), loadedArray.dataType());
-            assertArrayEquals("Array shape mismatch for " + varName, originalArray.shape(), loadedArray.shape());
-            assertEquals("Array sum mismatch for " + varName, originalArray.sumNumber().doubleValue(), loadedArray.sumNumber().doubleValue(), epsilon * originalArray.length());
-            assertEquals("Array min mismatch for " + varName, originalArray.minNumber().doubleValue(), loadedArray.minNumber().doubleValue(), epsilon);
-            assertEquals("Array max mismatch for " + varName, originalArray.maxNumber().doubleValue(), loadedArray.maxNumber().doubleValue(), epsilon);
-            assertTrue("Array contents mismatch for " + varName + ". Max diff: " + originalArray.sub(loadedArray).amaxNumber(),
-                    originalArray.equalsWithEps(loadedArray, epsilon));
+            assertEquals(originalArray.dataType(), loadedArray.dataType(), "Array data type mismatch for " + varName);
+            assertArrayEquals(originalArray.shape(), loadedArray.shape(), "Array shape mismatch for " + varName);
+            assertEquals(originalArray.sumNumber().doubleValue(), loadedArray.sumNumber().doubleValue(), epsilon * originalArray.length(), "Array sum mismatch for " + varName);
+            assertEquals(originalArray.minNumber().doubleValue(), loadedArray.minNumber().doubleValue(), epsilon, "Array min mismatch for " + varName);
+            assertEquals(originalArray.maxNumber().doubleValue(), loadedArray.maxNumber().doubleValue(), epsilon, "Array max mismatch for " + varName);
+            assertTrue(originalArray.equalsWithEps(loadedArray, epsilon),
+                    () -> "Array contents mismatch for " + varName + ". Max diff: " + originalArray.sub(loadedArray).amaxNumber());
             log.debug("Verified array content for {}", varName);
         }
         log.info("Array content verification passed for samples.");
 
-        // Cleanup handled by TemporaryFolder @Rule
         log.info("Test testLargeModelSerializationZip completed successfully!");
     }
 
 
     @Test
     //@Ignore // Uncomment if test consistently fails due to resource limits
-    public void testMultipleDataTypeSerializationZip() throws IOException {
+    public void testMultipleDataTypeSerializationZip(@TempDir Path tempDir) throws IOException {
         // --- This test verifies the ZIP format (.sdz) ---
         // --- It should use SDZSerializer ---
 
@@ -781,14 +768,14 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         int layerSize = 1000;
 
         // Assume enough memory
-        assumeTrue("Skipping multi-datatype ZIP test: Insufficient memory estimated", hasEnoughMemory(500L * 1024 * 1024)); // Rough estimate
+        assumeTrue(hasEnoughMemory(500L * 1024 * 1024), "Skipping multi-datatype ZIP test: Insufficient memory estimated"); // Rough estimate
 
         // Configure memory
         Nd4j.getEnvironment().setCudaDeviceLimit(Environment.CUDA_LIMIT_MALLOC_HEAP_SIZE, 2L * 1024 * 1024 * 1024); // 2GB limit
         System.out.println("Current malloc heap size limit: " + Nd4j.getEnvironment().cudaMallocHeapSize());
 
         // Set up temp file
-        File tempZipFile =  new File("multi-datatype-samediff-model.sdz"); // Ensure .sdz extension
+        File tempZipFile = tempDir.resolve("multi-datatype-samediff-model.sdz").toFile();
         log.info("Will save multi-datatype model (.sdz format) to: {}", tempZipFile.getAbsolutePath());
 
         // Create the model (same logic as original test)
@@ -847,8 +834,8 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         System.out.println("Save completed in " + (endTime - startTime) + " ms");
 
         // Verify ZIP file was created
-        assertTrue("Model ZIP file should exist", tempZipFile.exists());
-        assertTrue("File should be a ZIP", isZipFile(tempZipFile));
+        assertTrue(tempZipFile.exists(), "Model ZIP file should exist");
+        assertTrue(isZipFile(tempZipFile), "File should be a ZIP");
 
         // *** CORRECTED: Load the model back FROM ZIP using SDZSerializer ***
         System.out.println("Loading model from ZIP archive using SDZSerializer...");
@@ -858,10 +845,10 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         System.out.println("Load completed in " + (endTime - startTime) + " ms");
 
         // Basic validation (same as before)
-        assertNotNull("Loaded model should not be null", loadedModel);
-        assertEquals("Variable count mismatch", sd.variables().size(), loadedModel.variables().size());
-        assertEquals("Op count mismatch", sd.ops().length, loadedModel.ops().length);
-        assertEquals("Variable names mismatch", sd.variableNames().stream().collect(Collectors.toSet()), loadedModel.variableNames().stream().collect(Collectors.toSet()));
+        assertNotNull(loadedModel, "Loaded model should not be null");
+        assertEquals(sd.variables().size(), loadedModel.variables().size(), "Variable count mismatch");
+        assertEquals(sd.ops().length, loadedModel.ops().length, "Op count mismatch");
+        assertEquals(sd.variableNames().stream().collect(Collectors.toSet()), loadedModel.variableNames().stream().collect(Collectors.toSet()), "Variable names mismatch");
 
 
         // Verify all layers (using helper)
@@ -874,7 +861,6 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         verifyVariable(loadedModel, originalArrays, "output_w", DataType.FLOAT, 'c', layerSize, 10);
         verifyVariable(loadedModel, originalArrays, "output_b", DataType.FLOAT, 'c', 1, 10);
 
-        // Clean up handled by TemporaryFolder rule
         System.out.println("Multi-datatype ZIP serialization test completed successfully");
     }
 
@@ -893,22 +879,22 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
     private void verifyVariable(SameDiff loadedModel, Map<String, INDArray> originalArrays,
                                 String varName, DataType expectedType, char expectedOrder,
                                 long... expectedShape) { // Use varargs for shape consistency
-        assertTrue("Missing variable in loaded model: " + varName, loadedModel.hasVariable(varName));
+        assertTrue(loadedModel.hasVariable(varName), "Missing variable in loaded model: " + varName);
         SDVariable loadedVar = loadedModel.getVariable(varName);
-        assertNotNull("Loaded SDVariable is null for " + varName, loadedVar);
+        assertNotNull(loadedVar, "Loaded SDVariable is null for " + varName);
         INDArray loadedArray = loadedVar.getArr();
-        assertNotNull("Loaded array (getArr) is null for " + varName, loadedArray);
+        assertNotNull(loadedArray, "Loaded array (getArr) is null for " + varName);
 
-        assertTrue("Missing variable in original map: " + varName, originalArrays.containsKey(varName));
+        assertTrue(originalArrays.containsKey(varName), "Missing variable in original map: " + varName);
         INDArray originalArray = originalArrays.get(varName);
-        assertNotNull("Original array is null in map for " + varName, originalArray);
+        assertNotNull(originalArray, "Original array is null in map for " + varName);
 
-        assertEquals("Data type mismatch for " + varName, expectedType, loadedArray.dataType());
+        assertEquals(expectedType, loadedArray.dataType(), "Data type mismatch for " + varName);
         // Note: Verifying 'order' can be tricky due to internal copies/views. Focus on shape and content.
-        // assertEquals("Ordering mismatch for " + varName, expectedOrder, loadedArray.ordering());
-        assertArrayEquals("Shape mismatch for " + varName, expectedShape, loadedArray.shape());
-        assertTrue("Content mismatch for " + varName + ". Max diff: " + originalArray.sub(loadedArray).amaxNumber(),
-                originalArray.equalsWithEps(loadedArray, 1e-5));
+        // assertEquals(expectedOrder, loadedArray.ordering(), "Ordering mismatch for " + varName);
+        assertArrayEquals(expectedShape, loadedArray.shape(), "Shape mismatch for " + varName);
+        assertTrue(originalArray.equalsWithEps(loadedArray, 1e-5),
+                () -> "Content mismatch for " + varName + ". Max diff: " + originalArray.sub(loadedArray).amaxNumber());
     }
 
 
@@ -919,16 +905,16 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
                                 String varName, DataType expectedType, char expectedOrder,
                                 int expectedRows, int expectedCols) {
         // (Implementation unchanged from original test)
-        assertTrue("Missing variable: " + varName, loadedModel.hasVariable(varName));
+        assertTrue(loadedModel.hasVariable(varName), "Missing variable: " + varName);
         INDArray originalArray = originalArrays.get(varName);
         INDArray loadedArray = loadedModel.getVariable(varName).getArr();
-        assertNotNull("Original array should not be null for " + varName, originalArray);
-        assertNotNull("Loaded array should not be null for " + varName, loadedArray);
-        assertEquals("Data type mismatch for " + varName, expectedType, loadedArray.dataType());
+        assertNotNull(originalArray, "Original array should not be null for " + varName);
+        assertNotNull(loadedArray, "Loaded array should not be null for " + varName);
+        assertEquals(expectedType, loadedArray.dataType(), "Data type mismatch for " + varName);
         // Ordering check might be less reliable if arrays are small/reshaped, focus on data
-        // assertEquals("Ordering mismatch for " + varName, expectedOrder, loadedArray.ordering());
-        assertArrayEquals("Shape mismatch for " + varName, new long[]{expectedRows, expectedCols}, loadedArray.shape());
-        assertTrue("Content mismatch for " + varName, originalArray.equalsWithEps(loadedArray, 1e-5));
+        // assertEquals(expectedOrder, loadedArray.ordering(), "Ordering mismatch for " + varName);
+        assertArrayEquals(new long[]{expectedRows, expectedCols}, loadedArray.shape(), "Shape mismatch for " + varName);
+        assertTrue(originalArray.equalsWithEps(loadedArray, 1e-5), "Content mismatch for " + varName);
 
     }
 
@@ -939,9 +925,9 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
             long manifestLength = raf.readLong();
             long metadataOffset = raf.readLong();
 
-            assertTrue("Manifest must be present for this regression", manifestLength > 0);
-            assertTrue("Manifest must be small enough for the test helper", manifestLength < Integer.MAX_VALUE);
-            assertTrue("Shard must contain appended data before the manifest", manifestOffset > metadataOffset);
+            assertTrue(manifestLength > 0, "Manifest must be present for this regression");
+            assertTrue(manifestLength < Integer.MAX_VALUE, "Manifest must be small enough for the test helper");
+            assertTrue(manifestOffset > metadataOffset, "Shard must contain appended data before the manifest");
 
             byte[] manifestBytes = new byte[(int) manifestLength];
             raf.seek(manifestOffset);
@@ -961,22 +947,22 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         try (RandomAccessFile raf = new RandomAccessFile(shardFile, "r")) {
             byte[] magic = new byte[4];
             raf.readFully(magic);
-            assertArrayEquals("SDNB magic mismatch", new byte[]{'S', 'D', 'N', 'B'}, magic);
-            assertEquals("Unexpected SDNB version", 1, raf.readInt());
+            assertArrayEquals(new byte[]{'S', 'D', 'N', 'B'}, magic, "SDNB magic mismatch");
+            assertEquals(1, raf.readInt(), "Unexpected SDNB version");
             long manifestOffset = raf.readLong();
             long manifestLength = raf.readLong();
             long metadataOffset = raf.readLong();
 
-            assertEquals("Unexpected SDNB metadata offset", 32L, metadataOffset);
-            assertTrue("Manifest length must include Java serialization header", manifestLength >= 4);
-            assertTrue("Manifest offset must be inside shard", manifestOffset >= metadataOffset);
-            assertTrue("Manifest range exceeds file", manifestOffset + manifestLength <= raf.length());
+            assertEquals(32L, metadataOffset, "Unexpected SDNB metadata offset");
+            assertTrue(manifestLength >= 4, "Manifest length must include Java serialization header");
+            assertTrue(manifestOffset >= metadataOffset, "Manifest offset must be inside shard");
+            assertTrue(manifestOffset + manifestLength <= raf.length(), "Manifest range exceeds file");
 
             byte[] manifestHeader = new byte[4];
             raf.seek(manifestOffset);
             raf.readFully(manifestHeader);
-            assertArrayEquals("Manifest must start with Java serialization stream magic",
-                    new byte[]{(byte) 0xAC, (byte) 0xED, 0x00, 0x05}, manifestHeader);
+            assertArrayEquals(new byte[]{(byte) 0xAC, (byte) 0xED, 0x00, 0x05}, manifestHeader,
+                    "Manifest must start with Java serialization stream magic");
         }
     }
 

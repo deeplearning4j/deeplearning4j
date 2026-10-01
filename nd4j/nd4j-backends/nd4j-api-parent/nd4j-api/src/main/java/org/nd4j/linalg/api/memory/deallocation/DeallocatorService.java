@@ -780,6 +780,7 @@ public class DeallocatorService {
         private final int deviceId;
         private final Deque<DeallocatableReference> retries =
                 new ConcurrentLinkedDeque<>();
+        private long lastGcCheckMillis = System.currentTimeMillis();
 
         private DeallocatorServiceThread(
                 @NonNull ReferenceQueue<Deallocatable> queue,
@@ -802,34 +803,38 @@ public class DeallocatorService {
                         Thread.sleep(1);
                     }
 
-                    DeallocatableReference reference;
+                    // Thread 0 also runs the heap-pressure GC check (ADR 0070)
+                    // once per autoGcWindow of idle time, so it wakes every
+                    // second instead of blocking indefinitely. It never sleeps
+                    // the window itself: references enqueued meanwhile would
+                    // wait out the whole window, and the Integer.MAX_VALUE
+                    // window that suppresses the check during inference would
+                    // park the thread for ~25 days, past the window's restore.
                     long autoGcWindow =
                             Nd4j.getMemoryManager().getAutoGcWindow();
-                    if (threadIdx == 0 && autoGcWindow > 0) {
-                        reference = (DeallocatableReference) queue.poll();
-                        if (reference == null) {
-                            reference = retries.pollFirst();
+                    boolean periodicGc = threadIdx == 0 && autoGcWindow > 0;
+                    DeallocatableReference reference =
+                            (DeallocatableReference) queue.remove(
+                                    periodicGc || !retries.isEmpty() ? 1000L : 0L);
+                    if (reference == null) {
+                        reference = retries.pollFirst();
+                    }
+
+                    if (reference != null) {
+                        if (!processReference(reference)) {
+                            retries.offerLast(reference);
                         }
-                        if (reference == null) {
-                            Thread.sleep(autoGcWindow);
+                    } else if (periodicGc) {
+                        long now = System.currentTimeMillis();
+                        if (now - lastGcCheckMillis >= autoGcWindow) {
+                            lastGcCheckMillis = now;
                             Runtime runtime = Runtime.getRuntime();
                             long used =
                                     runtime.totalMemory() - runtime.freeMemory();
                             if (used > runtime.maxMemory() * 3 / 4) {
                                 Nd4j.getMemoryManager().invokeGc();
                             }
-                            continue;
                         }
-                    } else {
-                        reference = (DeallocatableReference) queue.remove(
-                                retries.isEmpty() ? 0L : 1000L);
-                        if (reference == null) {
-                            reference = retries.pollFirst();
-                        }
-                    }
-
-                    if (reference != null && !processReference(reference)) {
-                        retries.offerLast(reference);
                     }
                 } catch (InterruptedException e) {
                     interrupt();
