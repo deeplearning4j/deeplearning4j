@@ -230,6 +230,11 @@ The compiled recipe now expresses the same thing:
 - The accumulation order is untouched: bit-identity tests cover K spanning many
   chunks and a scalar tail, 1 and 5 rows, partly masked programs, and [N,K] view,
   [N,K] transpose-B and [K,N] storage.
+- Deeper rings do not pay, so the stage count stays at 4. A CUDA probe at 4
+  programs and 32 lanes took the same time (about 36.5 µs) with 4 to 12
+  stages. Sizing the ring to the shared memory a few-program launch leaves
+  free (12 stages for the 4-program 27B GDN pair) slowed that kernel in the
+  model from a median of 28.1 µs to 30.5 µs.
 
 The per-lane path needs K-contiguous storage, while the coalesced [K,N] form is
 better once a matmul is bandwidth-bound. `QuantizedLinear` therefore builds a

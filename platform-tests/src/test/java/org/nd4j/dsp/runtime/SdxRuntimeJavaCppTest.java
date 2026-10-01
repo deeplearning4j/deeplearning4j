@@ -185,7 +185,8 @@ class SdxRuntimeJavaCppTest {
         assertTrue(planHeader.contains("int diagnosticExecuteCount()"));
         assertTrue(planHeader.contains("diagnosticEpochBaseExecuteCount_ = executeCount_"));
         assertTrue(planExecution.contains("anySegmentNeedsWarmup(), diagnosticExecCount"));
-        assertTrue(planExecution.contains("backendExecutionPolicy.verifyCompiledExecution || opSanityActive"));
+        assertTrue(planExecution.contains("!policy.verifyCompiledExecution && !opSanityActive")
+                && planExecution.contains("if (!steadyStateReplayEligible(backendExecutionPolicy))"));
         assertTrue(segments.contains("plan->diagnosticExecuteCount()"));
     }
 

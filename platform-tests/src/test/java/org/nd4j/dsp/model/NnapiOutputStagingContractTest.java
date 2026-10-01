@@ -518,11 +518,13 @@ class NnapiOutputStagingContractTest {
         String cudaLifecycle = Files.readString(root.resolve(
                 "libnd4j/include/graph/impl/NativeDynamicShapePlan_cuda.cu"));
 
-        assertTrue(planHeader.contains("total += sharedCaptureWorkspaceBytes_")
-                        && planHeader.contains("total += cublasWorkspaceSize_")
+        assertTrue(planHeader.contains("for (const auto& entry : captureWorkspacesByDevice_)")
+                        && planHeader.contains("total += entry.second.second")
+                        && planHeader.contains(
+                                "for (const auto& workspace : cublasWorkspaces_) total += workspace.second.second")
                         && planHeader.contains("!handle->isWorkspaceExternal()")
                         && planHeader.contains("total += handle->getWorkspaceBytes()"),
-                "The plan-cache budget must include shared and handle-owned replay/cuBLAS workspaces");
+                "The plan-cache budget must include per-device shared and handle-owned replay/cuBLAS workspaces");
         int releaseStart = planLifecycle.indexOf(
                 "int NativeDynamicShapePlan::releaseGpuIntermediates()");
         int graphsQuiesced = planLifecycle.indexOf(
@@ -539,9 +541,10 @@ class NnapiOutputStagingContractTest {
                         && captureArenaReleased > untrackedRetired,
                 "Graphs must quiesce before buffer retirement, while capture arenas stay registered until all interior DataBuffers retire");
         assertTrue(cudaLifecycle.contains(
-                                "pool.unregisterCaptureWorkspace(sharedCaptureWorkspace_)")
+                                "pool.unregisterCaptureWorkspace(entry.second.first)")
                         && cudaLifecycle.contains(
-                                "pool.free(sharedCaptureWorkspace_, workspaceDevice, nullptr)")
+                                "pool.free(entry.second.first, entry.first, nullptr)")
+                        && cudaLifecycle.contains("captureWorkspacesByDevice_.clear()")
                         && cudaLifecycle.contains("handle->releaseWorkspace(")
                         && cudaLifecycle.contains("removeDirtyStream(")
                         && cudaLifecycle.contains("ownedStreamDeviceId_")
