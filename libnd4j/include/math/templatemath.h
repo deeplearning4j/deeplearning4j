@@ -236,6 +236,11 @@ SD_HOST_DEVICE SD_INLINE Z sd_fma(Z a, Z b, Z c);
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_saturate(X value);
 
+// out[i] = sd_saturate<X, Z>(in[i]) for N consecutive elements, which some type
+// pairs convert together (packed hardware conversions).
+template <typename X, typename Z, int N>
+SD_HOST_DEVICE SD_INLINE void sd_saturate_n(const X* in, Z* out);
+
 // out[i] = static_cast<Z>(in[i]) for N consecutive elements, which some type
 // pairs convert together (packed hardware conversions).
 template <typename X, typename Z, int N>
@@ -1229,6 +1234,21 @@ SD_HOST_DEVICE SD_INLINE float8_e5m2 sd_saturate<float, float8_e5m2>(float value
 }
 
 template <typename X, typename Z, int N>
+SD_HOST_DEVICE SD_INLINE void sd_saturate_n(const X* in, Z* out) {
+  for (int i = 0; i < N; i++) out[i] = sd_saturate<X, Z>(in[i]);
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE void sd_saturate_n<float, float8_e4m3, 2>(const float* in, float8_e4m3* out) {
+  float8_e4m3::from_float2_satfinite(in, out);
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE void sd_saturate_n<float, float8_e5m2, 2>(const float* in, float8_e5m2* out) {
+  float8_e5m2::from_float2_satfinite(in, out);
+}
+
+template <typename X, typename Z, int N>
 SD_HOST_DEVICE SD_INLINE void sd_convert_n(const X* in, Z* out) {
   for (int i = 0; i < N; i++) out[i] = static_cast<Z>(in[i]);
 }
@@ -1241,6 +1261,16 @@ SD_HOST_DEVICE SD_INLINE void sd_convert_n<float8_e4m3, float, 2>(const float8_e
 template <>
 SD_HOST_DEVICE SD_INLINE void sd_convert_n<float8_e5m2, float, 2>(const float8_e5m2* in, float* out) {
   float8_e5m2::to_float2(in, out);
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE void sd_convert_n<float8_e4m3, float16, 2>(const float8_e4m3* in, float16* out) {
+  float8_e4m3::to_half2(in, out);
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE void sd_convert_n<float8_e5m2, float16, 2>(const float8_e5m2* in, float16* out) {
+  float8_e5m2::to_half2(in, out);
 }
 
 template <typename X, typename Z>

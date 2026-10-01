@@ -452,19 +452,21 @@ struct ModelOptNvfp4Weights {
 
 // ModelOpt FP8 (ADR 0122), W8A8: each activation is quantized to E4M3 with the
 // static input scale (ops::helpers::modelOptQuantize, as every native FP8 path
-// quantizes it) and multiplies the weights' E4M3 codes; each output's sum is
-// scaled once by inputScale * weightScale, as the cuBLASLt scaled GEMM scales
-// it. Every E4M3 value is exact in FP16, so the codes multiply as FP16
-// tensor-core elements and every product is exact in the FP32 accumulator.
+// quantizes it, computed by ModelOptQuantizer) and multiplies the weights'
+// E4M3 codes; each output's sum is scaled once by inputScale * weightScale, as
+// the cuBLASLt scaled GEMM scales it. Every E4M3 value is exact in FP16, so the
+// codes convert in pairs to FP16 operands, multiply as FP16 tensor-core
+// elements, and every product is exact in the FP32 accumulator.
 struct ModelOptFp8Weights {
   using Format = ops::helpers::ModelOptFp8;
   using Storage = Format::Storage;
   using ScaleStorage = Format::ScaleStorage;
   using Scale = Format::Scale;
   using Activation = Format::Activation;
+  using Operand = float16;
 
   template <typename X>
-  using Element = typename TensorCoreElement<float16>::type;
+  using Element = typename TensorCoreElement<Operand>::type;
 
   // The FP16 MMA accumulates in FP32: the activation types that aggregate in
   // FP32.
@@ -501,8 +503,8 @@ struct ModelOptFp8Weights {
   LongType depth;
 
   struct Constants {
-    Scale inputScale;
-    Scale outputScale;  // inputScale * weightScale
+    ops::helpers::ModelOptQuantizer<Activation, Scale> quantizer;  // by inputScale
+    Scale outputScale;                                             // inputScale * weightScale
   };
 
   struct Packed {
@@ -524,32 +526,28 @@ struct ModelOptFp8Weights {
   }
 
   SD_DEVICE Constants prepare() const {
+    const Scale scale = ops::helpers::modelOptScaleChecked(inputScale[0]);
     Constants constants;
-    constants.inputScale = ops::helpers::modelOptScaleChecked(inputScale[0]);
-    constants.outputScale = ops::helpers::reproducible::multiply<Scale>(
-        constants.inputScale, Format::weightScale(weightScale, constants.inputScale));
+    constants.quantizer = ops::helpers::ModelOptQuantizer<Activation, Scale>::of(scale);
+    constants.outputScale =
+        ops::helpers::reproducible::multiply<Scale>(scale, Format::weightScale(weightScale, scale));
     return constants;
   }
 
-  // The 4 activations quantized to E4M3, as elements: exact.
+  // The 4 activations quantized to E4M3, as FP16 operands: exact.
   template <typename X>
   SD_DEVICE uint2 activations(const X* row, Constants constants) const {
-    using AccT = WeightOnlyAccumulator<X>;
-    static_assert(sizeof(Quad<Element<X>>) == sizeof(uint2), "4 elements fill the A fragment's two words");
+    static_assert(std::is_same<WeightOnlyAccumulator<X>, Scale>::value, "the activations quantize in Scale");
+    static_assert(sizeof(Quad<Operand>) == sizeof(uint2), "4 operands fill the A fragment's two words");
     const Quad<X> values = *reinterpret_cast<const Quad<X>*>(row);
-    const AccT scale = static_cast<AccT>(constants.inputScale);
-    Quad<Element<X>> elements;
+    Scale widened[4];
+    math::sd_convert_n<X, Scale, 4>(values.values, widened);
+    Activation codes[4];
+    constants.quantizer.template quantize<4>(widened, codes);
+    Quad<Operand> operands;
     CUTLASS_PRAGMA_UNROLL
-    for (int e = 0; e < 4; e += 2) {
-      const Activation codes[2] = {
-          ops::helpers::modelOptQuantize<Activation, AccT>(static_cast<AccT>(values.values[e]), scale),
-          ops::helpers::modelOptQuantize<Activation, AccT>(static_cast<AccT>(values.values[e + 1]), scale)};
-      AccT widened[2];
-      math::sd_convert_n<Activation, AccT, 2>(codes, widened);
-      elements.values[e] = static_cast<Element<X>>(widened[0]);
-      elements.values[e + 1] = static_cast<Element<X>>(widened[1]);
-    }
-    return *reinterpret_cast<const uint2*>(&elements);
+    for (int e = 0; e < 4; e += 2) math::sd_convert_n<Activation, Operand, 2>(codes + e, operands.values + e);
+    return *reinterpret_cast<const uint2*>(&operands);
   }
 
   template <typename AccT>
@@ -574,18 +572,15 @@ struct ModelOptFp8Weights {
   SD_DEVICE LaneWeights unpack(const Packed& raw) const { return raw; }
 
   // The member's K elements of step `step`: its codes 4*step .. 4*step+3 (the
-  // runs are held in step order).
+  // runs are held in step order), as FP16 operands.
   template <typename X>
   SD_DEVICE void dequantize(const LaneWeights& lane, int step, Constants, Element<X> (&weights)[4]) const {
-    using AccT = WeightOnlyAccumulator<X>;
+    static_assert(sizeof(Operand) == sizeof(Element<X>), "an element holds its operand's bits");
     const Storage* codes = reinterpret_cast<const Storage*>(lane.words) + 4 * step;
+    Operand operands[4];
     CUTLASS_PRAGMA_UNROLL
-    for (int e = 0; e < 4; e += 2) {
-      AccT widened[2];
-      math::sd_convert_n<Storage, AccT, 2>(codes + e, widened);
-      weights[e] = static_cast<Element<X>>(widened[0]);
-      weights[e + 1] = static_cast<Element<X>>(widened[1]);
-    }
+    for (int e = 0; e < 4; e += 2) math::sd_convert_n<Storage, Operand, 2>(codes + e, operands + e);
+    memcpy(weights, operands, sizeof(operands));
   }
 
   // The scales are scalars the lanes read themselves: any operands stage.

@@ -10,7 +10,10 @@
 #include <ops/declarable/helpers/helpers.h>
 #include <ops/declarable/helpers/reproducible_math.h>
 
+#include <cstdint>
+#include <cstring>
 #include <stdexcept>
+#include <type_traits>
 
 namespace sd {
 namespace ops {
@@ -58,6 +61,76 @@ template <typename Q, typename AccT>
 SD_HOST_DEVICE SD_INLINE AccT modelOptFakeQuantize(AccT x, AccT inputScale) {
   return reproducible::multiply<AccT>(static_cast<AccT>(modelOptQuantize<Q, AccT>(x, inputScale)), inputScale);
 }
+
+// Whether a[0, N) and b[0, N) hold the same bits, compared a word at a time.
+template <typename T, int N>
+SD_HOST_DEVICE SD_INLINE bool modelOptSameBits(const T* a, const T* b) {
+  constexpr int kBytes = static_cast<int>(sizeof(T)) * N;
+  using Word = std::conditional_t<kBytes % 4 == 0, uint32_t, std::conditional_t<kBytes % 2 == 0, uint16_t, uint8_t>>;
+  bool same = true;
+  for (int offset = 0; offset < kBytes; offset += static_cast<int>(sizeof(Word))) {
+    Word left;
+    Word right;
+    memcpy(&left, reinterpret_cast<const unsigned char*>(a) + offset, sizeof(Word));
+    memcpy(&right, reinterpret_cast<const unsigned char*>(b) + offset, sizeof(Word));
+    same &= left == right;
+  }
+  return same;
+}
+
+// modelOptQuantize of N consecutive elements by one inputScale s, without a
+// division per element. With y = RN(1/s), e the machine epsilon of AccT (twice
+// its unit roundoff u),
+//   lower = RN(y * (1 - 2e)) and upper = RN(y * (1 + 2e))
+// satisfy lower * s <= (1 + u)^2 (1 - 4u) < 1 < (1 - u)^2 (1 + 4u) <= upper * s
+// when both are normal and finite (bracketing, checked once). So the reals
+// x * lower and x * upper enclose x / s, and as rounding and the saturating
+// conversion are monotone, the codes of RN(x * lower) and RN(x * upper)
+// enclose the code of RN(x / s), modelOptQuantize(x). When they are the same
+// code, it is modelOptQuantize(x)'s: all three values carry x's sign, zeros
+// included, and every NaN converts to the canonical NaN. A group with an
+// element whose two codes differ (one within a few u of a rounding boundary of
+// Q: about one element in 10^5) is quantized element by element with
+// modelOptQuantize, as is every group when the scale does not bracket.
+template <typename Q, typename AccT>
+struct ModelOptQuantizer {
+  AccT inputScale;
+  AccT lower;
+  AccT upper;
+  bool bracketing;
+
+  SD_HOST_DEVICE SD_INLINE static ModelOptQuantizer of(AccT inputScale) {
+    const AccT one = static_cast<AccT>(1);
+    const AccT margin = static_cast<AccT>(2) * DataTypeUtils::eps<AccT>();
+    const AccT reciprocal = reproducible::divide<AccT>(one, inputScale);
+    ModelOptQuantizer quantizer;
+    quantizer.inputScale = inputScale;
+    quantizer.lower = reproducible::multiply<AccT>(reciprocal, one - margin);
+    quantizer.upper = reproducible::multiply<AccT>(reciprocal, one + margin);
+    quantizer.bracketing =
+        quantizer.lower >= DataTypeUtils::min<AccT>() && quantizer.upper <= DataTypeUtils::max<AccT>();
+    return quantizer;
+  }
+
+  // codes[i] = modelOptQuantize<Q, AccT>(values[i], inputScale) for i < N.
+  template <int N>
+  SD_HOST_DEVICE SD_INLINE void quantize(const AccT* values, Q* codes) const {
+    static_assert(N % 2 == 0, "the codes convert in pairs");
+    AccT low[N];
+    AccT high[N];
+    for (int i = 0; i < N; i++) {
+      low[i] = reproducible::multiply<AccT>(values[i], lower);
+      high[i] = reproducible::multiply<AccT>(values[i], upper);
+    }
+    Q highCodes[N];
+    for (int i = 0; i < N; i += 2) {
+      math::sd_saturate_n<AccT, Q, 2>(low + i, codes + i);
+      math::sd_saturate_n<AccT, Q, 2>(high + i, highCodes + i);
+    }
+    if (!bracketing || !modelOptSameBits<Q, N>(codes, highCodes))
+      for (int i = 0; i < N; i++) codes[i] = modelOptQuantize<Q, AccT>(values[i], inputScale);
+  }
+};
 
 // Format policies: each format's storage types plus the per-element arithmetic
 // every native kernel shares (the general and tiled kernels here, the CPU

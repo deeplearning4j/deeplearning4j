@@ -74,7 +74,22 @@ No op, helper or kernel keeps its own type list.
     rounds once. For FP32 to FP8 it is the conversion `cvt.rn.satfinite`.
     ModelOpt's activation quantizer is `sd_saturate<AccT, Format::Activation>`.
   - `sd_convert_n<X, Z, N>` converts N consecutive values. FP8 to FP32 pairs
-    use one packed conversion.
+    use one packed conversion, and so do FP8 to FP16 pairs, which are exact.
+  - `sd_saturate_n<X, Z, N>` saturates N consecutive values. FP32 to FP8 pairs
+    use one packed `cvt.rn.satfinite`. The float8 pair functions move their
+    two codes as one 16-bit word, so codes held in registers stay packed.
+  - `ModelOptQuantizer<Q, AccT>` (`modelopt_linear.h`) quantizes a run of
+    activations by one input scale s without a division per element. With
+    y = RN(1/s) and eps the machine epsilon of AccT, it multiplies each value
+    by lower = RN(y x (1 - 2 eps)) and by upper = RN(y x (1 + 2 eps)). When
+    both are normal and finite, lower x s < 1 < upper x s, so the two
+    products enclose x / s. Rounding and the saturating conversion are
+    monotone, so when an element's two codes agree they are
+    `modelOptQuantize`'s code. A run with an element whose codes differ (one
+    within a few ulps of a rounding boundary of Q, about one element in
+    10^5) is quantized by division, element by element, as is every run when
+    lower or upper is not normal and finite. The codes are bit-identical to
+    `modelOptQuantize`'s.
   - The FP8 limits (448, 57344) come from the types (`float8_e4m3::max()`,
     `std::numeric_limits`), not from literals.
 - **FP8 conversion bits.** On sm_89+ (`SD_NATIVE_FP8`) the float8 types

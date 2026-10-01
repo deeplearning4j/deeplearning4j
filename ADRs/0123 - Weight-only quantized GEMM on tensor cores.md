@@ -276,7 +276,18 @@ arithmetic exactly, so dequantized weights are bit-identical to today's:
   weightScale, as the cuBLASLt scaled GEMM scales it.
   - The weights need no dequantization, so the format sets
     `kQuantizesActivations` instead. A lane quantizes its activation fragment
-    in registers at every MMA step.
+    in registers at every MMA step, with `ModelOptQuantizer` (ADR 0122): two
+    multiplications per element instead of a division, and the division only
+    for a fragment the multiplications do not decide. Activation and weight
+    codes convert in pairs straight to FP16 operands; before, each element
+    was divided, converted alone, and widened through FP32 on its way to
+    FP16. In the 27B model the one-row k and v projections (N=1024, K=5120)
+    went from 34.05 µs to 33.66 µs per call. In the op-level bench with
+    staging chosen by the rule, one row took 2 to 7% less time at N >= 5120
+    and 16% less at N=1024 (with direct staging, -8% to +1%). At 16 rows the
+    five shapes measured -6% to +7% over two runs. In those same runs the
+    17-row cuBLASLt calls, which this change does not touch, moved -9% to
+    +1%, so the 16-row change is within run-to-run noise.
   - A lane's 32 codes of a chunk are two runs of 16. Member m's run r starts at
     K offset 64r + 16m, so each 16-byte load of a lane group's four members
     reads 64 contiguous bytes of their row: two whole 32-byte sectors.

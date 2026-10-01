@@ -44,6 +44,8 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
     // The float types the native ops declare for X (ALL_FLOATS).
     private static final DataType[] ACTIVATION_TYPES = {DataType.FLOAT, DataType.DOUBLE, DataType.HALF, DataType.BFLOAT16};
     private static final float[] E2M1 = {0, .5f, 1, 1.5f, 2, 3, 4, 6};
+    // The finite E4M3 magnitudes by encoding, 0x00 to 0x7E (448).
+    private static final float[] E4M3_MAGNITUDES = e4m3Magnitudes();
 
     @Override
     public char ordering() { return 'c'; }
@@ -1375,6 +1377,106 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
         }
     }
 
+    /**
+     * Every FP8 path quantizes an activation x to E4M3(x / inputScale), rounded
+     * to nearest even and saturated, exactly as modelOptQuantize divides. The
+     * weight-only GEMM computes it with ModelOptQuantizer's products by two
+     * reciprocals of the scale that bracket it, falling back to the division
+     * where their codes differ, so the activations here lie within 4 ULPs of
+     * every E4M3 rounding boundary times the scale (each midpoint between
+     * adjacent codes, and 464, above which E4M3 saturates), with both signs,
+     * among signed zeros, FP32 subnormals, the largest finite values,
+     * infinities and random values, shuffled within each row so the boundary
+     * values meet every fragment position. The scales include powers of two and
+     * two that do not bracket (a reciprocal that overflows, and one that is
+     * subnormal). Identity E4M3 weights with a unit weight scale make each FP32
+     * output exactly E4M3(x / s) * s: its one product summed with zero products
+     * (so signed zeros compare equal). Rows 1 to 16 take the weight-only GEMM
+     * (staged when -Dnd4j.weightOnly.staging=bulk) and 17 the cuBLASLt scaled
+     * GEMM.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testFp8QuantizationExactAtRoundingBoundaries(Nd4jBackend backend) {
+        assumeFalse(Nd4j.getEnvironment().isCPU(), "the weight-only tensor-core GEMM is a CUDA kernel");
+        boolean tensorCores = Nd4j.getNativeOps()
+                .getDeviceMajor(Nd4j.getAffinityManager().getDeviceForCurrentThread()) >= 8;
+        final int k = 4096;
+        byte[] identity = new byte[k * k];
+        for (int i = 0; i < k; i++) identity[i * k + i] = 0x38;  // E4M3 1.0
+        INDArray w = raw(DataType.FLOAT8, identity, k, k);
+        INDArray weightScale = scalar(1f);
+        float[] scales = {.3f, 1f, 0x1p-4f, .0123f, 3.7f, 1.7e-5f, 2.3e4f, 0x1p-130f, 1.5e38f};
+        int[] rowCounts = {1, 2, 5, 8, 9, 16, 17};
+        java.util.Random random = new java.util.Random(20261001L);
+        if (tensorCores) DspDiagnostics.setCategories(DspDiagnostics.BACKEND);
+        try {
+            for (float s : scales) {
+                float[] boundaries = e4m3Boundaries(s);
+                INDArray inputScale = scalar(s);
+                for (DataType dtype : new DataType[]{DataType.FLOAT, DataType.HALF, DataType.BFLOAT16}) {
+                    for (int rows : rowCounts) {
+                        float[] values = new float[rows * k];
+                        for (int row = 0; row < rows; row++) {
+                            float[] line = Arrays.copyOf(boundaries, k);
+                            for (int i = boundaries.length; i < k; i++)
+                                line[i] = (float) ((random.nextDouble() * 2 - 1) * 480 * s
+                                        * Math.scalb(1.0, -random.nextInt(20)));
+                            for (int i = k - 1; i > 0; i--) {
+                                int j = random.nextInt(i + 1);
+                                float swap = line[i];
+                                line[i] = line[j];
+                                line[j] = swap;
+                            }
+                            System.arraycopy(line, 0, values, row * k, k);
+                        }
+                        INDArray x = Nd4j.create(values, new long[]{rows, k}, DataType.FLOAT).castTo(dtype);
+                        float[] xs = x.castTo(DataType.FLOAT).data().asFloat();
+                        String context = "inputScale=" + s + "/" + dtype + "/rows=" + rows;
+                        DspDiagnostics.clear();
+                        INDArray z = Nd4j.exec(new ModelOptFp8Linear(x, w, weightScale, inputScale, true))[0];
+                        if (tensorCores)
+                            assertEquals(rows <= 16, "weight-only-mma".equals(modelOptPath(context)),
+                                    context + ": decode-class calls take the weight-only GEMM, wider ones not");
+                        assertEquals(DataType.FLOAT, z.dataType(), context);
+                        float[] actual = z.data().asFloat();
+                        for (int i = 0; i < xs.length; i++) {
+                            float expected = quantizeE4m3(xs[i] / s) * s;
+                            if (expected != actual[i])
+                                fail(context + " at [" + i / k + "," + i % k + "]: x " + xs[i] + " (0x"
+                                        + Integer.toHexString(Float.floatToRawIntBits(xs[i])) + ") expected "
+                                        + expected + " got " + actual[i]);
+                        }
+                    }
+                }
+            }
+        } finally {
+            if (tensorCores) DspDiagnostics.setCategories(DspDiagnostics.NONE);
+        }
+    }
+
+    // For each rounding boundary m of E4M3 (the midpoints between adjacent
+    // codes, and 464, above which it saturates), the 9 activations within 4
+    // ULPs of RN(m * s), with both signs; then signed zeros, FP32 subnormal,
+    // smallest normal and largest values, and infinities.
+    private static float[] e4m3Boundaries(float s) {
+        float[] specials = {0f, -0f, Float.MIN_VALUE, -Float.MIN_VALUE, Float.MIN_NORMAL, -Float.MIN_NORMAL,
+                Float.MAX_VALUE, -Float.MAX_VALUE, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY};
+        float[] values = new float[127 * 9 * 2 + specials.length];
+        int count = 0;
+        for (int bits = 0; bits <= 126; bits++) {
+            float boundary = bits < 126 ? (decodeE4m3(bits) + decodeE4m3(bits + 1)) / 2 : 464;
+            float x = boundary * s;
+            for (int ulp = 0; ulp < 4; ulp++) x = Math.nextDown(x);
+            for (int ulp = 0; ulp < 9; ulp++, x = Math.nextUp(x)) {
+                values[count++] = x;
+                values[count++] = -x;
+            }
+        }
+        System.arraycopy(specials, 0, values, count, specials.length);
+        return values;
+    }
+
     // The path a ModelOpt linear took since the last DspDiagnostics.clear(),
     // from its BACKEND event.
     private static String modelOptPath(String context) {
@@ -1656,19 +1758,25 @@ public class TestModelOptLinear extends BaseNd4jTestWithBackends {
         return bits < 128 ? value : -value;
     }
 
+    private static float[] e4m3Magnitudes() {
+        float[] magnitudes = new float[127];
+        for (int bits = 0; bits <= 126; bits++) magnitudes[bits] = decodeE4m3(bits);
+        return magnitudes;
+    }
+
     private static float quantizeE4m3(float x) {
         // Exhaustive nearest representable value, ties to the even encoding.
         float magnitude = Math.min(Math.abs(x), 448);
         int best = 0;
         float distance = Float.POSITIVE_INFINITY;
         for (int bits = 0; bits <= 126; bits++) {
-            float candidateDistance = Math.abs(decodeE4m3(bits) - magnitude);
+            float candidateDistance = Math.abs(E4M3_MAGNITUDES[bits] - magnitude);
             if (candidateDistance < distance || (candidateDistance == distance && (bits & 1) == 0)) {
                 distance = candidateDistance;
                 best = bits;
             }
         }
-        return Math.copySign(decodeE4m3(best), x);
+        return Math.copySign(E4M3_MAGNITUDES[best], x);
     }
 
     // x rounded to nearest even in dtype: DOUBLE keeps x, FLOAT rounds once to FP32.

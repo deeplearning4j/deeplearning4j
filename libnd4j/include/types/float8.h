@@ -33,6 +33,7 @@
 #define LIBND4J_FLOAT8_H
 
 #include <system/op_boilerplate.h>
+#include <types/float16.h>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -394,8 +395,16 @@ struct float8_e4m3 {
   // the conversion of the value clamped to [lowest(), max()], NaN kept.
   SD_INLINE SD_HOST_DEVICE static float8_e4m3 from_float_satfinite(float value);
 
+  // from_float_satfinite of in[0] and in[1]: one packed conversion in hardware.
+  // The pair functions move their two codes as one 16-bit word, so codes held
+  // in registers stay packed instead of splitting into bytes.
+  SD_INLINE SD_HOST_DEVICE static void from_float2_satfinite(const float* in, float8_e4m3* out);
+
   // in[0] and in[1] to FP32: one packed conversion in hardware.
   SD_INLINE SD_HOST_DEVICE static void to_float2(const float8_e4m3* in, float* out);
+
+  // in[0] and in[1] to FP16, exactly: one packed conversion in hardware.
+  SD_INLINE SD_HOST_DEVICE static void to_half2(const float8_e4m3* in, float16* out);
 
   // std::numeric_limits semantics. E4M3FN has no infinity and no signaling NaN.
   SD_INLINE SD_HOST_DEVICE static constexpr float8_e4m3 min() {
@@ -487,15 +496,40 @@ float8_e4m3 float8_e4m3::from_float_satfinite(float value) {
 #endif
 }
 
+// The packed pair holds element 0 in its low byte (low half for FP16 pairs):
+// memory order on the little-endian device.
+void float8_e4m3::from_float2_satfinite(const float* in, float8_e4m3* out) {
+#if defined(SD_NATIVE_FP8)
+  const __nv_fp8x2_storage_t pair = __nv_cvt_float2_to_fp8x2(make_float2(in[0], in[1]), __NV_SATFINITE, __NV_E4M3);
+  memcpy(out, &pair, sizeof(pair));
+#else
+  out[0] = from_float_satfinite(in[0]);
+  out[1] = from_float_satfinite(in[1]);
+#endif
+}
+
 void float8_e4m3::to_float2(const float8_e4m3* in, float* out) {
 #if defined(SD_NATIVE_FP8)
-  const __nv_fp8x2_storage_t pair = static_cast<__nv_fp8x2_storage_t>(in[0].data.x | (in[1].data.x << 8));
+  __nv_fp8x2_storage_t pair;
+  memcpy(&pair, in, sizeof(pair));
   const float2 values = __half22float2(__half2(__nv_cvt_fp8x2_to_halfraw2(pair, __NV_E4M3)));
   out[0] = values.x;
   out[1] = values.y;
 #else
   out[0] = static_cast<float>(in[0]);
   out[1] = static_cast<float>(in[1]);
+#endif
+}
+
+void float8_e4m3::to_half2(const float8_e4m3* in, float16* out) {
+#if defined(SD_NATIVE_FP8)
+  __nv_fp8x2_storage_t pair;
+  memcpy(&pair, in, sizeof(pair));
+  const __half2_raw values = __nv_cvt_fp8x2_to_halfraw2(pair, __NV_E4M3);
+  memcpy(out, &values, sizeof(values));
+#else
+  out[0] = static_cast<float16>(static_cast<float>(in[0]));
+  out[1] = static_cast<float16>(static_cast<float>(in[1]));
 #endif
 }
 
@@ -528,8 +562,14 @@ struct float8_e5m2 {
   // (cvt.rn.satfinite): the conversion of the value clamped to [lowest(), max()].
   SD_INLINE SD_HOST_DEVICE static float8_e5m2 from_float_satfinite(float value);
 
+  // from_float_satfinite of in[0] and in[1]: one packed conversion in hardware.
+  SD_INLINE SD_HOST_DEVICE static void from_float2_satfinite(const float* in, float8_e5m2* out);
+
   // in[0] and in[1] to FP32: one packed conversion in hardware.
   SD_INLINE SD_HOST_DEVICE static void to_float2(const float8_e5m2* in, float* out);
+
+  // in[0] and in[1] to FP16, exactly: one packed conversion in hardware.
+  SD_INLINE SD_HOST_DEVICE static void to_half2(const float8_e5m2* in, float16* out);
 
   // std::numeric_limits semantics.
   SD_INLINE SD_HOST_DEVICE static constexpr float8_e5m2 min() {
@@ -631,15 +671,39 @@ float8_e5m2 float8_e5m2::from_float_satfinite(float value) {
 #endif
 }
 
+// Pairs in memory order, as float8_e4m3's.
+void float8_e5m2::from_float2_satfinite(const float* in, float8_e5m2* out) {
+#if defined(SD_NATIVE_FP8)
+  const __nv_fp8x2_storage_t pair = __nv_cvt_float2_to_fp8x2(make_float2(in[0], in[1]), __NV_SATFINITE, __NV_E5M2);
+  memcpy(out, &pair, sizeof(pair));
+#else
+  out[0] = from_float_satfinite(in[0]);
+  out[1] = from_float_satfinite(in[1]);
+#endif
+}
+
 void float8_e5m2::to_float2(const float8_e5m2* in, float* out) {
 #if defined(SD_NATIVE_FP8)
-  const __nv_fp8x2_storage_t pair = static_cast<__nv_fp8x2_storage_t>(in[0].data.x | (in[1].data.x << 8));
+  __nv_fp8x2_storage_t pair;
+  memcpy(&pair, in, sizeof(pair));
   const float2 values = __half22float2(__half2(__nv_cvt_fp8x2_to_halfraw2(pair, __NV_E5M2)));
   out[0] = values.x;
   out[1] = values.y;
 #else
   out[0] = static_cast<float>(in[0]);
   out[1] = static_cast<float>(in[1]);
+#endif
+}
+
+void float8_e5m2::to_half2(const float8_e5m2* in, float16* out) {
+#if defined(SD_NATIVE_FP8)
+  __nv_fp8x2_storage_t pair;
+  memcpy(&pair, in, sizeof(pair));
+  const __half2_raw values = __nv_cvt_fp8x2_to_halfraw2(pair, __NV_E5M2);
+  memcpy(out, &values, sizeof(values));
+#else
+  out[0] = static_cast<float16>(static_cast<float>(in[0]));
+  out[1] = static_cast<float16>(static_cast<float>(in[1]));
 #endif
 }
 
