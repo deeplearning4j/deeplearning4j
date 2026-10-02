@@ -73,7 +73,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Run with:
  *   cd platform-tests && mvn test \
  *     -Dtest=TestDspValidation \
- *     -Dbackend.artifactId=nd4j-cuda-12.9
+ *     -Dbackend.artifactId=nd4j-cuda-13.1
  *
  * System properties:
  *   -Dvlm.validation.tokens=N       Override max decode tokens (default: 5 for accuracy, 10 for decode)
@@ -538,46 +538,19 @@ public class TestDspValidation {
         GenerationResult prefillResult = runDecode(slotConfig, 1);
         log.info("Prefill done: token={}", prefillResult.getTokenIds()[0]);
 
-        // Build decode-shape inputs: seqLen=1 embedding, populated KV caches
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+        // Build decode-shape inputs: one token at cache position kvSeqLen, over caches whose
+        // first kvSeqLen positions hold random data
         int maxKvLen = 2048;
         int kvSeqLen = 18;  // 17 prefill + 1 decode
-        Map<String, INDArray> decodePlaceholders = new LinkedHashMap<>();
-
-        // inputs_embeds: [1, 1, 576] — single token embedding
-        decodePlaceholders.put("inputs_embeds",
-                Nd4j.randn(DataType.FLOAT, 1, 1, hiddenSize).muli(0.02f));
-
-        // attention_mask: [1, maxKvLen+1] — covers all static KV positions + current token.
-        // In static KV mode, mask is 0 for unused positions and 1 for valid ones.
-        INDArray mask = Nd4j.zeros(DataType.INT64, 1, maxKvLen + 1);
-        // Mark valid positions: 0..kvSeqLen-1 (past) and kvSeqLen (current)
-        for (int i = 0; i <= kvSeqLen; i++) {
-            mask.putScalar(0, i, 1);
+        Map<String, INDArray> kvBuffers = inGraphKvBuffers(maxKvLen);
+        for (INDArray kv : kvBuffers.values()) {
+            INDArray cached = kv.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.interval(0, kvSeqLen), NDArrayIndex.all());
+            cached.assign(Nd4j.randn(DataType.FLOAT, cached.shape()).muli(0.1f));
         }
-        decodePlaceholders.put("attention_mask", mask);
-
-        // position_ids: [1, 1] = kvSeqLen
-        decodePlaceholders.put("position_ids",
-                Nd4j.createFromArray(new long[][]{{kvSeqLen}}));
-
-        // past_key_values: [1, numKvHeads, maxKvLen, headDim] with random data in [0:kvSeqLen]
-        for (String inputName : decoder.inputs()) {
-            if (inputName.startsWith("past_key_values.")) {
-                INDArray kv = ModelIOConfig.createEmptyKvCache(decoder, inputName, 1, hiddenSize);
-                // Resize to maxKvLen if the method returned a 0-length sequence dim
-                if (kv.size(2) == 0) {
-                    kv = Nd4j.zeros(kv.dataType(), kv.size(0), kv.size(1), maxKvLen, kv.size(3));
-                }
-                // Fill first kvSeqLen positions with random data
-                if (kvSeqLen > 0 && kv.size(2) >= kvSeqLen) {
-                    INDArray slice = kv.get(NDArrayIndex.all(), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, kvSeqLen), NDArrayIndex.all());
-                    slice.assign(Nd4j.randn(slice.shape()).muli(0.1f));
-                }
-                decodePlaceholders.put(inputName, kv);
-            }
-        }
+        // inputs_embeds: [1, 1, hidden] — single token embedding
+        Map<String, INDArray> decodePlaceholders = buildInGraphKvInputs(
+                Nd4j.randn(DataType.FLOAT, 1, 1, hiddenSize).muli(0.02f), kvSeqLen, kvBuffers);
 
         List<String> outputs = new ArrayList<>(decoder.outputs());
         log.info("Decode-shape comparison: {} placeholders, {} outputs, kvSeqLen={}",
@@ -743,7 +716,7 @@ public class TestDspValidation {
         GenerationResult slotResult = runDecode(slotConfig, maxTokens);
         Nd4j.getEnvironment().setDebug(false);
         Nd4j.getEnvironment().setVerbose(false);
-        log.info("SLOT_BY_SLOT tokens: {}", java.util.Arrays.toString(slotResult.getTokenIds()));
+        log.info("SLOT_BY_SLOT tokens: {}", Arrays.toString(slotResult.getTokenIds()));
 
         // Run TRITON_NO_GC with debug+verbose to get per-slot fingerprints
         log.info(">>> TRITON_NO_GC run with debug+verbose <<<");
@@ -756,7 +729,7 @@ public class TestDspValidation {
         GenerationResult tritonResult = runDecode(tritonConfig, maxTokens);
         Nd4j.getEnvironment().setDebug(false);
         Nd4j.getEnvironment().setVerbose(false);
-        log.info("TRITON_NO_GC tokens: {}", java.util.Arrays.toString(tritonResult.getTokenIds()));
+        log.info("TRITON_NO_GC tokens: {}", Arrays.toString(tritonResult.getTokenIds()));
 
         // Compare tokens
         int[] slotTokens = slotResult.getTokenIds();
@@ -771,33 +744,81 @@ public class TestDspValidation {
     }
 
     /**
-     * Build decoder placeholders for step 0 (prefill) — reusable for any single-pass test.
-     * Discovers KV cache inputs dynamically from the model's input variables.
+     * Build decoder placeholders for step 0 (the prompt) — reusable for any single-pass test.
+     * The caches leave room for a short decode after the prompt.
      */
     private Map<String, INDArray> buildDecoderStep0Inputs() {
-        Map<String, INDArray> placeholders = new LinkedHashMap<>();
-        placeholders.put("inputs_embeds", inputsEmbeds.dup());
-
         long seqLen = inputsEmbeds.size(1);
-        placeholders.put("attention_mask", Nd4j.ones(DataType.INT64, 1, seqLen));
-
-        long[] posIds = new long[(int) seqLen];
-        for (int i = 0; i < seqLen; i++) posIds[i] = i;
-        placeholders.put("position_ids", Nd4j.createFromArray(new long[][]{posIds}));
-
-        // Enumerate all model inputs and fill any past_key_values.* with empty KV caches.
-        // ModelIOConfig.createEmptyKvCache discovers numHeads and headDim from the model graph
-        // (handles GQA where numKvHeads != numQueryHeads). seqLen=0 for step-0 prefill.
-        for (String inputName : decoder.inputs()) {
-            if (inputName.startsWith("past_key_values.")) {
-                placeholders.put(inputName,
-                        ModelIOConfig.createEmptyKvCache(decoder, inputName, 1, hiddenSize));
-            }
-        }
-
-        log.info("buildDecoderStep0Inputs: {} total placeholders ({} KV cache entries)",
-                placeholders.size(), placeholders.size() - 3);
+        Map<String, INDArray> placeholders = buildInGraphKvInputs(inputsEmbeds.dup(), 0,
+                inGraphKvBuffers(seqLen + getTokens(5)));
+        log.info("buildDecoderStep0Inputs: {} total placeholders", placeholders.size());
         return placeholders;
+    }
+
+    /** Zeroed caches in the decoder's fixed [batch, heads, maxKvLen, headDim] layout. */
+    private Map<String, INDArray> inGraphKvBuffers(long maxKvLen) {
+        ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheInputNames(decoder);
+        List<String> names = new ArrayList<>(kvNames.keyNames);
+        names.addAll(kvNames.valueNames);
+        Map<String, INDArray> buffers = new LinkedHashMap<>();
+        for (String name : names) {
+            SDVariable placeholder = decoder.getVariable(name);
+            long[] declared = placeholder.getShape();
+            buffers.put(name, Nd4j.zeros(placeholder.dataType(),
+                    declared[0] > 0 ? declared[0] : 1, declared[1], maxKvLen, declared[3]));
+        }
+        return buffers;
+    }
+
+    /**
+     * Decoder inputs for one step of the decoder's in-graph KV contract, built the way
+     * generateNative builds them: DecoderInputBuilder fills the step inputs over fixed caches
+     * that the graph writes at cache_position, and causal_mask is a bias over the caches'
+     * maxKvLen positions, where the builder's own mask has the external-concat width.
+     */
+    private Map<String, INDArray> buildInGraphKvInputs(INDArray embeddings, long cachePos,
+                                                       Map<String, INDArray> kvBuffers) {
+        assertTrue(ModelIOConfig.isOnnxMhaInPlaceKvCache(decoder),
+                "these inputs follow the in-graph ONNX MHA cache contract");
+        ModelIOConfig io = ModelIOConfig.discover(decoder);
+        long seqLen = embeddings.size(1);
+        long maxKvLen = kvBuffers.values().iterator().next().size(2);
+        INDArray inputIds = Nd4j.zeros(DataType.INT64, 1, seqLen);
+        Map<String, INDArray> inputs = DecoderInputBuilder.buildDecoderInputMap(io, decoder.inputs(),
+                decoder, embeddings, inputIds, cachePos, seqLen, kvBuffers, maxKvLen, cachePos,
+                true, hiddenSize, null, true, null, null, seqLen);
+        boolean idsUsed = false;
+        for (INDArray value : inputs.values()) {
+            idsUsed |= value == inputIds;
+        }
+        if (!idsUsed) {
+            inputIds.close();
+        }
+        String causalName = io.getCausalMaskName();
+        DataType maskType = decoder.getVariable(causalName).dataType();
+        INDArray mask = cachePos == 0
+                ? DecoderInputBuilder.buildInGraphCausalMask(seqLen, maxKvLen, maskType)
+                : decodeCausalMask(cachePos, maxKvLen, maskType);
+        INDArray builderMask = inputs.put(causalName, mask);
+        if (builderMask != null) {
+            builderMask.close();
+        }
+        return inputs;
+    }
+
+    /** One decode row at cachePos: the cached positions and the new token are visible. */
+    private static INDArray decodeCausalMask(long cachePos, long maxKvLen, DataType dtype) {
+        float[] row = new float[(int) maxKvLen];
+        for (int k = (int) cachePos + 1; k < maxKvLen; k++) {
+            row[k] = ModelIOConfig.MASK_FILL;
+        }
+        INDArray mask = Nd4j.createFromArray(row).reshape(1, 1, 1, maxKvLen);
+        if (dtype == DataType.FLOAT) {
+            return mask;
+        }
+        INDArray cast = mask.castTo(dtype);
+        mask.close();
+        return cast;
     }
 
     // ─── Test: Per-op slot validation ──────────────────────────────────────
@@ -980,29 +1001,29 @@ public class TestDspValidation {
         log.info("[ISO_BASELINE_SBS] tokens={} text='{}'",
                 baselineTokens.length, baselineResult.getText());
 
-        // 2. OPTIMAL (executeSteadyState fast path active)
+        // 2. OPTIMAL (executeSteadyState fast path active). The DspHandle inspects the
+        // post-decode slot state while the decode's plan is still alive.
         BenchmarkConfig optimalCfg = BenchmarkConfig.optimal().maxTokens(maxTokens);
-        GenerationResult optimalResult = runDecode(optimalCfg, maxTokens);
-        int[] optimalTokens = optimalResult.getTokenIds();
-        log.info("[ISO_OPTIMAL] tokens={} text='{}'",
-                optimalTokens.length, optimalResult.getText());
-
-        // Use DspHandle to inspect post-decode slot state
-        DspHandle h = decoder.dsp();
-        if (h.isCompiled()) {
-            int nanSlot = h.firstNaNSlot();
-            log.info("[ISO_OPTIMAL] DspHandle: totalSlots={} firstNaNSlot={}",
-                    h.totalSlots(), nanSlot);
-            if (nanSlot >= 0) {
-                Map<Integer, String> snapshot = h.snapshotAllSlots();
-                int count = 0;
-                for (Map.Entry<Integer, String> e : snapshot.entrySet()) {
-                    if (e.getValue().contains("NaN") && count++ < 5) {
-                        log.info("  NaN: {}", e.getValue());
+        GenerationResult optimalResult = runDecode(optimalCfg, maxTokens, decoded -> {
+            DspHandle h = decoder.dsp();
+            if (h.isCompiled()) {
+                int nanSlot = h.firstNaNSlot();
+                log.info("[ISO_OPTIMAL] DspHandle: totalSlots={} firstNaNSlot={}",
+                        h.totalSlots(), nanSlot);
+                if (nanSlot >= 0) {
+                    Map<Integer, String> snapshot = h.snapshotAllSlots();
+                    int count = 0;
+                    for (Map.Entry<Integer, String> e : snapshot.entrySet()) {
+                        if (e.getValue().contains("NaN") && count++ < 5) {
+                            log.info("  NaN: {}", e.getValue());
+                        }
                     }
                 }
             }
-        }
+        });
+        int[] optimalTokens = optimalResult.getTokenIds();
+        log.info("[ISO_OPTIMAL] tokens={} text='{}'",
+                optimalTokens.length, optimalResult.getText());
 
         // 3. OPTIMAL + tritonVerifyKernels=true (forces execute() path, bypasses fast path)
         // The C++ precondition is: if (tritonVerifyKernels()) return execute(...)
@@ -1143,34 +1164,12 @@ public class TestDspValidation {
         int maxTokens = getTokens(8);
         log.info("=== STAGING BUFFER REPLAY INTROSPECTION (tokens={}) ===", maxTokens);
 
-        // Run OPTIMAL config to exercise CUDA graph capture + replay
-        BenchmarkConfig cfg = BenchmarkConfig.optimal().maxTokens(maxTokens);
-        BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.resetModelState(embedTokens);
-        BenchmarkConfigApplier.apply(cfg);
+        // Run OPTIMAL config to exercise CUDA graph capture + replay; the plan state is
+        // inspected before the pipeline closes
+        runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens, this::inspectStagingState);
+    }
 
-        decoder.setDspAutoCompileEnabled(true);
-        decoder.setDspNativeAutoCompileEnabled(true);
-        List<String> outputs = new ArrayList<>(decoder.outputs());
-        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, cfg);
-
-        embedTokens.setDspAutoCompileEnabled(true);
-        embedTokens.setDspNativeAutoCompileEnabled(true);
-        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
-        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, cfg);
-
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .ioConfig(ioConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(maxTokens)
-                .hiddenSize(hiddenSize)
-                .build());
-
-        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+    private void inspectStagingState(GenerationResult result) {
         int[] tokens = result.getTokenIds();
         log.info("[STAGING] generated {} tokens: '{}'", tokens.length, result.getText());
 
@@ -1357,66 +1356,41 @@ public class TestDspValidation {
         }
         ensureModelsLoaded();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(5));
-        BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.resetModelState(embedTokens);
-        BenchmarkConfigApplier.apply(config);
+        int maxTokens = getTokens(5);
+        runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens, result -> {
+            assertNotNull(result, "Decode result should exist");
 
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+            InferenceSession session = decoder.getOrCreateSession();
+            DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+            assertNotNull(executor, "DSP executor must exist");
+            assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
 
-        decoder.setDspAutoCompileEnabled(true);
-        decoder.setDspNativeAutoCompileEnabled(true);
-        List<String> outputs = new ArrayList<>(decoder.outputs());
-        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
+            var plan = executor.getCurrentPlan();
+            assertTrue(plan.getSlots().length > 358, "Expected decoder plan to include slot 358");
 
-        embedTokens.setDspAutoCompileEnabled(true);
-        embedTokens.setDspNativeAutoCompileEnabled(true);
-        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
-        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
+            log.info("=== DECODER PLAN BOUNDARY: slots 348-358 ===");
+            for (int slotIdx = 348; slotIdx <= 358; slotIdx++) {
+                log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+            }
 
-        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .ioConfig(ioConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(getTokens(5))
-                .hiddenSize(hiddenSize)
-                .build());
-
-        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-        assertNotNull(result, "Decode result should exist");
-
-        InferenceSession session = decoder.getOrCreateSession();
-        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
-        assertNotNull(executor, "DSP executor must exist");
-        assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
-
-        var plan = executor.getCurrentPlan();
-        assertTrue(plan.getSlots().length > 358, "Expected decoder plan to include slot 358");
-
-        log.info("=== DECODER PLAN BOUNDARY: slots 348-358 ===");
-        for (int slotIdx = 348; slotIdx <= 358; slotIdx++) {
-            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
-        }
-
-        String[] auxVarNames = {
-                "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_2/output_0",
-                "/model/layers.0/attn/v_proj/repeat_kv/Mul_1/output_0",
-                "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_4/output_0"
-        };
-        log.info("=== DECODER PLAN AUXILIARY ARRAYS (348-358) ===");
-        for (String varName : auxVarNames) {
-            SDVariable var = decoder.getVariable(varName);
-            INDArray arr = decoder.getArrForVarName(varName);
-            String creator = (var != null && var.getCreator() != null) ? var.getCreator().getOwnName() : "null";
-            String type = (var != null) ? String.valueOf(var.getVariableType()) : "null";
-            log.info("  {} -> type={} creator={} shape={} dtype={} values={}",
-                    varName, type, creator,
-                    arr != null ? Arrays.toString(arr.shape()) : "null",
-                    arr != null ? arr.dataType() : "null",
-                    (arr != null && arr.length() <= 16) ? arr.toStringFull() : "<len=" + (arr != null ? arr.length() : -1) + ">");
-        }
+            String[] auxVarNames = {
+                    "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_2/output_0",
+                    "/model/layers.0/attn/v_proj/repeat_kv/Mul_1/output_0",
+                    "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_4/output_0"
+            };
+            log.info("=== DECODER PLAN AUXILIARY ARRAYS (348-358) ===");
+            for (String varName : auxVarNames) {
+                SDVariable var = decoder.getVariable(varName);
+                INDArray arr = decoder.getArrForVarName(varName);
+                String creator = (var != null && var.getCreator() != null) ? var.getCreator().getOwnName() : "null";
+                String type = (var != null) ? String.valueOf(var.getVariableType()) : "null";
+                log.info("  {} -> type={} creator={} shape={} dtype={} values={}",
+                        varName, type, creator,
+                        arr != null ? Arrays.toString(arr.shape()) : "null",
+                        arr != null ? arr.dataType() : "null",
+                        (arr != null && arr.length() <= 16) ? arr.toStringFull() : "<len=" + (arr != null ? arr.length() : -1) + ">");
+            }
+        });
     }
 
     @Test
@@ -1428,72 +1402,47 @@ public class TestDspValidation {
         }
         ensureModelsLoaded();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(5));
-        BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.resetModelState(embedTokens);
-        BenchmarkConfigApplier.apply(config);
+        int maxTokens = getTokens(5);
+        runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens, result -> {
+            assertNotNull(result, "Decode result should exist");
 
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+            InferenceSession session = decoder.getOrCreateSession();
+            DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+            assertNotNull(executor, "DSP executor must exist");
+            assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
 
-        decoder.setDspAutoCompileEnabled(true);
-        decoder.setDspNativeAutoCompileEnabled(true);
-        List<String> outputs = new ArrayList<>(decoder.outputs());
-        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
+            var plan = executor.getCurrentPlan();
+            assertTrue(plan.getSlots().length > 430, "Expected decoder plan to include slot 430");
 
-        embedTokens.setDspAutoCompileEnabled(true);
-        embedTokens.setDspNativeAutoCompileEnabled(true);
-        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
-        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
-
-        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .ioConfig(ioConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(getTokens(5))
-                .hiddenSize(hiddenSize)
-                .build());
-
-        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-        assertNotNull(result, "Decode result should exist");
-
-        InferenceSession session = decoder.getOrCreateSession();
-        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
-        assertNotNull(executor, "DSP executor must exist");
-        assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
-
-        var plan = executor.getCurrentPlan();
-        assertTrue(plan.getSlots().length > 430, "Expected decoder plan to include slot 430");
-
-        log.info("=== DECODER PLAN BOUNDARY: slots 400-430 ===");
-        for (int slotIdx = 400; slotIdx <= 430; slotIdx++) {
-            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
-        }
-
-        int[] auxSlots = {399, 420, 421, 430, 431, 432};
-        log.info("=== DECODER PLAN AUXILIARY SLOTS (400-430) ===");
-        for (int slotIdx : auxSlots) {
-            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
-        }
-
-        String[] auxVarNames = {
-                "/model/layers.0/input_layernorm/output_0",
-                "/model/layers.0/attn/v_proj/MatMul/output_0",
-                "model.layers.0.attn.v_proj.MatMul.weight",
-                "model.layers.0.input_layernorm.weight"
-        };
-        log.info("=== DECODER PLAN AUXILIARY ARRAYS (400-430) ===");
-        for (String varName : auxVarNames) {
-            INDArray arr = decoder.getArrForVarName(varName);
-            if (arr == null) {
-                log.info("  {} -> null", varName);
-                continue;
+            log.info("=== DECODER PLAN BOUNDARY: slots 400-430 ===");
+            for (int slotIdx = 400; slotIdx <= 430; slotIdx++) {
+                log.info(PlanIntrospection.formatSlot(plan, slotIdx));
             }
-            log.info("  {} -> shape={} dtype={} values={}",
-                    varName, Arrays.toString(arr.shape()), arr.dataType(),
-                    arr.length() <= 16 ? arr.toStringFull() : "<len=" + arr.length() + ">");
-        }
+
+            int[] auxSlots = {399, 420, 421, 430, 431, 432};
+            log.info("=== DECODER PLAN AUXILIARY SLOTS (400-430) ===");
+            for (int slotIdx : auxSlots) {
+                log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+            }
+
+            String[] auxVarNames = {
+                    "/model/layers.0/input_layernorm/output_0",
+                    "/model/layers.0/attn/v_proj/MatMul/output_0",
+                    "model.layers.0.attn.v_proj.MatMul.weight",
+                    "model.layers.0.input_layernorm.weight"
+            };
+            log.info("=== DECODER PLAN AUXILIARY ARRAYS (400-430) ===");
+            for (String varName : auxVarNames) {
+                INDArray arr = decoder.getArrForVarName(varName);
+                if (arr == null) {
+                    log.info("  {} -> null", varName);
+                    continue;
+                }
+                log.info("  {} -> shape={} dtype={} values={}",
+                        varName, Arrays.toString(arr.shape()), arr.dataType(),
+                        arr.length() <= 16 ? arr.toStringFull() : "<len=" + arr.length() + ">");
+            }
+        });
     }
 
     @Test
@@ -1505,80 +1454,55 @@ public class TestDspValidation {
         }
         ensureModelsLoaded();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(5));
-        BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.resetModelState(embedTokens);
-        BenchmarkConfigApplier.apply(config);
+        int maxTokens = getTokens(5);
+        runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens, result -> {
+            assertNotNull(result, "Decode result should exist");
 
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+            InferenceSession session = decoder.getOrCreateSession();
+            DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+            assertNotNull(executor, "DSP executor must exist");
+            assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
 
-        decoder.setDspAutoCompileEnabled(true);
-        decoder.setDspNativeAutoCompileEnabled(true);
-        List<String> outputs = new ArrayList<>(decoder.outputs());
-        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
+            var plan = executor.getCurrentPlan();
+            assertTrue(plan.getSlots().length > 453, "Expected decoder plan to include slot 453");
 
-        embedTokens.setDspAutoCompileEnabled(true);
-        embedTokens.setDspNativeAutoCompileEnabled(true);
-        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
-        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
-
-        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .ioConfig(ioConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(getTokens(5))
-                .hiddenSize(hiddenSize)
-                .build());
-
-        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-        assertNotNull(result, "Decode result should exist");
-
-        InferenceSession session = decoder.getOrCreateSession();
-        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
-        assertNotNull(executor, "DSP executor must exist");
-        assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
-
-        var plan = executor.getCurrentPlan();
-        assertTrue(plan.getSlots().length > 453, "Expected decoder plan to include slot 453");
-
-        log.info("=== DECODER PLAN BOUNDARY: slots 431-453 ===");
-        for (int slotIdx = 431; slotIdx <= 453; slotIdx++) {
-            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
-        }
-
-        int[] auxSlots = {263, 265, 276, 277, 278, 430};
-        log.info("=== DECODER PLAN AUXILIARY SLOTS ===");
-        for (int slotIdx : auxSlots) {
-            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
-        }
-
-        String[] auxVarNames = {
-                "/model/layers.0/attn/v_proj/repeat_kv/Mul_1/output_0",
-                "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_4/output_0",
-                "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_2/output_0",
-                "sd_var_21",
-                "sd_var_22",
-                "sd_var_23",
-                "sd_var_24",
-                "sd_var_25",
-                "sd_var_26",
-                "sd_var_27",
-                "sd_var_28",
-                "sd_var_29"
-        };
-        log.info("=== DECODER PLAN AUXILIARY ARRAYS ===");
-        for (String varName : auxVarNames) {
-            INDArray arr = decoder.getArrForVarName(varName);
-            if (arr == null) {
-                log.info("  {} -> null", varName);
-                continue;
+            log.info("=== DECODER PLAN BOUNDARY: slots 431-453 ===");
+            for (int slotIdx = 431; slotIdx <= 453; slotIdx++) {
+                log.info(PlanIntrospection.formatSlot(plan, slotIdx));
             }
-            log.info("  {} -> shape={} dtype={} values={}",
-                    varName, Arrays.toString(arr.shape()), arr.dataType(),
-                    arr.length() <= 16 ? arr.toStringFull() : "<len=" + arr.length() + ">");
-        }
+
+            int[] auxSlots = {263, 265, 276, 277, 278, 430};
+            log.info("=== DECODER PLAN AUXILIARY SLOTS ===");
+            for (int slotIdx : auxSlots) {
+                log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+            }
+
+            String[] auxVarNames = {
+                    "/model/layers.0/attn/v_proj/repeat_kv/Mul_1/output_0",
+                    "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_4/output_0",
+                    "/model/layers.0/attn/v_proj/repeat_kv/Unsqueeze_2/output_0",
+                    "sd_var_21",
+                    "sd_var_22",
+                    "sd_var_23",
+                    "sd_var_24",
+                    "sd_var_25",
+                    "sd_var_26",
+                    "sd_var_27",
+                    "sd_var_28",
+                    "sd_var_29"
+            };
+            log.info("=== DECODER PLAN AUXILIARY ARRAYS ===");
+            for (String varName : auxVarNames) {
+                INDArray arr = decoder.getArrForVarName(varName);
+                if (arr == null) {
+                    log.info("  {} -> null", varName);
+                    continue;
+                }
+                log.info("  {} -> shape={} dtype={} values={}",
+                        varName, Arrays.toString(arr.shape()), arr.dataType(),
+                        arr.length() <= 16 ? arr.toStringFull() : "<len=" + arr.length() + ">");
+            }
+        });
     }
 
     @Test
@@ -1590,54 +1514,29 @@ public class TestDspValidation {
         }
         ensureModelsLoaded();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(5));
-        BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.resetModelState(embedTokens);
-        BenchmarkConfigApplier.apply(config);
+        int maxTokens = getTokens(5);
+        runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens, result -> {
+            assertNotNull(result, "Decode result should exist");
 
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+            InferenceSession session = decoder.getOrCreateSession();
+            DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+            assertNotNull(executor, "DSP executor must exist");
+            assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
 
-        decoder.setDspAutoCompileEnabled(true);
-        decoder.setDspNativeAutoCompileEnabled(true);
-        List<String> outputs = new ArrayList<>(decoder.outputs());
-        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
+            var plan = executor.getCurrentPlan();
+            assertTrue(plan.getSlots().length > 523, "Expected decoder plan to include slot 523");
 
-        embedTokens.setDspAutoCompileEnabled(true);
-        embedTokens.setDspNativeAutoCompileEnabled(true);
-        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
-        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
+            log.info("=== DECODER PLAN BOUNDARY: slots 455-523 ===");
+            for (int slotIdx = 455; slotIdx <= 523; slotIdx++) {
+                log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+            }
 
-        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .ioConfig(ioConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(getTokens(5))
-                .hiddenSize(hiddenSize)
-                .build());
-
-        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-        assertNotNull(result, "Decode result should exist");
-
-        InferenceSession session = decoder.getOrCreateSession();
-        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
-        assertNotNull(executor, "DSP executor must exist");
-        assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
-
-        var plan = executor.getCurrentPlan();
-        assertTrue(plan.getSlots().length > 523, "Expected decoder plan to include slot 523");
-
-        log.info("=== DECODER PLAN BOUNDARY: slots 455-523 ===");
-        for (int slotIdx = 455; slotIdx <= 523; slotIdx++) {
-            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
-        }
-
-        int[] auxSlots = {455, 467, 489, 503, 523, 524};
-        log.info("=== DECODER PLAN AUXILIARY SLOTS (455-523) ===");
-        for (int slotIdx : auxSlots) {
-            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
-        }
+            int[] auxSlots = {455, 467, 489, 503, 523, 524};
+            log.info("=== DECODER PLAN AUXILIARY SLOTS (455-523) ===");
+            for (int slotIdx : auxSlots) {
+                log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+            }
+        });
     }
 
     @Test
@@ -1649,93 +1548,89 @@ public class TestDspValidation {
         }
         ensureModelsLoaded();
 
-        BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(getTokens(5));
-        BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.resetModelState(embedTokens);
-        BenchmarkConfigApplier.apply(config);
+        int maxTokens = getTokens(5);
+        runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens, result -> {
+            assertNotNull(result, "Decode result should exist");
 
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+            InferenceSession session = decoder.getOrCreateSession();
+            DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+            assertNotNull(executor, "DSP executor must exist");
+            assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
 
-        decoder.setDspAutoCompileEnabled(true);
-        decoder.setDspNativeAutoCompileEnabled(true);
-        List<String> outputs = new ArrayList<>(decoder.outputs());
-        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
+            // This range was picked on the unoptimized 2742-op decoder. OnnxModelCache now imports
+            // the optimized graph, whose plan ends inside the range: log the slots that exist.
+            var plan = executor.getCurrentPlan();
+            int numSlots = plan.getSlots().length;
+            assertTrue(numSlots > 793, "Expected decoder plan to include slot 793");
 
-        embedTokens.setDspAutoCompileEnabled(true);
-        embedTokens.setDspNativeAutoCompileEnabled(true);
-        List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
-        BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
+            log.info("=== DECODER PLAN BOUNDARY: slots 793-846 (plan has {} slots) ===", numSlots);
+            for (int slotIdx = 793; slotIdx <= Math.min(846, numSlots - 1); slotIdx++) {
+                log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+            }
 
-        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .ioConfig(ioConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(getTokens(5))
-                .hiddenSize(hiddenSize)
-                .build());
-
-        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-        assertNotNull(result, "Decode result should exist");
-
-        InferenceSession session = decoder.getOrCreateSession();
-        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
-        assertNotNull(executor, "DSP executor must exist");
-        assertNotNull(executor.getCurrentPlan(), "Current plan must exist");
-
-        var plan = executor.getCurrentPlan();
-        assertTrue(plan.getSlots().length > 846, "Expected decoder plan to include slot 846");
-
-        log.info("=== DECODER PLAN BOUNDARY: slots 793-846 ===");
-        for (int slotIdx = 793; slotIdx <= 846; slotIdx++) {
-            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
-        }
-
-        int[] auxSlots = {792, 793, 819, 820, 821, 822, 823, 846, 847};
-        log.info("=== DECODER PLAN AUXILIARY SLOTS (793-846) ===");
-        for (int slotIdx : auxSlots) {
-            log.info(PlanIntrospection.formatSlot(plan, slotIdx));
-        }
+            int[] auxSlots = {792, 793, 819, 820, 821, 822, 823, 846, 847};
+            log.info("=== DECODER PLAN AUXILIARY SLOTS (793-846) ===");
+            for (int slotIdx : auxSlots) {
+                if (slotIdx < numSlots) {
+                    log.info(PlanIntrospection.formatSlot(plan, slotIdx));
+                }
+            }
+        });
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────
 
     private GenerationResult runDecode(BenchmarkConfig config, int maxTokens) throws Exception {
+        return runDecode(config, maxTokens, null);
+    }
+
+    /**
+     * Decodes the prompt with {@code config} on {@link #decoder}, then closes the pipeline.
+     *
+     * <p>{@link OnnxModelCache} returns the models already optimized, so the pipeline is told not
+     * to optimize again. A second pass decodes a private copy of the decoder: the plan state this
+     * class reads through {@code decoder} would belong to a model that never ran, and each call
+     * would keep one more copy of the weights and its frozen plan alive until the pipeline is
+     * closed. The config goes to the pipeline, which applies it to the models it runs; without it
+     * the pipeline applies its default config over this one.</p>
+     *
+     * <p>Closing the pipeline resets the decoder's session and clears its plan cache, so a test
+     * that reads the decode's plan state does so in {@code inspect}, before the close.</p>
+     */
+    private GenerationResult runDecode(BenchmarkConfig config, int maxTokens,
+                                       DecodeInspection inspect) throws Exception {
         BenchmarkConfigApplier.resetModelState(decoder);
         BenchmarkConfigApplier.resetModelState(embedTokens);
-        BenchmarkConfigApplier.apply(config);
-
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-
-        if (config.isTriton()) {
-            decoder.setDspAutoCompileEnabled(true);
-            decoder.setDspNativeAutoCompileEnabled(true);
-            List<String> outputs = new ArrayList<>(decoder.outputs());
-            BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
-
-            embedTokens.setDspAutoCompileEnabled(true);
-            embedTokens.setDspNativeAutoCompileEnabled(true);
-            List<String> embedOutputs = new ArrayList<>(embedTokens.outputs());
-            BenchmarkConfigApplier.compileModel(embedTokens, "embed_tokens", embedOutputs, config);
-        } else if (config.getExecutionMode() != null) {
-            decoder.setDspAutoCompileEnabled(true);
-            decoder.setDspNativeAutoCompileEnabled(true);
-            List<String> outputs = new ArrayList<>(decoder.outputs());
-            decoder.compileNativeDynamicShapePlan(outputs, config.getExecutionMode(), true);
+        GenerationResult result;
+        try (GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig(config, maxTokens))) {
+            result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+            if (inspect != null) {
+                inspect.inspect(result);
+            }
         }
+        log.info("[runDecode] {}: {} tokens, physicalBytes={}MB after close",
+                config.getName(), result.getTokenIds().length, mb(Pointer.physicalBytes()));
+        return result;
+    }
 
-        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
+    private GenerationPipelineConfig pipelineConfig(BenchmarkConfig config, int maxTokens) {
+        return GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
-                .ioConfig(ioConfig)
+                .ioConfig(ModelIOConfig.discover(decoder))
                 .samplingConfig(SamplingConfig.greedy())
                 .maxNewTokens(maxTokens)
                 .hiddenSize(hiddenSize)
-                .build());
+                .graphOptimizerEnabled(false)
+                .benchmarkConfig(config)
+                .build();
+    }
 
-        return pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+    /** Reads the decode's plan state; runs after generate, before the pipeline closes. */
+    @FunctionalInterface
+    private interface DecodeInspection {
+        void inspect(GenerationResult result) throws Exception;
     }
 
     // ─── Memory diagnostics ──────────────────────────────────────────────
@@ -1751,9 +1646,8 @@ public class TestDspValidation {
     @DisplayName("Trim impact on per-step GPU memory in real decode loop")
     public void testTrimImpactOnDecodeMemory() throws Exception {
         ensureModelsLoaded();
-        var nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
-        int device = org.nd4j.linalg.factory.Nd4j.getAffinityManager()
-                .getDeviceForCurrentThread().intValue();
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int device = Nd4j.getAffinityManager().getDeviceForCurrentThread().intValue();
         int steps = 20;
 
         log.info("=== TRIM IMPACT TEST: {} steps on device {} ===", steps, device);
@@ -1764,64 +1658,56 @@ public class TestDspValidation {
         BenchmarkConfig slotConfig = BenchmarkConfig.create("MEMORY_TEST")
                 .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
                 .maxTokens(steps);
-        BenchmarkConfigApplier.apply(slotConfig);
-        decoder.setDspAutoCompileEnabled(true);
-        decoder.setDspNativeAutoCompileEnabled(true);
-        decoder.compileNativeDynamicShapePlan(
-                new ArrayList<>(decoder.outputs()), GraphExecutionMode.SLOT_BY_SLOT, true);
 
-        // Trim + commit to establish clean baseline
-        Nd4j.getExecutioner().commit();
-        nativeOps.trimMemoryPool(device);
-        long baselineFree = nativeOps.getDeviceFreeMemory(device);
-        long totalMem = nativeOps.getDeviceTotalMemory(device);
-        log.info("[BASELINE] device={} total={}MB free={}MB used={}MB",
-                device, totalMem / (1024*1024), baselineFree / (1024*1024),
-                (totalMem - baselineFree) / (1024*1024));
+        // The pipeline applies the config and compiles the models it runs; the baseline
+        // below is taken after that, so it measures the decode alone
+        try (GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig(slotConfig, steps))) {
+            // Trim + commit to establish clean baseline
+            Nd4j.getExecutioner().commit();
+            nativeOps.trimMemoryPool(device);
+            long baselineFree = nativeOps.getDeviceFreeMemory(device);
+            long totalMem = nativeOps.getDeviceTotalMemory(device);
+            log.info("[BASELINE] device={} total={}MB free={}MB used={}MB",
+                    device, totalMem / (1024*1024), baselineFree / (1024*1024),
+                    (totalMem - baselineFree) / (1024*1024));
 
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
-                .decoder(decoder).embedTokens(embedTokens).tokenizer(tokenizer)
-                .ioConfig(ioConfig).samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(steps).hiddenSize(hiddenSize)
-                .build());
+            GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+            log.info("[DECODE] generated {} tokens: {}", result.getTokenIds().length,
+                    result.getText().substring(0, Math.min(80, result.getText().length())));
 
-        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-        log.info("[DECODE] generated {} tokens: {}", result.getTokenIds().length,
-                result.getText().substring(0, Math.min(80, result.getText().length())));
+            // Measurement 1: memory consumed after decode (no manual trim)
+            long afterDecodeFree = nativeOps.getDeviceFreeMemory(device);
+            long consumedBeforeTrim = baselineFree - afterDecodeFree;
+            log.info("[AFTER-DECODE] free={}MB consumed={}MB ({}MB/step before trim)",
+                    afterDecodeFree / (1024*1024), consumedBeforeTrim / (1024*1024),
+                    consumedBeforeTrim / (1024*1024) / steps);
 
-        // Measurement 1: memory consumed after decode (no manual trim)
-        long afterDecodeFree = nativeOps.getDeviceFreeMemory(device);
-        long consumedBeforeTrim = baselineFree - afterDecodeFree;
-        log.info("[AFTER-DECODE] free={}MB consumed={}MB ({}MB/step before trim)",
-                afterDecodeFree / (1024*1024), consumedBeforeTrim / (1024*1024),
-                consumedBeforeTrim / (1024*1024) / steps);
+            // Measurement 2: commit all pending async ops
+            Nd4j.getExecutioner().commit();
+            long afterCommitFree = nativeOps.getDeviceFreeMemory(device);
+            long commitRecovered = afterCommitFree - afterDecodeFree;
+            log.info("[AFTER-COMMIT] free={}MB recovered={}MB",
+                    afterCommitFree / (1024*1024), commitRecovered / (1024*1024));
 
-        // Measurement 2: commit all pending async ops
-        Nd4j.getExecutioner().commit();
-        long afterCommitFree = nativeOps.getDeviceFreeMemory(device);
-        long commitRecovered = afterCommitFree - afterDecodeFree;
-        log.info("[AFTER-COMMIT] free={}MB recovered={}MB",
-                afterCommitFree / (1024*1024), commitRecovered / (1024*1024));
+            // Measurement 3: trim the pool
+            nativeOps.trimMemoryPool(device);
+            long afterTrimFree = nativeOps.getDeviceFreeMemory(device);
+            long trimRecovered = afterTrimFree - afterCommitFree;
+            long totalRecovered = afterTrimFree - afterDecodeFree;
+            long trueLeak = baselineFree - afterTrimFree;
+            log.info("[AFTER-TRIM] free={}MB trimRecovered={}MB totalRecovered={}MB",
+                    afterTrimFree / (1024*1024), trimRecovered / (1024*1024),
+                    totalRecovered / (1024*1024));
+            log.info("[SUMMARY] {} steps: consumed={}MB, reclaimable={}MB, trueLeak={}MB ({}MB/step)",
+                    steps, consumedBeforeTrim / (1024*1024), totalRecovered / (1024*1024),
+                    trueLeak / (1024*1024), trueLeak / (1024*1024) / steps);
 
-        // Measurement 3: trim the pool
-        nativeOps.trimMemoryPool(device);
-        long afterTrimFree = nativeOps.getDeviceFreeMemory(device);
-        long trimRecovered = afterTrimFree - afterCommitFree;
-        long totalRecovered = afterTrimFree - afterDecodeFree;
-        long trueLeak = baselineFree - afterTrimFree;
-        log.info("[AFTER-TRIM] free={}MB trimRecovered={}MB totalRecovered={}MB",
-                afterTrimFree / (1024*1024), trimRecovered / (1024*1024),
-                totalRecovered / (1024*1024));
-        log.info("[SUMMARY] {} steps: consumed={}MB, reclaimable={}MB, trueLeak={}MB ({}MB/step)",
-                steps, consumedBeforeTrim / (1024*1024), totalRecovered / (1024*1024),
-                trueLeak / (1024*1024), trueLeak / (1024*1024) / steps);
-
-        // Trim again to verify nothing more comes back
-        nativeOps.trimMemoryPool(device);
-        long afterTrim2Free = nativeOps.getDeviceFreeMemory(device);
-        log.info("[DOUBLE-TRIM] free={}MB delta={}MB",
-                afterTrim2Free / (1024*1024), (afterTrim2Free - afterTrimFree) / (1024*1024));
+            // Trim again to verify nothing more comes back
+            nativeOps.trimMemoryPool(device);
+            long afterTrim2Free = nativeOps.getDeviceFreeMemory(device);
+            log.info("[DOUBLE-TRIM] free={}MB delta={}MB",
+                    afterTrim2Free / (1024*1024), (afterTrim2Free - afterTrimFree) / (1024*1024));
+        }
     }
 
     // ─── Per-phase memory tracking: output() vs outputDirect() ─────────────
@@ -1952,7 +1838,7 @@ public class TestDspValidation {
      *   recoveredTrim  = afterTrimFree - afterCloseFree  (positive = freed)
      */
     private long[][] runPerPhaseDecodeSteps(
-            org.nd4j.nativeblas.NativeOps nativeOps,
+            NativeOps nativeOps,
             int device,
             SameDiff decoder,
             List<String> decoderInputNames,
@@ -2159,40 +2045,26 @@ public class TestDspValidation {
     // ─── Exact decode loop memory isolation ──────────────────────────────────
 
     /**
-     * Isolates which specific decode-loop operation triggers the ~256MB/step GPU leak.
+     * Isolates which decode-loop operation, if any, grows GPU memory per step.
      *
-     * Runs 5 variants, each changing ONE thing compared to a stable baseline:
+     * Runs 5 variants over the decoder's fixed caches, each changing ONE thing compared to a
+     * stable baseline:
      *   A. New HashMap each step (same arrays)
      *   B. clearPlaceholders(false) between steps
-     *   C. associateArrayWithVariable for position_ids between steps
-     *   D. New attention_mask array each step (growing shape)
-     *   E. Full DecoderInputBuilder.buildDecoderInputMap path
+     *   C. New position_ids and cache_position arrays each step
+     *   D. New causal_mask and caches each step (same shapes)
+     *   E. Full DecoderInputBuilder.buildDecoderInputMap path each step
      *
      * The baseline (3 warmup steps with identical inputs) should show 0 MB/step growth.
-     * Whichever variant shows ~256MB/step growth is the culprit.
      */
     @Test
-    @DisplayName("Exact decode loop memory isolation: which operation leaks 256MB/step?")
+    @DisplayName("Exact decode loop memory isolation: which operation grows memory per step?")
     public void testExactDecodeLoopMemoryIsolation() throws Exception {
         ensureModelsLoaded();
-        var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         int device = Nd4j.getAffinityManager().getDeviceForCurrentThread().intValue();
-
-        // SmolDocling model constants
-        final int numLayers = 30;
-        final int headDim = 64;
-        final long hiddenSizeVal = 576;
-        final DataType kvType = DataType.HALF;
         final int maxKvLen = 20;
-
-        // Detect actual KV head count from model graph (GQA: KV heads != query heads)
-        final int numHeads;
-        {
-            String firstKvInput = "past_key_values.0.key";
-            INDArray probe = ModelIOConfig.createEmptyKvCache(decoder, firstKvInput, 1, hiddenSizeVal);
-            numHeads = (int) probe.size(1);
-            probe.close();
-        }
+        final long cachePos = 1;
 
         // ── Setup: reset decoder, enable DSP, compile ──
         BenchmarkConfigApplier.resetModelState(decoder);
@@ -2200,47 +2072,19 @@ public class TestDspValidation {
         decoder.setDspNativeAutoCompileEnabled(true);
         List<String> outputs = new ArrayList<>(decoder.outputs());
         decoder.compileNativeDynamicShapePlan(outputs, GraphExecutionMode.SLOT_BY_SLOT, true);
-
-        List<String> decoderInputNames = decoder.inputs();
+        // The in-graph caches are written in place, so logits is the only output
+        String[] fullOutputArray = {ModelIOConfig.findLogitsOutputName(decoder)};
         ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-        String logitsOutputName = ModelIOConfig.findLogitsOutputName(decoder);
-        ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheOutputNames(decoder);
+        String causalName = ioConfig.getCausalMaskName();
+        DataType maskType = decoder.getVariable(causalName).dataType();
 
-        // Collect all output names
-        List<String> allOutputNames = new ArrayList<>();
-        allOutputNames.add(logitsOutputName);
-        allOutputNames.addAll(kvNames.keyNames);
-        allOutputNames.addAll(kvNames.valueNames);
-        String[] fullOutputArray = allOutputNames.toArray(new String[0]);
-
-        // ── Build FIXED inputs (reused across warmup and variants A/B/C) ──
-        INDArray inputIds = Nd4j.createFromArray(new long[][]{{42L}});
-        INDArray attentionMask = Nd4j.zeros(DataType.LONG, 1, maxKvLen + 1);
-        attentionMask.putScalar(0, 0, 1); // one attended position
-        attentionMask.putScalar(0, maxKvLen, 1); // current token
-        INDArray positionIds = Nd4j.createFromArray(new long[][]{{0L}});
-        INDArray inputsEmbeds = Nd4j.zeros(DataType.HALF, 1, 1, hiddenSizeVal);
-
-        // Build static KV buffers (fixed shape, reused)
-        Map<String, INDArray> staticKvBuffers = new LinkedHashMap<>();
-        for (int i = 0; i < numLayers; i++) {
-            staticKvBuffers.put("past_key_values." + i + ".key",
-                    Nd4j.zeros(kvType, 1, numHeads, maxKvLen, headDim));
-            staticKvBuffers.put("past_key_values." + i + ".value",
-                    Nd4j.zeros(kvType, 1, numHeads, maxKvLen, headDim));
-        }
-
-        // Build the fixed input map
-        Map<String, INDArray> fixedInputMap = new LinkedHashMap<>();
-        if (decoderInputNames.contains("input_ids")) fixedInputMap.put("input_ids", inputIds);
-        for (String name : decoderInputNames) {
-            if (name.contains("attention_mask")) { fixedInputMap.put(name, attentionMask); break; }
-        }
-        if (decoderInputNames.contains("position_ids")) fixedInputMap.put("position_ids", positionIds);
-        if (decoderInputNames.contains("inputs_embeds")) fixedInputMap.put("inputs_embeds", inputsEmbeds);
-        for (Map.Entry<String, INDArray> kv : staticKvBuffers.entrySet()) {
-            if (decoderInputNames.contains(kv.getKey())) fixedInputMap.put(kv.getKey(), kv.getValue());
-        }
+        // ── Build FIXED inputs (reused across warmup and variants A/B) ──
+        INDArray stepEmbeds = Nd4j.zeros(DataType.FLOAT, 1, 1, hiddenSize);
+        Map<String, INDArray> staticKvBuffers = inGraphKvBuffers(maxKvLen);
+        Map<String, INDArray> fixedInputMap = buildInGraphKvInputs(stepEmbeds, cachePos, staticKvBuffers);
+        Set<INDArray> reused = Collections.newSetFromMap(new IdentityHashMap<>());
+        reused.add(stepEmbeds);
+        reused.addAll(staticKvBuffers.values());
 
         log.info("=== EXACT DECODE LOOP MEMORY ISOLATION ===");
         log.info("Device={}, maxKvLen={}, inputs={}, outputs={}",
@@ -2281,90 +2125,55 @@ public class TestDspValidation {
             }
         });
 
-        // ── VARIANT C: associateArrayWithVariable for position_ids ──
-        runVariant("C_ASSOCIATE_POSITION_IDS", nativeOps, device, 5, step -> {
-            INDArray newPos = Nd4j.createFromArray(new long[][]{{(long) step}});
-            decoder.associateArrayWithVariable(newPos, "position_ids");
-            Map<String, INDArray> out = decoder.output(fixedInputMap, fullOutputArray);
-            for (INDArray arr : out.values()) {
-                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-            }
-            newPos.close();
-        });
-
-        // ── VARIANT D: New attention_mask + KV caches each step (growing by 1 element) ──
-        // The model derives the causal mask from KV cache seqLen, so attention mask and
-        // KV cache dimensions must grow together to avoid shape mismatches in the add op.
-        runVariant("D_GROWING_ATTN_MASK", nativeOps, device, 5, step -> {
-            int kvSeqLen = maxKvLen + step;     // KV cache grows each step
-            int maskLen = kvSeqLen + 1;          // mask = kvSeqLen + 1 (current token)
-            INDArray newMask = Nd4j.zeros(DataType.LONG, 1, maskLen);
-            newMask.putScalar(0, 0, 1);
-            newMask.putScalar(0, maskLen - 1, 1);
+        // ── VARIANT C: new position_ids and cache_position arrays each step ──
+        runVariant("C_NEW_POSITION_ARRAYS", nativeOps, device, 5, step -> {
+            INDArray positions = Nd4j.createFromArray(new long[][]{{cachePos}});
+            INDArray cachePosition = Nd4j.createFromArray(cachePos);
             Map<String, INDArray> variantMap = new LinkedHashMap<>(fixedInputMap);
-            // Replace attention_mask
-            for (String name : decoderInputNames) {
-                if (name.contains("attention_mask")) { variantMap.put(name, newMask); break; }
-            }
-            // Replace KV caches with matching seqLen dimension
-            for (int i = 0; i < numLayers; i++) {
-                String keyName = "past_key_values." + i + ".key";
-                String valName = "past_key_values." + i + ".value";
-                if (decoderInputNames.contains(keyName))
-                    variantMap.put(keyName, Nd4j.zeros(kvType, 1, numHeads, kvSeqLen, headDim));
-                if (decoderInputNames.contains(valName))
-                    variantMap.put(valName, Nd4j.zeros(kvType, 1, numHeads, kvSeqLen, headDim));
-            }
+            variantMap.put(ioConfig.getPositionIdsName(), positions);
+            variantMap.put(ioConfig.getCachePositionName(), cachePosition);
             Map<String, INDArray> out = decoder.output(variantMap, fullOutputArray);
             for (INDArray arr : out.values()) {
                 if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
             }
-            // Close the per-step KV arrays
-            for (int i = 0; i < numLayers; i++) {
-                String keyName = "past_key_values." + i + ".key";
-                String valName = "past_key_values." + i + ".value";
-                INDArray k = variantMap.get(keyName);
-                if (k != null && k != staticKvBuffers.get(keyName) && k.closeable() && !k.wasClosed()) k.close();
-                INDArray v = variantMap.get(valName);
-                if (v != null && v != staticKvBuffers.get(valName) && v.closeable() && !v.wasClosed()) v.close();
-            }
-            newMask.close();
+            positions.close();
+            cachePosition.close();
         });
 
-        // ── VARIANT E: Full DecoderInputBuilder.buildDecoderInputMap ──
+        // ── VARIANT D: new causal_mask and caches each step, same shapes ──
+        runVariant("D_NEW_MASK_AND_CACHES", nativeOps, device, 5, step -> {
+            INDArray mask = decodeCausalMask(cachePos, maxKvLen, maskType);
+            Map<String, INDArray> caches = inGraphKvBuffers(maxKvLen);
+            Map<String, INDArray> variantMap = new LinkedHashMap<>(fixedInputMap);
+            variantMap.put(causalName, mask);
+            variantMap.putAll(caches);
+            Map<String, INDArray> out = decoder.output(variantMap, fullOutputArray);
+            for (INDArray arr : out.values()) {
+                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+            }
+            mask.close();
+            for (INDArray cache : caches.values()) cache.close();
+        });
+
+        // ── VARIANT E: Full DecoderInputBuilder.buildDecoderInputMap each step ──
         runVariant("E_FULL_BUILD_INPUT_MAP", nativeOps, device, 5, step -> {
-            long cachePos = step + 1;
-            Map<String, INDArray> builtMap = DecoderInputBuilder.buildDecoderInputMap(
-                    ioConfig, decoderInputNames, decoder,
-                    inputsEmbeds, inputIds,
-                    /*pastSeqLen=*/ cachePos, /*currentSeqLen=*/ 1L,
-                    staticKvBuffers, maxKvLen, cachePos,
-                    /*usingStaticKv=*/ true, hiddenSizeVal,
-                    /*reusableInputs=*/ null,
-                    /*dspActive=*/ true);
+            Map<String, INDArray> builtMap = buildInGraphKvInputs(stepEmbeds, cachePos + step, staticKvBuffers);
             Map<String, INDArray> out = decoder.output(builtMap, fullOutputArray);
             for (INDArray arr : out.values()) {
                 if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
             }
-            // Close any newly allocated arrays in builtMap that aren't our fixed buffers
-            for (Map.Entry<String, INDArray> e : builtMap.entrySet()) {
-                INDArray arr = e.getValue();
-                if (arr != null && arr != inputsEmbeds && arr != inputIds
-                        && !staticKvBuffers.containsValue(arr)
-                        && arr.closeable() && !arr.wasClosed()) {
+            // Close the arrays this step built; the embeddings and caches are reused
+            for (INDArray arr : builtMap.values()) {
+                if (arr != null && !reused.contains(arr) && arr.closeable() && !arr.wasClosed()) {
                     arr.close();
                 }
             }
         });
 
         // ── Cleanup ──
-        for (INDArray arr : staticKvBuffers.values()) {
+        for (INDArray arr : fixedInputMap.values()) {
             if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
         }
-        inputIds.close();
-        attentionMask.close();
-        positionIds.close();
-        inputsEmbeds.close();
 
         log.info("=== DONE: Check per-variant deltas above to identify the leak source ===");
     }
@@ -2404,37 +2213,31 @@ public class TestDspValidation {
         BenchmarkConfig paddedConfig = BenchmarkConfig.create("PADDED_MEMORY_TEST")
                 .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
                 .maxTokens(decodeSteps);
-        BenchmarkConfigApplier.apply(paddedConfig);
-        decoder.setDspAutoCompileEnabled(true);
-        decoder.setDspNativeAutoCompileEnabled(true);
-        decoder.compileNativeDynamicShapePlan(
-                new ArrayList<>(decoder.outputs()), GraphExecutionMode.SLOT_BY_SLOT, true);
 
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-        GenerationPipeline paddedPipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
-                .decoder(decoder).embedTokens(embedTokens).tokenizer(tokenizer)
-                .ioConfig(ioConfig).samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(decodeSteps).hiddenSize(hiddenSize)
-                .build());
+        // Each pipeline applies the config and compiles the models it runs. A pipeline
+        // stays open through its measurement and is closed before the next one starts.
+        long paddedBeforeFree;
+        long paddedDecode1Consumed;
+        try (GenerationPipeline paddedPipeline = GenerationPipeline.create(pipelineConfig(paddedConfig, decodeSteps))) {
+            // Establish clean baseline
+            Nd4j.getExecutioner().commit();
+            nativeOps.trimMemoryPool(device);
+            paddedBeforeFree = nativeOps.getDeviceFreeMemoryDefault();
+            log.info("[CHANGING_INPUTS] phase=PADDED_BASELINE gpuFree={}MB",
+                    mb(paddedBeforeFree));
 
-        // Establish clean baseline
-        Nd4j.getExecutioner().commit();
-        nativeOps.trimMemoryPool(device);
-        long paddedBeforeFree = nativeOps.getDeviceFreeMemoryDefault();
-        log.info("[CHANGING_INPUTS] phase=PADDED_BASELINE gpuFree={}MB",
-                mb(paddedBeforeFree));
-
-        // Run first decode (padded mode)
-        GenerationResult paddedResult1 = paddedPipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-        Nd4j.getExecutioner().commit();
-        nativeOps.trimMemoryPool(device);
-        long paddedAfterDecode1Free = nativeOps.getDeviceFreeMemoryDefault();
-        long paddedDecode1Consumed = paddedBeforeFree - paddedAfterDecode1Free;
-        log.info("[CHANGING_INPUTS] phase=PADDED_AFTER_DECODE1 gpuFree={}MB delta={}MB tokens={}",
-                mb(paddedAfterDecode1Free), mb(paddedDecode1Consumed),
-                paddedResult1.getTokenIds().length);
-        log.info("[CHANGING_INPUTS] phase=PADDED_DECODE1_TEXT text='{}'",
-                paddedResult1.getText().substring(0, Math.min(80, paddedResult1.getText().length())));
+            // Run first decode (padded mode)
+            GenerationResult paddedResult1 = paddedPipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+            Nd4j.getExecutioner().commit();
+            nativeOps.trimMemoryPool(device);
+            long paddedAfterDecode1Free = nativeOps.getDeviceFreeMemoryDefault();
+            paddedDecode1Consumed = paddedBeforeFree - paddedAfterDecode1Free;
+            log.info("[CHANGING_INPUTS] phase=PADDED_AFTER_DECODE1 gpuFree={}MB delta={}MB tokens={}",
+                    mb(paddedAfterDecode1Free), mb(paddedDecode1Consumed),
+                    paddedResult1.getTokenIds().length);
+            log.info("[CHANGING_INPUTS] phase=PADDED_DECODE1_TEXT text='{}'",
+                    paddedResult1.getText().substring(0, Math.min(80, paddedResult1.getText().length())));
+        }
 
         // Run SECOND decode with different prompt (same model, padded mode)
         // Use a different prompt to see if per-decode-call leak exists
@@ -2454,29 +2257,22 @@ public class TestDspValidation {
 
         // Reset decoder for second run
         BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.apply(paddedConfig);
-        decoder.setDspAutoCompileEnabled(true);
-        decoder.setDspNativeAutoCompileEnabled(true);
-        decoder.compileNativeDynamicShapePlan(
-                new ArrayList<>(decoder.outputs()), GraphExecutionMode.SLOT_BY_SLOT, true);
 
-        GenerationPipeline paddedPipeline2 = GenerationPipeline.create(GenerationPipelineConfig.builder()
-                .decoder(decoder).embedTokens(embedTokens).tokenizer(tokenizer)
-                .ioConfig(ioConfig).samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(decodeSteps).hiddenSize(hiddenSize)
-                .build());
-
-        long paddedBeforeDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
-        GenerationResult paddedResult2 = paddedPipeline2.generate(altPrefillEmbeds, altTokenIds);
-        Nd4j.getExecutioner().commit();
-        nativeOps.trimMemoryPool(device);
-        long paddedAfterDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
-        long paddedDecode2Consumed = paddedBeforeDecode2Free - paddedAfterDecode2Free;
-        log.info("[CHANGING_INPUTS] phase=PADDED_AFTER_DECODE2 gpuFree={}MB delta={}MB tokens={}",
-                mb(paddedAfterDecode2Free), mb(paddedDecode2Consumed),
-                paddedResult2.getTokenIds().length);
-        log.info("[CHANGING_INPUTS] phase=PADDED_DECODE2_TEXT text='{}'",
-                paddedResult2.getText().substring(0, Math.min(80, paddedResult2.getText().length())));
+        long paddedAfterDecode2Free;
+        long paddedDecode2Consumed;
+        try (GenerationPipeline paddedPipeline2 = GenerationPipeline.create(pipelineConfig(paddedConfig, decodeSteps))) {
+            long paddedBeforeDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
+            GenerationResult paddedResult2 = paddedPipeline2.generate(altPrefillEmbeds, altTokenIds);
+            Nd4j.getExecutioner().commit();
+            nativeOps.trimMemoryPool(device);
+            paddedAfterDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
+            paddedDecode2Consumed = paddedBeforeDecode2Free - paddedAfterDecode2Free;
+            log.info("[CHANGING_INPUTS] phase=PADDED_AFTER_DECODE2 gpuFree={}MB delta={}MB tokens={}",
+                    mb(paddedAfterDecode2Free), mb(paddedDecode2Consumed),
+                    paddedResult2.getTokenIds().length);
+            log.info("[CHANGING_INPUTS] phase=PADDED_DECODE2_TEXT text='{}'",
+                    paddedResult2.getText().substring(0, Math.min(80, paddedResult2.getText().length())));
+        }
 
         long paddedTotalConsumed = paddedBeforeFree - paddedAfterDecode2Free;
         log.info("[CHANGING_INPUTS] phase=PADDED_SUMMARY totalConsumed={}MB decode1={}MB decode2={}MB",
@@ -2493,58 +2289,45 @@ public class TestDspValidation {
             BenchmarkConfig nonPaddedConfig = BenchmarkConfig.create("NON_PADDED_MEMORY_TEST")
                     .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
                     .maxTokens(decodeSteps);
-            BenchmarkConfigApplier.apply(nonPaddedConfig);
-            decoder.setDspAutoCompileEnabled(true);
-            decoder.setDspNativeAutoCompileEnabled(true);
-            decoder.compileNativeDynamicShapePlan(
-                    new ArrayList<>(decoder.outputs()), GraphExecutionMode.SLOT_BY_SLOT, true);
 
-            ModelIOConfig nonPaddedIoConfig = ModelIOConfig.discover(decoder);
-            GenerationPipeline nonPaddedPipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
-                    .decoder(decoder).embedTokens(embedTokens).tokenizer(tokenizer)
-                    .ioConfig(nonPaddedIoConfig).samplingConfig(SamplingConfig.greedy())
-                    .maxNewTokens(decodeSteps).hiddenSize(hiddenSize)
-                    .build());
+            long nonPaddedBeforeFree;
+            long nonPaddedDecode1Consumed;
+            try (GenerationPipeline nonPaddedPipeline =
+                         GenerationPipeline.create(pipelineConfig(nonPaddedConfig, decodeSteps))) {
+                Nd4j.getExecutioner().commit();
+                nativeOps.trimMemoryPool(device);
+                nonPaddedBeforeFree = nativeOps.getDeviceFreeMemoryDefault();
+                log.info("[CHANGING_INPUTS] phase=NON_PADDED_BASELINE gpuFree={}MB",
+                        mb(nonPaddedBeforeFree));
 
-            Nd4j.getExecutioner().commit();
-            nativeOps.trimMemoryPool(device);
-            long nonPaddedBeforeFree = nativeOps.getDeviceFreeMemoryDefault();
-            log.info("[CHANGING_INPUTS] phase=NON_PADDED_BASELINE gpuFree={}MB",
-                    mb(nonPaddedBeforeFree));
-
-            // First decode — non-padded (shapes change each step)
-            GenerationResult nonPaddedResult1 = nonPaddedPipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-            Nd4j.getExecutioner().commit();
-            nativeOps.trimMemoryPool(device);
-            long nonPaddedAfterDecode1Free = nativeOps.getDeviceFreeMemoryDefault();
-            long nonPaddedDecode1Consumed = nonPaddedBeforeFree - nonPaddedAfterDecode1Free;
-            log.info("[CHANGING_INPUTS] phase=NON_PADDED_AFTER_DECODE1 gpuFree={}MB delta={}MB tokens={}",
-                    mb(nonPaddedAfterDecode1Free), mb(nonPaddedDecode1Consumed),
-                    nonPaddedResult1.getTokenIds().length);
+                // First decode — non-padded (shapes change each step)
+                GenerationResult nonPaddedResult1 = nonPaddedPipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+                Nd4j.getExecutioner().commit();
+                nativeOps.trimMemoryPool(device);
+                long nonPaddedAfterDecode1Free = nativeOps.getDeviceFreeMemoryDefault();
+                nonPaddedDecode1Consumed = nonPaddedBeforeFree - nonPaddedAfterDecode1Free;
+                log.info("[CHANGING_INPUTS] phase=NON_PADDED_AFTER_DECODE1 gpuFree={}MB delta={}MB tokens={}",
+                        mb(nonPaddedAfterDecode1Free), mb(nonPaddedDecode1Consumed),
+                        nonPaddedResult1.getTokenIds().length);
+            }
 
             // Second decode — non-padded with different prompt
             BenchmarkConfigApplier.resetModelState(decoder);
-            BenchmarkConfigApplier.apply(nonPaddedConfig);
-            decoder.setDspAutoCompileEnabled(true);
-            decoder.setDspNativeAutoCompileEnabled(true);
-            decoder.compileNativeDynamicShapePlan(
-                    new ArrayList<>(decoder.outputs()), GraphExecutionMode.SLOT_BY_SLOT, true);
 
-            GenerationPipeline nonPaddedPipeline2 = GenerationPipeline.create(GenerationPipelineConfig.builder()
-                    .decoder(decoder).embedTokens(embedTokens).tokenizer(tokenizer)
-                    .ioConfig(nonPaddedIoConfig).samplingConfig(SamplingConfig.greedy())
-                    .maxNewTokens(decodeSteps).hiddenSize(hiddenSize)
-                    .build());
-
-            long nonPaddedBeforeDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
-            GenerationResult nonPaddedResult2 = nonPaddedPipeline2.generate(altPrefillEmbeds.dup(), altTokenIds);
-            Nd4j.getExecutioner().commit();
-            nativeOps.trimMemoryPool(device);
-            long nonPaddedAfterDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
-            long nonPaddedDecode2Consumed = nonPaddedBeforeDecode2Free - nonPaddedAfterDecode2Free;
-            log.info("[CHANGING_INPUTS] phase=NON_PADDED_AFTER_DECODE2 gpuFree={}MB delta={}MB tokens={}",
-                    mb(nonPaddedAfterDecode2Free), mb(nonPaddedDecode2Consumed),
-                    nonPaddedResult2.getTokenIds().length);
+            long nonPaddedAfterDecode2Free;
+            long nonPaddedDecode2Consumed;
+            try (GenerationPipeline nonPaddedPipeline2 =
+                         GenerationPipeline.create(pipelineConfig(nonPaddedConfig, decodeSteps))) {
+                long nonPaddedBeforeDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
+                GenerationResult nonPaddedResult2 = nonPaddedPipeline2.generate(altPrefillEmbeds.dup(), altTokenIds);
+                Nd4j.getExecutioner().commit();
+                nativeOps.trimMemoryPool(device);
+                nonPaddedAfterDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
+                nonPaddedDecode2Consumed = nonPaddedBeforeDecode2Free - nonPaddedAfterDecode2Free;
+                log.info("[CHANGING_INPUTS] phase=NON_PADDED_AFTER_DECODE2 gpuFree={}MB delta={}MB tokens={}",
+                        mb(nonPaddedAfterDecode2Free), mb(nonPaddedDecode2Consumed),
+                        nonPaddedResult2.getTokenIds().length);
+            }
 
             long nonPaddedTotalConsumed = nonPaddedBeforeFree - nonPaddedAfterDecode2Free;
             log.info("[CHANGING_INPUTS] phase=NON_PADDED_SUMMARY totalConsumed={}MB decode1={}MB decode2={}MB",
@@ -2592,7 +2375,7 @@ public class TestDspValidation {
         void run(int step) throws Exception;
     }
 
-    private void runVariant(String name, org.nd4j.nativeblas.NativeOps nativeOps,
+    private void runVariant(String name, NativeOps nativeOps,
                             int device, int steps, VariantStep action) throws Exception {
         log.info("--- VARIANT {} ({} steps) ---", name, steps);
         Nd4j.getExecutioner().commit();
@@ -2624,7 +2407,7 @@ public class TestDspValidation {
      * Run:
      *   cd platform-tests && mvn test \
      *     -Dtest=TestDspValidation#testOptimalFlagBisection \
-     *     -Dbackend.artifactId=nd4j-cuda-12.9
+     *     -Dbackend.artifactId=nd4j-cuda-13.1
      */
     static Stream<BenchmarkConfig> bisectionConfigs() {
         int tokens = getTokens(10);
@@ -2773,45 +2556,46 @@ public class TestDspValidation {
         int maxTokens = getTokens(5);
         log.info("=== testD2DCopyIntegrity: maxTokens={} ===", maxTokens);
 
-        GenerationResult result = runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens);
-        int[] tokens = result.getTokenIds();
-        assertNotNull(tokens, "decode returned null");
-        assertTrue(tokens.length > 0, "decode returned 0 tokens");
+        runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens, result -> {
+            int[] tokens = result.getTokenIds();
+            assertNotNull(tokens, "decode returned null");
+            assertTrue(tokens.length > 0, "decode returned 0 tokens");
 
-        DspHandle h = decoder.dsp();
-        assertTrue(h.isCompiled(), "plan should be compiled after decode");
+            DspHandle h = decoder.dsp();
+            assertTrue(h.isCompiled(), "plan should be compiled after decode");
 
-        // Capture snapshot and verify D2D status
-        DspHandle.StepSnapshot snap = h.captureStepSnapshot();
-        log.info("StepSnapshot: {}", snap);
+            // Capture snapshot and verify D2D status
+            DspHandle.StepSnapshot snap = h.captureStepSnapshot();
+            log.info("StepSnapshot: {}", snap);
 
-        // Assert all D2D copies fired
-        if (!snap.d2dStatusByExtIdx.isEmpty()) {
-            DspPlanAssertions.assertAllD2DCopiesFired(decoder, "post-decode");
-            log.info("D2D: {}/{} copies fired",
-                    snap.d2dStatusByExtIdx.values().stream()
-                            .filter(s -> s.fired).count(),
-                    snap.d2dStatusByExtIdx.size());
-        }
-
-        // Assert no address drift
-        DspPlanAssertions.assertNoStagingAddressDrift(decoder, "post-decode");
-        DspPlanAssertions.assertNoAddressDrift(decoder, "post-decode");
-
-        // Log D2D status for each variable ext input
-        for (Map.Entry<Integer, DspHandle.D2DStatus> e : snap.d2dStatusByExtIdx.entrySet()) {
-            DspHandle.D2DStatus s = e.getValue();
-            log.info("  {}", s);
-        }
-
-        // Log pointer drift status
-        Map<Integer, Boolean> ptrMatch = h.allSegmentsPointersMatch();
-        for (Map.Entry<Integer, Boolean> e : ptrMatch.entrySet()) {
-            if (!e.getValue()) {
-                log.error("POINTER DRIFT seg[{}]: {}", e.getKey(),
-                        h.segmentTrackedPointersJson(e.getKey()));
+            // Assert all D2D copies fired
+            if (!snap.d2dStatusByExtIdx.isEmpty()) {
+                DspPlanAssertions.assertAllD2DCopiesFired(decoder, "post-decode");
+                log.info("D2D: {}/{} copies fired",
+                        snap.d2dStatusByExtIdx.values().stream()
+                                .filter(s -> s.fired).count(),
+                        snap.d2dStatusByExtIdx.size());
             }
-        }
+
+            // Assert no address drift
+            DspPlanAssertions.assertNoStagingAddressDrift(decoder, "post-decode");
+            DspPlanAssertions.assertNoAddressDrift(decoder, "post-decode");
+
+            // Log D2D status for each variable ext input
+            for (Map.Entry<Integer, DspHandle.D2DStatus> e : snap.d2dStatusByExtIdx.entrySet()) {
+                DspHandle.D2DStatus s = e.getValue();
+                log.info("  {}", s);
+            }
+
+            // Log pointer drift status
+            Map<Integer, Boolean> ptrMatch = h.allSegmentsPointersMatch();
+            for (Map.Entry<Integer, Boolean> e : ptrMatch.entrySet()) {
+                if (!e.getValue()) {
+                    log.error("POINTER DRIFT seg[{}]: {}", e.getKey(),
+                            h.segmentTrackedPointersJson(e.getKey()));
+                }
+            }
+        });
 
         log.info("=== testD2DCopyIntegrity PASSED ===");
     }
@@ -2831,40 +2615,41 @@ public class TestDspValidation {
         int maxTokens = getTokens(5);
         log.info("=== testCaptureCompleteness: maxTokens={} ===", maxTokens);
 
-        GenerationResult result = runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens);
-        assertNotNull(result.getTokenIds(), "decode returned null");
+        runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens, result -> {
+            assertNotNull(result.getTokenIds(), "decode returned null");
 
-        DspHandle h = decoder.dsp();
-        assertTrue(h.isCompiled(), "plan should be compiled after decode");
+            DspHandle h = decoder.dsp();
+            assertTrue(h.isCompiled(), "plan should be compiled after decode");
 
-        // Log capture stats
-        DspHandle.CaptureStats cs = h.parsedCaptureStats();
-        log.info("Capture stats: {}", cs);
+            // Log capture stats
+            DspHandle.CaptureStats cs = h.parsedCaptureStats();
+            log.info("Capture stats: {}", cs);
 
-        // Assert no permanent failures
-        DspPlanAssertions.assertZeroPermCaptureFailures(decoder, "post-decode");
+            // Assert no permanent failures
+            DspPlanAssertions.assertZeroPermCaptureFailures(decoder, "post-decode");
 
-        // Check host-only ops
-        int hostOps = h.numHostOnlyOps();
-        log.info("Host-only ops: {}", hostOps);
-        if (hostOps > 0) {
-            log.warn("Ops that escaped capture: {}", h.hostOnlyOpNames());
-        }
+            // Check host-only ops
+            int hostOps = h.numHostOnlyOps();
+            log.info("Host-only ops: {}", hostOps);
+            if (hostOps > 0) {
+                log.warn("Ops that escaped capture: {}", h.hostOnlyOpNames());
+            }
 
-        // Log segment details
-        int numSegs = h.numSegments();
-        log.info("Segments: {}", numSegs);
-        for (int s = 0; s < numSegs; s++) {
-            log.info("  seg[{}]: backend={} phase={} replayCount={} capturable={} failed={}",
-                    s, h.segmentBackendName(s), h.segmentExecutionPhase(s),
-                    h.segmentReplayCount(s), h.isSegmentCapturable(s),
-                    h.isSegmentCaptureFailed(s));
-        }
+            // Log segment details
+            int numSegs = h.numSegments();
+            log.info("Segments: {}", numSegs);
+            for (int s = 0; s < numSegs; s++) {
+                log.info("  seg[{}]: backend={} phase={} replayCount={} capturable={} failed={}",
+                        s, h.segmentBackendName(s), h.segmentExecutionPhase(s),
+                        h.segmentReplayCount(s), h.isSegmentCapturable(s),
+                        h.isSegmentCaptureFailed(s));
+            }
 
-        // Log plan lifecycle state
-        log.info("Plan: phase={} ptrsStable={} frozenExec={} sealed={} replays={}",
-                h.planPhase(), h.pointersStable(), h.frozenExecCount(),
-                h.isCompilationSealed(), h.totalGraphReplays());
+            // Log plan lifecycle state
+            log.info("Plan: phase={} ptrsStable={} frozenExec={} sealed={} replays={}",
+                    h.planPhase(), h.pointersStable(), h.frozenExecCount(),
+                    h.isCompilationSealed(), h.totalGraphReplays());
+        });
 
         log.info("=== testCaptureCompleteness PASSED ===");
     }
@@ -2883,44 +2668,45 @@ public class TestDspValidation {
         int maxTokens = getTokens(5);
         log.info("=== testOutputStalenessDetection: maxTokens={} ===", maxTokens);
 
-        GenerationResult result = runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens);
-        int[] tokens = result.getTokenIds();
-        assertNotNull(tokens, "decode returned null");
-        assertTrue(tokens.length > 0, "decode returned 0 tokens");
+        runDecode(BenchmarkConfig.optimal().maxTokens(maxTokens), maxTokens, result -> {
+            int[] tokens = result.getTokenIds();
+            assertNotNull(tokens, "decode returned null");
+            assertTrue(tokens.length > 0, "decode returned 0 tokens");
 
-        DspHandle h = decoder.dsp();
-        assertTrue(h.isCompiled(), "plan should be compiled after decode");
+            DspHandle h = decoder.dsp();
+            assertTrue(h.isCompiled(), "plan should be compiled after decode");
 
-        // Validate outputs
-        int[] flags = h.validateOutputs();
-        boolean anyIssues = false;
-        for (int i = 0; i < flags.length; i++) {
-            if (flags[i] != 0) {
-                log.error("Output[{}] has issues: flags=0x{}", i, Integer.toHexString(flags[i]));
-                anyIssues = true;
-            }
-        }
-        assertFalse(anyIssues, "outputs should be valid (no NaN/Inf/null/all-zero)");
-
-        // Log full state snapshot for diagnosis
-        String fullState = DspPlanAssertions.snapshotFullState(decoder);
-        log.info("Full plan state:\n{}", fullState);
-
-        // Check for stuck tokens (stale output symptom)
-        if (tokens.length >= 4) {
-            boolean allSame = true;
-            for (int i = 2; i < tokens.length; i++) {
-                if (tokens[i] != tokens[1]) {
-                    allSame = false;
-                    break;
+            // Validate outputs
+            int[] flags = h.validateOutputs();
+            boolean anyIssues = false;
+            for (int i = 0; i < flags.length; i++) {
+                if (flags[i] != 0) {
+                    log.error("Output[{}] has issues: flags=0x{}", i, Integer.toHexString(flags[i]));
+                    anyIssues = true;
                 }
             }
-            assertFalse(allSame,
-                    "all tokens after step 1 are identical (" + tokens[1] + ") — " +
-                    "stale output suspected. Full state:\n" + fullState);
-        }
+            assertFalse(anyIssues, "outputs should be valid (no NaN/Inf/null/all-zero)");
 
-        log.info("Generated {} tokens: {}", tokens.length, Arrays.toString(tokens));
+            // Log full state snapshot for diagnosis
+            String fullState = DspPlanAssertions.snapshotFullState(decoder);
+            log.info("Full plan state:\n{}", fullState);
+
+            // Check for stuck tokens (stale output symptom)
+            if (tokens.length >= 4) {
+                boolean allSame = true;
+                for (int i = 2; i < tokens.length; i++) {
+                    if (tokens[i] != tokens[1]) {
+                        allSame = false;
+                        break;
+                    }
+                }
+                assertFalse(allSame,
+                        "all tokens after step 1 are identical (" + tokens[1] + ") — " +
+                        "stale output suspected. Full state:\n" + fullState);
+            }
+
+            log.info("Generated {} tokens: {}", tokens.length, Arrays.toString(tokens));
+        });
         log.info("=== testOutputStalenessDetection PASSED ===");
     }
 }
