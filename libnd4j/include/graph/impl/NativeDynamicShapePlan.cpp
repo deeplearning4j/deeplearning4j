@@ -138,16 +138,20 @@ void trackFrozenPin(DataBuffer* db, const void* pinOwner) {
   g_frozenPinCounts[db][pinOwner]++;
 }
 
-// Returns true when this plan's pin on the buffer is still registered, so the
-// buffer object is alive — only then may the caller touch it. Dead or
+// Releases this plan's pin when it is still registered, which proves the buffer
+// object alive, and drops its frozen ref while the registry lock is held: a
+// buffer destroyed concurrently (a collected graph's arrays are freed on other
+// deallocator threads) deregisters under the same lock before it is freed, so
+// it either waits for this release or is already gone from the registry. Dead or
 // never-tracked pointers return false, including an address reused by a buffer
 // that only another plan pinned.
-bool untrackFrozenPin(DataBuffer* db, const void* pinOwner) {
+bool releaseFrozenPin(DataBuffer* db, const void* pinOwner) {
   std::lock_guard<std::mutex> lk(g_frozenPinMtx);
   auto it = g_frozenPinCounts.find(db);
   if (it == g_frozenPinCounts.end()) return false;
   auto owned = it->second.find(pinOwner);
   if (owned == it->second.end()) return false;
+  db->removeFrozenRef();
   if (--owned->second <= 0) it->second.erase(owned);
   if (it->second.empty()) g_frozenPinCounts.erase(it);
   return true;
@@ -200,10 +204,9 @@ static void releasePlanFrozenRefsForTeardown(
   int protectedDead = 0;
   for (auto* db : frozenProtectedRefBuffers) {
     if (db != nullptr) {
-      if (untrackFrozenPin(db, pinOwner)) {
-        db->removeFrozenRef();
+      if (releaseFrozenPin(db, pinOwner)) {
         protectedRemoved++;
-        // The registry still held the pin, so the buffer is alive.
+        // The registry still held the pin, so the buffer was alive at its release.
         if (pinProvenProtectedBuffers != nullptr) pinProvenProtectedBuffers->insert(db);
       } else {
         protectedDead++;  // destroyed externally while pinned — must not touch
@@ -221,8 +224,7 @@ static void releasePlanFrozenRefsForTeardown(
   int outputDead = 0;
   for (auto* db : frozenOutputRefBuffers) {
     if (db != nullptr) {
-      if (untrackFrozenPin(db, pinOwner)) {
-        db->removeFrozenRef();
+      if (releaseFrozenPin(db, pinOwner)) {
         outputRemoved++;
       } else {
         outputDead++;
@@ -3169,9 +3171,7 @@ Status NativeDynamicShapePlan::execute(
           if (it != frozenProtectedRefBuffers_.end()) {
             // Liveness-gated: a replaced external may already have been
             // destroyed by Java (weight close between replays).
-            if (untrackFrozenPin(db, this)) {
-              db->removeFrozenRef();
-            }
+            releaseFrozenPin(db, this);
             frozenProtectedRefBuffers_.erase(it);
           } else {
             DSP_DIAG(MEMORY,
