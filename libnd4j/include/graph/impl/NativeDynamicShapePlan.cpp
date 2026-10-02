@@ -5544,7 +5544,13 @@ void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
   // execution binding deletes its wrappers when its lease closes). With nothing
   // recorded, ensureAndSyncStagingBuffers allocates staging from the next
   // execute's array.
-  ensurePlaceholderStagingFromRecord(extIdx);
+  // A variable that is not a placeholder is device-managed state (in-place KV,
+  // recurrent state, a decode loop's own inputs): staging passes it through and
+  // never reads a staging copy, so allocating one only duplicates the caller's
+  // buffer (a full KV cache per input).
+  if (!isDeviceManagedExternalInput(extIdx, nullptr)) {
+    ensurePlaceholderStagingFromRecord(extIdx);
+  }
 
   // Re-detect frozen constants since the variable set changed — ops that
   // were frozen because their transitive inputs appeared constant may now
