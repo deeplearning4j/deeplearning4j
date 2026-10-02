@@ -25,6 +25,7 @@ import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader.DownloadResult;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader.LLMModel;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader.QuantType;
+import org.eclipse.deeplearning4j.model.download.ModelDownloader;
 import org.eclipse.deeplearning4j.llm.eval.GenerationQualityValidator;
 import org.eclipse.deeplearning4j.llm.eval.GenerationQualityValidator.QualityReport;
 import org.eclipse.deeplearning4j.llm.eval.PerplexityEvaluator;
@@ -448,8 +449,8 @@ public class TestLLMBenchmarkSuite {
         String key = spec.displayName();
         if (loadedTokenizers.containsKey(key)) return loadedTokenizers.get(key);
 
-        // Skip gated models when no HF token is configured
-        if (spec.requiresAuth) {
+        // Skip gated models when no HF token is configured and the tokenizer is not cached yet
+        if (spec.requiresAuth && !ModelDownloader.isCached(spec.tokenizerCacheFile, LLMModelDownloader.getCacheDir())) {
             String hfToken = System.getenv("HF_TOKEN");
             if (hfToken == null || hfToken.isEmpty()) {
                 hfToken = System.getProperty("hf.token");
@@ -475,8 +476,9 @@ public class TestLLMBenchmarkSuite {
         BenchmarkResult result = new BenchmarkResult(modelName, config.getName());
 
         try {
-            SameDiff model = loadModel(spec);
+            // The tokenizer first: a gated model without a token is skipped before its import.
             Tokenizer tokenizer = loadTokenizer(spec);
+            SameDiff model = loadModel(spec);
 
             result.opCount = model.ops().length;
             result.architecture = architectures.getOrDefault(spec.displayName(), "unknown");
@@ -1030,8 +1032,9 @@ public class TestLLMBenchmarkSuite {
         for (ModelSpec spec : models) {
             BenchmarkResult result = new BenchmarkResult(spec.llmModel.getName(), "PERPLEXITY");
             try {
-                SameDiff model = loadModel(spec);
+                // The tokenizer first: a gated model without a token is skipped before its import.
                 Tokenizer tokenizer = loadTokenizer(spec);
+                SameDiff model = loadModel(spec);
 
                 model.setGraphExecutionMode(GraphExecutionMode.AUTO);
                 model.setDspAutoCompileEnabled(true);
@@ -1208,8 +1211,9 @@ public class TestLLMBenchmarkSuite {
                 BenchmarkResult result = new BenchmarkResult(spec.llmModel.getName(),
                         "PROMPT:" + truncate(promptText, 30));
                 try {
-                    SameDiff model = loadModel(spec);
+                    // The tokenizer first: a gated model without a token is skipped before its import.
                     Tokenizer tokenizer = loadTokenizer(spec);
+                    SameDiff model = loadModel(spec);
 
                     BenchmarkConfigApplier.resetModelState(model);
                     BenchmarkConfigApplier.apply(config);
