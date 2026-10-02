@@ -37,7 +37,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -575,14 +574,14 @@ public class TestDspValidation {
         // kvSeqLen positions hold random data in place of a prefill's keys and values
         int maxKvLen = 2048;
         int kvSeqLen = 18;  // 17 prefill + 1 decode
-        Map<String, INDArray> kvBuffers = inGraphKvBuffers(maxKvLen);
+        Map<String, INDArray> kvBuffers = InGraphKvDecoderInputs.kvBuffers(decoder, maxKvLen);
         for (INDArray kv : kvBuffers.values()) {
             INDArray cached = kv.get(NDArrayIndex.all(), NDArrayIndex.all(),
                     NDArrayIndex.interval(0, kvSeqLen), NDArrayIndex.all());
             cached.assign(Nd4j.randn(DataType.FLOAT, cached.shape()).muli(0.1f));
         }
         // inputs_embeds: [1, 1, hidden] — single token embedding
-        Map<String, INDArray> decodePlaceholders = buildInGraphKvInputs(
+        Map<String, INDArray> decodePlaceholders = InGraphKvDecoderInputs.stepInputs(decoder, hiddenSize,
                 Nd4j.randn(DataType.FLOAT, 1, 1, hiddenSize).muli(0.02f), kvSeqLen, kvBuffers);
 
         List<String> outputs = new ArrayList<>(decoder.outputs());
@@ -749,76 +748,10 @@ public class TestDspValidation {
      */
     private Map<String, INDArray> buildDecoderStep0Inputs() {
         long seqLen = inputsEmbeds.size(1);
-        Map<String, INDArray> placeholders = buildInGraphKvInputs(inputsEmbeds.dup(), 0,
-                inGraphKvBuffers(seqLen + getTokens(5)));
+        Map<String, INDArray> placeholders = InGraphKvDecoderInputs.stepInputs(decoder, hiddenSize,
+                inputsEmbeds.dup(), 0, InGraphKvDecoderInputs.kvBuffers(decoder, seqLen + getTokens(5)));
         log.info("buildDecoderStep0Inputs: {} total placeholders", placeholders.size());
         return placeholders;
-    }
-
-    /** Zeroed caches in the decoder's fixed [batch, heads, maxKvLen, headDim] layout. */
-    private Map<String, INDArray> inGraphKvBuffers(long maxKvLen) {
-        ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheInputNames(decoder);
-        List<String> names = new ArrayList<>(kvNames.keyNames);
-        names.addAll(kvNames.valueNames);
-        Map<String, INDArray> buffers = new LinkedHashMap<>();
-        for (String name : names) {
-            SDVariable placeholder = decoder.getVariable(name);
-            long[] declared = placeholder.getShape();
-            buffers.put(name, Nd4j.zeros(placeholder.dataType(),
-                    declared[0] > 0 ? declared[0] : 1, declared[1], maxKvLen, declared[3]));
-        }
-        return buffers;
-    }
-
-    /**
-     * Decoder inputs for one step of the decoder's in-graph KV contract, built the way
-     * generateNative builds them: DecoderInputBuilder fills the step inputs over fixed caches
-     * that the graph writes at cache_position, and causal_mask is a bias over the caches'
-     * maxKvLen positions, where the builder's own mask has the external-concat width.
-     */
-    private Map<String, INDArray> buildInGraphKvInputs(INDArray embeddings, long cachePos,
-                                                       Map<String, INDArray> kvBuffers) {
-        assertTrue(ModelIOConfig.isOnnxMhaInPlaceKvCache(decoder),
-                "these inputs follow the in-graph ONNX MHA cache contract");
-        ModelIOConfig io = ModelIOConfig.discover(decoder);
-        long seqLen = embeddings.size(1);
-        long maxKvLen = kvBuffers.values().iterator().next().size(2);
-        INDArray inputIds = Nd4j.zeros(DataType.INT64, 1, seqLen);
-        Map<String, INDArray> inputs = DecoderInputBuilder.buildDecoderInputMap(io, decoder.inputs(),
-                decoder, embeddings, inputIds, cachePos, seqLen, kvBuffers, maxKvLen, cachePos,
-                true, hiddenSize, null, true, null, null, seqLen);
-        boolean idsUsed = false;
-        for (INDArray value : inputs.values()) {
-            idsUsed |= value == inputIds;
-        }
-        if (!idsUsed) {
-            inputIds.close();
-        }
-        String causalName = io.getCausalMaskName();
-        DataType maskType = decoder.getVariable(causalName).dataType();
-        INDArray mask = cachePos == 0
-                ? DecoderInputBuilder.buildInGraphCausalMask(seqLen, maxKvLen, maskType)
-                : decodeCausalMask(cachePos, maxKvLen, maskType);
-        INDArray builderMask = inputs.put(causalName, mask);
-        if (builderMask != null) {
-            builderMask.close();
-        }
-        return inputs;
-    }
-
-    /** One decode row at cachePos: the cached positions and the new token are visible. */
-    private static INDArray decodeCausalMask(long cachePos, long maxKvLen, DataType dtype) {
-        float[] row = new float[(int) maxKvLen];
-        for (int k = (int) cachePos + 1; k < maxKvLen; k++) {
-            row[k] = ModelIOConfig.MASK_FILL;
-        }
-        INDArray mask = Nd4j.createFromArray(row).reshape(1, 1, 1, maxKvLen);
-        if (dtype == DataType.FLOAT) {
-            return mask;
-        }
-        INDArray cast = mask.castTo(dtype);
-        mask.close();
-        return cast;
     }
 
     // ─── Test: Per-op slot validation ──────────────────────────────────────
@@ -1606,12 +1539,8 @@ public class TestDspValidation {
     /** Native memory a steady-state pipeline lifecycle may keep: measurement noise. */
     private static final long LIFECYCLE_RETENTION_PER_CYCLE_BYTES = 32L * 1024 * 1024;
 
-    static Stream<Arguments> lifecycleConfigs() {
-        return Stream.of(
-                Arguments.of("SLOT_BY_SLOT", false),
-                // Non-padded: the attention inputs grow every step, so each step binds new arrays
-                Arguments.of("SLOT_BY_SLOT", true),
-                Arguments.of("OPTIMAL", false));
+    static Stream<String> lifecycleConfigs() {
+        return Stream.of("SLOT_BY_SLOT", "OPTIMAL");
     }
 
     /**
@@ -1623,9 +1552,9 @@ public class TestDspValidation {
      * collection; from the third lifecycle on (plans compiled, caches and pools warm) it must
      * stay flat. A final collection reports what the lifecycles still left to it.
      */
-    @ParameterizedTest(name = "lifecycles[{0}, nonPadded={1}]")
+    @ParameterizedTest(name = "lifecycles[{0}]")
     @MethodSource("lifecycleConfigs")
-    public void testPipelineLifecycleRetainedMemory(String configName, boolean nonPadded) throws Exception {
+    public void testPipelineLifecycleRetainedMemory(String configName) throws Exception {
         ensureModelsLoaded();
         int cycles = Math.max(4, Integer.getInteger("vlm.validation.lifecycles", 6));
         int tokens = 3;
@@ -1633,29 +1562,15 @@ public class TestDspValidation {
                 ? BenchmarkConfig.optimal().maxTokens(tokens)
                 : BenchmarkConfig.create("LIFECYCLE_" + configName)
                         .executionMode(GraphExecutionMode.SLOT_BY_SLOT).maxTokens(tokens);
-        String noPadded = System.getProperty("nd4j.dsp.noPadded");
         Runtime runtime = Runtime.getRuntime();
         long[] nativeRss = new long[cycles];
-        try {
-            if (nonPadded) {
-                System.setProperty("nd4j.dsp.noPadded", "true");
-            } else {
-                System.clearProperty("nd4j.dsp.noPadded");
-            }
-            for (int cycle = 0; cycle < cycles; cycle++) {
-                runDecode(config, tokens);
-                Nd4j.getExecutioner().commit();
-                long rss = Pointer.physicalBytes();
-                nativeRss[cycle] = rss - runtime.totalMemory();
-                log.info("[LIFECYCLE] config={} nonPadded={} cycle={} rss={}MB heapCommitted={}MB native={}MB",
-                        configName, nonPadded, cycle, mb(rss), mb(runtime.totalMemory()), mb(nativeRss[cycle]));
-            }
-        } finally {
-            if (noPadded != null) {
-                System.setProperty("nd4j.dsp.noPadded", noPadded);
-            } else {
-                System.clearProperty("nd4j.dsp.noPadded");
-            }
+        for (int cycle = 0; cycle < cycles; cycle++) {
+            runDecode(config, tokens);
+            Nd4j.getExecutioner().commit();
+            long rss = Pointer.physicalBytes();
+            nativeRss[cycle] = rss - runtime.totalMemory();
+            log.info("[LIFECYCLE] config={} cycle={} rss={}MB heapCommitted={}MB native={}MB",
+                    configName, cycle, mb(rss), mb(runtime.totalMemory()), mb(nativeRss[cycle]));
         }
 
         // What the lifecycles left to garbage collection, by deallocator and bytes still held
@@ -1674,12 +1589,12 @@ public class TestDspValidation {
         for (Map.Entry<Long, String> entry : live.entrySet()) {
             if (!references.containsKey(entry.getKey())) reclaimed.merge(entry.getValue(), 1, Integer::sum);
         }
-        log.info("[LIFECYCLE] config={} nonPadded={} left to collection over {} lifecycles "
-                + "(deallocator:bytes=count): {}", configName, nonPadded, cycles, reclaimed);
+        log.info("[LIFECYCLE] config={} left to collection over {} lifecycles "
+                + "(deallocator:bytes=count): {}", configName, cycles, reclaimed);
 
         long perCycle = (nativeRss[cycles - 1] - nativeRss[2]) / (cycles - 3);
         assertTrue(perCycle <= LIFECYCLE_RETENTION_PER_CYCLE_BYTES,
-                configName + (nonPadded ? " non-padded" : "") + ": each pipeline lifecycle kept "
+                configName + ": each pipeline lifecycle kept "
                         + mb(perCycle) + "MB of native memory after close");
     }
 
@@ -1768,7 +1683,7 @@ public class TestDspValidation {
 
         final long maxKvLen = 32;
         INDArray stepEmbeds = Nd4j.zeros(DataType.FLOAT, 1, 1, hiddenSize);
-        Map<String, INDArray> caches = inGraphKvBuffers(maxKvLen);
+        Map<String, INDArray> caches = InGraphKvDecoderInputs.kvBuffers(decoder, maxKvLen);
         Set<INDArray> reused = Collections.newSetFromMap(new IdentityHashMap<>());
         reused.add(stepEmbeds);
         reused.addAll(caches.values());
@@ -1785,7 +1700,8 @@ public class TestDspValidation {
                 long beforeFree = nativeOps.getDeviceFreeMemoryDefault();
 
                 // ── Phase 2: the step, one token at cache position step + 1 ──
-                Map<String, INDArray> inputs = buildInGraphKvInputs(stepEmbeds, step + 1, caches);
+                Map<String, INDArray> inputs = InGraphKvDecoderInputs.stepInputs(decoder, hiddenSize,
+                        stepEmbeds, step + 1, caches);
                 Map<String, INDArray> outputs = useDirect
                         ? decoder.outputDirect(inputs, outputNames)
                         : decoder.output(inputs, outputNames);
@@ -1873,8 +1789,9 @@ public class TestDspValidation {
 
         // ── Build FIXED inputs (reused across warmup and variants A/B) ──
         INDArray stepEmbeds = Nd4j.zeros(DataType.FLOAT, 1, 1, hiddenSize);
-        Map<String, INDArray> staticKvBuffers = inGraphKvBuffers(maxKvLen);
-        Map<String, INDArray> fixedInputMap = buildInGraphKvInputs(stepEmbeds, cachePos, staticKvBuffers);
+        Map<String, INDArray> staticKvBuffers = InGraphKvDecoderInputs.kvBuffers(decoder, maxKvLen);
+        Map<String, INDArray> fixedInputMap = InGraphKvDecoderInputs.stepInputs(decoder, hiddenSize,
+                stepEmbeds, cachePos, staticKvBuffers);
         Set<INDArray> reused = Collections.newSetFromMap(new IdentityHashMap<>());
         reused.add(stepEmbeds);
         reused.addAll(staticKvBuffers.values());
@@ -1944,8 +1861,8 @@ public class TestDspValidation {
 
             // ── VARIANT D: new causal_mask and caches each step, same shapes ──
             growth.put("D_NEW_MASK_AND_CACHES", runVariant("D_NEW_MASK_AND_CACHES", nativeOps, device, 5, step -> {
-                INDArray mask = decodeCausalMask(cachePos, maxKvLen, maskType);
-                Map<String, INDArray> caches = inGraphKvBuffers(maxKvLen);
+                INDArray mask = InGraphKvDecoderInputs.decodeCausalMask(cachePos, maxKvLen, maskType);
+                Map<String, INDArray> caches = InGraphKvDecoderInputs.kvBuffers(decoder, maxKvLen);
                 Map<String, INDArray> variantMap = new LinkedHashMap<>(fixedInputMap);
                 variantMap.put(causalName, mask);
                 variantMap.putAll(caches);
@@ -1959,7 +1876,8 @@ public class TestDspValidation {
 
             // ── VARIANT E: Full DecoderInputBuilder.buildDecoderInputMap each step ──
             growth.put("E_FULL_BUILD_INPUT_MAP", runVariant("E_FULL_BUILD_INPUT_MAP", nativeOps, device, 5, step -> {
-                Map<String, INDArray> builtMap = buildInGraphKvInputs(stepEmbeds, cachePos + step, staticKvBuffers);
+                Map<String, INDArray> builtMap = InGraphKvDecoderInputs.stepInputs(decoder, hiddenSize,
+                        stepEmbeds, cachePos + step, staticKvBuffers);
                 Map<String, INDArray> out = decoder.output(builtMap, fullOutputArray);
                 for (INDArray arr : out.values()) {
                     if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();

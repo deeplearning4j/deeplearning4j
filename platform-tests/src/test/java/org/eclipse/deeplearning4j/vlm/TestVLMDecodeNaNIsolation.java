@@ -19,14 +19,17 @@
 package org.eclipse.deeplearning4j.vlm;
 
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
+import org.eclipse.deeplearning4j.llm.generation.InGraphKvDecoderInputs;
+import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
 import org.eclipse.deeplearning4j.vlm.model.encoder.EmbeddingMerger;
-import org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache;
 import org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoderUtils;
+import org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache;
+import org.eclipse.deeplearning4j.vlm.model.loading.SameDiffOptimizationCache;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
-import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,31 +38,38 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspHandle;
-import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * NaN isolation test for VLM decode using DspHandle API.
+ * NaN regression for the SmolDocling decoder through the DSP plan, over a real image-and-text
+ * prompt: the prefill and the first decode step after it must produce finite logits and leave
+ * no NaN in any plan slot, and the optimized decoder must predict the same next token as the
+ * unoptimized one. On failure, {@link DspHandle#firstNaNSlot()} and
+ * {@link DspHandle#snapshotAllSlots()} name the slots that hold NaN.
  *
- * Uses sd.dsp().firstNaNSlot() and sd.dsp().snapshotAllSlots() to pinpoint
- * exactly which op first produces NaN during plan execution of the SmolDocling
- * decoder.
- *
- * Run:
- *   cd platform-tests && mvn test \
- *     -Dtest=TestVLMDecodeNaNIsolation \
- *     -Dbackend.artifactId=nd4j-cuda-12.9 -Pcuda \
- *     2>&1 | tee /tmp/vlm-nan-isolation.log
+ * <p>Run:</p>
+ * <pre>
+ *   cd platform-tests &amp;&amp; mvn test -Dtest=TestVLMDecodeNaNIsolation \
+ *     -Dbackend.artifactId=nd4j-cuda-13.1 2&gt;&amp;1 | tee /tmp/vlm-nan-isolation.log
+ * </pre>
  */
 @Slf4j
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -69,10 +79,15 @@ public class TestVLMDecodeNaNIsolation {
     private SameDiff embedTokens;
     private HuggingFaceTokenizer tokenizer;
     private INDArray inputsEmbeds;
-    private int[] promptTokenIds;
+    private long hiddenSize;
+    private String decoderPath;
+    private String optimizerEnabled;
+    private String optimizerFp16;
 
     @BeforeAll
     public void setup() throws Exception {
+        optimizerEnabled = System.getProperty("nd4j.optimizer.enabled");
+        optimizerFp16 = System.getProperty("nd4j.optimizer.fp16");
         System.setProperty("nd4j.optimizer.enabled", "true");
         System.setProperty("nd4j.optimizer.fp16", "true");
 
@@ -83,10 +98,10 @@ public class TestVLMDecodeNaNIsolation {
         var visionResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
 
         tokenizer = HuggingFaceTokenizer.fromFile(tokenizerResult.getModelFile());
+        decoderPath = decoderResult.getModelFile().getAbsolutePath();
 
         SameDiff[] models = OnnxModelCache.importAllWithCache(
-                visionResult.getModelFile().getAbsolutePath(),
-                decoderResult.getModelFile().getAbsolutePath(),
+                visionResult.getModelFile().getAbsolutePath(), decoderPath,
                 embedResult.getModelFile().getAbsolutePath());
         SameDiff visionEncoder = models[0];
         decoder = models[1];
@@ -127,34 +142,34 @@ public class TestVLMDecodeNaNIsolation {
             INDArray singleFrame = frameSlice.reshape(1, 1, 3, targetSize, targetSize).dup();
 
             Map<String, INDArray> visionInputMap = new HashMap<>();
+            INDArray pixelMask = null;
             for (String inputName : visionInputNames) {
                 if (inputName.equals("pixel_values")) {
                     visionInputMap.put(inputName, singleFrame);
                 } else if (inputName.equals("pixel_attention_mask")) {
                     ImageTiler.ContentRegion region = splitResult.contentRegions.get(frameIdx);
-                    visionInputMap.put(inputName,
-                            ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize));
+                    pixelMask = ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize);
+                    visionInputMap.put(inputName, pixelMask);
                 }
             }
 
             Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
             VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(visionOutputs);
             frameEmbeddings.add(selected.tensor.dup());
-            for (var entry : visionOutputs.entrySet()) {
-                INDArray arr = entry.getValue();
-                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-            }
+            closeAll(visionOutputs.values());
             singleFrame.close();
+            if (pixelMask != null) {
+                pixelMask.close();
+            }
         }
-
-        visionEncoder.clearPlaceholders(false);
-        visionEncoder.clearOpInputs();
-        visionEncoder.resetSession();
-        Nd4j.getExecutioner().commit();
+        imageInput.close();
+        // The vision encoder is needed only for these embeddings
+        visionEncoder.close();
 
         INDArray visionEmbeddings = frameEmbeddings.size() == 1
                 ? frameEmbeddings.get(0).dup()
                 : Nd4j.concat(1, frameEmbeddings.toArray(new INDArray[0]));
+        closeAll(frameEmbeddings);
 
         int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
         int imageSeqLenPerFrame = (int) visionEmbeddings.shape()[1] / splitResult.getTotalFrames();
@@ -163,291 +178,224 @@ public class TestVLMDecodeNaNIsolation {
         String chatPrompt = "<|im_start|>User:" + imagePrompt
                 + "Convert this page to docling.<end_of_utterance>\nAssistant:";
         int[] encoded = tokenizer.encode(chatPrompt, false).getIds();
-        promptTokenIds = encoded;
 
         INDArray tokenIds = Nd4j.createFromArray(new int[][]{encoded}).castTo(DataType.INT64);
-        Map<String, INDArray> embedInputs = new HashMap<>();
-        for (String inputName : embedTokens.inputs()) {
-            embedInputs.put(inputName, tokenIds);
-        }
-        Map<String, INDArray> embedOutputs = embedTokens.output(embedInputs,
-                embedTokens.outputs().toArray(new String[0]));
-        INDArray textEmbeddings = embedOutputs.values().iterator().next().dup();
+        INDArray textEmbeddings = embed(tokenIds);
         tokenIds.close();
 
         inputsEmbeds = EmbeddingMerger.mergeEmbeddings(textEmbeddings, visionEmbeddings, encoded, imageTokenId);
+        textEmbeddings.close();
+        visionEmbeddings.close();
+        hiddenSize = inputsEmbeds.size(2);
 
         log.info("Setup complete: decoder={} ops, promptTokens={}, embedShape={}",
-                decoder.getOps().size(), promptTokenIds.length, Arrays.toString(inputsEmbeds.shape()));
+                decoder.getOps().size(), encoded.length, inputsEmbeds.shapeInfoToString());
     }
 
     @AfterAll
     public void tearDown() {
+        if (inputsEmbeds != null) inputsEmbeds.close();
         if (decoder != null) decoder.close();
         if (embedTokens != null) embedTokens.close();
+        restoreProperty("nd4j.optimizer.enabled", optimizerEnabled);
+        restoreProperty("nd4j.optimizer.fp16", optimizerFp16);
     }
 
-    /**
-     * Test 1: Prefill via sd.output() then inspect all slots for NaN.
-     * This tests the prefill (first forward pass with full sequence).
-     */
     @Test
-    @DisplayName("Prefill: inspect all slots for NaN via DspHandle")
+    @DisplayName("Prefill: finite logits and no NaN slot")
     void testPrefillSlotNaNInspection() {
-        long seqLen = inputsEmbeds.shape()[1];
-        Map<String, INDArray> inputs = buildPrefillInputs(seqLen);
-
-        String logitsName = findLogitsOutput();
-
-        // Warmup — compiles the plan
-        Map<String, INDArray> result = decoder.output(inputs, logitsName);
-        INDArray logits = result.get(logitsName);
-        assertNotNull(logits, "Prefill should produce logits");
-
-        double logitsSum = logits.sumNumber().doubleValue();
-        log.info("Prefill logits sum = {}, hasNaN = {}", logitsSum, Double.isNaN(logitsSum));
-
-        // Now use DspHandle to inspect slots
-        DspHandle h = decoder.dsp();
-        assertTrue(h.isCompiled(), "Plan should be compiled after output()");
-
-        log.info("Plan: {} total slots, {} ext inputs", h.totalSlots(), h.numExternalInputs());
-
-        // Replay and inspect
-        h.replay(inputs);
-        int nanSlot = h.firstNaNSlot();
-        Map<Integer, String> snapshot = h.snapshotAllSlots();
-
-        log.info("=== PREFILL SLOT SNAPSHOT ({} slots) ===", snapshot.size());
-        for (Map.Entry<Integer, String> entry : snapshot.entrySet()) {
-            if (entry.getValue().contains("NaN") || entry.getValue().contains("Inf")) {
-                log.error("  {}", entry.getValue());
-            }
+        long seqLen = inputsEmbeds.size(1);
+        Map<String, INDArray> caches = InGraphKvDecoderInputs.kvBuffers(decoder, seqLen + 1);
+        Map<String, INDArray> inputs = stepInputs(decoder, inputsEmbeds, 0, caches);
+        try {
+            INDArray logits = logits(decoder, inputs);
+            assertFinite("prefill logits", logits);
+            logits.close();
+            assertNoNaNSlot("prefill", inputs);
+        } finally {
+            closeInputs(inputs, caches);
         }
-
-        if (nanSlot >= 0) {
-            log.error("FIRST NaN at slot {}", nanSlot);
-            // Log surrounding slots for context
-            for (int i = Math.max(0, nanSlot - 3); i <= Math.min(nanSlot + 3, h.totalSlots() - 1); i++) {
-                String slotInfo = snapshot.get(i);
-                if (slotInfo != null) {
-                    log.info("  slot[{}]: {}", i, slotInfo);
-                }
-            }
-
-            // Get the actual NaN array for deeper inspection
-            INDArray nanArr = h.getSlotOutput(nanSlot);
-            if (nanArr != null) {
-                log.info("  NaN slot array shape: {}, dtype: {}",
-                        Arrays.toString(nanArr.shape()), nanArr.dataType());
-            }
-        } else {
-            log.info("No NaN found in prefill — prefill is clean");
-        }
-
-        // The test reports findings rather than asserting no NaN,
-        // since we know the NaN appears during decode, not necessarily prefill
-        log.info("Prefill NaN inspection complete. firstNaNSlot = {}", nanSlot);
     }
 
-    /**
-     * Test 2: Single decode step after prefill — this is where NaN appears.
-     * Build a decode-step input (single token, KV from prefill), replay,
-     * and find the first NaN slot.
-     */
     @Test
-    @DisplayName("Decode step 1: find first NaN slot via DspHandle")
+    @DisplayName("Decode step 1 after the prefill: finite logits and no NaN slot")
     void testDecodeStep1NaNIsolation() {
-        long seqLen = inputsEmbeds.shape()[1];
-        Map<String, INDArray> prefillInputs = buildPrefillInputs(seqLen);
-        String logitsName = findLogitsOutput();
+        long seqLen = inputsEmbeds.size(1);
+        Map<String, INDArray> caches = InGraphKvDecoderInputs.kvBuffers(decoder, seqLen + 1);
+        Map<String, INDArray> prefillInputs = stepInputs(decoder, inputsEmbeds, 0, caches);
+        Map<String, INDArray> decodeInputs = null;
+        INDArray decodeEmbeds = null;
+        try {
+            // The prefill writes the caches the decode step reads
+            INDArray prefillLogits = logits(decoder, prefillInputs);
+            assertFinite("prefill logits", prefillLogits);
+            int firstToken = lastPositionArgMax(prefillLogits);
+            prefillLogits.close();
+            log.info("Prefill first token: {} ({})", firstToken, tokenizer.decode(new int[]{firstToken}));
 
-        // Get all outputs including present KV cache
-        List<String> allOutputNames = new ArrayList<>();
-        allOutputNames.add(logitsName);
-        for (String name : decoder.outputs()) {
-            if (name.startsWith("present.")) {
-                allOutputNames.add(name);
+            INDArray tokenId = Nd4j.createFromArray(new long[][]{{firstToken}});
+            decodeEmbeds = embed(tokenId);
+            tokenId.close();
+            decodeInputs = stepInputs(decoder, decodeEmbeds, seqLen, caches);
+            INDArray decodeLogits = logits(decoder, decodeInputs);
+            assertFinite("decode step 1 logits", decodeLogits);
+            decodeLogits.close();
+            assertNoNaNSlot("decode step 1", decodeInputs);
+        } finally {
+            closeInputs(prefillInputs, null);
+            if (decodeInputs != null) {
+                closeInputs(decodeInputs, null);
             }
-        }
-        log.info("Requesting {} outputs ({} KV pairs)", allOutputNames.size(), allOutputNames.size() - 1);
-
-        // Prefill
-        Map<String, INDArray> prefillResult = decoder.output(
-                prefillInputs, allOutputNames.toArray(new String[0]));
-        INDArray prefillLogits = prefillResult.get(logitsName);
-        assertNotNull(prefillLogits);
-
-        // Get first token from prefill
-        INDArray lastLogits = prefillLogits.get(NDArrayIndex.point(0),
-                NDArrayIndex.point(seqLen - 1), NDArrayIndex.all());
-        int firstToken = lastLogits.argMax().getInt(0);
-        log.info("Prefill first token: {} ({})", firstToken, tokenizer.decode(new int[]{firstToken}));
-
-        // Build decode step 1 inputs
-        // Get token embedding for the predicted token
-        INDArray tokenId = Nd4j.createFromArray(new int[]{firstToken}).reshape(1, 1).castTo(DataType.INT64);
-        Map<String, INDArray> embedIn = new HashMap<>();
-        for (String name : embedTokens.inputs()) {
-            embedIn.put(name, tokenId);
-        }
-        Map<String, INDArray> embedOut = embedTokens.output(embedIn,
-                embedTokens.outputs().toArray(new String[0]));
-        INDArray decodeEmbeds = embedOut.values().iterator().next().dup();
-
-        // Build decode inputs with KV from prefill
-        Map<String, INDArray> decodeInputs = new HashMap<>();
-        decodeInputs.put("inputs_embeds", decodeEmbeds);
-        decodeInputs.put("attention_mask", Nd4j.ones(DataType.LONG, 1, seqLen + 1));
-        decodeInputs.put("position_ids", Nd4j.createFromArray(new long[]{seqLen}).reshape(1, 1));
-
-        // Wire KV from prefill as past_key_values
-        // Output names: present.N.key/value → Input names: past_key_values.N.key/value
-        for (String outputName : prefillResult.keySet()) {
-            if (outputName.startsWith("present.")) {
-                // present.0.key → past_key_values.0.key
-                String pastName = outputName.replace("present.", "past_key_values.");
-                if (decoder.inputs().contains(pastName)) {
-                    decodeInputs.put(pastName, prefillResult.get(outputName).dup());
-                } else {
-                    log.warn("KV mapping: {} → {} not found in decoder inputs", outputName, pastName);
-                }
+            if (decodeEmbeds != null) {
+                decodeEmbeds.close();
             }
-        }
-
-        // Reset decoder session to force fresh plan compilation for decode shape
-        decoder.resetSession();
-
-        // Run decode step
-        Map<String, INDArray> decodeResult = decoder.output(decodeInputs, logitsName);
-        INDArray decodeLogits = decodeResult.get(logitsName);
-        assertNotNull(decodeLogits, "Decode step should produce logits");
-
-        double decodeSum = decodeLogits.sumNumber().doubleValue();
-        log.info("Decode step 1 logits sum = {}, hasNaN = {}", decodeSum, Double.isNaN(decodeSum));
-
-        // Now use DspHandle to inspect ALL slots
-        DspHandle h = decoder.dsp();
-        assertTrue(h.isCompiled());
-
-        log.info("Decode plan: {} total slots, {} ext inputs", h.totalSlots(), h.numExternalInputs());
-
-        h.replay(decodeInputs);
-        int nanSlot = h.firstNaNSlot();
-        Map<Integer, String> snapshot = h.snapshotAllSlots();
-
-        // Report ALL NaN slots
-        int nanCount = 0;
-        int firstNaN = -1;
-        for (Map.Entry<Integer, String> entry : snapshot.entrySet()) {
-            if (entry.getValue().contains("NaN")) {
-                nanCount++;
-                if (firstNaN < 0) firstNaN = entry.getKey();
-                log.error("NaN: {}", entry.getValue());
-            }
-        }
-
-        log.info("=== DECODE STEP 1 SUMMARY ===");
-        log.info("Total slots: {}", snapshot.size());
-        log.info("NaN slots: {}", nanCount);
-        log.info("First NaN slot: {}", firstNaN);
-
-        if (firstNaN >= 0) {
-            // Log the 5 slots BEFORE the first NaN — these are the clean inputs
-            log.info("=== Slots leading up to first NaN ===");
-            for (int i = Math.max(0, firstNaN - 5); i <= firstNaN; i++) {
-                String info = snapshot.get(i);
-                if (info != null) {
-                    log.info("  {}", info);
-                }
-            }
-
-            // Get the NaN array for further analysis
-            INDArray nanArr = h.getSlotOutput(firstNaN);
-            if (nanArr != null) {
-                log.info("First NaN slot array: shape={}, dtype={}",
-                        Arrays.toString(nanArr.shape()), nanArr.dataType());
-            }
+            closeAll(caches.values());
         }
     }
 
-    /**
-     * Test 3: Same as test 1 but with optimizer DISABLED.
-     * If NaN disappears, the optimizer is corrupting the fused_rope inputs.
-     * If NaN persists, the bug is in the base DSP execution path.
-     */
     @Test
-    @DisplayName("Prefill WITHOUT optimizer: NaN comparison")
-    void testPrefillNoOptimizerNaNComparison() {
-        // Disable optimizer for this test
-        System.setProperty("nd4j.optimizer.enabled", "false");
-        System.setProperty("nd4j.optimizer.fp16", "false");
+    @DisplayName("Prefill without the optimizer: finite logits and the optimized decoder's next token")
+    void testPrefillNoOptimizerNaNComparison() throws Exception {
+        long seqLen = inputsEmbeds.size(1);
+        int optimizedToken = prefillNextToken(decoder, seqLen);
 
-        // Must reset session to force re-compilation without optimizer
-        decoder.resetSession();
-
-        long seqLen = inputsEmbeds.shape()[1];
-        Map<String, INDArray> inputs = buildPrefillInputs(seqLen);
-        String logitsName = findLogitsOutput();
-
-        Map<String, INDArray> result = decoder.output(inputs, logitsName);
-        INDArray logits = result.get(logitsName);
-        assertNotNull(logits);
-
-        double logitsSum = logits.sumNumber().doubleValue();
-        log.info("Prefill WITHOUT optimizer: logits sum = {}, hasNaN = {}", logitsSum, Double.isNaN(logitsSum));
-
-        DspHandle h = decoder.dsp();
-        if (h.isCompiled()) {
-            h.replay(inputs);
-            int nanSlot = h.firstNaNSlot();
-            log.info("WITHOUT optimizer: firstNaNSlot = {}", nanSlot);
-
-            if (nanSlot >= 0) {
-                Map<Integer, String> snapshot = h.snapshotAllSlots();
-                // Show first few NaN slots
-                int count = 0;
-                for (Map.Entry<Integer, String> entry : snapshot.entrySet()) {
-                    if (entry.getValue().contains("NaN")) {
-                        log.error("  {}", entry.getValue());
-                        if (++count >= 5) break;
-                    }
-                }
-                log.info("NaN PERSISTS without optimizer — bug is in base DSP execution");
-            } else {
-                log.info("No NaN without optimizer — OPTIMIZER IS THE CAUSE");
-            }
+        // The unoptimized decoder: the cached import with the in-place KV rewrite only
+        String enabled = System.getProperty(SameDiffOptimizationCache.OPTIMIZER_ENABLED_PROPERTY);
+        System.setProperty(SameDiffOptimizationCache.OPTIMIZER_ENABLED_PROPERTY, "false");
+        SameDiff unoptimized;
+        try {
+            unoptimized = OnnxModelCache.importWithCache(decoderPath);
+        } finally {
+            restoreProperty(SameDiffOptimizationCache.OPTIMIZER_ENABLED_PROPERTY, enabled);
         }
-
-        // Restore optimizer settings
-        System.setProperty("nd4j.optimizer.enabled", "true");
-        System.setProperty("nd4j.optimizer.fp16", "true");
+        try {
+            assertTrue(unoptimized != decoder && unoptimized.getOps().size() > decoder.getOps().size(),
+                    "expected the unoptimized graph (" + unoptimized.getOps().size()
+                            + " ops) to differ from the optimized decoder (" + decoder.getOps().size() + " ops)");
+            int unoptimizedToken = prefillNextToken(unoptimized, seqLen);
+            log.info("Next token: optimized={} ({}) unoptimized={} ({})",
+                    optimizedToken, tokenizer.decode(new int[]{optimizedToken}),
+                    unoptimizedToken, tokenizer.decode(new int[]{unoptimizedToken}));
+            assertEquals(unoptimizedToken, optimizedToken,
+                    "the optimized decoder predicts a different next token than the unoptimized one");
+        } finally {
+            unoptimized.close();
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Helpers
     // ─────────────────────────────────────────────────────────────────────────
 
-    private Map<String, INDArray> buildPrefillInputs(long seqLen) {
-        Map<String, INDArray> inputs = new HashMap<>();
-        for (String name : decoder.inputs()) {
-            if (name.equals("inputs_embeds")) {
-                inputs.put(name, inputsEmbeds);
-            } else if (name.equals("attention_mask")) {
-                inputs.put(name, Nd4j.ones(DataType.LONG, 1, seqLen));
-            } else if (name.equals("position_ids")) {
-                inputs.put(name, Nd4j.arange(seqLen).reshape(1, seqLen).castTo(DataType.LONG));
-            } else if (name.startsWith("past_key_values.")) {
-                inputs.put(name, Nd4j.zeros(DataType.FLOAT, 1, 3, 0, 64));
-            }
+    /** The prompt's next token from a prefill on {@code model}, whose logits must be finite. */
+    private int prefillNextToken(SameDiff model, long seqLen) {
+        Map<String, INDArray> caches = InGraphKvDecoderInputs.kvBuffers(model, seqLen + 1);
+        Map<String, INDArray> inputs = stepInputs(model, inputsEmbeds, 0, caches);
+        try {
+            INDArray logits = logits(model, inputs);
+            assertFinite("prefill logits (" + model.getOps().size() + " ops)", logits);
+            int token = lastPositionArgMax(logits);
+            logits.close();
+            return token;
+        } finally {
+            closeInputs(inputs, caches);
+        }
+    }
+
+    /**
+     * Step inputs with the embeddings in the model's declared dtype (the input builder passes them
+     * through as given).
+     */
+    private Map<String, INDArray> stepInputs(SameDiff model, INDArray embeddings, long cachePos,
+                                             Map<String, INDArray> caches) {
+        String embedsName = ModelIOConfig.discover(model).getInputEmbeddingsName();
+        DataType declared = model.getVariable(embedsName).dataType();
+        INDArray typed = embeddings.dataType() == declared ? embeddings : embeddings.castTo(declared);
+        Map<String, INDArray> inputs = InGraphKvDecoderInputs.stepInputs(model, hiddenSize, typed, cachePos, caches);
+        if (typed != embeddings) {
+            // Owned by this map now; closeInputs frees it with the other per-step arrays
+            inputs.put(embedsName, typed);
         }
         return inputs;
     }
 
-    private String findLogitsOutput() {
-        for (String name : decoder.outputs()) {
-            if (name.contains("logit")) return name;
+    private static INDArray logits(SameDiff model, Map<String, INDArray> inputs) {
+        String logitsName = ModelIOConfig.findLogitsOutputName(model);
+        return model.output(inputs, logitsName).get(logitsName);
+    }
+
+    private INDArray embed(INDArray tokenIds) {
+        Map<String, INDArray> embedInputs = new HashMap<>();
+        for (String name : embedTokens.inputs()) {
+            embedInputs.put(name, tokenIds);
         }
-        return decoder.outputs().get(0);
+        Map<String, INDArray> embedOutputs = embedTokens.output(embedInputs,
+                embedTokens.outputs().toArray(new String[0]));
+        INDArray embeddings = embedOutputs.values().iterator().next().dup();
+        closeAll(embedOutputs.values());
+        return embeddings;
+    }
+
+    private static int lastPositionArgMax(INDArray logits) {
+        INDArray last = logits.get(NDArrayIndex.point(0), NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all());
+        INDArray argMax = last.argMax();
+        int token = argMax.getInt(0);
+        argMax.close();
+        return token;
+    }
+
+    private static void assertFinite(String what, INDArray values) {
+        long nonFinite = Nd4j.getExecutioner().exec(new MatchCondition(values, Conditions.notFinite())).getLong(0);
+        assertEquals(0, nonFinite, what + ": " + nonFinite + " of " + values.length() + " values are NaN or infinite");
+    }
+
+    /** Replays the current plan with {@code inputs}; no slot may hold NaN afterwards. */
+    private void assertNoNaNSlot(String phase, Map<String, INDArray> inputs) {
+        DspHandle h = decoder.dsp();
+        assertTrue(h.isCompiled(), phase + ": the decoder should have compiled a DSP plan");
+        h.replay(inputs);
+        int nanSlot = h.firstNaNSlot();
+        if (nanSlot >= 0) {
+            String nanSlots = h.snapshotAllSlots().values().stream()
+                    .filter(summary -> summary.contains("NaN"))
+                    .collect(Collectors.joining("\n  "));
+            assertEquals(-1, nanSlot, phase + ": plan slots hold NaN:\n  " + nanSlots);
+        }
+        log.info("{}: no NaN in {} plan slots", phase, h.totalSlots());
+    }
+
+    /** Closes the per-step arrays of {@code inputs}: not the prompt embeddings and not the caches. */
+    private void closeInputs(Map<String, INDArray> inputs, Map<String, INDArray> caches) {
+        for (Map.Entry<String, INDArray> entry : inputs.entrySet()) {
+            INDArray value = entry.getValue();
+            boolean cache = caches == null ? isCacheValue(inputs, entry.getKey()) : caches.containsValue(value);
+            if (value != null && value != inputsEmbeds && !cache && !value.wasClosed()) {
+                value.close();
+            }
+        }
+        if (caches != null) {
+            closeAll(caches.values());
+        }
+    }
+
+    private boolean isCacheValue(Map<String, INDArray> inputs, String name) {
+        ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheInputNames(decoder);
+        return kvNames.keyNames.contains(name) || kvNames.valueNames.contains(name);
+    }
+
+    private static void closeAll(Iterable<INDArray> arrays) {
+        for (INDArray arr : arrays) {
+            if (arr != null && arr.closeable() && !arr.wasClosed()) {
+                arr.close();
+            }
+        }
+    }
+
+    private static void restoreProperty(String name, String value) {
+        if (value == null) {
+            System.clearProperty(name);
+        } else {
+            System.setProperty(name, value);
+        }
     }
 }
