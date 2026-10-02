@@ -39,6 +39,8 @@ public class Stabilize extends BaseTransformStrictOp {
         this.realMin = realMin;
         this.cutOff = cutOff;
         this.k = k;
+        // The native op reads k as its one extra argument.
+        this.extraArgs = new Object[]{k};
     }
 
     public Stabilize() {}
@@ -46,11 +48,13 @@ public class Stabilize extends BaseTransformStrictOp {
     public Stabilize(INDArray x, INDArray z, double k) {
         super(x, z);
         this.k = k;
+        this.extraArgs = new Object[]{k};
     }
 
     public Stabilize(INDArray x, double k) {
         super(x);
         this.k = k;
+        this.extraArgs = new Object[]{k};
     }
 
     @Override

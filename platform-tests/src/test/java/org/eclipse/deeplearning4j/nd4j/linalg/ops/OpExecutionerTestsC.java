@@ -192,6 +192,17 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testStabilize(Nd4jBackend backend) {
+        // x * k is clamped to the cutoff 3.79297773665 either way and the clamp divided by k.
+        INDArray x = Nd4j.createFromArray(-10f, -1f, 0f, 1f, 10f);
+        assertEquals(Nd4j.createFromArray(-3.79297773665f, -1f, 0f, 1f, 3.79297773665f),
+                Transforms.stabilize(x, 1.0, true));
+        assertEquals(Nd4j.createFromArray(-1.896488868325f, -1f, 0f, 1f, 1.896488868325f),
+                Transforms.stabilize(x, 2.0, true));
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSetRange(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         Nd4j.getExecutioner().exec(new SetRange(linspace, 0, 1));
