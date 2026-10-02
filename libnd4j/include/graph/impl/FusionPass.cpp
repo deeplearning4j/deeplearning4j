@@ -1194,8 +1194,10 @@ int FusionPass::applyFusions(
             if (slotIdx < 0 || slotIdx >= numSlots || prevSlotIdx < 0 || prevSlotIdx >= numSlots) continue;
             NativeSlot& slot = slots[slotIdx];
             const NativeSlot& prev = slots[prevSlotIdx];
+            // A control-flow op publishes an array it does not own (an Enter's input, a
+            // loop Merge's carried copy), so nothing may overwrite it in place.
             if (!isElementwiseSlot(slot) || prev.wiring.numOutputs < 1 || prev.aliasesInput() ||
-                prev.frozenConstantSlot()) {
+                prev.frozenConstantSlot() || prev.cf.controlFlowType != CF_NONE) {
                 continue;
             }
             const int prevOutputSlot = prev.wiring.outputSlotIndices[0];

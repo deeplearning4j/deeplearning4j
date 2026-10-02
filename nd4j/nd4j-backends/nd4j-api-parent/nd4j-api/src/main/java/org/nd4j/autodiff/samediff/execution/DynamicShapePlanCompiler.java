@@ -29,6 +29,7 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -111,6 +112,18 @@ public class DynamicShapePlanCompiler {
 
     private DynamicShapePlanCompiler() {}
 
+    /** A while loop's Merge: a NextIteration produces one of its inputs. */
+    private static boolean isLoopMerge(DynamicShapeSlot[] slots, int step, Map<Integer, Integer> stepOfOutputSlot) {
+        if (slots[step].getControlFlowType() != DynamicShapeSlot.CF_MERGE) return false;
+        for (int input : slots[step].getInputSourceIndices()) {
+            Integer producer = stepOfOutputSlot.get(input);
+            if (producer != null && slots[producer].getControlFlowType() == DynamicShapeSlot.CF_NEXT_ITERATION) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Compile a DynamicShapePlan from a ForwardExecutionDAG.
      *
@@ -186,6 +199,13 @@ public class DynamicShapePlanCompiler {
                 }
             }
             opNodes.add(node);
+        }
+
+        // Step 1b: lay every while loop out as one block, nested loops inside their parent's
+        // block. The native executor restarts a loop from its first Merge once its last
+        // NextIteration has run, so the block must hold the whole loop and nothing else.
+        if (hasControlFlow) {
+            opNodes = InferenceSession.loopStructuredOrder(dag, opNodes);
         }
 
         // Step 2: Build external input index maps
@@ -1087,65 +1107,78 @@ public class DynamicShapePlanCompiler {
             }
         }
 
+        // One region per while loop: its Merges (each fed by a NextIteration), grouped by the
+        // predicate of the Switches that read them. The region spans the loop's block (Step 1b)
+        // from its first Merge to its last NextIteration, and each of its NextIterations loops
+        // back to that first Merge. The native executor derives the same regions from the
+        // wiring (DspLoopStructure.h).
         List<DynamicShapePlan.LoopRegion> loopRegionsList = new ArrayList<>();
         if (hasControlFlow) {
-            for (int stepIdx = 0; stepIdx < numSteps; stepIdx++) {
-                DynamicShapeSlot slot = slots[stepIdx];
-                if (slot.getControlFlowType() != DynamicShapeSlot.CF_MERGE) continue;
+            Map<Integer, Integer> stepOfOutputSlot = new HashMap<>();
+            for (int s = 0; s < numSteps; s++) {
+                for (int oi : slots[s].getOutputSlotIndices()) {
+                    if (oi >= 0) stepOfOutputSlot.put(oi, s);
+                }
+            }
+            Map<Integer, List<Integer>> mergesByPredicate = new LinkedHashMap<>();
+            Map<Integer, List<Integer>> switchesByPredicate = new HashMap<>();
+            for (int s = 0; s < numSteps; s++) {
+                if (slots[s].getControlFlowType() != DynamicShapeSlot.CF_SWITCH) continue;
+                int[] switchInputs = slots[s].getInputSourceIndices();
+                if (switchInputs.length < 2) continue;
+                Integer dataStep = stepOfOutputSlot.get(switchInputs[0]);
+                if (dataStep == null || !isLoopMerge(slots, dataStep, stepOfOutputSlot)) continue;
+                mergesByPredicate.computeIfAbsent(switchInputs[1], k -> new ArrayList<>()).add(dataStep);
+                switchesByPredicate.computeIfAbsent(switchInputs[1], k -> new ArrayList<>()).add(s);
+            }
 
-                // Find NextIteration that feeds back to this Merge
-                int nextIterStep = -1;
-                for (int cs = stepIdx + 1; cs < numSteps; cs++) {
-                    if (slots[cs].getControlFlowType() == DynamicShapeSlot.CF_NEXT_ITERATION) {
-                        int[] niOutputs = slots[cs].getOutputSlotIndices();
-                        for (int niOut : niOutputs) {
-                            for (int mi : slot.getInputSourceIndices()) {
-                                if (mi >= 0 && mi == niOut) { nextIterStep = cs; break; }
-                            }
-                            if (nextIterStep >= 0) break;
-                        }
-                        if (nextIterStep >= 0) break;
+            List<int[]> loops = new ArrayList<>();
+            for (Map.Entry<Integer, List<Integer>> loop : mergesByPredicate.entrySet()) {
+                List<Integer> merges = loop.getValue();
+                List<Integer> switches = switchesByPredicate.get(loop.getKey());
+                Set<Integer> mergeInputs = new HashSet<>();
+                for (int merge : merges) {
+                    for (int mi : slots[merge].getInputSourceIndices()) mergeInputs.add(mi);
+                }
+                Set<Integer> falseOutputs = new HashSet<>();
+                for (int sw : switches) falseOutputs.add(slots[sw].getOutputSlotIndices()[0]);
+                int firstMerge = Collections.min(merges);
+                int lastNextIteration = -1;
+                int lastExit = -1;
+                for (int s = 0; s < numSteps; s++) {
+                    int cf = slots[s].getControlFlowType();
+                    if (cf == DynamicShapeSlot.CF_NEXT_ITERATION
+                            && mergeInputs.contains(slots[s].getOutputSlotIndices()[0])) {
+                        lastNextIteration = s;
+                        slots[s].setLoopBackTarget(firstMerge);
+                    } else if (cf == DynamicShapeSlot.CF_EXIT && slots[s].getInputSourceIndices().length > 0
+                            && falseOutputs.contains(slots[s].getInputSourceIndices()[0])) {
+                        lastExit = s;
                     }
                 }
-                if (nextIterStep < 0) continue; // if-else Merge, not a loop
-
-                int switchStep = -1, exitStep = -1;
-                for (int s = stepIdx + 1; s <= nextIterStep; s++) {
-                    if (slots[s].getControlFlowType() == DynamicShapeSlot.CF_SWITCH && switchStep < 0)
-                        switchStep = s;
-                    if (slots[s].getControlFlowType() == DynamicShapeSlot.CF_EXIT)
-                        exitStep = s;
-                }
-                // Exit may be after NextIteration (false branch of Switch)
-                if (exitStep < 0) {
-                    for (int s = nextIterStep + 1; s < numSteps; s++) {
-                        if (slots[s].getControlFlowType() == DynamicShapeSlot.CF_EXIT) {
-                            exitStep = s; break;
-                        }
-                    }
-                }
-                if (switchStep < 0) continue;
-
-                int bodyStart = switchStep + 1;
-                int bodyEnd = nextIterStep;
+                loops.add(new int[]{firstMerge, Collections.min(switches), lastNextIteration,
+                        lastExit >= 0 ? lastExit : lastNextIteration, Collections.max(switches) + 1});
+            }
+            // Outer loops first, so a nested loop's block takes its own region index
+            loops.sort(Comparator.comparingInt(l -> l[0]));
+            for (int[] l : loops) {
                 int regionIdx = loopRegionsList.size();
-
-                loopRegionsList.add(new DynamicShapePlan.LoopRegion(
-                        stepIdx, switchStep, nextIterStep,
-                        exitStep >= 0 ? exitStep : nextIterStep + 1,
-                        bodyStart, bodyEnd));
-
-                slots[nextIterStep].setLoopBackTarget(stepIdx);
-                for (int s = stepIdx; s <= Math.max(nextIterStep, exitStep >= 0 ? exitStep : nextIterStep); s++) {
+                loopRegionsList.add(new DynamicShapePlan.LoopRegion(l[0], l[1], l[2], l[3], l[4], l[2]));
+                for (int s = l[0]; s <= Math.max(l[2], l[3]); s++) {
                     slots[s].setLoopRegionIndex(regionIdx);
                 }
+                log.debug("Loop region {}: firstMerge={}, switch={}, lastNextIter={}, lastExit={}",
+                        regionIdx, l[0], l[1], l[2], l[3]);
+            }
 
-                // Defer release of loop body output slots to after Exit
+            // Release what a loop's block produces once the loop is over, at its last Exit;
+            // inner loops first, so an outer loop moves its nested loops' outputs to its own end
+            for (int li = loops.size() - 1; li >= 0; li--) {
+                int[] l = loops.get(li);
                 Set<Integer> loopBodyOutputSlots = new HashSet<>();
-                for (int s = stepIdx; s <= nextIterStep; s++) {
+                for (int s = l[0]; s <= l[2]; s++) {
                     for (int oi : slots[s].getOutputSlotIndices()) {
-                        if (oi >= 0 && !finalOutputSlots.contains(oi))
-                            loopBodyOutputSlots.add(oi);
+                        if (oi >= 0 && !finalOutputSlots.contains(oi)) loopBodyOutputSlots.add(oi);
                     }
                 }
                 for (int s = 0; s < numSteps; s++) {
@@ -1158,16 +1191,11 @@ public class DynamicShapePlanCompiler {
                             releaseAtStep[s] = filtered.stream().mapToInt(Integer::intValue).toArray();
                     }
                 }
-                int releaseStep = exitStep >= 0 ? exitStep : nextIterStep;
-                if (releaseStep < numSteps) {
-                    Set<Integer> combined = new LinkedHashSet<>();
-                    for (int r : releaseAtStep[releaseStep]) combined.add(r);
-                    combined.addAll(loopBodyOutputSlots);
-                    releaseAtStep[releaseStep] = combined.stream().mapToInt(Integer::intValue).toArray();
-                }
-
-                log.debug("Loop region {}: merge={}, switch={}, nextIter={}, exit={}, body=[{}-{}]",
-                        regionIdx, stepIdx, switchStep, nextIterStep, exitStep, bodyStart, bodyEnd);
+                int releaseStep = Math.max(l[2], l[3]);
+                Set<Integer> combined = new LinkedHashSet<>();
+                for (int r : releaseAtStep[releaseStep]) combined.add(r);
+                combined.addAll(loopBodyOutputSlots);
+                releaseAtStep[releaseStep] = combined.stream().mapToInt(Integer::intValue).toArray();
             }
         }
         DynamicShapePlan.LoopRegion[] loopRegions = loopRegionsList.isEmpty() ? null :

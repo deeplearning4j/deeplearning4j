@@ -20,6 +20,7 @@
 #include <array/DataTypeConversions.h>
 #include <array/DataTypeUtils.h>
 #include <graph/NativePlanCompiler.h>
+#include <graph/DspLoopStructure.h>
 #include <graph/PlanDefinition.h>
 #include <graph/ExecutionState.h>
 #include <graph/DspDiagnostics.h>
@@ -862,6 +863,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       // contract, treating that borrowed array as a plan-owned output can make
       // teardown release memory owned by the caller.
       if (sourceProducer.aliasesInput() || sourceProducer.frozenConstantSlot()) continue;
+      // A control-flow op publishes an array it does not own: an Enter's input, a Switch's
+      // data, a loop Merge's carried copy, which later passes and Exits still read.
+      if (sourceProducer.cf.controlFlowType != CF_NONE) continue;
       // Input slot must have only this op as consumer (safe to overwrite)
       if (slotConsumerCount[srcSlot] != 1) continue;
       // Skip if this slot is already marked (e.g., from fusion pass)
@@ -1061,54 +1065,13 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   if (plan->hasControlFlow_) {
     DSP_DIAG(COMPILE, "control flow detected in FlatGraph-compiled plan");
 
-    // Build loop regions: find NextIteration slots that loop back to Merge slots.
-    // For each NextIteration, find the Merge it targets by scanning backward.
+    // The plan runs each while loop as the region its wiring defines (DspLoopStructure.h)
     std::vector<LoopRegion> regions;
-    for (int s = 0; s < numSteps; s++) {
-      NativeSlot& slot = plan->slots_[s];
-      if (slot.cf.controlFlowType == CF_NEXT_ITERATION) {
-        // Find the Merge this NextIteration feeds: look at output wiring.
-        // NextIteration output feeds into a Merge's input. Find the Merge by
-        // scanning for a Merge whose inputSourceIndices references our output slot.
-        int nextIterOutputSlot = (slot.wiring.numOutputs > 0) ? slot.wiring.outputSlotIndices[0] : -1;
-        int mergeSlotIdx = -1;
-        if (nextIterOutputSlot >= 0) {
-          for (int m = 0; m < numSteps; m++) {
-            if (plan->slots_[m].cf.controlFlowType == CF_MERGE) {
-              for (int inp = 0; inp < plan->slots_[m].wiring.numInputs; inp++) {
-                if (plan->slots_[m].wiring.inputSourceIndices[inp] == nextIterOutputSlot) {
-                  mergeSlotIdx = m;
-                  break;
-                }
-              }
-              if (mergeSlotIdx >= 0) break;
-            }
-          }
-        }
-
-        if (mergeSlotIdx >= 0) {
-          slot.cf.loopBackTarget = mergeSlotIdx;
-          slot.cf.loopRegionIndex = static_cast<int>(regions.size());
-
-          LoopRegion lr;
-          lr.mergeSlot = mergeSlotIdx;
-          lr.nextIterSlot = s;
-          lr.bodyStartSlot = mergeSlotIdx + 1;
-          lr.bodyEndSlot = s;
-          // Find Switch and Exit in this region
-          lr.switchSlot = -1;
-          lr.exitSlot = -1;
-          for (int r = mergeSlotIdx; r <= s; r++) {
-            if (plan->slots_[r].cf.controlFlowType == CF_SWITCH && lr.switchSlot < 0)
-              lr.switchSlot = r;
-            if (plan->slots_[r].cf.controlFlowType == CF_EXIT && lr.exitSlot < 0)
-              lr.exitSlot = r;
-          }
-          regions.push_back(lr);
-        }
-      }
+    std::string loopError;
+    if (!dspBuildLoopRegions(plan->slots_, numSteps, totalOutputSlots, &regions, &loopError)) {
+      delete plan;
+      return fail(loopError);
     }
-
     if (!regions.empty()) {
       plan->numLoopRegions_ = static_cast<int>(regions.size());
       plan->loopRegions_ = new LoopRegion[plan->numLoopRegions_];

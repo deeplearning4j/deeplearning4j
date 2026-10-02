@@ -1398,6 +1398,19 @@ Control-flow ops (`Switch`, `Merge`, `Enter`, `Exit`, `NextIteration`, `LoopCond
 
 Dead propagation marks downstream slots dead when all inputs are dead. Loop iteration limits prevent infinite loops.
 
+**Loops.** When a plan is built, `dspBuildLoopRegions` (`DspLoopStructure.h`) derives its while loops from the wiring, whichever compiler produced the plan.
+- **Loop and region.** A loop is the Merges fed by a NextIteration whose Switches share one predicate. Its region runs from its first Merge to its last NextIteration.
+- **Layout.** `DynamicShapePlanCompiler` lays every loop out as one block (`InferenceSession.loopStructuredOrder`), with a nested loop inside its parent's block. The first Merge of each loop starts a segment. A layout where two loops overlap fails plan construction.
+- **End of a pass.** A pass ends at the loop's last NextIteration. If the loop's Switch routed to its true output, `dspPrepareLoopRestart` sets the dead flags for the next pass, and `phaseReplay` or `phaseWarmup` resumes at the segment that first Merge starts:
+  - every slot from the first Merge on runs again;
+  - the loop's Merges take their NextIteration inputs, because their Enter inputs are marked dead;
+  - every other loop in the range starts over from its Enters, with its NextIteration outputs dead.
+- **Carried values.** A loop Merge publishes its own copy of the value a pass starts from, kept in its slot as `SLOT_OWNED` and reused while its shape and type hold. Its NextIteration input is a body op's output, which that op overwrites during the next pass while the pass may still read the value (another body op, a nested loop's Enter). Its Enter input may be a caller's array. With the copy, the body reads the same pointers in every pass and execution, which captured graphs rely on. No op runs in place over a control-flow op's output (`NativePlanCompiler`, `FusionPass`).
+- **Execution start.** `phaseReplay` and `phaseWarmup` reset the dead flags at their start (`dspResetDeadFlags`), so the steady-state path (`executeSteadyState`) starts fresh as well. Every NextIteration output starts dead, so a Merge takes its Enter input until its loop restarts.
+- **Dead passes.** A captured graph or compiled kernel runs every op of its segment, but a loop body is dead in the pass that ends the loop. In a plan with loops, `dispatchSegment` asks `dspSegmentLiveness` which of a segment's ops are dead. It skips a segment whose ops are all dead, marking their outputs dead, and runs a segment with some dead ops slot by slot. Neither counts as an execution of the segment. Such plans never take the frozen whole-plan fast path, since their loops restart between segments.
+
+Loops in sequence and loops nested at any depth run on the plan.
+
 Control flow metadata (controlFlowType, loopBackTarget, loopRegionIndex) is included in plan serialization (version 3+).
 
 ### 2. Plan Serialization for Native Execution

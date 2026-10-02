@@ -98,6 +98,15 @@ public class Enter extends BaseCompatOp {
     }
 
     @Override
+    public Map<String, Object> propertiesForFunction() {
+        // The frame name, and whether the entered value is a loop invariant: written so that
+        // setPropertiesForFunction restores both after a FlatBuffers round trip.
+        Map<String, Object> ret = super.propertiesForFunction();
+        ret.put("isConstant", isConstant);
+        return ret;
+    }
+
+    @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
         if(properties.containsKey("frameName")) {
             String frameName = getStringFromProperty("frameName",properties);

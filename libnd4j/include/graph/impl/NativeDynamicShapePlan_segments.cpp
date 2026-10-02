@@ -27,6 +27,7 @@
 #include <graph/GraphBackendResolver.h>
 #include <graph/gpu/SymbolicShapeRanges.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspLoopStructure.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspHashUtils.h>
@@ -1919,7 +1920,50 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   // ops in seg N+1.
 
   int stepIdx = seg.def.startSlot;
-  int loopIterations = 0;
+  int executedEnd = seg.def.endSlot;
+  // A loop's last NextIteration ends a pass of the loop. While the loop's predicate holds, the
+  // next pass starts at the loop's first Merge: the dead flags are set for it and the segment
+  // stops here, for phaseReplay/phaseWarmup to resume at the segment that Merge starts.
+  auto restartsLoopAfter = [this](int step) {
+    const NativeSlot& slot = slots_[step];
+    const int loop = slot.cf.loopRegionIndex;
+    if (slot.cf.controlFlowType != CF_NEXT_ITERATION || loop < 0 || loop >= numLoopRegions_ ||
+        loopRegions_[loop].nextIterSlot != step ||
+        !dspLoopContinues(slots_, loopRegions_[loop], slotIsDead_, slotIsDeadSize_)) {
+      return false;
+    }
+    dspPrepareLoopRestart(slots_, numSlots_, loopRegions_, numLoopRegions_, loop, slotIsDead_,
+                          slotIsDeadSize_);
+    cfLoopBackStep_ = loopRegions_[loop].mergeSlot;
+    DSP_DIAG_SLOT(EXECUTE, step, "loop %d continues: next pass from slot %d", loop, cfLoopBackStep_);
+    return true;
+  };
+  // A loop Merge's copy of its selected input (see CF_MERGE), kept in its output slot and
+  // reused while shape and type hold. The slot owns it (SLOT_OWNED, recorded here), which tells
+  // it apart from an array the shape pre-pass forwarded into the slot.
+  auto loopCarriedCopy = [this](int si, NDArray* selected) -> NDArray* {
+    NDArray* carried = outputSlots_[si];
+    const bool reusable =
+        carried != nullptr && carried != selected && !carried->isView() &&
+        slotOwnership_ != nullptr &&
+        slotOwnership_[si].ownership == BufferOwnership::SLOT_OWNED &&
+        slotOwnership_[si].dataBuffer == carried->dataBuffer() &&
+        carried->dataBuffer() != selected->dataBuffer() &&
+        shape::equalsSoft(carried->shapeInfo(), selected->shapeInfo()) &&
+        carried->dataType() == selected->dataType();
+    if (reusable) {
+      carried->assign(selected);
+      return carried;
+    }
+    carried = selected->dup(selected->ordering());
+    writeOutputSlot(si, carried, "cf-merge-carried");
+    if (slotOwnership_ != nullptr) {
+      slotOwnership_[si].ownership = BufferOwnership::SLOT_OWNED;
+      slotOwnership_[si].parentSlotIdx = -1;
+      slotOwnership_[si].dataBuffer = carried->dataBuffer();
+    }
+    return carried;
+  };
   bool functionalReplayCompleted = false;
 
 #if !defined(SD_VULKAN)
@@ -2122,6 +2166,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
               "SLOT_BY_SLOT_CF_DEAD", seg.def.startSlot, stepIdx,
               slots_, outputSlots_, totalOutputSlots_, diagnosticExecuteCount(),
               streamIsCapturing, true);
+          if (restartsLoopAfter(stepIdx)) {
+            executedEnd = stepIdx;
+            break;
+          }
           stepIdx++;
           continue;
         }
@@ -2171,10 +2219,21 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
               }
             }
           }
+          // A loop's Merge publishes its own copy of the value the pass starts from. Its
+          // NextIteration input is a body op's output, which that op overwrites during the next
+          // pass while the pass may still read the value (another body op, a nested loop's
+          // Enter), and an Enter input may be a caller's array. The copy also gives the body
+          // the same input pointers in every pass and execution. A dead loop Merge keeps its
+          // copy and is only marked dead.
+          const bool loopMerge = slot.cf.loopRegionIndex >= 0;
           for (int i = 0; i < slot.wiring.numOutputs; i++) {
             int si = slot.wiring.outputSlotIndices[i];
             if (si >= 0 && si < totalOutputSlots_) {
-              writeOutputSlot(si, selected, "cf-merge");
+              if (!loopMerge) {
+                writeOutputSlot(si, selected, "cf-merge");
+              } else if (selected != nullptr) {
+                loopCarriedCopy(si, selected);
+              }
               if (slotIsDead_) slotIsDead_[si] = (selected == nullptr);
             }
           }
@@ -2206,12 +2265,11 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           verifyCfSlotWrite(stepIdx, "NEXT_ITER", slot.ident.opName.c_str(),
                             outputSlots_, slot.wiring.outputSlotIndices, slot.wiring.numOutputs, totalOutputSlots_);
 
-          // Loop-back is handled at the phaseReplay level (across segments),
-          // not here, because NextIteration and its target Merge are typically
-          // in different segments. Signal phaseReplay by recording the target.
-          if (slot.cf.loopBackTarget >= 0) {
-            if (cfLoopBackStep_ < 0 || slot.cf.loopBackTarget < cfLoopBackStep_) {
-              cfLoopBackStep_ = slot.cf.loopBackTarget;
+          // Live: the loop's next pass takes this value (restartsLoopAfter)
+          if (slotIsDead_ != nullptr) {
+            for (int o = 0; o < slot.wiring.numOutputs; o++) {
+              const int si = slot.wiring.outputSlotIndices[o];
+              if (si >= 0 && si < slotIsDeadSize_) slotIsDead_[si] = false;
             }
           }
           break;
@@ -2228,6 +2286,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           slots_, outputSlots_, totalOutputSlots_, diagnosticExecuteCount(),
           streamIsCapturing);
 
+      if (restartsLoopAfter(stepIdx)) {
+        executedEnd = stepIdx;
+        break;
+      }
       stepIdx++;
       continue;
     }
@@ -2853,7 +2915,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   if (executeCount_ < 4) {
     char segErr[512] = {};
     int segInvalid = validateSlotRange(
-        slots_, numSlots_, seg.def.startSlot, seg.def.endSlot,
+        slots_, numSlots_, seg.def.startSlot, executedEnd,
         outputSlots_, totalOutputSlots_,
         executeCount_, planLifecycle_.toLegacyCode(),
         segErr, sizeof(segErr));

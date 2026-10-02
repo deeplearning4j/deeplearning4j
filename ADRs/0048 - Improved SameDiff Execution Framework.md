@@ -154,6 +154,15 @@ if (op instanceof Enter) {
 }
 ```
 
+**Nested While Loops**: `InferenceSession.detectWhileLoopRegions` gives each frame's loop a region and nests them.
+
+- **Parent.** A loop is nested in the innermost other loop whose Merges reach one of its Merges. The walk stops only at the loop's own NextIteration and Exit ops: its own Exit reads one of its Switches, and its own NextIteration feeds one of its Merges. It goes through a nested loop, whose Exit leads back into the body. One reached Merge is enough: a loop variable entered from an invariant has a Merge upstream of the outer loop's.
+- **Lists.** The nested loop's ops stay out of the parent's own lists. Its first Merge that the parent reaches stands for the whole loop in the parent's condition or body. The walk that tells body from condition also goes through nested loops, so a nested loop is body even through a Merge fed by an invariant.
+- **Order.** The parent's lists are ordered by dependency, each nested loop taken as one step that reads every value its ops take from outside it.
+- **Execution.** `ControlFlowExecutor.executeWhileLoop` runs a nested loop to completion when it reaches that Merge.
+- **Outermost loops.** Only outermost loops are dispatched from the execution order. Before one runs, the outside ops it reads that have not run yet run first; an invariant's Enter chain can come after the loop's first Merge.
+- **DSP plans.** `InferenceSession.loopStructuredOrder` lays these regions out for `DynamicShapePlanCompiler`: each loop is one block, with a nested loop's block where it runs in its parent (ADR 0061, Control Flow Handling).
+
 ### Enhanced Memory Management
 
 The framework includes sophisticated memory tracking to prevent common issues:

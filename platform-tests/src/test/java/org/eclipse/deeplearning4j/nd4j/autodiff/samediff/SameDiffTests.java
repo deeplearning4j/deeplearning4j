@@ -4141,7 +4141,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
     @Test
-    @Disabled
     public void testNestedWhile() throws IOException {
         SameDiff sd = SameDiff.create();
         SDVariable countIn = sd.constant(5);

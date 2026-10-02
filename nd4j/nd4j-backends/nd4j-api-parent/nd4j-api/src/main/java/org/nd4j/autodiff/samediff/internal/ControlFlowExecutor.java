@@ -315,8 +315,14 @@ public class ControlFlowExecutor {
                 completedOps.add(mergeOp);
             }
 
-            // 2. Execute condition ops (between Merge and LoopCond)
+            // 2. Execute condition ops (between Merge and LoopCond); a loop nested in the
+            //    condition runs to completion where its first Merge stands
             for (String condOp : region.condOps) {
+                InferenceSession.WhileLoopRegion nested = region.nestedRegions.get(condOp);
+                if (nested != null) {
+                    executeWhileLoop(nested, dag, variableValues, completedOps, allRequired, listeners, at, batch);
+                    continue;
+                }
                 ExecutionNode condNode = opNodes.get(condOp);
                 if (condNode != null) {
                     session.executeNode(condNode, variableValues, allRequired, listeners, at, batch);
@@ -379,6 +385,14 @@ public class ControlFlowExecutor {
             for (String bodyOp : region.bodyOps) {
                 if (bodySkipOps.contains(bodyOp)) {
                     continue; // Skip inactive branch ops from nested if
+                }
+                // A nested while loop runs to completion where its first Merge stands; its
+                // Enter ops ran before it as this body's ops, and this body's ops after it
+                // read its Exit outputs.
+                InferenceSession.WhileLoopRegion nestedLoop = region.nestedRegions.get(bodyOp);
+                if (nestedLoop != null) {
+                    executeWhileLoop(nestedLoop, dag, variableValues, completedOps, allRequired, listeners, at, batch);
+                    continue;
                 }
                 ExecutionNode bodyNode = opNodes.get(bodyOp);
                 if (bodyNode != null) {

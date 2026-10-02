@@ -1681,12 +1681,20 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Detect while-loop regions and build skip sets for control flow
         Set<String> skipOps = new HashSet<>();
         Map<String, WhileLoopRegion> whileLoopRegions = detectWhileLoopRegions(dag);
-        Set<String> opsInWhileLoops = new HashSet<>();
-        for (WhileLoopRegion r : whileLoopRegions.values()) {
-            opsInWhileLoops.addAll(r.allOps());
+        // Only outermost loops are dispatched here; a nested loop runs inside its parent.
+        Map<String, String> whileLoopRegionOfOp = new HashMap<>();
+        for (Map.Entry<String, WhileLoopRegion> r : whileLoopRegions.entrySet()) {
+            if (r.getValue().parent != null) continue;
+            for (String loopOp : r.getValue().allOpsDeep()) {
+                whileLoopRegionOfOp.putIfAbsent(loopOp, r.getKey());
+            }
         }
         // Track which while-loop regions have been executed
         Set<String> executedWhileLoops = new HashSet<>();
+        // Ops run ahead of their place in execution order because a loop needed them
+        Set<String> ranAheadOfLoops = new HashSet<>();
+        Map<String, Integer> executionOrderIndex = whileLoopRegions.isEmpty()
+                ? Collections.emptyMap() : executionOrderIndex(dag);
 
         if (log.isDebugEnabled() && !whileLoopRegions.isEmpty()) {
             for (Map.Entry<String, WhileLoopRegion> rEntry : whileLoopRegions.entrySet()) {
@@ -1709,6 +1717,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
 
             String opName = node.getOperationName();
+            if (ranAheadOfLoops.contains(opName)) continue;
 
             // Skip ops marked inactive (e.g., inactive if-branch after Switch).
             // Publish explicit NULL MARKERS for the skipped op's outputs: a bare skip
@@ -1726,29 +1735,30 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             // If this op is part of a while-loop, check if it's the first Merge
             // of that region and execute the entire loop
-            if (opsInWhileLoops.contains(opName)) {
-                // Find which region this op belongs to
-                String regionKey = null;
-                for (Map.Entry<String, WhileLoopRegion> entry : whileLoopRegions.entrySet()) {
-                    if (entry.getValue().allOps().contains(opName)) {
-                        regionKey = entry.getKey();
-                        break;
-                    }
-                }
-                if (regionKey != null && !executedWhileLoops.contains(regionKey)) {
+            String regionKey = whileLoopRegionOfOp.get(opName);
+            if (regionKey != null) {
+                if (!executedWhileLoops.contains(regionKey)) {
                     // Check if we're at the first op of this region in execution order
                     WhileLoopRegion region = whileLoopRegions.get(regionKey);
                     if (region.mergeOps.contains(opName)) {
+                        // What the loop reads from outside it and has not run yet runs first
+                        for (String pending : pendingLoopPrerequisites(region.allOpsDeep(), dag, completedOps,
+                                whileLoopRegionOfOp, executionOrderIndex)) {
+                            executeNode(dag.getOperationNodes().get(pending), variableValues, allRequired,
+                                    listeners, at, batch);
+                            completedOps.add(pending);
+                            ranAheadOfLoops.add(pending);
+                        }
                         // Execute the entire while loop
                         executeWhileLoop(region, dag, variableValues, completedOps,
                                 allRequired, listeners, at, batch);
                         executedWhileLoops.add(regionKey);
                     }
                 }
-                // Skip individual execution - handled by executeWhileLoop
-                if (executedWhileLoops.contains(regionKey)) {
-                    continue;
-                }
+                // Skip individual execution - handled by executeWhileLoop. A nested loop's
+                // Merge can precede its outer loop's Merges in execution order; it runs
+                // inside the outer loop too.
+                continue;
             }
 
             // For Merge nodes (in if-conditionals), relax readiness: only need
@@ -2886,10 +2896,99 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // ======================== Control Flow Helpers ========================
 
     /**
-     * Detect while-loop regions in the DAG by finding Merge ops whose inputs
-     * include both an Enter output and a NextIteration output.
+     * The ops in the order a DSP plan runs while loops in. Each loop is one block: its Merges,
+     * condition, Switches, body, NextIteration and Exit ops, with a loop nested in its condition
+     * or body placed as a block where that loop runs. The outside ops a loop reads come before
+     * its block; every other op keeps its place. The native executor restarts a loop from its
+     * first Merge once its last NextIteration has run, so nothing outside the loop may sit in
+     * between.
      */
-    private Map<String, WhileLoopRegion> detectWhileLoopRegions(ForwardExecutionDAG dag) {
+    public static List<ExecutionNode> loopStructuredOrder(ForwardExecutionDAG dag, List<ExecutionNode> ops) {
+        Map<String, WhileLoopRegion> regions = detectWhileLoopRegions(dag);
+        if (regions.isEmpty()) return ops;
+        Map<String, ExecutionNode> byName = new HashMap<>();
+        for (ExecutionNode node : ops) byName.put(node.getOperationName(), node);
+        Map<String, String> rootLoopOfOp = new HashMap<>();
+        for (Map.Entry<String, WhileLoopRegion> r : regions.entrySet()) {
+            if (r.getValue().parent != null) continue;
+            for (String loopOp : r.getValue().allOpsDeep()) {
+                rootLoopOfOp.putIfAbsent(loopOp, r.getKey());
+            }
+        }
+        Map<String, Integer> orderIndex = executionOrderIndex(dag);
+        List<ExecutionNode> ordered = new ArrayList<>(ops.size());
+        Set<String> placed = new HashSet<>();
+        for (ExecutionNode node : ops) {
+            String name = node.getOperationName();
+            if (placed.contains(name)) continue;
+            String root = rootLoopOfOp.get(name);
+            if (root == null) {
+                placeOp(name, byName, placed, ordered);
+                continue;
+            }
+            // The loop's first op: what it reads from outside, then the whole loop
+            WhileLoopRegion region = regions.get(root);
+            for (String prerequisite : pendingLoopPrerequisites(region.allOpsDeep(), dag, placed,
+                    rootLoopOfOp, orderIndex)) {
+                placeOp(prerequisite, byName, placed, ordered);
+            }
+            placeLoop(region, byName, placed, ordered, orderIndex);
+        }
+        if (ordered.size() != ops.size()) {
+            List<String> missing = new ArrayList<>();
+            for (ExecutionNode node : ops) {
+                if (!placed.contains(node.getOperationName())) missing.add(node.getOperationName());
+            }
+            throw new IllegalStateException("While loop layout left out ops " + missing);
+        }
+        return ordered;
+    }
+
+    private static void placeLoop(WhileLoopRegion region, Map<String, ExecutionNode> byName, Set<String> placed,
+                                  List<ExecutionNode> ordered, Map<String, Integer> orderIndex) {
+        Comparator<String> byOrder = Comparator.comparingInt(op -> orderIndex.getOrDefault(op, Integer.MAX_VALUE));
+        for (String merge : sorted(region.mergeOps, byOrder)) placeOp(merge, byName, placed, ordered);
+        for (String condOp : region.condOps) placeLoopStep(condOp, region, byName, placed, ordered, orderIndex);
+        if (region.loopCondOp != null) placeOp(region.loopCondOp, byName, placed, ordered);
+        for (String switchOp : sorted(region.switchOps, byOrder)) placeOp(switchOp, byName, placed, ordered);
+        for (String bodyOp : region.bodyOps) placeLoopStep(bodyOp, region, byName, placed, ordered, orderIndex);
+        for (String nextIteration : sorted(region.nextIterOps, byOrder)) placeOp(nextIteration, byName, placed, ordered);
+        for (String exit : sorted(region.exitOps, byOrder)) placeOp(exit, byName, placed, ordered);
+    }
+
+    /** One step of a loop's condition or body: an op, or a nested loop standing at its first Merge. */
+    private static void placeLoopStep(String step, WhileLoopRegion region, Map<String, ExecutionNode> byName,
+                                      Set<String> placed, List<ExecutionNode> ordered, Map<String, Integer> orderIndex) {
+        WhileLoopRegion nested = region.nestedRegions.get(step);
+        if (nested != null) {
+            placeLoop(nested, byName, placed, ordered, orderIndex);
+        } else {
+            placeOp(step, byName, placed, ordered);
+        }
+    }
+
+    private static void placeOp(String op, Map<String, ExecutionNode> byName, Set<String> placed,
+                                List<ExecutionNode> ordered) {
+        ExecutionNode node = byName.get(op);
+        if (node != null && placed.add(op)) ordered.add(node);
+    }
+
+    private static List<String> sorted(List<String> ops, Comparator<String> order) {
+        List<String> copy = new ArrayList<>(ops);
+        copy.sort(order);
+        return copy;
+    }
+
+    /**
+     * Detect while-loop regions in the DAG by finding Merge ops whose inputs
+     * include both an Enter output and a NextIteration output. A loop whose Merges
+     * are reachable from another loop's Merges, short of that loop's NextIteration and
+     * Exit ops, is nested in it: the innermost such loop is its parent, the nested
+     * loop's ops stay out of the parent's own lists, and its first Merge stands for it
+     * in the parent's condition or body (ControlFlowExecutor.executeWhileLoop runs it
+     * to completion there). The map holds every region, nested ones included.
+     */
+    static Map<String, WhileLoopRegion> detectWhileLoopRegions(ForwardExecutionDAG dag) {
         Map<String, WhileLoopRegion> regions = new LinkedHashMap<>();
         List<ExecutionNode> executionOrder = dag.getExecutionOrder();
         Map<String, ExecutionNode> opNodes = dag.getOperationNodes();
@@ -2928,10 +3027,59 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         if (frameToMerges.isEmpty()) return regions;
 
+        // Each frame's ops reachable from its Merge outputs, up to its NextIteration and
+        // Exit ops (a nested loop's ops included).
+        Map<String, Set<String>> reachableByFrame = new LinkedHashMap<>();
+        for (Map.Entry<String, List<String>> entry : frameToMerges.entrySet()) {
+            reachableByFrame.put(entry.getKey(), reachableFromMerges(dag, entry.getValue()));
+        }
+
+        // A loop's parent is the innermost other loop that reaches one of its Merges. Not
+        // necessarily all: a nested loop variable entered from a loop invariant (a constant
+        // the outer loop enters once) has a Merge upstream of the outer loop's Merges.
+        Map<String, String> parentFrame = new HashMap<>();
+        for (Map.Entry<String, List<String>> inner : frameToMerges.entrySet()) {
+            String parent = null;
+            int parentSize = Integer.MAX_VALUE;
+            for (Map.Entry<String, Set<String>> outer : reachableByFrame.entrySet()) {
+                if (outer.getKey().equals(inner.getKey())) continue;
+                if (!Collections.disjoint(outer.getValue(), inner.getValue()) && outer.getValue().size() < parentSize) {
+                    parent = outer.getKey();
+                    parentSize = outer.getValue().size();
+                }
+            }
+            if (parent != null) parentFrame.put(inner.getKey(), parent);
+        }
+
         // For each frame, build the complete while-loop region
         for (Map.Entry<String, List<String>> entry : frameToMerges.entrySet()) {
             String frameName = entry.getKey();
             List<String> mergeOps = entry.getValue();
+
+            // Ops of loops nested (at any depth) in this one, and the first Merge of each
+            // directly nested loop, which stands for that loop here.
+            Set<String> nestedOps = new HashSet<>();
+            Map<String, String> nestedFrameByFirstMerge = new HashMap<>();
+            for (String other : frameToMerges.keySet()) {
+                String ancestor = parentFrame.get(other);
+                while (ancestor != null && !ancestor.equals(frameName)) {
+                    ancestor = parentFrame.get(ancestor);
+                }
+                if (ancestor == null) continue;
+                nestedOps.addAll(frameToMerges.get(other));
+                nestedOps.addAll(reachableByFrame.get(other));
+                if (frameName.equals(parentFrame.get(other))) {
+                    // The nested loop runs where its first Merge that this loop reaches stands:
+                    // after the body ops it enters. (A Merge of a loop invariant can come
+                    // earlier in execution order, ahead of this loop's Merges.)
+                    for (String nestedMerge : frameToMerges.get(other)) {
+                        if (reachableByFrame.get(frameName).contains(nestedMerge)) {
+                            nestedFrameByFirstMerge.put(nestedMerge, other);
+                            break;
+                        }
+                    }
+                }
+            }
 
             WhileLoopRegion region = new WhileLoopRegion();
             region.frameName = frameName;
@@ -2949,55 +3097,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Simpler approach: classify all control flow ops with matching frame,
             // and all ops between Switch:true outputs and NextIteration inputs.
 
-            // First pass: find LoopCond, Switch, NextIteration, Exit ops for this frame
-            Set<String> mergeOutputs = new HashSet<>();
-            for (String mergeOp : mergeOps) {
-                ExecutionNode mergeNode = opNodes.get(mergeOp);
-                if (mergeNode != null) {
-                    mergeOutputs.addAll(mergeNode.getOutputVariables());
-                }
-            }
-
-            // Find all ops reachable from merge outputs (condition + body)
-            Set<String> reachableOps = new HashSet<>();
-            Queue<String> toVisit = new LinkedList<>();
-            // Seed with merge output variables
-            for (String mergeOutput : mergeOutputs) {
-                Set<String> consumers = dag.getVariableConsumers().get(mergeOutput);
-                if (consumers != null) {
-                    for (String consumer : consumers) {
-                        if (!mergeOps.contains(consumer)) {
-                            toVisit.add(consumer);
-                        }
-                    }
-                }
-            }
-
-            while (!toVisit.isEmpty()) {
-                String current = toVisit.poll();
-                if (reachableOps.contains(current)) continue;
-                reachableOps.add(current);
-
-                ExecutionNode currentNode = opNodes.get(current);
-                if (currentNode == null) continue;
-
-                // Don't traverse past Exit ops (they leave the loop)
-                if (currentNode.getOperation() instanceof Exit) continue;
-                // Don't traverse past NextIteration (they feed back to Merge)
-                if (currentNode.getOperation() instanceof NextIteration) continue;
-
-                // Add consumers of this op's outputs
-                for (String output : currentNode.getOutputVariables()) {
-                    Set<String> consumers = dag.getVariableConsumers().get(output);
-                    if (consumers != null) {
-                        for (String consumer : consumers) {
-                            if (!reachableOps.contains(consumer) && !mergeOps.contains(consumer)) {
-                                toVisit.add(consumer);
-                            }
-                        }
-                    }
-                }
-            }
+            // This loop's own ops: those reachable from its Merges that no nested loop owns.
+            Set<String> reachableOps = new HashSet<>(reachableByFrame.get(frameName));
+            reachableOps.removeAll(nestedOps);
 
             // Classify reachable ops
             // Condition ops: between Merge and Switch (including LoopCond)
@@ -3079,7 +3181,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 if (bodyReachable.contains(current)) continue;
                 ExecutionNode cn = opNodes.get(current);
                 if (cn == null) continue;
-                if (cn.getOperation() instanceof NextIteration) {
+                // As for the loop's reach: stop at its own NextIteration only. A nested loop
+                // is body through all of its ops, its Merges fed by invariants included.
+                if (isLoopNextIteration(dag, cn, mergeOps)) {
                     bodyReachable.add(current);
                     continue;
                 }
@@ -3094,9 +3198,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
             }
 
-            // Use execution order for proper ordering
+            // Use execution order for proper ordering. A directly nested loop's first Merge
+            // stands for that loop in the condition or the body.
             for (ExecutionNode ordered : executionOrder) {
                 String name = ordered.getOperationName();
+                if (nestedFrameByFirstMerge.containsKey(name)) {
+                    if (bodyReachable.contains(name)) {
+                        region.bodyOps.add(name);
+                    } else {
+                        region.condOps.add(name);
+                    }
+                    region.nestedRegionFrames.put(name, nestedFrameByFirstMerge.get(name));
+                    continue;
+                }
                 if (!reachableOps.contains(name)) continue;
                 if (region.switchOps.contains(name) || region.nextIterOps.contains(name) ||
                         region.exitOps.contains(name) || name.equals(region.loopCondOp)) {
@@ -3116,7 +3230,182 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     region.nextIterOps.size(), region.exitOps.size());
         }
 
+        for (WhileLoopRegion region : regions.values()) {
+            for (Map.Entry<String, String> nested : region.nestedRegionFrames.entrySet()) {
+                WhileLoopRegion child = regions.get(nested.getValue());
+                region.nestedRegions.put(nested.getKey(), child);
+                child.parent = region;
+            }
+        }
+        // Execution order alone does not place a nested loop: an op of this loop that the
+        // nested loop reads (an Enter of a value its body captures) may come after the
+        // nested loop's first Merge. Order each list so that a nested loop follows what it
+        // reads and precedes what reads its Exits.
+        Map<String, Integer> orderIndex = executionOrderIndex(dag);
+        for (WhileLoopRegion region : regions.values()) {
+            if (region.nestedRegions.isEmpty()) continue;
+            region.condOps = orderWithNestedLoops(region.condOps, region.nestedRegions, dag, orderIndex);
+            region.bodyOps = orderWithNestedLoops(region.bodyOps, region.nestedRegions, dag, orderIndex);
+        }
         return regions;
+    }
+
+    private static Map<String, Integer> executionOrderIndex(ForwardExecutionDAG dag) {
+        Map<String, Integer> orderIndex = new HashMap<>();
+        List<ExecutionNode> executionOrder = dag.getExecutionOrder();
+        for (int i = 0; i < executionOrder.size(); i++) {
+            orderIndex.putIfAbsent(executionOrder.get(i).getOperationName(), i);
+        }
+        return orderIndex;
+    }
+
+    /**
+     * A loop's condition or body ops in dependency order, each nested loop (the key of
+     * nested, which stands in ops) taken as one step reading every input its ops (at any
+     * depth) take from outside it. Ready steps go in execution order.
+     */
+    private static List<String> orderWithNestedLoops(List<String> ops, Map<String, WhileLoopRegion> nested,
+                                                     ForwardExecutionDAG dag, Map<String, Integer> orderIndex) {
+        Map<String, String> stepOfOp = new HashMap<>();
+        Map<String, Set<String>> opsOfStep = new LinkedHashMap<>();
+        for (String op : ops) {
+            WhileLoopRegion loop = nested.get(op);
+            Set<String> stepOps = loop != null ? loop.allOpsDeep() : Collections.singleton(op);
+            opsOfStep.put(op, stepOps);
+            for (String stepOp : stepOps) stepOfOp.put(stepOp, op);
+        }
+        Map<String, Set<String>> dependsOn = new HashMap<>();
+        Map<String, Set<String>> dependents = new HashMap<>();
+        for (Map.Entry<String, Set<String>> step : opsOfStep.entrySet()) {
+            Set<String> deps = new HashSet<>();
+            for (String stepOp : step.getValue()) {
+                ExecutionNode node = dag.getOperationNodes().get(stepOp);
+                if (node == null) continue;
+                for (String input : node.getInputVariables()) {
+                    String producer = dag.getVariableProducers().get(input);
+                    String producerStep = producer != null ? stepOfOp.get(producer) : null;
+                    if (producerStep != null && !producerStep.equals(step.getKey())) deps.add(producerStep);
+                }
+            }
+            dependsOn.put(step.getKey(), deps);
+            for (String dep : deps) dependents.computeIfAbsent(dep, k -> new HashSet<>()).add(step.getKey());
+        }
+        PriorityQueue<String> ready = new PriorityQueue<>(
+                Comparator.comparingInt(step -> orderIndex.getOrDefault(step, Integer.MAX_VALUE)));
+        Map<String, Integer> remaining = new HashMap<>();
+        for (String step : opsOfStep.keySet()) {
+            remaining.put(step, dependsOn.get(step).size());
+            if (dependsOn.get(step).isEmpty()) ready.add(step);
+        }
+        List<String> ordered = new ArrayList<>(ops.size());
+        while (!ready.isEmpty()) {
+            String step = ready.poll();
+            ordered.add(step);
+            for (String dependent : dependents.getOrDefault(step, Collections.emptySet())) {
+                if (remaining.merge(dependent, -1, Integer::sum) == 0) ready.add(dependent);
+            }
+        }
+        if (ordered.size() != ops.size()) {
+            List<String> cyclic = new ArrayList<>(ops);
+            cyclic.removeAll(ordered);
+            throw new IllegalStateException("While loop steps depend on each other in a cycle: " + cyclic);
+        }
+        return ordered;
+    }
+
+    /**
+     * The ops a while loop needs that run outside it and have not run yet, upstream ones
+     * first: a loop invariant entered into a nested loop (an Enter chain from a constant)
+     * can come after the loop's first Merge in execution order.
+     */
+    private static List<String> pendingLoopPrerequisites(Set<String> loopOps, ForwardExecutionDAG dag,
+                                                         Set<String> completedOps,
+                                                         Map<String, String> whileLoopRegionOfOp,
+                                                         Map<String, Integer> orderIndex) {
+        Set<String> needed = new HashSet<>();
+        Deque<String> work = new ArrayDeque<>(loopOps);
+        Set<String> visited = new HashSet<>();
+        while (!work.isEmpty()) {
+            String op = work.poll();
+            if (!visited.add(op)) continue;
+            ExecutionNode node = dag.getOperationNodes().get(op);
+            if (node == null) continue;
+            for (String input : node.getInputVariables()) {
+                String producer = dag.getVariableProducers().get(input);
+                if (producer == null || loopOps.contains(producer) || completedOps.contains(producer)) continue;
+                // Another loop's op: that loop precedes this one and runs as a whole
+                if (whileLoopRegionOfOp.containsKey(producer)) continue;
+                if (needed.add(producer)) work.add(producer);
+            }
+        }
+        List<String> ordered = new ArrayList<>(needed);
+        ordered.sort(Comparator.comparingInt(op -> orderIndex.getOrDefault(op, Integer.MAX_VALUE)));
+        return ordered;
+    }
+
+    /**
+     * The ops reachable from a loop's Merge outputs, not past its own NextIteration and Exit
+     * ops (both included). A nested loop's Exit leads back into this loop's body, so the
+     * walk goes on past it.
+     */
+    private static Set<String> reachableFromMerges(ForwardExecutionDAG dag, List<String> mergeOps) {
+        Map<String, ExecutionNode> opNodes = dag.getOperationNodes();
+        Set<String> reachableOps = new HashSet<>();
+        Queue<String> toVisit = new LinkedList<>();
+        for (String mergeOp : mergeOps) {
+            ExecutionNode mergeNode = opNodes.get(mergeOp);
+            if (mergeNode == null) continue;
+            for (String mergeOutput : mergeNode.getOutputVariables()) {
+                Set<String> consumers = dag.getVariableConsumers().get(mergeOutput);
+                if (consumers == null) continue;
+                for (String consumer : consumers) {
+                    if (!mergeOps.contains(consumer)) toVisit.add(consumer);
+                }
+            }
+        }
+        while (!toVisit.isEmpty()) {
+            String current = toVisit.poll();
+            if (reachableOps.contains(current)) continue;
+            reachableOps.add(current);
+            ExecutionNode currentNode = opNodes.get(current);
+            if (currentNode == null) continue;
+            // The loop's Exit leaves it; its NextIteration feeds back to its Merges
+            if (isLoopExit(dag, currentNode, mergeOps) || isLoopNextIteration(dag, currentNode, mergeOps)) continue;
+            for (String output : currentNode.getOutputVariables()) {
+                Set<String> consumers = dag.getVariableConsumers().get(output);
+                if (consumers == null) continue;
+                for (String consumer : consumers) {
+                    if (!reachableOps.contains(consumer) && !mergeOps.contains(consumer)) {
+                        toVisit.add(consumer);
+                    }
+                }
+            }
+        }
+        return reachableOps;
+    }
+
+    /** An Exit of the loop with these Merges: it reads a Switch whose data is one of them. */
+    private static boolean isLoopExit(ForwardExecutionDAG dag, ExecutionNode node, List<String> mergeOps) {
+        if (!(node.getOperation() instanceof Exit)) return false;
+        for (String input : node.getInputVariables()) {
+            String switchOp = dag.getVariableProducers().get(input);
+            ExecutionNode switchNode = switchOp == null ? null : dag.getOperationNodes().get(switchOp);
+            if (switchNode == null || !(switchNode.getOperation() instanceof Switch)
+                    || switchNode.getInputVariables().isEmpty()) continue;
+            String merge = dag.getVariableProducers().get(switchNode.getInputVariables().get(0));
+            if (merge != null && mergeOps.contains(merge)) return true;
+        }
+        return false;
+    }
+
+    /** A NextIteration of the loop with these Merges: one of them reads it. */
+    private static boolean isLoopNextIteration(ForwardExecutionDAG dag, ExecutionNode node, List<String> mergeOps) {
+        if (!(node.getOperation() instanceof NextIteration)) return false;
+        for (String output : node.getOutputVariables()) {
+            Set<String> consumers = dag.getVariableConsumers().get(output);
+            if (consumers != null && !Collections.disjoint(consumers, mergeOps)) return true;
+        }
+        return false;
     }
 
     /**
@@ -3154,6 +3443,21 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         List<String> bodyOps;        // Body ops in execution order
         List<String> nextIterOps;    // NextIteration ops
         List<String> exitOps;        // Exit ops
+        // Loops nested in this one's condition or body, keyed by the nested loop's first Merge.
+        // That Merge stands in condOps or bodyOps for the whole nested loop, which runs to
+        // completion there; none of the nested loop's ops are in this region's own lists.
+        Map<String, WhileLoopRegion> nestedRegions = new LinkedHashMap<>();
+        Map<String, String> nestedRegionFrames = new LinkedHashMap<>();
+        WhileLoopRegion parent;
+
+        /** This region's ops and those of every loop nested in it. */
+        Set<String> allOpsDeep() {
+            Set<String> all = allOps();
+            for (WhileLoopRegion nested : nestedRegions.values()) {
+                all.addAll(nested.allOpsDeep());
+            }
+            return all;
+        }
 
         Set<String> allOps() {
             Set<String> all = new HashSet<>();
