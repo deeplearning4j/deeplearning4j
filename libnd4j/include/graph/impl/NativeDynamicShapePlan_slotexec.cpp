@@ -2995,7 +2995,8 @@ Status NativeDynamicShapePlan::executeSlot(
     // _shapeInfoBuffer corruption without crashing.
     if (!safeHasValidShapeInfo(cached)) return nullptr;
     auto* db = cached->dataBuffer();
-    bool invalid = (db == nullptr) || db->isClosed() || !db->isValid();
+    // An empty array has no elements to store, so it may have no buffer at all.
+    bool invalid = db == nullptr ? !cached->isEmpty() : (db->isClosed() || !db->isValid());
     // A reusable CUDA output can be structurally valid yet belong to the
     // device used by an earlier segment. Check provenance during warmup/
     // first-decode, when a segment device transition is expected; later

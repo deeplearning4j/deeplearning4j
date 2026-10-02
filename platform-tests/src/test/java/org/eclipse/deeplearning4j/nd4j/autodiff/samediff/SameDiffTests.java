@@ -4234,6 +4234,11 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNotNull(result, "cast output should not be null");
         assertTrue(result.isEmpty(), "cast of empty input should produce empty output");
         assertEquals(DataType.FLOAT, result.dataType(), "cast output should have FLOAT dtype");
+
+        // Again, through the plan's existing slots: an empty output has no buffer to reuse.
+        INDArray again = sd.output(placeholders, casted.name()).get(casted.name());
+        assertTrue(again.isEmpty(), "second cast of empty input should produce empty output");
+        assertEquals(DataType.FLOAT, again.dataType());
     }
 
     /**

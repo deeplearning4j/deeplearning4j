@@ -71,6 +71,21 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEmptyWithShapeRankZero(Nd4jBackend backend) {
+        for (DataType dt : new DataType[]{DataType.FLOAT, DataType.INT, DataType.BOOL}) {
+            INDArray empty = Nd4j.emptyWithShape(new long[0], dt);
+            assertTrue(empty.isEmpty());
+            assertEquals(dt, empty.dataType());
+            assertEquals(0, empty.length());
+
+            INDArray dup = Nd4j.empty(dt).dup();
+            assertTrue(dup.isEmpty());
+            assertEquals(dt, dup.dataType());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyDtype_1(Nd4jBackend backend) {
         val array = Nd4j.empty(DataType.INT);
 

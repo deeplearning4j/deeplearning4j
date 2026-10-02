@@ -4205,6 +4205,11 @@ public class Nd4j {
      * @return Empty INDArray
      */
     public static INDArray emptyWithShape(long[] shape,DataType type) {
+        // A rank-0 empty is the per-type empty array: a descriptor of rank 0 builds a
+        // one-element buffer, and the shape-info providers drop the empty flag at rank 0.
+        if (shape == null || shape.length == 0) {
+            return empty(type);
+        }
         LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,new long[shape.length],0 ,'c',type,true);
         return INSTANCE.create(longShapeDescriptor);
     }
