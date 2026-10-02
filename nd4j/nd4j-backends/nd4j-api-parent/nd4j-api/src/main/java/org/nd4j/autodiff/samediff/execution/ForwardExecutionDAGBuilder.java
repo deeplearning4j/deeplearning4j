@@ -153,6 +153,7 @@ public class ForwardExecutionDAGBuilder {
 
         Map<String, ExecutionNode> operationNodes = buildExecutionNodes(requiredOperations, requiredVariables);
         establishOperationDependencies(operationNodes);
+        addLoopEntryDependencies(operationNodes);
         List<ExecutionNode> executionOrder = createTopologicalOrder(operationNodes);
 
         Map<String, String> variableProducers = buildVariableProducerMap(operationNodes);
@@ -398,6 +399,48 @@ public class ForwardExecutionDAGBuilder {
         }
     }
     
+    /**
+     * Makes each loop Merge (one fed by a NextIteration) depend on every Enter of its frame.
+     * The session executes a whole while loop at the first loop Merge it reaches, iteration 0
+     * included, so every value entering the frame must exist by then. The Merge's own
+     * dependencies cover only its Enter, and the scheduler, which ranks nodes by the memory
+     * they free, may otherwise put a Merge before a sibling Enter.
+     */
+    private void addLoopEntryDependencies(Map<String, ExecutionNode> operationNodes) {
+        Map<String, List<String>> entersByFrame = new HashMap<>();
+        for (ExecutionNode node : operationNodes.values()) {
+            if (node.getOperation() instanceof Enter) {
+                entersByFrame.computeIfAbsent(((Enter) node.getOperation()).getFrameName(),
+                        frame -> new ArrayList<>()).add(node.getOperationName());
+            }
+        }
+        if (entersByFrame.isEmpty()) {
+            return;
+        }
+        for (ExecutionNode node : operationNodes.values()) {
+            if (!(node.getOperation() instanceof Merge)) {
+                continue;
+            }
+            boolean loopMerge = false;
+            String frame = null;
+            for (String input : node.getInputVariables()) {
+                String producer = findProducerOperation(input);
+                ExecutionNode producerNode = producer == null ? null : operationNodes.get(producer);
+                if (producerNode == null) {
+                    continue;
+                }
+                if (producerNode.getOperation() instanceof NextIteration) {
+                    loopMerge = true;
+                } else if (producerNode.getOperation() instanceof Enter) {
+                    frame = ((Enter) producerNode.getOperation()).getFrameName();
+                }
+            }
+            if (loopMerge && frame != null) {
+                node.getDependsOnOperations().addAll(entersByFrame.get(frame));
+            }
+        }
+    }
+
     /**
      * Handle special dependency cases for control flow operations.
      * These operations have unique execution semantics that require special handling.
