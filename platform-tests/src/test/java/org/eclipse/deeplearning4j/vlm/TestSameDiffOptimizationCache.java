@@ -11,16 +11,27 @@
 
 package org.eclipse.deeplearning4j.vlm;
 
+import onnx.Onnx;
+import org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx.OnnxOpTestHelper;
+import org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx.OnnxOpTestHelper.InputSpec;
+import org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx.OnnxOpTestHelper.OutputSpec;
+import org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache;
 import org.eclipse.deeplearning4j.vlm.model.loading.SameDiffOptimizationCache;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -109,6 +120,27 @@ class TestSameDiffOptimizationCache {
         System.setProperty("nd4j.optimizer.weightDtype", "int4");
         assertEquals("model.int4.opt.sdz",
                 SameDiffOptimizationCache.getOptimizedSdzCacheFile(source).getName());
+    }
+
+    @Test
+    void disabledCacheImportWritesNothingNextToTheModel() throws Exception {
+        Onnx.ModelProto model = OnnxOpTestHelper.buildModel("Relu",
+                List.of(InputSpec.graphInput("X", DataType.FLOAT, new long[]{2, 3}, null)),
+                List.of(new OutputSpec("Y", DataType.FLOAT, new long[]{2, 3})),
+                Collections.emptyMap());
+        File onnx = OnnxOpTestHelper.saveModel(model, tempDir);
+        String previousDisabled = System.getProperty(OnnxModelCache.DISABLE_CACHE_PROPERTY);
+        System.setProperty(OnnxModelCache.DISABLE_CACHE_PROPERTY, "true");
+        try (SameDiff sd = OnnxModelCache.importWithCache(onnx.getAbsolutePath())) {
+            assertTrue(sd.hasVariable("Y"));
+        } finally {
+            restoreProperty(OnnxModelCache.DISABLE_CACHE_PROPERTY, previousDisabled);
+        }
+
+        try (Stream<Path> files = Files.list(tempDir)) {
+            assertEquals(List.of("model.onnx"),
+                    files.map(f -> f.getFileName().toString()).sorted().collect(Collectors.toList()));
+        }
     }
 
     private CacheFiles cacheFiles() throws Exception {

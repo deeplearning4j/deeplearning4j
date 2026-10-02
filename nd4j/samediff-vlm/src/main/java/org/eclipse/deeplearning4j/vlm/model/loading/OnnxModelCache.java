@@ -107,6 +107,10 @@ public class OnnxModelCache {
 
         File sdzFile = getSdzCacheFile(onnxFile);
         boolean cacheDisabled = Boolean.getBoolean(DISABLE_CACHE_PROPERTY);
+        if (cacheDisabled) {
+            // No cache file is read or written, so there is nothing to lock either.
+            return importWithCacheLocked(onnxFile, sdzFile, true);
+        }
 
         // Acquire file lock to prevent concurrent read/write/delete of the SDZ cache.
         // The lock file is adjacent to the SDZ file — all processes/threads contending
@@ -160,23 +164,25 @@ public class OnnxModelCache {
         long importElapsed = System.currentTimeMillis() - importStart;
         log.info("ONNX import completed in {}ms: {}", importElapsed, onnxFile.getName());
 
-        // Cache for future runs
-        try {
-            long saveStart = System.currentTimeMillis();
-            SDZSerializer.save(sd, sdzFile, false, Map.of(
-                    "source_onnx", onnxFile.getName(),
-                    "import_timestamp", String.valueOf(System.currentTimeMillis())
-            ));
-            long saveElapsed = System.currentTimeMillis() - saveStart;
-            // Fingerprint sidecar so the next run detects a stale import after a .so rebuild.
-            SameDiffOptimizationCache.writeBuildFingerprint(sdzFile);
-            log.info("Cached SDZ model in {}ms: {} ({} bytes)", saveElapsed,
-                    sdzFile.getName(), sdzFile.length());
-        } catch (Exception e) {
-            log.warn("Failed to cache SDZ model (non-fatal): {}", e.getMessage());
-            // Delete partial SDZ file if save failed
-            if (sdzFile.exists()) {
-                sdzFile.delete();
+        // Cache for future runs; with caching disabled, nothing is written (as for the .opt.sdz)
+        if (!cacheDisabled) {
+            try {
+                long saveStart = System.currentTimeMillis();
+                SDZSerializer.save(sd, sdzFile, false, Map.of(
+                        "source_onnx", onnxFile.getName(),
+                        "import_timestamp", String.valueOf(System.currentTimeMillis())
+                ));
+                long saveElapsed = System.currentTimeMillis() - saveStart;
+                // Fingerprint sidecar so the next run detects a stale import after a .so rebuild.
+                SameDiffOptimizationCache.writeBuildFingerprint(sdzFile);
+                log.info("Cached SDZ model in {}ms: {} ({} bytes)", saveElapsed,
+                        sdzFile.getName(), sdzFile.length());
+            } catch (Exception e) {
+                log.warn("Failed to cache SDZ model (non-fatal): {}", e.getMessage());
+                // Delete partial SDZ file if save failed
+                if (sdzFile.exists()) {
+                    sdzFile.delete();
+                }
             }
         }
 
