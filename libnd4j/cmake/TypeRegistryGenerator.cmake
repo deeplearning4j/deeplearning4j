@@ -166,7 +166,9 @@ function(dump_type_macros_to_disk)
     if(DEFINED OPENBLAS_PATH)
         string(REPLACE "@OPENBLAS_PATH@" "${OPENBLAS_PATH}" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
     else()
-        string(REGEX REPLACE "#cmakedefine OPENBLAS_PATH[^\n]*\n" "" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+        # A backend without OpenBLAS (Vulkan) has no path. config.h.in #defines it, so the
+        # #cmakedefine pattern never matched and the placeholder reached config.h and the bindings.
+        string(REPLACE "@OPENBLAS_PATH@" "" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
     endif()
 
     if(DEFINED FLATBUFFERS_PATH)
