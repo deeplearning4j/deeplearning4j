@@ -2209,7 +2209,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("booleanAnd") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
-        javaOpClass = "BooleanAnd"
+        javaOpClass = "LogicalAnd"
         Input(BOOL, "x") { description = "First input boolean array" }
         Input(BOOL, "y") { description = "Second input boolean array" }
         Output(BOOL, "output"){ description = "Boolean AND result" }
@@ -2222,7 +2222,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("booleanOr") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
-        javaOpClass = "BooleanOr"
+        javaOpClass = "LogicalOr"
         Input(BOOL, "x") { description = "First input boolean array" }
         Input(BOOL, "y") { description = "Second input boolean array" }
         Output(BOOL, "output"){ description = "Boolean OR result" }
@@ -2235,7 +2235,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("booleanXor") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
-        javaOpClass = "BooleanXor"
+        javaOpClass = "LogicalXor"
         Input(BOOL, "x") { description = "First input boolean array" }
         Input(BOOL, "y") { description = "Second input boolean array" }
         Output(BOOL, "output"){ description = "Boolean XOR result" }

@@ -438,7 +438,7 @@ public class SDBaseOps {
   public SDVariable booleanAnd(SDVariable x, SDVariable y) {
     SDValidation.validateBool("booleanAnd", "x", x);
     SDValidation.validateBool("booleanAnd", "y", y);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd(sd,x, y).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalAnd(sd,x, y).outputVariable();
   }
 
   /**
@@ -452,7 +452,7 @@ public class SDBaseOps {
   public SDVariable booleanAnd(String name, SDVariable x, SDVariable y) {
     SDValidation.validateBool("booleanAnd", "x", x);
     SDValidation.validateBool("booleanAnd", "y", y);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd(sd,x, y).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalAnd(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -490,7 +490,7 @@ public class SDBaseOps {
   public SDVariable booleanOr(SDVariable x, SDVariable y) {
     SDValidation.validateBool("booleanOr", "x", x);
     SDValidation.validateBool("booleanOr", "y", y);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr(sd,x, y).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalOr(sd,x, y).outputVariable();
   }
 
   /**
@@ -504,7 +504,7 @@ public class SDBaseOps {
   public SDVariable booleanOr(String name, SDVariable x, SDVariable y) {
     SDValidation.validateBool("booleanOr", "x", x);
     SDValidation.validateBool("booleanOr", "y", y);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr(sd,x, y).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalOr(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -518,7 +518,7 @@ public class SDBaseOps {
   public SDVariable booleanXor(SDVariable x, SDVariable y) {
     SDValidation.validateBool("booleanXor", "x", x);
     SDValidation.validateBool("booleanXor", "y", y);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor(sd,x, y).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalXor(sd,x, y).outputVariable();
   }
 
   /**
@@ -532,7 +532,7 @@ public class SDBaseOps {
   public SDVariable booleanXor(String name, SDVariable x, SDVariable y) {
     SDValidation.validateBool("booleanXor", "x", x);
     SDValidation.validateBool("booleanXor", "y", y);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor(sd,x, y).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalXor(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

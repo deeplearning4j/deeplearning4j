@@ -109,9 +109,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicPartition;
@@ -124,6 +121,9 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.InvertPermutation;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.IsNumericTensor;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalAnd;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalOr;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalXor;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.NotEqualTo;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence;
@@ -401,7 +401,7 @@ public class NDBase {
   public INDArray booleanAnd(INDArray x, INDArray y) {
     NDValidation.validateBool("booleanAnd", "x", x);
     NDValidation.validateBool("booleanAnd", "y", y);
-    INDArray[] __tmp = Nd4j.exec(new BooleanAnd(x, y));
+    INDArray[] __tmp = Nd4j.exec(new LogicalAnd(x, y));
     try {
       return __tmp[0];
     } finally {
@@ -436,7 +436,7 @@ public class NDBase {
   public INDArray booleanOr(INDArray x, INDArray y) {
     NDValidation.validateBool("booleanOr", "x", x);
     NDValidation.validateBool("booleanOr", "y", y);
-    INDArray[] __tmp = Nd4j.exec(new BooleanOr(x, y));
+    INDArray[] __tmp = Nd4j.exec(new LogicalOr(x, y));
     try {
       return __tmp[0];
     } finally {
@@ -460,7 +460,7 @@ public class NDBase {
   public INDArray booleanXor(INDArray x, INDArray y) {
     NDValidation.validateBool("booleanXor", "x", x);
     NDValidation.validateBool("booleanXor", "y", y);
-    INDArray[] __tmp = Nd4j.exec(new BooleanXor(x, y));
+    INDArray[] __tmp = Nd4j.exec(new LogicalXor(x, y));
     try {
       return __tmp[0];
     } finally {

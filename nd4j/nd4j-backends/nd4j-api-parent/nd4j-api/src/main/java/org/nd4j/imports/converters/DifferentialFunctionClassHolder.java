@@ -910,9 +910,6 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder.class,
                 org.nd4j.linalg.api.ops.custom.Eig.class,
                 org.nd4j.linalg.api.ops.impl.transforms.floating.SqrtM.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor.class,
                 org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayRemove.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusBBp.class,
                 // Transformer input padding ops
