@@ -2858,6 +2858,22 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTensorArrayGatherSingleIndex(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        TensorArray tensorArray = sd.tensorArray(DataType.FLOAT);
+        INDArray arr1 = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
+        SDVariable var1 = sd.var(arr1);
+        INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
+        SDVariable var2 = sd.var(arr2);
+        SDVariable write0 = tensorArray.write(var2, 0, var1);
+        SDVariable write1 = tensorArray.write(write0, 1, var2);
+        // One index gathers that element only; a single -1 (stack) gathers all.
+        SDVariable second = tensorArray.gather(write1, 1);
+        assertEquals(Nd4j.pile(arr2), second.eval());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorArray2(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         TensorArray tensorArray = sd.tensorArray(DataType.FLOAT);

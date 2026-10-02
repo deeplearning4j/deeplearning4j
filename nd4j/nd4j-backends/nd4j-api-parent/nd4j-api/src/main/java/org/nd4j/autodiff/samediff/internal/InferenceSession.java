@@ -5581,6 +5581,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     // shape.get(0) is OWNED by the output array after allocation - don't close it
                     INDArray out = mmgr.allocateFromDescriptor(false, shape.get(0));
                     c.setOutputArgument(0, out);
+                    // The context took the op's (then empty) outputs above; exec reads only the context.
+                    opContext.setOutputArray(0, out);
                     Nd4j.getExecutioner().exec(c, opContext);
                     c.setInputArguments(new INDArray[0]);
                     return ExecutionResult.createFrom(tArr.getVariable(),out);
@@ -5621,9 +5623,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             int[] idxArrInt = idxArr.toIntVector();
             log.trace("Gathering op " + op.getOwnName() + " from indices " + Arrays.toString(idxArrInt) + " named " + indicesName + " from list " + tArr.getVariable());
             if(idxArrInt.length > 0) {
-                //Edge case: -1 means "all"
+                //Edge case: a single -1 means "all"
                 List<INDArray> newList = new ArrayList<>();
-                if (idxArrInt.length == 1 || idxArrInt.length > 0 &&  idxArrInt[0]  < 0) {
+                if (idxArrInt.length == 1 && idxArrInt[0] == -1) {
                     newList.addAll(l);
                 } else {
                     for (int id : idxArrInt) {
@@ -5654,6 +5656,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         // shape.get(0) is OWNED by the output array after allocation - don't close it
                         INDArray out = mmgr.allocateFromDescriptor(false, shape.get(0));
                         s.setOutputArgument(0, out);
+                        // The context took the op's (then empty) outputs above; exec reads only the context.
+                        opContext.setOutputArray(0, out);
                         Nd4j.getExecutioner().exec(s, opContext);
                         return ExecutionResult.createFrom(tArr.getVariable(),out);
                     } finally {
