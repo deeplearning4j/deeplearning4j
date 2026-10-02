@@ -257,7 +257,9 @@ SD_DEVICE void Reduce3<X, Z>::execScalarCuda(
       tc[16384] = 0; // reset
       sPartials[threadIdx.x] = OpType::startingValue(x);
 
-      if (tid == 0 && extraZ[0] != static_cast<Z>(0) && extraZ[1] != static_cast<Z>(0)) {
+      // Every block's accumulators count, including zero ones (a block of disjoint values
+      // has a zero intersection for Jaccard).
+      if (tid == 0 && OpType::extraParamsLen > 0) {
         extraZ[0] = 0.0;
         extraZ[1] = 0.0;
         for (int i = 0; i < gridDim.x; i++) {

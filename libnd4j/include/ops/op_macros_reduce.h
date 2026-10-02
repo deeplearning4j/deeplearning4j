@@ -305,20 +305,16 @@ namespace simdOps {
         return merge_simd(old, opOutput, extraParamsRef);                                     \
     }                                                                                          \
                                                                                                \
+    /* The op's own logic adds into its accumulators; run it on zeroed locals and add those  \
+       to the shared accumulators atomically. */                                              \
     static SD_DEVICE Y opAtomic(X d1, X d2, Y* extraParamsRef) {                              \
-      if constexpr (std::is_same_v<X COMMA bool>) {                                           \
-        Y val1 = static_cast<Y>(static_cast<int>(d1) * static_cast<int>(d1));                \
-        Y val2 = static_cast<Y>(static_cast<int>(d2) * static_cast<int>(d2));                \
-        sd::math::atomics::sd_atomicAdd(&extraParamsRef[0], val1);                           \
-        sd::math::atomics::sd_atomicAdd(&extraParamsRef[1], val2);                           \
-        return static_cast<Y>(static_cast<int>(d1) * static_cast<int>(d2));                  \
-      } else {                                                                                 \
-        Y val1 = static_cast<Y>(sd::math::sd_abs<X COMMA X>(d1) * sd::math::sd_abs<X COMMA X>(d1)); \
-        Y val2 = static_cast<Y>(sd::math::sd_abs<X COMMA X>(d2) * sd::math::sd_abs<X COMMA X>(d2)); \
-        sd::math::atomics::sd_atomicAdd(&extraParamsRef[0], val1);                           \
-        sd::math::atomics::sd_atomicAdd(&extraParamsRef[1], val2);                           \
-        return static_cast<Y>(d1 * d2);                                                       \
-      }                                                                                        \
+      Y local[EXTRA_PARAMS_LEN > 0 ? EXTRA_PARAMS_LEN : 1];                                   \
+      for (int i = 0; i < (EXTRA_PARAMS_LEN > 0 ? EXTRA_PARAMS_LEN : 1); i++)                 \
+        local[i] = static_cast<Y>(0);                                                         \
+      const Y out = op_logic(d1, d2, local);                                                  \
+      for (int i = 0; i < EXTRA_PARAMS_LEN; i++)                                              \
+        sd::math::atomics::sd_atomicAdd(&extraParamsRef[i], local[i]);                        \
+      return out;                                                                             \
     }                                                                                          \
   };
 

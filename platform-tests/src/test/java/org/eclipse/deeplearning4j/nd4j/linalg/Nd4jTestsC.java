@@ -5154,6 +5154,21 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testJaccardAndCosineAcrossBlocks(Nd4jBackend backend) {
+        // Long enough for many CUDA blocks. x is zero over its first half, so the blocks there
+        // have a zero intersection, and every block's partial sums must still count.
+        int n = 1 << 20;
+        INDArray x = Nd4j.concat(0, Nd4j.zeros(DataType.DOUBLE, n / 2), Nd4j.ones(DataType.DOUBLE, n / 2));
+        INDArray y = Nd4j.ones(DataType.DOUBLE, n);
+
+        // 1 - sum(min) / sum(max) = 1 - (n/2) / n
+        assertEquals(0.5, Transforms.jaccardDistance(x, y), 1e-6);
+        // (n/2) / (sqrt(n/2) * sqrt(n))
+        assertEquals(Math.sqrt(0.5), Transforms.cosineSim(x, y), 1e-6);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHammingDistance1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 0, 0, 1, 0, 0}).castTo(DataType.DOUBLE);
         INDArray y = Nd4j.create(new double[] {0, 0, 0, 0, 1, 0}).castTo(DataType.DOUBLE);
