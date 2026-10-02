@@ -440,12 +440,8 @@ void freeNativePlanCache(sd::Pointer cacheHandle) {
 }
 
 void clearNativePlanCacheHandle(sd::Pointer cacheHandle) {
-  fprintf(stderr, "[DSP-JNI] clearNativePlanCacheHandle enter cache=%p\n", cacheHandle);
-  fflush(stderr);
   if (!cacheHandle) return;
   reinterpret_cast<sd::graph::NativePlanCache*>(cacheHandle)->clear();
-  fprintf(stderr, "[DSP-JNI] clearNativePlanCacheHandle exit cache=%p\n", cacheHandle);
-  fflush(stderr);
 }
 
 sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
