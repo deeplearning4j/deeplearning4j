@@ -314,6 +314,16 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
             return allocationBytes;
         }
 
+        /**
+         * The native data this reference still holds: the allocation size until some path
+         * releases the data, 0 after. An explicitly closed buffer keeps its registration (and
+         * a small native wrapper) until collection, but no longer its data.
+         */
+        @Override
+        public long getBytes() {
+            return released.get() ? 0 : allocationBytes;
+        }
+
         void markDeallocated() {
             synchronized (this) {
                 if (this.buffer != null) {
