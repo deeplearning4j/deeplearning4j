@@ -2870,6 +2870,19 @@ Status NativeDynamicShapePlan::execute(
            numSlots_, numExternalInputs, numExternalInputs_,
            executeCount_, planLifecycle_.isShapesFrozen() ? 1 : 0);
 
+  // Publish the footprint for other threads (the plan cache's budget pass over
+  // pinned plans) on every path out: only the executing thread may walk the
+  // plan's containers. Steady-state replay allocates nothing and skips this.
+  struct OwnedBytesPublisher {
+    NativeDynamicShapePlan* plan;
+    ~OwnedBytesPublisher() {
+      try {
+        plan->publishOwnedBytesSnapshot(plan->estimatedOwnedBytes());
+      } catch (...) {
+      }
+    }
+  } ownedBytesPublisher{this};
+
   // Clear any sticky CUDA error that accumulated from a previous plan execution
   // (e.g., Triton compilation capture errors, ContextBuffers init errors, or
   // cross-plan errors from a shared thread). Without this, error 906/901 from
@@ -9474,6 +9487,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   clearGpuBackendFailedCache();
 
   const size_t totalOwnedBytesAfterRelease = estimatedOwnedBytes();
+  publishOwnedBytesSnapshot(totalOwnedBytesAfterRelease);
   size_t captureWorkspaceBytesAfterRelease = 0;
   size_t cublasWorkspaceBytesAfterRelease = 0;
 #ifdef SD_CUDA

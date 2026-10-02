@@ -2263,6 +2263,15 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   size_t estimatedOwnedBytes() const;
 
   /**
+   * estimatedOwnedBytes() as of this plan's last execute() or release,
+   * published by the thread that ran it; 0 before the first. Another thread —
+   * the plan cache's budget pass over pinned plans, which may be executing
+   * elsewhere — reads this instead of walking containers the executing thread
+   * mutates.
+   */
+  size_t ownedBytesSnapshot() const { return ownedBytesSnapshot_.load(std::memory_order_acquire); }
+
+  /**
    * Get the output slots array (NDArray pointers for all slots).
    * Used by validation/diagnostic functions to inspect outputs after execution.
    */
@@ -3363,6 +3372,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   SD_INLINE NDArray* registerOwned(NDArray* arr) {
     if (arr != nullptr) planOwnedArrays_.insert(arr);
     return arr;
+  }
+
+  // estimatedOwnedBytes() as last published by the thread that executed or
+  // released this plan (ownedBytesSnapshot()).
+  std::atomic<size_t> ownedBytesSnapshot_{0};
+  void publishOwnedBytesSnapshot(size_t bytes) {
+    ownedBytesSnapshot_.store(bytes, std::memory_order_release);
   }
 
   // GPU graph capture control
