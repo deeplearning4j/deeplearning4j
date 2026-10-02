@@ -350,6 +350,11 @@ public class SameDiffOptimizationCache {
 
     /**
      * Run GraphOptimizer and optionally cache the optimized graph with metadata.
+     *
+     * <p>Consumes {@code sd}: the optimizer works on a copy, and the input graph, with every
+     * array the import or load gave it, is closed unless it is the graph returned (optimizer
+     * disabled, or a graph the optimizer leaves alone). Callers must not use {@code sd}
+     * afterwards.</p>
      */
     public static SameDiff optimizeWithCache(SameDiff sd, File sourceFile, boolean cacheDisabled,
                                              Map<String, String> extraMetadata) {
@@ -363,7 +368,15 @@ public class SameDiffOptimizationCache {
         long optStart = System.currentTimeMillis();
 
         List<String> outputs = sd.outputs() != null ? new ArrayList<>(sd.outputs()) : new ArrayList<>();
-        SameDiff optimized = GraphOptimizer.optimize(sd, outputs);
+        SameDiff optimized = null;
+        try {
+            optimized = GraphOptimizer.optimize(sd, outputs);
+        } finally {
+            // Nothing else holds the input: left open, its arrays would wait for collection
+            if (optimized != sd) {
+                sd.close();
+            }
+        }
 
         int opsAfter = optimized.getOps().size();
         long optElapsed = System.currentTimeMillis() - optStart;
