@@ -483,19 +483,24 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 }
                 }
             } else if (irGraph.isConstantOpName(opName)) {
-                val arr = irGraph.getConstantArrayForName(nodeName)
                 val constantOutputName = if (node.numOutputs() < 1 || irGraph.frameworkName().contains("tensorflow")) nodeName else node.outputAt(0)
                 // Skip if a variable with this name was already registered as a dynamic variable
                 // in the first pass (e.g. Constant node output added by addInitializersToDynamicVariables).
+                // Materialize the tensor only when it is registered here: getConstantArrayForName
+                // builds a new array on every call, and a skipped copy of every Constant-node
+                // weight was left to garbage collection.
                 if (!sd.hasVariable(constantOutputName)) {
+                    val arr = irGraph.getConstantArrayForName(nodeName)
                     if (node.numOutputs() < 1 || irGraph.frameworkName().contains("tensorflow")) {
                         sd.constant(nodeName, arr)
                     } else {
                         sd.constant(node.outputAt(0), arr)
                     }
-                }
-                if (isTracingEnabled) {
-                    VariableOriginTracer.traceVariableResolution(nodeName, "constant", sd.getVariable(nodeName), arr)
+                    if (isTracingEnabled) {
+                        VariableOriginTracer.traceVariableResolution(nodeName, "constant", sd.getVariable(nodeName), arr)
+                    }
+                } else if (isTracingEnabled) {
+                    VariableOriginTracer.traceVariableResolution(nodeName, "constant_skipped_exists", sd.getVariable(nodeName), null)
                 }
             } else if (irGraph.isVariable(nodeName)) {
                 val shape = irGraph.shapeOfInput(nodeName)
