@@ -1035,7 +1035,6 @@ public class NdArrayReductionTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @org.junit.jupiter.api.Disabled("Needs investigation")
     public void testLogExpSum1(Nd4jBackend backend) {
         INDArray matrix = Nd4j.create(3, 3);
         for (int r = 0; r < matrix.rows(); r++) {
@@ -1051,7 +1050,6 @@ public class NdArrayReductionTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @org.junit.jupiter.api.Disabled("Needs investigation")
     public void testLogExpSum2(Nd4jBackend backend) {
         INDArray row = Nd4j.create(new double[]{1, 2, 3});
 
