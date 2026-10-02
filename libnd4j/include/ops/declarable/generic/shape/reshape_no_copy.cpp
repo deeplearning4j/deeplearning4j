@@ -14,20 +14,9 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  // OPTIMIZATION: Identity reshape - skip if shapes are identical.
-  // For decode (seq_len=1), many reshapes are [1,1,D] → [1,D] or similar no-ops.
-  if (input->rankOf() == output->rankOf()) {
-    bool sameShape = true;
-    for (int i = 0; i < input->rankOf(); i++) {
-      if (input->sizeAt(i) != output->sizeAt(i)) {
-        sameShape = false;
-        break;
-      }
-    }
-    if (sameShape) {
-      return Status::OK;
-    }
-  }
+  // Equal shapes do not make the reshape a no-op: only an output that is the input's own memory
+  // (the view the shape function describes) is. A framework- or caller-allocated output of the
+  // same shape must be written below, or it keeps whatever it held.
 
   // Handle empty arrays - nothing to copy
   if (input->isEmpty() || input->lengthOf() == 0 || output->isEmpty() || output->lengthOf() == 0) {
@@ -96,6 +85,12 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
         order = 'f';
       } else if (orderArg == RESHAPE_NO_COPY_C_ORDER_MARKER) {
         order = 'c';
+      } else {
+        std::string errorMessage = "reshape_no_copy: the integer argument must be an order marker, ";
+        errorMessage += std::to_string(RESHAPE_NO_COPY_C_ORDER_MARKER) + " ('c') or ";
+        errorMessage += std::to_string(RESHAPE_NO_COPY_F_ORDER_MARKER) + " ('f'), got ";
+        errorMessage += std::to_string(orderArg);
+        THROW_EXCEPTION(errorMessage.c_str());
       }
     } else {
       // Default to 'c' order if not specified
@@ -113,7 +108,17 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
         newShape.push_back(iArgs->at(i));
       }
     }
-    order = iArgs->at(iArgs->size() - 1) == RESHAPE_NO_COPY_F_ORDER_MARKER ? 'f' : 'c';
+    // Any other last value is a dimension passed without the marker: reading it as the marker
+    // would silently drop that dimension from the target shape.
+    const sd::LongType marker = iArgs->at(iArgs->size() - 1);
+    if (marker != RESHAPE_NO_COPY_F_ORDER_MARKER && marker != RESHAPE_NO_COPY_C_ORDER_MARKER) {
+      std::string errorMessage = "reshape_no_copy: the last integer argument must be the order marker, ";
+      errorMessage += std::to_string(RESHAPE_NO_COPY_C_ORDER_MARKER) + " ('c') or ";
+      errorMessage += std::to_string(RESHAPE_NO_COPY_F_ORDER_MARKER) + " ('f'), after the target shape; got ";
+      errorMessage += std::to_string(marker);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+    order = marker == RESHAPE_NO_COPY_F_ORDER_MARKER ? 'f' : 'c';
   }
 
   // Handle empty newShape (rank-0 / scalar output)
