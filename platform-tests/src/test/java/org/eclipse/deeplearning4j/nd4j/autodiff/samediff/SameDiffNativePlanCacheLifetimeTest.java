@@ -23,6 +23,7 @@ import org.bytedeco.javacpp.LongPointer;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -41,6 +42,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * device workspaces (a 256MB cuBLAS workspace each, by default). A graph the caller drops
  * without close() must give that memory back once it is collected, like its arrays do.
  * SameDiffTests, which rarely closes its graphs, exhausted the 128GB of a GB10 this way.
+ * Its executors must also leave the frozen executor count, which otherwise keeps
+ * InferenceSession from clearing the TAD cache for the rest of the process.
  */
 @Slf4j
 public class SameDiffNativePlanCacheLifetimeTest {
@@ -60,6 +63,7 @@ public class SameDiffNativePlanCacheLifetimeTest {
         runGraphs(1, true);
         reclaim();
         long heldBefore = heldDeviceBytes(ops);
+        int frozenBefore = DynamicShapePlanExecutor.frozenExecutorCount();
         runGraphs(GRAPHS, true);
         reclaim();
         long heldAfterClosed = heldDeviceBytes(ops);
@@ -74,6 +78,8 @@ public class SameDiffNativePlanCacheLifetimeTest {
                 + "{} dropped graphs still reachable after collection; memory pool reserves {}MB unused",
                 GRAPHS, mb(keptByClosed), mb(keptByDropped), reachable, mb(poolCachedBytes(ops)));
         assertEquals(0, reachable, "graphs dropped without close() must be collectable");
+        assertEquals(frozenBefore, DynamicShapePlanExecutor.frozenExecutorCount(),
+                "executors of collected graphs must leave the frozen executor count");
         assertTrue(keptByClosed <= TOLERANCE_BYTES, GRAPHS + " closed graphs kept "
                 + mb(keptByClosed) + "MB of device memory");
         assertTrue(keptByDropped <= TOLERANCE_BYTES, GRAPHS + " graphs dropped without close() kept "

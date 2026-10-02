@@ -22,6 +22,7 @@ package org.nd4j.autodiff.samediff.execution;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.nd4j.autodiff.samediff.HeldCount;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -130,11 +131,37 @@ public class DynamicShapePlanExecutor implements Closeable {
         return GLOBAL_FROZEN_EXECUTOR_COUNT.get() > 0;
     }
 
+    /** The number of executors {@link #hasFrozenExecutors()} counts. */
+    public static int frozenExecutorCount() {
+        return GLOBAL_FROZEN_EXECUTOR_COUNT.get();
+    }
+
     /**
-     * True when THIS executor has incremented {@link #GLOBAL_FROZEN_EXECUTOR_COUNT}.
-     * Prevents double-increment and ensures the decrement is paired correctly.
+     * Counts this executor in {@link #GLOBAL_FROZEN_EXECUTOR_COUNT} unless it already is.
+     *
+     * @return true when this call counted it
      */
-    private boolean registeredAsFrozen;
+    private boolean registerAsFrozen() {
+        if (frozenRegistration != null) return false;
+        frozenRegistration = HeldCount.acquire(GLOBAL_FROZEN_EXECUTOR_COUNT);
+        return true;
+    }
+
+    /** Gives back this executor's unit of {@link #GLOBAL_FROZEN_EXECUTOR_COUNT}, if it holds one. */
+    private void unregisterAsFrozen() {
+        HeldCount registration = frozenRegistration;
+        if (registration == null) return;
+        frozenRegistration = null;
+        registration.release();
+    }
+
+    /**
+     * This executor's unit of {@link #GLOBAL_FROZEN_EXECUTOR_COUNT}, or null when it holds
+     * none. Given back when the executor is reset or closed; an executor collected without
+     * close() gives it back through the DeallocatorService, since its plans can no longer
+     * replay the TAD pointers they baked.
+     */
+    private HeldCount frozenRegistration;
 
     /** C++ error code returned when an input DataBuffer is closed/destroyed/invalid.
      *  Java can detect this and re-resolve the stale input from SameDiff variables. */
@@ -923,10 +950,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Decrement global frozen-executor count before clearing the flag.
             // After SESSION_RESET the CUDA graphs are destroyed (releaseGpuIntermediates above)
             // so the baked TAD pointers no longer exist; it is safe to allow clearTADCache again.
-            if (registeredAsFrozen) {
-                GLOBAL_FROZEN_EXECUTOR_COUNT.decrementAndGet();
-                registeredAsFrozen = false;
-            }
+            unregisterAsFrozen();
             hadFrozenPlan = false;
             nativeExecutionDevice = -1;
             return;
@@ -1061,7 +1085,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Keep: nativePlanCacheHandle, pinnedPlanHandles (lease stays pinned),
             // cachedOpContext + contextInputRefs (shared across plan swaps; only
             // executeNative() may atomically replace the refs), configuredHandleAddresses,
-            // retainedExternalInputsByPlanHandle, registeredAsFrozen/global frozen count.
+            // retainedExternalInputsByPlanHandle, frozenRegistration/global frozen count.
             // Drop only the CURRENT identity + per-execution input caches so the next
             // executeNative() compiles-or-restores for the incoming plan.
             nativePlanHandle = null;
@@ -1103,9 +1127,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         // A plan change destroys the old CUDA graphs (freeNativePlanHandle above),
         // so the baked TAD pointers from the old plan no longer exist.
         // Parked plans keep their graphs alive — the executor stays registered.
-        if (registeredAsFrozen && !parkedFrozenOutgoing) {
-            GLOBAL_FROZEN_EXECUTOR_COUNT.decrementAndGet();
-            registeredAsFrozen = false;
+        if (!parkedFrozenOutgoing) {
+            unregisterAsFrozen();
         }
         nativeExecutorFailed = false;
         // FROZEN→FROZEN MULTI-PLAN SWITCH: if the outgoing plan was ever frozen, preserve
@@ -2039,10 +2062,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Register in the global frozen-executor counter (once per executor lifetime).
         // This prevents clearTADCache() from running while this executor holds baked
         // CUDA-graph kernel args that reference TAD device pointers.
-        if (!registeredAsFrozen) {
-            GLOBAL_FROZEN_EXECUTOR_COUNT.incrementAndGet();
-            registeredAsFrozen = true;
-        }
+        registerAsFrozen();
         log.info("FROZEN_TRANSITION: unfrozen → FROZEN (reason={}, nativePhase={}, frozenCallCount reset, plan={}, globalFrozenCount={})",
                 reason, nativePhaseCode,
                 nativePlanHandle != null && !nativePlanHandle.isNull() ? "native" : "java",
@@ -2222,10 +2242,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Decrement global frozen-executor count before resetting Java frozen state.
         // releaseGpuIntermediates() above destroyed the CUDA graphs; the baked TAD pointers
         // from the old plan no longer exist. It is safe to allow clearTADCache again.
-        if (registeredAsFrozen) {
-            GLOBAL_FROZEN_EXECUTOR_COUNT.decrementAndGet();
-            registeredAsFrozen = false;
-        }
+        unregisterAsFrozen();
         // The native lifecycle is gone with the handle; only cache history is reset here.
         hadFrozenPlan = false;
         nativeExecutorFailed = false;
@@ -5692,9 +5709,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             DspLifecycleSnapshot lifecycleSnapshot = getLifecycleSnapshot();
             if (lifecycleSnapshot.isValid() && lifecycleSnapshot.isShapesFrozenOrReplaying()) {
                     int nativePhaseCode = lifecycleSnapshot.getPlanPhase().getNativeCode();
-                    if (!registeredAsFrozen) {
-                        GLOBAL_FROZEN_EXECUTOR_COUNT.incrementAndGet();
-                        registeredAsFrozen = true;
+                    if (registerAsFrozen()) {
                         log.info("DSP_TAD_GUARD: plan reached native phase {} — registered in global frozen count {}",
                                 nativePhaseCode, GLOBAL_FROZEN_EXECUTOR_COUNT.get());
                     }
@@ -6413,10 +6428,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
             // Only after every native lease has been released may global TAD-cache guards
             // and protected Java buffer owners be dropped.
-            if (registeredAsFrozen) {
-                GLOBAL_FROZEN_EXECUTOR_COUNT.decrementAndGet();
-                registeredAsFrozen = false;
-            }
+            unregisterAsFrozen();
             currentPlan = null;
             protectedConstantBuffers = null;
             closed = true;
