@@ -493,9 +493,10 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
   NDArray** result = externalArrays;
   if (needsStaging && !execCtx->isStagingBuffersSynced()) {
     if (!planLifecycle_.isSlotBySlot() && !externalInputIsVariable_.empty()) {
+      // A plan without external inputs stages nothing: its input array may be null.
       DspStagingSyncResult stagingResult =
           ensureAndSyncStagingBuffers(externalArrays, numExt, activeStreamPtr);
-      if (!stagingResult.ok() || stagingResult.effectiveExternals == nullptr) {
+      if (!stagingResult.ok() || (numExt > 0 && stagingResult.effectiveExternals == nullptr)) {
         DSP_DIAG(EXECUTE,
                  "%s: staging preparation failed status=%d cudaError=%d — aborting",
                  diagTag, static_cast<int>(stagingResult.status),

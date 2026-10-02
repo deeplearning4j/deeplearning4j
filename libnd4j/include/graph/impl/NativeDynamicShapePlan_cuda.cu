@@ -536,9 +536,10 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       execCtx->execTarget = ExecTarget::GRAPH_REPLAY;
     }
   }
+  // A plan without external inputs stages nothing: its input array may be null.
   DspStagingSyncResult syncResult = performPreReplaySync(
       externalInputs, numExternalInputs, stream, "frozen_fast_path");
-  if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+  if (!syncResult.ok() || (numExternalInputs > 0 && syncResult.effectiveExternals == nullptr)) {
     DSP_DIAG(EXECUTE,
              "FROZEN_FAST_PATH: input staging failed status=%d cudaError=%d - aborting",
              static_cast<int>(syncResult.status), syncResult.cudaError);
@@ -785,7 +786,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
           }
           DspStagingSyncResult segmentSync = performPreReplaySync(
               externalInputs, numExternalInputs, stream, "frozen_fast_path_segment");
-          if (!segmentSync.ok() || segmentSync.effectiveExternals == nullptr) {
+          if (!segmentSync.ok() || (numExternalInputs > 0 && segmentSync.effectiveExternals == nullptr)) {
             DSP_DIAG(EXECUTE,
                      "FROZEN_FAST_PATH: seg[%d-%d] device=%d input staging failed "
                      "status=%d cudaError=%d - aborting",

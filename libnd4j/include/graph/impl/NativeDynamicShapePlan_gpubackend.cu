@@ -2115,9 +2115,10 @@ Status NativeDynamicShapePlan::compositeReplay(
   // gap-stream override below — cross-stream sync reads the real default
   // stream via getCudaStream(). With the override active, getCudaStream()
   // returns cudaStr, making the cross-stream sync a no-op.
+  // A plan without external inputs stages nothing: its input array may be null.
   DspStagingSyncResult syncResult = performPreReplaySync(
       externalArrays, numExt, stream, "compositeReplay");
-  if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+  if (!syncResult.ok() || (numExt > 0 && syncResult.effectiveExternals == nullptr)) {
     DSP_DIAG(EXECUTE,
              "compositeReplay: input staging failed status=%d cudaError=%d — aborting",
              static_cast<int>(syncResult.status), syncResult.cudaError);
@@ -4243,7 +4244,7 @@ Status NativeDynamicShapePlan::segDispatchReplay(
     // performPreReplaySync is idempotent (dedup via PlanExecutionContext flags).
     DspStagingSyncResult syncResult = performPreReplaySync(
         externalArrays, numExt, stream, "monolithicReplay");
-    if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+    if (!syncResult.ok() || (numExt > 0 && syncResult.effectiveExternals == nullptr)) {
       DSP_DIAG(EXECUTE,
                "monolithicReplay: input staging failed status=%d cudaError=%d — aborting",
                static_cast<int>(syncResult.status), syncResult.cudaError);
@@ -5265,7 +5266,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           }
           throw;
         }
-        if (!stagingResult.ok() || stagingResult.effectiveExternals == nullptr) {
+        if (!stagingResult.ok() || (numExt > 0 && stagingResult.effectiveExternals == nullptr)) {
           abortStagingCapture();
           DSP_DIAG(EXECUTE,
                    "pre-composite-capture staging failed status=%d cudaError=%d — aborting",
@@ -7530,7 +7531,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
     // direct execution reads stale capture-time device data every step.
     DspStagingSyncResult syncResult = performPreReplaySync(
         externalArrays, numExt, stream, "tritonDirectExec");
-  if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+  if (!syncResult.ok() || (numExt > 0 && syncResult.effectiveExternals == nullptr)) {
       DSP_DIAG(EXECUTE,
                "tritonDirectExec: input staging failed status=%d cudaError=%d — aborting",
                static_cast<int>(syncResult.status), syncResult.cudaError);

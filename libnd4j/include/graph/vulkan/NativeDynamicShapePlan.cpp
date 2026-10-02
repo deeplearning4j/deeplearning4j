@@ -158,9 +158,10 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       execCtx != nullptr) {
     execCtx->execTarget = ExecTarget::GRAPH_REPLAY;
   }
+  // A plan without external inputs stages nothing: its input array may be null.
   DspStagingSyncResult syncResult = performPreReplaySync(
       externalInputs, numExternalInputs, stream, "vulkan_frozen_fast_path");
-  if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+  if (!syncResult.ok() || (numExternalInputs > 0 && syncResult.effectiveExternals == nullptr)) {
     return vulkanPlanFailure(
         "Vulkan frozen fast-path input staging failed: syncStatus=" +
         std::to_string(static_cast<int>(syncResult.status)));
@@ -698,7 +699,7 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
 
   DspStagingSyncResult stagingResult =
       ensureAndSyncStagingBuffers(externalArrays, numExt, executionStream);
-  if (!stagingResult.ok() || stagingResult.effectiveExternals == nullptr) {
+  if (!stagingResult.ok() || (numExt > 0 && stagingResult.effectiveExternals == nullptr)) {
     DSP_DIAG(EXECUTE, "%s: Vulkan pre-replay staging failed", diagTag);
     return stagingResult;
   }

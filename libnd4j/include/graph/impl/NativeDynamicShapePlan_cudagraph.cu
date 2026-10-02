@@ -719,9 +719,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           execCtx->execTarget = ExecTarget::GRAPH_REPLAY;
         }
       }
+      // A plan without external inputs stages nothing: its input array may be null.
       DspStagingSyncResult syncResult = performPreReplaySync(
           externalArrays, numExt, stream, "cudagraph_replay");
-      if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+      if (!syncResult.ok() || (numExt > 0 && syncResult.effectiveExternals == nullptr)) {
         DSP_DIAG(EXECUTE,
                  "CUDA graph replay input staging failed status=%d cudaError=%d — aborting",
                  static_cast<int>(syncResult.status), syncResult.cudaError);
@@ -1894,7 +1895,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
     DspStagingSyncResult syncResult = performPreReplaySync(
         externalArrays, numExt, stream, "cudagraph_capture");
-    if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+    if (!syncResult.ok() || (numExt > 0 && syncResult.effectiveExternals == nullptr)) {
       DSP_DIAG_SEG(COMPILE, segIdx,
                    "CUDA graph capture input staging failed status=%d cudaError=%d",
                    static_cast<int>(syncResult.status), syncResult.cudaError);

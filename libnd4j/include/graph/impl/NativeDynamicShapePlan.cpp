@@ -8024,9 +8024,10 @@ Status NativeDynamicShapePlan::dispatchSegment(
     if (execCtx != nullptr) {
       execCtx->execTarget = ExecTarget::SBS_ON_LC_STREAM;
     }
+    // A plan without external inputs stages nothing: its input array may be null.
     DspStagingSyncResult syncResult =
         performPreReplaySync(externalArrays, numExt, stream, "terminal_sbs");
-    if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+    if (!syncResult.ok() || (numExt > 0 && syncResult.effectiveExternals == nullptr)) {
       DSP_DIAG(EXECUTE,
                "dispatchSegment: terminal SBS input preparation failed status=%d cudaError=%d",
                static_cast<int>(syncResult.status), syncResult.cudaError);
@@ -8068,7 +8069,7 @@ Status NativeDynamicShapePlan::dispatchSegment(
 
   DspStagingSyncResult syncResult =
       performPreReplaySync(externalArrays, numExt, stream, "dispatchSegment");
-  if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+  if (!syncResult.ok() || (numExt > 0 && syncResult.effectiveExternals == nullptr)) {
     DSP_DIAG(EXECUTE,
              "dispatchSegment: input staging failed status=%d cudaError=%d — aborting",
              static_cast<int>(syncResult.status), syncResult.cudaError);
