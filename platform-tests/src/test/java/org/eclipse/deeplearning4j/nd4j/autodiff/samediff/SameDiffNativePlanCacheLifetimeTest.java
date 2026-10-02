@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,7 +33,10 @@ import org.nd4j.nativeblas.NativeOps;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,11 +44,12 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * A graph that executes through a DSP plan owns a native plan cache: its plans with their
- * device workspaces (a 256MB cuBLAS workspace each, by default). A graph the caller drops
- * without close() must give that memory back once it is collected, like its arrays do.
- * SameDiffTests, which rarely closes its graphs, exhausted the 128GB of a GB10 this way.
- * Its executors must also leave the frozen executor count, which otherwise keeps
- * InferenceSession from clearing the TAD cache for the rest of the process.
+ * device workspaces (a cuBLAS workspace each, 32MB from Hopper on). A graph the caller drops
+ * without close() must give that memory back once it is collected, like its arrays do, and
+ * collected once device memory runs low. SameDiffTests, which rarely closes its graphs,
+ * exhausted the 128GB of a GB10 this way. Its executors must also leave the frozen executor
+ * count, which otherwise keeps InferenceSession from clearing the TAD cache for the rest of
+ * the process.
  */
 @Slf4j
 public class SameDiffNativePlanCacheLifetimeTest {
@@ -84,6 +90,115 @@ public class SameDiffNativePlanCacheLifetimeTest {
                 + mb(keptByClosed) + "MB of device memory");
         assertTrue(keptByDropped <= TOLERANCE_BYTES, GRAPHS + " graphs dropped without close() kept "
                 + mb(keptByDropped) + "MB of device memory after collection");
+    }
+
+    /**
+     * Graphs created, executed once and dropped by worker threads, as many callers do (and
+     * SameDiffTests#testRapidSameDiffCreationDestruction does): once the threads are gone, every
+     * graph and its executor must be collectable, or their plans' device memory is never freed.
+     */
+    @Test
+    void graphsDroppedByWorkerThreadsAreCollected() throws InterruptedException {
+        assumeTrue(Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA,
+                "device memory is the CUDA backend's");
+        runGraphs(1, true);
+        reclaim();
+        int frozenBefore = DynamicShapePlanExecutor.frozenExecutorCount();
+
+        List<WeakReference<SameDiff>> dropped = new CopyOnWriteArrayList<>();
+        List<Throwable> failures = new CopyOnWriteArrayList<>();
+        List<Thread> workers = new ArrayList<>();
+        for (int t = 0; t < 4; t++) {
+            Thread worker = new Thread(() -> {
+                try {
+                    for (int i = 0; i < 6; i++) {
+                        dropped.add(new WeakReference<>(runDenseSoftmaxGraph()));
+                    }
+                } catch (Throwable e) {
+                    failures.add(e);
+                }
+            }, "PlanCacheLifetimeWorker-" + t);
+            workers.add(worker);
+            worker.start();
+        }
+        for (Thread worker : workers) {
+            worker.join();
+        }
+        assertTrue(failures.isEmpty(), "worker failed: " + failures);
+        reclaim();
+
+        long reachable = dropped.stream().filter(ref -> ref.get() != null).count();
+        log.info("[PLAN_CACHE_LIFETIME] {} graphs dropped by 4 worker threads: {} still reachable after "
+                + "collection; frozen executors {} -> {}", dropped.size(), reachable, frozenBefore,
+                DynamicShapePlanExecutor.frozenExecutorCount());
+        assertEquals(0, reachable, "graphs dropped by worker threads must be collectable");
+        assertEquals(frozenBefore, DynamicShapePlanExecutor.frozenExecutorCount(),
+                "executors of collected graphs must leave the frozen executor count");
+    }
+
+    /**
+     * Nothing collects dropped graphs while the Java heap is quiet, however full the device gets:
+     * the next graph to take a plan cache must collect them once device memory is low
+     * (simulated here at just under a quarter free).
+     */
+    @Test
+    void droppedGraphsAreReclaimedWhenDeviceMemoryIsLow() throws InterruptedException {
+        assumeTrue(Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA,
+                "device memory is the CUDA backend's");
+        runGraphs(1, true);
+        reclaim();
+        int frozenBefore = DynamicShapePlanExecutor.frozenExecutorCount();
+        // Dropped by a thread that has ended, so no state of the executing thread still holds them.
+        List<WeakReference<SameDiff>> dropped = new CopyOnWriteArrayList<>();
+        List<Throwable> failures = new CopyOnWriteArrayList<>();
+        Thread worker = new Thread(() -> {
+            try {
+                for (int i = 0; i < 4; i++) {
+                    dropped.add(new WeakReference<>(runDenseSoftmaxGraph()));
+                }
+            } catch (Throwable e) {
+                failures.add(e);
+            }
+        }, "PlanCacheLifetimeWorker");
+        worker.start();
+        worker.join();
+        assertTrue(failures.isEmpty(), "worker failed: " + failures);
+
+        DeviceMemoryManager memory = DeviceMemoryManager.getInstance();
+        long reclaimsBefore = LowMemoryReclaim.reclaims();
+        memory.setMemorySimulationEnabled(true);
+        memory.setSimulatedFreeMemory(0, Nd4j.getNativeOps().getDeviceTotalMemory(0) / 4 - 1);
+        LowMemoryReclaim.resetSchedule();
+        try {
+            runDenseSoftmaxGraph().close();
+        } finally {
+            memory.clearAllMemorySimulation();
+            LowMemoryReclaim.resetSchedule();
+        }
+
+        long reachable = dropped.stream().filter(ref -> ref.get() != null).count();
+        log.info("[PLAN_CACHE_LIFETIME] low device memory: {} reclaim(s), {} of {} dropped graphs still "
+                + "reachable; frozen executors {} -> {}", LowMemoryReclaim.reclaims() - reclaimsBefore,
+                reachable, dropped.size(), frozenBefore, DynamicShapePlanExecutor.frozenExecutorCount());
+        assertEquals(reclaimsBefore + 1, LowMemoryReclaim.reclaims(),
+                "creating a plan cache with device memory low must reclaim once");
+        assertEquals(0, reachable, "the reclaim must collect the dropped graphs");
+        assertEquals(frozenBefore, DynamicShapePlanExecutor.frozenExecutorCount(),
+                "the reclaim must free the dropped graphs' executors");
+    }
+
+    /** The graph of SameDiffTests#testRapidSameDiffCreationDestruction, executed once; returned unclosed. */
+    private static SameDiff runDenseSoftmaxGraph() {
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 64);
+        SDVariable w = sd.var("w", Nd4j.randn(DataType.FLOAT, 64, 32).mul(0.1));
+        SDVariable b = sd.var("b", Nd4j.zeros(DataType.FLOAT, 32));
+        sd.nn.softmax("output", input.mmul(w).add(b), -1);
+        try (INDArray in = Nd4j.randn(DataType.FLOAT, 2, 64)) {
+            Map<String, INDArray> out = sd.output(Collections.singletonMap("input", in), "output");
+            out.get("output").close();
+        }
+        return sd;
     }
 
     /**

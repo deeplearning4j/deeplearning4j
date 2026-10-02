@@ -52,15 +52,17 @@ public final class NativePlanCacheOwner implements Deallocatable {
 
     /**
      * Creates a native plan cache on the current thread's device and registers its release at
-     * collection.
+     * collection. When memory is low, the caches of graphs dropped without close() are reclaimed
+     * first ({@link LowMemoryReclaim}).
      */
     public static NativePlanCacheOwner create(NativeOps nativeOps) {
+        int device = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        LowMemoryReclaim.reclaimIfLow(nativeOps, device);
         Pointer cache = nativeOps.createNativePlanCache();
         if (cache == null || cache.isNull()) {
             throw new IllegalStateException("createNativePlanCache returned null — native DSP cache is unavailable");
         }
-        NativePlanCacheOwner owner = new NativePlanCacheOwner(nativeOps, cache,
-                Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        NativePlanCacheOwner owner = new NativePlanCacheOwner(nativeOps, cache, device);
         try {
             Nd4j.getDeallocatorService().pickObject(owner);
         } catch (RuntimeException e) {

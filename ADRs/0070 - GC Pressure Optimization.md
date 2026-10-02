@@ -168,10 +168,17 @@ This prevents SIGABRT crashes caused by calling `free()` on corrupted heap metad
 
 **Heap Threshold Sensitivity**: The 75% threshold is empirically tuned. Workloads with very large Java heap usage (e.g., large batch preprocessing) may need adjustment via system property.
 
+### Native Memory Pressure Reclaim (amendment, October 2026)
+
+The heap-pressure trigger never fires for objects whose native memory dwarfs their heap footprint. A SameDiff graph dropped without `close()` keeps its native plan cache (slot buffers, captured graphs and a cuBLAS workspace per plan) until it is collected, and its heap side is small. SameDiffTests#testRapidSameDiffCreationDestruction (12 threads x 50 dropped graphs) piled them up until the GB10's kernel OOM-killed the JVM, with the Java heap far below 75%.
+
+`LowMemoryReclaim` (org.eclipse.deeplearning4j.nd4j.autodiff.samediff) adds memory pressure as a second trigger, at the one point where a graph takes native memory: `NativePlanCacheOwner.create`, once per graph. When less than a quarter of the device is free (pool-aware: reserved but unused pool memory counts as free; the host's available memory for a backend without device memory), or the process is past three quarters of JavaCPP's `maxPhysicalBytes`, it runs `System.gc()` and `DeallocatorService.flushCollectedReferences()`, which frees only references positively collected. One thread reclaims at a time; a reclaim that leaves memory low doubles the wait before the next (one second up to one minute), so memory filled by live data costs at most one collection a minute. Steady-state decode creates no plan caches and never reaches it, so the DSP GC suppression above is unchanged.
+
 ## References
 
 - DeallocatorService.java in nd4j-api
 - OpaqueDataBuffer.java (gcIfHeapPressured integration)
 - DynamicShapePlanExecutor.java (autoGcWindow suppression)
 - SameDiffMemoryUtils.java (safeClose utility)
+- LowMemoryReclaim.java, NativePlanCacheOwner.java (native memory pressure reclaim)
 - BaseNDArray.java (setCloseable fix)
