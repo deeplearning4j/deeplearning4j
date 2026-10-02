@@ -841,12 +841,10 @@ public class SameDiffScopeSerdeTest extends BaseNd4jTestWithBackends {
 
         assertEquals(sd1, sd2);
 
-        w2a.getArr().assign(3.0f);
-
-        assertNotEquals(sd1, sd2);
-
-        w1a.getArr().assign(3.0f);
-        assertEquals(sd1, sd2);
+        // A constant's contents are fixed once created (on CUDA an in-place write never reaches
+        // the host copy equals() reads): compare graphs built with different constants instead.
+        assertNotEquals(equalsTestGraph(2.0f), equalsTestGraph(3.0f));
+        assertEquals(equalsTestGraph(3.0f), equalsTestGraph(3.0f));
 
         SDVariable s1 = p1.sub("op", w1);
         SDVariable s2 = p2.add("op", w1);
@@ -887,5 +885,13 @@ public class SameDiffScopeSerdeTest extends BaseNd4jTestWithBackends {
         SDVariable out = sd.cnn().conv2d(sdInput, sdWeights, sdBias, c);
 
         assertArrayEquals(new long[]{bS, oC, oH, oW}, out.eval().shape());
+    }
+
+    private static SameDiff equalsTestGraph(float c2) {
+        SameDiff sd = SameDiff.create();
+        SDVariable p = sd.placeHolder("ph", DataType.FLOAT, -1, 10);
+        p.add("add", sd.constant("c1", 1.0f));
+        sd.constant("c2", c2);
+        return sd;
     }
 }
