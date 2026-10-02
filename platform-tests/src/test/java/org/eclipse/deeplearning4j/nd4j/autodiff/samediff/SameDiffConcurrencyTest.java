@@ -720,8 +720,10 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(nThreads);
         AtomicBoolean failed = new AtomicBoolean(false);
+        AtomicBoolean stop = new AtomicBoolean(false);
         AtomicReference<Throwable> firstError = new AtomicReference<>();
         AtomicInteger successCount = new AtomicInteger(0);
+        List<Thread> threads = new ArrayList<>();
 
         for (int t = 0; t < nThreads; t++) {
             final int threadId = t;
@@ -729,7 +731,7 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                 try {
                     startLatch.await();
 
-                    for (int i = 0; i < nModelsPerThread; i++) {
+                    for (int i = 0; i < nModelsPerThread && !stop.get(); i++) {
                         try (SameDiff sd = SameDiff.create()) {
                             SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 64);
                             SDVariable w = sd.var("w", Nd4j.randn(DataType.FLOAT, 64, 32).mul(0.1));
@@ -760,11 +762,17 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                 }
             });
             thread.setName("RapidCreate-Thread-" + threadId);
+            threads.add(thread);
             thread.start();
         }
 
         startLatch.countDown();
         boolean completed = doneLatch.await(180, TimeUnit.SECONDS);
+        // Workers still running after a timeout would keep creating graphs into the next test.
+        stop.set(true);
+        for (Thread thread : threads) {
+            thread.join(TimeUnit.SECONDS.toMillis(60));
+        }
         assertTrue(completed, "All threads should complete within timeout");
 
         if (failed.get()) {

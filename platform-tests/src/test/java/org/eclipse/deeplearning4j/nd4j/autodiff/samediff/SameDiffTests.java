@@ -31,6 +31,11 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -5299,11 +5304,13 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         int nThreads = 12;
         int nModelsPerThread = 50;
 
-        java.util.concurrent.CountDownLatch startLatch = new java.util.concurrent.CountDownLatch(1);
-        java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(nThreads);
-        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
-        java.util.concurrent.atomic.AtomicReference<Throwable> firstError = new java.util.concurrent.atomic.AtomicReference<>();
-        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(nThreads);
+        AtomicBoolean failed = new AtomicBoolean(false);
+        AtomicBoolean stop = new AtomicBoolean(false);
+        AtomicReference<Throwable> firstError = new AtomicReference<>();
+        AtomicInteger successCount = new AtomicInteger(0);
+        List<Thread> threads = new ArrayList<>();
 
         for (int t = 0; t < nThreads; t++) {
             final int threadId = t;
@@ -5311,7 +5318,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 try {
                     startLatch.await();
 
-                    for (int i = 0; i < nModelsPerThread; i++) {
+                    for (int i = 0; i < nModelsPerThread && !stop.get(); i++) {
                         // Create a small model
                         SameDiff sd = SameDiff.create();
                         SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 64);
@@ -5347,11 +5354,17 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 }
             });
             thread.setName("RapidCreate-Thread-" + threadId);
+            threads.add(thread);
             thread.start();
         }
 
         startLatch.countDown();
-        boolean completed = doneLatch.await(180, java.util.concurrent.TimeUnit.SECONDS);
+        boolean completed = doneLatch.await(180, TimeUnit.SECONDS);
+        // Workers still running after a timeout would keep creating graphs into the next test.
+        stop.set(true);
+        for (Thread thread : threads) {
+            thread.join(TimeUnit.SECONDS.toMillis(60));
+        }
         assertTrue(completed, "All threads should complete within timeout");
 
         if (failed.get()) {
