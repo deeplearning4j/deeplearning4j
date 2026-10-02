@@ -1594,12 +1594,13 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     public void testPoisson(Nd4jBackend backend){
         Nd4j.getRandom().setSeed(12345);
         INDArray shape = Nd4j.createFromArray(new int[] {1,3});
-        INDArray alpha = Nd4j.rand(1,3);
-        RandomPoisson randomPoisson = new RandomPoisson(shape, alpha);
-        INDArray[] res = Nd4j.exec(randomPoisson);
+        INDArray alpha = Nd4j.rand(1,3).muli(5);
 
-        RandomPoisson randomPoisson1 = new RandomPoisson(shape, alpha);
-        INDArray[] res1 = Nd4j.exec(randomPoisson1);
+        // A draw advances the thread's generator, so the same seed, not the same op, reproduces it.
+        Nd4j.getRandom().setSeed(42);
+        INDArray[] res = Nd4j.exec(new RandomPoisson(shape, alpha));
+        Nd4j.getRandom().setSeed(42);
+        INDArray[] res1 = Nd4j.exec(new RandomPoisson(shape, alpha));
         assertEquals(res[0], res1[0]);
     }
 

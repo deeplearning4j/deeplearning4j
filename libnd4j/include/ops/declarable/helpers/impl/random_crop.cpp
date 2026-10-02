@@ -16,35 +16,39 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-//  @author sgazeos@gmail.com
-//
+// One implementation for every backend: the crop is a sub-array view of the input, which the
+// output's own assign copies on the input's device.
+#include <ops/declarable/helpers/random.h>
 #include <ops/declarable/helpers/random_crop.h>
-#include <graph/Context.h>
-
-#include <memory>
-#include <vector>
-
-
-
+#if NOT_EXCLUDED(OP_random_crop)
 namespace sd {
 namespace ops {
 namespace helpers {
 
-template <typename T>
-static Status _randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed) {
+Status randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed) {
+  if (output->lengthOf() == 0) return Status::OK;
+  auto& rng = context.randomGenerator();
+  applySeedArgument(rng, seed);
+
+  // Every dimension is cropped at an offset drawn uniformly from those where the crop fits.
+  const int rank = input->rankOf();
+  std::vector<LongType> ranges(2 * rank);
+  for (int d = 0; d < rank; d++) {
+    const LongType size = output->sizeAt(d);
+    const LongType offsets = input->sizeAt(d) - size + 1;
+    const LongType offset = offsets > 1 ? rng.relativeLong(d) % offsets : 0;
+    ranges[2 * d] = offset;
+    ranges[2 * d + 1] = offset + size;
+  }
+  rng.rewindH(rank);
+
+  NDArray* crop = (*input)(ranges, true);
+  output->assign(crop);
+  delete crop;
   return Status::OK;
 }
-
-Status randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), return _randomCropFunctor, (context, input, shape, output, seed),
-                        SD_FLOAT_TYPES);
-}
-
-BUILD_SINGLE_TEMPLATE( sd::Status _randomCropFunctor,
-                      (graph::Context & context, NDArray* input, NDArray* shape, NDArray* output, int seed),
-                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

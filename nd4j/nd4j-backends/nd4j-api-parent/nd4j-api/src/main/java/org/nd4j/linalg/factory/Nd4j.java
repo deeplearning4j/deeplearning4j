@@ -2447,11 +2447,14 @@ public class Nd4j {
     }
 
     /**
-     * Generate a linearly spaced vector
+     * Generate a linearly spaced vector: {@code num} values from {@code lower} on, {@code step} apart.
+     * Note the argument order differs from {@link #linspace(DataType, double, double, long)}, which
+     * takes the step before the count: {@code linspace(FLOAT, 0, 1, 100)} with integer arguments
+     * resolves here and returns the single value 0.
      *
-     * @param lower  lower bound
-     * @param num upper bound
-     * @param step    number of items in returned vector
+     * @param lower first value
+     * @param num   number of items in the returned vector
+     * @param step  difference between consecutive items
      * @return the linearly spaced vector
      */
     public static INDArray linspace(@NonNull DataType dtype, long lower, long num, long step) {

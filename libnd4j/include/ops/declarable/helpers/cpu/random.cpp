@@ -30,187 +30,95 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-/**
- * gammaLess - compute gamma distributed value for shapes (alpha) from 0 to 1
- * @tparam T - any float types are acceptable
- * @param rng - random generator for uniformly vals
- * @param alpha - shape of distribution
- * @param beta - scale of distributed values
- * @return gamma distributed value
- */
-template <typename T>
-T gammaLess(graph::RandomGenerator& rng, T const alpha, T const beta) {
-  auto d = T(1.0334f) - T(0.0766f) * math::p_exp(T(2.2942f) * alpha);
-  auto a = math::p_pow(T(2.f), alpha) * math::p_pow<T>(T(1.f) - math::p_exp(-d * T(0.5f)), alpha);
-  auto b = alpha * math::p_pow(d, alpha - T(1.f)) * exp(-d);
-  auto c = a + b;
-  T rawX;
-  static sd::LongType index = 0;
-  const T underAlpha = T(1.f) / alpha;
-  const T powerAlpha = math::p_pow<T>(T(2.f), alpha - T(1.f));
+// Samples in float, or in double for a double output.
+template <typename Z>
+using RandomComputeT = typename std::conditional<std::is_same<Z, double>::value, double, float>::type;
 
-  for (;;) {
-    auto u = rng.relativeT<T>(index++, T(0.f), T(1.f));
+template <typename Z>
+static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
+                             NDArray* output) {
+  using C = RandomComputeT<Z>;
+  // Output element i samples with parameters i % length of alpha and beta broadcast together.
+  LongType* parameterShape = alpha->shapeInfo();
+  if (beta != nullptr)
+    ShapeUtils::evalBroadcastShapeInfo(alpha->shapeInfo(), beta->shapeInfo(), true, parameterShape,
+                                       context->getWorkspace());
+  NDArray* alphas = randomParameter(alpha, parameterShape, DataTypeUtils::fromT<C>(), context);
+  NDArray* rates = beta != nullptr ? randomParameter(beta, parameterShape, DataTypeUtils::fromT<C>(), context) : nullptr;
 
-    if (u <= a / c)
-      rawX = -T(2.f) * math::p_log(T(1.f) - T(0.5f) * math::p_pow(T(c * u), underAlpha));
-    else
-      rawX = -math::p_log(c * (T(1.f) - u) / (alpha * math::p_pow(d, alpha - T(1.f))));
+  NDArray::preparePrimaryUse({output}, {alphas, rates});
+  const C* alphaBuf = alphas->bufferAsT<C>();
+  const C* rateBuf = rates != nullptr ? rates->bufferAsT<C>() : nullptr;
+  const LongType parameters = alphas->lengthOf();
+  Z* outputBuf = output->bufferAsT<Z>();
+  const LongType* outputShapeInfo = output->shapeInfo();
+  const LongType rank = shape::rank(outputShapeInfo);
 
-    T v = static_cast<T>(rng.relativeT(index++, 0.f, 1.f));
-    if (rawX <= d) {
-      auto testVal = (math::p_pow(rawX, alpha - 1.f) * math::p_exp(-T(0.5f) * rawX)) /
-                     (powerAlpha * math::p_pow(T(1.f) - math::p_exp(-T(0.5f) * rawX), alpha - T(1.f)));
-      if (testVal < v) continue;
-      break;
-    } else {
-      if (v <= math::p_pow<T>(d / rawX, T(1.f) - alpha)) break;
-      continue;
+  auto func = PRAGMA_THREADS_FOR {
+    LongType coords[SD_MAX_RANK];
+    LongType offset;
+    for (auto i = start; i < stop; i++) {
+      const LongType p = i % parameters;
+      const C sample = sampleGamma<C>(rng, i, alphaBuf[p], rateBuf != nullptr ? rateBuf[p] : C(1));
+      INDEX2COORDS(i, rank, shape::shapeOf(outputShapeInfo), coords);
+      COORDS2INDEX(rank, shape::stride(outputShapeInfo), coords, offset);
+      outputBuf[offset] = static_cast<Z>(sample);
     }
-  }
-
-  return rawX / beta;
-}
-
-/**
- * gammaGreat - generate gamma distributed value for shape (alpha) greater then 1
- * @tparam T - given type (any float type is accepted.)
- * @param rng  - random generator
- * @param alpha - shape of the gamma distribution (alpha)
- * @param beta  - scale of the gamma distribution (beta)
- * @return - gamma distributed value with given params
- */
-template <typename T>
-T gammaGreat(graph::RandomGenerator& rng, T const alpha, T const beta) {
-  auto decreasedAlpha = alpha - T(1.f / 3.f);
-  auto c = T(1.) / math::p_sqrt(T(9.f) * decreasedAlpha);
-  static sd::LongType index = 0;
-  T x;
-  auto normalDistributed = [](graph::RandomGenerator& rng, sd::LongType& index) {
-    auto v1 = rng.relativeT(index++, T(0.f), T(1.f));
-    auto v2 = rng.relativeT(index++, T(0.f), T(1.f));
-
-    return math::p_cos(T(2.f * 3.141592f) * v2) * math::p_sqrt(T(-2.f) * math::p_log(v1));
   };
+  samediff::Threads::parallel_for(func, 0, output->lengthOf());
+  NDArray::registerPrimaryUse({output}, {alphas, rates});
+  rng.rewindH(output->lengthOf());
 
-  float normalizedVar;
-  for (;;) {
-    do {
-      x = normalDistributed(rng, index);
-      normalizedVar = T(1.f) + c * x;
-    } while (normalizedVar < T(0.f));
-    normalizedVar = normalizedVar * normalizedVar * normalizedVar;  // v * v * v;
-
-    auto u = rng.relativeT<T>(index++, T(0.f), T(1.f));
-    if (u < T(1.f) - T(.0331f) * (x * x) * (x * x)) break;
-    if (log(u) < 0.5f * x * x + decreasedAlpha * (1. - normalizedVar + math::p_log(normalizedVar))) break;
-  }
-  return (decreasedAlpha * normalizedVar / beta);
-}
-
-template <typename T>
-void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
-                      NDArray* output) {
-  auto broadcasted = alpha->shapeInfo();
-  if (beta != nullptr) {
-     sd::LongType* broadcastedShape = nullptr;
-    ShapeUtils::evalBroadcastShapeInfo(alpha->shapeInfo(), beta->shapeInfo(), true, broadcastedShape, context->getWorkspace());
-    broadcasted = broadcastedShape;
-  }
-
-  auto step = shape::length(broadcasted);
-  auto shift = output->lengthOf() / step;
-
-  auto copyAlpha = alpha;
-  auto copyBeta = beta;
-  if (beta != nullptr) {
-    NDArray alphaBroadcasted(broadcasted, alpha->dataType(), false, context);
-    NDArray betaBroadcasted(broadcasted, beta->dataType(), false, context);
-
-    copyAlpha = alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), alpha);
-    copyBeta = betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), beta);
-  }
-  bool directOutput = shape::strideDescendingCAscendingF(output->shapeInfo()) && output->ordering() == 'c';
-  T* outputBuf = output->dataBuffer()->primaryAsT<T>();
-
-  PRAGMA_OMP_PARALLEL_FOR
-  for (sd::LongType k = 0; k < shift; k++) {
-    auto pos = k * step;
-    for (sd::LongType e = 0; e < step; e++)
-      if (directOutput) {
-        outputBuf[pos + e] = copyAlpha->t<T>(e) <= 1
-                                 ? gammaLess(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f))
-                                 : gammaGreat(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f));
-      } else {
-        output->r<T>(pos + e) = copyAlpha->t<T>(e) <= 1
-                                    ? gammaLess(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f))
-                                    : gammaGreat(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f));
-      }
-  }
-
-  if (beta != nullptr) {
-    delete copyAlpha;
-    delete copyBeta;
-  }
+  delete alphas;
+  delete rates;
 }
 
 void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
                      NDArray* output) {
-  BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomGamma_, (context, rng, alpha, beta, output), SD_FLOAT_NATIVE);
+  BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomGamma_, (context, rng, alpha, beta, output), SD_FLOAT_TYPES);
 }
 BUILD_SINGLE_TEMPLATE( void fillRandomGamma_,
                       (LaunchContext * context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
                        NDArray* output),
-                      SD_FLOAT_NATIVE);
+                      SD_FLOAT_TYPES);
 
-/*
- * algorithm Poisson generator based upon the inversion by sequential search:[48]:505
-init:
-     Let x ← 0, p ← e−λ, s ← p.
-     Generate uniform random number u in [0,1].
-while u > s do:
-     x ← x + 1.
-     p ← p * λ / x.
-     s ← s + p.
-return x.
- * */
-template <typename T, typename Z>
-void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
-  auto shift = output->lengthOf() / lambda->lengthOf();
-  auto step = lambda->lengthOf();
-  T* lambdaBuf = lambda->dataBuffer()->primaryAsT<T>();
-  Z* outputBuf = output->dataBuffer()->primaryAsT<Z>();
-  bool directLa = shape::strideDescendingCAscendingF(lambda->shapeInfo()) && lambda->ordering() == 'c';
-  bool directOut = shape::strideDescendingCAscendingF(output->shapeInfo()) && output->ordering() == 'c';
-  PRAGMA_OMP_PARALLEL_FOR
-  for (sd::LongType k = 0; k < shift; k++) {
-    auto pos = k * step;
-    auto u = rng.relativeT<T>(k, static_cast<T>(0.), static_cast<T>(1.));
-    for (sd::LongType e = 0; e < step; e++) {
-      auto p = math::sd_exp<T, T>(-lambda->t<T>(e));
-      auto s = p;
-      auto x = Z(0.f);
-      while (u > s) {
-        x += 1.f;
-        p *= static_cast<T>(directLa ? lambdaBuf[e] / x : lambda->t<T>(e) / x);
-        s += p;
-      }
-      if (directOut)
-        outputBuf[pos + e] = x;
-      else
-        output->r<Z>(pos + e) = x;
+template <typename Z>
+static void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
+  using C = RandomComputeT<Z>;
+  // Output element i samples with lambda i % lambda's length.
+  NDArray* lambdas = randomParameter(lambda, lambda->shapeInfo(), DataTypeUtils::fromT<C>(), context);
+
+  NDArray::preparePrimaryUse({output}, {lambdas});
+  const C* lambdaBuf = lambdas->bufferAsT<C>();
+  const LongType parameters = lambdas->lengthOf();
+  Z* outputBuf = output->bufferAsT<Z>();
+  const LongType* outputShapeInfo = output->shapeInfo();
+  const LongType rank = shape::rank(outputShapeInfo);
+
+  auto func = PRAGMA_THREADS_FOR {
+    LongType coords[SD_MAX_RANK];
+    LongType offset;
+    for (auto i = start; i < stop; i++) {
+      const C sample = samplePoisson<C>(rng, i, lambdaBuf[i % parameters]);
+      INDEX2COORDS(i, rank, shape::shapeOf(outputShapeInfo), coords);
+      COORDS2INDEX(rank, shape::stride(outputShapeInfo), coords, offset);
+      outputBuf[offset] = static_cast<Z>(sample);
     }
-  }
+  };
+  samediff::Threads::parallel_for(func, 0, output->lengthOf());
+  NDArray::registerPrimaryUse({output}, {lambdas});
+  rng.rewindH(output->lengthOf());
+
+  delete lambdas;
 }
 
 void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
-  BUILD_DOUBLE_SELECTOR(lambda->dataType(), output->dataType(), fillRandomPoisson_, (context, rng, lambda, output),
-                        SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+  BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomPoisson_, (context, rng, lambda, output), SD_FLOAT_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE( void fillRandomPoisson_,
+BUILD_SINGLE_TEMPLATE( void fillRandomPoisson_,
                       (LaunchContext * context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output),
-                      SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+                      SD_FLOAT_TYPES);
 
 template <typename T>
 void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max,
@@ -227,6 +135,8 @@ void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& rng, NDA
     for (sd::LongType i = 0; i < output->lengthOf(); i++) {
       output->r<T>(i) = rng.relativeT<T>(i, minVal, maxVal);
     }
+    // The floating fill above rewinds inside the random launcher; the next fill must draw anew.
+    rng.rewindH(output->lengthOf());
   }
 }
 

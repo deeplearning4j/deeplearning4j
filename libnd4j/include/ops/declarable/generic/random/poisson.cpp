@@ -34,11 +34,7 @@ CUSTOM_OP_IMPL(random_poisson, 2, 1, false, 0, 0) {
   auto shape = INPUT_VARIABLE(0);
   auto lambda = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
-  auto seed = 0;
-  if (block.getIArguments()->size()) {
-    seed = INT_ARG(0);
-  }
-  rng.setSeed(seed);
+  if (block.getIArguments()->size()) helpers::applySeedArgument(rng, INT_ARG(0));
   helpers::fillRandomPoisson(block.launchContext(), rng, lambda, output);
 
   return Status::OK;

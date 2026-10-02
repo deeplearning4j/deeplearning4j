@@ -28,6 +28,7 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.nd4j.autodiff.samediff.OpTraits;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
@@ -55,16 +56,12 @@ public class ConstantFunctionOptimizations extends BaseOptimizerSet {
     public static final long CONSTANT_FN_FOLDING_MAX_SIZE_DEFAULT = 4 * 1024 * 1024;    //4MB
 
     public static class FoldConstantFunctions implements Optimizer {
-        private static final String RANDOM_OPS_PACKAGE = "org.nd4j.linalg.api.ops.random";
-
+        /**
+         * Legacy random ops implement RandomOp; a custom op that draws from the random generator, or
+         * observes other execution state, declares OpTraits.STATEFUL on its native descriptor.
+         */
         private static boolean isNonDeterministicOp(DifferentialFunction df) {
-            // Traditional random ops implement RandomOp
-            if (df instanceof RandomOp)
-                return true;
-            // Modern custom random ops (RandomNormal, RandomBernoulli, etc.) extend DynamicCustomOp
-            // but live under the random package. Range is deterministic despite being in this package.
-            String className = df.getClass().getName();
-            return className.startsWith(RANDOM_OPS_PACKAGE) && !className.endsWith(".Range");
+            return df instanceof RandomOp || (df instanceof CustomOp && OpTraits.has(df.opName(), OpTraits.STATEFUL));
         }
 
         @Override

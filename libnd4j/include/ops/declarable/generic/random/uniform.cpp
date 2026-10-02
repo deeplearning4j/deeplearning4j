@@ -47,11 +47,7 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   auto dtype = FLOAT32;
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
 
-  if (block.getIArguments()->size() > 1) {
-    auto seed = INT_ARG(1);
-    rng.setStates(seed, seed ^ 0xdeadbeef);
-    sd_debug("randomuniform: Setting seed %d\n", seed);
-  }
+  if (block.getIArguments()->size() > 1) helpers::applySeedArgument(rng, INT_ARG(1));
 
   auto min = block.width() > 1 ? INPUT_VARIABLE(1) : (NDArray*)nullptr;
   auto max = block.width() > 2 ? INPUT_VARIABLE(2) : (NDArray*)nullptr;

@@ -68,7 +68,7 @@ DECLARE_TYPES(random_crop) {
 
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 
-  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_STATEFUL);
 }
 }  // namespace ops
 }  // namespace sd

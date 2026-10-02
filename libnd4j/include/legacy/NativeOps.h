@@ -71,8 +71,15 @@ SD_LIB_EXPORT const char* getAllCustomOps();
  * Look up op trait flags by op name. Returns the OP_TRAIT_* bitmask
  * (see ops/declarable/OpDescriptor.h) or 0 if the op is not registered.
  * Backs Java-side trait queries so hardcoded string sets can be deleted.
+ * Only the low 32 bits: getOpTraitMask returns all of them.
  */
 SD_LIB_EXPORT unsigned int getOpTraits(const char* opName);
+
+/**
+ * The op's complete OP_TRAIT_* bitmask, including the traits above bit 31
+ * (OP_TRAIT_STATEFUL), or 0 if the op is not registered.
+ */
+SD_LIB_EXPORT sd::LongType getOpTraitMask(const char* opName);
 
 SD_LIB_EXPORT OpaqueRandomGenerator* createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed);
 

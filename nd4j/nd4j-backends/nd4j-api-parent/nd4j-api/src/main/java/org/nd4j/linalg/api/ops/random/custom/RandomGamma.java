@@ -44,8 +44,9 @@ public class RandomGamma extends DynamicCustomOp {
                        int... seeds) {
         if (beta != null) {
             addInputArgument(shape,alpha,beta);
+        } else {
+            addInputArgument(shape,alpha);
         }
-        addInputArgument(shape,alpha);
         addIArgument(seeds);
     }
 

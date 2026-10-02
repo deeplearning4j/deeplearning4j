@@ -30,6 +30,7 @@
  */
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/DspExecutionRandom.h>
 #include <graph/ModeContract.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/GraphBackend.h>
@@ -724,6 +725,7 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
 
 Status NativeDynamicShapePlan::platformExecuteSlot(const NativeSlot& slot,
                                                    Context& context) {
+  SlotRandomStateScope randomState(slot.drawsRandomState(), context);
   return slot.ident.op->execute(&context);
 }
 

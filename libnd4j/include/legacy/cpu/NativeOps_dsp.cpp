@@ -31,6 +31,7 @@
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/DspBufferPool.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspExecutionRandom.h>
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspVerifyUtils.h>
 #include <legacy/NativeOps.h>
@@ -215,9 +216,14 @@ static int executePlanContext(
     // Pass through the execution stream from Java. CUDA-backed DSP execution relies on
     // a consistent stream for Triton launches, KV scatter, and downstream consumers.
     // CPU backends ignore the pointer inside NativeDynamicShapePlan::execute().
-    auto status = steadyState
-        ? plan->executeSteadyState(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, stream)
-        : plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, stream);
+    Status status;
+    {
+      // Random slots draw from this entry context's generator (DspExecutionRandom.h).
+      sd::graph::DspExecutionRandomScope executionRandom(&opContext->randomGenerator());
+      status = steadyState
+          ? plan->executeSteadyState(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, stream)
+          : plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, stream);
+    }
 
     if (status != Status::OK) {
       const char* existingMsg = sd::LaunchContext::defaultContext()->errorReference()->errorMessage();

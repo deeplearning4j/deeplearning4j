@@ -6,6 +6,7 @@
 #include <dsp/NativeOpsDsp.h>
 #include <execution/vulkan/VulkanExecutionStream.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspExecutionRandom.h>
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/DspVerifyUtils.h>
@@ -278,11 +279,16 @@ static int executePlanContext(sd::Pointer planHandle, OpaqueContext* opContext,
     }
 
     VulkanExecutionStreamGuard streamGuard(executionStream);
-    auto status = steadyState
-        ? plan->executeSteadyState(inputs.data(), numInputs, outputs.data(), numOutputs,
-                                  reinterpret_cast<void*>(executionStream))
-        : plan->execute(inputs.data(), numInputs, outputs.data(), numOutputs,
-                        reinterpret_cast<void*>(executionStream));
+    Status status;
+    {
+      // Random slots draw from this entry context's generator (DspExecutionRandom.h).
+      sd::graph::DspExecutionRandomScope executionRandom(&opContext->randomGenerator());
+      status = steadyState
+          ? plan->executeSteadyState(inputs.data(), numInputs, outputs.data(), numOutputs,
+                                    reinterpret_cast<void*>(executionStream))
+          : plan->execute(inputs.data(), numInputs, outputs.data(), numOutputs,
+                          reinterpret_cast<void*>(executionStream));
+    }
     if (status != Status::OK) {
       const char* detail =
           sd::LaunchContext::defaultContext()->errorReference()->errorMessage();

@@ -42,13 +42,7 @@ CUSTOM_OP_IMPL(random_gamma, 2, 1, false, 0, 0) {
   }
 
   auto output = OUTPUT_VARIABLE(0);
-  auto seed = 0;
-
-  if (block.getIArguments()->size()) {
-    seed = INT_ARG(0);
-  }
-
-  rng.setSeed(seed);
+  if (block.getIArguments()->size()) helpers::applySeedArgument(rng, INT_ARG(0));
 
   helpers::fillRandomGamma(block.launchContext(), rng, alpha, beta, output);
 

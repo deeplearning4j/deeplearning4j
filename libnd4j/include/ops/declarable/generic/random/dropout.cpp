@@ -64,7 +64,8 @@ DECLARE_TYPES(dropout) {
       ->setAllowedOutputTypes({ALL_FLOATS})
       ->setSameMode(true);
 
-  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+  // Unseeded, the mask is drawn from the context's random generator.
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_STATEFUL);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -114,8 +115,6 @@ CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {
 
   NDArray* reduceShape = nullptr;        // this param is optional
   NDArray* output = OUTPUT_VARIABLE(0);  //
-
-  if (block.width() > 2) reduceShape = INPUT_VARIABLE(2);
 
   int seed = INT_ARG(0);
 

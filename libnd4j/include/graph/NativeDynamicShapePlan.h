@@ -743,9 +743,22 @@ struct NativeSlot {
     // static argument slices have no host control read and are capture-safe.
     if (hasDynamicOutputSize() ||
         (hasOpTrait(sd::ops::OP_TRAIT_SLICE) && hasValueDependentShape())) return false;
+    // A replay would repeat the draws captured once.
+    if (drawsRandomState()) return false;
     if (!mergeViews && (isViewCapableOp() || isIdentityOp() || frozenConstantSlot()))
       return false;
     return true;
+  }
+
+  // ── Random state ─────────────────────────────────────────────────
+  // A slot whose op draws from its context's random generator: a stateful op that writes no
+  // input. (Ops that write inputs are stateful through the state tensors they update, which a
+  // replay updates as well.) Each execution hands it the plan execution's generator
+  // (DspExecutionRandom.h), so it runs live.
+  bool drawsRandomState() const {
+    if (!hasOpTrait(sd::ops::OP_TRAIT_STATEFUL)) return false;
+    const auto* descriptor = ident.op != nullptr ? ident.op->getOpDescriptor() : nullptr;
+    return descriptor == nullptr || descriptor->getInputWriteGroups().empty();
   }
 
   // ── Generation counter accessors ─────────────────────────────────

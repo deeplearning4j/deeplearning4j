@@ -143,6 +143,13 @@ The behavior depends on `gapOpsCapturedInGraph`:
 2. The cuBLAS handle's stream binding
 3. The exact GPU addresses of input/output buffers (via capture buffers)
 
+#### Random slots are never captured
+
+A slot that draws random state (`NativeSlot::drawsRandomState()`: a stateful op that writes
+no input) is not capturable (`isCapturable()`), so it never enters a graph and always runs
+live: a replay would repeat the draws of its capture. It draws from the plan execution's
+generator, which the Java executor seeds from `Nd4j.getRandom()` (ADR 0126).
+
 ---
 
 ## Shared Resources Audit

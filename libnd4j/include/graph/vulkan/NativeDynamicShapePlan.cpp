@@ -20,6 +20,7 @@
 #include <graph/LegacyOpTypeCodes.h>
 #include <graph/ModeContract.h>
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/DspExecutionRandom.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/DspDeviceDispatch.h>
 #include <graph/vulkan/VulkanDeviceContext.h>
@@ -1280,6 +1281,7 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
 
 Status NativeDynamicShapePlan::platformExecuteSlot(const NativeSlot& slot,
                                                    Context& context) {
+  SlotRandomStateScope randomState(slot.drawsRandomState(), context);
   if (slot.legacy.legacyOpType == LEGACY_NOT_SET) {
     return slot.ident.op->execute(&context);
   }

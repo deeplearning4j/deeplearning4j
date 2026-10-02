@@ -2802,9 +2802,17 @@ public native @Cast("char*") String getAllCustomOps();
  * Look up op trait flags by op name. Returns the OP_TRAIT_* bitmask
  * (see ops/declarable/OpDescriptor.h) or 0 if the op is not registered.
  * Backs Java-side trait queries so hardcoded string sets can be deleted.
+ * Only the low 32 bits: getOpTraitMask returns all of them.
  */
 public native @Cast("unsigned int") int getOpTraits(@Cast("char*") String opName);
 public native @Cast("unsigned int") int getOpTraits(@Cast("char*") BytePointer opName);
+
+/**
+ * The op's complete OP_TRAIT_* bitmask, including the traits above bit 31
+ * (OP_TRAIT_STATEFUL), or 0 if the op is not registered.
+ */
+public native @Cast("sd::LongType") long getOpTraitMask(@Cast("char*") String opName);
+public native @Cast("sd::LongType") long getOpTraitMask(@Cast("char*") BytePointer opName);
 
 public native org.nd4j.nativeblas.OpaqueRandomGenerator createRandomGenerator(@Cast("sd::LongType") long rootSeed, @Cast("sd::LongType") long nodeSeed);
 

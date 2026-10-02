@@ -1684,6 +1684,8 @@ sd::Status sd::ops::DeclarableOp::execute(sd::graph::RandomGenerator &rng, const
   for (size_t e = 0; e < dArgs.size(); e++) block.getDArguments()->push_back(dArgs.at(e));
 
   sd::Status result = this->execute(&block);
+  // A random op advanced the context's copy: hand that state back, so the caller's next call draws anew.
+  rng = block.getRng();
 
   return result;
 }

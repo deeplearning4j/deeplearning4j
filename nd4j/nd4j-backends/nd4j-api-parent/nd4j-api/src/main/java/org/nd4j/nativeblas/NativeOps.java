@@ -173,9 +173,18 @@ public interface NativeOps {
   * Look up op trait flags by op name. Returns the OP_TRAIT_* bitmask
   * matching {@code libnd4j/include/ops/declarable/OpDescriptor.h}, or 0 if
   * the op is unknown. Used by the Java session code to replace hardcoded
-  * string sets with a trait query.
+  * string sets with a trait query. Only the low 32 bits: {@link #getOpTraitMask}
+  * returns all of them.
   */
  int getOpTraits(String opName);
+
+ /**
+  * The op's complete OP_TRAIT_* bitmask, including the traits above bit 31
+  * (OP_TRAIT_STATEFUL), or 0 if the op is unknown.
+  */
+ default long getOpTraitMask(String opName) {
+     throw new UnsupportedOperationException("getOpTraitMask not implemented in this backend");
+ }
 
  void inspectArray(PointerPointer  extraPointers, Pointer  buffer, LongPointer shapeInfo, Pointer specialBuffer,
                    LongPointer specialShapeInfo, Pointer  debugInfo);

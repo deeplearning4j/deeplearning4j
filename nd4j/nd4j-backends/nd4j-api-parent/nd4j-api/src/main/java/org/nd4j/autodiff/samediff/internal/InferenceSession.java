@@ -22,6 +22,7 @@ package org.nd4j.autodiff.samediff.internal;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.nd4j.autodiff.samediff.OpTraits;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
@@ -83,6 +84,8 @@ import org.bytedeco.javacpp.LongPointer;
 
 import org.nd4j.shade.wstx.util.StringUtil;
 
+import org.nd4j.linalg.api.rng.Random;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -101,26 +104,30 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private static final int GC_DISABLED_WINDOW = Integer.MAX_VALUE;
 
 
-    // Matches OP_TRAIT_DATA_DEPENDENT in libnd4j/include/ops/declarable/OpDescriptor.h (1 << 9).
-    // Ops carrying this trait have output shapes that depend on input VALUES rather than
-    // input shapes alone (e.g. Where, unique). They are never shape-cacheable and always
+    // Ops with OpTraits.DATA_DEPENDENT have output shapes that depend on input VALUES rather
+    // than input shapes alone (e.g. Where, unique). They are never shape-cacheable and always
     // require INT/LONG input sync.
-    private static final int OP_TRAIT_DATA_DEPENDENT = 1 << 9;
-
-    // Cache of op-name → trait bitmask. The underlying native table is immutable once
-    // initOpTraits() has run, so per-name lookups are memoised to avoid a JNI round-trip
-    // on every op execution.
-    private static final Map<String, Integer> OP_TRAIT_CACHE = new ConcurrentHashMap<>();
-
     private static boolean isDataDependentOutputOp(String opName) {
-        if (opName == null) return false;
-        Integer cached = OP_TRAIT_CACHE.get(opName);
-        if (cached == null) {
-            int traits = NativeOpsHolder.getInstance().getDeviceNativeOps().getOpTraits(opName);
-            cached = traits;
-            OP_TRAIT_CACHE.put(opName, cached);
+        return OpTraits.has(opName, OpTraits.DATA_DEPENDENT);
+    }
+
+    /**
+     * Runs a custom op through this session's own context. An op that draws from the random
+     * generator ({@link OpTraits#STATEFUL}) starts from the thread's {@link Nd4j#getRandom()} state
+     * and hands back the state it advanced, as {@code Nd4j.exec(CustomOp)} does with the context it
+     * creates. A session's context otherwise brings its own generator, seeded from the clock, so
+     * {@code Nd4j.getRandom().setSeed} never reached SameDiff's random ops.
+     */
+    private static INDArray[] execWithThreadRandom(CustomOp op, OpContext opContext) {
+        if (!OpTraits.has(op.opName(), OpTraits.STATEFUL)) {
+            return Nd4j.exec(op, opContext);
         }
-        return (cached & OP_TRAIT_DATA_DEPENDENT) != 0;
+        Random random = Nd4j.getRandom();
+        opContext.setRngStates(random.rootState(), random.nodeState());
+        INDArray[] outputs = Nd4j.exec(op, opContext);
+        Pair<Long, Long> advanced = opContext.getRngStates();
+        random.setStates(advanced.getFirst(), advanced.getSecond());
+        return outputs;
     }
 
     protected Collection<String> dspMutableExternalInputNames() {
@@ -3895,7 +3902,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
         }
         long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
-        INDArray[] execOutputArrays = Nd4j.exec(dynOp, opContext);
+        INDArray[] execOutputArrays = execWithThreadRandom(dynOp, opContext);
         if (TIMING_ENABLED) {
             timing.nativeExecNs += System.nanoTime() - tExec0;
             timing.opCount++;
@@ -5287,7 +5294,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
                 ExecutionResult result;
                 try {
-                    Nd4j.exec(c, opContext);
+                    execWithThreadRandom(c, opContext);
                     result = ExecutionResult.createFrom((DifferentialFunction) c,opContext);
                 } finally {
                     // LEAK FIX: Clean up operation's internal arrays to prevent memory leaks

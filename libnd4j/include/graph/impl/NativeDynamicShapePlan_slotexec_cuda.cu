@@ -33,6 +33,7 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspExecutionRandom.h>
 #include <graph/DspThreadState.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/gpu/DspCudaDispatch.h>
@@ -45,6 +46,7 @@ namespace graph {
 
 Status NativeDynamicShapePlan::platformExecuteSlot(const NativeSlot& slot,
                                                    Context& context) {
+  SlotRandomStateScope randomState(slot.drawsRandomState(), context);
   // During warmup, record the CUDA provenance of every pointer handed to the op.
   // This is intentionally diagnostic-only: it identifies cross-device slot
   // allocation before the asynchronous kernel can report an opaque error 700.

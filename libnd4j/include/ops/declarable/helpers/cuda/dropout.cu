@@ -36,7 +36,7 @@ namespace helpers {
 template <typename T>
 static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, LongType const* inputShape, void* outputBuf,
                                           LongType const* outputShape, void* maskBuf, LongType const* maskShape,
-                                          double probVal, int inLen, RandomGenerator* nodeRng) {
+                                          double probVal, int inLen, RandomGenerator nodeRng) {
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
   T const* input = reinterpret_cast<T const*>(inputBuf);
@@ -73,7 +73,7 @@ static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, LongType const* 
   LongType maskOffset;
 
   for (LongType e = tid; e < inLen; e += step) {
-    T val = nodeRng->relativeT(e, T(0.f), T(1.f));
+    T val = nodeRng.relativeT(e, T(0.f), T(1.f));
     bool keep = double(val) < probVal;
 
     INDEX2COORDS(e, outputRank, outputShapePtr, outputCoords);
@@ -95,42 +95,35 @@ static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, LongType const* 
 
 
 template <typename T>
-static void dropoutSimple(LaunchContext* context, NDArray * input, NDArray* output, double probValue,
-                          int seed, NDArray* mask) {
-  RandomGenerator nodeRng(3019L, seed);
+static void dropoutSimple(LaunchContext* context, RandomGenerator& nodeRng, NDArray* input, NDArray* output,
+                          double probValue, NDArray* mask) {
   int inLen = input->lengthOf();
-  RandomGenerator* dRandom;
+  if (inLen == 0) return;
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output, mask}, {input});
-
-  int deviceId = 0;
-  cudaGetDevice(&deviceId);
-  dRandom = reinterpret_cast<RandomGenerator*>(memory::CudaMemoryPool::getInstance().allocate(sizeof(RandomGenerator), deviceId, *stream));
-  if (dRandom == nullptr) {
-    THROW_EXCEPTION("helpers::dropoutSimple: Cannot allocate device memory for random generator.");
-  }
-  auto err = cudaMemcpyAsync(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice, *stream);
-  if (err) {
-    { std::string msg = "helpers::dropoutSimple: Cannot set up device memory for random generator.; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
-  }
 
   void* maskBuf = (mask != nullptr) ? mask->specialBuffer() : nullptr;
   LongType const* maskShape = (mask != nullptr) ? mask->specialShapeInfo() : nullptr;
 
+  // The generator is passed by value: the kernel only reads it.
   dim3 getDims = getLaunchDims("dropout");
   dropoutSimpleKernel<T><<<getDims.x, getDims.y, getDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                                                                        output->specialBuffer(), output->specialShapeInfo(),
                                                                        maskBuf, maskShape, probValue,
-                                                                       inLen, dRandom);
-  memory::CudaMemoryPool::getInstance().free(dRandom, deviceId, *stream);
+                                                                       inLen, nodeRng);
+  DebugHelper::checkGlobalErrorCode("dropoutSimpleKernel failed");
   NDArray::registerSpecialUse({output, mask}, {input});
 }
 
 template <typename T>
 Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed,
                        double probValue, NDArray* mask) {
+  // A nonzero seed fixes the mask. Seed 0 draws it from the context's generator, which SameDiff
+  // seeds from Nd4j.getRandom(), and advances that generator, so each execution drops anew.
+  RandomGenerator seeded(3019L, seed);
+  RandomGenerator& rng = seed != 0 ? seeded : context.randomGenerator();
   if (reduceShape == nullptr) {
-    dropoutSimple<T>(context.launchContext(), input, output, probValue, seed, mask);
+    dropoutSimple<T>(context.launchContext(), rng, input, output, probValue, mask);
   } else {
     REQUIRE_TRUE(reduceShape->lengthOf() <= input->rankOf(), 0, "dropout: Noise shape should be fittable to input");
 
@@ -155,7 +148,7 @@ Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* out
     float one = 1.f;
     chunk->assign(one);
 
-    dropoutSimple<T>(context.launchContext(), chunk.get(), chunk.get(), probValue, seed, nullptr);
+    dropoutSimple<T>(context.launchContext(), rng, chunk.get(), chunk.get(), probValue, nullptr);
     // broadcast chunk to full matrix
     std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
     dropOutMultiplier->assign(one);
@@ -166,6 +159,7 @@ Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* out
     output->assign(ret);
     delete ret;
   }
+  rng.rewindH(input->lengthOf());
 
   return Status::OK;
 }
@@ -179,75 +173,14 @@ Status dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* outp
 
 /////////////////////////////////// backpropagations ///////////////////////////////////////////////
 template <typename T>
-static SD_KERNEL void dropoutBPKernel(void* outputBuf, LongType const* outputShape, void* gradOutBuf,
-                                      LongType const* gradOutShape, double probValue) {
-  __shared__ T* output;
-  __shared__ T* input;
-  __shared__ LongType len;
-  __shared__ LongType outputRank, gradOutRank;
-  __shared__ const LongType *outputShapePtr, *outputStridePtr;
-  __shared__ const LongType *gradOutShapePtr, *gradOutStridePtr;
-
-  if (threadIdx.x == 0) {
-    len = shape::length(outputShape);
-
-    output = reinterpret_cast<T*>(outputBuf);
-    input = reinterpret_cast<T*>(gradOutBuf);
-
-    outputRank = shape::rank(outputShape);
-    outputShapePtr = shape::shapeOf(outputShape);
-    outputStridePtr = shape::stride(outputShape);
-
-    gradOutRank = shape::rank(gradOutShape);
-    gradOutShapePtr = shape::shapeOf(gradOutShape);
-    gradOutStridePtr = shape::stride(gradOutShape);
-  }
-  __syncthreads();
-
-  auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  auto step = blockDim.x * gridDim.x;
-
-  LongType outputCoords[SD_MAX_RANK];
-  LongType gradOutCoords[SD_MAX_RANK];
-  LongType zOffset;
-  LongType gradOutOffset;
-
-  for (LongType e = tid; e < len; e += step) {
-    INDEX2COORDS(e, outputRank, outputShapePtr, outputCoords);
-    COORDS2INDEX(outputRank, outputStridePtr, outputCoords, zOffset);
-
-    INDEX2COORDS(e, gradOutRank, gradOutShapePtr, gradOutCoords);
-    COORDS2INDEX(gradOutRank, gradOutStridePtr, gradOutCoords, gradOutOffset);
-
-    // Scale gradients back if the output wasn't zero
-    if (output[zOffset] != T(0.)) {
-      output[zOffset] = T(input[gradOutOffset] / probValue);
-    }
-  }
-}
-
-template <typename T>
 static Status dropOutFunctorBP_(sd::graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
                                 NDArray* reduceShape, int seed, double probValue, NDArray* mask) {
-  // we're making additional FF run to see how probabilities played out with given seeds
-  auto res = dropOutFunctor(context, input, output, reduceShape, seed, probValue,mask);
-  auto stream = context.launchContext()->getCudaStream();
-
-  NDArray::prepareSpecialUse({output}, {input, gradOut});
-
-
-  if (Status::OK == res) {
-    dim3 launchDims = getLaunchDims("dropout");
-    dropoutBPKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-        output->specialBuffer(), output->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
-        probValue);
-
-    DebugHelper::checkGlobalErrorCode( "dropout_bp(...) failed");
-
-  }
-  NDArray::registerSpecialUse({output}, {input, gradOut});
-
-  return res;
+  // The forward passes kept elements through unscaled, and its mask (input 1) records which: the
+  // gradient is gradOut where the mask is 1 and 0 where it is 0. Re-running the forward would
+  // overwrite that input and, unseeded, drop other elements than the forward did.
+  output->assign(gradOut);
+  *output *= *mask;
+  return Status::OK;
 }
 
 template <typename T>
@@ -370,12 +303,12 @@ static Status alphaDropOutFunctor_(sd::graph::Context& context, NDArray* input, 
 template <typename T>
 Status alphaDropOutFunctorBP_(sd::graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output, NDArray* reduceShape,
                               int seed, double probValue, double alpha, double alpha1, double beta, NDArray* mask) {
-  auto res = alphaDropOutFunctor(context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta, mask);
-  if (res == Status::OK) {
-    (*output) *= alpha;
-    (*output) *= (*gradOut);
-  }
-  return res;
+  // The forward scales kept inputs by alpha (alpha * x + alpha1) and replaces dropped ones, so the
+  // gradient is gradOut * alpha where the keep mask is 1 and 0 where it is 0.
+  output->assign(gradOut);
+  *output *= *mask;
+  *output *= alpha;
+  return Status::OK;
 }
 
 Status dropOutFunctorBP(sd::graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output, NDArray* reduceShape,

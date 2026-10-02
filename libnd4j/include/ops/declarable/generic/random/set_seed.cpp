@@ -25,11 +25,12 @@
 
 #include <legacy/NativeOps.h>
 #include <ops/declarable/headers/random.h>
+#include <ops/declarable/helpers/random.h>
 
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(set_seed, -2, 1, false, 0, -2) {
-  auto rng = block.getRng();  //.getRNG();
+  auto& rng = block.randomGenerator();
 
   LongType seed = 0;
   if (block.getIArguments()->size() > 0) {
@@ -42,13 +43,19 @@ CUSTOM_OP_IMPL(set_seed, -2, 1, false, 0, -2) {
     REQUIRE_TRUE(false, 0, "SetSeed: either IArg or scalr input should be provided");
   }
 
-  rng.setSeed((int)seed);
+  // Seeds the context's generator the way a random op's own seed argument does (0 leaves it as it
+  // is); the caller hands the state on to later random ops (SameDiff to Nd4j.getRandom()).
+  helpers::applySeedArgument(rng, seed);
+  double written = static_cast<double>(seed);
+  OUTPUT_VARIABLE(0)->assign(written);
   return Status::OK;
 }
 
 DECLARE_SHAPE_FN(set_seed) {
-  auto newshape = ConstantShapeHelper::getInstance().scalarShapeInfo(block.dataType());
-  return SHAPELIST(newshape);
+  // The output is the seed as a float scalar. The seed may come from an IArg alone, so the
+  // type is the DataType argument's, not an input's.
+  const DataType dtype = block.numD() > 0 ? D_ARG(0) : FLOAT32;
+  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(dtype));
 }
 
 DECLARE_TYPES(set_seed) {

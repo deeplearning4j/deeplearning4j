@@ -23,6 +23,7 @@ package org.nd4j.autodiff.samediff.execution;
 import java.util.Arrays;
 
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.nd4j.autodiff.samediff.OpTraits;
 import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -57,10 +58,8 @@ import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Compiles a {@link DynamicShapePlan} from a {@link ForwardExecutionDAG}.
@@ -83,31 +82,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class DynamicShapePlanCompiler {
-
-    // Mirror of libnd4j/include/ops/declarable/OpDescriptor.h. Each op
-    // publishes these traits from its own DECLARE_TYPES/addTraits registration;
-    // Java queries the resolved descriptor through JNI so both compilers use the
-    // same semantic metadata.
-    private static final int OP_TRAIT_TERNARY_ELEMENTWISE    = 1 << 2;
-    private static final int OP_TRAIT_REDUCTION              = 1 << 3;
-    private static final int OP_TRAIT_VIEW_PRODUCING         = 1 << 7;
-    private static final int OP_TRAIT_VALUE_DEPENDENT_SHAPE  = 1 << 8;
-    private static final int OP_TRAIT_DATA_DEPENDENT         = 1 << 9;
-    private static final int OP_TRAIT_CONCAT                 = 1 << 20;
-    private static final int OP_TRAIT_DYNAMIC_OUTPUT_SIZE    = 1 << 31;
-
-    // Cache: op-name → immutable descriptor trait bitmask. Memoise per name to
-    // avoid JNI round-trips during plan compilation.
-    private static final Map<String, Integer> OP_TRAIT_CACHE = new ConcurrentHashMap<>();
-
-    private static int opTraitsOf(String opName) {
-        if (opName == null) return 0;
-        Integer cached = OP_TRAIT_CACHE.get(opName);
-        if (cached != null) return cached;
-        int traits = NativeOpsHolder.getInstance().getDeviceNativeOps().getOpTraits(opName);
-        OP_TRAIT_CACHE.put(opName, traits);
-        return traits;
-    }
 
     /**
      * Copy the framework shape-info buffers declared by an op into plan-owned metadata.
@@ -788,21 +762,23 @@ public class DynamicShapePlanCompiler {
             // Begin with the intrinsic descriptor classification, then resolve
             // argument-driven versus tensor-driven forms for this invocation.
             // Operation names remain diagnostics-only.
-            int opTraits = opTraitsOf(opName);
+            // Each op publishes its traits from its own DECLARE_TYPES/addTraits registration;
+            // both compilers read that descriptor (OpTraits), so they share the semantics.
+            long opTraits = OpTraits.of(opName);
             boolean fixedExtentTernaryInvocation =
-                    (opTraits & OP_TRAIT_TERNARY_ELEMENTWISE) != 0
+                    (opTraits & OpTraits.TERNARY_ELEMENTWISE) != 0
                             && numInputs == 3;
             boolean dynamicOutputSize =
-                    (opTraits & OP_TRAIT_DYNAMIC_OUTPUT_SIZE) != 0
+                    (opTraits & OpTraits.DYNAMIC_OUTPUT_SIZE) != 0
                             && !fixedExtentTernaryInvocation;
             boolean shapeDependsOnValues = opTraits != 0
-                    ? (opTraits & OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0
+                    ? (opTraits & OpTraits.VALUE_DEPENDENT_SHAPE) != 0
                     : hasIntLongInputs;
 
             if (shapeDependsOnValues) {
                 boolean hasNoRuntimeInputs = numInputs == 0;
                 boolean argumentShapedView =
-                        (opTraits & OP_TRAIT_VIEW_PRODUCING) != 0
+                        (opTraits & OpTraits.VIEW_PRODUCING) != 0
                                 && numInputs <= 1
                                 && iArgs.length > 0;
                 if (hasNoRuntimeInputs || argumentShapedView) {
@@ -811,17 +787,17 @@ public class DynamicShapePlanCompiler {
             }
             if (!shapeDependsOnValues) {
                 boolean tensorAxisConcat =
-                        (opTraits & OP_TRAIT_CONCAT) != 0
+                        (opTraits & OpTraits.CONCAT) != 0
                                 && bArgs.length > 0
                                 && bArgs[0];
                 boolean tensorControlledView =
-                        (opTraits & OP_TRAIT_VIEW_PRODUCING) != 0
-                                && (opTraits & OP_TRAIT_DATA_DEPENDENT) != 0
+                        (opTraits & OpTraits.VIEW_PRODUCING) != 0
+                                && (opTraits & OpTraits.DATA_DEPENDENT) != 0
                                 && numInputs > 1
                                 && iArgs.length == 0;
                 boolean tensorControlledReduction =
-                        (opTraits & OP_TRAIT_REDUCTION) != 0
-                                && (opTraits & OP_TRAIT_DATA_DEPENDENT) != 0
+                        (opTraits & OpTraits.REDUCTION) != 0
+                                && (opTraits & OpTraits.DATA_DEPENDENT) != 0
                                 && numInputs > 1;
                 shapeDependsOnValues = tensorAxisConcat
                         || tensorControlledView

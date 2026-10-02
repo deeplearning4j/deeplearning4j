@@ -54,6 +54,8 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.nativeblas.OpaqueLaunchContext;
 import org.nd4j.nativeblas.OpaqueContext;
+import org.nd4j.nativeblas.OpaqueRandomGenerator;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.nativeblas.OpaqueNDArray;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.LongPointer;
@@ -497,6 +499,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             try {
                 requireOpen();
                 if (activeNativeBinding != null) throw new IllegalStateException("Native binding already in use");
+                seedContextRandom(owner.nativeOps(), context);
                 activeNativeBinding = this;
                 useThread = Thread.currentThread();
                 acquired = true;
@@ -510,9 +513,13 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (useThread != Thread.currentThread() || activeNativeBinding != this) {
                 throw new IllegalStateException("Native use must complete on its issuing thread");
             }
-            useThread = null;
-            activeNativeBinding = null;
-            nativeExecLock.unlock();
+            try {
+                takeContextRandom(owner.nativeOps(), context);
+            } finally {
+                useThread = null;
+                activeNativeBinding = null;
+                nativeExecLock.unlock();
+            }
         }
 
         @Override
@@ -3479,6 +3486,24 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
     }
 
+    /**
+     * Random slots of a plan draw from the generator of the context it executes with
+     * (DspExecutionRandom.h) and are never captured. An execution starts that generator from the
+     * thread's Nd4j.getRandom() state and hands back the state the plan advanced, as
+     * Nd4j.exec(CustomOp) does for a single op.
+     */
+    private static void seedContextRandom(NativeOps nativeOps, OpaqueContext context) {
+        Random random = Nd4j.getRandom();
+        nativeOps.setRandomGeneratorStates(nativeOps.getGraphContextRandomGenerator(context),
+                random.rootState(), random.nodeState());
+    }
+
+    private static void takeContextRandom(NativeOps nativeOps, OpaqueContext context) {
+        OpaqueRandomGenerator generator = nativeOps.getGraphContextRandomGenerator(context);
+        Nd4j.getRandom().setStates(nativeOps.getRandomGeneratorRootState(generator),
+                nativeOps.getRandomGeneratorNodeState(generator));
+    }
+
     private static void requireCurrentDispatchAbi(NativeOps nativeOps) {
         try {
             java.lang.reflect.Method dispatch = nativeOps.getClass().getMethod(
@@ -5630,6 +5655,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         nativePlanHandle != null ? "0x" + Long.toHexString(nativePlanHandle.address()) : "null",
                         lifecycleExecutionCount(), numInputs, numOutputs, isShapesFrozen());
             }
+            seedContextRandom(nativeOps, opContext);
             long execStart = System.nanoTime();
             int status = steadyState
                     ? nativeOps.executeSteadyStatePlan(nativePlanHandle, opContext, execStream)
@@ -5692,6 +5718,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         + " (" + OpStatus.nameOf(status) + "): " + (errMsg != null ? errMsg : "unknown error")
                         + planSlotContext);
             }
+            takeContextRandom(nativeOps, opContext);
 
             // Refresh the immutable native lifecycle snapshot after each execution.
             // The C++ plan advances SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING autonomously via

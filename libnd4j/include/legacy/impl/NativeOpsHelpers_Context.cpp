@@ -567,7 +567,7 @@ std::vector<ExecTrace*> * listOpTraces() {
   return sd::ops::OpRegistrator::getInstance().execTrace();
 }
 
-unsigned int getOpTraits(const char* opName) {
+sd::LongType getOpTraitMask(const char* opName) {
   if (opName == nullptr) return 0;
   std::string name(opName);
   // Answer with the merged VIEW of descriptor traits and the legacy
@@ -578,12 +578,14 @@ unsigned int getOpTraits(const char* opName) {
   // consumers without any side effects. Legacy (non-declarable) transform
   // and scalar families are not in the registry at all and are served
   // straight from the table.
-  const auto tableTraits =
-      static_cast<unsigned int>(sd::ops::getOpTraitsByName(name));
+  const auto tableTraits = static_cast<uint64_t>(sd::ops::getOpTraitsByName(name));
   auto* op = sd::ops::OpRegistrator::getInstance().getOperation(name);
   const auto* descriptor = op != nullptr ? op->getOpDescriptor() : nullptr;
-  if (descriptor != nullptr)
-    return static_cast<unsigned int>(descriptor->getTraits()) | tableTraits;
-  return tableTraits;
+  const uint64_t traits = descriptor != nullptr ? descriptor->getTraits64() | tableTraits : tableTraits;
+  return static_cast<sd::LongType>(traits);
+}
+
+unsigned int getOpTraits(const char* opName) {
+  return static_cast<unsigned int>(static_cast<uint64_t>(getOpTraitMask(opName)));
 }
 

@@ -32,6 +32,7 @@
 #include <graph/DspBufferPool.h>
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspExecutionRandom.h>
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspVerifyUtils.h>
 #include <helpers/ShapeUtils.h>
@@ -249,9 +250,14 @@ static int executePlanContext(
       cudaGetLastError();  // clear any trim error
     }
 
-    auto status = steadyState
-        ? plan->executeSteadyState(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, cudaStream)
-        : plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, cudaStream);
+    Status status;
+    {
+      // Random slots draw from this entry context's generator (DspExecutionRandom.h).
+      sd::graph::DspExecutionRandomScope executionRandom(&opContext->randomGenerator());
+      status = steadyState
+          ? plan->executeSteadyState(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, cudaStream)
+          : plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, cudaStream);
+    }
 
     // ── CRITICAL: clear tl_dspReplayActive at JNI boundary ─────────────────
     // plan->execute() sets tl_dspReplayActive=true during composite replay of

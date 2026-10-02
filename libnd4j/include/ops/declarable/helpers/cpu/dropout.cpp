@@ -31,8 +31,8 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void dropoutSimple(NDArray* input, NDArray* output, double probValue, int seed, NDArray* mask) {
-  sd::graph::RandomGenerator nodeRng(3019L, seed);
+static void dropoutSimple(graph::RandomGenerator& nodeRng, NDArray* input, NDArray* output, double probValue,
+                          NDArray* mask) {
   int inLen = input->lengthOf();
   std::vector<sd::LongType> inShape = {inLen};
   std::vector<sd::LongType> outShape = {output->lengthOf()};
@@ -83,15 +83,21 @@ static void dropoutSimple(NDArray* input, NDArray* output, double probValue, int
     delete flattenedMask;
   }
 }
-BUILD_SINGLE_TEMPLATE( void dropoutSimple, (NDArray* input, NDArray* output, double probValue, int seed,NDArray *mask),
+BUILD_SINGLE_TEMPLATE( void dropoutSimple,
+                      (graph::RandomGenerator& nodeRng, NDArray* input, NDArray* output, double probValue,
+                       NDArray* mask),
                       SD_FLOAT_TYPES);
 
 template <typename T>
 sd::Status dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed,
                            double probValue, NDArray* mask) {
+  // A nonzero seed fixes the mask. Seed 0 draws it from the context's generator, which SameDiff
+  // seeds from Nd4j.getRandom(), and advances that generator, so each execution drops anew.
+  sd::graph::RandomGenerator seeded(3019L, seed);
+  graph::RandomGenerator& rng = seed != 0 ? seeded : context.randomGenerator();
 
   if (reduceShape == nullptr) {
-    dropoutSimple<T>(input, output, probValue, seed, mask);
+    dropoutSimple<T>(rng, input, output, probValue, mask);
   } else {
     REQUIRE_TRUE(reduceShape->lengthOf() <= input->rankOf(), 0, "dropout: Noise shape should be fittable to input");
 
@@ -114,7 +120,7 @@ sd::Status dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* out
     std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), output->getContext()));
     float assign = 1.f;
     chunk->assign(assign);
-    dropoutSimple<T>(chunk.get(), chunk.get(), probValue, seed, nullptr);
+    dropoutSimple<T>(rng, chunk.get(), chunk.get(), probValue, nullptr);
     // broadcast chunk to full matrix
     mask->assign(assign);
 
@@ -123,6 +129,7 @@ sd::Status dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* out
     output->assign(assign5);
     delete assign5;
   }
+  rng.rewindH(input->lengthOf());
 
   return sd::Status::OK;
 }
@@ -189,10 +196,11 @@ template <typename T>
 sd::Status alphaDropOutFunctorBP_(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
                                   NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1,
                                   double beta, NDArray* mask) {
-  // Use in-place operations to avoid temporary NDArray creation
-  // which can cause ownership issues with the assignment operator
-  *output *= *gradOut;
+  // The forward scales kept inputs by alpha (alpha * x + alpha1) and replaces dropped ones, so the
+  // gradient is gradOut * alpha where the keep mask is 1 and 0 where it is 0.
+  output->assign(gradOut);
   *output *= *mask;
+  *output *= alpha;
   return sd::Status::OK;
 }
 
