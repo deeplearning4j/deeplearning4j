@@ -60,6 +60,17 @@ Environment::Environment() {
   // Triton is the universal DSP/replay configuration knob. Backend-specific
   // compiler/runtime availability is resolved after this common configuration.
   _triton.initFromEnvironment();
+#if defined(SD_CUDA)
+  // A DSP plan's cuBLAS workspace defaults to the size cuBLAS recommends:
+  // 32 MiB from Hopper (compute capability 9) on, 4 MiB before. One size
+  // serves every visible device, so it is the largest any of them needs.
+  // ND4J_DSP_CUBLAS_WORKSPACE_MB, read below, still overrides it.
+  int cublasWorkspaceMb = 4;
+  for (const auto& capability : _cuda.capabilities()) {
+    if (capability.first() >= 9) cublasWorkspaceMb = 32;
+  }
+  _dsp.setCublasWorkspaceMb(cublasWorkspaceMb);
+#endif
   _dsp.initFromEnvironment();
 }
 

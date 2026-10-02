@@ -29,20 +29,36 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.nativeblas.NativeOps;
 
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Every DSP plan on CUDA hands cuBLAS a workspace of its own. A plan that cannot allocate it fails
- * with an error naming it rather than running its GEMMs without one (pedantic math then returns
- * zeros for FP16).
+ * Every DSP plan on CUDA hands cuBLAS a workspace of its own. By default it is the size cuBLAS
+ * recommends for the visible GPUs, and a plan that cannot allocate it fails with an error naming
+ * it rather than running its GEMMs without one (pedantic math then returns zeros for FP16).
  */
 @Slf4j
 public class DspCublasWorkspaceTest {
+
+    @Test
+    void defaultIsTheSizeCublasRecommends() {
+        assumeCuda();
+        NativeOps ops = Nd4j.getNativeOps();
+        int expected = 4;
+        for (int d = 0; d < Nd4j.getAffinityManager().getNumberOfDevices(); d++) {
+            if (ops.getDeviceMajor(d) >= 9) {
+                expected = 32;
+            }
+        }
+        assertEquals(expected, Nd4j.getEnvironment().dspCublasWorkspaceMb(),
+                "32MB from Hopper (compute capability 9) on, 4MB before");
+    }
 
     @Test
     void workspaceMustHaveASize() {

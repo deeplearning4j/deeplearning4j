@@ -153,7 +153,7 @@ The behavior depends on `gapOpsCapturedInGraph`:
 
 | Property | Value |
 |---|---|
-| **Type** | Device GPU memory (256 MB) |
+| **Type** | Device GPU memory: by default the size cuBLAS recommends for the visible GPUs (32 MB from Hopper, compute capability 9, on; 4 MB before), resolved at Environment construction; `ND4J_DSP_CUBLAS_WORKSPACE_MB` / `setDspCublasWorkspaceMb` override it (was a fixed 256 MB, eight times cuBLAS's recommendation, allocated by every plan) |
 | **Declared** | `NativeDynamicShapePlan.h:1161` |
 | **Scope** | Per-plan, shared across ALL segments |
 | **Allocated** | `ensureCublasWorkspace()` via `CudaMemoryPool::allocateDirect`. A failed allocation trims the pool and retries once outside capture, then throws: a plan never runs its GEMMs without the workspace (pedantic math without one returns all-zero FP16 results; a capture without one records cuBLAS's own allocations). `platformBeginExecution` releases its entry state before the throw, since it precedes `execute()`'s `PlatformEndGuard` |
@@ -420,7 +420,7 @@ Pre-replay setup:
 
 Pre-replay zeroing:
   7. Batch-zero: cudaMemsetAsync for each batchZeroEntry (fill engines, outside graph)
-  8. cuBLAS workspace zero: cudaMemsetAsync(cublasWorkspaceBuffer_, 0, 256MB)
+  8. cuBLAS workspace zero: cudaMemsetAsync(cublasWorkspaceBuffer_, 0, workspace size)
 
 Graph launch:
   9. Pre-launch error check (cudaPeekAtLastError)
@@ -440,7 +440,7 @@ Post-replay:
 
 ### 1. cuBLAS Workspace State Mismatch Between Capture and Replay
 
-**Problem:** The cuBLAS workspace (256MB) is shared across all segments. During CUDA graph capture:
+**Problem:** The cuBLAS workspace is shared across all segments. During CUDA graph capture:
 
 1. `setCublasWorkspaceForCapture()` binds the workspace to the cuBLAS handle and sets `cublasSetStream_v2` to the capture stream
 2. Warmup cuBLAS calls have already written data into the workspace (non-zero)
@@ -528,12 +528,12 @@ This table tracks what happens to each shared resource at each execution phase.
 | Phase | Action | State After |
 |---|---|---|
 | Plan construction | Not allocated | nullptr |
-| Warmup (execCount=0) | `setCublasWorkspaceForWarmup()` → allocate 256MB, bind to handle | Bound to handle, contains warmup GEMM residue |
+| Warmup (execCount=0) | `setCublasWorkspaceForWarmup()` → allocate the workspace, bind to handle | Bound to handle, contains warmup GEMM residue |
 | Pre-capture | `setCublasWorkspaceForCapture()` → bind to handle + set stream | Bound to handle+stream, **NOT zeroed** (warmup residue remains) |
 | During capture | cuBLAS GEMMs read/write workspace (recorded into graph) | Contains capture-time GEMM state |
 | Post-capture | `restoreCublasWorkspaceAfterCapture()` → unbind from handle | **Unbound**, `tl_cublasWorkspacePtr=nullptr`, buffer still allocated |
 | Slot-by-slot (non-captured seg) | cuBLAS uses internal allocator (workspace unbound) | Workspace untouched by slot-by-slot cuBLAS |
-| Pre-replay | `cudaMemsetAsync(buf, 0, 256MB)` | **Zeroed** (different from capture-time state!) |
+| Pre-replay | `cudaMemsetAsync(buf, 0, workspace size)` | **Zeroed** (different from capture-time state!) |
 | During replay | Graph replays cuBLAS kernels that read workspace | Kernels see zeros instead of capture-time data |
 
 **FIX NEEDED:** Either (a) zero workspace BEFORE capture too, or (b) don't zero before replay, or (c) snapshot and restore.

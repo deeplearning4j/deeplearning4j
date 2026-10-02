@@ -62,7 +62,7 @@ public interface DspEnvironmentConfig {
     default void setDspCaptureOomMaxRetries(int retries) {}
     default int dspCaptureOomRetryInterval() { return 4; }
     default void setDspCaptureOomRetryInterval(int interval) {}
-    default int dspCublasWorkspaceMb() { return 256; }
+    default int dspCublasWorkspaceMb() { return 0; }
     default void setDspCublasWorkspaceMb(int mb) {}
     default int dspGraphMetadataSafetyMb() { return 16; }
     default void setDspGraphMetadataSafetyMb(int mb) {}

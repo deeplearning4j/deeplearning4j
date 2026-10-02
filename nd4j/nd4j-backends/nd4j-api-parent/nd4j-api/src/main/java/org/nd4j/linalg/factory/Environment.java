@@ -1505,8 +1505,12 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
     default int dspCaptureOomRetryInterval() { return 4; }
     default void setDspCaptureOomRetryInterval(int interval) {}
 
-    /** cuBLAS workspace size in MB for graph capture (default: 256) */
-    default int dspCublasWorkspaceMb() { return 256; }
+    /**
+     * cuBLAS workspace size in MB of each DSP plan. On CUDA the default is the size cuBLAS recommends
+     * for the visible GPUs: 32 from Hopper (compute capability 9) on, 4 before. Backends without
+     * cuBLAS report 0.
+     */
+    default int dspCublasWorkspaceMb() { return 0; }
     default void setDspCublasWorkspaceMb(int mb) {}
 
     /** Post-alloc safety margin in MB for CUDA driver graph metadata (default: 16) */

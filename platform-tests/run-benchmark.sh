@@ -138,6 +138,7 @@ CLEAR_DECODER=false
 SPECULATIVE_K=0
 DRAFT_MODEL=false
 NO_CUBLAS_WORKSPACE=false
+CUBLAS_WORKSPACE_MB=""
 NO_FREEZE=false
 TRITON_TF32=false
 CUBLAS_TF32=false
@@ -269,6 +270,10 @@ while [[ $# -gt 0 ]]; do
         --no-cublas-workspace)
             NO_CUBLAS_WORKSPACE=true
             shift
+            ;;
+        --cublas-workspace-mb)
+            CUBLAS_WORKSPACE_MB="$2"
+            shift 2
             ;;
         --no-freeze)
             NO_FREEZE=true
@@ -419,7 +424,7 @@ while [[ $# -gt 0 ]]; do
             echo "       [--ideal]  # SMOLDOC_IDEAL, 250 tokens, skip audit, keep decoder cache"
             echo "       [--fp16] [--no-fp16] [--no-optimizer] [--optimizer-log]"
             echo "       [--clear-cache] [--clear-decoder] [--no-clear-decoder]"
-            echo "       [--draft] [--speculative K] [--no-cublas-workspace] [--no-freeze]"
+            echo "       [--draft] [--speculative K] [--no-cublas-workspace] [--cublas-workspace-mb N] [--no-freeze]"
             echo "       [--triton-tf32] [--no-triton-tf32]"
 echo "       [--disable-view-fastpath] [--disable-cast-hwm] [--disable-ws-skip]"
             echo "       [--dsp-timing] [--skip-final-validate]"
@@ -467,6 +472,7 @@ $OPTIMIZER_LOG && echo "  Optimizer: logging applied transforms"
 $DEBUG_MODE   && echo "  Mode:   DEBUG (DSP diagnostics + CUDA driver log)"
 $NSYS_MODE    && echo "  Mode:   NSYS (NVIDIA Nsight Systems profiler)"
 $NO_CUBLAS_WORKSPACE && echo "  cuBLAS workspace:   DISABLED (no explicit workspace during capture)"
+[ -n "$CUBLAS_WORKSPACE_MB" ] && echo "  cuBLAS workspace:   ${CUBLAS_WORKSPACE_MB}MB per plan (default: cuBLAS's recommended size)"
 $NO_FREEZE           && echo "  Freeze:             DISABLED (no shape freezing, no CUDA graph)"
 $NO_ATTN_OVERRIDE    && echo "  AttnOverride:       DISABLED (use model's attn_mask_reformat subgraph)"
 $NO_DIRECT           && echo "  Direct exec:        DISABLED (use output() instead of outputDirect())"
@@ -534,6 +540,10 @@ fi
 
 if $NO_CUBLAS_WORKSPACE; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.cublas.captureWorkspace=0"
+fi
+
+if [ -n "$CUBLAS_WORKSPACE_MB" ]; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.cublasWorkspaceMb=$CUBLAS_WORKSPACE_MB"
 fi
 
 if $NO_FREEZE; then

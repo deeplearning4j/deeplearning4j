@@ -1929,6 +1929,7 @@
                         <ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>${nd4j.triton.fuseAttentionNeighborhoods}</ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>
                         <CUDA_LOG_FILE>${cuda.log.file}</CUDA_LOG_FILE>
                         <ND4J_CUBLAS_CAPTURE_WORKSPACE>${nd4j.cublas.captureWorkspace}</ND4J_CUBLAS_CAPTURE_WORKSPACE>
+                        <ND4J_DSP_CUBLAS_WORKSPACE_MB>${nd4j.dsp.cublasWorkspaceMb}</ND4J_DSP_CUBLAS_WORKSPACE_MB>
                         <ND4J_TRITON_TF32>${nd4j.triton.tf32}</ND4J_TRITON_TF32>
                         <ND4J_DSP_TRACE_SLOT>${nd4j.dsp.traceSlot}</ND4J_DSP_TRACE_SLOT>
                         <ND4J_DSP_TRACE_EXT_INPUT>${nd4j.dsp.traceExtInput}</ND4J_DSP_TRACE_EXT_INPUT>
