@@ -1217,8 +1217,9 @@ SD_LIB_EXPORT int copyPlanStagingToBuffer(sd::Pointer planHandle, int extIdx, Op
 
 /**
  * Get a slot's output array as OpaqueNDArray, borrowed from the plan.
- * Null when the slot is empty or holds a caller's input array (an identity of an
- * external input): the caller may have deleted that array since the execute.
+ * Null when the slot is empty, holds a caller's input array (an identity of an
+ * external input), or holds a plan view over a caller's input: the caller may
+ * have deleted that array or its storage since the execute.
  */
 SD_LIB_EXPORT OpaqueNDArray getPlanSlotOutputArray(sd::Pointer planHandle, int slotIdx);
 

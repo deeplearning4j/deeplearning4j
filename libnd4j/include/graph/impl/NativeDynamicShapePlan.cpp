@@ -152,6 +152,15 @@ bool untrackFrozenPin(DataBuffer* db, const void* pinOwner) {
   if (it->second.empty()) g_frozenPinCounts.erase(it);
   return true;
 }
+
+// Whether this plan holds a registered pin on the buffer, which proves the
+// buffer object is alive: destruction drops every entry for its address.
+// Reads no buffer field, so it is safe on a caller's possibly deleted buffer.
+bool holdsFrozenPin(const DataBuffer* db, const void* pinOwner) {
+  std::lock_guard<std::mutex> lk(g_frozenPinMtx);
+  auto it = g_frozenPinCounts.find(const_cast<DataBuffer*>(db));
+  return it != g_frozenPinCounts.end() && it->second.count(pinOwner) != 0;
+}
 }  // namespace
 
 }  // namespace graph
@@ -5003,7 +5012,17 @@ bool NativeDynamicShapePlan::isPlanControlledWrapper(NDArray* array) const {
 
 NDArray* NativeDynamicShapePlan::getIntrospectableSlotArray(int slotIdx) const {
   NDArray* value = getSlotOutputArray(slotIdx);
-  return isPlanControlledWrapper(value) ? value : nullptr;
+  if (!isPlanControlledWrapper(value)) return nullptr;
+  // A plan view over a caller's input reads the caller's storage, which the
+  // caller may have freed since the last execute; it is withheld like the
+  // caller's own wrapper, unless this plan's frozen pin proves the buffer
+  // alive (constants and weights of a frozen plan; placeholders are never
+  // pinned).
+  DataBuffer* db = value->dataBuffer();
+  if (!ownsItsStorage(value) && isRecordedExternalBuffer(db) && !holdsFrozenPin(db, this)) {
+    return nullptr;
+  }
+  return value;
 }
 
 bool NativeDynamicShapePlan::isRecordedExternalBuffer(const DataBuffer* buffer) const {
@@ -5012,6 +5031,45 @@ bool NativeDynamicShapePlan::isRecordedExternalBuffer(const DataBuffer* buffer) 
     if (record.buffer == buffer) return true;
   }
   return false;
+}
+
+void NativeDynamicShapePlan::resetSlotStatesForSegment(int startSlot, int endSlot) {
+  DSP_DIAG(EXECUTE, "resetSlotStatesForSegment: resetting slots [%d-%d] back to BUILDING",
+           startSlot, endSlot);
+  int clearedClosedOutputs = 0;
+  for (int i = startSlot; i <= endSlot && i < numSlots_; i++) {
+    // SlotPhase::reset() emits DSP_DIAG(LIFECYCLE) with old->new state per slot.
+    slots_[i].slotPhase.reset();
+    // Clear frozen buffer pointer snapshot so detectFrozenConstants re-snapshots
+    // fresh pointers when the slot is re-frozen after re-warmup.
+    slots_[i].frozenOutputPtrs.clear();
+    for (int o = 0; o < slots_[i].wiring.numOutputs; o++) {
+      int outSi = slots_[i].wiring.outputSlotIndices[o];
+      if (outSi < 0 || outSi >= totalOutputSlots_ || outputSlots_ == nullptr) continue;
+      NDArray* arr = outputSlots_[outSi];
+      // An identity slot holds the caller's wrapper and a view can wrap a
+      // caller's buffer; between executes either may be deleted, and the next
+      // execute rebinds both. Only the plan's own wrappers over storage the
+      // caller did not lend are probed.
+      if (arr == nullptr || !isPlanControlledWrapper(arr)) continue;
+      DataBuffer* db = arr->dataBuffer();
+      if (db == nullptr || (!ownsItsStorage(arr) && isRecordedExternalBuffer(db))) continue;
+      if (db->isClosed()) {
+        outputSlots_[outSi] = nullptr;
+        planOwnedArrays_.erase(arr);
+        if (slotOwnership_ != nullptr) {
+          slotOwnership_[outSi].reset();
+        }
+        clearedClosedOutputs++;
+      }
+    }
+  }
+  if (clearedClosedOutputs > 0) {
+    DSP_DIAG(MEMORY,
+             "resetSlotStatesForSegment: cleared %d closed cached output slot(s) "
+             "inside invalidated range [%d-%d]",
+             clearedClosedOutputs, startSlot, endSlot);
+  }
 }
 
 size_t NativeDynamicShapePlan::estimatedOwnedBytes() const {

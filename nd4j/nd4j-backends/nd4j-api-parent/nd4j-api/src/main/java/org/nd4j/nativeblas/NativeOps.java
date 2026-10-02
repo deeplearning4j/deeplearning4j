@@ -2390,8 +2390,8 @@ public interface NativeOps {
   /**
    * Get the OpaqueNDArray at the given output slot index.
    * Non-owning view — valid until next execute(). Returns null if out of range or empty,
-   * and for a slot holding a caller's input array (an identity of an external input),
-   * which the caller may have deleted since the execute.
+   * and for a slot holding a caller's input array (an identity of an external input) or a
+   * plan view over one, whose array or storage the caller may have deleted since the execute.
    */
   default OpaqueNDArray getPlanSlotOutputArray(Pointer planHandle, int slotIdx) { return null; }
 

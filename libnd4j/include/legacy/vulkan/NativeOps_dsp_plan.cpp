@@ -731,13 +731,26 @@ int dspValidateOutputs(sd::Pointer h, int* flagsOut) {
   const auto* definition = plan->getPlanDefinition();
   auto** outputSlots = plan->getOutputSlots();
   if (!definition || !outputSlots) return -1;
-  std::vector<NDArray*> outputs(count);
+  // Validation runs between executes, when an output slot can hold the caller's
+  // input (an identity output) or a plan view over it, and the caller may have
+  // freed that storage. Such an output is the caller's data: it is reported OK
+  // without being read. An empty slot is still NULL.
+  std::vector<NDArray*> outputs(count, nullptr);
+  std::vector<uint8_t> callerOwned(count, 0);
   for (int i = 0; i < count; ++i) {
     const int slot = definition->requestedOutputSlotIndices()[i];
-    outputs[i] = slot >= 0 && slot < plan->getTotalOutputSlots()
-        ? outputSlots[slot] : nullptr;
+    if (slot < 0 || slot >= plan->getTotalOutputSlots() || outputSlots[slot] == nullptr) continue;
+    outputs[i] = plan->getIntrospectableSlotArray(slot);
+    callerOwned[i] = outputs[i] == nullptr;
   }
-  return sd::graph::dspValidateOutputs(outputs.data(), count, flagsOut);
+  int issues = sd::graph::dspValidateOutputs(outputs.data(), count, flagsOut);
+  for (int i = 0; i < count; ++i) {
+    if (callerOwned[i] && flagsOut[i] == sd::graph::DSP_VALIDATE_NULL) {
+      flagsOut[i] = sd::graph::DSP_VALIDATE_OK;
+      issues--;
+    }
+  }
+  return issues;
 }
 
 int dspDetectStaleOutputs(sd::Pointer h, float* prevNorms, bool* staleOut,
@@ -749,11 +762,13 @@ int dspDetectStaleOutputs(sd::Pointer h, float* prevNorms, bool* staleOut,
   const auto* definition = plan->getPlanDefinition();
   auto** outputSlots = plan->getOutputSlots();
   if (!definition || !outputSlots) return -1;
-  std::vector<NDArray*> outputs(count);
+  // Between executes: an output that is the caller's input, or a plan view
+  // over it, is not read and not tracked (as for an empty slot).
+  std::vector<NDArray*> outputs(count, nullptr);
   for (int i = 0; i < count; ++i) {
     const int slot = definition->requestedOutputSlotIndices()[i];
-    outputs[i] = slot >= 0 && slot < plan->getTotalOutputSlots()
-        ? outputSlots[slot] : nullptr;
+    if (slot < 0 || slot >= plan->getTotalOutputSlots()) continue;
+    outputs[i] = plan->getIntrospectableSlotArray(slot);
   }
   return sd::graph::dspDetectStaleOutputs(
       outputs.data(), count, prevNorms, staleOut, epsilon);

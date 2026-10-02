@@ -3119,39 +3119,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Reset slot states within a segment range back to WARMUP so frozen
   // contexts with stale dtypes are not reused after invalidation.
   // Keeps cached shapes intact — they're needed by the normal warmup
-  // path for output allocation.  Only clears the frozen-context gate.
-  void resetSlotStatesForSegment(int startSlot, int endSlot) {
-    DSP_DIAG(EXECUTE, "resetSlotStatesForSegment: resetting slots [%d-%d] back to BUILDING",
-             startSlot, endSlot);
-    int clearedClosedOutputs = 0;
-    for (int i = startSlot; i <= endSlot && i < numSlots_; i++) {
-      // SlotPhase::reset() emits DSP_DIAG(LIFECYCLE) with old->new state per slot.
-      slots_[i].slotPhase.reset();
-      // Clear frozen buffer pointer snapshot so detectFrozenConstants re-snapshots
-      // fresh pointers when the slot is re-frozen after re-warmup.
-      slots_[i].frozenOutputPtrs.clear();
-      for (int o = 0; o < slots_[i].wiring.numOutputs; o++) {
-        int outSi = slots_[i].wiring.outputSlotIndices[o];
-        if (outSi < 0 || outSi >= totalOutputSlots_ || outputSlots_ == nullptr) continue;
-        NDArray* arr = outputSlots_[outSi];
-        DataBuffer* db = arr != nullptr ? arr->dataBuffer() : nullptr;
-        if (db != nullptr && db->isClosed()) {
-          outputSlots_[outSi] = nullptr;
-          planOwnedArrays_.erase(arr);
-          if (slotOwnership_ != nullptr) {
-            slotOwnership_[outSi].reset();
-          }
-          clearedClosedOutputs++;
-        }
-      }
-    }
-    if (clearedClosedOutputs > 0) {
-      DSP_DIAG(MEMORY,
-               "resetSlotStatesForSegment: cleared %d closed cached output slot(s) "
-               "inside invalidated range [%d-%d]",
-               clearedClosedOutputs, startSlot, endSlot);
-    }
-  }
+  // path for output allocation.  Only clears the frozen-context gate, and
+  // drops cached plan outputs whose buffer was closed. Also runs between
+  // executes (markExternalInputVariable, backend cache invalidation), so it
+  // never reads a caller's wrapper or a buffer borrowed from a caller.
+  void resetSlotStatesForSegment(int startSlot, int endSlot);
 
   // Public so NativeOps_dsp.cpp diagnostics can query composite state.
   bool hasCompositeHandles(const GraphSegment& seg) const;
