@@ -229,19 +229,19 @@ public static native @MemberGetter int HAVE_ONEDNN();
 public static final int HAVE_ONEDNN = HAVE_ONEDNN();
 public static final int HAVE_ARMCOMPUTE = 0;
 public static final int HAVE_CUDNN = 0;
-public static final int HAVE_OPENBLAS = 1;
+public static final int HAVE_OPENBLAS = 0;
 public static final int HAVE_FLATBUFFERS = 0;
 public static final int HAVE_TRITON = 0;
 public static final int HAVE_TRITON_CPU = 0;
-public static final int HAVE_MLIR = 0;
+public static final int HAVE_MLIR = 1;
 public static final int HAVE_MLX = 0;
 public static final int HAVE_NNAPI = 0;
 public static final int HAVE_CUTLASS = 0;
 public static final int HAVE_OPENVINO = 0;
 
-public static final String SD_LIBRARY_NAME = "nd4jcpu";
-public static final String OPENBLAS_PATH = "/home/agibsonccc/.javacpp/cache/openblas-0.3.31-1.5.13-linux-arm64.jar/org/bytedeco/openblas/linux-arm64";
-// #define DEFAULT_ENGINE samediff::ENGINE_CPU
+public static final String SD_LIBRARY_NAME = "nd4jvulkan";
+public static final String OPENBLAS_PATH = "";
+// #define DEFAULT_ENGINE samediff::ENGINE_VULKAN
 
 // Type system configuration - populated by CMake TypeValidation system
 public static final int SD_SELECTIVE_TYPES = 0;
@@ -1781,6 +1781,7 @@ public static final int
 // #include <system/op_boilerplate.h>
 // #include <system/PointerValidation.h>
 
+// #include <algorithm>
 // #include <climits>
 // #include <cstring>
 // #include <mutex>
@@ -1913,6 +1914,9 @@ public static final int
   public native void readSpecial();
   public native @Cast("bool") boolean isPrimaryActual();
   public native @Cast("bool") boolean isSpecialActual();
+
+// #ifndef __JAVACPP_HACK__
+// #endif
 
   public native void expand(@Cast("const uint64_t") long size);
 
@@ -2846,6 +2850,10 @@ public native @Cast("const sd::LongType*") LongPointer getOpaqueNDArrayShapeInfo
 public native Pointer getOpaqueNDArrayBuffer(@ByVal org.nd4j.nativeblas.OpaqueNDArray array);
 
 public native Pointer getOpaqueNDArraySpecialBuffer(@ByVal org.nd4j.nativeblas.OpaqueNDArray array);
+
+// Borrowed pointers that never synchronize or migrate the underlying DataBuffer.
+public native Pointer getOpaqueNDArrayPrimaryBufferNoSync(@ByVal org.nd4j.nativeblas.OpaqueNDArray array);
+public native Pointer getOpaqueNDArraySpecialBufferNoSync(@ByVal org.nd4j.nativeblas.OpaqueNDArray array);
 
 public native @ByVal @Name("createOpaqueNDArray") org.nd4j.nativeblas.OpaqueNDArray create(org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo,
                                                 org.nd4j.nativeblas.OpaqueDataBuffer buffer,
@@ -4579,8 +4587,19 @@ public native @Cast("sd::Pointer") Pointer dispatchNativePlan(@Cast("sd::Pointer
                                              int newBorrower);
 
 /**
+ * Acquire one independent cache lease without redispatch or plan-resource mutation.
+ * Returns 1 on acquisition, 0 for null handles, nonmember plans, shutdown,
+ * clear-pending caches, or lease-count overflow. Does not dereference planHandle.
+ * A successful retain must be paired with one unpinNativePlan call.
+ * The caller must keep cacheHandle alive; this protects cache residency only,
+ * not executor resource retirement, execution, or external-buffer lifetimes.
+ */
+public native int retainNativePlan(@Cast("sd::Pointer") Pointer cacheHandle, @Cast("sd::Pointer") Pointer planHandle);
+
+/**
  * Unpin a plan handle, making it eligible for LRU eviction.
- * Must be called once for every borrower lease acquired from dispatchNativePlan,
+ * Must be called once for every borrower lease acquired from dispatchNativePlan
+ * or retainNativePlan,
  * when Java swaps away from a plan or closes the executor. The cache keeps the
  * plan eviction-protected until the final lease is released.
  *
@@ -5720,7 +5739,10 @@ public native int copyPlanStagingToBuffer(@Cast("sd::Pointer") Pointer planHandl
 // =============================================================================
 
 /**
- * Get a slot's output array as OpaqueNDArray.
+ * Get a slot's output array as OpaqueNDArray, borrowed from the plan.
+ * Null when the slot is empty, holds a caller's input array (an identity of an
+ * external input), or holds a plan view over a caller's input: the caller may
+ * have deleted that array or its storage since the execute.
  */
 public native @ByVal org.nd4j.nativeblas.OpaqueNDArray getPlanSlotOutputArray(@Cast("sd::Pointer") Pointer planHandle, int slotIdx);
 
@@ -5728,6 +5750,13 @@ public native @ByVal org.nd4j.nativeblas.OpaqueNDArray getPlanSlotOutputArray(@C
  * Get the total number of output slots.
  */
 public native int getTotalPlanOutputSlots(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Device bytes the plan retains (NativeDynamicShapePlan::estimatedOwnedBytes): owned
+ * intermediates, staging, compiled artifacts and workspaces, each buffer once, callers'
+ * inputs excluded. Safe between executes. 0 for a null handle.
+ */
+public native long getPlanEstimatedOwnedBytes(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
  * Get the monotonic write-generation counter for a slot.
@@ -9874,6 +9903,15 @@ public static final int
 @Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF( @Cast("sd::LongType*") LongPointer shapeBuffer);
 @Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF( @Cast("sd::LongType*") LongBuffer shapeBuffer);
 @Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF( @Cast("sd::LongType*") long[] shapeBuffer);
+
+// True when the elements are packed in row-major (C) order: every dimension of
+// size > 1 has exactly the stride of a packed C-order array. Size-1 dimensions
+// are ignored — their index is always 0, so their stride never contributes to an
+// address, and ND4J normalizes such strides (a [1,K] row is stored with strides
+// [1,1]). The strides alone decide; the order flag is not consulted.
+@Namespace("shape") public native @Cast("bool") boolean isDenseRowMajor(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isDenseRowMajor(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isDenseRowMajor(@Cast("const sd::LongType*") long[] shapeInfo);
 
 
 
@@ -15708,6 +15746,7 @@ public static final int
 // #include <initializer_list>
 // #include <string>
 // #include <vector>
+// #include <utility>
 
 // #ifndef __JAVACPP_HACK__
 // #endif
