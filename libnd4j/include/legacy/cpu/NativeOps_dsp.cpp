@@ -91,21 +91,25 @@ static int executePlanContext(
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(code);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg);
   };
+  // Every failure returns a Status code (-1 for a native exception) so callers can name it:
+  // the plan's own status passes through, and this entry's own failures map onto Status.
+  const int badInput = static_cast<int>(Status::BAD_INPUT);
+  const int badArguments = static_cast<int>(Status::BAD_ARGUMENTS);
 
   try {
     if (planHandle == nullptr) {
       const char* msg = steadyState ? "executeSteadyStatePlan: null plan handle"
                                     : "executeDynamicShapePlan: null plan handle";
       DSP_DIAG(EXECUTE, "%s", msg);
-      setError(1, msg);
-      return 1;
+      setError(badInput, msg);
+      return badInput;
     }
     if (opContext == nullptr) {
       const char* msg = steadyState ? "executeSteadyStatePlan: null opContext"
                                     : "executeDynamicShapePlan: null opContext";
       DSP_DIAG(EXECUTE, "%s", msg);
-      setError(1, msg);
-      return 1;
+      setError(badInput, msg);
+      return badInput;
     }
 
     auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
@@ -119,16 +123,16 @@ static int executePlanContext(
       snprintf(buf, sizeof(buf), "%s: input count mismatch: got %d, expected %d",
                entryPoint, numInputs, plan->getNumExternalInputs());
       DSP_DIAG(EXECUTE, "%s", buf);
-      setError(2, buf);
-      return 2;
+      setError(badInput, buf);
+      return badInput;
     }
     if (numOutputs < 0) {
       char buf[256];
       snprintf(buf, sizeof(buf), "%s: output count mismatch: got %d, expected %d",
                entryPoint, boundOutputCount, plan->getNumRequestedOutputs());
       DSP_DIAG(EXECUTE, "%s", buf);
-      setError(3, buf);
-      return 3;
+      setError(badArguments, buf);
+      return badArguments;
     }
 
     std::vector<NDArray*> inputPtrs(numInputs);
@@ -138,12 +142,11 @@ static int executePlanContext(
         char buf[256];
         snprintf(buf, sizeof(buf), "%s: null input at index %d", entryPoint, i);
         DSP_DIAG(EXECUTE, "%s", buf);
-        setError(4, buf);
-        return 4;
+        setError(badInput, buf);
+        return badInput;
       }
-      // Validate DataBuffer integrity before passing to plan->execute().
-      // Return error code 5 (STALE_BUFFER) with the bad input index encoded
-      // in the error message so Java can re-resolve only that input and retry.
+      // A closed, destroyed or invalid input buffer is the caller's error; the message
+      // names the input.
       auto* db = inputPtrs[i]->dataBuffer();
       if (db != nullptr) {
         if (db->isClosed() || db->isDestroyed() || !db->isValid()) {
@@ -152,8 +155,8 @@ static int executePlanContext(
                    "%s: stale buffer at input %d (closed=%d destroyed=%d valid=%d)",
                    entryPoint, i, db->isClosed() ? 1 : 0, db->isDestroyed() ? 1 : 0, db->isValid() ? 1 : 0);
           DSP_DIAG(EXECUTE, "%s", buf);
-          setError(5, buf);
-          return 5;
+          setError(badInput, buf);
+          return badInput;
         }
         DSP_DIAG(EXECUTE, "executeDSP: input[%d] ndarray=%p db=%p closed=%d const=%d special=%p primary=%p destroyed=%d valid=%d lenBytes=%lld",
                  i, (void*)inputPtrs[i], (void*)db, db->isClosed() ? 1 : 0,

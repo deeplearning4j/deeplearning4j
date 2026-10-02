@@ -39,7 +39,21 @@ public enum OpStatus {
     ND4J_STATUS_BAD_DIMENSIONS,
     ND4J_STATUS_BAD_ORDER,
     ND4J_STATUS_BAD_ARGUMENTS,
-    ND4J_STATUS_VALIDATION;
+    ND4J_STATUS_VALIDATION,
+    ND4J_STATUS_DOUBLE_WRITE,
+    ND4J_STATUS_DOUBLE_READ,
+    ND4J_STATUS_KERNEL_FAILURE;
+
+    /** The name of a native status code (sd::Status), or UNKNOWN(code) for one this enum lacks. */
+    public static String nameOf(int val) {
+        switch (val) {
+            case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9:
+            case 20: case 30: case 31: case 32: case 33: case 34: case 40: case 45: case 50:
+                return byNumber(val).name();
+            default:
+                return "UNKNOWN(" + val + ")";
+        }
+    }
 
     public static OpStatus byNumber(int val) {
         switch (val) {
@@ -75,6 +89,12 @@ public enum OpStatus {
                 return ND4J_STATUS_BAD_ORDER;
             case 34:
                 return ND4J_STATUS_BAD_ARGUMENTS;
+            case 40:
+                return ND4J_STATUS_DOUBLE_WRITE;
+            case 45:
+                return ND4J_STATUS_DOUBLE_READ;
+            case 50:
+                return ND4J_STATUS_KERNEL_FAILURE;
             default:
                 throw new ND4JIllegalStateException("Unknown status given: " + val);
         }

@@ -353,14 +353,16 @@ inline bool isAmdDeviceType(int deviceType) {
   return deviceType == static_cast<int32_t>(SDX_DEVICE_AMD);
 }
 
+// The native plan entries return Status codes (-1 for a native exception).
 sdx_status_t mapExecuteStatus(int code) {
-  if (code == 0) return SDX_STATUS_OK;
-
-  switch (code) {
-    case 1:
-    case 2:
-    case 3:
-    case 4:
+  switch (static_cast<sd::Status>(code)) {
+    case sd::Status::OK:
+      return SDX_STATUS_OK;
+    case sd::Status::BAD_INPUT:
+    case sd::Status::BAD_SHAPE:
+    case sd::Status::BAD_RANK:
+    case sd::Status::BAD_PARAMS:
+    case sd::Status::BAD_ARGUMENTS:
       return SDX_STATUS_INVALID_ARGUMENT;
     default:
       return SDX_STATUS_EXECUTION_FAILED;

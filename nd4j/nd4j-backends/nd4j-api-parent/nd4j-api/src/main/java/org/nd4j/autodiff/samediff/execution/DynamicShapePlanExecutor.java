@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.framework.device.TransferDirection;
@@ -162,10 +163,6 @@ public class DynamicShapePlanExecutor implements Closeable {
      * replay the TAD pointers they baked.
      */
     private HeldCount frozenRegistration;
-
-    /** C++ error code returned when an input DataBuffer is closed/destroyed/invalid.
-     *  Java can detect this and re-resolve the stale input from SameDiff variables. */
-    private static final int NATIVE_STATUS_STALE_BUFFER = 5;
 
     /**
      * True once this executor has owned a plan that reached a frozen lifecycle.
@@ -5672,15 +5669,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 diagnosticsError.getMessage());
                     }
                 }
-                if (status == NATIVE_STATUS_STALE_BUFFER) {
-                    // C++ detected a closed/destroyed DataBuffer. This means a constant or
-                    // variable was GC'd between Java's input resolution and C++ execution.
-                    // Throw a specific exception so callers can re-resolve and retry.
-                    throw new IllegalStateException("Stale buffer detected by C++ during DSP execution: " +
-                            (errMsg != null ? errMsg : "unknown input") + planSlotContext);
-                }
-                throw new RuntimeException("Native plan execution failed with status " + status +
-                        ": " + (errMsg != null ? errMsg : "unknown error") + planSlotContext);
+                throw new RuntimeException("Native plan execution failed with status " + status
+                        + " (" + OpStatus.nameOf(status) + "): " + (errMsg != null ? errMsg : "unknown error")
+                        + planSlotContext);
             }
 
             // Refresh the immutable native lifecycle snapshot after each execution.
