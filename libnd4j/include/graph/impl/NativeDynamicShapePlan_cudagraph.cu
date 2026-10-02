@@ -1384,11 +1384,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             }
             if (staging != nullptr) {
               DataBuffer* stagingBuffer = staging->dataBuffer();
+              // Layout, not the legacy element-wise-stride word: an op's output and
+              // a fresh array with the same layout share the plan and its staging.
+              const LongType* stagingShape = staging->shapeInfo();
+              const LongType* inputShape = array->shapeInfo();
+              const bool sameLayout =
+                  shape::haveSameShapeAndStrides(stagingShape, inputShape) &&
+                  ArrayOptions::dataType(stagingShape) == ArrayOptions::dataType(inputShape) &&
+                  shape::order(stagingShape) == shape::order(inputShape) &&
+                  shape::isEmptyConst(stagingShape) == shape::isEmptyConst(inputShape);
               if (stagingBuffer == nullptr || !stagingBuffer->isValid() ||
                   stagingBuffer->isClosed() || stagingBuffer->deviceId() != candidate ||
                   stagingBuffer->getLenInBytes() != storageBytes ||
-                  staging->offset() != array->offset() ||
-                  !shape::equalsStrict(staging->shapeInfo(), array->shapeInfo())) {
+                  staging->offset() != array->offset() || !sameLayout) {
                 eligible = false;
               }
             } else if (sourceBuffer->deviceId() == candidate) {

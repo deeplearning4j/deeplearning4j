@@ -78,6 +78,9 @@ static void logPlanCacheMemoryState(
 uint64_t NativePlanCache::hashShapeInfoContents(sd::LongType** ptrs, sd::LongType count) {
   // FNV-1a 64-bit over the raw LongType words of each shape-info buffer.
   // Each buffer is rank*2+4 LongType elements (rank, dims, strides, extras).
+  // The legacy element-wise-stride word (second to last) is skipped: an op's
+  // output and a fresh array with the same layout differ only there, and must
+  // share a plan (the Java executor's shape hash skips it too).
   uint64_t h = 14695981039346656037ULL;
   for (sd::LongType i = 0; i < count; i++) {
     const sd::LongType* si = ptrs[i];
@@ -90,6 +93,7 @@ uint64_t NativePlanCache::hashShapeInfoContents(sd::LongType** ptrs, sd::LongTyp
     sd::LongType rank = shape::rank(si);
     sd::LongType len = shape::shapeInfoLength(rank);
     for (sd::LongType j = 0; j < len; j++) {
+      if (j == len - 2) continue;
       h ^= static_cast<uint64_t>(si[j]);
       h *= 1099511628211ULL;
     }

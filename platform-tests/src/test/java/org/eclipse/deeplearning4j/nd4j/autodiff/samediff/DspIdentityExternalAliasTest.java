@@ -174,6 +174,12 @@ class DspIdentityExternalAliasTest {
                 }
                 DspPlanAssertions.assertFrozenExecCountAtLeast(sd, STEPS / 2,
                         "the steady-state path must run");
+                // Every call has one layout: a fed-back output (PING_PONG) differs from a
+                // fresh array only in the legacy element-wise-stride word and must reuse
+                // the plan instead of compiling and pinning a second one.
+                DynamicShapePlanExecutor executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                assertNotNull(executor);
+                assertEquals(1, executor.getPinnedPlanCount(), "one input layout must map to one plan");
             }
         } finally {
             for (INDArray x : callerArrays) {

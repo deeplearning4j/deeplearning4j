@@ -239,6 +239,11 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Cache leases owned by this executor, including both sides of a frozen prefill/decode switch. */
     private final Map<Long, Pointer> pinnedPlanHandles = new HashMap<>();
 
+    /** Number of native plans this executor holds cache leases on. */
+    public int getPinnedPlanCount() {
+        return pinnedPlanHandles.size();
+    }
+
     /** Independent bindings retain both native resources and their exact Java input owners. */
     private final Set<NativeExecutionBinding> nativeExecutionBindings = new HashSet<>();
     private NativeBufferOwner completedExecutionOwner;
@@ -2944,7 +2949,9 @@ public class DynamicShapePlanExecutor implements Closeable {
      * Fold the raw shape-info words into the running plan-cache hash. Native
      * dispatch hashes rank, dimensions, strides, dtype/order, and extras; using
      * the same Java shape-info payload avoids treating a stride/order/dtype
-     * change as a same-shape lease lookup.
+     * change as a same-shape lease lookup. Both sides skip the legacy
+     * element-wise-stride word (second to last): an op's output and a fresh array
+     * with the same layout differ only there, and must reach the same plan.
      */
     private long hashPlaceholderKeyShape(Map<String, INDArray> placeholderArrays, long hash, String phKey) {
         INDArray arr = placeholderArrays != null ? placeholderArrays.get(phKey) : null;
@@ -2955,8 +2962,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (arr != null) {
             long[] shapeInfo = arr.shapeInfoJava();
             if (shapeInfo != null) {
-                for (long word : shapeInfo) {
-                    hash = hash * 31 + word;
+                int ewsWord = shapeInfo.length - 2;
+                for (int w = 0; w < shapeInfo.length; w++) {
+                    if (w != ewsWord) hash = hash * 31 + shapeInfo[w];
                 }
             } else {
                 hash = hash * 31 - 1;

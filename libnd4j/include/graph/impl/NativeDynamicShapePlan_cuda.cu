@@ -1709,8 +1709,17 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
           }
           stateBuffers[externalInputIdx] = state;
         }
+        // The storage contract is the layout (rank, shape, strides, dtype, order,
+        // emptiness), not the legacy element-wise-stride word: an op's output fed
+        // back here differs from a fresh array only there and shares the plan.
+        const LongType* stateShape = state->shapeInfo();
+        const LongType* inputShape = arr->shapeInfo();
+        const bool sameLayout = shape::haveSameShapeAndStrides(stateShape, inputShape) &&
+                                ArrayOptions::dataType(stateShape) == ArrayOptions::dataType(inputShape) &&
+                                shape::order(stateShape) == shape::order(inputShape) &&
+                                shape::isEmptyConst(stateShape) == shape::isEmptyConst(inputShape);
         if (state->dataBuffer()->getLenInBytes() != db->getLenInBytes() ||
-            state->offset() != arr->offset() || !shape::equalsStrict(state->shapeInfo(), arr->shapeInfo())) {
+            state->offset() != arr->offset() || !sameLayout) {
           throw std::runtime_error("writable external changed storage contract within a plan lease");
         }
         // DataBuffer::memcpy handles peer/non-peer transfers and publishes a
