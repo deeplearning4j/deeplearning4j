@@ -211,6 +211,9 @@ PLATFORM_IMPL(batched_gemm, ENGINE_ONEDNN) {
     vC[e] = OUTPUT_VARIABLE(e);
   }
 
+  // The op's implicit zero C (see generic batched_gemm): the sum post-op reads the destination.
+  for (auto* c : vC) c->nullify();
+
   batchedGemmONEDNN(vA, vB, vC, alpha, beta, transABlas, transBBlas, M, N, K, ldA, ldB, ldC);
 
   return sd::Status::OK;

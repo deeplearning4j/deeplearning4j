@@ -156,6 +156,12 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 2) {
     REQUIRE_TRUE(currN == N, 0, "BatchedGemm: batch %i, inconsistent N dimension: expected %d, got %d", e, N, currN);
   }
 
+  // batched_gemm has no C input: each output starts as an implicit zero C, with beta kept as a
+  // real operand (the Vulkan lowering's contract; the op is fully writing). The BLAS helpers
+  // read C whenever beta is nonzero, and a framework-allocated output holds whatever its buffer
+  // held before.
+  for (auto* c : vC) c->nullify();
+
   helpers::bgemm(vA, vB, vC, alphaInput, betaInput, transABlas, transBBlas, M, N, K, ldA, ldB, ldC);
 
   if(alphaInput != alpha) {
