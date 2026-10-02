@@ -127,16 +127,14 @@ SD_INLINE SD_HOST_DEVICE uint32_t RandomGenerator::relativeT<uint32_t>(LongType 
 #ifdef HAS_INT32
 template <>
 SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeT<int>(LongType index) {
-  auto r = static_cast<int>(relativeT<uint32_t>(index));
-  return r <= DataTypeUtils::max<int>() ? r : r % DataTypeUtils::max<int>();
+  return relativeInt(index);
 }
 #endif
 
 #ifdef HAS_INT64
 template <>
 SD_INLINE SD_HOST_DEVICE LongType RandomGenerator::relativeT<LongType>(LongType index) {
-  auto r = static_cast<sd::LongType>(relativeT<unsigned long>(index));
-  return r <= DataTypeUtils::max<LongType>() ? r : r % DataTypeUtils::max<LongType>();
+  return relativeLong(index);
 }
 #endif
 
@@ -302,8 +300,11 @@ SD_INLINE SD_HOST_DEVICE T RandomGenerator::relativeT(LongType index) {
 
 SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeInt(LongType index) {
 #ifdef HAS_UINT32
-  auto r = static_cast<int>(relativeT<uint32_t>(index));
-  return r <= DataTypeUtils::max<int>() ? r : r % DataTypeUtils::max<int>();
+  // Non-negative: a hash above int's maximum wraps into [0, max). Compared unsigned, since the
+  // hash cast to int first is negative exactly when it is above the maximum.
+  const uint32_t r = relativeT<uint32_t>(index);
+  const auto max = static_cast<uint32_t>(DataTypeUtils::max<int>());
+  return static_cast<int>(r <= max ? r : r % max);
 #else
   return 0;  // Fallback if no uint32_t
 #endif
@@ -311,8 +312,10 @@ SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeInt(LongType index) {
 
 SD_INLINE SD_HOST_DEVICE LongType RandomGenerator::relativeLong(LongType index) {
 #ifdef HAS_UINT64
-  auto r = static_cast<LongType>(relativeT<unsigned long>(index));
-  return r <= DataTypeUtils::max<LongType>() ? r : r % DataTypeUtils::max<LongType>();
+  // Non-negative, as relativeInt.
+  const auto r = static_cast<uint64_t>(relativeT<unsigned long>(index));
+  const auto max = static_cast<uint64_t>(DataTypeUtils::max<LongType>());
+  return static_cast<LongType>(r <= max ? r : r % max);
 #else
   return 0;  // Fallback if no uint64_t
 #endif
