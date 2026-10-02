@@ -61,6 +61,7 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.io.Closeable;
+import java.lang.ref.Reference;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -6128,6 +6129,9 @@ public class DynamicShapePlanExecutor implements Closeable {
             return results;
         } finally {
             nativeExecLock.unlock();
+            // The graph's plan cache is freed once the graph is collected; the graph must stay
+            // reachable until the native execution and the readback of its plan are done.
+            Reference.reachabilityFence(sd);
         }
         }  // end bare block from input-setting
         } finally {

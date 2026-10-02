@@ -27,6 +27,7 @@ import org.apache.commons.collections4.trie.PatriciaTrie;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.*;
+import org.eclipse.deeplearning4j.nd4j.autodiff.samediff.NativePlanCacheOwner;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -139,17 +140,25 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     private final Map<Set<String>, DynamicShapePlan> dynamicShapePlanCache = new ConcurrentHashMap<>();
 
     /**
-     * Single native plan cache handle (C++ LRU cache keyed by placeholder-shape signature).
+     * Owner of the native plan cache (C++ LRU cache keyed by placeholder-shape signature).
      * One native cache per SameDiff instance — it owns the lifetimes of all compiled plan
-     * handles dispatched from it. Lazily created on first use; freed on {@link #close()}
-     * and cleared on {@link #clearDynamicShapePlanCache()}.
+     * handles dispatched from it. Lazily created on first use; freed on {@link #close()}, or
+     * once this graph is collected if it is never closed, and cleared on
+     * {@link #clearDynamicShapePlanCache()}.
      *
      * <p>Dispatch happens via {@code NativeOps.dispatchNativePlan(cache, planBytes, ...,
      * phShapeInfoPtrs, numPh)}: given the serialized plan and current placeholder shape-infos,
      * the C++ cache returns the handle for a plan compiled against that exact shape signature
      * (compiling a new one on cache miss).</p>
      */
-    private Pointer nativePlanCache;
+    private NativePlanCacheOwner nativePlanCacheOwner;
+
+    /**
+     * Owners of earlier native plan caches whose free a borrower's plan lease refused. Each
+     * frees its cache once this graph, which every borrower references, has been collected;
+     * until then the graph keeps them reachable.
+     */
+    private final List<NativePlanCacheOwner> leasedNativePlanCacheOwners = new ArrayList<>();
 
     /**
      * External inputs whose contents are mutated in-place between DSP executions.
@@ -4718,6 +4727,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 plan.close();
             }
         }
+        Pointer nativePlanCache = getNativePlanCache();
         if (nativePlanCache != null && !nativePlanCache.isNull()) {
             // A clear failure means some cache-owned resource may still be live. Retain the
             // exact cache handle and propagate; replacing/nulling it loses the only retry path.
@@ -4733,32 +4743,31 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @return non-null Pointer to the C++ native plan cache
      */
     public synchronized Pointer getOrCreateNativePlanCache() {
-        if (nativePlanCache == null || nativePlanCache.isNull()) {
-            NativeOps nativeOps = Nd4j.getNativeOps();
-            nativePlanCache = nativeOps.createNativePlanCache();
-            if (nativePlanCache == null || nativePlanCache.isNull()) {
-                throw new RuntimeException("createNativePlanCache returned null — native DSP cache is unavailable");
-            }
-            log.debug("Created native plan cache: {}", nativePlanCache);
+        if (nativePlanCacheOwner == null) {
+            nativePlanCacheOwner = NativePlanCacheOwner.create(Nd4j.getNativeOps());
+            log.debug("Created native plan cache: {}", nativePlanCacheOwner.cache());
         }
-        return nativePlanCache;
+        return nativePlanCacheOwner.cache();
     }
 
     /**
      * @return the current native plan cache handle, or null if not yet created.
      */
     public Pointer getNativePlanCache() {
-        return nativePlanCache;
+        NativePlanCacheOwner owner = nativePlanCacheOwner;
+        return owner == null ? null : owner.cache();
     }
 
     /** Free the current native plan cache, retaining ownership if native teardown fails. */
     private synchronized void freeNativePlanCacheHandle() {
-        Pointer cache = nativePlanCache;
-        if (cache == null || cache.isNull()) return;
-        Nd4j.getNativeOps().freeNativePlanCache(cache);
-        if (nativePlanCache == cache) {
-            nativePlanCache = null;
+        NativePlanCacheOwner owner = nativePlanCacheOwner;
+        if (owner == null) return;
+        if (!owner.free()) {
+            // A borrower still leases one of its plans. The leased plans go when the borrower
+            // releases them, the cache itself once this graph has been collected.
+            leasedNativePlanCacheOwners.add(owner);
         }
+        nativePlanCacheOwner = null;
     }
 
     /**

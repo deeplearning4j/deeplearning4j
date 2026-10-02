@@ -338,12 +338,24 @@ sd::Pointer createNativePlanCache() {
   }
 }
 
-void freeNativePlanCache(sd::Pointer handle) {
-  if (handle == nullptr) return;
+int freeNativePlanCache(sd::Pointer handle) {
+  if (handle == nullptr) return 1;
   auto* cache = reinterpret_cast<NativePlanCache*>(handle);
   // Never destroy a cache while a borrower still owns a raw plan handle.
   cache->clear();
-  if (cache->pinnedCount() != 0) return;
+  if (cache->pinnedCount() != 0) {
+    DSP_DIAG(MEMORY, "freeNativePlanCache: refused while %zu plan lease(s) remain",
+             cache->pinnedCount());
+    return 0;
+  }
+  delete cache;
+  return 1;
+}
+
+void freeAbandonedNativePlanCache(sd::Pointer handle) {
+  if (handle == nullptr) return;
+  auto* cache = reinterpret_cast<NativePlanCache*>(handle);
+  cache->abandon();
   delete cache;
 }
 

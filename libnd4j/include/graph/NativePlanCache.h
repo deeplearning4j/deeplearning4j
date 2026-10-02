@@ -188,9 +188,17 @@ class SD_LIB_EXPORT NativePlanCache {
   void unpinPlan(NativeDynamicShapePlan* plan);
 
   /**
-   * Remove all entries, deleting every owned plan. Clears all pins.
+   * Remove and delete every plan no borrower leases. Leased plans stay until their last
+   * lease is released, which then deletes them; meanwhile no new lease is granted.
    */
   void clear();
+
+  /**
+   * Drop every borrower lease, then clear(): for a cache whose owning graph was collected,
+   * whose borrowers (all referencing that graph) are gone and will never release their leases.
+   * Deleting a plan a live borrower leases is a use-after-free, so never call this otherwise.
+   */
+  void abandon();
 
   /** Current number of cached entries. */
   size_t size() const;

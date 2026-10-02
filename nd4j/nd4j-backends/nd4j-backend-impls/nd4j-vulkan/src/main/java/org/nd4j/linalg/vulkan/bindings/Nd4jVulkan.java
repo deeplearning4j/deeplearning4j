@@ -4547,9 +4547,20 @@ public native void freeDynamicShapePlan(@Cast("sd::Pointer") Pointer planHandle)
 public native @Cast("sd::Pointer") Pointer createNativePlanCache();
 
 /**
- * Destroy a cache created by createNativePlanCache(). Frees all entries.
+ * Destroy a cache created by createNativePlanCache(), with every plan no borrower leases.
+ * While a borrower (an executor or execution binding) still holds a lease the cache is kept:
+ * its unleased plans are deleted and the leased ones once their last lease is released.
+ *
+ * @return 1 when the cache was destroyed (or the handle was null), 0 when a lease kept it
  */
-public native void freeNativePlanCache(@Cast("sd::Pointer") Pointer cacheHandle);
+public native int freeNativePlanCache(@Cast("sd::Pointer") Pointer cacheHandle);
+
+/**
+ * Destroy a cache whose owning graph was collected without freeing it. Every borrower of a
+ * cache references the graph that owns it, so none outlives the graph: the leases they never
+ * released are dropped and every plan is deleted with the cache.
+ */
+public native void freeAbandonedNativePlanCache(@Cast("sd::Pointer") Pointer cacheHandle);
 
 /**
  * Clear all entries from a cache (does NOT delete the cache itself).

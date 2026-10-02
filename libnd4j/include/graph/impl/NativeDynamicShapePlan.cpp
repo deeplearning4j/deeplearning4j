@@ -165,7 +165,19 @@ bool holdsFrozenPin(const DataBuffer* db, const void* pinOwner) {
   auto it = g_frozenPinCounts.find(const_cast<DataBuffer*>(db));
   return it != g_frozenPinCounts.end() && it->second.count(pinOwner) != 0;
 }
+
+// Set while this thread tears down the plans of a cache whose owning graph was
+// collected (NativePlanCache::abandon).
+thread_local bool tl_teardownForCollectedOwner = false;
 }  // namespace
+
+// Seam for NativePlanCache::abandon(), declared there to keep NativeDynamicShapePlan.h
+// unchanged. A collected graph's arrays are being freed by other deallocator threads
+// while its plans are torn down, so a pin-proven buffer may be freed right after its
+// pin is released: teardown then migrates no external buffer.
+SD_LIB_EXPORT void setPlanTeardownForCollectedOwner(bool collected) {
+  tl_teardownForCollectedOwner = collected;
+}
 
 }  // namespace graph
 
@@ -9261,9 +9273,11 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // deleted one without reading it, so weight migration may touch only the
   // buffers whose pins were released above. A plan that never pinned
   // (slot-by-slot execution) migrates nothing.
+  // A collected graph's buffers are being freed concurrently (see
+  // setPlanTeardownForCollectedOwner): none is migrated.
   const size_t protectedBeforePinFilter = protectedWeightBuffers_.size();
   for (auto it = protectedWeightBuffers_.begin(); it != protectedWeightBuffers_.end();) {
-    if (pinProvenProtectedBuffers.count(*it) == 0) {
+    if (tl_teardownForCollectedOwner || pinProvenProtectedBuffers.count(*it) == 0) {
       it = protectedWeightBuffers_.erase(it);
     } else {
       ++it;

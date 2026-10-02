@@ -1513,9 +1513,24 @@ public interface NativeOps {
  /**
   * Free a native plan cache, releasing all compiled plan handles it owns and
   * all associated GPU memory (capture buffers, workspaces, replay state).
+  * While a borrower (executor or execution binding) still holds a plan lease the cache
+  * is kept: its unleased plans are freed now, the leased ones when their last lease is
+  * released.
+  *
+  * @return 1 when the cache was destroyed, 0 when a lease kept it
   */
- default void freeNativePlanCache(Pointer cache) {
+ default int freeNativePlanCache(Pointer cache) {
      throw new UnsupportedOperationException("freeNativePlanCache not implemented in this backend");
+ }
+
+ /**
+  * Free a native plan cache whose owning graph was collected without freeing it.
+  * Every borrower of a cache references the graph that owns it, so none survives the
+  * graph: the plan leases they never released are dropped and every plan is freed.
+  * Never call this for a cache a live borrower may still use.
+  */
+ default void freeAbandonedNativePlanCache(Pointer cache) {
+     throw new UnsupportedOperationException("freeAbandonedNativePlanCache not implemented in this backend");
  }
 
  /**

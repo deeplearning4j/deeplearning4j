@@ -101,9 +101,20 @@ SD_LIB_EXPORT void freeDynamicShapePlan(sd::Pointer planHandle);
 SD_LIB_EXPORT sd::Pointer createNativePlanCache();
 
 /**
- * Destroy a cache created by createNativePlanCache(). Frees all entries.
+ * Destroy a cache created by createNativePlanCache(), with every plan no borrower leases.
+ * While a borrower (an executor or execution binding) still holds a lease the cache is kept:
+ * its unleased plans are deleted and the leased ones once their last lease is released.
+ *
+ * @return 1 when the cache was destroyed (or the handle was null), 0 when a lease kept it
  */
-SD_LIB_EXPORT void freeNativePlanCache(sd::Pointer cacheHandle);
+SD_LIB_EXPORT int freeNativePlanCache(sd::Pointer cacheHandle);
+
+/**
+ * Destroy a cache whose owning graph was collected without freeing it. Every borrower of a
+ * cache references the graph that owns it, so none outlives the graph: the leases they never
+ * released are dropped and every plan is deleted with the cache.
+ */
+SD_LIB_EXPORT void freeAbandonedNativePlanCache(sd::Pointer cacheHandle);
 
 /**
  * Clear all entries from a cache (does NOT delete the cache itself).

@@ -32,6 +32,10 @@
 namespace sd {
 namespace graph {
 
+// Defined in NativeDynamicShapePlan.cpp: marks this thread's plan teardowns as those
+// of a collected graph, whose arrays other deallocator threads are freeing.
+SD_LIB_EXPORT void setPlanTeardownForCollectedOwner(bool collected);
+
 // ---------------------------------------------------------------------------
 // Static members
 // ---------------------------------------------------------------------------
@@ -186,6 +190,27 @@ void NativePlanCache::clear() {
     }
   }
   DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: done plans=%zu", toDelete.size());
+}
+
+// ---------------------------------------------------------------------------
+// abandon
+// ---------------------------------------------------------------------------
+
+void NativePlanCache::abandon() {
+  size_t leasedPlans = 0;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    leasedPlans = pinCounts_.size();
+    pinCounts_.clear();
+    clearPending_ = false;
+  }
+  DSP_DIAG(MEMORY, "PLAN_CACHE_ABANDON: dropped the leases of %zu plan(s) whose borrowers are gone",
+           leasedPlans);
+  struct CollectedOwnerTeardown {
+    CollectedOwnerTeardown() { setPlanTeardownForCollectedOwner(true); }
+    ~CollectedOwnerTeardown() { setPlanTeardownForCollectedOwner(false); }
+  } collectedOwnerTeardown;
+  clear();
 }
 
 // ---------------------------------------------------------------------------
