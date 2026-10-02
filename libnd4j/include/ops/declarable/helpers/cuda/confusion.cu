@@ -21,7 +21,6 @@
 //
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
-#include <memory/cuda/CudaMemoryPool.h>
 
 #include <ops/declarable/helpers/confusion.h>
 
@@ -33,38 +32,17 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-template <typename T>
-SD_KERNEL static void copyBuffers(LongType* destination, void const* source, LongType bufferLength) {
- const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
- const auto step = gridDim.x * blockDim.x;
- const T * sourceCast = reinterpret_cast<T const*>(source);
- for (int t = tid; t < bufferLength; t += step) {
-   destination[t] = static_cast<LongType>(sourceCast[t]);
- }
-
-
-}
-
-
-
-
-template <typename T>
-SD_KERNEL static void confusionFunctorKernel(LongType* labelsBuffer, LongType* predictionBuffer, LongType bufferLength, void const* weightsBuffer, void* outputBuffer,
+// labels and predictions arrive as contiguous INT64 vectors and the weights, when present,
+// as a contiguous vector of the output type: the caller converts them (see _confusionFunctor).
+template <typename Z>
+SD_KERNEL static void confusionFunctorKernel(const LongType* labelsBuffer, const LongType* predictionBuffer,
+                                             LongType bufferLength, const Z* weightsBuffer, Z* outputBuffer,
                                              const LongType* tadShape, const LongType* tadOffsets) {
- __shared__ int arrIdx, blocksPerArr;
- __shared__ T* z;
- __shared__ T const* w;
- __shared__ LongType *zShapeInfo, *xShapeInfo, arrLen;
  __shared__ LongType tadRank;
  __shared__ LongType* tadShapePtr;
  __shared__ LongType* tadStridePtr;
 
  if (threadIdx.x == 0) {
-   z = reinterpret_cast<T*>(outputBuffer);
-   w = reinterpret_cast<T const*>(weightsBuffer);
-   arrLen = shape::length(tadShape);
-
-   // Cache shape information
    tadRank = shape::rank(tadShape);
    tadShapePtr = shape::shapeOf(tadShape);
    tadStridePtr = shape::stride(tadShape);
@@ -76,84 +54,53 @@ SD_KERNEL static void confusionFunctorKernel(LongType* labelsBuffer, LongType* p
  LongType predCoords[SD_MAX_RANK];
  LongType predOffset;
 
- for (int t = tid; t < bufferLength; t += step) {
+ for (LongType t = tid; t < bufferLength; t += step) {
    auto label = labelsBuffer[t];
    auto pred = predictionBuffer[t];
-   auto tZ = z + tadOffsets[label];
-   T val = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
+   auto tZ = outputBuffer + tadOffsets[label];
+   Z val = (weightsBuffer == nullptr ? static_cast<Z>(1) : weightsBuffer[t]);
 
    INDEX2COORDS(pred, tadRank, tadShapePtr, predCoords);
    COORDS2INDEX(tadRank, tadStridePtr, predCoords, predOffset);
    sd::math::atomics::sd_atomicAdd(&tZ[predOffset], val);
  }
 }
-template <typename X, typename Z>
-void _confusionFunctor(LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights,
-                      NDArray* output) {
- auto stream = context->getCudaStream();
 
+template <typename Z>
+static void _confusionFunctor(LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights,
+                              NDArray* output) {
+ auto stream = context->getCudaStream();
  auto pack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), 1);
  PointersManager manager(context, "helpers::confusion");
-predictions->syncToDevice();
-  LongType* labelsLongBuffer = labels->dataType() == INT64 ? (LongType*)labels->specialBuffer() : nullptr;
-  LongType* predictionLongBuffer =
-     predictions->dataType() == INT64 ? (LongType*)predictions->specialBuffer() : nullptr;
 
+ // Contiguous copies in the types the kernel reads: whatever the inputs' own types and
+ // strides, labels and predictions become INT64 indices and weights take the output's type.
+ NDArray* labelsLong = labels->cast(INT64);
+ NDArray* predictionsLong = predictions->cast(INT64);
+ NDArray* weightsZ = weights != nullptr ? weights->cast(output->dataType()) : nullptr;
 
-
- dim3 conf = getLaunchDims("confusion_matrix");
- if (labelsLongBuffer == nullptr) {
-   int devId = 0; cudaGetDevice(&devId);
-   labelsLongBuffer = reinterpret_cast<LongType*>(sd::memory::CudaMemoryPool::getInstance().allocate(labels->lengthOf() * sizeof(LongType), devId, nullptr));
-   if (labelsLongBuffer == nullptr) THROW_EXCEPTION("Cannot allocate memory for labels long buffer");
-   // copy with type conversion
-   copyBuffers<X><<<conf.x, conf.y, conf.z, *stream>>>(labelsLongBuffer, labels->specialBuffer(), labels->lengthOf());
-   sd::DebugHelper::checkGlobalErrorCode("copyBuffers  failed");
-
- }
-
- if (predictionLongBuffer == nullptr) {
-   int devId2 = 0; cudaGetDevice(&devId2);
-   predictionLongBuffer = reinterpret_cast<LongType*>(sd::memory::CudaMemoryPool::getInstance().allocate(predictions->lengthOf() * sizeof(LongType), devId2, nullptr));
-   if (predictionLongBuffer == nullptr) THROW_EXCEPTION("Cannot allocate memory for predictions long buffer");
-   // copy with type conversion
-   copyBuffers<X>
-       <<<256, 512, 1024, *stream>>>(predictionLongBuffer, predictions->specialBuffer(), predictions->lengthOf());
-   sd::DebugHelper::checkGlobalErrorCode("copyBuffers  failed");
-
- }
-
- manager.synchronize();
-
-
-
- auto bufferLength = labels->lengthOf();
+ NDArray::prepareSpecialUse({output}, {labelsLong, predictionsLong, weightsZ});
  dim3 launchDims = getLaunchDims("confusionMatrix");
  confusionFunctorKernel<Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-     labelsLongBuffer, predictionLongBuffer, bufferLength, weights != nullptr ? weights->specialBuffer() : nullptr,
-     output->specialBuffer(), pack->specialShapeInfo(), pack->specialOffsets());
-  sd::DebugHelper::checkGlobalErrorCode("confusionFunctorKernel  failed");
+     reinterpret_cast<const LongType*>(labelsLong->specialBuffer()),
+     reinterpret_cast<const LongType*>(predictionsLong->specialBuffer()), labels->lengthOf(),
+     weightsZ != nullptr ? reinterpret_cast<const Z*>(weightsZ->specialBuffer()) : nullptr,
+     reinterpret_cast<Z*>(output->specialBuffer()), pack->specialShapeInfo(), pack->specialOffsets());
+ sd::DebugHelper::checkGlobalErrorCode("confusionFunctorKernel  failed");
+ NDArray::registerSpecialUse({output}, {labelsLong, predictionsLong, weightsZ});
 
+ // The kernel reads the copies asynchronously: finish it before they are freed.
  manager.synchronize();
-
- if (predictionLongBuffer != predictions->specialBuffer()) {
-   int devIdFree1 = 0; cudaGetDevice(&devIdFree1);
-   sd::memory::CudaMemoryPool::getInstance().free(predictionLongBuffer, devIdFree1, nullptr);
- }
-
- if (labelsLongBuffer != labels->specialBuffer()) {
-   int devIdFree2 = 0; cudaGetDevice(&devIdFree2);
-   sd::memory::CudaMemoryPool::getInstance().free(labelsLongBuffer, devIdFree2, nullptr);
- }
+ delete labelsLong;
+ delete predictionsLong;
+ delete weightsZ;
 }
 
 void confusionFunctor(LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights,
                      NDArray* output) {
- auto xType = predictions->dataType();
- auto zType = output->dataType();  // weights can be null
+ auto zType = output->dataType();
  NDArray::prepareSpecialUse({output}, {labels, predictions, weights});
- BUILD_DOUBLE_SELECTOR(xType, zType, _confusionFunctor, (context, labels, predictions, weights, output),
-                       SD_INDEXING_TYPES, SD_NUMERIC_TYPES);
+ BUILD_SINGLE_SELECTOR(zType, _confusionFunctor, (context, labels, predictions, weights, output), SD_NUMERIC_TYPES);
  NDArray::registerSpecialUse({output}, {labels, predictions, weights});
 }
 }  // namespace helpers

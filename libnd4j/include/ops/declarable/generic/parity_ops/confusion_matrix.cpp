@@ -61,6 +61,20 @@ CUSTOM_OP_IMPL(confusion_matrix, 2, 1, false, 0, -2) {
                predictions->rankOf());
   REQUIRE_TRUE(labels->isSameShape(predictions), 0, "CONFUSION_MATRIX: Labels and predictions should have equal shape");
 
+  // A label or prediction indexes a row or column of the output: one past the number of
+  // classes (given as an argument) would write outside it.
+  auto* maxPredictionArr = predictions->reduceNumber(reduce::Max);
+  const LongType maxPrediction = maxPredictionArr->e<LongType>(0);
+  delete maxPredictionArr;
+  auto* maxLabelArr = labels->reduceNumber(reduce::Max);
+  const LongType maxLabel = maxLabelArr->e<LongType>(0);
+  delete maxLabelArr;
+  const LongType numClasses = output->sizeAt(0);
+  REQUIRE_TRUE(maxLabel < numClasses && maxPrediction < numClasses, 0,
+               "CONFUSION_MATRIX: labels and predictions must be below the number of classes %lld, "
+               "but the largest label is %lld and the largest prediction %lld",
+               (long long)numClasses, (long long)maxLabel, (long long)maxPrediction);
+
   helpers::confusionFunctor(block.launchContext(), labels, predictions, weights, output);
 
   return sd::Status::OK;

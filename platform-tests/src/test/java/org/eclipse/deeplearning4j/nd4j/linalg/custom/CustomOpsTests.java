@@ -46,6 +46,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.Where;
 import org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression;
 import org.nd4j.linalg.api.ops.impl.image.ResizeArea;
 import org.nd4j.linalg.api.ops.impl.image.ResizeBilinear;
+import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
 import org.nd4j.linalg.api.ops.impl.shape.Create;
 import org.nd4j.linalg.api.ops.impl.shape.Linspace;
 import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
@@ -83,6 +84,31 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConfusionMatrixWeightsOfAnotherType(Nd4jBackend backend) {
+        // INT weights summed into a LONG matrix are read as INT
+        INDArray labels = Nd4j.createFromArray(1, 2, 4);
+        INDArray predictions = Nd4j.createFromArray(2, 2, 4);
+        INDArray weights = Nd4j.createFromArray(10, 100, 1000);
+        INDArray matrix = Nd4j.exec(new ConfusionMatrix(labels, predictions, weights, 5, DataType.LONG))[0];
+
+        INDArray expected = Nd4j.zeros(DataType.LONG, 5, 5);
+        expected.putScalar(1, 2, 10);
+        expected.putScalar(2, 2, 100);
+        expected.putScalar(4, 4, 1000);
+        assertEquals(expected, matrix);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConfusionMatrixRejectsLabelOutOfRange(Nd4jBackend backend) {
+        // label 5 indexes no row of a 3-class matrix
+        INDArray labels = Nd4j.createFromArray(0, 1, 5);
+        INDArray predictions = Nd4j.createFromArray(0, 1, 2);
+        assertThrows(RuntimeException.class, () -> Nd4j.exec(new ConfusionMatrix(labels, predictions, 3)));
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

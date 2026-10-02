@@ -75,9 +75,13 @@ public class ConfusionMatrix extends DynamicCustomOp {
     }
 
 
+    // Every constructor passes the output type as the op's D_ARG: without it the native op
+    // outputs INT64 while calculateOutputDataTypes declares outputType (INT by default).
+
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, SDVariable weights, DataType dataType){
-        this(sameDiff, labels, pred, weights);
+        super(null, sameDiff, new SDVariable[]{labels, pred, weights});
         this.outputType = dataType;
+        addDArgument(dataType);
     }
 
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, DataType dataType){
@@ -87,17 +91,19 @@ public class ConfusionMatrix extends DynamicCustomOp {
     }
 
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, SDVariable weights){
-        super(null, sameDiff, new SDVariable[]{labels, pred, weights});
+        this(sameDiff, labels, pred, weights, DEFAULT_DTYPE);
     }
 
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, Integer numClasses){
         super(null, sameDiff, new SDVariable[]{labels, pred});
         addIArgument(numClasses);
+        addDArgument(outputType);
     }
 
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, SDVariable weights, Integer numClasses){
         super(null, sameDiff, new SDVariable[]{labels, pred, weights});
         addIArgument(numClasses);
+        addDArgument(outputType);
     }
 
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, Integer numClasses, SDVariable weights){
@@ -105,6 +111,7 @@ public class ConfusionMatrix extends DynamicCustomOp {
         if(numClasses != null) {
             addIArgument(numClasses);
         }
+        addDArgument(outputType);
     }
 
     @Override

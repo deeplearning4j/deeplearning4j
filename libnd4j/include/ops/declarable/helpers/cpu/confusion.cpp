@@ -38,8 +38,13 @@ static void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* we
     labelsVec[j] = labels->e<sd::LongType>(j);
     predsVec[j] = predictions->e<sd::LongType>(j);
   }
+  // Weights have their own type and strides: read them converted to the output type.
+  std::vector<T> weightsVec;
+  if (weights != nullptr) {
+    weightsVec.resize(lLen);
+    for (sd::LongType j = 0; j < lLen; j++) weightsVec[j] = weights->e<T>(j);
+  }
   auto outputBuf = output->bufferAsT<T>();
-  auto weightsBuf = (weights != nullptr) ? weights->bufferAsT<T>() : nullptr;
   // Get strides for offset calculation
   auto stride0 = output->strideAt(0);
   auto stride1 = output->strideAt(1);
@@ -48,7 +53,7 @@ static void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* we
   for (sd::LongType j = 0; j < lLen; j++) {
     auto label = labelsVec[j];
     auto pred = predsVec[j];
-    T value = (weightsBuf == nullptr ? (T)1.0f : weightsBuf[j]);
+    T value = (weights == nullptr ? (T)1.0f : weightsVec[j]);
     auto offset = label * stride0 + pred * stride1;
     outputBuf[offset] += value;
   }
