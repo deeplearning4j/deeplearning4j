@@ -306,8 +306,9 @@ public class TestRandomOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(12345);
         for(DataType t : new DataType[]{DataType.FLOAT, DataType.DOUBLE}) {
             SameDiff sd = SameDiff.create();
-            SDVariable shape = sd.constant("shape", Nd4j.createFromArray(1, 100));
-            SDVariable out = sd.random.uniform(0, 10, t, 1, 100);
+            // U(0, 10): mean 5, standard deviation 10/sqrt(12); over 10000 values the mean's
+            // standard error is 0.029, and every bound below holds with overwhelming probability.
+            SDVariable out = sd.random.uniform(0, 10, t, 1, 10000);
             INDArray arr = out.eval();
             assertEquals(t, arr.dataType());
             if (t.equals(DataType.DOUBLE)) {
@@ -316,7 +317,7 @@ public class TestRandomOpValidation extends BaseOpValidation {
                 double mean = arr.meanNumber().doubleValue();
                 assertEquals(0, min, 0.5);
                 assertEquals(10, max, 0.5);
-                assertEquals(5.5, mean, 1);
+                assertEquals(5.0, mean, 0.15);
             }
             else if (t.equals(DataType.FLOAT)) {
                 float min = arr.minNumber().floatValue();
@@ -324,7 +325,7 @@ public class TestRandomOpValidation extends BaseOpValidation {
                 float mean = arr.meanNumber().floatValue();
                 assertEquals(0, min, 0.5);
                 assertEquals(10, max, 0.5);
-                assertEquals(5.0, mean, 1);
+                assertEquals(5.0, mean, 0.15);
             }
         }
     }
