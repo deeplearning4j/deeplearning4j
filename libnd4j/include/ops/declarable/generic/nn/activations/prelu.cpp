@@ -63,8 +63,14 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
     expectedAlphaShape[sharedAxes[i] - 1] = 1;
   }
 
+  LongType product = 1;
+  for (const auto& item : expectedAlphaShape) product *= item;
+  REQUIRE_TRUE(product == alpha->lengthOf(), 0,
+               "PRELU OP: wrong shape of alpha array, expected is %s, but got %s instead !",
+               ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
 
-  NDArray *alpha2 =  alphaShape != expectedAlphaShape ? alpha->reshape(alpha->ordering(), expectedAlphaShape) : alpha;
+  NDArray *alpha2 = alphaShape != expectedAlphaShape ? alpha->reshape(alpha->ordering(), expectedAlphaShape, false)
+                                                     : alpha;
   helpers::prelu(block.launchContext(), input,
                  alpha2,
                  output);
@@ -76,8 +82,9 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
 DECLARE_TYPES(prelu) {
   getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING |
                                OP_TRAIT_ACTIVATION);
+  // The output takes the input's type; alpha may have its own floating type.
   getOpDescriptor()
-      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
@@ -131,22 +138,51 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
 
   REQUIRE_TRUE(product == alphaLen, 0, "PRELU_BP OP: wrong shape of alpha array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
+  // A gradient has the type of the array it differentiates.
+  REQUIRE_TRUE(dLdO->dataType() == input->dataType() && dLdI->dataType() == input->dataType(), 0,
+               "PRELU_BP OP: dLdO and dLdI must have the input's type %s, but got %s and %s !",
+               DataTypeUtils::asString(input->dataType()).c_str(), DataTypeUtils::asString(dLdO->dataType()).c_str(),
+               DataTypeUtils::asString(dLdI->dataType()).c_str());
+  REQUIRE_TRUE(dLdA->dataType() == alpha->dataType(), 0,
+               "PRELU_BP OP: dLdA must have alpha's type %s, but got %s !",
+               DataTypeUtils::asString(alpha->dataType()).c_str(), DataTypeUtils::asString(dLdA->dataType()).c_str());
+  // The gradient of a loss summed to a scalar (SameDiff seeds every loss with one) arrives as that
+  // scalar and applies to every element.
+  REQUIRE_TRUE(dLdO->isSameShape(input) || dLdO->lengthOf() == 1, 0,
+               "PRELU_BP OP: dLdO must have the input's shape %s or be a scalar, but got %s !",
+               ShapeUtils::shapeAsString(input).c_str(), ShapeUtils::shapeAsString(dLdO).c_str());
   // ***** end of validation ***** //
+
+  NDArray* dLdOFull = dLdO;
+  if (!dLdO->isSameShape(input)) {
+    std::vector<LongType> fullShape(inputShape);
+    dLdOFull = new NDArray(input->ordering(), fullShape, dLdO->dataType(), block.launchContext());
+    dLdOFull->assign(dLdO);
+  }
 
   NDArray* alphaReshaped = nullptr;
   NDArray* dLdAReshaped = nullptr;
-  
+
+  // The helper writes dLdA through dLdAReshaped, so it must be a view of dLdA; reshape makes a
+  // copy only when dLdA's strides admit no view of the alpha shape, and the copy is written back.
   if (alphaShape != expectedAlphaShape) {
-    alphaReshaped = alpha->reshape(alpha->ordering(), expectedAlphaShape);
-    dLdAReshaped = dLdA->reshape(dLdA->ordering(), expectedAlphaShape);
+    alphaReshaped = alpha->reshape(alpha->ordering(), expectedAlphaShape, false);
+    dLdAReshaped = dLdA->reshape(dLdA->ordering(), expectedAlphaShape, false);
   }
 
-  helpers::preluBP(block.launchContext(), input, 
-                   alphaReshaped != nullptr ? alphaReshaped : alpha, 
-                   dLdO, dLdI, 
+  helpers::preluBP(block.launchContext(), input,
+                   alphaReshaped != nullptr ? alphaReshaped : alpha,
+                   dLdOFull, dLdI,
                    dLdAReshaped != nullptr ? dLdAReshaped : dLdA);
+  if (dLdOFull != dLdO) delete dLdOFull;
 
   if (alphaReshaped != nullptr) {
+    if (dLdAReshaped->dataBuffer() != dLdA->dataBuffer()) {
+      std::vector<LongType> dLdAShape(alphaShape);
+      NDArray* written = dLdAReshaped->reshape(dLdAReshaped->ordering(), dLdAShape, false);
+      dLdA->assign(written);
+      delete written;
+    }
     delete alphaReshaped;
     delete dLdAReshaped;
   }
@@ -160,7 +196,7 @@ DECLARE_TYPES(prelu_bp) {
   getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION |
                                OP_TRAIT_BACKWARD);
   getOpDescriptor()
-      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS})

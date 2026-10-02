@@ -23,6 +23,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
+#include <math/templatemath.h>
 #include <ops/declarable/helpers/activations.h>
 #include <ops/op_types.h>
 #include <system/op_boilerplate.h>
@@ -42,6 +43,7 @@ namespace helpers {
 template <typename X, typename Y>
 void SD_KERNEL __launch_bounds__(256, 2) preluCuda(const void *vx, const LongType *xShapeInfo, const void *vy, const LongType *yShapeInfo,
                          void *vz) {
+  using ComputeT = typename math::promote_type<X, Y>::type;
   const auto x = reinterpret_cast<const X *>(vx);
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<X *>(vz);
@@ -80,7 +82,7 @@ void SD_KERNEL __launch_bounds__(256, 2) preluCuda(const void *vx, const LongTyp
 
       LongType yOffset;
       COORDS2INDEX(yRank, yStride, coords + 1, yOffset);
-      z[xzOffset] = xVal * y[yOffset];
+      z[xzOffset] = static_cast<X>(static_cast<ComputeT>(xVal) * static_cast<ComputeT>(y[yOffset]));
     } else {
       z[xzOffset] = xVal;
     }
@@ -105,13 +107,13 @@ void prelu(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *outp
   const auto xType = input->dataType();
   const auto yType = alpha->dataType();
 
-  NDArray::prepareSpecialUse({output}, {&input, &alpha});
-  BUILD_SINGLE_SELECTOR_TWICE(
-      xType, preluCudaLauncher,
+  NDArray::prepareSpecialUse({output}, {input, alpha});
+  BUILD_DOUBLE_SELECTOR(
+      xType, yType, preluCudaLauncher,
       (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), input->specialBuffer(),
           input->specialShapeInfo(), alpha->specialBuffer(), alpha->specialShapeInfo(), output->specialBuffer()),
-      SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({output}, {&input, &alpha});
+      SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+  NDArray::registerSpecialUse({output}, {input, alpha});
   // Don't sync - let CUDA operations run asynchronously
 }
 
@@ -121,10 +123,11 @@ void SD_KERNEL __launch_bounds__(256, 2) preluBPCuda(const void *vIn, const Long
                            const LongType *alphaShapeInfo, const void *vdLdO, const LongType *dLdOShapeInfo,
                            void *vdLdI, const LongType *dLdIShapeInfo, void *vdLdA,
                            const LongType *dLdAShapeInfo) {
+  using ComputeT = typename math::promote_type<X, Y>::type;
   const auto in = reinterpret_cast<const X *>(vIn);
   const auto alpha = reinterpret_cast<const Y *>(vAlpha);
-  const auto dLdO = reinterpret_cast<const Y *>(vdLdO);
-  auto dLdI = reinterpret_cast<Y *>(vdLdI);
+  const auto dLdO = reinterpret_cast<const X *>(vdLdO);
+  auto dLdI = reinterpret_cast<X *>(vdLdI);
   auto dLdA = reinterpret_cast<Y *>(vdLdA);
 
   __shared__ LongType inLen, totalThreads;
@@ -175,9 +178,10 @@ void SD_KERNEL __launch_bounds__(256, 2) preluBPCuda(const void *vIn, const Long
       COORDS2INDEX(alphaRank, alphaStride, coords + 1, alphaOffset);
       COORDS2INDEX(alphaRank, dLdAStride, coords + 1, dLdAOffset);
 
-      dLdI[dLdIOffset] = grO * alpha[alphaOffset];
+      dLdI[dLdIOffset] = static_cast<X>(static_cast<ComputeT>(grO) * static_cast<ComputeT>(alpha[alphaOffset]));
 
-      math::atomics::sd_atomicAdd<Y>(&dLdA[dLdAOffset], static_cast<Y>(grO * xVal));
+      math::atomics::sd_atomicAdd<Y>(&dLdA[dLdAOffset],
+                                     static_cast<Y>(static_cast<ComputeT>(grO) * static_cast<ComputeT>(xVal)));
     } else {
       dLdI[dLdIOffset] = grO;
     }
@@ -205,20 +209,20 @@ void preluBP(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *dL
   if (launchDims.y > 256) launchDims.y = 256;
 
   const auto xType = input->dataType();
-  const auto zType = alpha->dataType();
+  const auto yType = alpha->dataType();
 
   // prepareSpecialUse must come before nullify() to allocate the device buffer first;
   // dLdA uses atomicAdd accumulation so it must be zero-initialized on device.
   // nullify() is a no-op on device when special()==nullptr (from Java/JNI side).
   NDArray::prepareSpecialUse({dLdI, dLdA}, {input, alpha, dLdO});
   dLdA->nullify();
-  BUILD_SINGLE_SELECTOR_TWICE(
-      xType, preluBPCudaLauncher,
+  BUILD_DOUBLE_SELECTOR(
+      xType, yType, preluBPCudaLauncher,
       (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), input->specialBuffer(),
           input->specialShapeInfo(), alpha->specialBuffer(), alpha->specialShapeInfo(), dLdO->specialBuffer(),
           dLdO->specialShapeInfo(), dLdI->specialBuffer(), dLdI->specialShapeInfo(), dLdA->specialBuffer(),
           dLdA->specialShapeInfo()),
-      SD_FLOAT_TYPES);
+      SD_FLOAT_TYPES, SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({dLdI, dLdA}, {input, alpha, dLdO});
   // Don't sync - let CUDA operations run asynchronously
 }

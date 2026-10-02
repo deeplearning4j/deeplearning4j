@@ -5709,6 +5709,30 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPReLUAlphaOfAnotherFloatType(Nd4jBackend backend) {
+        // alpha is read as its own floating type, whatever the input's
+        INDArray input = Nd4j.createFromArray(new float[][][]{{
+                {-10, 10, 10, -10},
+                {10, 10, -10, -10}
+        }});
+        INDArray alpha = Nd4j.createFromArray(0.01, 0.1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("prelu")
+                .addInputs(input, alpha)
+                .addIntegerArguments(2)
+                .build();
+        INDArray[] result = Nd4j.exec(op);
+
+        INDArray expected = Nd4j.createFromArray(new float[][][]{{
+                {-0.1f, 10, 10, -0.1f},
+                {10, 10, -1, -1}
+        }});
+        assertEquals(DataType.FLOAT, result[0].dataType());
+        assertTrue(expected.equalsWithEps(result[0], 1e-5), "prelu with a DOUBLE alpha: " + result[0]);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPReLUDirect(Nd4jBackend backend) {
         // Isolation test: call prelu directly via Nd4j.exec to bypass SameDiff
         INDArray input = Nd4j.createFromArray(new int[][][]{{
