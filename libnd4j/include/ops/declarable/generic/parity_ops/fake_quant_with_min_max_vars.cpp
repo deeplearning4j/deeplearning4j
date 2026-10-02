@@ -32,23 +32,9 @@ namespace ops {
 CONFIGURABLE_OP_IMPL(fake_quant_with_min_max_vars, 1, 1, true, 0, 0) {
   auto x = INPUT_VARIABLE(0);
 
-  NDArray* min;
-  NDArray* max;
-
   REQUIRE_TRUE(block.width() == 3 || block.getTArguments()->size() == 2, 0,
                "fake_quant_with_min_max_vars: No minimum/maximum values provided by either input arrays or TArgs");
 
-  NDArray *m;
-  NDArray *m2;
-  if (block.width() == 3) {
-    min = INPUT_VARIABLE(1);
-    max = INPUT_VARIABLE(2);
-  } else if (block.getTArguments()->size() == 2) {
-    m = NDArrayFactory::create(x->dataType(), T_ARG(0), block.launchContext());
-    m2 = NDArrayFactory::create(x->dataType(), T_ARG(1), block.launchContext());
-    min = m;
-    max = m2;
-  }
   auto output = OUTPUT_VARIABLE(0);
   REQUIRE_TRUE(x->dataType() == output->dataType(), 0,
                "fake_quant_with_min_max_vars: input and output data types must be the same");
@@ -62,15 +48,25 @@ CONFIGURABLE_OP_IMPL(fake_quant_with_min_max_vars, 1, 1, true, 0, 0) {
   REQUIRE_TRUE(numBits > 1 && numBits < 17, 0,
                "fake_quant_with_min_max_vars: Number of bits for quantization should be in between 2 and 16, but %i was given.",
                numBits);
+
+  // Bounds come from inputs 1 and 2, or from the two TArgs as scalars this op owns.
+  NDArray* ownedMin = nullptr;
+  NDArray* ownedMax = nullptr;
+  NDArray* min;
+  NDArray* max;
+  if (block.width() == 3) {
+    min = INPUT_VARIABLE(1);
+    max = INPUT_VARIABLE(2);
+  } else {
+    ownedMin = NDArrayFactory::create(x->dataType(), T_ARG(0), block.launchContext());
+    ownedMax = NDArrayFactory::create(x->dataType(), T_ARG(1), block.launchContext());
+    min = ownedMin;
+    max = ownedMax;
+  }
   helpers::fakeQuantWithMinMaxVars(x, min, max, numBits, narrowed, output);
 
-  if(m != nullptr) {
-    delete m;
-  }
-
-  if(m2 != nullptr) {
-    delete m2;
-  }
+  delete ownedMin;
+  delete ownedMax;
   return sd::Status::OK;
 }
 
