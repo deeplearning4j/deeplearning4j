@@ -1362,6 +1362,16 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
+    public int dspCublasWorkspaceMb() {
+        return e.dspCublasWorkspaceMb();
+    }
+
+    @Override
+    public void setDspCublasWorkspaceMb(int mb) {
+        e.setDspCublasWorkspaceMb(mb);
+    }
+
+    @Override
     public boolean dspCastSinkMatmul() {
         return e.dspCastSinkMatmul();
     }
