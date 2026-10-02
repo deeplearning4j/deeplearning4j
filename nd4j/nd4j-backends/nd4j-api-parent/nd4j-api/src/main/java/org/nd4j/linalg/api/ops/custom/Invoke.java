@@ -119,8 +119,14 @@ public class Invoke extends DynamicCustomOp {
             }
 
             Map<String, INDArray> output = instance.output(inputMap, relevantOutputNames);
+            // Callers take the results by position: result i is this op's output i, the sub-graph's
+            // output subGraphOutputNames[i], in whatever order output() returned them.
+            Map<String, INDArray> ordered = new LinkedHashMap<>();
+            for (int i = 0; i < outputVarNameMappings.length; i++) {
+                ordered.put(outputs[i].name(), output.get(subGraphOutputNames[i]));
+            }
             return ExecutionResult.builder()
-                    .outputs(ExecutionResult.pack(output))
+                    .outputs(ExecutionResult.pack(ordered))
                     .build();
         } else {
             Map<String,SDValue> valueInputs = new LinkedHashMap<>();
