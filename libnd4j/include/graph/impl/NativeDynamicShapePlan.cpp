@@ -8032,10 +8032,14 @@ Status NativeDynamicShapePlan::dispatchSegment(
   // Slot-by-slot fallback — SyncOverride for warmup sync. Backends that require
   // complete lowering may still execute backend-owned native ranges, but an
   // unresolved plan segment must never escape through this top-level path.
+  // A backend's verification bypass (tritonSkipKernels) is not such an escape:
+  // execute() already made slot-by-slot this execute's mode on purpose, while
+  // modeContract still describes the plan's strict mode.
   const bool strictGraphFallbackViolation =
       !modeContract.allowsFallback &&
       planLifecycle_.isInFrozenOrReplayState() && seg.def.isCapturable &&
-      !isTerminalOutcome(seg.exec.outcome);
+      !isTerminalOutcome(seg.exec.outcome) &&
+      !getResolvedGraphBackendExecutionPolicy().bypassCompiledExecution;
   if (completeLoweringRequired || strictGraphFallbackViolation) {
     return rejectUnloweredExecution(
         completeLoweringRequired ? "no_backend_admitted_segment"
