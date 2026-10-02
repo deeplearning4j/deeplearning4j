@@ -119,10 +119,8 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
         REQUIRE_TRUE(false, 0, "Gaussian requires either TArgs or 3 arguments to be present");
       }
 
-      REQUIRE_TRUE(input->isVector(), 0, "Gaussian requires pure shape as first argument");
-
-      std::vector<LongType> shape(input->lengthOf());
-      for (int e = 0; e < input->lengthOf(); e++) shape[e] = input->e<LongType>(e);
+      // Generator-only form: no shape tensor; the output already has the shape either way.
+      REQUIRE_TRUE(input == nullptr || input->isVector(), 0, "Gaussian requires pure shape as first argument");
 
       auto z = OUTPUT_VARIABLE(0);
 
@@ -144,10 +142,8 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
         REQUIRE_TRUE(false, 0, "Bernoulli requires either 1 TArg or 2 arguments to be present");
       }
 
-      REQUIRE_TRUE(input->isVector(), 0, "Bernoulli requires pure shape as first argument");
-
-      std::vector<LongType> shape(input->lengthOf());
-      for (int e = 0; e < input->lengthOf(); e++) shape[e] = input->e<LongType>(e);
+      // Generator-only form: no shape tensor; the output already has the shape either way.
+      REQUIRE_TRUE(input == nullptr || input->isVector(), 0, "Bernoulli requires pure shape as first argument");
 
       auto z = OUTPUT_VARIABLE(0);  // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
@@ -155,8 +151,9 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
 
 
     } break;
+    case random::BinomialDistribution:
     case random::BinomialDistributionEx: {
-      // BinomialEx distribution
+      // Binomial distribution: both legacy ops draw `trials` Bernoulli samples with probability prob
       T prob;
       int trials;
       if (block.width() > 2) {
@@ -167,6 +164,10 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
 
         trials = arg1->e<int>(0);
         prob = arg2->e<T>(0);
+      } else if (block.getTArguments()->size() == 2 && block.getIArguments()->empty()) {
+        // The legacy ops' extra arguments, in the order the kernels read them: [trials, prob]
+        trials = static_cast<int>(T_ARG(0));
+        prob = T_ARG(1);
       } else if (block.getTArguments()->size() == 1 && block.getIArguments()->size() == 1) {
         trials = INT_ARG(0);
         prob = T_ARG(0);
@@ -174,10 +175,8 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
         REQUIRE_TRUE(false, 0, "Binomial requires either TArgs/IArgs or 3 arguments to be present");
       }
 
-      REQUIRE_TRUE(input->isVector(), 0, "Binomial requires pure shape as first argument");
-
-      std::vector<LongType> shape(input->lengthOf());
-      for (int e = 0; e < input->lengthOf(); e++) shape[e] = input->e<LongType>(e);
+      // Generator-only form: no shape tensor; the output already has the shape either way.
+      REQUIRE_TRUE(input == nullptr || input->isVector(), 0, "Binomial requires pure shape as first argument");
 
       auto z = OUTPUT_VARIABLE(0);  // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
@@ -202,10 +201,8 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
         REQUIRE_TRUE(false, 0, "LogNormal requires either TArgs or 3 arguments to be present");
       }
 
-      REQUIRE_TRUE(input->isVector(), 0, "LogNormal requires pure shape as first argument");
-
-      std::vector<LongType> shape(input->lengthOf());
-      for (int e = 0; e < input->lengthOf(); e++) shape[e] = input->e<LongType>(e);
+      // Generator-only form: no shape tensor; the output already has the shape either way.
+      REQUIRE_TRUE(input == nullptr || input->isVector(), 0, "LogNormal requires pure shape as first argument");
 
       auto z = OUTPUT_VARIABLE(0);  // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
@@ -230,10 +227,8 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
         REQUIRE_TRUE(false, 0, "TruncatedNormal requires either TArgs or 3 arguments to be present");
       }
 
-      REQUIRE_TRUE(input->isVector(), 0, "TruncatedNormal requires pure shape as first argument");
-
-      std::vector<LongType> shape(input->lengthOf());
-      for (int e = 0; e < input->lengthOf(); e++) shape[e] = input->e<LongType>(e);
+      // Generator-only form: no shape tensor; the output already has the shape either way.
+      REQUIRE_TRUE(input == nullptr || input->isVector(), 0, "TruncatedNormal requires pure shape as first argument");
 
       auto z = OUTPUT_VARIABLE(0);
 

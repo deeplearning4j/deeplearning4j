@@ -47,7 +47,9 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -56,6 +58,33 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.RNG)
 public class TestRandomOpValidation extends BaseOpValidation {
 
+
+    /**
+     * Random generators given only a static shape have no tensor input. The Gaussian, Bernoulli,
+     * binomial, log-normal and truncated-normal branches of the legacy random op dereferenced the
+     * absent shape tensor (a SIGSEGV in SameDiffTests.testCtc, through a DSP plan).
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRandomGeneratorsWithStaticShape(Nd4jBackend backend) {
+        long[] shape = {3, 50, 7};
+        SameDiff sd = SameDiff.create();
+        SDVariable[] generated = {
+                sd.random().normal("normal", 0, 1, DataType.FLOAT, shape),
+                sd.random().bernoulli("bernoulli", 0.5, DataType.FLOAT, shape),
+                sd.random().binomial("binomial", 4, 0.5, DataType.FLOAT, shape),
+                sd.random().logNormal("logNormal", 0, 1, DataType.FLOAT, shape),
+                sd.random().normalTruncated("normalTruncated", 0, 1, DataType.FLOAT, shape)};
+        String[] names = Arrays.stream(generated).map(SDVariable::name).toArray(String[]::new);
+
+        Map<String, INDArray> out = sd.output(Collections.emptyMap(), names);
+        for (String name : names) {
+            INDArray values = out.get(name);
+            assertArrayEquals(shape, values.shape(), name);
+            assertFalse(Double.isNaN(values.sumNumber().doubleValue()), name + " produced NaN");
+        }
+        sd.close();
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
