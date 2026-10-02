@@ -312,15 +312,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long st = profilingConfigurableHookIn(op, oc);
         op.validateDataTypes(oc);
 
-        // Handle empty input arrays: native code crashes on nullptr buffers
+        // Handle empty input arrays: native code crashes on nullptr buffers. A reduction over
+        // nothing has the op's result type and gives 0, but a boolean reduction its op's
+        // emptyValue (All true, Any false), as the CUDA executioner does.
         if (x.isEmpty()) {
+            final DataType emptyResultType = oc != null ? op.resultType(oc) : op.resultType();
+            final double emptyResult =
+                    op instanceof BaseReduceBoolOp && ((BaseReduceBoolOp) op).emptyValue() ? 1.0 : 0.0;
             if (z == null) {
                 // Compute the correct output shape for the reduction
                 long[] dims = op.dimensions() != null ? op.dimensions().toLongVector() : new long[0];
                 boolean keepDims = op.isKeepDims();
                 if (dims.length == 0) {
                     // Full reduction: result is scalar
-                    z = Nd4j.scalar(x.dataType(), 0.0);
+                    z = Nd4j.scalar(emptyResultType, emptyResult);
                 } else {
                     // Partial reduction: compute output shape
                     long[] xShape = x.shape();
@@ -330,7 +335,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             int di = d < 0 ? (int)(d + xShape.length) : (int)d;
                             outShape[di] = 1;
                         }
-                        z = Nd4j.zeros(x.dataType(), outShape);
+                        z = Nd4j.zeros(emptyResultType, outShape);
                     } else {
                         java.util.Set<Integer> dimSet = new java.util.HashSet<>();
                         for (long d : dims) {
@@ -343,13 +348,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             }
                         }
                         long[] outShape = outDims.stream().mapToLong(Long::longValue).toArray();
-                        z = Nd4j.zeros(x.dataType(), outShape);
+                        z = Nd4j.zeros(emptyResultType, outShape);
+                    }
+                    if (emptyResult != 0.0 && z.length() > 0) {
+                        z.assign(emptyResult);
                     }
                 }
                 setZ(z, op, oc);
             } else {
                 if (z.length() > 0) {
-                    z.assign(0.0);
+                    z.assign(emptyResult);
                 }
             }
             profilingConfigurableHookOut(op, oc, st);
@@ -526,18 +534,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } else {
             if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
-            // Compute the OpaqueNDArray wrapper for the dimension array.
-            // For reduce-all (null or empty dimension), use null for ops that don't require dims
-            // (REDUCE_FLOAT, REDUCE_SAME) but use an empty INDArray for ops whose native binding
-            // requires a non-null @ByVal OpaqueNDArray dimension parameter (REDUCE_LONG, REDUCE_BOOL).
-            // Passing Java null for a @ByVal JavaCPP parameter throws NullPointerException.
-            OpaqueNDArray dims = (dimension == null || dimension.length == 0)
-                    ? null
-                    : OpaqueNDArray.fromINDArray(Nd4j.createFromArray(dimension));
-            // For REDUCE_LONG and REDUCE_BOOL the native binding always requires a dimension OpaqueNDArray.
-            // When performing a full reduce-all (dims == null), supply an empty LONG array so
-            // JavaCPP does not throw "Pointer address of argument N is NULL" for the @ByVal param.
-            OpaqueNDArray emptyDimsForReduceLongBool = null; // lazily created below if needed
+            // The dimension array the native reductions take. A reduction over every dimension
+            // (null or empty) passes an empty LONG array, as the CUDA executioner does: the
+            // dimensional entry points (execReduce*2, and execReduceLong/Bool) require a non-null
+            // array, and JavaCPP throws "Pointer address of argument N is NULL" for a null one.
+            // That includes a keepDims reduction over all axes, whose result is not a scalar.
+            OpaqueNDArray dims = OpaqueNDArray.fromINDArray(dimension == null || dimension.length == 0
+                    ? Nd4j.empty(DataType.LONG)
+                    : Nd4j.createFromArray(dimension));
 
             if (ret.isScalar()) {
                 if (extraz.get() == null)
@@ -547,25 +551,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         getNativeOps().execReduceFloat(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case REDUCE_BOOL:
-                        if (dims == null) {
-                            if (emptyDimsForReduceLongBool == null)
-                                emptyDimsForReduceLongBool = OpaqueNDArray.fromINDArray(Nd4j.empty(DataType.LONG));
-                            getNativeOps().execReduceBool(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, emptyDimsForReduceLongBool);
-                        } else {
-                            getNativeOps().execReduceBool(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, dims);
-                        }
+                        getNativeOps().execReduceBool(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, dims);
                         break;
                     case REDUCE_SAME:
                         getNativeOps().execReduceSame(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case REDUCE_LONG:
-                        if (dims == null) {
-                            if (emptyDimsForReduceLongBool == null)
-                                emptyDimsForReduceLongBool = OpaqueNDArray.fromINDArray(Nd4j.empty(DataType.LONG));
-                            getNativeOps().execReduceLong(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, emptyDimsForReduceLongBool);
-                        } else {
-                            getNativeOps().execReduceLong(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, dims);
-                        }
+                        getNativeOps().execReduceLong(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, dims);
                         break;
                     default:
                         throw new UnsupportedOperationException("Unsupported op used in reduce: " + op.getOpType());
