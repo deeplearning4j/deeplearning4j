@@ -4473,7 +4473,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         // Downstream operations (simplified embedding simulation)
         // Embedding lookup would use the INT indices, but we simulate with a simple operation
-        SDVariable embeddingDim = sd.constant("embed_dim", Nd4j.scalar(768.0));
+        // A FLOAT scalar: FLOAT divided by a DOUBLE scalar promotes to DOUBLE.
+        SDVariable embeddingDim = sd.constant("embed_dim", Nd4j.scalar(768.0f));
         SDVariable castedFloat = inputIdsInt32.castTo("input_float", DataType.FLOAT);
 
         // Simple computation on the cast result
