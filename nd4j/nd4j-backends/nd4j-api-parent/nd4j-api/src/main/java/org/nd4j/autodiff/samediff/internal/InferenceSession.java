@@ -2339,17 +2339,21 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         // Use cached constant values to avoid thousands of PatriciaTrie lookups per call.
         // Constants never change, so caching is safe.
+        // The cache holds the constants of every DAG this session has run: one for other outputs
+        // can need constants the earlier ones did not.
         Map<String, SDValue> constVarCache = cachedConstVarValues;
         if (constVarCache == null) {
             constVarCache = new HashMap<>();
-            for (String constName : dag.getConstants()) {
+        }
+        for (String constName : dag.getConstants()) {
+            if (!constVarCache.containsKey(constName)) {
                 INDArray constValue = getConstantOrVariable(constName);
                 if (constValue != null) {
                     constVarCache.put(constName, SDValue.create(constValue));
                 }
             }
-            cachedConstVarValues = constVarCache;
         }
+        cachedConstVarValues = constVarCache;
         variableValues.putAll(constVarCache);
 
         // Variables (model weights) must be re-read every call because they can be
