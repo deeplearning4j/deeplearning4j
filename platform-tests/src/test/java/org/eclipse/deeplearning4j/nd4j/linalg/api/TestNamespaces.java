@@ -30,6 +30,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 @NativeTag
 public class TestNamespaces extends BaseNd4jTestWithBackends {
 
@@ -37,18 +39,26 @@ public class TestNamespaces extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBitwiseSimple(Nd4jBackend backend){
+        for (DataType type : new DataType[]{DataType.INT, DataType.LONG}) {
+            INDArray x = Nd4j.createFromArray(6, 3, 12, 5, 255).reshape(1, 5).castTo(type);
+            INDArray y = Nd4j.createFromArray(3, 5, 10, 4, 15).reshape(1, 5).castTo(type);
+            assertEquals(Nd4j.createFromArray(2, 1, 8, 4, 15).reshape(1, 5).castTo(type), Nd4j.bitwise.and(x, y));
+            assertEquals(Nd4j.createFromArray(7, 7, 14, 5, 255).reshape(1, 5).castTo(type), Nd4j.bitwise.or(x, y));
+            assertEquals(Nd4j.createFromArray(5, 6, 6, 1, 240).reshape(1, 5).castTo(type), Nd4j.bitwise.xor(x, y));
 
-        INDArray x = Nd4j.rand(DataType.FLOAT, 1, 5).muli(100000).castTo(DataType.INT);
-        INDArray y = Nd4j.rand(DataType.FLOAT, 1, 5).muli(100000).castTo(DataType.INT);
+            INDArray shifts = Nd4j.createFromArray(1, 2, 0, 3, 4).reshape(1, 5).castTo(type);
+            assertEquals(Nd4j.createFromArray(12, 12, 12, 40, 4080).reshape(1, 5).castTo(type),
+                    Nd4j.bitwise.leftShift(x, shifts));
+            assertEquals(Nd4j.createFromArray(3, 0, 12, 0, 15).reshape(1, 5).castTo(type),
+                    Nd4j.bitwise.rightShift(x, shifts));
 
-        INDArray and = Nd4j.bitwise.and(x, y);
-        INDArray or = Nd4j.bitwise.or(x, y);
-        INDArray xor = Nd4j.bitwise.xor(x, y);
-
-//        System.out.println(and);
-//        System.out.println(or);
-//        System.out.println(xor);
-
+            // Against a scalar, as a loop condition combines a [1] comparison with its extra condition.
+            INDArray one = Nd4j.createFromArray(1).reshape(1).castTo(type);
+            INDArray scalarOne = Nd4j.scalar(1).castTo(type);
+            assertEquals(one, Nd4j.bitwise.and(one, scalarOne));
+            assertEquals(one, Nd4j.bitwise.or(one, scalarOne));
+            assertEquals(Nd4j.createFromArray(0).reshape(1).castTo(type), Nd4j.bitwise.xor(one, scalarOne));
+        }
     }
 
     @ParameterizedTest

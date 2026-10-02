@@ -506,7 +506,7 @@ class Stabilize {
       return static_cast<X>(SD_MIN_CUTFOFF) / k;
     return d1;
   }
-  static X op_simd(X d1, X *params) { return op_logic(d1, params); }
+  static SD_HOST_DEVICE X op_simd(X d1, X *params) { return op_logic(d1, params); }
 
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda;
@@ -1612,7 +1612,7 @@ class Celu {
     return sd::math::sd_max<X>(static_cast<X>(0), d1) +
            sd::math::sd_min<X>(static_cast<X>(0), alpha * (sd::math::sd_exp<X, X>(d1/alpha) - static_cast<X>(1)));
   }
-  static X op_simd(X d1, X *params) { return op_logic(d1, params); }
+  static SD_HOST_DEVICE X op_simd(X d1, X *params) { return op_logic(d1, params); }
 
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda;
@@ -1649,7 +1649,7 @@ DECLARE_UNARY_CLIPPING_OP(ThresholdedReLU,
   template <typename X>                                                                                    \
   class OP_NAME {                                                                                         \
    private:                                                                                               \
-    static SD_INLINE X op_logic(X d1, X d2) {                                                            \
+    static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X d2) {                                             \
       if constexpr (std::is_integral<X>::value) {                                                        \
         return OPERATION;                                                                                \
       } else {                                                                                           \
@@ -1671,7 +1671,7 @@ DECLARE_UNARY_CLIPPING_OP(ThresholdedReLU,
         return result;                                                                                   \
       }                                                                                                  \
     }                                                                                                     \
-    static SD_INLINE X op_logic(X d1, X d2, X *params) { return op_logic(d1, d2); }                       \
+    static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X d2, X *params) { return op_logic(d1, d2); }        \
     static SD_INLINE SD_HOST_DEVICE X op_simd(X d1, X d2) { return op_logic(d1, d2); }                    \
     static SD_INLINE SD_HOST_DEVICE X op_simd(X d1, X d2, X *params) { return op_logic(d1, d2, params); } \
                                                                                                           \
