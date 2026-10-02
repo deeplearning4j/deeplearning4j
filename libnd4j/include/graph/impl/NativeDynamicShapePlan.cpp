@@ -126,20 +126,30 @@ bool isStagingOwnedWrapper(
 }
 
 std::mutex g_frozenPinMtx;
-std::unordered_map<DataBuffer*, int> g_frozenPinCounts;
+// Pins are counted per buffer AND per pinning plan. A buffer destroyed while
+// pinned drops every plan's entry; a new buffer the allocator places at the same
+// address is a different pin under whichever plan pins it. Keyed by address
+// alone, a plan releasing a dead buffer's pin would consume the new owner's
+// entry, call removeFrozenRef() on the new buffer and treat it as its own.
+std::unordered_map<DataBuffer*, std::unordered_map<const void*, int>> g_frozenPinCounts;
 
-void trackFrozenPin(DataBuffer* db) {
+void trackFrozenPin(DataBuffer* db, const void* pinOwner) {
   std::lock_guard<std::mutex> lk(g_frozenPinMtx);
-  g_frozenPinCounts[db]++;
+  g_frozenPinCounts[db][pinOwner]++;
 }
 
-// Returns true when the buffer object is still alive (pin found) — only then
-// may the caller touch it. Dead/never-tracked pointers return false.
-bool untrackFrozenPin(DataBuffer* db) {
+// Returns true when this plan's pin on the buffer is still registered, so the
+// buffer object is alive — only then may the caller touch it. Dead or
+// never-tracked pointers return false, including an address reused by a buffer
+// that only another plan pinned.
+bool untrackFrozenPin(DataBuffer* db, const void* pinOwner) {
   std::lock_guard<std::mutex> lk(g_frozenPinMtx);
   auto it = g_frozenPinCounts.find(db);
   if (it == g_frozenPinCounts.end()) return false;
-  if (--it->second <= 0) g_frozenPinCounts.erase(it);
+  auto owned = it->second.find(pinOwner);
+  if (owned == it->second.end()) return false;
+  if (--owned->second <= 0) it->second.erase(owned);
+  if (it->second.empty()) g_frozenPinCounts.erase(it);
   return true;
 }
 }  // namespace
@@ -169,6 +179,7 @@ void NativeDynamicShapePlan::recordPlanFailureIfMissing(
 
 static void releasePlanFrozenRefsForTeardown(
     const char* owner,
+    const void* pinOwner,
     bool shouldRelease,
     std::vector<DataBuffer*>& frozenProtectedRefBuffers,
     std::vector<DataBuffer*>& frozenOutputRefBuffers,
@@ -180,7 +191,7 @@ static void releasePlanFrozenRefsForTeardown(
   int protectedDead = 0;
   for (auto* db : frozenProtectedRefBuffers) {
     if (db != nullptr) {
-      if (untrackFrozenPin(db)) {
+      if (untrackFrozenPin(db, pinOwner)) {
         db->removeFrozenRef();
         protectedRemoved++;
         // The registry still held the pin, so the buffer is alive.
@@ -201,7 +212,7 @@ static void releasePlanFrozenRefsForTeardown(
   int outputDead = 0;
   for (auto* db : frozenOutputRefBuffers) {
     if (db != nullptr) {
-      if (untrackFrozenPin(db)) {
+      if (untrackFrozenPin(db, pinOwner)) {
         db->removeFrozenRef();
         outputRemoved++;
       } else {
@@ -295,20 +306,22 @@ static int disableFusedChainsAcrossSegmentBoundaries(
 
 static void replacePlanFrozenRefsForCurrentState(
     const char* owner,
+    const void* pinOwner,
     const std::unordered_set<DataBuffer*>& protectedWeightBuffers,
     NDArray** outputSlots,
     int totalOutputSlots,
     std::vector<DataBuffer*>& frozenProtectedRefBuffers,
     std::vector<DataBuffer*>& frozenOutputRefBuffers) {
   releasePlanFrozenRefsForTeardown(
-      owner, hasTrackedPlanFrozenRefs(frozenProtectedRefBuffers, frozenOutputRefBuffers),
+      owner, pinOwner,
+      hasTrackedPlanFrozenRefs(frozenProtectedRefBuffers, frozenOutputRefBuffers),
       frozenProtectedRefBuffers, frozenOutputRefBuffers);
 
   int protectedAdded = 0;
   for (auto* db : protectedWeightBuffers) {
     if (db != nullptr) {
       db->addFrozenRef();
-      trackFrozenPin(db);
+      trackFrozenPin(db, pinOwner);
       frozenProtectedRefBuffers.push_back(db);
       protectedAdded++;
     }
@@ -320,7 +333,7 @@ static void replacePlanFrozenRefsForCurrentState(
       if (outputSlots[i] != nullptr && outputSlots[i]->dataBuffer() != nullptr) {
         DataBuffer* db = outputSlots[i]->dataBuffer();
         db->addFrozenRef();
-        trackFrozenPin(db);
+        trackFrozenPin(db, pinOwner);
         frozenOutputRefBuffers.push_back(db);
         outputAdded++;
       }
@@ -1665,7 +1678,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // Remove frozen reference counts before deleting or nulling slot arrays.
   // Frozen sealing adds one output-slot ref per non-null slot, so release exactly
   // the recorded list; do not dedupe shared DataBuffers.
-  releasePlanFrozenRefsForTeardown("~NativeDynamicShapePlan", hadFrozenRefsOnEntry,
+  releasePlanFrozenRefsForTeardown("~NativeDynamicShapePlan", this, hadFrozenRefsOnEntry,
                                    frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
 
   // Free symbolic shape range profiles from all segments
@@ -3134,7 +3147,7 @@ Status NativeDynamicShapePlan::execute(
           if (it != frozenProtectedRefBuffers_.end()) {
             // Liveness-gated: a replaced external may already have been
             // destroyed by Java (weight close between replays).
-            if (untrackFrozenPin(db)) {
+            if (untrackFrozenPin(db, this)) {
               db->removeFrozenRef();
             }
             frozenProtectedRefBuffers_.erase(it);
@@ -3149,7 +3162,7 @@ Status NativeDynamicShapePlan::execute(
       for (auto* db : current) {
         if (db != nullptr && protectedWeightBuffers_.count(db) == 0) {
           db->addFrozenRef();
-          trackFrozenPin(db);
+          trackFrozenPin(db, this);
           frozenProtectedRefBuffers_.push_back(db);
         }
       }
@@ -4316,7 +4329,7 @@ Status NativeDynamicShapePlan::execute(
     }
 
     replacePlanFrozenRefsForCurrentState(
-        "AUTO_SEAL", protectedWeightBuffers_, outputSlots_, totalOutputSlots_,
+        "AUTO_SEAL", this, protectedWeightBuffers_, outputSlots_, totalOutputSlots_,
         frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::AUTO_SEAL_FIRED,
                          oldExecCount, executeCount_);
@@ -6591,7 +6604,7 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
   // fully allocated them. Track exactly the refs owned by this plan so teardown
   // and rebind never guess from state that predates coloring.
   replacePlanFrozenRefsForCurrentState(
-      "phaseWarmup", protectedWeightBuffers_, outputSlots_, totalOutputSlots_,
+      "phaseWarmup", this, protectedWeightBuffers_, outputSlots_, totalOutputSlots_,
       frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
 
   return Status::OK;
@@ -8266,7 +8279,7 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
       if (planLifecycle_.isInFrozenOrReplayState() ||
           hasTrackedPlanFrozenRefs(frozenProtectedRefBuffers_, frozenOutputRefBuffers_)) {
         replacePlanFrozenRefsForCurrentState(
-            "phaseReplayCaptureRehome", protectedWeightBuffers_, outputSlots_,
+            "phaseReplayCaptureRehome", this, protectedWeightBuffers_, outputSlots_,
             totalOutputSlots_, frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
       }
       if (frozenSnapshot_.valid) frozenSnapshot_.clear();
@@ -8787,7 +8800,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   auto releaseFrozenRefsForTeardown = [&]() {
     if (frozenRefsReleasedForTeardown) return;
     frozenRefsReleasedForTeardown = true;
-    releasePlanFrozenRefsForTeardown("releaseGpuIntermediates", hadFrozenRefsOnEntry,
+    releasePlanFrozenRefsForTeardown("releaseGpuIntermediates", this, hadFrozenRefsOnEntry,
                                      frozenProtectedRefBuffers_, frozenOutputRefBuffers_,
                                      &protectedWeightBuffers_, &pinProvenProtectedBuffers);
   };
