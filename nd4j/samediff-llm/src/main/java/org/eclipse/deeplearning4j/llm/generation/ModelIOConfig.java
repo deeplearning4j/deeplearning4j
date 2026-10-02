@@ -841,13 +841,7 @@ public class ModelIOConfig {
         if (model.hasVariable(defaultAttnReformat)) {
             attnReformat = defaultAttnReformat;
         } else {
-            // Search for alternative patterns
-            for (String varName : model.variableMap().keySet()) {
-                if (varName.contains("attn_mask_reformat") && varName.contains("output")) {
-                    attnReformat = varName;
-                    break;
-                }
-            }
+            attnReformat = findAttnMaskReformatOutput(model);
         }
 
         // Determine present-to-past replacement
@@ -897,5 +891,40 @@ public class ModelIOConfig {
                 config.encoderDecoder, config.encoderHiddenStatesName, config.encoderAttentionMaskName);
 
         return config;
+    }
+
+    /**
+     * The attention bias the attn_mask_reformat subgraph hands to the layers, for models without
+     * the canonical Tile output: a floating-point tensor named in the subgraph and read by an op
+     * outside it. The subgraph's internal tensors also carry its name and an "output" suffix (a
+     * constant-folded ConstantOfShape shape vector, for one); taking one of those for the mask
+     * lets prefill override it and the native decode loop write mask values into it.
+     *
+     * @return the output's name, or null when the model has no such tensor
+     */
+    private static String findAttnMaskReformatOutput(SameDiff model) {
+        List<String> outputs = new ArrayList<>();
+        for (SDVariable variable : model.variables()) {
+            String name = variable.name();
+            if (!name.contains("attn_mask_reformat") || variable.dataType() == null
+                    || !variable.dataType().isFPType()) {
+                continue;
+            }
+            Variable meta = model.getVariables().get(name);
+            if (meta == null || meta.getInputsForOp() == null) continue;
+            for (String opName : meta.getInputsForOp()) {
+                if (!opName.contains("attn_mask_reformat")) {
+                    outputs.add(name);
+                    break;
+                }
+            }
+        }
+        if (outputs.isEmpty()) return null;
+        Collections.sort(outputs);
+        if (outputs.size() > 1) {
+            log.warn("ModelIOConfig.discover(): {} attn_mask_reformat outputs {}; using {}",
+                    outputs.size(), outputs, outputs.get(0));
+        }
+        return outputs.get(0);
     }
 }
