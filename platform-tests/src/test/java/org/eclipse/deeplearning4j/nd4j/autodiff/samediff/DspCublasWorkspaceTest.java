@@ -95,6 +95,8 @@ public class DspCublasWorkspaceTest {
             log.info("Execution without its cuBLAS workspace failed with: {}", messages(failure));
             assertTrue(messages(failure).contains("cuBLAS workspace"),
                     "the failure must name the workspace: " + messages(failure));
+            assertTrue(messages(failure).contains("(NATIVE_EXCEPTION)"),
+                    "a native exception's status must be named: " + messages(failure));
 
             try (SameDiff fresh = denseSoftmax(w, b)) {
                 for (int i = 0; i < 4; i++) {

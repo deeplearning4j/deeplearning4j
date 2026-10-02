@@ -44,9 +44,15 @@ public enum OpStatus {
     ND4J_STATUS_DOUBLE_READ,
     ND4J_STATUS_KERNEL_FAILURE;
 
-    /** The name of a native status code (sd::Status), or UNKNOWN(code) for one this enum lacks. */
+    /**
+     * The name of a native status code (sd::Status); NATIVE_EXCEPTION for -1, which native entry
+     * points such as the DSP plan entries return when they caught an exception; UNKNOWN(code) for
+     * any other code this enum lacks.
+     */
     public static String nameOf(int val) {
         switch (val) {
+            case -1:
+                return "NATIVE_EXCEPTION";
             case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9:
             case 20: case 30: case 31: case 32: case 33: case 34: case 40: case 45: case 50:
                 return byNumber(val).name();
