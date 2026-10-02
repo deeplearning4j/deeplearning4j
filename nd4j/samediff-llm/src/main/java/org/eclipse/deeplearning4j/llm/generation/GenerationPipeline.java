@@ -275,6 +275,14 @@ public class GenerationPipeline implements AutoCloseable {
     /** Embedding weight table for direct token-to-embedding lookup (bypasses SameDiff.output()). */
     private final INDArray embeddingTable;
 
+    /**
+     * Whether {@link #embeddingTable} is the pipeline's own FLOAT copy of a reduced-precision
+     * model table ({@link #decodeEmbeddingTable}) rather than the model's array. Closed in
+     * {@link #close()}: a pipeline per request would otherwise leave one table-sized buffer
+     * per pipeline for garbage collection to find.
+     */
+    private final boolean ownsEmbeddingTable;
+
     /** Resolved hidden size of the model. */
     private final long hiddenSize;
 
@@ -361,7 +369,7 @@ public class GenerationPipeline implements AutoCloseable {
             Tokenizer tokenizer,
             ModelMetadata modelMetadata,
             ModelIOConfig ioConfig,
-            INDArray embeddingTable,
+            INDArray embeddingTable, boolean ownsEmbeddingTable,
             long hiddenSize,
             String embedInputName, String[] embedOutputNames,
             SameDiff draftDecoder, boolean ownsDraftDecoder,
@@ -391,6 +399,7 @@ public class GenerationPipeline implements AutoCloseable {
                 ConstraintCandidateDiagnostics.fromSystemProperties();
         this.ioConfig = ioConfig;
         this.embeddingTable = embeddingTable;
+        this.ownsEmbeddingTable = ownsEmbeddingTable;
         this.hiddenSize = hiddenSize;
         this.embedInputName = embedInputName;
         this.embedOutputNames = embedOutputNames;
@@ -669,12 +678,15 @@ public class GenerationPipeline implements AutoCloseable {
 
         // 4. Extract embedding table for direct lookup (from embedTokens or decoder)
         //    Done before hidden size detection so we can reuse the result (avoids scanning all variables twice).
-        INDArray embeddingTable = extractEmbeddingTable(embedSource);
+        //    The decode op reads it in FLOAT, so a reduced-precision model table becomes the pipeline's own copy.
+        INDArray modelEmbeddingTable = extractEmbeddingTable(embedSource);
+        INDArray embeddingTable = decodeEmbeddingTable(modelEmbeddingTable);
+        boolean ownsEmbeddingTable = embeddingTable != modelEmbeddingTable;
 
         // 5. Auto-detect hidden size (use embedTokens if available, else decoder)
         long resolvedHiddenSize = config.getHiddenSize();
         if (resolvedHiddenSize <= 0) {
-            resolvedHiddenSize = detectHiddenSize(embedSource, embeddingTable);
+            resolvedHiddenSize = detectHiddenSize(embedSource, modelEmbeddingTable);
         }
 
         // 6. Load draft decoder for speculative decoding
@@ -754,7 +766,7 @@ public class GenerationPipeline implements AutoCloseable {
                 config.getTokenizer(),
                 modelMetadata,
                 ioConfig,
-                embeddingTable,
+                embeddingTable, ownsEmbeddingTable,
                 resolvedHiddenSize,
                 embedInputName, embedOutputNames,
                 draftDecoder, ownsDraftDecoder,
@@ -9935,6 +9947,15 @@ public class GenerationPipeline implements AutoCloseable {
                 log.warn("Error closing prefix block pool: {}", e.getMessage());
             }
         }
+        // The FLOAT copy of a reduced-precision embedding table belongs to this pipeline; the
+        // decode loops that read it ended with the sessions and borrowers retired above.
+        if (ownsEmbeddingTable && embeddingTable != null && !embeddingTable.wasClosed()) {
+            try {
+                embeddingTable.close();
+            } catch (Exception e) {
+                log.warn("Error closing embedding table copy: {}", e.getMessage());
+            }
+        }
         // Return reserved-but-unused CUDA pool blocks after every buffer above is closed.
         // Pool reservations are process-global and survive pipeline close: without this trim,
         // a second pipeline in the same JVM starts inside the previous one's peak reservation,
@@ -10312,6 +10333,9 @@ public class GenerationPipeline implements AutoCloseable {
      * heuristic is used only for graphs without an explicit token table; auxiliary
      * per-layer embeddings must never replace a declared [vocabSize, hiddenSize] table.</p>
      *
+     * <p>Returns the model's own array, in the model's dtype, never a copy: callers must not close
+     * it. {@link #decodeEmbeddingTable} converts it for the decode op.</p>
+     *
      * @param model the SameDiff model (typically embed_tokens or a decoder with shared weights)
      * @return the embedding table, or null if not found
      */
@@ -10342,17 +10366,27 @@ public class GenerationPipeline implements AutoCloseable {
             }
         }
         if (embeddingTable != null) {
-            // If the optimizer quantized constants to HALF for memory savings,
-            // cast the embedding table back to FLOAT for the autoregressive_decode op.
-            if (embeddingTable.dataType() == DataType.HALF || embeddingTable.dataType() == DataType.BFLOAT16) {
-                log.info("Extracted embedding table is {} — casting to FLOAT for decode op", embeddingTable.dataType());
-                embeddingTable = embeddingTable.castTo(DataType.FLOAT);
-            }
-            log.info("Extracted embedding table: shape={}", Arrays.toString(embeddingTable.shape()));
+            log.info("Extracted embedding table: shape={} dtype={}",
+                    Arrays.toString(embeddingTable.shape()), embeddingTable.dataType());
         } else {
             log.warn("Could not extract embedding table from model");
         }
         return embeddingTable;
+    }
+
+    /**
+     * The embedding table in FLOAT, which the autoregressive_decode op copies rows from into the
+     * decoder's FLOAT embeddings. A table the optimizer stored in HALF or BFLOAT16 is copied, and
+     * the caller owns that copy (it differs from {@code modelTable}); a FLOAT table is returned
+     * as is.
+     */
+    static INDArray decodeEmbeddingTable(INDArray modelTable) {
+        if (modelTable == null
+                || (modelTable.dataType() != DataType.HALF && modelTable.dataType() != DataType.BFLOAT16)) {
+            return modelTable;
+        }
+        log.info("Embedding table is {} — copying to FLOAT for the decode op", modelTable.dataType());
+        return modelTable.castTo(DataType.FLOAT);
     }
 
     /**
