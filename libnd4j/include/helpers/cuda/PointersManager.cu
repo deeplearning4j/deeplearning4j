@@ -59,6 +59,10 @@ PointersManager::PointersManager(const LaunchContext* context, const std::string
 
 //////////////////////////////////////////////////////////////////////////
 void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
+  // An empty table (an op's dimension list when its axes cover the whole array) needs no
+  // memory: the pool returns null for zero bytes, which used to be reported as exhaustion.
+  if (sizeInBytes == 0) return nullptr;
+
   void* dst = nullptr;
   bool fromCudaMalloc = false;
 
@@ -137,6 +141,9 @@ static uint64_t fnvHash(const void* data, size_t len) {
 }
 
 void* PointersManager::replicatePointer(const void* src, const size_t numberOfBytes) {
+  // Nothing to copy: kernels receive the table with its zero length and never read it.
+  if (numberOfBytes == 0) return nullptr;
+
   const bool graphRecording = recordingCudaGraph(_context);
   if (src && graphRecording && numberOfBytes <= 256) {
     // During CUDA graph capture, check if identical content was already uploaded.
