@@ -777,14 +777,15 @@ public class GenerationPipeline implements AutoCloseable {
         // CUDA graph nodes → ZERO_KERNEL_SBS terminal → permanent slot-by-slot at
         // ~19 tok/s instead of ~65 tok/s.
         //
-        // Fix: set TRITON mode + environment flags via setDspCompilationMode() so
-        // auto-compile creates the plan during the warmup decode with real decode
-        // shapes. The segment lifecycle then proceeds: WARMUP → COMPILE (Triton JIT
-        // with actual data) → CAPTURE (CUDA graph with Triton islands).
+        // Fix: select TRITON mode via setDspCompilationPolicy() so auto-compile
+        // creates the plan during the warmup decode with real decode shapes. The
+        // segment lifecycle then proceeds: WARMUP → COMPILE (Triton JIT with actual
+        // data) → CAPTURE (CUDA graph with Triton islands). Only the policy: the
+        // MAX_AUTOTUNE knob preset would overwrite the Triton tuning apply() just set.
         if (benchmarkConfig.isTriton()) {
-            decoder.setDspCompilationMode(DspCompilationMode.MAX_AUTOTUNE);
+            decoder.setDspCompilationPolicy(DspCompilationMode.MAX_AUTOTUNE);
             if (embedTokens != null) {
-                embedTokens.setDspCompilationMode(DspCompilationMode.MAX_AUTOTUNE);
+                embedTokens.setDspCompilationPolicy(DspCompilationMode.MAX_AUTOTUNE);
             }
             log.info("  Triton mode configured on decoder{} — compilation deferred to first execution with real shapes",
                     embedTokens != null ? " and embed_tokens" : "");

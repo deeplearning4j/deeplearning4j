@@ -356,14 +356,10 @@ public class BenchmarkConfigApplier {
                 env.setTritonCoopTargetBlocks(1);
                 break;
             case "BALANCED":
-                env.setTritonBuildThreads(4);
-                env.setTritonMaxSubsegmentOps(0);
-                env.setTritonMaxSubsegmentSections(0);
-                env.setTritonNumWarps(8);
-                env.setTritonNumStages(2);
+                // The MAX_AUTOTUNE compiler knobs: every kernel keeps the warps and stages
+                // its IR builder chose. A config's explicit fields override them in apply().
+                SameDiff.applyDspCompilationPreset(DspCompilationMode.MAX_AUTOTUNE);
                 env.setTritonNumCTAs(1);
-                env.setTritonMaxNreg(0);
-                env.setTritonEnableFpFusion(true);
                 env.setTritonVerbose(true);
                 env.setTritonDumpSections(false);
                 env.setTritonDumpArgs(false);
@@ -373,14 +369,8 @@ public class BenchmarkConfigApplier {
                 env.setTritonCooperativeLaunch(false);
                 break;
             default: // MAX_PERF / MAX_AUTOTUNE
-                env.setTritonBuildThreads(4);
-                env.setTritonMaxSubsegmentOps(0);
-                env.setTritonMaxSubsegmentSections(0);
-                env.setTritonNumWarps(8);
-                env.setTritonNumStages(2);
+                SameDiff.applyDspCompilationPreset(DspCompilationMode.MAX_AUTOTUNE);
                 env.setTritonNumCTAs(1);
-                env.setTritonMaxNreg(0);
-                env.setTritonEnableFpFusion(true);
                 env.setTritonVerbose(false);
                 env.setTritonDumpSections(false);
                 env.setTritonDumpArgs(false);
@@ -395,8 +385,8 @@ public class BenchmarkConfigApplier {
     /**
      * Compile a model for the given benchmark config.
      *
-     * For Triton configs, uses MAX_AUTOTUNE compilation mode.
-     * For non-Triton configs, compiles with the specified execution mode.
+     * For Triton configs, compiles in MAX_AUTOTUNE's strict TRITON mode with the Triton
+     * knobs {@link #apply} set. For non-Triton configs, compiles with the specified execution mode.
      *
      * @param model   the SameDiff model to compile
      * @param label   human-readable label for logging
@@ -464,11 +454,11 @@ public class BenchmarkConfigApplier {
     private static GraphExecutionMode compileTritonModel(SameDiff model, String label, List<String> outputs) {
         model.setDspAutoCompileEnabled(true);
         model.setDspNativeAutoCompileEnabled(true);
-        model.setDspFallbackToAutoIfTritonUnavailable(false);
+        // apply() set the config's Triton knobs; the MAX_AUTOTUNE preset would overwrite
+        // them, so take only its execution mode and strictness.
+        model.setDspCompilationPolicy(DspCompilationMode.MAX_AUTOTUNE);
 
-        GraphExecutionMode effectiveMode = outputs.isEmpty()
-                ? model.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE)
-                : model.compileNativeDynamicShapePlan(outputs, DspCompilationMode.MAX_AUTOTUNE);
+        GraphExecutionMode effectiveMode = model.compileNativeDynamicShapePlan(outputs.toArray(new String[0]));
         if (effectiveMode != GraphExecutionMode.TRITON) {
             throw new IllegalStateException("MAX_AUTOTUNE for " + label +
                     " resolved to " + effectiveMode + " instead of TRITON");

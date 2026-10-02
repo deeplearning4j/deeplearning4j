@@ -1593,8 +1593,10 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
         setTritonArgDirtyTracking(true);
         setTritonFusionScoring(false);
         setTritonMergedCaptureThroughViews(true);
-        setTritonNumWarps(4);
-        setTritonNumStages(1);
+        // 0 keeps each kernel's own warps and stages (its pipelined loops need their
+        // stage counts); a global override is a tuning experiment, not a default.
+        setTritonNumWarps(0);
+        setTritonNumStages(0);
         setCublasTf32Enabled(true);
         setTritonTf32Enabled(true);
         setDspBatchedGemm(true);

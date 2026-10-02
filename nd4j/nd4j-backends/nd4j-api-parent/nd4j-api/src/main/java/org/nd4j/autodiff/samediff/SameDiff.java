@@ -86,6 +86,7 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
+import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
@@ -4979,15 +4980,48 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
     /**
      * Apply a preset DSP/Triton compilation profile similar to PyTorch compile modes.
-     * This configures graph backend selection and Triton compiler/runtime knobs.
+     * This configures graph backend selection ({@link #setDspCompilationPolicy}) and the
+     * process-wide Triton compiler/runtime knobs ({@link #applyDspCompilationPreset}).
      */
     public void setDspCompilationMode(@NonNull DspCompilationMode mode) {
-        org.nd4j.linalg.factory.Environment env = Nd4j.getEnvironment();
+        setDspCompilationPolicy(mode);
+        applyDspCompilationPreset(mode);
+    }
+
+    /**
+     * Select the graph execution mode and Triton availability policy of a compilation mode
+     * without touching the process-wide Triton knobs. For callers that set those knobs
+     * themselves (a benchmark config), whose tuning the preset would otherwise overwrite.
+     */
+    public void setDspCompilationPolicy(@NonNull DspCompilationMode mode) {
         switch (mode) {
             case REDUCE_OVERHEAD:
                 // Favor quick compile path and low startup cost.
                 graphExecutionMode = GraphExecutionMode.PTX_JIT;
                 dspFallbackToAutoIfTritonUnavailable = true;
+                break;
+            case SPLIT_STITCH:
+                // Opt-in and strict: Triton must be available or compilation fails loudly.
+                graphExecutionMode = GraphExecutionMode.TRITON;
+                dspFallbackToAutoIfTritonUnavailable = false;
+                break;
+            case MAX_AUTOTUNE:
+                // Strict by default: MAX_AUTOTUNE should fail loudly if Triton is unavailable.
+                graphExecutionMode = GraphExecutionMode.TRITON;
+                dspFallbackToAutoIfTritonUnavailable = false;
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported DSP compilation mode: " + mode);
+        }
+    }
+
+    /**
+     * Set the process-wide Triton compiler/runtime knobs of a compilation mode.
+     */
+    public static void applyDspCompilationPreset(@NonNull DspCompilationMode mode) {
+        Environment env = Nd4j.getEnvironment();
+        switch (mode) {
+            case REDUCE_OVERHEAD:
                 env.setTritonCacheEnabled(true);
                 env.setTritonAlwaysCompile(false);
                 env.setTritonBuildThreads(1);
@@ -4996,9 +5030,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 break;
             case SPLIT_STITCH:
                 // Split large segments into smaller Triton sections and stitch execution at runtime.
-                // This is opt-in and strict: Triton must be available or compilation fails loudly.
-                graphExecutionMode = GraphExecutionMode.TRITON;
-                dspFallbackToAutoIfTritonUnavailable = false;
                 env.setTritonCacheEnabled(true);
                 env.setTritonAlwaysCompile(false);
                 env.setTritonBuildThreads(
@@ -5014,10 +5045,8 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 env.setTritonDisableLineInfo(false);
                 break;
             case MAX_AUTOTUNE:
-                // Favor highest steady-state throughput via Triton.
-                graphExecutionMode = GraphExecutionMode.TRITON;
-                // Strict by default: MAX_AUTOTUNE should fail loudly if Triton is unavailable.
-                dspFallbackToAutoIfTritonUnavailable = false;
+                // Favor highest steady-state throughput via Triton. Warps and stages stay at
+                // 0 so every kernel keeps the values its IR builder chose for it.
                 env.setTritonCacheEnabled(true);
                 env.setTritonAlwaysCompile(false);
                 env.setTritonBuildThreads(Math.max(1, Math.min(8, Runtime.getRuntime().availableProcessors() / 2)));

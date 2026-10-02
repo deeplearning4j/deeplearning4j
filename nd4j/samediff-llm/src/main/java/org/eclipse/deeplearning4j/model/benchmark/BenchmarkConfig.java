@@ -211,7 +211,6 @@ public class BenchmarkConfig {
                 .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                 .tritonFusionScoring(false)
                 .tritonMergedCaptureThroughViews(true)
-                .tritonNumWarps(4).tritonNumStages(1)
                 .cublasTf32(true)
                 .tritonTf32(true)
                 .dspBatchedGemm(true)
