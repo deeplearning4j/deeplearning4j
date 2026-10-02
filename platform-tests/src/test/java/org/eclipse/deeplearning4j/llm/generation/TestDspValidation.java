@@ -35,7 +35,9 @@ import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -46,6 +48,8 @@ import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.execution.PlanIntrospection;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.api.memory.deallocation.DeallocatableReference;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -59,6 +63,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -66,9 +71,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * DSP Validation Test Framework.
  *
- * Compares execution results between different DSP execution modes to pinpoint
- * the exact op that introduces divergence. Uses slot output interceptors to capture
- * intermediate values and compare them across modes.
+ * Runs the SmolDocling decoder under different DSP execution modes and asserts that each
+ * reproduces the SLOT_BY_SLOT reference (generated tokens, or decoder outputs for a single
+ * forward pass), that plan state seen through DspHandle and DspPlanAssertions holds its
+ * invariants, and that repeated decodes do not keep memory.
  *
  * Run with:
  *   cd platform-tests && mvn test \
@@ -138,6 +144,40 @@ public class TestDspValidation {
 
     private static int getTokens(int defaultTokens) {
         return configuredTokens > 0 ? configuredTokens : defaultTokens;
+    }
+
+    /**
+     * Fraction of positions at which two decodes produced the same token, over the longer
+     * decode: a decode that stops early or runs longer than the other counts as diverging.
+     */
+    private static double tokenMatchRate(int[] test, int[] ref) {
+        int maxLen = Math.max(test.length, ref.length);
+        if (maxLen == 0) return 1.0;
+        int matches = 0;
+        for (int i = 0; i < Math.min(test.length, ref.length); i++) {
+            if (test[i] == ref[i]) matches++;
+        }
+        return (double) matches / maxLen;
+    }
+
+    /** The configured token match rate, as a fraction. */
+    private static double requiredMatchRate() {
+        return configuredMatchRate / 100.0;
+    }
+
+    /**
+     * The rate a config must reach against a decode without TF32: the configured rate, or at
+     * most 15% when the config enables TF32, whose rounding can diverge an autoregressive decode
+     * within a few steps (the same policy as testOutputAccuracy).
+     */
+    private static double requiredMatchRateAgainstFp32(BenchmarkConfig config) {
+        boolean tf32 = config.isCublasTf32() || config.isTritonTf32();
+        return tf32 ? Math.min(requiredMatchRate(), 0.15) : requiredMatchRate();
+    }
+
+    private static String matchRateMessage(String comparison, double rate, double required) {
+        return String.format("%s: token match rate %.1f%% (required %.1f%%)",
+                comparison, rate * 100, required * 100);
     }
 
     private static ValidationConfig getValidationConfig() {
@@ -531,15 +571,8 @@ public class TestDspValidation {
         }
         ensureModelsLoaded();
 
-        // First run a prefill step with SLOT_BY_SLOT to populate KV caches
-        BenchmarkConfig slotConfig = BenchmarkConfig.create("SLOT_BY_SLOT")
-                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
-                .maxTokens(1);
-        GenerationResult prefillResult = runDecode(slotConfig, 1);
-        log.info("Prefill done: token={}", prefillResult.getTokenIds()[0]);
-
-        // Build decode-shape inputs: one token at cache position kvSeqLen, over caches whose
-        // first kvSeqLen positions hold random data
+        // Decode-shape inputs: one token at cache position kvSeqLen, over caches whose first
+        // kvSeqLen positions hold random data in place of a prefill's keys and values
         int maxKvLen = 2048;
         int kvSeqLen = 18;  // 17 prefill + 1 decode
         Map<String, INDArray> kvBuffers = inGraphKvBuffers(maxKvLen);
@@ -582,17 +615,14 @@ public class TestDspValidation {
             if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
         }
 
-        if (!slotVsTriton.isEmpty()) {
-            log.error("Decode-shape forward pass diverges between SLOT_BY_SLOT and Triton!");
-        } else {
-            log.info("Decode-shape forward pass: SLOT_BY_SLOT and Triton match perfectly");
-        }
+        assertTrue(slotVsTriton.isEmpty(),
+                "Decode-shape forward pass diverges between SLOT_BY_SLOT and Triton: " + slotVsTriton);
     }
 
     // ─── Test: Multi-step decode mode comparison ──────────────────────────
 
     @Test
-    @DisplayName("Multi-step decode: SLOT_BY_SLOT vs TRITON_NO_GC per-token comparison")
+    @DisplayName("Multi-step decode: Triton skip, verify and no-capture decodes reproduce SLOT_BY_SLOT")
     public void testMultiStepDecodeComparison() throws Exception {
         if (!Nd4j.getNativeOps().isTritonAvailable()) {
             log.info("Triton not available — skipping");
@@ -611,9 +641,8 @@ public class TestDspValidation {
         int[] slotTokens = slotResult.getTokenIds();
         log.info("SLOT_BY_SLOT: {} tokens, text='{}'", slotTokens.length, slotResult.getText());
 
-        // Run TRITON_SKIP_KERNELS: Triton backend active but all compiled sub-kernels
-        // skipped (routes to native ordered-range executor). If this matches SLOT_BY_SLOT,
-        // the bug is definitively in Triton-compiled sub-kernels, not DSP orchestration.
+        // TRITON_SKIP_KERNELS: the Triton backend with every compiled kernel skipped, so each
+        // segment runs on the native ordered-range executor: DSP orchestration without Triton code.
         BenchmarkConfig skipConfig = BenchmarkConfig.create("TRITON_SKIP_KERNELS")
                 .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                 .tritonSectionFusion(true).tritonCompileAll(true)
@@ -623,24 +652,9 @@ public class TestDspValidation {
         int[] skipTokens = skipResult.getTokenIds();
         log.info("TRITON_SKIP_KERNELS: {} tokens, text='{}'", skipTokens.length, skipResult.getText());
 
-        // Compare SLOT_BY_SLOT vs TRITON_SKIP_KERNELS
-        int skipMinLen = Math.min(slotTokens.length, skipTokens.length);
-        int skipMatches = 0;
-        for (int i = 0; i < skipMinLen; i++) {
-            if (slotTokens[i] == skipTokens[i]) skipMatches++;
-        }
-        double skipMatchRate = skipMinLen > 0 ? (double) skipMatches / skipMinLen : 1.0;
-        log.info("SKIP_KERNELS vs SLOT_BY_SLOT: {}/{} ({}%)",
-                skipMatches, skipMinLen, String.format("%.1f", skipMatchRate * 100));
-        if (skipMatchRate >= 0.99) {
-            log.info("CONFIRMED: Triton sub-kernels cause the divergence (skip matches baseline)");
-        } else {
-            log.error("UNEXPECTED: Even with kernels skipped, output diverges — DSP orchestration issue?");
-        }
-
-        // Run TRITON_VERIFY: Triton backend runs BOTH Triton AND native for each sub-kernel,
-        // comparing outputs. Logs HASH_MISMATCH for any kernel that produces different results.
-        // Use tritonVerifyFullSnapshot to capture ALL slot state before/after.
+        // TRITON_VERIFY: runs each Triton kernel and its native counterpart and compares them;
+        // a HASH_MISMATCH line names a kernel whose output differs. tritonVerifyFullSnapshot
+        // records every slot before and after.
         BenchmarkConfig verifyConfig = BenchmarkConfig.create("TRITON_VERIFY")
                 .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                 .tritonSectionFusion(true).tritonCompileAll(true)
@@ -650,9 +664,8 @@ public class TestDspValidation {
         GenerationResult verifyResult = runDecode(verifyConfig, maxTokens);
         int[] verifyTokens = verifyResult.getTokenIds();
         log.info("TRITON_VERIFY: {} tokens, text='{}'", verifyTokens.length, verifyResult.getText());
-        log.info(">>> Check test output for HASH_MISMATCH / VERIFY lines to identify divergent kernel <<<");
 
-        // Run TRITON_NO_GC (the config under investigation)
+        // TRITON_NO_GC: Triton kernels without CUDA graph capture
         BenchmarkConfig tritonConfig = BenchmarkConfig.create("TRITON_NO_GC")
                 .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                 .tritonSectionFusion(true).tritonCompileAll(true)
@@ -661,37 +674,22 @@ public class TestDspValidation {
         int[] tritonTokens = tritonResult.getTokenIds();
         log.info("TRITON_NO_GC: {} tokens, text='{}'", tritonTokens.length, tritonResult.getText());
 
-        // Compare token by token
-        int minLen = Math.min(slotTokens.length, tritonTokens.length);
-        int firstDivergentStep = -1;
-        int matches = 0;
-        for (int i = 0; i < minLen; i++) {
-            if (slotTokens[i] == tritonTokens[i]) {
-                matches++;
-            } else if (firstDivergentStep < 0) {
-                firstDivergentStep = i;
-                log.error("FIRST DIVERGENCE at step {}: SLOT_BY_SLOT={} TRITON_NO_GC={}",
-                        i, slotTokens[i], tritonTokens[i]);
-            }
-        }
-        double matchRate = minLen > 0 ? (double) matches / minLen : 1.0;
-        log.info("Token match rate: {}/{} ({}%) first_divergent_step={}",
-                matches, minLen, String.format("%.1f", matchRate * 100), firstDivergentStep);
-
-        // Summary
-        log.info("=== BISECTION SUMMARY ===");
-        log.info("SLOT_BY_SLOT text:        {}", slotResult.getText());
-        log.info("TRITON_SKIP_KERNELS text: {}", skipResult.getText());
-        log.info("TRITON_VERIFY text:       {}", verifyResult.getText());
-        log.info("TRITON_NO_GC text:        {}", tritonResult.getText());
-        log.info("SKIP match rate: {}%", String.format("%.1f", skipMatchRate * 100));
-        log.info("NO_GC match rate: {}%", String.format("%.1f", matchRate * 100));
-
-        // Soft assertion — log but don't fail, since we're investigating
-        if (matchRate < 0.9) {
-            log.error("Token match rate {}% is below 90% threshold. First divergence at step {}.",
-                    String.format("%.1f", matchRate * 100), firstDivergentStep);
-        }
+        // Each must reproduce the SLOT_BY_SLOT decode: SKIP_KERNELS checks the orchestration,
+        // VERIFY and NO_GC the compiled kernels
+        double required = requiredMatchRate();
+        double skipRate = tokenMatchRate(skipTokens, slotTokens);
+        double verifyRate = tokenMatchRate(verifyTokens, slotTokens);
+        double tritonRate = tokenMatchRate(tritonTokens, slotTokens);
+        log.info("Match vs SLOT_BY_SLOT: SKIP_KERNELS={}% VERIFY={}% NO_GC={}%",
+                String.format("%.1f", skipRate * 100), String.format("%.1f", verifyRate * 100),
+                String.format("%.1f", tritonRate * 100));
+        assertAll(
+                () -> assertTrue(skipRate >= required,
+                        matchRateMessage("TRITON_SKIP_KERNELS vs SLOT_BY_SLOT", skipRate, required)),
+                () -> assertTrue(verifyRate >= required,
+                        matchRateMessage("TRITON_VERIFY vs SLOT_BY_SLOT", verifyRate, required)),
+                () -> assertTrue(tritonRate >= required,
+                        matchRateMessage("TRITON_NO_GC vs SLOT_BY_SLOT", tritonRate, required)));
     }
 
     @Test
@@ -706,32 +704,32 @@ public class TestDspValidation {
         int maxTokens = 5;
         log.info("=== Per-slot fingerprint comparison: {} tokens ===", maxTokens);
 
-        // Run SLOT_BY_SLOT with debug+verbose to get per-slot fingerprints
-        log.info(">>> SLOT_BY_SLOT run with debug+verbose <<<");
-        Nd4j.getEnvironment().setDebug(true);
-        Nd4j.getEnvironment().setVerbose(true);
+        // Both runs with debug+verbose, which print per-slot fingerprints
         BenchmarkConfig slotConfig = BenchmarkConfig.create("SLOT_BY_SLOT")
                 .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
                 .maxTokens(maxTokens);
-        GenerationResult slotResult = runDecode(slotConfig, maxTokens);
-        Nd4j.getEnvironment().setDebug(false);
-        Nd4j.getEnvironment().setVerbose(false);
-        log.info("SLOT_BY_SLOT tokens: {}", Arrays.toString(slotResult.getTokenIds()));
-
-        // Run TRITON_NO_GC with debug+verbose to get per-slot fingerprints
-        log.info(">>> TRITON_NO_GC run with debug+verbose <<<");
-        Nd4j.getEnvironment().setDebug(true);
-        Nd4j.getEnvironment().setVerbose(true);
         BenchmarkConfig tritonConfig = BenchmarkConfig.create("TRITON_NO_GC")
                 .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                 .tritonSectionFusion(true).tritonCompileAll(true)
                 .maxTokens(maxTokens);
-        GenerationResult tritonResult = runDecode(tritonConfig, maxTokens);
-        Nd4j.getEnvironment().setDebug(false);
-        Nd4j.getEnvironment().setVerbose(false);
+        GenerationResult slotResult;
+        GenerationResult tritonResult;
+        Nd4j.getEnvironment().setDebug(true);
+        Nd4j.getEnvironment().setVerbose(true);
+        try {
+            log.info(">>> SLOT_BY_SLOT run with debug+verbose <<<");
+            slotResult = runDecode(slotConfig, maxTokens);
+            log.info(">>> TRITON_NO_GC run with debug+verbose <<<");
+            tritonResult = runDecode(tritonConfig, maxTokens);
+        } finally {
+            Nd4j.getEnvironment().setDebug(false);
+            Nd4j.getEnvironment().setVerbose(false);
+        }
+        log.info("SLOT_BY_SLOT tokens: {}", Arrays.toString(slotResult.getTokenIds()));
         log.info("TRITON_NO_GC tokens: {}", Arrays.toString(tritonResult.getTokenIds()));
 
-        // Compare tokens
+        // The per-slot DSP_FINGERPRINT lines of both runs are in the output for locating the
+        // first divergent slot; the decodes themselves must agree
         int[] slotTokens = slotResult.getTokenIds();
         int[] tritonTokens = tritonResult.getTokenIds();
         int minLen = Math.min(slotTokens.length, tritonTokens.length);
@@ -740,7 +738,9 @@ public class TestDspValidation {
                     i, slotTokens[i], tritonTokens[i],
                     slotTokens[i] == tritonTokens[i] ? "MATCH" : "DIVERGE");
         }
-        log.info("Fingerprint lines are in test output — grep for DSP_FINGERPRINT");
+        double rate = tokenMatchRate(tritonTokens, slotTokens);
+        assertTrue(rate >= requiredMatchRate(),
+                matchRateMessage("TRITON_NO_GC vs SLOT_BY_SLOT", rate, requiredMatchRate()));
     }
 
     /**
@@ -823,14 +823,6 @@ public class TestDspValidation {
 
     // ─── Test: Per-op slot validation ──────────────────────────────────────
 
-    @Test
-    @DisplayName("Per-op slot validation: interceptor captures during decode")
-    public void testPerOpSlotValidation() throws Exception {
-        // TODO: Re-enable when slot interceptor infrastructure is re-implemented in C++.
-        // This test relied on CapturingSlotInterceptor and setSlotOutputInterceptor which
-        // have been removed (non-functional with native C++ execution).
-        log.info("Skipping: interceptor classes removed (CapturingSlotInterceptor, setSlotOutputInterceptor)");
-    }
 
     // ─── Test: Decode step validation ──────────────────────────────────────
 
@@ -877,9 +869,8 @@ public class TestDspValidation {
                 .maxTokens(maxTokens);
         GenerationResult forceRecapResult = runDecode(forceRecapCfg, maxTokens);
 
-        // Also run no-capture as a diagnostic (not used for assertions).
-        // REF_TRITON_NO_CAPTURE has a known bug with value-dependent shape ops
-        // causing degenerate output. Log it for tracking but don't gate on it.
+        // No-capture: the same Triton kernels launched directly, without CUDA graphs and without
+        // the consolidated argument table
         BenchmarkConfig noCaptureConfig = BenchmarkConfig.create("REF_TRITON_NO_CAPTURE")
                 .tritonIncludeTypes(optimalCfg.getTritonIncludeTypes())
                 .tritonSectionFusion(optimalCfg.isTritonSectionFusion())
@@ -894,18 +885,12 @@ public class TestDspValidation {
                 .tritonTf32(optimalCfg.isTritonTf32())
                 .dspBatchedGemm(optimalCfg.isDspBatchedGemm())
                 .maxTokens(maxTokens);
-        GenerationResult noCaptureResult = null;
-        try {
-            noCaptureResult = runDecode(noCaptureConfig, maxTokens);
-        } catch (Exception e) {
-            log.warn("KNOWN BUG: REF_TRITON_NO_CAPTURE crashed (value-dependent shape op bug): {}",
-                    e.getMessage() != null ? e.getMessage().substring(0, Math.min(200, e.getMessage().length())) : "null");
-        }
+        GenerationResult noCaptureResult = runDecode(noCaptureConfig, maxTokens);
 
         // Compare generated token IDs
         int[] refTokens = refResult.getTokenIds();
         int[] forceRecapTokens = forceRecapResult.getTokenIds();
-        int[] noCaptureTokens = noCaptureResult != null ? noCaptureResult.getTokenIds() : new int[0];
+        int[] noCaptureTokens = noCaptureResult.getTokenIds();
 
         // --- Force-recapture vs OPTIMAL ---
         int forceRecapMinLen = Math.min(refTokens.length, forceRecapTokens.length);
@@ -918,9 +903,10 @@ public class TestDspValidation {
                 forceRecapFirstDiv = i;
             }
         }
-        double forceRecapMatchRate = forceRecapMinLen > 0 ? (double) forceRecapMatches / forceRecapMinLen : 1.0;
+        double forceRecapMatchRate = tokenMatchRate(forceRecapTokens, refTokens);
         log.info("=== FORCE-RECAPTURE vs OPTIMAL: {}/{} ({}%) ===",
-                forceRecapMatches, forceRecapMinLen, String.format("%.1f", forceRecapMatchRate * 100));
+                forceRecapMatches, Math.max(refTokens.length, forceRecapTokens.length),
+                String.format("%.1f", forceRecapMatchRate * 100));
         log.info("  OPTIMAL text:          {}", refResult.getText());
         log.info("  Force-recapture text:  {}", forceRecapResult.getText());
         if (forceRecapFirstDiv >= 0) {
@@ -928,20 +914,10 @@ public class TestDspValidation {
                     forceRecapFirstDiv, refTokens[forceRecapFirstDiv], forceRecapTokens[forceRecapFirstDiv]);
         }
 
-        // --- No-capture diagnostic (informational only) ---
-        int noCaptureMinLen = Math.min(refTokens.length, noCaptureTokens.length);
-        int noCaptureMatches = 0;
-        for (int i = 0; i < noCaptureMinLen; i++) {
-            if (refTokens[i] == noCaptureTokens[i]) noCaptureMatches++;
-        }
-        double noCaptureMatchRate = noCaptureMinLen > 0 ? (double) noCaptureMatches / noCaptureMinLen : 1.0;
-        log.info("=== NO-CAPTURE vs OPTIMAL (diagnostic): {}/{} ({}%) ===",
-                noCaptureMatches, noCaptureMinLen, String.format("%.1f", noCaptureMatchRate * 100));
-        log.info("  No-capture text: {}", noCaptureResult != null ? noCaptureResult.getText() : "<CRASHED>");
-        if (noCaptureMatchRate < 0.5) {
-            log.warn("KNOWN BUG: REF_TRITON_NO_CAPTURE produces degenerate output — " +
-                    "no-capture Triton path has value-dependent shape op handling issues");
-        }
+        // --- No-capture vs OPTIMAL ---
+        double noCaptureMatchRate = tokenMatchRate(noCaptureTokens, refTokens);
+        log.info("=== NO-CAPTURE vs OPTIMAL: {}% ===", String.format("%.1f", noCaptureMatchRate * 100));
+        log.info("  No-capture text: {}", noCaptureResult.getText());
 
         if (verbose) {
             for (int i = 0; i < forceRecapMinLen; i++) {
@@ -953,32 +929,30 @@ public class TestDspValidation {
             }
         }
 
-        // Assert: force-recapture must match OPTIMAL at the configured rate.
-        // This validates capture+replay correctness against the known-good path.
-        double requiredRate = configuredMatchRate / 100.0;
-        assertTrue(forceRecapMatchRate >= requiredRate,
-                "Token match rate too low: FORCE_RECAPTURE vs OPTIMAL="
-                        + String.format("%.1f%% (required %.1f%%)",
-                        forceRecapMatchRate * 100, requiredRate * 100));
+        // Both must match OPTIMAL at the configured rate: recapturing every step checks capture
+        // and replay, launching without graphs checks the kernels and their arguments alone.
+        double requiredRate = requiredMatchRate();
+        assertAll(
+                () -> assertTrue(forceRecapMatchRate >= requiredRate,
+                        matchRateMessage("FORCE_RECAPTURE vs OPTIMAL", forceRecapMatchRate, requiredRate)),
+                () -> assertTrue(noCaptureMatchRate >= requiredRate,
+                        matchRateMessage("REF_TRITON_NO_CAPTURE vs OPTIMAL", noCaptureMatchRate, requiredRate)));
     }
 
     // ─── Test: executeSteadyState fast path isolation ─────────────────────
 
     /**
-     * Isolate whether the executeSteadyState fast path causes step-4 divergence.
+     * The executeSteadyState fast path and graph replay against the paths they shortcut.
      *
-     * Theory: executeCount_ is NOT reset by unseal()/markExternalInputVariable, so
-     * after re-capture + seal(), the fast path (platformTryFrozenFastPath) activates
-     * immediately instead of going through the normal warmup->capture->replay lifecycle.
-     *
-     * Configs tested:
+     * Configs:
      *   1. SLOT_BY_SLOT: baseline (no graph capture, no fast path)
      *   2. OPTIMAL: full fast path (executeSteadyState -> platformTryFrozenFastPath)
-     *   3. OPTIMAL + tritonVerifyKernels=true: forces execute() path (bypass fast path)
+     *   3. OPTIMAL + tritonVerifyKernels=true: forces the execute() path (no fast path)
      *   4. OPTIMAL + tritonForceRecapture=true: re-captures every step (no replay reuse)
      *
-     * If (3) matches (1) but (2) doesn't -> executeSteadyState fast path is the bug.
-     * If (4) matches (1) but (2) doesn't -> CUDA graph replay (not capture) is the bug.
+     * Each must reproduce the baseline as closely as TF32 allows, OPTIMAL must agree with (3)
+     * and (4), and no slot of the replayed plan may hold NaN. A divergence between (2) and (3)
+     * points at the fast path; one between (2) and (4) at graph replay.
      */
     @Test
     @DisplayName("Isolate executeSteadyState fast path vs execute() path divergence")
@@ -1006,20 +980,20 @@ public class TestDspValidation {
         BenchmarkConfig optimalCfg = BenchmarkConfig.optimal().maxTokens(maxTokens);
         GenerationResult optimalResult = runDecode(optimalCfg, maxTokens, decoded -> {
             DspHandle h = decoder.dsp();
-            if (h.isCompiled()) {
-                int nanSlot = h.firstNaNSlot();
-                log.info("[ISO_OPTIMAL] DspHandle: totalSlots={} firstNaNSlot={}",
-                        h.totalSlots(), nanSlot);
-                if (nanSlot >= 0) {
-                    Map<Integer, String> snapshot = h.snapshotAllSlots();
-                    int count = 0;
-                    for (Map.Entry<Integer, String> e : snapshot.entrySet()) {
-                        if (e.getValue().contains("NaN") && count++ < 5) {
-                            log.info("  NaN: {}", e.getValue());
-                        }
+            assertTrue(h.isCompiled(), "an OPTIMAL decode must leave a compiled decoder plan to inspect");
+            int nanSlot = h.firstNaNSlot();
+            log.info("[ISO_OPTIMAL] DspHandle: totalSlots={} firstNaNSlot={}",
+                    h.totalSlots(), nanSlot);
+            if (nanSlot >= 0) {
+                Map<Integer, String> snapshot = h.snapshotAllSlots();
+                int count = 0;
+                for (Map.Entry<Integer, String> e : snapshot.entrySet()) {
+                    if (e.getValue().contains("NaN") && count++ < 5) {
+                        log.info("  NaN: {}", e.getValue());
                     }
                 }
             }
+            assertEquals(-1, nanSlot, "a slot of the replayed decode plan holds NaN");
         });
         int[] optimalTokens = optimalResult.getTokenIds();
         log.info("[ISO_OPTIMAL] tokens={} text='{}'",
@@ -1077,56 +1051,39 @@ public class TestDspValidation {
 
         // ─── Analysis ───
         log.info("=== FAST PATH ISOLATION ANALYSIS ===");
-        int optVsBase = logTokenComparison("OPTIMAL vs BASELINE",
+        double optVsBase = logTokenComparison("OPTIMAL vs BASELINE",
                 optimalTokens, baselineTokens);
-        int noFastVsBase = logTokenComparison("NO_FAST_PATH vs BASELINE",
+        double noFastVsBase = logTokenComparison("NO_FAST_PATH vs BASELINE",
                 noFastTokens, baselineTokens);
-        int recapVsBase = logTokenComparison("FORCE_RECAPTURE vs BASELINE",
+        double recapVsBase = logTokenComparison("FORCE_RECAPTURE vs BASELINE",
                 recapTokens, baselineTokens);
-        int optVsNoFast = logTokenComparison("OPTIMAL vs NO_FAST_PATH",
+        double optVsNoFast = logTokenComparison("OPTIMAL vs NO_FAST_PATH",
                 optimalTokens, noFastTokens);
+        double optVsRecap = logTokenComparison("OPTIMAL vs FORCE_RECAPTURE",
+                optimalTokens, recapTokens);
 
-        // ─── Diagnosis ───
-        log.info("=== DIAGNOSIS ===");
-        if (optVsBase >= 0 && noFastVsBase < 0) {
-            log.info("CONFIRMED: executeSteadyState fast path is the bug.");
-            log.info("  OPTIMAL diverges at step {} but NO_FAST_PATH matches baseline.", optVsBase);
-            log.info("  The fast path (platformTryFrozenFastPath) produces wrong results.");
-            log.info("  executeCount_ not being reset by unseal() is the likely root cause.");
-        } else if (optVsBase >= 0 && noFastVsBase >= 0) {
-            log.info("NOT fast path: both paths diverge from baseline.");
-            log.info("  OPTIMAL diverges at step {}, NO_FAST_PATH at step {}.", optVsBase, noFastVsBase);
-            if (noFastVsBase == optVsBase) {
-                log.info("  Same step — bug is in the shared execute()/replay logic.");
-            } else {
-                log.info("  Different steps — multiple bugs or interaction effect.");
-            }
-        } else if (optVsBase < 0) {
-            log.info("No divergence: OPTIMAL matches baseline. Bug may be intermittent.");
-        }
-
-        if (optVsBase >= 0) {
-            if (recapVsBase < 0) {
-                log.info("  FORCE_RECAPTURE matches baseline — replay is correct, D2D staging may be stale.");
-            } else if (recapVsBase >= 0 && recapVsBase != optVsBase) {
-                log.info("  FORCE_RECAPTURE diverges at step {} (vs {} for OPTIMAL) — partial capture issue.",
-                        recapVsBase, optVsBase);
-            } else {
-                log.info("  FORCE_RECAPTURE diverges at same step {} — capture itself produces wrong graphs.",
-                        recapVsBase);
-            }
-        }
-
-        // Assert that at least one non-baseline config diverges (otherwise test is not exercising the bug)
-        // But don't fail on the divergence itself — this is a diagnostic test.
-        // The key output is the DIAGNOSIS log section above.
-        log.info("=== END FAST PATH ISOLATION ===");
+        // Each path must reproduce the fp32 baseline as closely as its TF32 setting allows, and
+        // the three TF32 paths must agree: OPTIMAL differs from NO_FAST_PATH only in the
+        // executeSteadyState fast path, and from FORCE_RECAPTURE only in replaying captured graphs.
+        double vsBaseline = requiredMatchRateAgainstFp32(optimalCfg);
+        double samePath = requiredMatchRate();
+        assertAll(
+                () -> assertTrue(optVsBase >= vsBaseline,
+                        matchRateMessage("OPTIMAL vs SLOT_BY_SLOT", optVsBase, vsBaseline)),
+                () -> assertTrue(noFastVsBase >= vsBaseline,
+                        matchRateMessage("NO_FAST_PATH vs SLOT_BY_SLOT", noFastVsBase, vsBaseline)),
+                () -> assertTrue(recapVsBase >= vsBaseline,
+                        matchRateMessage("FORCE_RECAPTURE vs SLOT_BY_SLOT", recapVsBase, vsBaseline)),
+                () -> assertTrue(optVsNoFast >= samePath, matchRateMessage(
+                        "OPTIMAL vs NO_FAST_PATH (the executeSteadyState fast path)", optVsNoFast, samePath)),
+                () -> assertTrue(optVsRecap >= samePath, matchRateMessage(
+                        "OPTIMAL vs FORCE_RECAPTURE (graph replay)", optVsRecap, samePath)));
     }
 
     /**
-     * Compare two token sequences, log per-step comparison, return first divergent step (-1 if match).
+     * Compare two token sequences, logging the first divergent step; returns the match rate.
      */
-    private int logTokenComparison(String label, int[] test, int[] ref) {
+    private double logTokenComparison(String label, int[] test, int[] ref) {
         int minLen = Math.min(test.length, ref.length);
         int matches = 0;
         int firstDiv = -1;
@@ -1137,9 +1094,9 @@ public class TestDspValidation {
                 firstDiv = i;
             }
         }
-        double rate = minLen > 0 ? (double) matches / minLen * 100 : 100.0;
+        double rate = tokenMatchRate(test, ref);
         log.info("[{}] match={}/{} ({}%) firstDivStep={}{}",
-                label, matches, minLen, String.format("%.1f", rate),
+                label, matches, Math.max(test.length, ref.length), String.format("%.1f", rate * 100),
                 firstDiv,
                 firstDiv >= 0 ? String.format(" (ref=%d test=%d)", ref[firstDiv], test[firstDiv]) : "");
         if (verbose && firstDiv >= 0) {
@@ -1148,7 +1105,7 @@ public class TestDspValidation {
                 log.info("  [{}] step {}: ref={} test={} [{}]", label, i, ref[i], test[i], m);
             }
         }
-        return firstDiv;
+        return rate;
     }
 
     // ─── Test: Staging buffer D2D introspection during CUDA graph replay ──
@@ -1175,10 +1132,7 @@ public class TestDspValidation {
 
         // Now inspect the plan state via DspHandle
         DspHandle h = decoder.dsp();
-        if (!h.isCompiled()) {
-            log.warn("[STAGING] Plan not compiled — cannot introspect");
-            return;
-        }
+        assertTrue(h.isCompiled(), "an OPTIMAL decode must leave a compiled decoder plan to inspect");
 
         int execCount = h.executeCount();
         int numStaging = h.numStagingBuffers();
@@ -1291,10 +1245,18 @@ public class TestDspValidation {
 
         log.info("=== END STAGING BUFFER REPLAY INTROSPECTION ===");
 
-        if (hasStuckTokens) {
-            log.error("[STAGING] REPLAY BUG CONFIRMED: tokens stuck at step 4. " +
-                      "Staging state and address info above can pinpoint the cause.");
-        }
+        // A replay reads each per-step input from its staging buffer, so the effective address
+        // must be the staging address, every variable input must be on the fast path's copy
+        // list, and a stale input shows up as one token repeating from step 4
+        final int mismatches = addressMismatches;
+        final boolean stuck = hasStuckTokens;
+        assertAll(
+                () -> assertEquals(0, mismatches,
+                        "variable inputs whose effective address is not their staging buffer"),
+                () -> assertTrue(uncachedVariable.isEmpty(),
+                        "variable inputs missing from the fast path's copy list: " + uncachedVariable),
+                () -> assertFalse(stuck, "replayed decode repeats one token from step 4: "
+                        + Arrays.toString(tokens)));
     }
 
     // ─── Test: TF32 impact isolation ──────────────────────────────────────
@@ -1322,14 +1284,13 @@ public class TestDspValidation {
                 maxTokens);
 
         // With TF32
-        GenerationResult tf32Result = runDecode(
-                BenchmarkConfig.create("WITH_TF32")
-                        .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
-                        .tritonSectionFusion(true).tritonCompileAll(true)
-                        .cublasTf32(true)
-                        .dspBatchedGemm(true)
-                        .maxTokens(maxTokens),
-                maxTokens);
+        BenchmarkConfig tf32Config = BenchmarkConfig.create("WITH_TF32")
+                .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                .tritonSectionFusion(true).tritonCompileAll(true)
+                .cublasTf32(true)
+                .dspBatchedGemm(true)
+                .maxTokens(maxTokens);
+        GenerationResult tf32Result = runDecode(tf32Config, maxTokens);
 
         // Compare tokens
         int[] noTf32Tokens = noTf32Result.getTokenIds();
@@ -1339,12 +1300,16 @@ public class TestDspValidation {
         for (int i = 0; i < minLen; i++) {
             if (noTf32Tokens[i] == tf32Tokens[i]) matches++;
         }
-        double matchRate = minLen > 0 ? (double) matches / minLen : 1.0;
+        double matchRate = tokenMatchRate(tf32Tokens, noTf32Tokens);
 
-        log.info("TF32 token match rate: {}/{} ({}%)", matches, minLen,
-                String.format("%.1f", matchRate * 100));
+        log.info("TF32 token match rate: {}/{} ({}%)", matches,
+                Math.max(noTf32Tokens.length, tf32Tokens.length), String.format("%.1f", matchRate * 100));
         log.info("NO_TF32 text: {}", noTf32Result.getText());
         log.info("TF32 text:    {}", tf32Result.getText());
+
+        // TF32 may move the decode only as far as the class's TF32 policy allows
+        double required = requiredMatchRateAgainstFp32(tf32Config);
+        assertTrue(matchRate >= required, matchRateMessage("WITH_TF32 vs NO_TF32", matchRate, required));
     }
 
     @Test
@@ -1602,8 +1567,11 @@ public class TestDspValidation {
         BenchmarkConfigApplier.resetModelState(decoder);
         BenchmarkConfigApplier.resetModelState(embedTokens);
         GenerationResult result;
-        try (GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig(config, maxTokens))) {
-            result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+        // The prefill copy is this method's: closed after the pipeline, which may retain it as a
+        // stable prefill input until close
+        try (INDArray prefill = inputsEmbeds.dup();
+             GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig(config, maxTokens))) {
+            result = pipeline.generate(prefill, promptTokenIds);
             if (inspect != null) {
                 inspect.inspect(result);
             }
@@ -1633,162 +1601,114 @@ public class TestDspValidation {
         void inspect(GenerationResult result) throws Exception;
     }
 
-    // ─── Memory diagnostics ──────────────────────────────────────────────
+    // ─── Pipeline lifecycle retained memory ─────────────────────────────────
+
+    /** Native memory a steady-state pipeline lifecycle may keep: measurement noise. */
+    private static final long LIFECYCLE_RETENTION_PER_CYCLE_BYTES = 32L * 1024 * 1024;
+
+    static Stream<Arguments> lifecycleConfigs() {
+        return Stream.of(
+                Arguments.of("SLOT_BY_SLOT", false),
+                // Non-padded: the attention inputs grow every step, so each step binds new arrays
+                Arguments.of("SLOT_BY_SLOT", true),
+                Arguments.of("OPTIMAL", false));
+    }
 
     /**
-     * Measures per-step GPU memory in the real SmolDocling decode loop.
-     * Runs 20 steps SLOT_BY_SLOT, then checks:
-     *   1. How much memory was consumed (before any manual trim)
-     *   2. How much trim recovers
-     *   3. What's left (true leak vs reclaimable pool hold)
+     * Repeated pipeline lifecycles on the same decoder must not keep native memory. A closed
+     * pipeline frees what it allocated itself instead of leaving it to garbage collection, which
+     * a mostly idle Java heap may not run for a long time (a FLOAT copy of an FP16 embedding
+     * table, 108MB for SmolDocling, used to pile up once per pipeline this way). Process RSS
+     * minus the committed Java heap is measured after each lifecycle without forcing a
+     * collection; from the third lifecycle on (plans compiled, caches and pools warm) it must
+     * stay flat. A final collection reports what the lifecycles still left to it.
      */
-    @Test
-    @DisplayName("Trim impact on per-step GPU memory in real decode loop")
-    public void testTrimImpactOnDecodeMemory() throws Exception {
+    @ParameterizedTest(name = "lifecycles[{0}, nonPadded={1}]")
+    @MethodSource("lifecycleConfigs")
+    public void testPipelineLifecycleRetainedMemory(String configName, boolean nonPadded) throws Exception {
         ensureModelsLoaded();
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        int device = Nd4j.getAffinityManager().getDeviceForCurrentThread().intValue();
-        int steps = 20;
-
-        log.info("=== TRIM IMPACT TEST: {} steps on device {} ===", steps, device);
-        log.info("TRIM_INTERVAL=50 (static final in InferenceSession, cannot change at runtime)");
-
-        BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.resetModelState(embedTokens);
-        BenchmarkConfig slotConfig = BenchmarkConfig.create("MEMORY_TEST")
-                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
-                .maxTokens(steps);
-
-        // The pipeline applies the config and compiles the models it runs; the baseline
-        // below is taken after that, so it measures the decode alone
-        try (GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig(slotConfig, steps))) {
-            // Trim + commit to establish clean baseline
-            Nd4j.getExecutioner().commit();
-            nativeOps.trimMemoryPool(device);
-            long baselineFree = nativeOps.getDeviceFreeMemory(device);
-            long totalMem = nativeOps.getDeviceTotalMemory(device);
-            log.info("[BASELINE] device={} total={}MB free={}MB used={}MB",
-                    device, totalMem / (1024*1024), baselineFree / (1024*1024),
-                    (totalMem - baselineFree) / (1024*1024));
-
-            GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-            log.info("[DECODE] generated {} tokens: {}", result.getTokenIds().length,
-                    result.getText().substring(0, Math.min(80, result.getText().length())));
-
-            // Measurement 1: memory consumed after decode (no manual trim)
-            long afterDecodeFree = nativeOps.getDeviceFreeMemory(device);
-            long consumedBeforeTrim = baselineFree - afterDecodeFree;
-            log.info("[AFTER-DECODE] free={}MB consumed={}MB ({}MB/step before trim)",
-                    afterDecodeFree / (1024*1024), consumedBeforeTrim / (1024*1024),
-                    consumedBeforeTrim / (1024*1024) / steps);
-
-            // Measurement 2: commit all pending async ops
-            Nd4j.getExecutioner().commit();
-            long afterCommitFree = nativeOps.getDeviceFreeMemory(device);
-            long commitRecovered = afterCommitFree - afterDecodeFree;
-            log.info("[AFTER-COMMIT] free={}MB recovered={}MB",
-                    afterCommitFree / (1024*1024), commitRecovered / (1024*1024));
-
-            // Measurement 3: trim the pool
-            nativeOps.trimMemoryPool(device);
-            long afterTrimFree = nativeOps.getDeviceFreeMemory(device);
-            long trimRecovered = afterTrimFree - afterCommitFree;
-            long totalRecovered = afterTrimFree - afterDecodeFree;
-            long trueLeak = baselineFree - afterTrimFree;
-            log.info("[AFTER-TRIM] free={}MB trimRecovered={}MB totalRecovered={}MB",
-                    afterTrimFree / (1024*1024), trimRecovered / (1024*1024),
-                    totalRecovered / (1024*1024));
-            log.info("[SUMMARY] {} steps: consumed={}MB, reclaimable={}MB, trueLeak={}MB ({}MB/step)",
-                    steps, consumedBeforeTrim / (1024*1024), totalRecovered / (1024*1024),
-                    trueLeak / (1024*1024), trueLeak / (1024*1024) / steps);
-
-            // Trim again to verify nothing more comes back
-            nativeOps.trimMemoryPool(device);
-            long afterTrim2Free = nativeOps.getDeviceFreeMemory(device);
-            log.info("[DOUBLE-TRIM] free={}MB delta={}MB",
-                    afterTrim2Free / (1024*1024), (afterTrim2Free - afterTrimFree) / (1024*1024));
+        int cycles = Math.max(4, Integer.getInteger("vlm.validation.lifecycles", 6));
+        int tokens = 3;
+        BenchmarkConfig config = "OPTIMAL".equals(configName)
+                ? BenchmarkConfig.optimal().maxTokens(tokens)
+                : BenchmarkConfig.create("LIFECYCLE_" + configName)
+                        .executionMode(GraphExecutionMode.SLOT_BY_SLOT).maxTokens(tokens);
+        String noPadded = System.getProperty("nd4j.dsp.noPadded");
+        Runtime runtime = Runtime.getRuntime();
+        long[] nativeRss = new long[cycles];
+        try {
+            if (nonPadded) {
+                System.setProperty("nd4j.dsp.noPadded", "true");
+            } else {
+                System.clearProperty("nd4j.dsp.noPadded");
+            }
+            for (int cycle = 0; cycle < cycles; cycle++) {
+                runDecode(config, tokens);
+                Nd4j.getExecutioner().commit();
+                long rss = Pointer.physicalBytes();
+                nativeRss[cycle] = rss - runtime.totalMemory();
+                log.info("[LIFECYCLE] config={} nonPadded={} cycle={} rss={}MB heapCommitted={}MB native={}MB",
+                        configName, nonPadded, cycle, mb(rss), mb(runtime.totalMemory()), mb(nativeRss[cycle]));
+            }
+        } finally {
+            if (noPadded != null) {
+                System.setProperty("nd4j.dsp.noPadded", noPadded);
+            } else {
+                System.clearProperty("nd4j.dsp.noPadded");
+            }
         }
+
+        // What the lifecycles left to garbage collection, by deallocator and bytes still held
+        Map<Long, DeallocatableReference> references = Nd4j.getDeallocatorService().getReferenceMap();
+        Map<Long, String> live = new HashMap<>();
+        for (Map.Entry<Long, DeallocatableReference> entry : references.entrySet()) {
+            Deallocator deallocator = entry.getValue().getDeallocator();
+            live.put(entry.getKey(), (deallocator == null ? "none" : deallocator.getClass().getSimpleName())
+                    + ":" + entry.getValue().getBytes());
+        }
+        for (int i = 0; i < 3; i++) {
+            System.gc();
+        }
+        Nd4j.getDeallocatorService().forceFlushAll();
+        Map<String, Integer> reclaimed = new TreeMap<>();
+        for (Map.Entry<Long, String> entry : live.entrySet()) {
+            if (!references.containsKey(entry.getKey())) reclaimed.merge(entry.getValue(), 1, Integer::sum);
+        }
+        log.info("[LIFECYCLE] config={} nonPadded={} left to collection over {} lifecycles "
+                + "(deallocator:bytes=count): {}", configName, nonPadded, cycles, reclaimed);
+
+        long perCycle = (nativeRss[cycles - 1] - nativeRss[2]) / (cycles - 3);
+        assertTrue(perCycle <= LIFECYCLE_RETENTION_PER_CYCLE_BYTES,
+                configName + (nonPadded ? " non-padded" : "") + ": each pipeline lifecycle kept "
+                        + mb(perCycle) + "MB of native memory after close");
     }
 
     // ─── Per-phase memory tracking: output() vs outputDirect() ─────────────
 
+    /** Device memory the steady-state steps of a decode may keep in total: measurement noise. */
+    private static final long STEADY_RETENTION_TOLERANCE_BYTES = 64L * 1024 * 1024;
+
     /**
-     * Per-phase GPU memory tracking to pinpoint exactly where memory is consumed
-     * during each decode step. Runs 5 decode steps with BOTH output() and
-     * outputDirect() to compare per-step memory consumption.
-     *
-     * For each step, measures GPU free memory at 4 phases:
-     *   1. BEFORE calling decoder.output/outputDirect
-     *   2. AFTER the output call returns (delta_output = consumption)
-     *   3. AFTER closing all returned outputs (recovered_close = freed memory)
-     *   4. AFTER Nd4j.getExecutioner().commit() + trimMemoryPool (recovered_trim)
-     *
-     * Reports delta at each phase to identify the exact culprit of 241 MB/step leak.
+     * Per-phase device memory of decode steps through output() and outputDirect(), over the
+     * decoder's fixed in-graph caches. For each step it measures device free memory before the
+     * call, after it returns (consumed), after its outputs close (released) and after a commit
+     * and pool trim (released). The first steps compile, capture and seal the plan; from
+     * {@code steadyFrom} on the plan replays, and those steps together must keep nothing beyond
+     * measurement noise.
      */
     @Test
     @DisplayName("Per-phase memory tracking: output() vs outputDirect() decode")
     public void testPerPhaseMemoryTracking() throws Exception {
         ensureModelsLoaded();
-        var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         int device = Nd4j.getAffinityManager().getDeviceForCurrentThread().intValue();
-
-        // Model config for SmolDocling: 30 layers, headDim=64, FLOAT16 KV
-        // GQA: KV heads != query heads — detect dynamically
-        final int numLayers = 30;
-        final int headDim = 64;
-        final long hiddenSizeVal = 576;
-        final DataType kvType = DataType.HALF;
-        final int seqLen = 10; // initial prompt length
-
-        // Detect actual KV head count from model graph (GQA: KV heads != query heads)
-        final int numHeads;
-        {
-            String firstKvInput = "past_key_values.0.key";
-            INDArray probe = ModelIOConfig.createEmptyKvCache(decoder, firstKvInput, 1, hiddenSizeVal);
-            numHeads = (int) probe.size(1);
-            probe.close();
-        }
-
-        // Discover decoder I/O
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-        List<String> decoderInputNames = decoder.inputs();
-        String logitsOutputName = ModelIOConfig.findLogitsOutputName(decoder);
-        ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheOutputNames(decoder);
-        List<String> presentKeyNames = kvNames.keyNames;
-        List<String> presentValueNames = kvNames.valueNames;
-
-        // Collect ALL output names (logits + present KV)
-        List<String> allOutputNames = new ArrayList<>();
-        allOutputNames.add(logitsOutputName);
-        allOutputNames.addAll(presentKeyNames);
-        allOutputNames.addAll(presentValueNames);
-        String[] fullOutputArray = allOutputNames.toArray(new String[0]);
+        final int steps = 8;
+        final int steadyFrom = 4;
 
         log.info("=== PER-PHASE MEMORY TRACKING ===");
-        log.info("Device={}, logitsOutput={}, presentKeys={}, presentValues={}",
-                device, logitsOutputName, presentKeyNames.size(), presentValueNames.size());
+        long[][] outputPhases = runPerPhaseDecodeSteps(nativeOps, device, steps, false);
+        long[][] directPhases = runPerPhaseDecodeSteps(nativeOps, device, steps, true);
 
-        // Run with output() first
-        long[][] outputPhases = runPerPhaseDecodeSteps(nativeOps, device, decoder,
-                decoderInputNames, fullOutputArray, logitsOutputName,
-                presentKeyNames, presentValueNames, ioConfig,
-                numLayers, numHeads, headDim, kvType, seqLen,
-                false /* use output() */);
-
-        // Reset decoder state
-        BenchmarkConfigApplier.resetModelState(decoder);
-        Nd4j.getExecutioner().commit();
-        nativeOps.trimMemoryPool(device);
-
-        // Run with outputDirect()
-        long[][] directPhases = runPerPhaseDecodeSteps(nativeOps, device, decoder,
-                decoderInputNames, fullOutputArray, logitsOutputName,
-                presentKeyNames, presentValueNames, ioConfig,
-                numLayers, numHeads, headDim, kvType, seqLen,
-                true /* use outputDirect() */);
-
-        // Print summary comparison table
-        int steps = 5;
         log.info("");
         log.info("══════════════════════════════════════════════════════════════════════════════════");
         log.info("  SUMMARY: output() vs outputDirect() per-step memory (MB)");
@@ -1797,245 +1717,117 @@ public class TestDspValidation {
                 "Step",
                 "out_delta", "out_recvCls", "out_recvTrm",
                 "dir_delta", "dir_recvCls", "dir_recvTrm"));
-        log.info(String.format("%-8s %12s %12s %12s | %12s %12s %12s",
-                "────────", "────────────", "────────────", "────────────",
-                "────────────", "────────────", "────────────"));
-
-        long oTotalDelta = 0, oTotalRecvClose = 0, oTotalRecvTrim = 0;
-        long dTotalDelta = 0, dTotalRecvClose = 0, dTotalRecvTrim = 0;
-
         for (int i = 0; i < steps; i++) {
-            // outputPhases[i]: [deltaOutput, recoveredClose, recoveredTrim]
-            long oD = outputPhases[i][0], oC = outputPhases[i][1], oT = outputPhases[i][2];
-            long dD = directPhases[i][0], dC = directPhases[i][1], dT = directPhases[i][2];
-            oTotalDelta += oD; oTotalRecvClose += oC; oTotalRecvTrim += oT;
-            dTotalDelta += dD; dTotalRecvClose += dC; dTotalRecvTrim += dT;
-
             log.info(String.format("step%-4d %12d %12d %12d | %12d %12d %12d",
-                    i + 1, mb(oD), mb(oC), mb(oT), mb(dD), mb(dC), mb(dT)));
+                    i + 1,
+                    mb(outputPhases[i][0]), mb(outputPhases[i][1]), mb(outputPhases[i][2]),
+                    mb(directPhases[i][0]), mb(directPhases[i][1]), mb(directPhases[i][2])));
         }
-
-        log.info(String.format("%-8s %12s %12s %12s | %12s %12s %12s",
-                "────────", "────────────", "────────────", "────────────",
-                "────────────", "────────────", "────────────"));
-        log.info(String.format("%-8s %12d %12d %12d | %12d %12d %12d",
-                "TOTAL",
-                mb(oTotalDelta), mb(oTotalRecvClose), mb(oTotalRecvTrim),
-                mb(dTotalDelta), mb(dTotalRecvClose), mb(dTotalRecvTrim)));
-
-        long oNetLeak = oTotalDelta - oTotalRecvClose - oTotalRecvTrim;
-        long dNetLeak = dTotalDelta - dTotalRecvClose - dTotalRecvTrim;
-        log.info("Net leak (delta - recovered): output()={}MB  outputDirect()={}MB",
-                mb(oNetLeak), mb(dNetLeak));
+        long outputRetained = retainedFrom(outputPhases, steadyFrom);
+        long directRetained = retainedFrom(directPhases, steadyFrom);
+        log.info("Retained over steps {}-{} (delta - recovered): output()={}MB outputDirect()={}MB",
+                steadyFrom + 1, steps, mb(outputRetained), mb(directRetained));
         log.info("══════════════════════════════════════════════════════════════════════════════════");
+
+        assertAll(
+                () -> assertTrue(outputRetained <= STEADY_RETENTION_TOLERANCE_BYTES,
+                        "output() decode steps " + (steadyFrom + 1) + "-" + steps + " kept "
+                                + mb(outputRetained) + "MB"),
+                () -> assertTrue(directRetained <= STEADY_RETENTION_TOLERANCE_BYTES,
+                        "outputDirect() decode steps " + (steadyFrom + 1) + "-" + steps + " kept "
+                                + mb(directRetained) + "MB"));
+    }
+
+    /** Net bytes the steps from index {@code from} on kept: consumed minus released by close and trim. */
+    private static long retainedFrom(long[][] phases, int from) {
+        long retained = 0;
+        for (int i = from; i < phases.length; i++) {
+            retained += phases[i][0] - phases[i][1] - phases[i][2];
+        }
+        return retained;
     }
 
     /**
-     * Run 5 decode steps, measuring GPU memory at 4 phases per step.
-     * Returns long[5][3] where each row is [deltaOutput, recoveredClose, recoveredTrim]:
-     *   deltaOutput   = beforeFree - afterOutputFree  (positive = consumed)
+     * Run {@code steps} OPTIMAL decode steps over fixed in-graph caches, measuring device free
+     * memory at 4 phases per step. Returns long[steps][3] where each row is
+     * [deltaOutput, recoveredClose, recoveredTrim]:
+     *   deltaOutput    = beforeFree - afterOutputFree  (positive = consumed)
      *   recoveredClose = afterCloseFree - afterOutputFree  (positive = freed)
      *   recoveredTrim  = afterTrimFree - afterCloseFree  (positive = freed)
      */
-    private long[][] runPerPhaseDecodeSteps(
-            NativeOps nativeOps,
-            int device,
-            SameDiff decoder,
-            List<String> decoderInputNames,
-            String[] fullOutputArray,
-            String logitsOutputName,
-            List<String> presentKeyNames,
-            List<String> presentValueNames,
-            ModelIOConfig ioConfig,
-            int numLayers,
-            int numHeads,
-            int headDim,
-            DataType kvType,
-            int seqLen,
-            boolean useDirect) throws Exception {
-
-        int steps = 5;
-        long[][] phases = new long[steps][3];
-
-        // Apply optimal config for consistent execution
+    private long[][] runPerPhaseDecodeSteps(NativeOps nativeOps, int device, int steps,
+                                            boolean useDirect) throws Exception {
         BenchmarkConfig config = BenchmarkConfig.optimal().maxTokens(steps);
         BenchmarkConfigApplier.resetModelState(decoder);
         BenchmarkConfigApplier.apply(config);
         decoder.setDspAutoCompileEnabled(true);
         decoder.setDspNativeAutoCompileEnabled(true);
-        List<String> outputs = new ArrayList<>(decoder.outputs());
-        BenchmarkConfigApplier.compileModel(decoder, "decoder", outputs, config);
+        // The in-graph caches are written in place, so logits is the only output
+        String[] outputNames = {ModelIOConfig.findLogitsOutputName(decoder)};
+        BenchmarkConfigApplier.compileModel(decoder, "decoder", Arrays.asList(outputNames), config);
 
-        // Build initial KV cache: empty [1, numHeads, 0, headDim]
-        Map<String, INDArray> kvCaches = new LinkedHashMap<>();
-        for (int i = 0; i < numLayers; i++) {
-            kvCaches.put("past_key_values." + i + ".key", Nd4j.zeros(kvType, 1, numHeads, 0, headDim));
-            kvCaches.put("past_key_values." + i + ".value", Nd4j.zeros(kvType, 1, numHeads, 0, headDim));
-        }
-
-        // Establish a clean baseline
-        Nd4j.getExecutioner().commit();
-        nativeOps.trimMemoryPool(device);
-
-        int currentSeqLen = seqLen;
+        final long maxKvLen = 32;
+        INDArray stepEmbeds = Nd4j.zeros(DataType.FLOAT, 1, 1, hiddenSize);
+        Map<String, INDArray> caches = inGraphKvBuffers(maxKvLen);
+        Set<INDArray> reused = Collections.newSetFromMap(new IdentityHashMap<>());
+        reused.add(stepEmbeds);
+        reused.addAll(caches.values());
         String modeName = useDirect ? "outputDirect" : "output";
+        long[][] phases = new long[steps][3];
 
         log.info("");
         log.info("--- {} decode steps (mode={}) ---", steps, modeName);
+        Nd4j.getExecutioner().commit();
+        nativeOps.trimMemoryPool(device);
+        try {
+            for (int step = 0; step < steps; step++) {
+                // ── Phase 1: device free memory BEFORE the step ──
+                long beforeFree = nativeOps.getDeviceFreeMemoryDefault();
 
-        for (int step = 0; step < steps; step++) {
-            // ── Phase 1: Record GPU free memory BEFORE the step ──
-            long beforeFree = nativeOps.getDeviceFreeMemoryDefault();
+                // ── Phase 2: the step, one token at cache position step + 1 ──
+                Map<String, INDArray> inputs = buildInGraphKvInputs(stepEmbeds, step + 1, caches);
+                Map<String, INDArray> outputs = useDirect
+                        ? decoder.outputDirect(inputs, outputNames)
+                        : decoder.output(inputs, outputNames);
+                long afterOutputFree = nativeOps.getDeviceFreeMemoryDefault();
 
-            // Build decoder inputs for this step
-            Map<String, INDArray> inputMap = new LinkedHashMap<>();
-
-            // input_ids: [1, 1] INT64
-            long nextTokenId = 100L + step;
-            INDArray inputIds = Nd4j.createFromArray(new long[][]{{nextTokenId}});
-            if (decoderInputNames.contains("input_ids")) {
-                inputMap.put("input_ids", inputIds);
-            }
-
-            // attention_mask: [1, currentSeqLen] INT64, all 1s
-            long[] maskData = new long[currentSeqLen];
-            Arrays.fill(maskData, 1L);
-            INDArray attentionMask = Nd4j.createFromArray(maskData).reshape(1, currentSeqLen);
-            for (String inputName : decoderInputNames) {
-                if (inputName.contains("attention_mask")) {
-                    inputMap.put(inputName, attentionMask);
-                    break;
-                }
-            }
-
-            // position_ids: [1, 1] INT64
-            INDArray positionIds = Nd4j.createFromArray(new long[][]{{currentSeqLen - 1}});
-            if (decoderInputNames.contains("position_ids")) {
-                inputMap.put("position_ids", positionIds);
-            }
-
-            // inputs_embeds: [1, 1, hiddenSize] FLOAT16 if needed
-            if (decoderInputNames.contains("inputs_embeds")) {
-                long hiddenSizeVal = 576; // SmolDocling hidden size
-                INDArray embeds = Nd4j.zeros(DataType.HALF, 1, 1, hiddenSizeVal);
-                inputMap.put("inputs_embeds", embeds);
-            }
-
-            // KV cache inputs
-            for (Map.Entry<String, INDArray> entry : kvCaches.entrySet()) {
-                if (decoderInputNames.contains(entry.getKey())) {
-                    inputMap.put(entry.getKey(), entry.getValue());
-                }
-            }
-
-            // ── Phase 2: Call decoder output ──
-            Map<String, INDArray> decoderOutputs;
-            try {
-                if (useDirect) {
-                    decoderOutputs = decoder.outputDirect(inputMap, fullOutputArray);
-                } else {
-                    decoderOutputs = decoder.output(inputMap, fullOutputArray);
-                }
-            } catch (Exception e) {
-                log.warn("Step {} decoder {} failed: {}", step + 1, modeName, e.getMessage());
-                phases[step] = new long[]{-1, -1, -1};
-                for (INDArray arr : inputMap.values()) {
+                // ── Phase 3: close the returned outputs ──
+                for (INDArray arr : outputs.values()) {
                     if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
                 }
-                continue;
-            }
+                long afterCloseFree = nativeOps.getDeviceFreeMemoryDefault();
 
-            long afterOutputFree = nativeOps.getDeviceFreeMemoryDefault();
-            long deltaOutput = beforeFree - afterOutputFree; // positive = consumed
+                // ── Phase 4: commit and trim the pool ──
+                Nd4j.getExecutioner().commit();
+                nativeOps.trimMemoryPool(device);
+                long afterTrimFree = nativeOps.getDeviceFreeMemoryDefault();
 
-            // ── Extract KV caches BEFORE closing outputs ──
-            // Close old KV cache arrays first
-            for (INDArray oldKv : kvCaches.values()) {
-                if (oldKv != null && oldKv.closeable() && !oldKv.wasClosed()) {
-                    oldKv.close();
-                }
-            }
-            kvCaches.clear();
-
-            for (int i = 0; i < numLayers; i++) {
-                String presentKeyName = findLayerOutput(presentKeyNames, i);
-                String presentValueName = findLayerOutput(presentValueNames, i);
-
-                if (presentKeyName != null && decoderOutputs.containsKey(presentKeyName)) {
-                    kvCaches.put("past_key_values." + i + ".key",
-                            decoderOutputs.get(presentKeyName).dup());
-                } else {
-                    kvCaches.put("past_key_values." + i + ".key",
-                            Nd4j.zeros(kvType, 1, numHeads, currentSeqLen + 1, headDim));
+                // The step's own inputs; the embeddings and caches carry over
+                for (INDArray arr : inputs.values()) {
+                    if (arr != null && !reused.contains(arr) && arr.closeable() && !arr.wasClosed()) {
+                        arr.close();
+                    }
                 }
 
-                if (presentValueName != null && decoderOutputs.containsKey(presentValueName)) {
-                    kvCaches.put("past_key_values." + i + ".value",
-                            decoderOutputs.get(presentValueName).dup());
-                } else {
-                    kvCaches.put("past_key_values." + i + ".value",
-                            Nd4j.zeros(kvType, 1, numHeads, currentSeqLen + 1, headDim));
-                }
+                phases[step] = new long[]{beforeFree - afterOutputFree,
+                        afterCloseFree - afterOutputFree, afterTrimFree - afterCloseFree};
+                log.info("step={} before={}MB after_output={}MB delta_output={}MB "
+                                + "after_close={}MB recovered_close={}MB after_trim={}MB recovered_trim={}MB [{}]",
+                        step + 1,
+                        mb(beforeFree), mb(afterOutputFree), mb(phases[step][0]),
+                        mb(afterCloseFree), mb(phases[step][1]),
+                        mb(afterTrimFree), mb(phases[step][2]),
+                        modeName.toUpperCase());
             }
-
-            // ── Phase 3: Close all returned outputs (logits + present KV) ──
-            for (Map.Entry<String, INDArray> entry : decoderOutputs.entrySet()) {
-                INDArray arr = entry.getValue();
-                if (arr != null && arr.closeable() && !arr.wasClosed()) {
-                    arr.close();
-                }
-            }
-
-            long afterCloseFree = nativeOps.getDeviceFreeMemoryDefault();
-            long recoveredClose = afterCloseFree - afterOutputFree; // positive = freed
-
-            // ── Phase 4: Commit and trim pool ──
-            Nd4j.getExecutioner().commit();
-            nativeOps.trimMemoryPool(device);
-
-            long afterTrimFree = nativeOps.getDeviceFreeMemoryDefault();
-            long recoveredTrim = afterTrimFree - afterCloseFree; // positive = freed
-
-            phases[step] = new long[]{deltaOutput, recoveredClose, recoveredTrim};
-
-            // Close input arrays (except KV cache entries which are reused)
-            for (Map.Entry<String, INDArray> entry : inputMap.entrySet()) {
-                if (kvCaches.containsKey(entry.getKey())) continue; // don't close reused KV
-                INDArray arr = entry.getValue();
-                if (arr != null && arr.closeable() && !arr.wasClosed()) {
-                    arr.close();
-                }
-            }
-
-            currentSeqLen++;
-
-            log.info("step={} before={}MB after_output={}MB delta_output={}MB " +
-                            "after_close={}MB recovered_close={}MB after_trim={}MB recovered_trim={}MB [{}]",
-                    step + 1,
-                    mb(beforeFree), mb(afterOutputFree), mb(deltaOutput),
-                    mb(afterCloseFree), mb(recoveredClose),
-                    mb(afterTrimFree), mb(recoveredTrim),
-                    modeName.toUpperCase());
-        }
-
-        // Clean up remaining KV caches
-        for (INDArray arr : kvCaches.values()) {
-            if (arr != null && arr.closeable() && !arr.wasClosed()) {
-                arr.close();
+        } finally {
+            // Retire the plan that holds the caches before closing them
+            BenchmarkConfigApplier.resetModelState(decoder);
+            stepEmbeds.close();
+            for (INDArray cache : caches.values()) {
+                if (cache.closeable() && !cache.wasClosed()) cache.close();
             }
         }
-
         return phases;
-    }
-
-    /** Find the present KV output name matching layer index. */
-    private static String findLayerOutput(List<String> names, int layerIdx) {
-        for (String name : names) {
-            if (name.contains("." + layerIdx + ".") || name.endsWith("." + layerIdx)) {
-                return name;
-            }
-        }
-        return null;
     }
 
     private static long mb(long bytes) {
@@ -2045,20 +1837,21 @@ public class TestDspValidation {
     // ─── Exact decode loop memory isolation ──────────────────────────────────
 
     /**
-     * Isolates which decode-loop operation, if any, grows GPU memory per step.
+     * Whether any decode-loop operation grows memory or plans per step.
      *
-     * Runs 5 variants over the decoder's fixed caches, each changing ONE thing compared to a
-     * stable baseline:
+     * After 3 warmup steps with identical inputs, runs 5 variants over the decoder's fixed
+     * caches, each changing ONE thing:
      *   A. New HashMap each step (same arrays)
      *   B. clearPlaceholders(false) between steps
-     *   C. New position_ids and cache_position arrays each step
+     *   C. New position_ids and cache_position arrays each step, in the input builder's layout
      *   D. New causal_mask and caches each step (same shapes)
      *   E. Full DecoderInputBuilder.buildDecoderInputMap path each step
      *
-     * The baseline (3 warmup steps with identical inputs) should show 0 MB/step growth.
+     * No variant changes an input's layout, so all of them must run on the plan warmup compiled,
+     * and after its first step none may keep device memory beyond measurement noise.
      */
     @Test
-    @DisplayName("Exact decode loop memory isolation: which operation grows memory per step?")
+    @DisplayName("Exact decode loop memory isolation: no operation grows memory or plans per step")
     public void testExactDecodeLoopMemoryIsolation() throws Exception {
         ensureModelsLoaded();
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -2070,13 +1863,13 @@ public class TestDspValidation {
         BenchmarkConfigApplier.resetModelState(decoder);
         decoder.setDspAutoCompileEnabled(true);
         decoder.setDspNativeAutoCompileEnabled(true);
-        List<String> outputs = new ArrayList<>(decoder.outputs());
-        decoder.compileNativeDynamicShapePlan(outputs, GraphExecutionMode.SLOT_BY_SLOT, true);
         // The in-graph caches are written in place, so logits is the only output
         String[] fullOutputArray = {ModelIOConfig.findLogitsOutputName(decoder)};
+        decoder.compileNativeDynamicShapePlan(Arrays.asList(fullOutputArray), GraphExecutionMode.SLOT_BY_SLOT, true);
         ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
         String causalName = ioConfig.getCausalMaskName();
         DataType maskType = decoder.getVariable(causalName).dataType();
+        DataType cachePositionType = decoder.getVariable(ioConfig.getCachePositionName()).dataType();
 
         // ── Build FIXED inputs (reused across warmup and variants A/B) ──
         INDArray stepEmbeds = Nd4j.zeros(DataType.FLOAT, 1, 1, hiddenSize);
@@ -2090,284 +1883,114 @@ public class TestDspValidation {
         log.info("Device={}, maxKvLen={}, inputs={}, outputs={}",
                 device, maxKvLen, fixedInputMap.size(), fullOutputArray.length);
 
-        // ── Warmup: 3 steps with FIXED identical inputs (expect ~0 MB/step) ──
-        log.info("--- WARMUP: 3 steps with identical inputs ---");
-        Nd4j.getExecutioner().commit();
-        nativeOps.trimMemoryPool(device);
-
-        for (int step = 0; step < 3; step++) {
-            long before = nativeOps.getDeviceFreeMemoryDefault();
-            Map<String, INDArray> out = decoder.output(fixedInputMap, fullOutputArray);
-            for (INDArray arr : out.values()) {
-                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-            }
-            Nd4j.getExecutioner().commit();
-            nativeOps.trimMemoryPool(device);
-            long after = nativeOps.getDeviceFreeMemoryDefault();
-            log.info("[WARMUP] step={} gpuFree={}MB delta={}MB", step, mb(after), mb(before - after));
-        }
-
-        // ── VARIANT A: New HashMap each step, same arrays ──
-        runVariant("A_NEW_HASHMAP", nativeOps, device, 5, step -> {
-            Map<String, INDArray> newMap = new HashMap<>(fixedInputMap);
-            Map<String, INDArray> out = decoder.output(newMap, fullOutputArray);
-            for (INDArray arr : out.values()) {
-                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-            }
-        });
-
-        // ── VARIANT B: clearPlaceholders(false) between steps ──
-        runVariant("B_CLEAR_PLACEHOLDERS", nativeOps, device, 5, step -> {
-            decoder.clearPlaceholders(false);
-            Map<String, INDArray> out = decoder.output(fixedInputMap, fullOutputArray);
-            for (INDArray arr : out.values()) {
-                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-            }
-        });
-
-        // ── VARIANT C: new position_ids and cache_position arrays each step ──
-        runVariant("C_NEW_POSITION_ARRAYS", nativeOps, device, 5, step -> {
-            INDArray positions = Nd4j.createFromArray(new long[][]{{cachePos}});
-            INDArray cachePosition = Nd4j.createFromArray(cachePos);
-            Map<String, INDArray> variantMap = new LinkedHashMap<>(fixedInputMap);
-            variantMap.put(ioConfig.getPositionIdsName(), positions);
-            variantMap.put(ioConfig.getCachePositionName(), cachePosition);
-            Map<String, INDArray> out = decoder.output(variantMap, fullOutputArray);
-            for (INDArray arr : out.values()) {
-                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-            }
-            positions.close();
-            cachePosition.close();
-        });
-
-        // ── VARIANT D: new causal_mask and caches each step, same shapes ──
-        runVariant("D_NEW_MASK_AND_CACHES", nativeOps, device, 5, step -> {
-            INDArray mask = decodeCausalMask(cachePos, maxKvLen, maskType);
-            Map<String, INDArray> caches = inGraphKvBuffers(maxKvLen);
-            Map<String, INDArray> variantMap = new LinkedHashMap<>(fixedInputMap);
-            variantMap.put(causalName, mask);
-            variantMap.putAll(caches);
-            Map<String, INDArray> out = decoder.output(variantMap, fullOutputArray);
-            for (INDArray arr : out.values()) {
-                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-            }
-            mask.close();
-            for (INDArray cache : caches.values()) cache.close();
-        });
-
-        // ── VARIANT E: Full DecoderInputBuilder.buildDecoderInputMap each step ──
-        runVariant("E_FULL_BUILD_INPUT_MAP", nativeOps, device, 5, step -> {
-            Map<String, INDArray> builtMap = buildInGraphKvInputs(stepEmbeds, cachePos + step, staticKvBuffers);
-            Map<String, INDArray> out = decoder.output(builtMap, fullOutputArray);
-            for (INDArray arr : out.values()) {
-                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-            }
-            // Close the arrays this step built; the embeddings and caches are reused
-            for (INDArray arr : builtMap.values()) {
-                if (arr != null && !reused.contains(arr) && arr.closeable() && !arr.wasClosed()) {
-                    arr.close();
-                }
-            }
-        });
-
-        // ── Cleanup ──
-        for (INDArray arr : fixedInputMap.values()) {
-            if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-        }
-
-        log.info("=== DONE: Check per-variant deltas above to identify the leak source ===");
-    }
-
-    // ─── Changing inputs memory leak test ─────────────────────────────────
-
-    /**
-     * Tests whether changing placeholder values between decode calls causes a
-     * memory leak (expected ~256MB/step) while fixed inputs (padded static KV
-     * cache mode) do NOT leak.
-     *
-     * Runs TWO full decode sessions:
-     *   1. PADDED mode (default): all external inputs have FIXED shapes, NDArray
-     *      objects are reused across steps — shapes never change.
-     *   2. NON-PADDED mode (nd4j.dsp.noPadded=true): attention mask grows each
-     *      step, forcing new NDArray allocations and shape changes.
-     *
-     * Compares GPU memory consumption between the two modes to determine whether
-     * the leak is caused by changing input shapes/objects.
-     */
-    @Test
-    @DisplayName("Changing inputs memory leak: padded (fixed shapes) vs non-padded (growing shapes)")
-    public void testChangingInputsMemoryLeak() throws Exception {
-        ensureModelsLoaded();
-        var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        int device = Nd4j.getAffinityManager().getDeviceForCurrentThread().intValue();
-        int prefillTokens = 9;
-        int decodeSteps = 10;
-
-        log.info("=== CHANGING INPUTS MEMORY LEAK TEST ===");
-        log.info("prefillTokens={} decodeSteps={} device={}", prefillTokens, decodeSteps, device);
-
-        // ── Phase 1: PADDED mode (default — fixed shapes, no leak expected) ──
-        log.info("[CHANGING_INPUTS] phase=PADDED_SETUP");
-        BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.resetModelState(embedTokens);
-        BenchmarkConfig paddedConfig = BenchmarkConfig.create("PADDED_MEMORY_TEST")
-                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
-                .maxTokens(decodeSteps);
-
-        // Each pipeline applies the config and compiles the models it runs. A pipeline
-        // stays open through its measurement and is closed before the next one starts.
-        long paddedBeforeFree;
-        long paddedDecode1Consumed;
-        try (GenerationPipeline paddedPipeline = GenerationPipeline.create(pipelineConfig(paddedConfig, decodeSteps))) {
-            // Establish clean baseline
-            Nd4j.getExecutioner().commit();
-            nativeOps.trimMemoryPool(device);
-            paddedBeforeFree = nativeOps.getDeviceFreeMemoryDefault();
-            log.info("[CHANGING_INPUTS] phase=PADDED_BASELINE gpuFree={}MB",
-                    mb(paddedBeforeFree));
-
-            // Run first decode (padded mode)
-            GenerationResult paddedResult1 = paddedPipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-            Nd4j.getExecutioner().commit();
-            nativeOps.trimMemoryPool(device);
-            long paddedAfterDecode1Free = nativeOps.getDeviceFreeMemoryDefault();
-            paddedDecode1Consumed = paddedBeforeFree - paddedAfterDecode1Free;
-            log.info("[CHANGING_INPUTS] phase=PADDED_AFTER_DECODE1 gpuFree={}MB delta={}MB tokens={}",
-                    mb(paddedAfterDecode1Free), mb(paddedDecode1Consumed),
-                    paddedResult1.getTokenIds().length);
-            log.info("[CHANGING_INPUTS] phase=PADDED_DECODE1_TEXT text='{}'",
-                    paddedResult1.getText().substring(0, Math.min(80, paddedResult1.getText().length())));
-        }
-
-        // Run SECOND decode with different prompt (same model, padded mode)
-        // Use a different prompt to see if per-decode-call leak exists
-        String altPrompt = "<|im_start|>user\nDescribe this image.\n<|im_end|>\n<|im_start|>assistant\n";
-        int[] altTokenIds = tokenizer.encode(altPrompt).getIds();
-        INDArray altTokenIdArray = Nd4j.createFromArray(new int[][]{altTokenIds}).castTo(DataType.INT64);
-        Map<String, INDArray> altEmbedInputs = new HashMap<>();
-        for (String inputName : embedTokens.inputs()) {
-            altEmbedInputs.put(inputName, altTokenIdArray);
-        }
-        Map<String, INDArray> altEmbedOutputs = embedTokens.output(altEmbedInputs,
-                embedTokens.outputs().toArray(new String[0]));
-        INDArray altTextEmbeddings = altEmbedOutputs.values().iterator().next().dup();
-        altTokenIdArray.close();
-        // Simple text-only prefill (no vision merging needed for memory test)
-        INDArray altPrefillEmbeds = altTextEmbeddings;
-
-        // Reset decoder for second run
-        BenchmarkConfigApplier.resetModelState(decoder);
-
-        long paddedAfterDecode2Free;
-        long paddedDecode2Consumed;
-        try (GenerationPipeline paddedPipeline2 = GenerationPipeline.create(pipelineConfig(paddedConfig, decodeSteps))) {
-            long paddedBeforeDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
-            GenerationResult paddedResult2 = paddedPipeline2.generate(altPrefillEmbeds, altTokenIds);
-            Nd4j.getExecutioner().commit();
-            nativeOps.trimMemoryPool(device);
-            paddedAfterDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
-            paddedDecode2Consumed = paddedBeforeDecode2Free - paddedAfterDecode2Free;
-            log.info("[CHANGING_INPUTS] phase=PADDED_AFTER_DECODE2 gpuFree={}MB delta={}MB tokens={}",
-                    mb(paddedAfterDecode2Free), mb(paddedDecode2Consumed),
-                    paddedResult2.getTokenIds().length);
-            log.info("[CHANGING_INPUTS] phase=PADDED_DECODE2_TEXT text='{}'",
-                    paddedResult2.getText().substring(0, Math.min(80, paddedResult2.getText().length())));
-        }
-
-        long paddedTotalConsumed = paddedBeforeFree - paddedAfterDecode2Free;
-        log.info("[CHANGING_INPUTS] phase=PADDED_SUMMARY totalConsumed={}MB decode1={}MB decode2={}MB",
-                mb(paddedTotalConsumed), mb(paddedDecode1Consumed), mb(paddedDecode2Consumed));
-
-        // ── Phase 2: NON-PADDED mode (attention mask changes shape each step) ──
-        log.info("[CHANGING_INPUTS] phase=NON_PADDED_SETUP");
-        String origNoPadded = System.getProperty("nd4j.dsp.noPadded");
+        Map<String, Long> growth = new LinkedHashMap<>();
+        int plansAfterWarmup;
+        int plansAfterVariants;
         try {
-            System.setProperty("nd4j.dsp.noPadded", "true");
+            // ── Warmup: 3 steps with FIXED identical inputs ──
+            log.info("--- WARMUP: 3 steps with identical inputs ---");
+            Nd4j.getExecutioner().commit();
+            nativeOps.trimMemoryPool(device);
 
-            BenchmarkConfigApplier.resetModelState(decoder);
-            BenchmarkConfigApplier.resetModelState(embedTokens);
-            BenchmarkConfig nonPaddedConfig = BenchmarkConfig.create("NON_PADDED_MEMORY_TEST")
-                    .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
-                    .maxTokens(decodeSteps);
-
-            long nonPaddedBeforeFree;
-            long nonPaddedDecode1Consumed;
-            try (GenerationPipeline nonPaddedPipeline =
-                         GenerationPipeline.create(pipelineConfig(nonPaddedConfig, decodeSteps))) {
+            for (int step = 0; step < 3; step++) {
+                long before = nativeOps.getDeviceFreeMemoryDefault();
+                Map<String, INDArray> out = decoder.output(fixedInputMap, fullOutputArray);
+                for (INDArray arr : out.values()) {
+                    if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+                }
                 Nd4j.getExecutioner().commit();
                 nativeOps.trimMemoryPool(device);
-                nonPaddedBeforeFree = nativeOps.getDeviceFreeMemoryDefault();
-                log.info("[CHANGING_INPUTS] phase=NON_PADDED_BASELINE gpuFree={}MB",
-                        mb(nonPaddedBeforeFree));
-
-                // First decode — non-padded (shapes change each step)
-                GenerationResult nonPaddedResult1 = nonPaddedPipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-                Nd4j.getExecutioner().commit();
-                nativeOps.trimMemoryPool(device);
-                long nonPaddedAfterDecode1Free = nativeOps.getDeviceFreeMemoryDefault();
-                nonPaddedDecode1Consumed = nonPaddedBeforeFree - nonPaddedAfterDecode1Free;
-                log.info("[CHANGING_INPUTS] phase=NON_PADDED_AFTER_DECODE1 gpuFree={}MB delta={}MB tokens={}",
-                        mb(nonPaddedAfterDecode1Free), mb(nonPaddedDecode1Consumed),
-                        nonPaddedResult1.getTokenIds().length);
+                long after = nativeOps.getDeviceFreeMemoryDefault();
+                log.info("[WARMUP] step={} gpuFree={}MB delta={}MB", step, mb(after), mb(before - after));
             }
+            DynamicShapePlanExecutor executor = decoder.getOrCreateSession().getDynamicShapePlanExecutor();
+            assertNotNull(executor, "the warmup decode must run on a DSP plan");
+            plansAfterWarmup = executor.getPinnedPlanCount();
 
-            // Second decode — non-padded with different prompt
-            BenchmarkConfigApplier.resetModelState(decoder);
+            // ── VARIANT A: New HashMap each step, same arrays ──
+            growth.put("A_NEW_HASHMAP", runVariant("A_NEW_HASHMAP", nativeOps, device, 5, step -> {
+                Map<String, INDArray> newMap = new HashMap<>(fixedInputMap);
+                Map<String, INDArray> out = decoder.output(newMap, fullOutputArray);
+                for (INDArray arr : out.values()) {
+                    if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+                }
+            }));
 
-            long nonPaddedAfterDecode2Free;
-            long nonPaddedDecode2Consumed;
-            try (GenerationPipeline nonPaddedPipeline2 =
-                         GenerationPipeline.create(pipelineConfig(nonPaddedConfig, decodeSteps))) {
-                long nonPaddedBeforeDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
-                GenerationResult nonPaddedResult2 = nonPaddedPipeline2.generate(altPrefillEmbeds.dup(), altTokenIds);
-                Nd4j.getExecutioner().commit();
-                nativeOps.trimMemoryPool(device);
-                nonPaddedAfterDecode2Free = nativeOps.getDeviceFreeMemoryDefault();
-                nonPaddedDecode2Consumed = nonPaddedBeforeDecode2Free - nonPaddedAfterDecode2Free;
-                log.info("[CHANGING_INPUTS] phase=NON_PADDED_AFTER_DECODE2 gpuFree={}MB delta={}MB tokens={}",
-                        mb(nonPaddedAfterDecode2Free), mb(nonPaddedDecode2Consumed),
-                        nonPaddedResult2.getTokenIds().length);
-            }
+            // ── VARIANT B: clearPlaceholders(false) between steps ──
+            growth.put("B_CLEAR_PLACEHOLDERS", runVariant("B_CLEAR_PLACEHOLDERS", nativeOps, device, 5, step -> {
+                decoder.clearPlaceholders(false);
+                Map<String, INDArray> out = decoder.output(fixedInputMap, fullOutputArray);
+                for (INDArray arr : out.values()) {
+                    if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+                }
+            }));
 
-            long nonPaddedTotalConsumed = nonPaddedBeforeFree - nonPaddedAfterDecode2Free;
-            log.info("[CHANGING_INPUTS] phase=NON_PADDED_SUMMARY totalConsumed={}MB decode1={}MB decode2={}MB",
-                    mb(nonPaddedTotalConsumed), mb(nonPaddedDecode1Consumed), mb(nonPaddedDecode2Consumed));
+            // ── VARIANT C: new position_ids and cache_position arrays each step ──
+            // The input builder's layout: position_ids [1, 1] LONG, cache_position a scalar of the
+            // variable's dtype. A rank-1 cache_position is a different layout and its own plan.
+            growth.put("C_NEW_POSITION_ARRAYS", runVariant("C_NEW_POSITION_ARRAYS", nativeOps, device, 5, step -> {
+                INDArray positions = Nd4j.createFromArray(new long[][]{{cachePos}});
+                INDArray cachePosition = Nd4j.scalar(cachePositionType, cachePos);
+                Map<String, INDArray> variantMap = new LinkedHashMap<>(fixedInputMap);
+                variantMap.put(ioConfig.getPositionIdsName(), positions);
+                variantMap.put(ioConfig.getCachePositionName(), cachePosition);
+                Map<String, INDArray> out = decoder.output(variantMap, fullOutputArray);
+                for (INDArray arr : out.values()) {
+                    if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+                }
+                positions.close();
+                cachePosition.close();
+            }));
 
-            // ── Final comparison ──
-            log.info("══════════════════════════════════════════════════════════════════════════════════");
-            log.info("  CHANGING INPUTS MEMORY LEAK: PADDED vs NON-PADDED COMPARISON");
-            log.info("══════════════════════════════════════════════════════════════════════════════════");
-            log.info(String.format("  %-25s %12s %12s %12s", "Mode", "Decode1(MB)", "Decode2(MB)", "Total(MB)"));
-            log.info(String.format("  %-25s %12s %12s %12s", "─────────────────────────", "────────────", "────────────", "────────────"));
-            log.info(String.format("  %-25s %12d %12d %12d", "PADDED (fixed shapes)",
-                    mb(paddedDecode1Consumed), mb(paddedDecode2Consumed), mb(paddedTotalConsumed)));
-            log.info(String.format("  %-25s %12d %12d %12d", "NON-PADDED (changing)",
-                    mb(nonPaddedDecode1Consumed), mb(nonPaddedDecode2Consumed), mb(nonPaddedTotalConsumed)));
-            log.info(String.format("  %-25s %12d %12d %12d", "DIFFERENCE",
-                    mb(nonPaddedDecode1Consumed - paddedDecode1Consumed),
-                    mb(nonPaddedDecode2Consumed - paddedDecode2Consumed),
-                    mb(nonPaddedTotalConsumed - paddedTotalConsumed)));
-            log.info("══════════════════════════════════════════════════════════════════════════════════");
+            // ── VARIANT D: new causal_mask and caches each step, same shapes ──
+            growth.put("D_NEW_MASK_AND_CACHES", runVariant("D_NEW_MASK_AND_CACHES", nativeOps, device, 5, step -> {
+                INDArray mask = decodeCausalMask(cachePos, maxKvLen, maskType);
+                Map<String, INDArray> caches = inGraphKvBuffers(maxKvLen);
+                Map<String, INDArray> variantMap = new LinkedHashMap<>(fixedInputMap);
+                variantMap.put(causalName, mask);
+                variantMap.putAll(caches);
+                Map<String, INDArray> out = decoder.output(variantMap, fullOutputArray);
+                for (INDArray arr : out.values()) {
+                    if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+                }
+                mask.close();
+                for (INDArray cache : caches.values()) cache.close();
+            }));
 
-            // Key question: does non-padded mode leak MORE than padded mode?
-            long leakDifference = nonPaddedTotalConsumed - paddedTotalConsumed;
-            log.info("[CHANGING_INPUTS] phase=VERDICT leakDifferenceMB={} " +
-                            "paddedPerStep={}MB nonPaddedPerStep={}MB",
-                    mb(leakDifference),
-                    mb(paddedTotalConsumed) / (decodeSteps * 2),
-                    mb(nonPaddedTotalConsumed) / (decodeSteps * 2));
-
+            // ── VARIANT E: Full DecoderInputBuilder.buildDecoderInputMap each step ──
+            growth.put("E_FULL_BUILD_INPUT_MAP", runVariant("E_FULL_BUILD_INPUT_MAP", nativeOps, device, 5, step -> {
+                Map<String, INDArray> builtMap = buildInGraphKvInputs(stepEmbeds, cachePos + step, staticKvBuffers);
+                Map<String, INDArray> out = decoder.output(builtMap, fullOutputArray);
+                for (INDArray arr : out.values()) {
+                    if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+                }
+                // Close the arrays this step built; the embeddings and caches are reused
+                for (INDArray arr : builtMap.values()) {
+                    if (arr != null && !reused.contains(arr) && arr.closeable() && !arr.wasClosed()) {
+                        arr.close();
+                    }
+                }
+            }));
+            plansAfterVariants = executor.getPinnedPlanCount();
         } finally {
-            // Restore original property
-            if (origNoPadded != null) {
-                System.setProperty("nd4j.dsp.noPadded", origNoPadded);
-            } else {
-                System.clearProperty("nd4j.dsp.noPadded");
+            // Retire the plan that holds the fixed inputs before closing them
+            BenchmarkConfigApplier.resetModelState(decoder);
+            for (INDArray arr : fixedInputMap.values()) {
+                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
             }
         }
 
-        // Cleanup
-        altTextEmbeddings.close();
+        log.info("Plans: after warmup={} after variants={}; growth after each variant's first step (MB): {}",
+                plansAfterWarmup, plansAfterVariants, growth.entrySet().stream()
+                        .map(e -> e.getKey() + "=" + mb(e.getValue())).collect(Collectors.joining(", ")));
+        List<Executable> checks = new ArrayList<>();
+        checks.add(() -> assertEquals(plansAfterWarmup, plansAfterVariants,
+                "no variant changes an input layout, so none may compile another plan"));
+        for (Map.Entry<String, Long> e : growth.entrySet()) {
+            checks.add(() -> assertTrue(e.getValue() <= STEADY_RETENTION_TOLERANCE_BYTES,
+                    e.getKey() + " kept " + mb(e.getValue()) + "MB after its first step"));
+        }
+        assertAll(checks);
     }
 
     @FunctionalInterface
@@ -2375,12 +1998,17 @@ public class TestDspValidation {
         void run(int step) throws Exception;
     }
 
-    private void runVariant(String name, NativeOps nativeOps,
+    /**
+     * Runs {@code steps} steps of a variant, logging device free memory after each. Returns the
+     * bytes the steps after the first kept; the first may allocate what the later ones reuse.
+     */
+    private long runVariant(String name, NativeOps nativeOps,
                             int device, int steps, VariantStep action) throws Exception {
         log.info("--- VARIANT {} ({} steps) ---", name, steps);
         Nd4j.getExecutioner().commit();
         nativeOps.trimMemoryPool(device);
         long baselineFree = nativeOps.getDeviceFreeMemoryDefault();
+        long afterFirstStepFree = baselineFree;
 
         for (int step = 0; step < steps; step++) {
             long before = nativeOps.getDeviceFreeMemoryDefault();
@@ -2388,6 +2016,7 @@ public class TestDspValidation {
             Nd4j.getExecutioner().commit();
             nativeOps.trimMemoryPool(device);
             long after = nativeOps.getDeviceFreeMemoryDefault();
+            if (step == 0) afterFirstStepFree = after;
             long delta = before - after;
             log.info("[VARIANT] name={} step={} gpuFree={}MB delta={}MB", name, step, mb(after), mb(delta));
         }
@@ -2396,6 +2025,7 @@ public class TestDspValidation {
         long totalLeak = baselineFree - finalFree;
         log.info("[VARIANT] name={} TOTAL: baseline={}MB final={}MB totalLeak={}MB avgPerStep={}MB",
                 name, mb(baselineFree), mb(finalFree), mb(totalLeak), mb(totalLeak) / steps);
+        return afterFirstStepFree - finalFree;
     }
 
     // ─── Flag bisection: isolate which OPTIMAL flag combination causes divergence ──
@@ -2456,7 +2086,7 @@ public class TestDspValidation {
                 .tritonFusionScoring(false)
                 .dspBatchedGemm(true).maxTokens(tokens));
 
-        // Full OPTIMAL (expected to fail — confirms the test detects the bug)
+        // Full OPTIMAL
         configs.add(BenchmarkConfig.optimal().maxTokens(tokens));
 
         return configs.stream();

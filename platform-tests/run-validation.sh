@@ -2,15 +2,14 @@
 # SmolDocling DSP Accuracy Validation — compare execution modes for correctness
 #
 # Validates that different DSP execution modes (SLOT_BY_SLOT, TRITON, OPTIMAL)
-# produce identical or near-identical output. Uses the DSP Validation Framework
-# with slot output interceptors and per-step token comparison.
+# produce identical or near-identical output, with per-step token comparison
+# against a SLOT_BY_SLOT reference (TestDspValidation).
 #
 # ┌─────────────────────────────────────────────────────────────────────┐
 # │ VALIDATION TESTS                                                    │
 # │                                                                     │
 # │  outputAccuracy:    Compare generated tokens across configs         │
-# │  perOpSlot:         Interceptor captures during OPTIMAL decode      │
-# │  decodeStep:        SLOT_BY_SLOT vs OPTIMAL step-by-step compare    │
+# │  decodeStep:        Recapture / no-capture decodes vs OPTIMAL       │
 # │  tf32Isolation:     Same config with/without TF32                   │
 # │                                                                     │
 # │  Default: run ALL tests                                             │
@@ -19,7 +18,7 @@
 # Usage: ./run-validation.sh [OPTIONS]
 #
 # Test selection:
-#   --test NAME         Run specific test: outputAccuracy, perOpSlot, decodeStep,
+#   --test NAME         Run specific test: outputAccuracy, decodeStep,
 #                       tf32Isolation, or ALL (default: ALL)
 #
 # Configuration:
@@ -126,10 +125,7 @@ case "$TEST_NAME" in
         TEST_SELECTOR="${TEST_CLASS}"
         ;;
     outputAccuracy|output)
-        TEST_SELECTOR="${TEST_CLASS}#testOutputAccuracy"
-        ;;
-    perOpSlot|perop)
-        TEST_SELECTOR="${TEST_CLASS}#testPerOpSlotValidation"
+        TEST_SELECTOR="${TEST_CLASS}#testOutputAccuracy*"
         ;;
     decodeStep|decode)
         TEST_SELECTOR="${TEST_CLASS}#testDecodeStepValidation"
@@ -139,7 +135,7 @@ case "$TEST_NAME" in
         ;;
     *)
         echo "Unknown test: $TEST_NAME"
-        echo "Available: ALL, outputAccuracy, perOpSlot, decodeStep, tf32Isolation"
+        echo "Available: ALL, outputAccuracy, decodeStep, tf32Isolation"
         exit 1
         ;;
 esac
@@ -184,7 +180,7 @@ fi
 $MVN test \
   -Dtest="$TEST_SELECTOR" \
   -Dlibnd4j.triton=ON \
-  -Dbackend.artifactId=nd4j-cuda-12.9 \
+  -Dbackend.artifactId=nd4j-cuda-13.1 \
   $EXTRA_ARGS \
   2>&1 | tee "$LOG_FILE"
 
@@ -249,23 +245,6 @@ for l in lines:
         match_results.append(("tf32", matched, total, pct))
         print(f"  [INFO] TF32 impact: {matched}/{total} tokens matched ({pct:.1f}%)")
 
-# Interceptor capture info
-for l in lines:
-    m = re.search(r'Interceptor captured (\d+) variables across (\d+) steps', l)
-    if m:
-        print(f"  [INFO] Interceptor: {m.group(1)} variables, {m.group(2)} steps")
-
-# Show captured variable shapes if verbose
-captured = [l for l in lines if "Captured '" in l]
-if captured:
-    print(f"  [INFO] Captured variables: {len(captured)}")
-    for c in captured[:5]:
-        m = re.search(r"Captured '(.+?)': shape=(.+?) dtype=(.+)", c)
-        if m:
-            print(f"    {m.group(1)}: {m.group(2)} ({m.group(3)})")
-    if len(captured) > 5:
-        print(f"    ... and {len(captured) - 5} more")
-
 # Reference/test text comparison
 ref_texts = []
 test_texts = []
@@ -296,7 +275,7 @@ else:
 PYEOF
 else
     echo "  No surefire report found. Grep from log:"
-    grep -E "Token match rate|Interceptor captured|FAIL|PASS" "$LOG_FILE" | tail -15
+    grep -E "Token match rate|FAIL|PASS" "$LOG_FILE" | tail -15
 fi
 
 echo "═══════════════════════════════════════════════════════════"
