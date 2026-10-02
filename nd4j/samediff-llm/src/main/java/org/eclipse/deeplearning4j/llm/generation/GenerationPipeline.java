@@ -243,6 +243,12 @@ public class GenerationPipeline implements AutoCloseable {
     static final double SPEC_K_CEILING_CAP_FRACTION = 0.8;
     /** Scalar-only generations tolerated at K=0 before a bounded K=1 probe. */
     static final int SPEC_K_PROBE_INTERVAL = 8;
+    /**
+     * Frozen executions after which a capturing decode plan should be replaying. Plans capture
+     * within a few steps of freezing (a 5-token decode already replays); a decode that ends
+     * earlier never reaches capture, which is not a degradation worth an error.
+     */
+    static final int FROZEN_EXECUTIONS_TO_REACH_CAPTURE = 16;
 
     private enum DecodePolicyKind {
         GREEDY,
@@ -9264,12 +9270,26 @@ public class GenerationPipeline implements AutoCloseable {
                                     replayReport.numSegments);
                         }
                     } else if (replayReport.planPhase != null
-                            && replayReport.planPhase != PlanPhase.REPLAYING) {
+                            && replayReport.planPhase != PlanPhase.REPLAYING
+                            && decoder.getGraphExecutionMode() != GraphExecutionMode.SLOT_BY_SLOT
+                            && !Nd4j.getEnvironment().tritonSkipKernels()) {
                         // Plan never reached REPLAYING — every step was slot-by-slot or shapes-only.
-                        log.error("[DSP] planPhase={} after decode loop — CUDA graphs were never " +
-                                "captured. All segments resolved to slot-by-slot. " +
-                                "Performance matches slot-by-slot baseline (~8 tok/s vs ~65 tok/s target).",
-                                replayReport.planPhase);
+                        // A configuration that forces slot-by-slot execution ends here by design, and
+                        // so does a decode too short to reach capture or one that recaptures every
+                        // step; only a failed capture or a long decode that never captured is lost
+                        // performance.
+                        boolean captureFailed = replayReport.segments.stream().anyMatch(s -> s.captureFailed);
+                        if (captureFailed
+                                || replayReport.frozenExecutionCount >= FROZEN_EXECUTIONS_TO_REACH_CAPTURE) {
+                            log.error("[DSP] planPhase={} after {} frozen executions — CUDA graphs were never "
+                                            + "captured{}. All segments resolved to slot-by-slot. Performance "
+                                            + "matches slot-by-slot baseline (~8 tok/s vs ~65 tok/s target).",
+                                    replayReport.planPhase, replayReport.frozenExecutionCount,
+                                    captureFailed ? " (capture failed)" : "");
+                        } else {
+                            log.debug("[DSP] planPhase={} after {} frozen executions: the decode ended before "
+                                    + "capture", replayReport.planPhase, replayReport.frozenExecutionCount);
+                        }
                     }
                 }
             } catch (Throwable t) {
