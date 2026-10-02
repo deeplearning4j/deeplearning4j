@@ -4973,6 +4973,16 @@ bool viewFitsBuffer(const LongType* shapeInfo, LongType offset, DataBuffer* buff
   const LongType elementBytes = static_cast<LongType>(DataTypeUtils::sizeOf(shapeInfo));
   return (lastElement + 1) * elementBytes <= static_cast<LongType>(buffer->getLenInBytes());
 }
+
+// Whether an array owns the storage it wraps: the test the NDArray destructor
+// applies before deleting its buffer. Reads only the wrapper's own fields, so it
+// is safe on a plan wrapper whose borrowed buffer (a caller's input, another
+// slot's allocation) may already be gone. Only an owner's buffer may be probed,
+// counted as plan memory, or freed by the plan.
+bool ownsItsStorage(NDArray* array) {
+  return array != nullptr && array->ownsDataBuffer() && array->shapeInfo() != nullptr &&
+         !array->isView();
+}
 }  // namespace
 
 bool NativeDynamicShapePlan::isPlanControlledWrapper(NDArray* array) const {
@@ -5050,14 +5060,18 @@ size_t NativeDynamicShapePlan::estimatedOwnedBytes() const {
     if (record.buffer != nullptr) externalBuffers.insert(record.buffer);
   }
 
-  // Count every unique plan-owned DataBuffer once. Capture-workspace interior
-  // pointers are already represented by their arena above and must not be
-  // charged again. Include staging and untracked caches in addition to slot
-  // outputs so the plan-cache budget reflects the complete retained footprint.
+  // Count every unique plan-owned DataBuffer once, through the array that owns
+  // it: a view's buffer belongs to its owner (counted there) or to a caller
+  // (not plan memory, and possibly freed — teardown clears the records above
+  // before it re-measures, so the pointer match alone cannot protect a retired
+  // view). Capture-workspace interior pointers are already represented by their
+  // arena above and must not be charged again. Include staging and untracked
+  // caches in addition to slot outputs so the plan-cache budget reflects the
+  // complete retained footprint.
   std::unordered_set<DataBuffer*> countedBuffers;
   auto addArray = [&total, &captureWorkspaceRanges, &countedBuffers, &externalBuffers](
                       NDArray* arr) {
-    if (arr == nullptr) return;
+    if (!ownsItsStorage(arr)) return;
     DataBuffer* db = arr->dataBuffer();
     if (db == nullptr || externalBuffers.count(db) != 0 || !db->isValid() ||
         !countedBuffers.insert(db).second) {
@@ -5072,6 +5086,8 @@ size_t NativeDynamicShapePlan::estimatedOwnedBytes() const {
     total += static_cast<size_t>(arr->memoryFootprint());
   };
   for (NDArray* arr : planOwnedArrays_) addArray(arr);
+  // Owners already retired from the slots but not yet deleted still hold their storage.
+  for (NDArray* arr : deferredSlotDeletes_) addArray(arr);
   for (NDArray* arr : outputDeliveryBuffers_) addArray(arr);
   for (NDArray* arr : retiredRequestedOutputOwners_) addArray(arr);
   for (const auto& entry : migrationBuffers_) addArray(entry.second);
@@ -8925,7 +8941,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     for (auto* arr : planOwnedArrays_) {
       if (arr == nullptr || warmupRetiringBuffers.count(arr->dataBuffer()) == 0) continue;
       warmupRetiringArrays.insert(arr);
-      (arr->ownsDataBuffer() ? warmupOwners : warmupBorrowers).push_back(arr);
+      (ownsItsStorage(arr) ? warmupOwners : warmupBorrowers).push_back(arr);
     }
     for (int si = 0; si < totalOutputSlots_; ++si) {
       if (warmupRetiringArrays.count(outputSlots_[si]) == 0) continue;
@@ -9009,9 +9025,16 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
             // Pre-clean the DataBuffer (mirror the destructor guard at ~1226-1233)
             // so a GC-freed buffer (MAGIC_DESTROYED) doesn't reach deleteBuffers()
             // → Workspace::allocateBytes SIGSEGV (this=0xDEADBEEFCAFEBABE).
-            auto* db = outputSlots_[i]->dataBuffer();
-            if (db != nullptr && db->isValid() && !db->isClosed()) {
-              db->deleteBuffers();
+            // Only an owner's buffer: a plan view classified SLOT_OWNED here
+            // can wrap a caller's placeholder buffer (placeholders are never
+            // protected) or a later slot's allocation. Freeing it would release
+            // storage the plan does not own, and the caller's may already be
+            // deleted. Deleting the view wrapper leaves its buffer untouched.
+            if (ownsItsStorage(outputSlots_[i])) {
+              auto* db = outputSlots_[i]->dataBuffer();
+              if (db != nullptr && db->isValid() && !db->isClosed()) {
+                db->deleteBuffers();
+              }
             }
             outputSlots_[i]->setShapeInfo((sd::LongType*)nullptr);
             delete outputSlots_[i];
@@ -9041,9 +9064,12 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
             // Pre-clean the DataBuffer (mirror the destructor guard at ~1226-1233)
             // so a GC-freed buffer (MAGIC_DESTROYED) doesn't reach deleteBuffers()
             // → Workspace::allocateBytes SIGSEGV (this=0xDEADBEEFCAFEBABE).
-            auto* db = outputSlots_[i]->dataBuffer();
-            if (db != nullptr && db->isValid() && !db->isClosed()) {
-              db->deleteBuffers();
+            // Only an owner's buffer, as in the classified pass above.
+            if (ownsItsStorage(outputSlots_[i])) {
+              auto* db = outputSlots_[i]->dataBuffer();
+              if (db != nullptr && db->isValid() && !db->isClosed()) {
+                db->deleteBuffers();
+              }
             }
             outputSlots_[i]->setShapeInfo((sd::LongType*)nullptr);
             delete outputSlots_[i];

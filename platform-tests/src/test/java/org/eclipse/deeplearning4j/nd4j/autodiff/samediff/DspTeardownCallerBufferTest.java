@@ -5,6 +5,9 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
@@ -20,6 +23,7 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,16 +45,30 @@ class DspTeardownCallerBufferTest {
     private static final int STEPS = 4;
     private static final int FRESH_ARRAYS = 16;
 
-    @Test
-    void teardownLeavesTheCallersInputIntact() {
+    static Stream<Arguments> inputViewPlans() {
+        return Stream.of(
+                Arguments.of(GraphExecutionMode.AUTO, 1),
+                Arguments.of(GraphExecutionMode.AUTO, STEPS),
+                Arguments.of(GraphExecutionMode.SLOT_BY_SLOT, 1),
+                Arguments.of(GraphExecutionMode.SLOT_BY_SLOT, STEPS));
+    }
+
+    /**
+     * The reshape is a view the plan creates over the caller's buffer, an intermediate the plan
+     * holds in its slot. Until a capture moves it onto staging, teardown sees a plan-owned
+     * array over a buffer it does not own, and must delete the wrapper without the storage.
+     */
+    @ParameterizedTest(name = "{0} x{1}")
+    @MethodSource("inputViewPlans")
+    void teardownLeavesTheCallersInputIntact(GraphExecutionMode mode, int executes) {
         boolean enabled = InferenceSession.isDynamicShapePlanEnabled();
         try {
             InferenceSession.setDynamicShapePlanEnabled(true);
             try (SameDiff sd = SameDiff.create(); INDArray x = input(0)) {
-                // The reshape is a view the plan creates over the caller's buffer.
                 sd.reshape("flat", sd.placeHolder("x", DataType.FLOAT, ROWS, COLS), ROWS * COLS)
                         .add(1.0).mul("out", 2.0);
-                for (int step = 0; step < STEPS; step++) {
+                sd.setGraphExecutionMode(mode);
+                for (int step = 0; step < executes; step++) {
                     INDArray out = sd.output(Map.of("x", x), "out").get("out");
                     for (int i = 0; i < ROWS * COLS; i++) {
                         assertEquals((input(0, i / COLS, i % COLS) + 1.0f) * 2.0f, out.getFloat(i), 0.0f,
