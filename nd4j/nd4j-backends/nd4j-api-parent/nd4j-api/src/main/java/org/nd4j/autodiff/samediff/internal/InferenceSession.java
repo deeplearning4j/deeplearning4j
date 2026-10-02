@@ -2489,7 +2489,41 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 trackLiveBuffer(arr);
             }
         }
+        registerConsumerDependencies(outputValue, varName, allRequired);
+    }
 
+    /**
+     * Registers the consumers of a name that a forwarding op gives to an array it did not produce:
+     * Identity, Enter, Exit, NextIteration, LoopCond, the taken side of a Switch, and a later
+     * iteration's Merge pass the same array on under their own output name. Its consumers there
+     * must hold the array as its first consumers do, or it is released, and its cached object
+     * reissued with another shape, once the forwarding op's own dependency is satisfied. The buffer
+     * is not tracked again: the alias is the same array.
+     */
+    void addAliasConsumerDependencies(SDValue value, String aliasVar, Set<String> allRequired) {
+        if (value != null) {
+            registerConsumerDependencies(value, aliasVar, allRequired);
+        }
+    }
+
+    /** After a forwarding op ran: each output that is one of its inputs registers its own consumers. */
+    private void registerForwardedOutputs(ExecutionNode node, Map<String, SDValue> variableValues,
+                                          Set<String> allRequired) {
+        for (String output : node.getOutputVariables()) {
+            SDValue value = variableValues.get(output);
+            if (value == null) {
+                continue;   // a Switch's untaken side
+            }
+            for (String input : node.getInputVariables()) {
+                if (variableValues.get(input) == value) {
+                    addAliasConsumerDependencies(value, output, allRequired);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void registerConsumerDependencies(SDValue outputValue, String varName, Set<String> allRequired) {
         if (allRequired.contains(varName)) {
             // This is a final output: protect from deallocation until explicitly released
             arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
@@ -2630,6 +2664,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Handle special control flow operations directly
             if (op instanceof Identity) {
                 executeIdentityNode(node, variableValues);
+                registerForwardedOutputs(node, variableValues, allRequired);
                 return;
             }
 
@@ -2638,21 +2673,26 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             switch (opNameLowerCase) {
                 case "switch":
                     executeSwitchNode(node, variableValues, op);
+                    registerForwardedOutputs(node, variableValues, allRequired);
                     return;
                 case "enter":
                     executeEnterNode(node, variableValues, op);
+                    registerForwardedOutputs(node, variableValues, allRequired);
                     return;
                 case "exit":
                     executeExitNode(node, variableValues, op);
+                    registerForwardedOutputs(node, variableValues, allRequired);
                     return;
                 case "next_iteration":
                     executeNextIterationNode(node, variableValues, op);
+                    registerForwardedOutputs(node, variableValues, allRequired);
                     return;
                 case "merge":
                     executeMergeNode(node, variableValues, op, allRequired);
                     return;
                 case "loop_cond":
                     executeLoopCondNode(node, variableValues, op);
+                    registerForwardedOutputs(node, variableValues, allRequired);
                     return;
             }
 

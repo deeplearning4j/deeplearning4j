@@ -306,6 +306,7 @@ public class ControlFlowExecutor {
 
                     if (nextIterValue != null) {
                         variableValues.put(outputVar, nextIterValue);
+                        session.addAliasConsumerDependencies(nextIterValue, outputVar, allRequired);
                     } else {
                         // Fallback to standard Merge
                         session.executeNode(mergeNode, variableValues, allRequired, listeners, at, batch);
