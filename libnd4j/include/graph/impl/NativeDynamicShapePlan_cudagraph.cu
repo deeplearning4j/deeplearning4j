@@ -2234,7 +2234,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
       size_t nodesAfter = handle->getNumNodesDuringCapture(cudaStr);
       size_t nodesContributed = (nodesAfter > nodesBefore) ? (nodesAfter - nodesBefore) : 0;
-      bool isHostOnlyOp = (nodesContributed == 0);
       {
         ::sd::cuda::CaptureAuditEntry entry;
         entry.slotIndex = stepIdx;
@@ -2242,6 +2241,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         entry.nodesBefore = nodesBefore;
         entry.nodesAfter = nodesAfter;
         entry.nodesContributed = nodesContributed;
+        entry.replayStable = nodesContributed == 0 &&
+            slotIsTransparentHostOnlyForGraphCoverage(
+                slots_[stepIdx], slotOwnership_, outputSlots_, captureExternals,
+                numExt, totalOutputSlots_);
 
         // Populate per-op node type breakdown by querying the in-progress capture graph.
         // This lets postGraphReplayFixup distinguish ops with only memcpy/memset nodes
@@ -2289,14 +2292,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       // but have no compute kernel (e.g. relu alpha setup).
       DSP_DIAG(GRAPH_REPLAY,
                "CAPTURE_SLOT[%d/%d] op='%s' nodesBefore=%zu nodesAfter=%zu "
-               "nodesContributed=%zu kernels=%d memcpys=%d memsets=%d hostOnly=%s totalSoFar=%zu",
+               "nodesContributed=%zu kernels=%d memcpys=%d memsets=%d hostOnly=%s "
+               "replayStable=%s totalSoFar=%zu",
                stepIdx, seg.def.endSlot,
                slots_[stepIdx].ident.opName.c_str(),
                nodesBefore, nodesAfter, nodesContributed,
                lastCaptureAudit_.back().kernels,
                lastCaptureAudit_.back().memcpys,
                lastCaptureAudit_.back().memsets,
-               isHostOnlyOp ? "YES" : "no",
+               lastCaptureAudit_.back().isHostOnly() ? "YES" : "no",
+               lastCaptureAudit_.back().replayStable ? "yes" : "no",
                nodesAfter);
 
     }
@@ -2690,22 +2695,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       return Status::OK;
     }
 
-    // Interleaved non-transparent host-only check: after the gap-stream capture
-    // override above, ordinary GPU-capable ops must contribute graph nodes. If a
-    // materializing op still contributes 0 nodes before a downstream GPU op, the
+    // Interleaved host-only check: after the gap-stream capture override above,
+    // ordinary GPU-capable ops must contribute graph nodes. If a materializing
+    // op (not replay-stable) still contributes 0 nodes before a downstream GPU op, the
     // segment topology is invalid for monolithic capture and must be fixed at
     // segmentation level rather than hidden behind permanent slot-by-slot.
     if (!lastCaptureAudit_.empty()) {
       bool hasInterleavedHostOnly = false;
       for (size_t ai = 0; ai < lastCaptureAudit_.size(); ai++) {
-        if (lastCaptureAudit_[ai].nodesContributed == 0) {
-          int hostSlotIdx = lastCaptureAudit_[ai].slotIndex;
-          bool transparent =
-              hostSlotIdx >= 0 && hostSlotIdx < numSlots_ &&
-              slotIsTransparentHostOnlyForGraphCoverage(
-                  slots_[hostSlotIdx], slotOwnership_, outputSlots_, captureExternals,
-                  numExt, totalOutputSlots_);
-          if (transparent) continue;
+        if (lastCaptureAudit_[ai].isHostOnly()) {
           for (size_t aj = ai + 1; aj < lastCaptureAudit_.size(); aj++) {
             if (lastCaptureAudit_[aj].nodesContributed > 0) {
               DSP_DIAG_SEG(COMPILE, segIdx,

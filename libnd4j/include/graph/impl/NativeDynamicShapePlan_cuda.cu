@@ -3821,12 +3821,15 @@ void NativeDynamicShapePlan::printCaptureAudit() const {
   DSP_DIAG(SEGMENT, "+==========================================================================?");
 
   int hostOnlyCount = 0;
+  int replayStableCount = 0;
   size_t totalNodes = 0;
 
   for (const auto& entry : lastCaptureAudit_) {
     totalNodes += entry.nodesContributed;
     if (entry.isHostOnly()) {
       hostOnlyCount++;
+    } else if (entry.nodesContributed == 0) {
+      replayStableCount++;
     }
   }
 
@@ -3847,20 +3850,22 @@ void NativeDynamicShapePlan::printCaptureAudit() const {
   DSP_DIAG(SEGMENT, "+==========================================================================?");
   DSP_DIAG(SEGMENT, "| Total CUDA graph nodes: %zu from %zu ops",
             totalNodes, lastCaptureAudit_.size());
-  DSP_DIAG(SEGMENT, "| Host-only ops: %d, Node-contributing ops: %zu",
-            hostOnlyCount, lastCaptureAudit_.size() - hostOnlyCount);
+  DSP_DIAG(SEGMENT, "| Host-only ops: %d, replay-stable ops without nodes: %d, "
+            "node-contributing ops: %zu",
+            hostOnlyCount, replayStableCount,
+            lastCaptureAudit_.size() - hostOnlyCount - replayStableCount);
   if (hostOnlyCount > 0) {
     DSP_DIAG(SEGMENT, "| *** WARNING: %d HOST-ONLY ops detected! ***", hostOnlyCount);
     DSP_DIAG(SEGMENT, "| Host-only ops do work during capture but NOT during replay.");
     DSP_DIAG(SEGMENT, "| Their outputs will be STALE on the 2nd+ graph execution.");
   } else {
-    DSP_DIAG(SEGMENT, "| All ops contributed CUDA graph nodes. Graph is complete.");
+    DSP_DIAG(SEGMENT, "| Every op contributed nodes or needs none on replay. Graph is complete.");
   }
   DSP_DIAG(SEGMENT, "+==========================================================================+");
 
   // Record summary into diagnostics
-  DSP_DIAG(COMPILE, "capture audit: %zu nodes from %zu ops, %d host-only",
-           totalNodes, lastCaptureAudit_.size(), hostOnlyCount);
+  DSP_DIAG(COMPILE, "capture audit: %zu nodes from %zu ops, %d host-only, %d replay-stable",
+           totalNodes, lastCaptureAudit_.size(), hostOnlyCount, replayStableCount);
   if (hostOnlyCount > 0) {
     DSP_THROW(COMPILE, "%d host-only ops in captured graph - outputs stale on replay",
               hostOnlyCount);

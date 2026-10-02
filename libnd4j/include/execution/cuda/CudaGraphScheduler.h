@@ -157,7 +157,13 @@ struct SD_LIB_EXPORT CaptureAuditEntry {
     int memAllocs = 0;
     int memFrees = 0;
 
-    bool isHostOnly() const { return nodesContributed == 0; }
+    // The op contributed no node because its output needs none on replay: shape
+    // metadata, a constant, a fused-chain tail, or a view or identity of a buffer
+    // bound for the capture. Set by the capture that classified it.
+    bool replayStable = false;
+
+    // Host-only: did work during capture that the graph does not repeat.
+    bool isHostOnly() const { return nodesContributed == 0 && !replayStable; }
 };
 
 /**
