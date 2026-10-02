@@ -3148,7 +3148,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testShapeUpdating(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();

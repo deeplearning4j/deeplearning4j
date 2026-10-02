@@ -5131,7 +5131,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testJaccardDistance1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 1, 0, 0, 1, 0}).castTo(DataType.DOUBLE);
         INDArray y = Nd4j.create(new double[] {1, 1, 0, 1, 0, 0}).castTo(DataType.DOUBLE);
