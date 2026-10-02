@@ -1332,8 +1332,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
             SDVariable indices = sd.constant(indicesArr);
             SDVariable oneHot = sd.oneHot(indices, depth, i, 1.0, 0.0, DataType.DOUBLE);
 
-            // The oneHot op currently returns FLOAT even when DOUBLE is requested; cast expected to match actual dtype.
-            INDArray exp = Nd4j.eye(3).castTo(FLOAT);
+            INDArray exp = Nd4j.eye(3).castTo(DataType.DOUBLE);
 
             String msg = "Axis: " + i;
             log.info("Test case: " + msg);
@@ -1378,8 +1377,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
         int axis = -1;
         SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 5.0, 0.0, DataType.DOUBLE);
 
-        // The oneHot op currently returns FLOAT even when DOUBLE is requested; cast expected to match actual dtype.
-        INDArray exp = Nd4j.create(new float[][]{{5, 0, 0}, {0,0,5}, {0,0,0}, {0, 5, 0}});
+        INDArray exp = Nd4j.create(new double[][]{{5, 0, 0}, {0,0,5}, {0,0,0}, {0, 5, 0}});
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expected(oneHot, exp)
