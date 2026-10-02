@@ -5462,6 +5462,14 @@ void NativeDynamicShapePlan::rebindExternalInputAliases(NDArray** externalInputs
   }
   std::vector<uint8_t> coveredSteps(static_cast<size_t>(numSlots_), 0);
   int staleSegments = 0, rewarmedSegments = 0;
+  // Invalidating a capture tears down process-wide state (Triton cache entries,
+  // graphs, workspaces, pool pins). execute() takes the warmup mutex only after
+  // this rebind, so take it here, as every other invalidation does, whenever a
+  // segment must re-warm. Unchanged replays stay lock-free.
+  int lockDevice = sd::graph::dspGetCurrentDevice();
+  if (lockDevice < 0 || lockDevice >= kMaxDevices) lockDevice = 0;
+  std::unique_lock<std::mutex> rewarmLock(g_warmupSerializationMtx[lockDevice], std::defer_lock);
+  if (std::find(rewarmSteps.begin(), rewarmSteps.end(), 1) != rewarmSteps.end()) rewarmLock.lock();
   for (auto& seg : segments_) {
     bool stale = false, rewarm = false;
     for (int s = std::max(0, seg.def.startSlot); s <= seg.def.endSlot && s < numSlots_; s++) {
@@ -8739,6 +8747,11 @@ void NativeDynamicShapePlan::processPendingExternalViewReacquire(NDArray** exter
   }
 
   if (cleared > 0) {
+    // Runs before execute() takes the warmup mutex; invalidation tears down
+    // process-wide capture state, so serialize it like every other invalidation.
+    int lockDevice = sd::graph::dspGetCurrentDevice();
+    if (lockDevice < 0 || lockDevice >= kMaxDevices) lockDevice = 0;
+    std::lock_guard<std::mutex> rewarmLock(g_warmupSerializationMtx[lockDevice]);
     for (size_t segIdx = 0; segIdx < segments_.size(); segIdx++) {
       if (!touchedSegments[segIdx]) continue;
       auto& seg = segments_[segIdx];
