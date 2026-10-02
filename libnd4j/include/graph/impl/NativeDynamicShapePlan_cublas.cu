@@ -60,10 +60,22 @@ void NativeDynamicShapePlan::ensureCublasWorkspace(size_t minBytes) {
   // and baked as a workspace pointer into captured GEMM nodes — it must survive across
   // capture/replay cycles without going through the async pool.
   cublasWorkspaceBuffer_ = pool.allocateDirect(minBytes, deviceId);
+  if (cublasWorkspaceBuffer_ == nullptr && !tl_graphExecutionActive) {
+    // The pool may hold what is missing reserved but unused: give it back and
+    // try once more. (Trimming synchronizes streams, which capture forbids.)
+    pool.trimPool(deviceId);
+    cublasWorkspaceBuffer_ = pool.allocateDirect(minBytes, deviceId);
+  }
   if (cublasWorkspaceBuffer_ == nullptr) {
+    // Without its workspace a plan's GEMMs are wrong rather than slow: pedantic
+    // math picks an algorithm that returns zeros for FP16, and a capture would
+    // record cuBLAS's own allocations into the graph.
     DSP_DIAG(MEMORY, "failed to allocate cuBLAS workspace (%zu bytes) on device %d",
              minBytes, deviceId);
-    return;
+    const std::string message = "DSP plan could not allocate its cuBLAS workspace of " +
+                                std::to_string(minBytes / (1024 * 1024)) + " MB on device " +
+                                std::to_string(deviceId) + ": out of device memory";
+    THROW_EXCEPTION(message.c_str());
   }
   cublasWorkspaceSize_ = minBytes;
   cublasWorkspaceDevice_ = deviceId;  // record alloc device for safe teardown free
@@ -92,6 +104,15 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
     return;
   }
 
+  // ── Workspace configuration ───────────────────────────────────────────────
+  // Provide explicit workspace to prevent per-GEMM MemAlloc/MemFree graph nodes.
+  // Allocated before the handle is touched: ensureCublasWorkspace throws when
+  // the device cannot hold it.
+  bool useCublasWorkspace = sd::Environment::getInstance().cublasCaptureWorkspace();
+  if (useCublasWorkspace) {
+    ensureCublasWorkspace(sd::Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
+  }
+
   cudaStream_t resolvedStream = stream != nullptr ? *static_cast<cudaStream_t*>(stream) : nullptr;
   DSP_DIAG(EXECUTE, "setCublasWorkspaceForCapture: setting cuBLAS stream=%p (from void*=%p) "
            "tl_graphExecutionActive=%d tl_cublasLtDisabled=%d",
@@ -108,12 +129,7 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
   cublasSetMathMode(*handlePtr, deterministic ? CUBLAS_PEDANTIC_MATH : CUBLAS_DEFAULT_MATH);
   tl_cublasLtDisabled = true;
 
-  // ── Workspace configuration ───────────────────────────────────────────────
-  // Provide explicit workspace to prevent per-GEMM MemAlloc/MemFree graph nodes.
-  bool useCublasWorkspace = sd::Environment::getInstance().cublasCaptureWorkspace();
-
   if (useCublasWorkspace) {
-    ensureCublasWorkspace(sd::Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
     cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
     tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
     tl_cublasWorkspaceSize = cublasWorkspaceSize_;
@@ -141,14 +157,18 @@ void NativeDynamicShapePlan::setCublasWorkspaceForWarmup() {
   // buffers with one algorithm's layout but capture records a different algorithm,
   // causing shape/result divergence on replay.
   //
+  // Workspace: match capture's workspace configuration, allocated before the
+  // handle is touched (ensureCublasWorkspace throws when it cannot be).
+  bool useCublasWorkspace = sd::Environment::getInstance().cublasCaptureWorkspace();
+  if (useCublasWorkspace) {
+    ensureCublasWorkspace(sd::Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
+  }
+
   const bool deterministic = ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas;
   cublasSetMathMode(*handlePtr, deterministic ? CUBLAS_PEDANTIC_MATH : CUBLAS_DEFAULT_MATH);
   tl_cublasLtDisabled = true;
 
-  // Workspace: match capture's workspace configuration.
-  bool useCublasWorkspace = sd::Environment::getInstance().cublasCaptureWorkspace();
   if (useCublasWorkspace) {
-    ensureCublasWorkspace(sd::Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
     cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
     tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
     tl_cublasWorkspaceSize = cublasWorkspaceSize_;

@@ -156,7 +156,7 @@ The behavior depends on `gapOpsCapturedInGraph`:
 | **Type** | Device GPU memory (256 MB) |
 | **Declared** | `NativeDynamicShapePlan.h:1161` |
 | **Scope** | Per-plan, shared across ALL segments |
-| **Allocated** | `ensureCublasWorkspace()` via `cudaMalloc` (cublas.cu:48) |
+| **Allocated** | `ensureCublasWorkspace()` via `CudaMemoryPool::allocateDirect`. A failed allocation trims the pool and retries once outside capture, then throws: a plan never runs its GEMMs without the workspace (pedantic math without one returns all-zero FP16 results; a capture without one records cuBLAS's own allocations). `platformBeginExecution` releases its entry state before the throw, since it precedes `execute()`'s `PlatformEndGuard` |
 | **Set for capture** | `setCublasWorkspaceForCapture()` — binds to cuBLAS handle + stream |
 | **Set for warmup** | `setCublasWorkspaceForWarmup()` — binds without stream override |
 | **Zeroed before replay** | `cudaMemsetAsync(cublasWorkspaceBuffer_, 0, ...)` (gpubackend.cpp:1302) |

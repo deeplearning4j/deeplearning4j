@@ -4671,6 +4671,22 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                     "Replay handle creation failed — fix the root cause.",
                     seg.def.startSlot, seg.def.endSlot, deviceId);
     } else {
+      // Pre-allocate cuBLAS workspace to prevent internal cudaMalloc during capture.
+      // cuBLAS internally allocates workspace on stream 0 for GEMM operations. During
+      // graph capture on a named stream, this cross-stream allocation breaks capture,
+      // producing invalid graph nodes that SIGSEGV on cudaGraphLaunch. Allocated before
+      // any capture state is set up, so a device that cannot hold it fails like the
+      // shared workspace above.
+      try {
+        ensureCublasWorkspace(Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
+      } catch (...) {
+        SegmentLifecycle::invalidateForRebuild(this, seg, "oom_cublas_workspace");
+#if HAVE_TRITON
+        tritonOrderedRangeGuard.active = false;
+        TritonGraphBackend::clearOrderedRangeExecutor();
+#endif
+        throw;
+      }
       bindCaptureWorkspaceTls(seg.exec.replayHandle.get(), "composite_capture");
       clearCaptureScopedCachesTls("composite_capture");
 
@@ -4735,12 +4751,6 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
         }
         tl_graphCaptureStream = static_cast<void*>(resolvedCaptureStream);
       }
-      // Pre-allocate cuBLAS workspace to prevent internal cudaMalloc during capture.
-      // cuBLAS internally allocates workspace on stream 0 for GEMM operations. During
-      // graph capture on a named stream, this cross-stream allocation breaks capture,
-      // producing invalid graph nodes that SIGSEGV on cudaGraphLaunch.
-      const size_t CUBLAS_WORKSPACE_SIZE = Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL;
-      ensureCublasWorkspace(CUBLAS_WORKSPACE_SIZE);
       // NOTE: setCublasWorkspaceForCapture is deferred to AFTER warmup (see below).
       // Calling it here sets cublasSetStream_v2 to the capture stream, which causes
       // cuBLAS matmuls in gap ops during warmup to run on tritonStr instead of gapStr.

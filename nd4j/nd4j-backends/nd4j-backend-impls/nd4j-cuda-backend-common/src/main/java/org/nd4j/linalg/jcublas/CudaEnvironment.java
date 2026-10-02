@@ -1368,6 +1368,10 @@ public class CudaEnvironment implements Environment {
 
     @Override
     public void setDspCublasWorkspaceMb(int mb) {
+        if (mb <= 0) {
+            // Plans that set a workspace on cuBLAS cannot run without one (see ensureCublasWorkspace).
+            throw new IllegalArgumentException("DSP cuBLAS workspace must be at least 1 MB, got " + mb);
+        }
         e.setDspCublasWorkspaceMb(mb);
     }
 

@@ -4097,6 +4097,28 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   }
   ctx->crossStreamEvent = ownedCrossStreamEvent_;
 
+  // Entry precedes execute()'s PlatformEndGuard. An entry step that fails must
+  // release the state acquired here, including the capture reservation, before
+  // it throws.
+  auto abandonEntry = [&]() {
+    AttentionWorkspace::setActiveScope(ctx->previousAttentionWorkspaceScope);
+    if (stream != nullptr && tl_gapStreamPinnedByPlanExec) {
+      tl_dspGapStream = tl_prevGapStreamForPlanExec;
+      tl_prevGapStreamForPlanExec = nullptr;
+      tl_gapStreamPinnedByPlanExec = false;
+    }
+    if (tl_activeMmulFpPlan == this) {
+      tl_activeMmulFpPlan = nullptr;
+      tl_activeMmulFpOrdinal = 0;
+    }
+    int dev = ctx->deviceId;
+    delete static_cast<DspStreamGuard*>(ctx->streamGuard);
+    delete ctx;
+    if (dev < 0 || dev >= 16) dev = 0;
+    if (g_execCount[dev].fetch_sub(1, std::memory_order_acq_rel) <= 1)
+      g_captureCV[dev].notify_all();
+  };
+
   // Resolve CUDA streams and set up DspStreamGuard RAII
   if (stream != nullptr) {
     cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
@@ -4154,29 +4176,12 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
       cudaEvent_t evt = reinterpret_cast<cudaEvent_t>(ctx->crossStreamEvent);
       cudaStream_t dspStr = reinterpret_cast<cudaStream_t>(ctx->dspStream);
       cudaStream_t lcStr  = reinterpret_cast<cudaStream_t>(ctx->lcDefaultStream);
-      // Entry precedes execute()'s PlatformEndGuard. A failed ordering operation
-      // must unwind the state acquired here, including the capture reservation.
       auto requireEntryOrdering = [&](cudaError_t error, const char* stage) {
         if (error == cudaSuccess) return;
         std::string detail = std::string("DSP entry cross-stream ordering failed: ") +
             stage + " cudaError=" + std::to_string(static_cast<int>(error)) +
             " (" + cudaGetErrorString(error) + ")";
-        AttentionWorkspace::setActiveScope(ctx->previousAttentionWorkspaceScope);
-        if (tl_gapStreamPinnedByPlanExec) {
-          tl_dspGapStream = tl_prevGapStreamForPlanExec;
-          tl_prevGapStreamForPlanExec = nullptr;
-          tl_gapStreamPinnedByPlanExec = false;
-        }
-        if (tl_activeMmulFpPlan == this) {
-          tl_activeMmulFpPlan = nullptr;
-          tl_activeMmulFpOrdinal = 0;
-        }
-        int dev = ctx->deviceId;
-        delete static_cast<DspStreamGuard*>(ctx->streamGuard);
-        delete ctx;
-        if (dev < 0 || dev >= 16) dev = 0;
-        if (g_execCount[dev].fetch_sub(1, std::memory_order_acq_rel) <= 1)
-          g_captureCV[dev].notify_all();
+        abandonEntry();
         throw std::runtime_error(detail);
       };
       // 1) LC default stream -> DSP stream
@@ -4215,35 +4220,33 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   //    graph replay, producing tiny FP differences that compound through
   //    GDN recurrent state until token divergence (~step 14).
   //
-  // 2. No workspace - prevents split-K algorithms that accumulate partial
-  //    sums in workspace with non-deterministic reduction order.
+  // 2. The plan's own workspace - CUBLAS_PEDANTIC_MATH with no workspace causes
+  //    CUBLAS_GEMM_DEFAULT to produce all-zeros for FP16 inputs on some GPUs
+  //    because the only PEDANTIC-compatible algorithm for that precision needs
+  //    workspace.
   //
   // 3. tl_cublasLtDisabled - blocks cublasLt (which has its own split-K)
   //    and forces CUBLAS_GEMM_DEFAULT instead of CUBLAS_GEMM_DEFAULT_TENSOR_OP.
   //
   // All three must be set for BOTH modes so they use identical cuBLAS state.
   // Modes requiring deterministic cuBLAS enforce PEDANTIC_MATH + workspace + no Lt.
-  // A workspace MUST be provided: CUBLAS_PEDANTIC_MATH with no workspace causes
-  // CUBLAS_GEMM_DEFAULT to produce all-zeros for FP16 inputs on some GPUs because
-  // the only PEDANTIC-compatible algorithm for that precision needs workspace.
   // TRITON composite mode manages its own workspace/algorithm lifecycle.
   if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
     auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
     if (handlePtr != nullptr) {
+      // (2) first: ensureCublasWorkspace is idempotent (allocates once) and
+      // throws when the device cannot hold the workspace.
+      try {
+        ensureCublasWorkspace(sd::Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
+      } catch (...) {
+        abandonEntry();
+        throw;
+      }
       // (1) Force bitwise-reproducible algorithms
       cublasSetMathMode(*handlePtr, CUBLAS_PEDANTIC_MATH);
-      // (2) Provide workspace - required for PEDANTIC + FP16 algorithm selection.
-      // ensureCublasWorkspace is idempotent (allocates once).
-      ensureCublasWorkspace(sd::Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL);
-      if (cublasWorkspaceBuffer_ != nullptr) {
-        cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
-        tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
-        tl_cublasWorkspaceSize = cublasWorkspaceSize_;
-      } else {
-        cublasSetWorkspace(*handlePtr, nullptr, 0);
-        tl_cublasWorkspacePtr = nullptr;
-        tl_cublasWorkspaceSize = 0;
-      }
+      cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
+      tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
+      tl_cublasWorkspaceSize = cublasWorkspaceSize_;
     }
     // (3) Block cublasLt and force CUBLAS_GEMM_DEFAULT
     tl_cublasLtDisabled = true;
