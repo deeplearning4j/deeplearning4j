@@ -971,8 +971,12 @@ public class DynamicShapePlanExecutor implements Closeable {
             } catch (Exception serializationFailure) {
                 incomingBytes = null;
             }
+            // The bytes name outputs by slot index only: a graph whose output was renamed
+            // serializes identically, but results are keyed by the requested names.
             if (incomingBytes != null && incomingBytes.length == cachedSerializedPlan.length
-                    && java.util.Arrays.equals(incomingBytes, cachedSerializedPlan)) {
+                    && java.util.Arrays.equals(incomingBytes, cachedSerializedPlan)
+                    && new ArrayList<>(plan.getRequestedOutputs())
+                            .equals(new ArrayList<>(nativePlanSource.getRequestedOutputs()))) {
                 log.info("initialize: PLAN_CHANGED suppressed — incoming plan is byte-identical to the "
                                 + "compiled frozen plan (execCount={}, frozen={}); adopting Java object, "
                                 + "keeping native handle and captured graph state",
@@ -2532,9 +2536,15 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // generate; requiring it is what forced the disk-cache recompile).
                 boolean residencyOk = retained != null
                         && (retained.independentLease || pinOk);
+                // Same bytes with other output names (a renamed output) is another plan.
+                List<String> incomingSortedOutputs = new ArrayList<>(plan.getRequestedOutputs());
+                Collections.sort(incomingSortedOutputs);
+                boolean outputNamesOk = retained != null && retained.sortedOutputs != null
+                        && Arrays.asList(retained.sortedOutputs).equals(incomingSortedOutputs);
                 if (retained != null
                         && retained.handle != null && !retained.handle.isNull()
                         && residencyOk
+                        && outputNamesOk
                         && java.util.Arrays.equals(retained.serialized, incomingSerialized)) {
                     cachedSerializedPlan = retained.serialized;
                     nativePlanSource = plan;
@@ -2622,6 +2632,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                             && !pinnedPlanHandles.containsKey(retained.handle.address())) {
                         why = "parked handle 0x" + Long.toHexString(retained.handle.address())
                                 + " no longer pinned and no independent lease (evicted or released)";
+                    } else if (!outputNamesOk) {
+                        why = "requested outputs differ (stored=" + Arrays.toString(retained.sortedOutputs)
+                                + ", incoming=" + incomingSortedOutputs + ")";
                     } else {
                         why = "serialized bytes differ (stored=" + retained.serialized.length
                                 + "B, incoming=" + incomingSerialized.length + "B)";

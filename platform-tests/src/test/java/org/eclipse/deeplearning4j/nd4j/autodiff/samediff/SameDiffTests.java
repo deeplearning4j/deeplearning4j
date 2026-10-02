@@ -3685,6 +3685,21 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testInputVariableRenamingAfterExecution(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("in", DataType.FLOAT, 3, 4);
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 5));
+        in.mmul("out", w);
+        INDArray x = Nd4j.rand(DataType.FLOAT, 3, 4);
+        INDArray before = sd.outputSingle(Collections.singletonMap("in", x), "out");
+
+        in.rename("in2");
+        INDArray after = sd.outputSingle(Collections.singletonMap("in2", x), "out");
+        assertEquals(before, after);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableRenaming2(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();

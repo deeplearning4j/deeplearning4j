@@ -470,6 +470,20 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     /**
+     * Forget the compiled forms of the graph, all of which name its variables: the execution DAGs,
+     * the plan and the constant/variable lookup. Nothing is closed, so outputs this session already
+     * returned stay valid. The next execution rebuilds them from the graph; an executor still holding
+     * the previous plan adopts or replaces it then.
+     */
+    public void invalidateCompiledGraph() {
+        dynamicShapePlan = null;
+        currentExecutionDAG = null;
+        dagCache.clear();
+        cachedConstVarValues = null;
+        cachedInputsList = null;
+    }
+
+    /**
      * Clear only the node output buffers and plan, preserving the array cache
      * and model constants. Use this during decode recompile cycles where
      * stale prefill outputs must be cleared but model weights must survive.

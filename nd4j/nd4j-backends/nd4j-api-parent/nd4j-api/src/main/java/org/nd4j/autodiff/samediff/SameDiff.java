@@ -6248,6 +6248,14 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         Preconditions.checkState(variables.containsKey(from), "Cannot rename variable \"%s\": no variable with this name exists", from);
         Preconditions.checkState(!variables.containsKey(to), "Cannot rename variable \"%s\" to name \"%s\": a variable with name \"%s\" already exists", from, to, to);
 
+        // Compiled plans address variables by name: a renamed graph needs new ones. A session
+        // reuses its own plan and DAGs while the requested outputs match, so they go too; the
+        // sessions themselves stay, as do the outputs they returned.
+        dynamicShapePlanCache.clear();
+        for (InferenceSession session : sessions.values()) {
+            session.invalidateCompiledGraph();
+        }
+
         Variable v = variables.get(from);
         v.setName(to);
         v.getVariable().setVarName(to);
