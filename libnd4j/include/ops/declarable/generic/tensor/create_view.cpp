@@ -106,8 +106,8 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
     indicesPerIndex.push_back(indexVector);
 
     if(indexType ==  POINT_TYPE) { //point index
-      //Point indexes don't appear in output
-      auto pointOffset = indexIndices[i];
+      //Point indexes don't appear in output; a point vector holds its one offset first
+      auto pointOffset = indexIndices[0];
       baseOffset += pointOffset * ( inputBase->strideAt(inIdx));
       inIdx++;
 

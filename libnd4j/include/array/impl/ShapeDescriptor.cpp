@@ -705,13 +705,18 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
 #endif
   auto _shape = _shape_strides;
   auto _strides = _shape_strides + rank2;
-  if (!shape.empty() && strides.size() != shape.size() ) {
-    for (int i = 0; i < rank2; i++) {
+  if (_rank == 0) {
+    // A scalar has no dimension to copy (shape and strides are empty): fill the one slot as
+    // scalarDescriptor() does.
+    _shape[0] = 0;
+    _strides[0] = 1;
+  } else if (strides.size() != shape.size()) {
+    for (int i = 0; i < _rank; i++) {
       _shape[i] = shape[i];
     }
     fillStrides();
   } else {
-    for (int i = 0; i < rank2; i++) {
+    for (int i = 0; i < _rank; i++) {
       _shape[i] = shape[i];
       _strides[i] = strides[i];
     }

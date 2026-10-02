@@ -2652,6 +2652,18 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCreateViewOfTwoPoints(Nd4jBackend backend) {
+        // Each point selects along its own axis, and two of them leave a scalar view.
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        SDVariable element = sd.createView(sd.constant(arr), CreateView.createPoint(sd, 1), CreateView.createPoint(sd, 2));
+        INDArray value = element.eval();
+        assertEquals(0, value.rank());
+        assertEquals(arr.getDouble(1, 2), value.getDouble(0), 0.0);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateViewBp(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         Nd4j.getExecutioner().enableVerboseMode(true);
