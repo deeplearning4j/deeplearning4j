@@ -44,9 +44,13 @@ public class ReshapeNoCopy extends DynamicCustomOp {
         // Default constructor
     }
 
-    public ReshapeNoCopy(INDArray input, INDArray output) {
-        addInputArgument(input);
-        addOutputArgument(output);
+    /**
+     * Reshape {@code input} to the target shape held in {@code shape}, in C order (the op's
+     * two-input form, as {@code NDNN.reshapeNoCopy} calls it). This used to take an output
+     * array instead, which left the op without a target shape: it could only throw.
+     */
+    public ReshapeNoCopy(INDArray input, INDArray shape) {
+        addInputArgument(input, shape);
     }
 
     public ReshapeNoCopy(INDArray input, INDArray shape, INDArray output) {
