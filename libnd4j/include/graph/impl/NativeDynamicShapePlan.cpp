@@ -3361,12 +3361,15 @@ Status NativeDynamicShapePlan::execute(
                  extArr->dataBuffer() ? (extArr->dataBuffer()->isSpecialActual() ? 1 : 0) : -1);
         platformDumpExtInputGpuValues(extArr, traceExt, executeCount_, stream);
       }
-      // Check if the traced external input shares a buffer with any output slot in the cache
-      if (extArr != nullptr && sd::graph::dspBuffer(extArr) != nullptr && outputSlots_ != nullptr) {
+      // Check if the traced external input shares a buffer with any output slot in the cache.
+      // Slots are matched by DataBuffer identity, never read: a slot runs before the
+      // refresh that repoints stale views, and dspBuffer() could sync a stale buffer.
+      if (extArr != nullptr && extArr->dataBuffer() != nullptr && outputSlots_ != nullptr) {
+        DataBuffer* extBuffer = extArr->dataBuffer();
         void* extAddr = sd::graph::dspBuffer(extArr);
         int aliasCount = 0;
         for (int si = 0; si < totalOutputSlots_; si++) {
-          if (outputSlots_[si] != nullptr && sd::graph::dspBuffer(outputSlots_[si]) == extAddr) {
+          if (outputSlots_[si] != nullptr && outputSlots_[si]->dataBuffer() == extBuffer) {
             DSP_DIAG(VERIFY, "EXT_INPUT_ALIAS: extIdx=%d addr=%p == slotArrayCache[%d] (len=%lld)",
                      traceExt, extAddr, si, (long long)outputSlots_[si]->lengthOf());
             aliasCount++;
@@ -5363,10 +5366,23 @@ void NativeDynamicShapePlan::rebindExternalInputAliases(NDArray** externalInputs
       effectiveExternals_[e] = change.next;
     }
 
-    // Pass (b): plan-owned views minted over the previous input's buffer.
+    // Pass (b): plan-owned views minted over the previous input's buffer. The
+    // alias chain (derived) finds the views of identity and view steps. A view
+    // under any other producer (an in-place fused step, a control-flow
+    // publication) wraps that buffer as well, and the plan owns nothing in it,
+    // so such a view is matched by the buffer itself: left on it, it would be
+    // probed and refreshed over storage the caller may have freed. Not when the
+    // plan fed its own output back in (that buffer stays with its producer) or
+    // another input shares the buffer (its offset would be ambiguous).
     if (!change.addressChanged && !change.layoutChanged) continue;
+    bool matchByBuffer = !prevPlanControlled && prevRecord.buffer != nullptr;
+    for (int other = 0; matchByBuffer && other < prevCount; other++) {
+      if (other != e && lastExternalInputRecords_[other].buffer == prevRecord.buffer) {
+        matchByBuffer = false;
+      }
+    }
     for (int si = 0; si < totalOutputSlots_; si++) {
-      if (derived[si] != e) continue;
+      if (derived[si] != e && !(matchByBuffer && derived[si] < 0)) continue;
       NDArray* view = outputSlots_[si];
       if (view == nullptr || view == change.next) continue;
       if (planOwnedArrays_.count(view) == 0 ||
@@ -8362,8 +8378,15 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
       }
       if (planLifecycle_.isInFrozenOrReplayState() ||
           hasTrackedPlanFrozenRefs(frozenProtectedRefBuffers_, frozenOutputRefBuffers_)) {
+        // executeSteadyState reaches here without refreshing the protected set,
+        // which can still name a previous call's buffer that the caller has
+        // freed. Pin only the protected buffers this call passed in.
+        std::unordered_set<DataBuffer*> currentProtected;
+        for (DataBuffer* db : protectedWeightBuffers_) {
+          if (isRecordedExternalBuffer(db)) currentProtected.insert(db);
+        }
         replacePlanFrozenRefsForCurrentState(
-            "phaseReplayCaptureRehome", this, protectedWeightBuffers_, outputSlots_,
+            "phaseReplayCaptureRehome", this, currentProtected, outputSlots_,
             totalOutputSlots_, frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
       }
       if (frozenSnapshot_.valid) frozenSnapshot_.clear();
@@ -8639,6 +8662,16 @@ void NativeDynamicShapePlan::processPendingExternalViewReacquire(NDArray** exter
     NDArray* oldView = outputSlots_[si];
     if (oldView == nullptr) continue;
     checked++;
+
+    // The rebind at execute start moved the plan's views of a changed input onto
+    // its new buffer, so a plan view wrapping the current buffer is kept as is,
+    // by pointer comparison, without probing anything.
+    NDArray* currentInput = externalInputs != nullptr ? externalInputs[extIdx] : nullptr;
+    if (currentInput != nullptr && currentInput->dataBuffer() != nullptr &&
+        isPlanControlledWrapper(oldView) && oldView->dataBuffer() == currentInput->dataBuffer()) {
+      kept++;
+      continue;
+    }
 
     // The old view can be a wrapper the previous borrower's flow already
     // destructed (dtor nulls _shapeInfo) or whose donor buffer died with the

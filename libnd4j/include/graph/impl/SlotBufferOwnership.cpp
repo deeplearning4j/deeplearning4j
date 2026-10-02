@@ -879,19 +879,19 @@ bool validateLifecycleForPhase(
       for (int i = 0; i < totalSlots; i++) {
         if (outputSlots[i] == nullptr) continue;
         DataBuffer* db = outputSlots[i]->dataBuffer();
-        if (db != nullptr && db->isClosed()) {
-          // A slot whose underlying buffer is NOT in protectedWeightBuffers
-          // is not a true weight — it is either a view over a placeholder
-          // external input, or a SLOT_OWNED buffer that tracked a transient
-          // wrapper whose underlying memory was reclaimed (e.g., classifier
-          // saw separate DataBuffer* wrappers for view ops that nonetheless
-          // share the placeholder's memory).  In both cases the stale wrapper
-          // will be refreshed by the imminent slot-exec re-execution of the
-          // producing op.  Only protected weight/constant buffers must never
-          // be closed during a frozen phase — that is a true use-after-free.
-          if (protectedWeightBuffers.count(db) == 0) {
-            continue;
-          }
+        // A slot whose underlying buffer is NOT in protectedWeightBuffers
+        // is not a true weight — it is either a view over a placeholder
+        // external input, or a SLOT_OWNED buffer that tracked a transient
+        // wrapper whose underlying memory was reclaimed (e.g., classifier
+        // saw separate DataBuffer* wrappers for view ops that nonetheless
+        // share the placeholder's memory).  In both cases the stale wrapper
+        // will be refreshed by the imminent slot-exec re-execution of the
+        // producing op.  Only protected weight/constant buffers must never
+        // be closed during a frozen phase — that is a true use-after-free.
+        // Membership is checked first, by pointer: a view's buffer may be a
+        // caller's input that is already deleted, and is not probed.
+        if (db == nullptr || protectedWeightBuffers.count(db) == 0) continue;
+        if (db->isClosed()) {
           snprintf(errMsg, errMsgLen,
                    "LIFECYCLE_ERROR: slot %d has CLOSED protected weight DataBuffer %p during "
                    "SHAPES_FROZEN+ phase — model weight was freed while plan active",
@@ -1092,14 +1092,14 @@ int detectClosedBuffers(
   // of its producing op. Using protection (not ownership) keeps this consistent with
   // validateLifecycleForPhase's SHAPES_FROZEN rule and avoids false-positive UAFs on
   // stale ext-input views (e.g. squeeze/reshape of a placeholder in REPLAY_BLOCKED).
+  // Membership is checked first, by pointer: a stale view's buffer may be a caller's
+  // input that is already deleted, and is not probed.
   if (outputSlots != nullptr) {
     for (int i = 0; i < totalSlots; i++) {
       if (outputSlots[i] == nullptr) continue;
       DataBuffer* db = outputSlots[i]->dataBuffer();
-      if (db != nullptr && db->isClosed()) {
-        if (protectedWeightBuffers.count(db) == 0) {
-          continue;
-        }
+      if (db == nullptr || protectedWeightBuffers.count(db) == 0) continue;
+      if (db->isClosed()) {
         const char* ownershipStr = (ownership != nullptr)
             ? bufferOwnershipName(ownership[i].ownership)
             : "unknown";

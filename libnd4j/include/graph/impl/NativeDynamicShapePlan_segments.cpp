@@ -2786,10 +2786,14 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       std::vector<NDArray*> borrowers, owners;
       for (NDArray* arr : planOwnedArrays_) {
         if (arr == nullptr || arr->dataBuffer() == nullptr ||
-            liveBuffers.count(arr->dataBuffer()) != 0 ||
-            !arr->dataBuffer()->isValid()) continue;
+            liveBuffers.count(arr->dataBuffer()) != 0) continue;
+        const bool owner = arr->ownsDataBuffer() && !arr->isView();
+        // Only an owner's buffer is probed, before deleting the owner frees it.
+        // A borrower's buffer belongs to another owner or to a caller and may
+        // already be freed; deleting the borrower leaves it untouched.
+        if (owner && !arr->dataBuffer()->isValid()) continue;
         retiring.insert(arr);
-        (arr->ownsDataBuffer() && !arr->isView() ? owners : borrowers).push_back(arr);
+        (owner ? owners : borrowers).push_back(arr);
       }
       if (!retiring.empty()) {
         // Contexts borrow wrappers; remove those pointers before freeing them.
