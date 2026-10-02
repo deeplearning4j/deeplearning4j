@@ -2335,7 +2335,7 @@ public class DspExtInputDecoderPatternTest extends DspExtInputTestSupport {
     }
 
     /**
-     * HEAD ISOLATION (imperative, no SameDiff graph → no order=-1 artifact): the EXACT live
+     * HEAD ISOLATION (imperative, no SameDiff graph): the EXACT live
      * decode chain, op-by-op, with broadcast_to producing its output (NO explicit output array =
      * the model's view-producing path) fed a NON-CONTIGUOUS permuted view. Prior passing tests used
      * either an explicit broadcast output (materialized) or a fresh contiguous [1,3,3,N,64]; this
@@ -2400,7 +2400,6 @@ public class DspExtInputDecoderPatternTest extends DspExtInputTestSupport {
      * full expansion from the per-head input through SameDiff execute(), the model's path.
      */
     @org.junit.jupiter.api.Test
-    @org.junit.jupiter.api.Disabled("SameDiff build-time order=-1 artifact: broadcast_to's shape-fn propagates a placeholder order=-1 at graph-build, so reshape_no_copy throws 'Invalid order: -1' at runtime. The IMPORTED model has resolved orders (imperative broadcast test passes) — this is NOT the decode bug. Kept for reference.")
     @org.junit.jupiter.api.DisplayName("Full GQA KV-expansion in execute() (per-head -> broadcast -> merge) must not zero")
     void testGqaFullExpansionExecuteNoZeros() {
         final int N = 1142, KV = 3, REP = 3, H = KV * REP, D = 64, Dm = H * D; // 9*64 = 576

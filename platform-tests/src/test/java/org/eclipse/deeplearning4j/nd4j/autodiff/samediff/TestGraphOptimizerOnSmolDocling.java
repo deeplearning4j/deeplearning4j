@@ -657,7 +657,7 @@ public class TestGraphOptimizerOnSmolDocling {
     private static long prod(long[] a) { long p = 1; for (long x : a) p *= x; return p; }
 
     /**
-     * HEAD ISOLATION via the REAL decoder graph (resolved orders → no order=-1 artifact).
+     * HEAD ISOLATION via the REAL decoder graph.
      * Inspects placeholders + the first onnx_multi_head_attention / broadcast_to var names, then
      * feeds SYNTHETIC non-zero inputs_embeds and requests the MHA's Q/K/V inputs. If K/V come back
      * ZERO with non-zero Q → the decode K/V=0 bug is reproduced in the real graph in pure execute()
