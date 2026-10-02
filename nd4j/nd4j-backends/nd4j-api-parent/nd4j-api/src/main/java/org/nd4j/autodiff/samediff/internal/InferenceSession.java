@@ -3694,9 +3694,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
 
                 if (Nd4j.getEnvironment().isDebugAndVerbose()) {
-                    boolean descriptorEmpty = Shape.isEmpty(shapeInfo);
+                    // A zero-length output is empty whether or not its descriptor says so: a shape
+                    // function may describe one without ARRAY_EMPTY (shape_of of a scalar), the
+                    // allocator marks it, and native code counts either as empty.
+                    boolean descriptorEmpty = Shape.isEmpty(shapeInfo) || Shape.length(shapeInfo) == 0;
                     INDArray allocated = outputArrays[i];
-                    if (allocated == null || allocated.isEmpty() != descriptorEmpty) {
+                    if (allocated == null || (allocated.isEmpty() || allocated.length() == 0) != descriptorEmpty) {
                         throw new ND4JIllegalStateException(
                                 "Output allocation does not match calculated descriptor for op '" +
                                         customOp.opName() + "' output " + i +

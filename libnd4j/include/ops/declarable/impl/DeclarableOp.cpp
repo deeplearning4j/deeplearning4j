@@ -572,8 +572,11 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
             THROW_EXCEPTION(errorMessage.c_str());
           }
           int shapeEquals = shape::equalsSoft(out, arrayShapeInfo);
+          // Empty as NDArray::isEmpty() counts it, ARRAY_EMPTY or zero length, on both sides: a
+          // shape function may describe a zero-length vector (shape_of of a scalar) without the
+          // flag that the caller's preallocated array carries.
           int arrayEmpty = array->isEmpty();
-          int expectedEmpty = shape::isEmptyConst(out);
+          int expectedEmpty = shape::isEmptyConst(out) || shape::length(out) == 0;
           if (sd::env_isDebugAndVerbose()) {
             sd_debug("OP PREPARE OUTPUTS: op=%s index=%zu array=%p expectedEmpty=%d actualEmpty=%d expectedExtras=%lld actualExtras=%lld expectedEws=%lld actualEws=%lld\n",
                      getOpName()->c_str(), idx, array, expectedEmpty, arrayEmpty,

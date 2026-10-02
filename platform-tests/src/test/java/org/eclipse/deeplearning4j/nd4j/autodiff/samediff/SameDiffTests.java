@@ -47,6 +47,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.*;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.autodiff.validation.OpValidation;
@@ -246,6 +247,33 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
             long gatherVal3 = out3.get("gather_out").getLong(0);
             System.out.println("Test3 - gather_out only: " + gatherVal3);
             assertEquals(1L, gatherVal3, "gather(shape, 0) requesting only gather_out should be 1");
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testShapeOfScalarReshapesToAScalar(Nd4jBackend backend) {
+        // The shape of a scalar is a vector of no elements, and reshaping by it makes a scalar.
+        // Debug and verbose mode make the session check each allocation against its descriptor.
+        boolean dsp = InferenceSession.isDynamicShapePlanEnabled();
+        boolean debug = Nd4j.getEnvironment().isDebug();
+        boolean verbose = Nd4j.getEnvironment().isVerbose();
+        Nd4j.getEnvironment().setDebug(true);
+        Nd4j.getEnvironment().setVerbose(true);
+        try {
+            for (boolean enabled : new boolean[]{false, true}) {
+                InferenceSession.setDynamicShapePlanEnabled(enabled);
+                SameDiff sd = SameDiff.create();
+                SDVariable shape = sd.shape("scalarShape", sd.constant("scalar", Nd4j.scalar(DataType.INT, 3)));
+                sd.reshape("reshaped", sd.constant("five", Nd4j.createFromArray(5.0f)), shape);
+                Map<String, INDArray> out = sd.output(Collections.emptyMap(), "scalarShape", "reshaped");
+                assertEquals(0, out.get("scalarShape").length(), "dsp=" + enabled);
+                assertEquals(Nd4j.scalar(5.0f), out.get("reshaped"), "dsp=" + enabled);
+            }
+        } finally {
+            InferenceSession.setDynamicShapePlanEnabled(dsp);
+            Nd4j.getEnvironment().setDebug(debug);
+            Nd4j.getEnvironment().setVerbose(verbose);
         }
     }
 
