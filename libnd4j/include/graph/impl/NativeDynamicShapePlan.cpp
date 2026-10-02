@@ -8475,9 +8475,12 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
           }
         }
 
-        // Clear dead flags for the full loop body range so body ops re-execute
+        // Clear dead flags for every step the restarted pass re-executes: the loop body
+        // and the steps after the last NextIteration (the Exit and what consumes the loop
+        // result), which the previous pass marked dead while the loop was still running.
+        // The pass marks again whatever is really dead.
         if (slotIsDead_) {
-          for (int s = earliestMerge; s <= lastNextIter && s < numSlots_; s++) {
+          for (int s = earliestMerge; s < numSlots_; s++) {
             NativeSlot& bodySlot = slots_[s];
             for (int oi = 0; oi < bodySlot.wiring.numOutputs; oi++) {
               int si = bodySlot.wiring.outputSlotIndices[oi];
