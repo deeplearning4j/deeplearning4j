@@ -1233,12 +1233,62 @@ void fusedAttentionCuda(
  }
 }
 
+// Loads each thread of a GQA decode block issues per staging pass before it stores any, so a
+// pass costs about one memory latency instead of one per element.
+constexpr int GQA_DECODE_STAGE_LOADS = 16;
+// Dynamic shared memory every CUDA device grants a block without an opt-in.
+constexpr size_t GQA_DECODE_SHARED_LIMIT = 48 * 1024;
+
+// Copies rows [firstKv, firstKv + rows) of one KV head into staged[row * pitch + d] as AccT,
+// with coalesced loads by the whole block. Rows inside the current producer window come from
+// that window, the others from the cache. The conversion to AccT is exact, so a consumer reads
+// the same values it would read from global memory.
+template <typename T, typename AccT>
+static SD_DEVICE SD_INLINE void stageGqaDecodeRows(
+    AccT* staged, const LongType pitch, const int rows, const LongType firstKv, const LongType headDim,
+    const T* cacheBase, const LongType cacheRowStride, const LongType cacheDimStride,
+    const T* windowBase, const LongType windowRowStride, const LongType windowDimStride,
+    const bool validWindow, const LongType windowStart, const LongType windowSeq) {
+  const int width = static_cast<int>(headDim);
+  const int total = rows * width;
+  const int passElements = static_cast<int>(blockDim.x) * GQA_DECODE_STAGE_LOADS;
+  for (int passStart = 0; passStart < total; passStart += passElements) {
+    AccT loaded[GQA_DECODE_STAGE_LOADS];
+#pragma unroll
+    for (int j = 0; j < GQA_DECODE_STAGE_LOADS; j++) {
+      const int element = passStart + static_cast<int>(threadIdx.x) + j * static_cast<int>(blockDim.x);
+      if (element < total) {
+        const int row = element / width;
+        const LongType d = element - row * width;
+        const LongType kvIdx = firstKv + row;
+        const LongType windowIndex = kvIdx - windowStart;
+        const bool fromWindow = validWindow && windowIndex >= 0 && windowIndex < windowSeq;
+        const T* source = fromWindow ? windowBase + windowIndex * windowRowStride + d * windowDimStride
+                                     : cacheBase + kvIdx * cacheRowStride + d * cacheDimStride;
+        loaded[j] = static_cast<AccT>(*source);
+      }
+    }
+#pragma unroll
+    for (int j = 0; j < GQA_DECODE_STAGE_LOADS; j++) {
+      const int element = passStart + static_cast<int>(threadIdx.x) + j * static_cast<int>(blockDim.x);
+      if (element < total) {
+        const int row = element / width;
+        staged[row * pitch + (element - row * width)] = loaded[j];
+      }
+    }
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Direct GQA attention kernel — 4D BSHD inputs, tiled online softmax.
 // Each block handles one (batch, qHead, queryIdx) tuple.
 // K/V are indexed via kvHead = qHead / headsPerKvHead, so multi-row GQA
 // avoids both K/V head materialization and Q/K/V permutation round-trips.
 // NO atomicAdd — each thread owns output dimensions.
+// K and V rows pass through shared memory stageRows at a time (stageGqaDecodeRows); every
+// score and output sum is still the same sequential chain over the same values, so the
+// result does not depend on stageRows and matches the compiled Triton recipe
+// (emitNativeOrderedGqaRowAttention).
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
@@ -1279,7 +1329,9 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    const LongType biasStride0,
    const LongType biasStride1,
    const LongType biasStride2,
-   const LongType biasStride3) {
+   const LongType biasStride3,
+   // K/V rows staged per pass
+   const int stageRows) {
 
  using AccT = typename FlashAccType<T>::type;
 
@@ -1297,11 +1349,17 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
  const LongType kvHead = qHead / headsPerKvHead;
  if (kvHead >= numKvHeads) return;
 
- // Shared memory layout: scores tile + output accumulator [headDim]
- // in accumulator precision.
+ // Shared memory layout, all in accumulator precision: the tile's scores, the output
+ // accumulator [headDim], this tile's P*V subtotals [headDim], the query row [headDim], and
+ // stageRows K or V rows at a pitch of headDim + 1, so a warp reading one row per thread and a
+ // warp reading one dimension per thread both hit distinct banks.
  extern __shared__ char sharedMem[];
  AccT* sharedScores = reinterpret_cast<AccT*>(sharedMem);
  AccT* sharedOutput = sharedScores + GQA_DECODE_TILE_SIZE_KV;
+ AccT* tileOutput = sharedOutput + headDim;
+ AccT* queryRow = tileOutput + headDim;
+ AccT* stagedRows = queryRow + headDim;
+ const LongType stagePitch = headDim + 1;
 
  // Q pointer: query[batchIdx, queryIdx, qHead, :] — stride-based indexing
  const T* Q = query + batchIdx * qStride0 + queryIdx * qStride1 + qHead * qStride2;
@@ -1353,9 +1411,10 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    globalSum = static_cast<AccT>(0);
  }
 
- // Initialize output accumulator
+ // Initialize output accumulator and stage the query row
  for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
    sharedOutput[d] = static_cast<AccT>(0);
+   queryRow[d] = static_cast<AccT>(Q[d * qStride3]);
  }
  __syncthreads();
 
@@ -1368,34 +1427,38 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    const int tileSize = static_cast<int>(kvEnd - kvStart);
    if (tileSize <= 0) continue;
 
-   // Step 1: Compute Q @ K^T scores for this tile + add bias.
+   // Step 1: Compute Q @ K^T scores for this tile + add bias, from K rows staged
+   // stageRows at a time. Each score is one sequential chain over d.
    // Positions beyond this query row's causal boundary remain -inf.
-   for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
-     const LongType kvIdx = kvStart + k;
-     AccT score = -DataTypeUtils::infOrMax<AccT>();
-     if (kvIdx < maxKV) {
-       const LongType currentIndex = kvIdx - currentStart;
-       const bool useCurrent =
-           validCurrentWindow && currentIndex >= 0 && currentIndex < currentSeq;
-       const T* Krow = useCurrent
-           ? currentKBase + currentIndex * currentKStride1
-           : Kbase + kvIdx * kStride1;
-       const LongType kDimStride = useCurrent ? currentKStride3 : kStride3;
-       score = static_cast<AccT>(0);
-       for (LongType d = 0; d < headDim; d++) {
-         score += static_cast<AccT>(Q[d * qStride3])
-             * static_cast<AccT>(Krow[d * kDimStride]);
-       }
-       score *= static_cast<AccT>(scale);
+   for (int stageStart = 0; stageStart < tileSize; stageStart += stageRows) {
+     const int rows = min(stageRows, tileSize - stageStart);
+     stageGqaDecodeRows<T, AccT>(stagedRows, stagePitch, rows, kvStart + stageStart, headDim,
+                                 Kbase, kStride1, kStride3,
+                                 currentKBase, currentKStride1, currentKStride3,
+                                 validCurrentWindow, currentStart, currentSeq);
+     __syncthreads();
 
-       if (biasRow != nullptr) {
-         score += static_cast<AccT>(biasRow[kvIdx * biasStride3]);
+     for (int r = threadIdx.x; r < rows; r += blockDim.x) {
+       const int k = stageStart + r;
+       const LongType kvIdx = kvStart + k;
+       AccT score = -DataTypeUtils::infOrMax<AccT>();
+       if (kvIdx < maxKV) {
+         const AccT* Krow = stagedRows + r * stagePitch;
+         score = static_cast<AccT>(0);
+         for (LongType d = 0; d < headDim; d++) {
+           score += queryRow[d] * Krow[d];
+         }
+         score *= static_cast<AccT>(scale);
+
+         if (biasRow != nullptr) {
+           score += static_cast<AccT>(biasRow[kvIdx * biasStride3]);
+         }
        }
+
+       sharedScores[k] = score;
      }
-
-     sharedScores[k] = score;
+     __syncthreads();
    }
-   __syncthreads();
 
    // Step 2: Find max in this tile
    AccT tileMax = -DataTypeUtils::infOrMax<AccT>();
@@ -1485,21 +1548,31 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    }
    __syncthreads();
 
-   // Step 5: Accumulate weighted V — each thread owns a subset of output dims
+   // Step 5: Accumulate weighted V — each thread owns a subset of output dims. A dim's
+   // tile subtotal is one chain over k in order, carried in tileOutput across the V rows
+   // staged stageRows at a time, and then added to the output accumulator.
    for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-     AccT acc = static_cast<AccT>(0);
-     for (int k = 0; k < tileSize; k++) {
-       const LongType kvIdx = kvStart + k;
-       const LongType currentIndex = kvIdx - currentStart;
-       const bool useCurrent =
-           validCurrentWindow && currentIndex >= 0 && currentIndex < currentSeq;
-       const T* Vrow = useCurrent
-           ? currentVBase + currentIndex * currentVStride1
-           : Vbase + kvIdx * vStride1;
-       const LongType vDimStride = useCurrent ? currentVStride3 : vStride3;
-       acc += sharedScores[k] * static_cast<AccT>(Vrow[d * vDimStride]);
+     tileOutput[d] = static_cast<AccT>(0);
+   }
+   for (int stageStart = 0; stageStart < tileSize; stageStart += stageRows) {
+     const int rows = min(stageRows, tileSize - stageStart);
+     stageGqaDecodeRows<T, AccT>(stagedRows, stagePitch, rows, kvStart + stageStart, headDim,
+                                 Vbase, vStride1, vStride3,
+                                 currentVBase, currentVStride1, currentVStride3,
+                                 validCurrentWindow, currentStart, currentSeq);
+     __syncthreads();
+
+     for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
+       AccT acc = tileOutput[d];
+       for (int r = 0; r < rows; r++) {
+         acc += sharedScores[stageStart + r] * stagedRows[r * stagePitch + d];
+       }
+       tileOutput[d] = acc;
      }
-     sharedOutput[d] += acc;
+     __syncthreads();
+   }
+   for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
+     sharedOutput[d] += tileOutput[d];
    }
    __syncthreads();
  }
@@ -1570,9 +1643,18 @@ static void fusedGQADecodeLauncher(
  dim3 block(threadsPerBlock);
 
  using AccT = typename FlashAccType<T>::type;
- size_t smem = sharedMem > 0
-     ? static_cast<size_t>(sharedMem)
-     : static_cast<size_t>(GQA_DECODE_TILE_SIZE_KV + headDim) * sizeof(AccT);
+ // Stage as many K/V rows as the block loads in one pass, at most a tile, and fewer when the
+ // layout (scores, three [headDim] rows, staged rows) would not fit a block's shared memory.
+ auto layoutBytes = [&](LongType rows) -> LongType {
+   return (GQA_DECODE_TILE_SIZE_KV + 3 * headDim + rows * (headDim + 1)) * static_cast<LongType>(sizeof(AccT));
+ };
+ LongType stageRows = sd::math::sd_max<LongType>(
+     1, sd::math::sd_min<LongType>(GQA_DECODE_TILE_SIZE_KV,
+                                   static_cast<LongType>(threadsPerBlock) * GQA_DECODE_STAGE_LOADS /
+                                       sd::math::sd_max<LongType>(1, headDim)));
+ while (stageRows > 1 && layoutBytes(stageRows) > static_cast<LongType>(GQA_DECODE_SHARED_LIMIT)) stageRows /= 2;
+ const size_t smem = static_cast<size_t>(
+     sd::math::sd_max<LongType>(layoutBytes(stageRows), static_cast<LongType>(sharedMem)));
 
  fusedGQADecodeKernel<T><<<grid, block, smem, *stream>>>(
      query, key, value,
@@ -1586,7 +1668,8 @@ static void fusedGQADecodeLauncher(
      currentKStride0, currentKStride1, currentKStride2, currentKStride3,
      currentVStride0, currentVStride1, currentVStride2, currentVStride3,
      oStride0, oStride1, oStride2, oStride3,
-     biasStride0, biasStride1, biasStride2, biasStride3);
+     biasStride0, biasStride1, biasStride2, biasStride3,
+     static_cast<int>(stageRows));
  DebugHelper::checkGlobalErrorCode("fusedGQADecode failed");
 }
 
