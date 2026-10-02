@@ -4717,6 +4717,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                 }
                 if (arr == null) {
+                    SDVariable missing = sd.getVariable(varName);
+                    if (missing != null && missing.getVariableType() == VariableType.PLACEHOLDER) {
+                        // The caller's mistake, reported as the non-DSP path reports it.
+                        throw new IllegalArgumentException("No array was provided for required placeholder variable \""
+                                + varName + "\"");
+                    }
                     throw new RuntimeException("Native executor: missing external input '" + varName +
                             "' (index " + i + "/" + extKeys.length + "). " +
                             "All external inputs must be resolved. No fallback permitted." +

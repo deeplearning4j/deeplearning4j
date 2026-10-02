@@ -1086,6 +1086,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 } catch (Error e) {
                     releaseUnretainedPlaceholderCopiesAfterFailure(e);
                     throw e;
+                } catch (IllegalArgumentException e) {
+                    // The caller's arguments (a placeholder without an array, for one), not an
+                    // executor fault: reported as the standard path reports it.
+                    releaseUnretainedPlaceholderCopiesAfterFailure(e);
+                    throw e;
                 } catch (Exception e) {
                     releaseUnretainedPlaceholderCopiesAfterFailure(e);
                     log.error("DynamicShapePlan-based execution failed — no fallback allowed: {}", e.getMessage());
@@ -5913,7 +5918,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         args[i] = otherPlaceholders.get(s).getTensorValue();
                     }
                     else
-                        throw new IllegalArgumentException("No array was provided for required placeholder variable \"%s\"".format(s));
+                        throw new IllegalArgumentException(String.format("No array was provided for required placeholder variable \"%s\"", s));
                 } else {
                     VarId vid = lookup(s, opInputs, allIterInputs, true);
                     SDValue getValue = getSdValue(vid);
