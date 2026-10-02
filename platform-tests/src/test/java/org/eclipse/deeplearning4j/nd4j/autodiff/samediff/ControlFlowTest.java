@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.ControlFlow;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -251,5 +252,23 @@ public class ControlFlowTest {
 
         assertArrayEquals(new long[]{1, 640, 1, 1}, out.get("spatial_mean").shape());
         assertArrayEquals(new long[]{1, 1, 1, 1}, out.get("global_mean").shape());
+    }
+
+    /**
+     * A while loop over constants adds no trainable variable: whileLoop once created a scalar
+     * "counter" variable, read only by a Merge of its own output, which training would have
+     * taken for a parameter without a gradient.
+     */
+    @Test
+    public void testWhileLoopAddsNoTrainableVariable() {
+        SameDiff sd = SameDiff.create();
+        SDVariable[] out = sd.whileLoop(new SDVariable[]{sd.constant(3), sd.constant(0)},
+                (s, v) -> v[0].gt(0),
+                (s, v) -> new SDVariable[]{v[0].sub(1), v[1].add(v[0])});
+        for (SDVariable variable : sd.variables()) {
+            assertNotEquals(VariableType.VARIABLE, variable.getVariableType(),
+                    "trainable variable " + variable.name());
+        }
+        assertEquals(6, out[1].eval().getInt(0));
     }
 }

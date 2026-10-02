@@ -541,8 +541,6 @@ public class ControlFlow {
 
         NameScope loopScope = sameDiff.withNameScope(frameName);
 
-        SDVariable counter = sameDiff.scalar(sameDiff.generateNewVarName("counter", 0), 0);
-
         SDVariable[] entered = new SDVariable[loopVars.length];
         for (int i = 0; i < loopVars.length; i++) {
             entered[i] = new Enter(sameDiff, frameName, loopVars[i]).outputVariable();
@@ -557,10 +555,6 @@ public class ControlFlow {
             mergeOps[i].setFrameName(frameName);
             merged[i] = mergeOps[i].outputVariable();
         }
-
-        Merge counterMerge = new Merge(sameDiff, counter, counter);
-        counter = counterMerge.outputVariable();
-        counterMerge.setFrameName(frameName);
 
         NameScope condScope = sameDiff.withNameScope("cond");
         SDVariable condResult = cond.define(sameDiff, merged);
@@ -612,16 +606,12 @@ public class ControlFlow {
         bodyScope.close();
         sameDiff.removeArgumentInterceptor();
 
-        counter.add(1);
-
         for (int i = 0; i < outs.length; i++) {
             NextIteration nextIteration = new NextIteration(sameDiff, outs[i]);
             nextIteration.setFrameName(frameName);
             SDVariable n = nextIteration.outputVariable();
             mergeOps[i].replaceArg(1, n);
         }
-
-        counterMerge.replaceArg(1, counter);
 
         loopScope.close();
         return sameDiff.updateVariableNamesAndReferences(exits, outputNames);
