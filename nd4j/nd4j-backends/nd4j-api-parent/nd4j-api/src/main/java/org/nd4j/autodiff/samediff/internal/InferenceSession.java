@@ -3601,7 +3601,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // reshape and reshape_no_copy encode their order in different iArg positions.
         boolean isReshapeNoCopyOp = "reshape_no_copy".equals(customOp.opName());
         boolean isReshapeOp = "reshape".equals(customOp.opName()) || isReshapeNoCopyOp;
-        boolean reshapeViewPossible = false;
+        INDArray reshapeView = null;
         char reshapeOrder = 'c';
         if (isReshapeOp && inputArrays != null && !inputArrays.isEmpty() && outShape.size() == 1) {
             if (TIMING_ENABLED) timing.reshapeTotal++;
@@ -3627,9 +3627,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
                 boolean isFOrder = (reshapeOrder == 'f');
                 long[] targetShape = Shape.shape(outShape.get(0).asLong());
-                reshapeViewPossible = Shape.ableToReshapeWithView(reshapeInput, isFOrder, targetShape);
+                // The view takes its strides from the input (numpy's no-copy reshape), not the
+                // target shape's canonical strides: a permuted input whose axes the reshape keeps
+                // apart stays strided, and canonical strides would read it in storage order.
+                reshapeView = Shape.newShapeNoCopy(reshapeInput, targetShape, isFOrder);
                 if (TIMING_ENABLED) {
-                    if (reshapeViewPossible) timing.reshapeViewUsed++;
+                    if (reshapeView != null) timing.reshapeViewUsed++;
                     else timing.reshapeViewSkipped++;
                 }
             }
@@ -3641,11 +3644,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 long[] shapeInfo = shapeBuffer.asLong();
 
                 // Special case: reshape with view possible
-                if (isReshapeOp && reshapeViewPossible && i == 0) {
-                    INDArray input = inputArrays.get(0);
-                    long[] actualShape = Shape.shape(shapeInfo);
-                    long[] strides = Nd4j.getStrides(actualShape, reshapeOrder);
-                    outputArrays[i] = Nd4j.create(input.data(), actualShape, strides, input.offset(), reshapeOrder, true);
+                if (reshapeView != null && i == 0) {
+                    outputArrays[i] = reshapeView;
                     continue;
                 }
 

@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -252,10 +253,103 @@ public class ReshapeViewCopyTests extends BaseNd4jTestWithBackends {
 
             assertNotNull(output, "Missing reshape_no_copy output for order " + order);
             assertArrayEquals(new long[]{3, 4}, output.shape());
-            assertEquals(order, output.ordering());
-            assertEquals(1.0, output.getDouble(0, 0), 1e-5);
-            assertEquals(12.0, output.getDouble(2, 3), 1e-5);
+            // C and F layouts agree at [0,0] and [2,3], so every element is compared. output()
+            // returns an independent copy in the default order: the layout is not the op's, the
+            // values show which order the marker selected.
+            assertEquals(inputArr.reshape(order, 3, 4), output, "reshape_no_copy values for order " + order);
             sd.close();
+        }
+    }
+
+    /**
+     * A reshape that keeps a permuted input's axes apart (the same shape, or a unit axis
+     * inserted) needs no copy, but its view takes the input's strides: the target shape's
+     * canonical strides over the permuted buffer would read the elements in storage order.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSameDiffReshapeViewOfPermutedInputKeepsItsStrides(Nd4jBackend backend) {
+        long[][] targets = {{4, 3}, {4, 1, 3}, {1, 4, 3}, {4, 3, 1}};
+        for (boolean noCopy : new boolean[]{false, true}) {
+            for (long[] target : targets) {
+                SameDiff sd = SameDiff.create();
+                INDArray inputArr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+                SDVariable input = sd.var("input", inputArr);
+                SDVariable permuted = sd.permute(input, 1, 0);  // [4, 3] over the [3, 4] buffer
+                SDVariable reshaped = noCopy
+                        ? new ReshapeNoCopy(sd, permuted, target, 'c').outputVariable()
+                        : sd.reshape(permuted, target);
+                INDArray original = inputArr.dup();
+                INDArray expected = inputArr.permute(1, 0).dup('c').reshape(target);
+                String what = (noCopy ? "reshape_no_copy" : "reshape") + " of a permuted view to "
+                        + Arrays.toString(target);
+
+                INDArray output = sd.output(Map.of(), reshaped.name()).get(reshaped.name());
+                assertEquals(expected, output, what);
+                // A view over the input's buffer must not be written through
+                assertEquals(original, sd.getArrForVarName("input"), what + ": the input variable changed");
+                INDArray again = sd.output(Map.of(), reshaped.name()).get(reshaped.name());
+                assertEquals(expected, again, what + ": second output");
+                sd.close();
+            }
+        }
+    }
+
+    /**
+     * An output reshape_no_copy did not get as a view of its input, such as one the caller
+     * provides, is written even when the shapes are equal.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReshapeNoCopyWritesASeparateOutputOfTheSameShape(Nd4jBackend backend) {
+        INDArray input = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+        INDArray output = Nd4j.zeros(DataType.DOUBLE, 3, 4);
+        Nd4j.exec(new ReshapeNoCopy(input, new long[]{3, 4}, output, 'c'));
+        assertEquals(input, output);
+    }
+
+    /**
+     * The last integer argument of reshape_no_copy is the order marker. A shape passed without
+     * it lost its last dimension to the marker: [3, 1] over three elements became [3].
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReshapeNoCopyRejectsAShapeWithoutItsOrderMarker(Nd4jBackend backend) {
+        INDArray input = Nd4j.linspace(1, 3, 3, DataType.DOUBLE);
+        DynamicCustomOp missingMarker = DynamicCustomOp.builder("reshape_no_copy")
+                .addInputs(input)
+                .addIntegerArguments(3L, 1L)
+                .build();
+        assertThrows(RuntimeException.class, () -> Nd4j.exec(missingMarker));
+
+        INDArray reshaped = Nd4j.exec(new ReshapeNoCopy(input, new long[]{3, 1}, null, 'c'))[0];
+        assertArrayEquals(new long[]{3, 1}, reshaped.shape());
+    }
+
+    /** NDNN.reshapeNoCopy hands the op its target shape as the second input. */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNdnnReshapeNoCopyTakesTheShapeTensor(Nd4jBackend backend) {
+        INDArray input = Nd4j.linspace(1, 12, 12, DataType.DOUBLE);
+        INDArray reshaped = Nd4j.nn().reshapeNoCopy(input, Nd4j.createFromArray(3L, 4L));
+        assertEquals(input.reshape(3, 4), reshaped);
+    }
+
+    /** The reshape op executed directly builds its no-copy view the same way. */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testExecReshapeViewOfPermutedInputKeepsItsStrides(Nd4jBackend backend) {
+        long[][] targets = {{4, 3}, {4, 1, 3}, {1, 4, 3}, {4, 3, 1}};
+        for (long[] target : targets) {
+            INDArray source = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray permuted = source.permute(1, 0);
+            INDArray original = source.dup();
+            INDArray expected = permuted.dup('c').reshape(target);
+            String what = "Nd4j.exec(reshape) of a permuted view to " + Arrays.toString(target);
+
+            INDArray output = Nd4j.exec(new Reshape(permuted, 'c', target))[0];
+            assertEquals(expected, output, what);
+            assertEquals(original, source, what + ": the input changed");
         }
     }
 

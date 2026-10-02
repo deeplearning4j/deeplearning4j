@@ -311,10 +311,14 @@ public class Reshape extends DynamicCustomOp {
                 resolvedShape[minusOneIdx] = input.length() / knownElements;
             }
 
-            //wrap an existing buffer to ensure that the original buffer doesn't get deallocated
-            INDArray arr = Nd4j.create(input.data(),
-                    resolvedShape,
-                    Nd4j.getStrides(resolvedShape, newOrder), input.offset(), newOrder);
+            // A view over the input's buffer with the input's strides (numpy's no-copy reshape).
+            // The target shape's canonical strides fit only an input stored densely in newOrder:
+            // over a permuted input they alias other elements, and the op's copy then overwrote
+            // the input. Null when the shape fed at execution time needs a copy after all.
+            INDArray arr = Shape.newShapeNoCopy(input, resolvedShape, newOrder == 'f');
+            if (arr == null) {
+                return super.initializeOutputs(ctx);
+            }
             addOutputArgument(arr);
             return false;
         }
