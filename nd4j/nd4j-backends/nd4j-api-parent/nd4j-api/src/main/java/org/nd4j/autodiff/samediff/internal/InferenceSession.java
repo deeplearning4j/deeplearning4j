@@ -2551,6 +2551,30 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
     }
 
+    /**
+     * create_view yields a view of its input that shares the input's buffer, as the graph means it
+     * to: SDVariable.put assigns each slice through such a view of the array it updates. Run as a
+     * regular op, create_view copies the viewed elements into an output of its own.
+     */
+    private void executeCreateViewNode(ExecutionNode node, Map<String, SDValue> variableValues,
+                                       Set<String> allRequired) {
+        List<String> inputs = node.getInputVariables();
+        INDArray[] arrays = new INDArray[inputs.size()];
+        for (int i = 0; i < inputs.size(); i++) {
+            SDValue value = variableValues.get(inputs.get(i));
+            if (value == null || value.getTensorValue() == null) {
+                throw new IllegalStateException("Input variable " + inputs.get(i) + " not found for create_view "
+                        + node.getOperationName());
+            }
+            arrays[i] = value.getTensorValue();
+        }
+        INDArray view = CreateView.createFrom(arrays[0], Arrays.copyOfRange(arrays, 1, arrays.length));
+        String output = node.getOutputVariables().get(0);
+        SDValue outputValue = SDValue.create(view);
+        variableValues.put(output, outputValue);
+        addConsumerDependencies(outputValue, output, allRequired);
+    }
+
     void executeNode(ExecutionNode node,
                      Map<String, SDValue> variableValues,
                      Set<String> allRequired,
@@ -2708,6 +2732,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             if (op instanceof Invoke) {
                 executeInvokeNode(node, variableValues, (Invoke) op);
+                return;
+            }
+
+            if (op instanceof CreateView) {
+                executeCreateViewNode(node, variableValues, allRequired);
                 return;
             }
 
@@ -3541,6 +3570,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         opContext.setDArguments(dynOp.dArgs());
         opContext.setBArguments(dynOp.bArgs());
         opContext.setSArguments(dynOp.sArgs());
+
+        // assign writes y into x, its first input: SDVariable.put assigns each slice through a view
+        // of the array it updates, which an output of its own would leave untouched.
+        if (customOp instanceof Assign && opContext.getInputArrays().size() > 1) {
+            INDArray target = opContext.getInputArray(0);
+            opContext.setOutputArray(0, target);
+            Nd4j.exec(dynOp, opContext);
+            String outputName = node.getOutputVariables().get(0);
+            SDValue outputValue = SDValue.create(target);
+            variableValues.put(outputName, outputValue);
+            addConsumerDependencies(outputValue, outputName, allRequired);
+            return;
+        }
 
         // Calculate output shapes with caching: for autoregressive generation, most ops
         // have identical input shapes across decode steps. Cache by (opName + input shapes + args).
