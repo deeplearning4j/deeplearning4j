@@ -139,6 +139,11 @@ public class GradCheckUtil {
             }
         }
 
+        // Random ops (dropout and the like) draw from Nd4j.getRandom(). Every forward pass of the check starts from the
+        // same generator state, so the analytic gradient and each numerical score are taken of the same function (the
+        // same dropout mask, say) rather than of a fresh draw each time.
+        final long noiseSeed = Nd4j.getRandom().getSeed();
+        Nd4j.getRandom().setSeed(noiseSeed);
         Map<String,INDArray> gm = sd.calculateGradients(placeholderValues, varsNeedingGrads);
 
         Map<String,INDArray> grad = new HashMap<>();
@@ -278,6 +283,7 @@ public class GradCheckUtil {
                 a.putScalar(idx, orig + eps);
                 sd.invalidateAllPlanCaches();
                 double scorePlus = 0.0;
+                Nd4j.getRandom().setSeed(noiseSeed);
                 Map<String,INDArray> m = sd.output(placeholderValues, lossFnVariables);
                 for(INDArray arr : m.values()) {
                     scorePlus += arr.sumNumber().doubleValue();
@@ -292,6 +298,7 @@ public class GradCheckUtil {
 
                 a.putScalar(idx, orig-eps);
                 sd.invalidateAllPlanCaches();
+                Nd4j.getRandom().setSeed(noiseSeed);
                 m = sd.output(placeholderValues, lossFnVariables);
                 double scoreMinus = 0.0;
                 for(INDArray arr : m.values()) {
@@ -442,7 +449,10 @@ public class GradCheckUtil {
             varsRequiringGrads.add(s);
         }
 
-        //Calculate analytical gradients
+        //Calculate analytical gradients. Every forward pass of the check starts from the same random generator state, so
+        //random ops (dropout and the like) draw the same values in each (see checkGradients).
+        final long noiseSeed = Nd4j.getRandom().getSeed();
+        Nd4j.getRandom().setSeed(noiseSeed);
         Map<String,INDArray> grads = sd.calculateGradients(config.getPlaceholderValues(), new ArrayList<>(varsRequiringGrads));
         Map<String,INDArray> gradientsForAct = new HashMap<>();
         for(String s : actGrads){
@@ -473,6 +483,7 @@ public class GradCheckUtil {
             // mark setCloseable(false) so the buffer survives the addPlaceholderOverride() call
             // below, which triggers invalidateAllPlanCaches() → clearAllCaches() →
             // closeLatestRequestedOutputBuffers() and would otherwise close this buffer.
+            Nd4j.getRandom().setSeed(noiseSeed);
             Map<String,INDArray> baselineRaw = sd.output(config.getPlaceholderValues(), Collections.singletonList(s));
             INDArray baselineArr = baselineRaw.get(s).dup();
             baselineArr.setCloseable(false);
@@ -548,6 +559,7 @@ public class GradCheckUtil {
                 Map<String,INDArray> plusPlaceholders = new HashMap<>(config.getPlaceholderValues() != null ? config.getPlaceholderValues() : new HashMap<>());
                 plusPlaceholders.put(s, perturbedPlus);
                 double scorePlus = 0.0;
+                Nd4j.getRandom().setSeed(noiseSeed);
                 Map<String,INDArray> mPlus = sd.output(plusPlaceholders, lossFnVariables);
                 for(INDArray arr : mPlus.values()){
                     scorePlus += arr.sumNumber().doubleValue();
@@ -559,6 +571,7 @@ public class GradCheckUtil {
                 Map<String,INDArray> minusPlaceholders = new HashMap<>(config.getPlaceholderValues() != null ? config.getPlaceholderValues() : new HashMap<>());
                 minusPlaceholders.put(s, perturbedMinus);
                 double scoreMinus = 0.0;
+                Nd4j.getRandom().setSeed(noiseSeed);
                 Map<String,INDArray> mMinus = sd.output(minusPlaceholders, lossFnVariables);
                 for(INDArray arr : mMinus.values()){
                     scoreMinus += arr.sumNumber().doubleValue();
