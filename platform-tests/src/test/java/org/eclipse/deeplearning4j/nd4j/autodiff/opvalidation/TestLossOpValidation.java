@@ -187,7 +187,9 @@ public class TestLossOpValidation extends BaseOpValidation {
                             break;
                         case "log_poisson_full":
                             predictionsArr = Transforms.log(Transforms.abs(predictionsArr));
-                            labelsArr = Transforms.abs(labelsArr);
+                            //Labels away from 0: the Stirling term's log(labels) + 0.5/labels gradient has a
+                            //1/labels^3 third derivative, and the gradient check's central difference error grows with it
+                            labelsArr = Transforms.abs(labelsArr).addi(0.1);
                             expOut = Transforms.exp(predictionsArr)
                                     .sub(labelsArr.mul(predictionsArr))
                                     .add(labelsArr.mul(Transforms.log(labelsArr)))
@@ -346,12 +348,6 @@ public class TestLossOpValidation extends BaseOpValidation {
                             .expectedOutput("loss", expOut)
                             .gradientCheck(doGradCheck)
                             .testFlatBufferSerialization(TestCase.TestSerialization.BOTH);
-
-                    // log_poisson_full has log(labels) + 0.5/labels terms with high curvature,
-                    // causing larger finite-difference errors at large gradient magnitudes
-                    if(fn.equals("log_poisson_full")) {
-                        tc.gradCheckMaxRelativeError(5e-5);
-                    }
 
                     if(reduction == LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT && !weights.equals("none")){
                         tc = tc.gradCheckMask(Collections.singletonMap("weights", w.getArr().neq(0)));

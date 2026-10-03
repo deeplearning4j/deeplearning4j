@@ -55,7 +55,9 @@ union u64 {
   uint64_t _ulong;
   di32 _di32;
   du32 _du32;
-  u64() { _long = 0; }
+  // Host and device: a kernel that constructs a host-only u64 compiles to an empty body, and the
+  // build's -w hides the diagnostic.
+  SD_HOST_DEVICE u64() { _long = 0; }
 };
 }  // namespace sd
 

@@ -3,7 +3,8 @@
 ## Status
 
 Accepted (2026-10-02). Amends ADR 0089 (CUDA graph capture and replay): slots that
-draw random state are never captured.
+draw random state are never captured. Amended 2026-10-03: the generator is Philox4x32-10
+(see The generator).
 
 ## Context
 
@@ -83,10 +84,30 @@ lambda 10, Hormann's PTRS from 10 on) live once in `helpers/random.h` as host/de
 functions used by the CPU and CUDA helpers. Element `e` of a fill draws its own
 counter range of the generator (`e * 2^16 + j`), so the result does not depend on how
 threads or blocks split the work, and a fill advances the generator once
-(`rewindH`). The generator hashes neighbouring indices into correlated values (a
-lag-1 correlation of -0.05), which biased Gamma(0.5) and Poisson(0.5), so each index
-passes through a splitmix64 finalizer first (`spreadDrawIndex`). Parameters are broadcast and converted to the compute type (float, or
-double for a double output) once per fill (`randomParameter`).
+(`rewindH`). The draws of one element are independent because the generator's
+values at neighbouring indices are (see The generator). Parameters are broadcast
+and converted to the compute type (float, or double for a double output) once per
+fill (`randomParameter`).
+
+### The generator
+
+`RandomGenerator`'s value at an index was a hash of the index and the low 32 bits of
+each state. Neighbouring indices hashed into correlated values (a lag-1 correlation
+of -0.0475 in the samplers' draw layout), which biased Gamma(0.5) and Poisson(0.5),
+and states that differed only in their high bits drew the same stream. The value at
+an index is now a Philox4x32-10 block (Salmon et al., SC'11; the generator of cuRAND
+and Random123): the key is the root state and the counter is (index, node state), so
+every bit of the index and of both states reaches every output bit.
+
+- A float is the top 23 bits of word 0 (`relativeT<float>`), a double the top 52 bits
+  of words 1 and 0 (`relativeT<double>`; it used to widen a float unless built with
+  `__DOUBLE_RNG__`). Integer and half-precision values derive from these as before.
+- The Vulkan lowering of the `RANDOM` recipes computes the same block with 32 x 32 ->
+  64-bit multiplies (`arith.mului_extended`), so it needs no Int64 capability; its
+  state words carry both halves of each state.
+- A seed s sets the states (s, s ^ 0xdeadbeef) everywhere: `applySeedArgument` and the
+  backends' `NativeRandom.setSeed`. CPU and CUDA sign-extended the constant to 64 bits
+  and Vulkan did not, which the old hash could not see.
 
 ## Consequences
 
@@ -97,11 +118,16 @@ double for a double output) once per fill (`randomParameter`).
   over.
 - Results of the gamma and Poisson ops differ from before for the same state: the
   algorithms and the draw layout changed.
+- Every seeded random output differs from before (uniform, normal and Bernoulli fills,
+  dropout masks, shuffles and the samplers), on every backend alike. Tests compare
+  draws with `PhiloxReference` instead of recorded values.
 - Backends whose generated bindings were not regenerated report
   `UnsupportedOperationException` from `getOpTraitMask` until they are.
 
 ## References
 
+- `libnd4j/include/graph/RandomGenerator.h` (`philoxBlock`),
+  `graph/vulkan/VulkanOpLowerings.cpp` (`RANDOM` recipes)
 - `libnd4j/include/graph/DspExecutionRandom.h`, `NativeDynamicShapePlan.h`
   (`drawsRandomState`, `isCapturable`)
 - `libnd4j/include/ops/declarable/helpers/random.h`, `helpers/impl/random.cpp`,
@@ -109,4 +135,5 @@ double for a double output) once per fill (`randomParameter`).
 - `InferenceSession.execWithThreadRandom`, `DynamicShapePlanExecutor`
   (`seedContextRandom`, `takeContextRandom`), `OpTraits`,
   `ConstantFunctionOptimizations`
-- `platform-tests`: `SameDiffRandomStateTest`
+- `platform-tests`: `SameDiffRandomStateTest`, `RandomGeneratorPhiloxTest` (with
+  `PhiloxReference`, checked against Random123's known answers)

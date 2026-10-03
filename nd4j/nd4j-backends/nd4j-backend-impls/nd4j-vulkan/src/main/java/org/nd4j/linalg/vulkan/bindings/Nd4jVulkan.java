@@ -7955,6 +7955,8 @@ public static final int
   public native @Cast("sd::LongType") long rootState();
   public native @Cast("sd::LongType") long nodeState();
 
+  // The generator's 32 and 64 random bits at index (Philox4x32-10, see below). The names are
+  // older than the generator; the generated bindings expose them.
   public native @Cast("uint32_t") int xoroshiro32(@Cast("uint64_t") long index);
   public native @Cast("uint64_t") long xoroshiro64(@Cast("uint64_t") long index);
 }
@@ -8082,6 +8084,14 @@ public static final int
 // Helper functions
 @Namespace("sd::graph") public native @Cast("uint32_t") int rotl(@Cast("const uint32_t") int x, int k);
 @Namespace("sd::graph") public native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, int k);
+
+// Philox4x32-10 (Salmon, Moraes, Dror and Shaw, "Parallel random numbers: as easy as 1, 2, 3",
+// SC'11), the counter-based generator of cuRAND and Random123. The 64-bit key is the root state
+// and the 128-bit counter is (index, node state), so every index of every stream draws its own
+// block: every bit of both states and of the index reaches every output bit, and neighbouring
+// indices are independent. The arithmetic is 32 x 32 -> 64-bit multiplies, which the Vulkan
+// lowering reproduces without the Int64 capability (VulkanOpLowerings, RANDOM recipes).
+
 
 
 

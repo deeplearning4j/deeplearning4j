@@ -516,6 +516,10 @@ inline constexpr size_t kVulkanRandomRootLowWord =
     offsetof(VulkanRandomStateWords, rootLow) / sizeof(uint32_t);
 inline constexpr size_t kVulkanRandomNodeLowWord =
     offsetof(VulkanRandomStateWords, nodeLow) / sizeof(uint32_t);
+inline constexpr size_t kVulkanRandomRootHighWord =
+    offsetof(VulkanRandomStateWords, rootHigh) / sizeof(uint32_t);
+inline constexpr size_t kVulkanRandomNodeHighWord =
+    offsetof(VulkanRandomStateWords, nodeHigh) / sizeof(uint32_t);
 
 static_assert(sizeof(VulkanRandomStateWords) == 2 * sizeof(uint64_t),
               "Vulkan RNG state ABI must preserve both 64-bit generator states");

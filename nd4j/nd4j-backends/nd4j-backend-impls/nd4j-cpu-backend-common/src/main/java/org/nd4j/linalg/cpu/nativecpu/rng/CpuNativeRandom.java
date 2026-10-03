@@ -45,7 +45,7 @@ public class CpuNativeRandom extends NativeRandom {
     @Override
     public void init() {
         nativeOps = Nd4j.getNativeOps();
-        statePointer = nativeOps.createRandomGenerator(this.seed, this.seed ^ 0xdeadbeef);
+        statePointer = nativeOps.createRandomGenerator(this.seed, this.seed ^ 0xdeadbeefL);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class CpuNativeRandom extends NativeRandom {
     public void setSeed(long seed) {
         this.seed = seed;
         this.currentPosition.set(0);
-        nativeOps.setRandomGeneratorStates((OpaqueRandomGenerator)statePointer, seed, seed ^ 0xdeadbeef);
+        nativeOps.setRandomGeneratorStates((OpaqueRandomGenerator)statePointer, seed, seed ^ 0xdeadbeefL);
     }
 
     @Override

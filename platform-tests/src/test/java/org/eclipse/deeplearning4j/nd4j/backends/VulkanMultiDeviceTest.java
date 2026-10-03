@@ -21,6 +21,7 @@ package org.eclipse.deeplearning4j.nd4j.backends;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.eclipse.deeplearning4j.nd4j.linalg.rng.PhiloxReference;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -110,13 +111,8 @@ public class VulkanMultiDeviceTest {
     private static int deviceCount = 0;
 
     private static float canonicalUniform(long seed, int index) {
-        int s0 = (int) seed;
-        int s1 = (int) (seed ^ 0xdeadbeefL);
-        int position = index + 2;
-        s0 ^= position * (s1 + 24243287);
-        s1 ^= position * (s0 + 723829);
-        int raw = Integer.rotateLeft((s1 ^ s0) * 0x9E3779BB, 5) * 5;
-        return Float.intBitsToFloat(0x3f800000 | (raw >>> 9)) - 1.0f;
+        return PhiloxReference.uniformFloat(
+                PhiloxReference.seededRoot(seed), PhiloxReference.seededNode(seed), index);
     }
 
     @BeforeAll

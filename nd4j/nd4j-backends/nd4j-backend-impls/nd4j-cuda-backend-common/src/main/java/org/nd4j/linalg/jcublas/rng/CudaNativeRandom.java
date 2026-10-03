@@ -55,7 +55,7 @@ public class CudaNativeRandom extends NativeRandom {
     @Override
     public void init() {
         nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        statePointer = nativeOps.createRandomGenerator(this.seed, this.seed ^ 0xdeadbeef);
+        statePointer = nativeOps.createRandomGenerator(this.seed, this.seed ^ 0xdeadbeefL);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -77,7 +77,7 @@ public class CudaNativeRandom extends NativeRandom {
     public void setSeed(long seed) {
         this.seed = seed;
         this.currentPosition.set(0);
-        nativeOps.setRandomGeneratorStates((OpaqueRandomGenerator)statePointer, seed, seed ^ 0xdeadbeef);
+        nativeOps.setRandomGeneratorStates((OpaqueRandomGenerator)statePointer, seed, seed ^ 0xdeadbeefL);
     }
 
     @Override

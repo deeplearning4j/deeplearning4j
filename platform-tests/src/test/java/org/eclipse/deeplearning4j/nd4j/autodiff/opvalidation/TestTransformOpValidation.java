@@ -698,7 +698,8 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     break;
                 case 13:
                     t = sd.math().log(in);
-                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
+                    //Away from 0: the gradient check's central difference error grows as eps^2/x^2
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).addi(0.1);
                     inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.log(ia, true));
                     break;
@@ -759,7 +760,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     break;
                 case 24:
                     t = sd.math().sqrt(in);
-                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).addi(0.1);
                     inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.sqrt(ia, true));
                     break;
@@ -1056,13 +1057,13 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 case 74:
                     continue;
                 case 75:
-                    ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
+                    ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).addi(0.1);
                     t = sd.math().log(in, 2);
                     inputForGraph = ia.dup(ia.ordering());
                     tc.expected(t, Transforms.log(ia, 2, true));
                     break;
                 case 76:
-                    ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
+                    ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).addi(0.1);
                     t = sd.math().log(in, 10);
                     inputForGraph = ia.dup(ia.ordering());
                     tc.expected(t, Transforms.log(ia, 10, true));

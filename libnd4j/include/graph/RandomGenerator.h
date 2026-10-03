@@ -61,8 +61,14 @@ class SD_LIB_EXPORT RandomGenerator {
   SD_INLINE SD_HOST_DEVICE LongType rootState() { return _rootState._long; }
   SD_INLINE SD_HOST_DEVICE LongType nodeState() { return _nodeState._long; }
 
+  // The generator's 32 and 64 random bits at index (Philox4x32-10, see below). The names are
+  // older than the generator; the generated bindings expose them.
   SD_INLINE SD_HOST_DEVICE uint32_t xoroshiro32(uint64_t index);
   SD_INLINE SD_HOST_DEVICE uint64_t xoroshiro64(uint64_t index);
+
+ private:
+  // Writes the four words of index's Philox block to words[0..3].
+  SD_INLINE SD_HOST_DEVICE void philoxBlock(uint64_t index, uint32_t* words) const;
 };
 
 static_assert(sizeof(RandomGenerator) == 2 * sizeof(u64),
@@ -99,13 +105,11 @@ SD_INLINE SD_HOST_DEVICE float RandomGenerator::relativeT<float>(LongType index)
 #ifdef HAS_DOUBLE
 template <>
 SD_INLINE SD_HOST_DEVICE double RandomGenerator::relativeT<double>(LongType index) {
-#ifdef __DOUBLE_RNG__
-  u64 u;
-  u._ulong = ((UINT64_C(0x3FF) << 52) | (this->xoroshiro64(index) >> 12));
-  return u._double - 1.0;
-#else
-  return (double)relativeT<float>(index);
-#endif
+  // The top 52 bits as a fraction in [0, 1); the conversion and the power-of-two division are
+  // exact.
+  constexpr int kFractionBits = 52;
+  return static_cast<double>(this->xoroshiro64(index) >> (64 - kFractionBits)) /
+         static_cast<double>(UINT64_C(1) << kFractionBits);
 }
 #endif
 
@@ -325,32 +329,45 @@ SD_INLINE SD_HOST_DEVICE LongType RandomGenerator::relativeLong(LongType index) 
 static SD_INLINE SD_HOST_DEVICE uint32_t rotl(const uint32_t x, int k) { return (x << k) | (x >> (32 - k)); }
 static SD_INLINE SD_HOST_DEVICE uint64_t rotl(const uint64_t x, int k) { return (x << k) | (x >> (64 - k)); }
 
+// Philox4x32-10 (Salmon, Moraes, Dror and Shaw, "Parallel random numbers: as easy as 1, 2, 3",
+// SC'11), the counter-based generator of cuRAND and Random123. The 64-bit key is the root state
+// and the 128-bit counter is (index, node state), so every index of every stream draws its own
+// block: every bit of both states and of the index reaches every output bit, and neighbouring
+// indices are independent. The arithmetic is 32 x 32 -> 64-bit multiplies, which the Vulkan
+// lowering reproduces without the Int64 capability (VulkanOpLowerings, RANDOM recipes).
+SD_INLINE SD_HOST_DEVICE void RandomGenerator::philoxBlock(uint64_t index, uint32_t* words) const {
+  words[0] = static_cast<uint32_t>(index);
+  words[1] = static_cast<uint32_t>(index >> 32);
+  words[2] = static_cast<uint32_t>(_nodeState._ulong);
+  words[3] = static_cast<uint32_t>(_nodeState._ulong >> 32);
+  uint32_t key0 = static_cast<uint32_t>(_rootState._ulong);
+  uint32_t key1 = static_cast<uint32_t>(_rootState._ulong >> 32);
+  for (int pass = 0; pass < 10; pass++) {
+    if (pass > 0) {
+      key0 += 0x9E3779B9u;
+      key1 += 0xBB67AE85u;
+    }
+    const uint64_t product0 = static_cast<uint64_t>(0xD2511F53u) * words[0];
+    const uint64_t product1 = static_cast<uint64_t>(0xCD9E8D57u) * words[2];
+    const uint32_t next0 = static_cast<uint32_t>(product1 >> 32) ^ words[1] ^ key0;
+    const uint32_t next2 = static_cast<uint32_t>(product0 >> 32) ^ words[3] ^ key1;
+    words[1] = static_cast<uint32_t>(product1);
+    words[3] = static_cast<uint32_t>(product0);
+    words[0] = next0;
+    words[2] = next2;
+  }
+}
+
 SD_INLINE SD_HOST_DEVICE uint32_t RandomGenerator::xoroshiro32(uint64_t index) {
-  auto s0 = _rootState._ulong;
-  auto s1 = _nodeState._ulong;
-
-  // Use XOR instead of OR so that bits can be both set and cleared, giving a
-  // reversible mixing step.  The original |= was a one-way accumulator that
-  // produced systematic bias for small seed values such as 119.
-  s0 ^= ((index + 2) * (s1 + 24243287));
-  s1 ^= ((index + 2) * (s0 + 723829));
-
-  // Use safe integer truncation instead of reinterpret_cast<int*> to extract
-  // the lower 32 bits. The pointer-aliasing approach is undefined behaviour when
-  // the compiler SIMD-vectorises this loop: &val is a local address that may live
-  // only in a vector register during vectorised execution, making the cast illegal.
-  // Explicit masking produces identical bit patterns and is SIMD-safe.
-  uint32_t lower32 = static_cast<uint32_t>(s1 ^ s0);
-
-  return rotl(lower32 * 0x9E3779BB, 5) * 5;
+  uint32_t words[4];
+  philoxBlock(index, words);
+  return words[0];
 }
 
 SD_INLINE SD_HOST_DEVICE uint64_t RandomGenerator::xoroshiro64(uint64_t index) {
-  uint64_t upper = ((uint64_t)xoroshiro32(index)) << 32;
-  // Use direct bit manipulation instead of sd_rotl to avoid template issues
-  uint64_t rotated = (index << 32) | (index >> 32);
-  uint32_t lower = xoroshiro32(rotated);
-  return upper + lower;
+  uint32_t words[4];
+  philoxBlock(index, words);
+  return (static_cast<uint64_t>(words[1]) << 32) | words[0];
 }
 
 SD_INLINE SD_HOST_DEVICE void RandomGenerator::rewindH(uint64_t steps) {

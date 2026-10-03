@@ -44,6 +44,7 @@
 #include <mlir/Dialect/Math/IR/Math.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -8566,53 +8567,80 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
 
       mlir::Value index = rewriter.create<mlir::arith::IndexCastUIOp>(
           loc, i32, flat);
-      mlir::Value indexPlusTwo = rewriter.create<mlir::arith::AddIOp>(
-          loc, index, i32Constant(2u));
-      mlir::SmallVector<mlir::Value> rootIndex{
-          idxConst(rewriter, loc,
-                   static_cast<int64_t>(kVulkanRandomRootLowWord))};
-      mlir::SmallVector<mlir::Value> nodeIndex{
-          idxConst(rewriter, loc,
-                   static_cast<int64_t>(kVulkanRandomNodeLowWord))};
-      mlir::Value root = rewriter.create<mlir::memref::LoadOp>(
-          loc, inputs.front(), rootIndex);
-      mlir::Value node = rewriter.create<mlir::memref::LoadOp>(
-          loc, inputs.front(), nodeIndex);
-      mlir::Value s0 = rewriter.create<mlir::arith::XOrIOp>(
-          loc, root,
-          rewriter.create<mlir::arith::MulIOp>(
-              loc, indexPlusTwo,
-              rewriter.create<mlir::arith::AddIOp>(
-                  loc, node, i32Constant(24243287u))));
-      mlir::Value s1 = rewriter.create<mlir::arith::XOrIOp>(
-          loc, node,
-          rewriter.create<mlir::arith::MulIOp>(
-              loc, indexPlusTwo,
-              rewriter.create<mlir::arith::AddIOp>(
-                  loc, s0, i32Constant(723829u))));
-      mlir::Value product = rewriter.create<mlir::arith::MulIOp>(
-          loc,
-          rewriter.create<mlir::arith::XOrIOp>(loc, s1, s0),
-          i32Constant(0x9E3779BBu));
-      mlir::Value rotated = rewriter.create<mlir::arith::OrIOp>(
-          loc,
-          rewriter.create<mlir::arith::ShLIOp>(
-              loc, product, i32Constant(5u)),
-          rewriter.create<mlir::arith::ShRUIOp>(
-              loc, product, i32Constant(27u)));
-      mlir::Value randomBits = rewriter.create<mlir::arith::MulIOp>(
-          loc, rotated, i32Constant(5u));
-      mlir::Value unitBits = rewriter.create<mlir::arith::OrIOp>(
-          loc, i32Constant(0x3f800000u),
-          rewriter.create<mlir::arith::ShRUIOp>(
-              loc, randomBits, i32Constant(9u)));
-      auto f32 = rewriter.getF32Type();
-      mlir::Value unit = rewriter.create<mlir::arith::SubFOp>(
-          loc,
-          rewriter.create<mlir::arith::BitcastOp>(loc, f32, unitBits),
-          scalarConstant(rewriter, loc, f32, 1.0));
-      mlir::Value unitAccumulator =
-          convertFloat(rewriter, loc, unit, accumulator);
+      auto stateWord = [&](size_t word) -> mlir::Value {
+        mlir::SmallVector<mlir::Value> wordIndex{
+            idxConst(rewriter, loc, static_cast<int64_t>(word))};
+        return rewriter.create<mlir::memref::LoadOp>(loc, inputs.front(),
+                                                      wordIndex);
+      };
+      // RandomGenerator::xoroshiro32: word 0 of the Philox4x32-10 block whose
+      // key is the root state and whose counter is (index, node state). A
+      // flat index fits 32 bits here, so the counter's index high word is 0.
+      mlir::Value counter[4] = {index, i32Constant(0u),
+                                stateWord(kVulkanRandomNodeLowWord),
+                                stateWord(kVulkanRandomNodeHighWord)};
+      mlir::Value key0 = stateWord(kVulkanRandomRootLowWord);
+      mlir::Value key1 = stateWord(kVulkanRandomRootHighWord);
+      auto xorOf = [&](mlir::Value a, mlir::Value b) -> mlir::Value {
+        return rewriter.create<mlir::arith::XOrIOp>(loc, a, b);
+      };
+      for (int pass = 0; pass < 10; ++pass) {
+        if (pass > 0) {
+          key0 = rewriter.create<mlir::arith::AddIOp>(loc, key0,
+                                                      i32Constant(0x9E3779B9u));
+          key1 = rewriter.create<mlir::arith::AddIOp>(loc, key1,
+                                                      i32Constant(0xBB67AE85u));
+        }
+        auto product0 = rewriter.create<mlir::arith::MulUIExtendedOp>(
+            loc, i32Constant(0xD2511F53u), counter[0]);
+        auto product1 = rewriter.create<mlir::arith::MulUIExtendedOp>(
+            loc, i32Constant(0xCD9E8D57u), counter[2]);
+        mlir::Value next0 =
+            xorOf(xorOf(product1.getHigh(), counter[1]), key0);
+        mlir::Value next2 =
+            xorOf(xorOf(product0.getHigh(), counter[3]), key1);
+        counter[1] = product1.getLow();
+        counter[3] = product0.getLow();
+        counter[0] = next0;
+        counter[2] = next2;
+      }
+      mlir::Value unitAccumulator;
+      if (accumulator.getWidth() == 64) {
+        // RandomGenerator::relativeT<double>: the top 52 bits of words 1
+        // and 0, as (w1 >> 12) * 2^-20 + ((w1 << 20) | (w0 >> 12)) * 2^-52.
+        // Both terms and their sum are exact in f64, so this equals the
+        // host's bit assembly without the Int64 capability.
+        mlir::Value high = rewriter.create<mlir::arith::ShRUIOp>(
+            loc, counter[1], i32Constant(12u));
+        mlir::Value low = rewriter.create<mlir::arith::OrIOp>(
+            loc,
+            rewriter.create<mlir::arith::ShLIOp>(loc, counter[1],
+                                                 i32Constant(20u)),
+            rewriter.create<mlir::arith::ShRUIOp>(loc, counter[0],
+                                                  i32Constant(12u)));
+        unitAccumulator = rewriter.create<mlir::arith::AddFOp>(
+            loc,
+            rewriter.create<mlir::arith::MulFOp>(
+                loc,
+                rewriter.create<mlir::arith::UIToFPOp>(loc, accumulator, high),
+                floatConst(rewriter, loc, accumulator, std::ldexp(1.0, -20))),
+            rewriter.create<mlir::arith::MulFOp>(
+                loc,
+                rewriter.create<mlir::arith::UIToFPOp>(loc, accumulator, low),
+                floatConst(rewriter, loc, accumulator, std::ldexp(1.0, -52))));
+      } else {
+        // relativeT<float>: the top 23 bits of word 0.
+        mlir::Value unitBits = rewriter.create<mlir::arith::OrIOp>(
+            loc, i32Constant(0x3f800000u),
+            rewriter.create<mlir::arith::ShRUIOp>(
+                loc, counter[0], i32Constant(9u)));
+        auto f32 = rewriter.getF32Type();
+        mlir::Value unit = rewriter.create<mlir::arith::SubFOp>(
+            loc,
+            rewriter.create<mlir::arith::BitcastOp>(loc, f32, unitBits),
+            scalarConstant(rewriter, loc, f32, 1.0));
+        unitAccumulator = convertFloat(rewriter, loc, unit, accumulator);
+      }
       if (genericRandom) {
         auto randomArgument = [&](int ordinal, double fallback) {
           auto attr = op->getAttrOfType<mlir::FloatAttr>(

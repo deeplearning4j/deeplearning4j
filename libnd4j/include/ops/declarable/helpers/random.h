@@ -44,31 +44,20 @@ SD_INLINE void applySeedArgument(graph::RandomGenerator& rng, LongType seed) {
 
 /**
  * Draw streams of the rejection samplers. Draw j (j = 0, 1, ...) of element e of a fill is the
- * generator's value at spreadDrawIndex(e * kRandomDrawsPerElement + j), so every element has its
- * own reproducible sequence however threads or CUDA blocks split the work. A fill rewinds the
- * generator once afterwards (RandomGenerator::rewindH) so the next fill draws anew.
+ * generator's value at e * kRandomDrawsPerElement + j, so every element has its own reproducible
+ * sequence however threads or CUDA blocks split the work. The generator's values at neighbouring
+ * indices are independent (Philox, RandomGenerator.h), so an element's consecutive draws are
+ * too. A fill rewinds the generator once afterwards (RandomGenerator::rewindH) so the next fill
+ * draws anew.
  */
 constexpr LongType kRandomDrawsPerElement = LongType{1} << 16;
-
-/**
- * splitmix64's finalizer, a bijection. RandomGenerator hashes nearby indices into correlated
- * values (adjacent indices correlate at about -0.05), which biases a sampler that combines an
- * element's consecutive draws: Box-Muller pairs, Knuth's product, the shape boost. Spreading the
- * draw indices over the whole index space removes that dependence.
- */
-SD_HOST_DEVICE SD_INLINE uint64_t spreadDrawIndex(uint64_t index) {
-  index += 0x9E3779B97F4A7C15ULL;
-  index = (index ^ (index >> 30)) * 0xBF58476D1CE4E5B9ULL;
-  index = (index ^ (index >> 27)) * 0x94D049BB133111EBULL;
-  return index ^ (index >> 31);
-}
 
 /** The next uniform value of an element's stream, in (0, 1], so log() of it is finite. */
 template <typename T>
 SD_HOST_DEVICE SD_INLINE T streamUniform(graph::RandomGenerator& rng, LongType element, LongType& draw) {
   const uint64_t streamIndex = static_cast<uint64_t>(element) * static_cast<uint64_t>(kRandomDrawsPerElement) +
                                static_cast<uint64_t>(draw++ & (kRandomDrawsPerElement - 1));
-  return T(1) - rng.relativeT<T>(static_cast<LongType>(spreadDrawIndex(streamIndex)));
+  return T(1) - rng.relativeT<T>(static_cast<LongType>(streamIndex));
 }
 
 /** The next standard normal value of an element's stream (Box-Muller). */
