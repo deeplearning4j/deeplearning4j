@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
@@ -49,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests that attribute specific DSP issues to their root cause:
@@ -85,6 +87,12 @@ public class DspMixedPrecisionReplayTest {
     public void setUp() {
         System.setProperty(ND4JSystemProperties.DYNAMIC_SHAPE_PLAN_ENABLED, "true");
         InferenceSession.setDynamicShapePlanEnabled(true);
+    }
+
+    /** Triton GPU segments and device-buffer contracts exist only on the CUDA backend. */
+    private static void assumeCuda() {
+        assumeTrue(Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA,
+                "Triton GPU and device-buffer contracts need the CUDA backend");
     }
 
     @AfterEach
@@ -545,6 +553,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton reduce_sum [16,64] matches native CUDA raw bits")
     public void testTritonReductionMatchesNativeTreeExactly() {
+        assumeCuda();
         final int rows = 16;
         final int reductionSize = 64;
         float[] values = new float[rows * reductionSize];
@@ -1213,6 +1222,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton standalone swish matches native CUDA raw bits")
     public void testTritonStandaloneSwishMatchesNativeExactly() {
+        assumeCuda();
         float[] inputValues = new float[]{
                 -10.0f, -8.0f, -4.0f, -2.0f, -1.92597f, -1.0f, -0.5f, -0.1f,
                 0.0f, 0.1f, 0.5f, 1.0f, 1.92597f, 2.0f, 4.0f, 8.0f
@@ -1290,6 +1300,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton fused RoPE pointer and SSA paths match native CUDA raw bits")
     public void testTritonFusedRoPEMatchesNativeExactly() {
+        assumeCuda();
         final int batch = 1;
         final int sequence = 64;
         final int qHeads = 8;
@@ -1451,6 +1462,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton RMSNorm to partial RoPE internal SSA handoff is exact")
     public void testTritonRmsNormToPartialRoPEInternalSsaHandoff() {
+        assumeCuda();
         final int batch = 1;
         final int sequence = 1;
         final int heads = 8;
@@ -1951,6 +1963,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton DPA-v2 honors explicit and automatic attention scales")
     public void testTritonDpaV2AttentionScale() {
+        assumeCuda();
         final int headDim = 2;
         INDArray queryData = Nd4j.createFromArray(new float[] {1.0f, 0.0f})
                 .reshape(1, 1, 1, headDim);
@@ -2020,6 +2033,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton DPA-v2 cache-form attention bias matches native CUDA")
     public void testTritonDpaV2CacheFormAttentionBiasMatchesNative() {
+        assumeCuda();
         final int batch = 1;
         final int sequence = 8;
         final int qHeads = 8;
@@ -2155,6 +2169,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton DPA-v2 GQA prefill probabilities match native CUDA")
     public void testTritonDpaV2GqaPrefillProbabilitiesMatchNative() {
+        assumeCuda();
         final int batch = 1;
         final int sequence = 64;
         final int qHeads = 8;
@@ -2313,6 +2328,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton DPA-v2 GQA two-key attention remains FP32 under the TF32 profile")
     public void testTritonDpaV2GqaTwoKeyTf32MatchesNativeCuda() {
+        assumeCuda();
         final int batch = 1;
         final int sequence = 2;
         final int qHeads = 8;
@@ -2378,6 +2394,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton DPA-v2 GQA normalization preserves native reciprocal-then-multiply rounding")
     public void testTritonDpaV2GqaTwoKeyNormalizationOrderMatchesNativeCuda() {
+        assumeCuda();
         final int batch = 1;
         final int sequence = 2;
         final int qHeads = 8;
@@ -2443,6 +2460,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton DPA-v2 GQA seventeen-key tile boundary remains exact")
     public void testTritonDpaV2GqaSeventeenKeyTileBoundaryMatchesNativeCuda() {
+        assumeCuda();
         final int batch = 1;
         final int sequence = 17;
         final int qHeads = 8;
@@ -2515,6 +2533,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton DPA-v2 GQA seventeen-key dense-V accumulation remains exact")
     public void testTritonDpaV2GqaSeventeenKeyDenseValueMatchesNativeCuda() {
+        assumeCuda();
         final int batch = 1;
         final int sequence = 17;
         final int qHeads = 8;
@@ -2589,6 +2608,7 @@ public class DspMixedPrecisionReplayTest {
     @Test
     @DisplayName("Triton DPA-v2 GQA prefill dense-V accumulation matches native CUDA")
     public void testTritonDpaV2GqaPrefillDenseValueAccumulationMatchesNative() {
+        assumeCuda();
         final int batch = 1;
         final int sequence = 64;
         final int qHeads = 8;
@@ -2659,6 +2679,7 @@ public class DspMixedPrecisionReplayTest {
     @ParameterizedTest(name = "live-cache GQA accumulator {0}")
     @EnumSource(value = DataType.class, names = {"HALF", "BFLOAT16"})
     public void testTritonHalfGqaLiveCacheMatchesNativeCuda(DataType dtype) {
+        assumeCuda();
         Environment environment = Nd4j.getEnvironment();
         boolean compileAllBefore = environment.tritonCompileAll();
         String includeTypesBefore = environment.tritonIncludeTypes();
@@ -2803,6 +2824,7 @@ public class DspMixedPrecisionReplayTest {
     @CsvSource({"1,true,256", "2,true,256", "1,false,256", "2,false,256",
             "1,true,257", "2,true,257", "1,false,257", "2,false,257"})
     public void testTritonGqaBiasIsNotPastKey(int width, boolean liveCache, int capacity) {
+        assumeCuda();
         Environment environment = Nd4j.getEnvironment();
         boolean compileAllBefore = environment.tritonCompileAll();
         String includeTypesBefore = environment.tritonIncludeTypes();
@@ -2939,6 +2961,7 @@ public class DspMixedPrecisionReplayTest {
     @ParameterizedTest(name = "KV publication {0}, Triton capture={1}")
     @CsvSource({"TRITON,true", "TRITON,false", "CUDA_GRAPHS,false"})
     public void testHostRestoredGqaCachePublication(GraphExecutionMode mode, boolean tritonCapture) {
+        assumeCuda();
         Environment environment = Nd4j.getEnvironment();
         boolean compileAllBefore = environment.tritonCompileAll();
         String includeTypesBefore = environment.tritonIncludeTypes();
