@@ -96,7 +96,6 @@ public class TestSameDiffConv extends BaseDL4JTest {
     }
 
     @Test
-    @Disabled("Failure on gpu")
     public void testSameDiffConvForward() {
 
         int imgH = 16;
@@ -201,18 +200,16 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                             MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
                                             net2.init();
 
-                                            //Check params: note that samediff/libnd4j conv params are [kH, kW, iC, oC]
-                                            //DL4J are [nOut, nIn, kH, kW]
+                                            //Check params: the SameDiff layer's and DL4J's convolution weights are both
+                                            //[kH, kW, nIn, nOut]; the SameDiff layer's bias is [1, nOut], DL4J's [nOut]
                                             Map<String, INDArray> params1 = net.paramTable();
                                             Map<String, INDArray> params2 = net2.paramTable();
                                             for(Map.Entry<String,INDArray> e : params1.entrySet()){
+                                                INDArray p2 = params2.get(e.getKey());
                                                 if(e.getKey().endsWith("_W")){
-                                                    INDArray p1 = e.getValue();
-                                                    INDArray p2 = params2.get(e.getKey());
-                                                    p2 = p2.permute(2, 3, 1, 0);
-                                                    p1.assign(p2);
+                                                    e.getValue().assign(p2);
                                                 } else {
-                                                    assertEquals(params2.get(e.getKey()), e.getValue());
+                                                    assertEquals(p2.reshape(e.getValue().shape()), e.getValue());
                                                 }
                                             }
 

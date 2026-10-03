@@ -201,7 +201,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     @DisplayName("Test Cnn With Space To Depth")
