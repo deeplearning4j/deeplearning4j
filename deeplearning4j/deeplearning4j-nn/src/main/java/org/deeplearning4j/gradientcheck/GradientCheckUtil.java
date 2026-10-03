@@ -231,10 +231,8 @@ public class GradientCheckUtil {
             val n = paramTable.get(paramNames.get(i)).length();
             paramEnds[i] = paramEnds[i - 1] + n;
             if(c.subset) {
-                long ss = n / c.maxPerParam;
-                if(ss == 0) {
-                    ss = n;
-                }
+                //About maxPerParam evenly spaced elements of each parameter array: all of a smaller one
+                long ss = Math.max(1, n / c.maxPerParam);
 
                 if (ss > Integer.MAX_VALUE)
                     throw new ND4JArraySizeException();
@@ -262,6 +260,7 @@ public class GradientCheckUtil {
         }
 
         INDArray params = c.net.params(); //Assumption here: params is a view that we can modify in-place
+        long nChecked = 0;
         for (long i = 0; i < nParams;) {
             //Get param name
             if (i >= paramEnds[currParamNameIdx]) {
@@ -272,6 +271,7 @@ public class GradientCheckUtil {
                 i = paramEnds[currParamNameIdx++];
                 continue;
             }
+            nChecked++;
 
             //(w+epsilon): Do forward pass and score
             double origValue = params.getDouble(i);
@@ -332,8 +332,9 @@ public class GradientCheckUtil {
             long step;
             if(c.subset) {
                 step = stepSizeForParam.get(paramName);
-                if(i + step > paramEnds[currParamNameIdx] + 1) {
-                    step = paramEnds[currParamNameIdx]+1 - i;
+                if(i + step > paramEnds[currParamNameIdx]) {
+                    //The next array's first element is checked too
+                    step = paramEnds[currParamNameIdx] - i;
                 }
             } else {
                 step = 1;
@@ -342,9 +343,9 @@ public class GradientCheckUtil {
             i += step;
         }
 
-        val nPass = nParams - totalNFailures;
-        log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
-                + totalNFailures + " failed. Largest relative error = " + maxError);
+        val nPass = nChecked - totalNFailures;
+        log.info("GradientCheckUtil.checkGradients(): " + nChecked + " of " + nParams + " params checked, " + nPass
+                + " passed, " + totalNFailures + " failed. Largest relative error = " + maxError);
 
         return totalNFailures == 0;
     }
