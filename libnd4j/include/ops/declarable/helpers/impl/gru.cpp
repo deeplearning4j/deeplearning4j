@@ -273,195 +273,136 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   // dLdb           gradient wrt bru [2*nU]
   // dLdbc          gradient wrt bc  [nU]
 
+  // The op's outputs are r, u, c and h = u * hLast + (1 - u) * c, and dLdr, dLdu, dLdc, dLdh are the gradients wrt
+  // them: the total gradients wrt u and c add the path through h, and the total gradient wrt r the path through c
+  // (whose argument holds r * hLast).
+
   // * means element-wise product or so called Hadamard product
   // × means matrix multiplication
 
-  /************************************************************************************************/
-  /******************************* THIS IS NOT OPTIMIZED CODE *************************************/
-  /*** aim is to have math-readable code in order to keep track of backprop formulas derivation ***/
-
-  const int bS = x->sizeAt(0);
   const int iS = x->sizeAt(1);
   const int nU = hLast->sizeAt(1);
-
-  NDArray *xT = x->transpose();          // [iS, bS]
-  NDArray *hLastT = hLast->transpose();  // [nU, bS]
 
   NDArray *Wrx = (*W)({0, iS, 0, nU});             // [iS, nU]
   NDArray *Wux = (*W)({0, iS, nU, 2 * nU});        // [iS, nU]
   NDArray *Wrh = (*W)({iS, iS + nU, 0, nU});       // [nU, nU]
   NDArray *Wuh = (*W)({iS, iS + nU, nU, 2 * nU});  // [nU, nU]
+  NDArray *Wcx = (*Wc)({0, iS, 0, 0});             // [iS, nU]
+  NDArray *Wch = (*Wc)({iS, iS + nU, 0, 0});       // [nU, nU]
+  NDArray *br = (*b)({0, nU});                     // [nU]
+  NDArray *bu = (*b)({nU, 2 * nU});                // [nU]
 
-  NDArray *Wcx = (*Wc)({0, iS, 0, 0});        // reset cell weights    [iS, nU]
-  NDArray *Wch = (*Wc)({iS, iS + nU, 0, 0});  // updates cell weights  [nU, nU]
-
-  NDArray *br = (*b)({0, nU});       // [nU]
-  NDArray *bu = (*b)({nU, 2 * nU});  // [nU]
-
-  NDArray *WrxT = Wrx->transpose();  // [nU, iS]
-  NDArray *WuxT = Wux->transpose();  // [nU, iS]
-  NDArray *WrhT = Wrh->transpose();  // [nU, nU]
-  NDArray *WuhT = Wuh->transpose();  // [nU, nU]
-
-  NDArray *WcxT = Wcx->transpose();  // [nU, iS]
-  NDArray *WchT = Wch->transpose();  // [nU, nU]
-
-  NDArray *dLdWrx = (*dLdW)({0, iS, 0, nU});             // [iS, nU]
-  NDArray *dLdWux = (*dLdW)({0, iS, nU, 2 * nU});        // [iS, nU]
-  NDArray *dLdWrh = (*dLdW)({iS, iS + nU, 0, nU});       // [nU, nU]
-  NDArray *dLdWuh = (*dLdW)({iS, iS + nU, nU, 2 * nU});  // [nU, nU]
-
-  NDArray *dLdWcx = (*dLdWc)({0, iS, 0, 0});        // [iS, nU]
-  NDArray *dLdWch = (*dLdWc)({iS, iS + nU, 0, 0});  // [nU, nU]
-
-  NDArray *dLdbr = (*dLdb)({0, nU});       // [nU]
-  NDArray *dLdbu = (*dLdb)({nU, 2 * nU});  // [nU]
+  NDArray *dLdWrx = (*dLdW)({0, iS, 0, nU});
+  NDArray *dLdWux = (*dLdW)({0, iS, nU, 2 * nU});
+  NDArray *dLdWrh = (*dLdW)({iS, iS + nU, 0, nU});
+  NDArray *dLdWuh = (*dLdW)({iS, iS + nU, nU, 2 * nU});
+  NDArray *dLdWcx = (*dLdWc)({0, iS, 0, 0});
+  NDArray *dLdWch = (*dLdWc)({iS, iS + nU, 0, 0});
+  NDArray *dLdbr = (*dLdb)({0, nU});
+  NDArray *dLdbu = (*dLdb)({nU, 2 * nU});
 
   // ***** feed forward step ***** //
-
-  // r = sigmoid(x × Wrx + hLast × Wrh + br)
-  auto xWrx = mmul(*x, *Wrx);
-  auto hLastWrh = mmul(*hLast, *Wrh);
-  auto* sum1 = *xWrx + *hLastWrh;
-  auto* rTemp = (*sum1) + (*br);
-  delete sum1;
-  // r, u, c, dcdZc and dhdu are moved out of the temporaries, not copied: the copy constructor gives a view of the
-  // buffer each delete frees
-  NDArray r = std::move(*rTemp);  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-  delete rTemp;
+  // r = sigmoid(x × Wrx + hLast × Wrh + br), u = sigmoid(x × Wux + hLast × Wuh + bu)
+  NDArray r(hLast->shapeInfo(), false, context);
+  NDArray u(hLast->shapeInfo(), false, context);
+  NDArray c(hLast->shapeInfo(), false, context);
+  MmulHelper::mmul(x, Wrx, &r, 1.0, 0.0);
+  MmulHelper::mmul(hLast, Wrh, &r, 1.0, 1.0);
+  r += *br;
   r.applyTransform(transform::Sigmoid, &r);
-
-  // u = sigmoid(x × Wux + hLast × Wuh + bu)
-  auto xWux = mmul(*x, *Wux);
-  auto hLastWuh = mmul(*hLast, *Wuh);
-  auto* sum2 = *xWux + *hLastWuh;
-  auto* uTemp = (*sum2) + (*bu);
-  delete sum2;
-  NDArray u = std::move(*uTemp);  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-  delete uTemp;
-  delete xWux;
+  MmulHelper::mmul(x, Wux, &u, 1.0, 0.0);
+  MmulHelper::mmul(hLast, Wuh, &u, 1.0, 1.0);
+  u += *bu;
   u.applyTransform(transform::Sigmoid, &u);
-
   // c = tanh(x × Wcx + (r * hLast) × Wch + bc)
-  auto* rTimesHLast2 = r * (*hLast);
-  auto xWcx = mmul(*x, *Wcx);
-  auto rTimesHLast2Wch = mmul(*rTimesHLast2, *Wch);
-  delete rTimesHLast2;
-  auto* sum3 = *xWcx + *rTimesHLast2Wch;
-  auto* cTemp = (*sum3) + (*bc);
-  delete sum3;
-  delete xWcx;
-  delete rTimesHLast2Wch;
-  NDArray c = std::move(*cTemp);  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-  delete cTemp;
+  NDArray *rTimesHLast = r * (*hLast);
+  MmulHelper::mmul(x, Wcx, &c, 1.0, 0.0);
+  MmulHelper::mmul(rTimesHLast, Wch, &c, 1.0, 1.0);
+  c += *bc;
   c.applyTransform(transform::Tanh, &c);
 
-  // h = (1 - u) * c + u * hPrev
-
   // ***** back prop step ***** //
-
-  auto* hLastMinusC = (*hLast) - c;
-  auto* oneMinusU = 1.f - u;
-  auto* dudZu = u * (*oneMinusU);
-  delete oneMinusU;
-  auto* oneMinusR = 1.f - r;
-  auto* drdZr = r * (*oneMinusR);
-  delete oneMinusR;
-  auto* cSquared = c * c;
-  auto* oneMinusCSquared = 1.f - (*cSquared);
-  delete cSquared;
-  NDArray dcdZc = std::move(*oneMinusCSquared);
-  delete oneMinusCSquared;
-  auto* dLdZc = (*dLdc) * dcdZc;
-  auto* dLdZu = (*dLdu) * (*dudZu);
-  delete dudZu;
-  auto* dLdZr = (*dLdr) * (*drdZr);
-  delete drdZr;
-
-  NDArray *dhdc = 1.f - u;         // [bS, nU]
-  NDArray dhdu = std::move(*hLastMinusC);  // [bS, nU]
+  // dL/dc = dLdc + dLdh * (1 - u), dL/du = dLdu + dLdh * (hLast - c)
+  NDArray *oneMinusU = 1.f - u;
+  NDArray *dLdcTotal = (*dLdh) * (*oneMinusU);
+  *dLdcTotal += *dLdc;
+  NDArray *hLastMinusC = (*hLast) - c;
+  NDArray *dLduTotal = (*dLdh) * (*hLastMinusC);
+  *dLduTotal += *dLdu;
   delete hLastMinusC;
 
-  // dLdx = dLdZu × WuxT + dLdZc × WcxT + dLdZr × WrxT
-  auto dLdZuWuxT = mmul(*dLdZu, *WuxT);
-  auto dLdZcWcxT = mmul(*dLdZc, *WcxT);
-  auto dLdZrWrxT = mmul(*dLdZr, *WrxT);
-  auto* temp1 = *dLdZuWuxT + *dLdZcWcxT;
-  auto* dLdxTemp = (*temp1) + *dLdZrWrxT;
-  delete temp1;
+  // dLdZc = dL/dc * (1 - c^2), dLdZu = dL/du * u * (1 - u)
+  NDArray *cSquared = c * c;
+  NDArray *dLdZc = 1.f - (*cSquared);
+  *dLdZc *= *dLdcTotal;
+  delete cSquared;
+  delete dLdcTotal;
+  NDArray *dLdZu = u * (*oneMinusU);
+  *dLdZu *= *dLduTotal;
+  delete dLduTotal;
 
-  delete dLdZuWuxT;
-  delete dLdZcWcxT;
-  delete dLdZrWrxT;
-  dLdx->assign(dLdxTemp);  // [bS, iS]
-  delete dLdxTemp;
+  // dL/dr = dLdr + (dLdZc × Wch^T) * hLast, dLdZr = dL/dr * r * (1 - r)
+  NDArray *WchT = Wch->transpose();
+  NDArray *dLdZcWchT = mmul(*dLdZc, *WchT);  // [bS, nU]: the gradient wrt r * hLast
+  NDArray *dLdrTotal = (*dLdZcWchT) * (*hLast);
+  *dLdrTotal += *dLdr;
+  NDArray *oneMinusR = 1.f - r;
+  NDArray *dLdZr = r * (*oneMinusR);
+  *dLdZr *= *dLdrTotal;
+  delete oneMinusR;
+  delete dLdrTotal;
 
-  // dldZTimeR = dLdZc * r
-  auto* dldZTimeR = (*dLdZc) * r;
+  // dLdx = dLdZr × Wrx^T + dLdZu × Wux^T + dLdZc × Wcx^T
+  NDArray *WrxT = Wrx->transpose();
+  NDArray *WuxT = Wux->transpose();
+  NDArray *WcxT = Wcx->transpose();
+  MmulHelper::mmul(dLdZr, WrxT, dLdx, 1.0, 0.0);
+  MmulHelper::mmul(dLdZu, WuxT, dLdx, 1.0, 1.0);
+  MmulHelper::mmul(dLdZc, WcxT, dLdx, 1.0, 1.0);
 
-  // dLdhLast = dLdh * u + dLdZu × WuhT + dldZTimeR × WchT + dLdZr × WrhT
-  auto* dLdhTimesU = (*dLdh) * u;
-  auto dLdZuWuhT = mmul(*dLdZu, *WuhT);
-  auto dldZTimeRWchT = mmul(*dldZTimeR, *WchT);
-  auto dLdZrWrhT = mmul(*dLdZr, *WrhT);
-  auto* temp2 = (*dLdhTimesU) + *dLdZuWuhT;
-  delete dLdhTimesU;
-  delete dLdZuWuhT;
-  auto* temp3 = (*temp2) + *dldZTimeRWchT;
-  delete temp2;
-  delete dldZTimeRWchT;
-  auto* dLdhLastTemp = (*temp3) + *dLdZrWrhT;
-  delete temp3;
-  delete dLdZrWrhT;
-  dLdhLast->assign(dLdhLastTemp);  // [bS, nU]
-  delete dLdhLastTemp;
+  // dLdhLast = dLdh * u + dLdZr × Wrh^T + dLdZu × Wuh^T + (dLdZc × Wch^T) * r
+  NDArray *WrhT = Wrh->transpose();
+  NDArray *WuhT = Wuh->transpose();
+  NDArray *viaC = (*dLdZcWchT) * r;
+  NDArray *viaH = (*dLdh) * u;
+  *viaH += *viaC;
+  dLdhLast->assign(viaH);
+  MmulHelper::mmul(dLdZr, WrhT, dLdhLast, 1.0, 1.0);
+  MmulHelper::mmul(dLdZu, WuhT, dLdhLast, 1.0, 1.0);
+  delete viaC;
+  delete viaH;
+  delete dLdZcWchT;
 
-  // dLdWrx = xT × dLdZr
-  auto dLdWrxTemp = mmul(*xT, *dLdZr);
-  dLdWrx->assign(dLdWrxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
-  delete dLdWrxTemp;
-  // dLdWrh = hLastT × dLdZr
-  auto dLdWrhTemp = mmul(*hLastT, *dLdZr);
-  dLdWrh->assign(dLdWrhTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
-  delete dLdWrhTemp;
-  // dLdWux = xT × dLdZu
-  auto dLdWuxTemp = mmul(*xT, *dLdZu);
-  dLdWux->assign(dLdWuxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
-  delete dLdWuxTemp;
-  // dLdWuh = hLastT × dLdZu
-  auto dLdWuhTemp = mmul(*hLastT, *dLdZu);
-  dLdWuh->assign(dLdWuhTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
-  delete dLdWuhTemp;
-  // dLdWcx = xT × dLdZc
-  auto dLdWcxTemp = mmul(*xT, *dLdZc);
-  dLdWcx->assign(dLdWcxTemp);  // [iS, bS] × [bS, nU] = [iS, nU]
-  delete dLdWcxTemp;
-  // dLdWch = (r * hLast)T × dLdZc
-  auto* rTimesHLast = r * (*hLast);
-  NDArray* rTimesHLastT = rTimesHLast->transpose();
+  // weight gradients: x^T × dLdZ for the input weights, hLast^T × dLdZ (r and u) and (r * hLast)^T × dLdZc for the
+  // recurrent ones; bias gradients: dLdZ summed over the batch
+  NDArray *xT = x->transpose();
+  NDArray *hLastT = hLast->transpose();
+  NDArray *rTimesHLastT = rTimesHLast->transpose();
+  MmulHelper::mmul(xT, dLdZr, dLdWrx, 1.0, 0.0);
+  MmulHelper::mmul(hLastT, dLdZr, dLdWrh, 1.0, 0.0);
+  MmulHelper::mmul(xT, dLdZu, dLdWux, 1.0, 0.0);
+  MmulHelper::mmul(hLastT, dLdZu, dLdWuh, 1.0, 0.0);
+  MmulHelper::mmul(xT, dLdZc, dLdWcx, 1.0, 0.0);
+  MmulHelper::mmul(rTimesHLastT, dLdZc, dLdWch, 1.0, 0.0);
+  std::vector<sd::LongType> batchAxis = {0};
+  dLdZr->reduceAlongDimension(reduce::Sum, dLdbr, &batchAxis);
+  dLdZu->reduceAlongDimension(reduce::Sum, dLdbu, &batchAxis);
+  dLdZc->reduceAlongDimension(reduce::Sum, dLdbc, &batchAxis);
+
+  delete oneMinusU;
   delete rTimesHLast;
-  auto dLdWchTemp = mmul(*rTimesHLastT, *dLdZc);
-  dLdWch->assign(dLdWchTemp);  // [nU, bS] × [bS, nU] = [nU, nU]
-  delete dLdWchTemp;
-  // Calculate reduction for bias gradients
-  std::vector<sd::LongType> zeroVec = {0};
-  auto* dLdbrTemp = dLdZr->reduceAlongDimension(reduce::Sum, &zeroVec);
-  dLdbr->assign(dLdbrTemp);  // [nU]
-  delete dLdbrTemp;
-
-  auto* dLdbuTemp = dLdZu->reduceAlongDimension(reduce::Sum, &zeroVec);
-  dLdbu->assign(dLdbuTemp);  // [nU]
-  delete dLdbuTemp;
-
-  auto* dLdbcTemp = dLdZc->reduceAlongDimension(reduce::Sum, &zeroVec);
-  dLdbc->assign(dLdbcTemp);  // [nU]
-  delete dLdbcTemp;
-
-  delete dhdc;
-  delete dLdZc;
-  delete dLdZu;
+  delete rTimesHLastT;
   delete dLdZr;
-  delete dldZTimeR;
+  delete dLdZu;
+  delete dLdZc;
+  delete xT;
+  delete hLastT;
+  delete WrxT;
+  delete WuxT;
+  delete WcxT;
+  delete WrhT;
+  delete WuhT;
+  delete WchT;
   delete Wrx;
   delete Wux;
   delete Wrh;
@@ -470,12 +411,6 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   delete Wch;
   delete br;
   delete bu;
-  delete WrxT;
-  delete WuxT;
-  delete WrhT;
-  delete WuhT;
-  delete WcxT;
-  delete WchT;
   delete dLdWrx;
   delete dLdWux;
   delete dLdWrh;
@@ -484,9 +419,6 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   delete dLdWch;
   delete dLdbr;
   delete dLdbu;
-  delete xT;
-  delete hLastT;
-  delete rTimesHLastT;
 }
 
 //////////////////////////////////////////////////////////////////////////
