@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.opvalidation;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -35,6 +36,11 @@ public abstract class BaseOpValidation extends BaseNd4jTestWithBackends {
     // Track whether the GPU context is known to be corrupted
     private static volatile boolean gpuContextCorrupted = false;
 
+    private boolean executionerDebug;
+    private boolean executionerVerbose;
+    private boolean environmentDebug;
+    private boolean environmentVerbose;
+
 
     @Override
     public char ordering() {
@@ -43,6 +49,11 @@ public abstract class BaseOpValidation extends BaseNd4jTestWithBackends {
 
     @BeforeEach
     public void beforeClass() {
+        executionerDebug = Nd4j.getExecutioner().isDebug();
+        executionerVerbose = Nd4j.getExecutioner().isVerbose();
+        environmentDebug = Nd4j.getEnvironment().isDebug();
+        environmentVerbose = Nd4j.getEnvironment().isVerbose();
+
         // If a previous test corrupted the GPU context, skip subsequent tests
         // This prevents cascade failures that produce misleading error messages
         assumeTrue(!gpuContextCorrupted, "Skipping test - GPU context was corrupted by a previous test failure");
@@ -70,6 +81,18 @@ public abstract class BaseOpValidation extends BaseNd4jTestWithBackends {
 
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
+    }
+
+    /**
+     * Tests turn on debug and verbose mode while they run; left on, every later test in the JVM runs
+     * and logs in those modes
+     */
+    @AfterEach
+    public void restoreDiagnosticModes() {
+        Nd4j.getExecutioner().enableDebugMode(executionerDebug);
+        Nd4j.getExecutioner().enableVerboseMode(executionerVerbose);
+        Nd4j.getEnvironment().setDebug(environmentDebug);
+        Nd4j.getEnvironment().setVerbose(environmentVerbose);
     }
 
     /**
