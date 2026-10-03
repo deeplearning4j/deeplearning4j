@@ -405,9 +405,12 @@ SD_INLINE SD_HOST_DEVICE float DataTypeUtils::min<float>() {
   return FLT_MIN;
 }
 
+// The smallest positive normal value, as for every other float type. It returned 0, which made every
+// "below the smallest positive value" guard (SVD deflation, Householder and Jacobi rotations, LU
+// pivots, the incomplete beta's continued fraction) unreachable for FLOAT.
 template <>
 SD_INLINE SD_HOST_DEVICE float DataTypeUtils::min_positive<float>() {
-  return (float)0;
+  return FLT_MIN;
 }
 #endif
 
