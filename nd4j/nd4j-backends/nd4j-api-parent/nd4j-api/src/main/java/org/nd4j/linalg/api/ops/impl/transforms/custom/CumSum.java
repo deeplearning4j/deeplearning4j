@@ -130,18 +130,23 @@ public class CumSum extends DynamicCustomOp {
 
     protected void addArgs() {
         addIArgument(exclusive ? 1 : 0, reverse ? 1 : 0);
-        for (val a: jaxis)
-            addIArgument(jaxis);
+        if (jaxis != null)
+            for (val a: jaxis)
+                addIArgument(a);
     }
 
+    /**
+     * Restores the fields from the integer arguments, which are [exclusive, reverse, axis...]. An op rebuilt from its
+     * serialized form (SameDiff clones every op that way when it builds the gradient graph) gets its arguments back
+     * but not these fields, and {@link #doDiff(List)} hands all of them to the backward op.
+     */
     @Override
     public void configureFromArguments() {
-        if(!iArguments.isEmpty()) {
-            this.jaxis = Longs.toArray(iArguments.subList(1,iArguments.size()));
+        if (iArguments != null && iArguments.size() >= 2) {
             this.exclusive = iArguments.get(0) > 0;
+            this.reverse = iArguments.get(1) > 0;
+            this.jaxis = Longs.toArray(iArguments.subList(2, iArguments.size()));
         }
-
-
     }
 
     @Override
@@ -154,6 +159,11 @@ public class CumSum extends DynamicCustomOp {
         if(properties.containsKey("exclusive")) {
             Long exclusive = getLongValueFromProperty("exclusive",properties);
             this.exclusive = exclusive > 0;
+        }
+
+        Long reverse = getLongValueFromProperty("reverse",properties);
+        if(reverse != null) {
+            this.reverse = reverse > 0;
         }
     }
 

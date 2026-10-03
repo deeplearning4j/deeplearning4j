@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.CumProdBp;
+import org.nd4j.shade.guava.primitives.Longs;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -137,6 +138,21 @@ public class CumProd extends DynamicCustomOp {
         if (jaxis != null)
             for (val a: jaxis)
                 addIArgument(a);
+    }
+
+    /**
+     * Restores the fields from the integer arguments, which are [exclusive, reverse, axis...]. An op rebuilt from its
+     * serialized form (SameDiff clones every op that way when it builds the gradient graph) gets its arguments back
+     * but not these fields, and {@link #doDiff(List)} needs all of them: without the axes the backward op has none
+     * to scan along, and its gradient is zero.
+     */
+    @Override
+    public void configureFromArguments() {
+        if (iArguments != null && iArguments.size() >= 2) {
+            this.exclusive = iArguments.get(0) > 0;
+            this.reverse = iArguments.get(1) > 0;
+            this.jaxis = Longs.toArray(iArguments.subList(2, iArguments.size()));
+        }
     }
 
     @Override

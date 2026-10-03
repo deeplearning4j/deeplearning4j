@@ -82,6 +82,13 @@ DECLARE_TYPES(cumprod_bp) {
       ->setSameMode(true);
 }
 
+// With y = cumprod(x) scanned along some direction (strictly before each element when exclusive), output i holds
+// every x_k at or before i in that direction (strictly before i when exclusive), and dy_i/dx_k = y_i / x_k for those
+// k. So
+//   dL/dx_k = (sum of g_i * y_i over the outputs i that hold x_k) / x_k,
+// where the outputs that hold x_k are the ones from k on in the scan direction (after k when exclusive): the sum is a
+// cumulative sum of g * y in the opposite direction, exclusive when the forward scan was, divided by x.
+// TensorFlow's Cumprod gradient divides the same way, so like it this is not defined for an x_k of zero.
 CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
   auto input = INPUT_VARIABLE(0);
   auto axis = block.width() == 3 ? INPUT_VARIABLE(1) : nullptr;
@@ -103,35 +110,38 @@ CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
     for (int e = 0; e < newSize; e++) dims[e] = INT_ARG(e + 2);
   }
 
-  sd::ops::helpers::prefix(block.launchContext(), scalar::Multiply, input, output, dims, exclusive, reverse);
-  NDArray *val = output->dup();
+  for (size_t e = 0; e < dims.size(); e++)
+    if (dims[e] < 0) dims[e] += input->rankOf();
 
-  gradOut->applyPairwiseTransform(pairwise::Multiply, output, val);
-  val->applyPairwiseTransform(pairwise::Divide, input, val);
-  if (!exclusive && !reverse) {
-    if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, dims, true, false);
-    else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, false, true);
-
-  } else if (!exclusive && reverse) {
-    if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, dims, false, false);
-    else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, false, false);
-  } else if (exclusive && !reverse) {
-    if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, dims, true, true);
-    else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, true, true);
-  } else {
-    if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, dims, true, false);
-    else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, val, output, true, false);
+  if (input->isEmpty()) {
+    // No-op
+    return sd::Status::OK;
   }
 
-  delete val;
+  // Without axes the forward op scans the whole array as one flat sequence, and so must its gradient: the scan
+  // over a list of axes has nothing to scan when the list is empty.
+  auto scan = [&](scalar::Ops op, NDArray* x, NDArray* z, const bool exclusiveScan, const bool reverseScan) {
+    if (dims.empty())
+      sd::ops::helpers::prefix(block.launchContext(), op, x, z, exclusiveScan, reverseScan);
+    else
+      sd::ops::helpers::prefix(block.launchContext(), op, x, z, dims, exclusiveScan, reverseScan);
+  };
+
+  // y = cumprod(x), scanned as the forward op scanned it
+  scan(scalar::Multiply, input, output, exclusive, reverse);
+
+  // g * y, accumulated against the scan direction and divided by x. A loss variable that is not itself a scalar
+  // sends back a scalar gradient, the same at every output. `weighted` is a copy of y so that it lays out its axes
+  // the way the output does: the scans pair the sequences of both arrays by position.
+  NDArray *weighted = output->dup();
+  if (gradOut->lengthOf() == 1 && output->lengthOf() > 1)
+    output->applyScalarArr(scalar::Multiply, gradOut, weighted);
+  else
+    gradOut->applyPairwiseTransform(pairwise::Multiply, output, weighted);
+  scan(scalar::Add, weighted, output, exclusive, !reverse);
+  output->applyPairwiseTransform(pairwise::Divide, input, output);
+
+  delete weighted;
 
   return sd::Status::OK;
 }
