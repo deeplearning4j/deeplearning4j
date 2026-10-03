@@ -33,26 +33,55 @@ namespace helpers {
 template <typename X, typename Z>
 static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output) {
   const sd::LongType numArgs = inArrs.size();
-  auto x = inArrs[0];
+  const sd::LongType length = output.lengthOf();
+  const int rank = output.rankOf();
+
+  // Logical coordinates through each array's own strides, as mergeMax_ and mergeAvg_ use: t<X>(e)
+  // and r<Z>(e) walk each array in its own order, so an 'f' output paired a 'c' input's element e
+  // with a different element of its own (DL4J's ElementWiseVertex(Max) backward).
+  auto outputShape = output.shapeInfo();
+  std::vector<bool> vbSameShapeAndStrides(numArgs);
+  std::vector<sd::LongType*> vStridePtrs(numArgs);
+  std::vector<sd::LongType> vRanks(numArgs);
+  std::vector<const X*> vBuffers(numArgs);
+  for (int i = 0; i < numArgs; ++i) {
+    vbSameShapeAndStrides[i] = shape::haveSameShapeAndStrides(outputShape, inArrs[i]->shapeInfo());
+    vStridePtrs[i] = shape::stride(inArrs[i]->shapeInfo());
+    vRanks[i] = shape::rank(inArrs[i]->shapeInfo());
+    vBuffers[i] = inArrs[i]->bufferAsT<X>();
+  }
+
+  sd::LongType *outputShapeOf = shape::shapeOf(outputShape);
+  sd::LongType *outputStride = shape::stride(outputShape);
+  Z* outBuffer = output.bufferAsT<Z>();
 
   auto func = PRAGMA_THREADS_FOR {
+    sd::LongType coords[SD_MAX_RANK];
     for (auto e = start; e < stop; e++) {
+      INDEX2COORDS(e, rank, outputShapeOf, coords);
+      sd::LongType outOffset;
+      COORDS2INDEX(rank, outputStride, coords, outOffset);
+
       X max = -DataTypeUtils::max<X>();
       Z idx = static_cast<Z>(0);
-
       for (sd::LongType i = 0; i < numArgs; i++) {
-        X v = inArrs[i]->t<X>(e);
+        sd::LongType xOffset;
+        if (vbSameShapeAndStrides[i]) {
+          xOffset = outOffset;
+        } else {
+          COORDS2INDEX(vRanks[i], vStridePtrs[i], coords, xOffset);
+        }
+        const X v = vBuffers[i][xOffset];
         if (v > max) {
           max = v;
           idx = static_cast<Z>(i);
         }
       }
-
-      output.r<Z>(e) = static_cast<Z>(idx);
+      outBuffer[outOffset] = idx;
     }
   };
 
-  samediff::Threads::parallel_for(func, 0, x->lengthOf());
+  samediff::Threads::parallel_for(func, 0, length);
 }
 
 void mergeMaxIndex(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
@@ -128,11 +157,15 @@ static void mergeMaxBp_(const std::vector<NDArray*>& inArrs, std::vector<NDArray
 
   auto gradShape = inArrs[numArgs]->shapeInfo();
   std::vector<bool> vbSameShaepeAndStrides(numArgs);
+  std::vector<bool> vbOutSameShapeAndStrides(numArgs);
   std::vector<sd::LongType*> vShapePtrs(numArgs);
   std::vector<sd::LongType*> vStridePtrs(numArgs);
   std::vector<sd::LongType> vRanks(numArgs);
   for (int i = 0; i < numArgs; ++i) {
     vbSameShaepeAndStrides[i] = shape::haveSameShapeAndStrides(gradShape, inArrs[i]->shapeInfo());
+    // Output i has its own strides: it took input i's flag, so an output laid out unlike its input
+    // was written at the gradient's offset.
+    vbOutSameShapeAndStrides[i] = shape::haveSameShapeAndStrides(gradShape, outArrs[i]->shapeInfo());
     vShapePtrs[i] = shape::shapeOf(inArrs[i]->shapeInfo());
     vStridePtrs[i] = shape::stride(inArrs[i]->shapeInfo());
     vRanks[i] = shape::rank(inArrs[i]->shapeInfo());
@@ -177,7 +210,7 @@ static void mergeMaxBp_(const std::vector<NDArray*>& inArrs, std::vector<NDArray
       }
 
       sd::LongType zOffset;
-      if (vbSameShaepeAndStrides[nMaxIndex]) {
+      if (vbOutSameShapeAndStrides[nMaxIndex]) {
         zOffset = gradOffset;
       } else {
         COORDS2INDEX(outRanks[nMaxIndex],outStridePtrs[nMaxIndex], coords, zOffset);
@@ -311,18 +344,49 @@ void mergeAvgBp(sd::LaunchContext* context, NDArray& gradient, std::vector<NDArr
 template <typename T>
 static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
   const sd::LongType numArgs = inArrs.size();
-  auto x = inArrs[0];
+  const sd::LongType length = output.lengthOf();
+  const int rank = output.rankOf();
+
+  // Logical coordinates through each array's own strides, as mergeAvg_: e<T>(e) and p(e, ...) walk
+  // each array in its own order and mispaired elements across 'c' and 'f' arrays.
+  auto outputShape = output.shapeInfo();
+  std::vector<bool> vbSameShapeAndStrides(numArgs);
+  std::vector<sd::LongType*> vStridePtrs(numArgs);
+  std::vector<sd::LongType> vRanks(numArgs);
+  std::vector<const T*> vBuffers(numArgs);
+  for (int i = 0; i < numArgs; ++i) {
+    vbSameShapeAndStrides[i] = shape::haveSameShapeAndStrides(outputShape, inArrs[i]->shapeInfo());
+    vStridePtrs[i] = shape::stride(inArrs[i]->shapeInfo());
+    vRanks[i] = shape::rank(inArrs[i]->shapeInfo());
+    vBuffers[i] = inArrs[i]->bufferAsT<T>();
+  }
+
+  sd::LongType *outputShapeOf = shape::shapeOf(outputShape);
+  sd::LongType *outputStride = shape::stride(outputShape);
+  T* outBuffer = output.bufferAsT<T>();
 
   auto func = PRAGMA_THREADS_FOR {
+    sd::LongType coords[SD_MAX_RANK];
     for (auto e = start; e < stop; e++) {
-      T sum = (T)0.f;
-      for (sd::LongType i = 0; i < numArgs; i++) sum += inArrs[i]->e<T>(e);
+      INDEX2COORDS(e, rank, outputShapeOf, coords);
+      sd::LongType outOffset;
+      COORDS2INDEX(rank, outputStride, coords, outOffset);
 
-      output.p(e, sum);
+      T sum = static_cast<T>(0);
+      for (sd::LongType i = 0; i < numArgs; i++) {
+        sd::LongType xOffset;
+        if (vbSameShapeAndStrides[i]) {
+          xOffset = outOffset;
+        } else {
+          COORDS2INDEX(vRanks[i], vStridePtrs[i], coords, xOffset);
+        }
+        sum += vBuffers[i][xOffset];
+      }
+      outBuffer[outOffset] = sum;
     }
   };
 
-  samediff::Threads::parallel_for(func, 0, x->lengthOf());
+  samediff::Threads::parallel_for(func, 0, length);
 }
 void mergeAdd(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (inArrs, output), SD_NUMERIC_TYPES);
@@ -332,18 +396,47 @@ void mergeAdd(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs, N
 template <typename T>
 static void mergeAddBp_(NDArray& gradient, std::vector<NDArray*>& outArrs) {
   const sd::LongType numArgs = outArrs.size();
+  const sd::LongType length = gradient.lengthOf();
+  const int gradRank = gradient.rankOf();
+
+  // Logical coordinates through each array's own strides, as mergeAvgBp_.
+  auto gradShape = gradient.shapeInfo();
+  std::vector<bool> vbSameShapeAndStrides(numArgs);
+  std::vector<sd::LongType*> vStridePtrs(numArgs);
+  std::vector<sd::LongType> vRanks(numArgs);
+  std::vector<T*> vOutBuffers(numArgs);
+  for (int i = 0; i < numArgs; ++i) {
+    vbSameShapeAndStrides[i] = shape::haveSameShapeAndStrides(gradShape, outArrs[i]->shapeInfo());
+    vStridePtrs[i] = shape::stride(outArrs[i]->shapeInfo());
+    vRanks[i] = shape::rank(outArrs[i]->shapeInfo());
+    vOutBuffers[i] = outArrs[i]->bufferAsT<T>();
+  }
+
+  sd::LongType *gradShapeOf = shape::shapeOf(gradShape);
+  sd::LongType *gradStride = shape::stride(gradShape);
+  const T* gradBuffer = gradient.bufferAsT<T>();
 
   auto func = PRAGMA_THREADS_FOR {
+    sd::LongType coords[SD_MAX_RANK];
     for (auto e = start; e < stop; e++) {
-      T v = gradient.e<T>(e);
+      INDEX2COORDS(e, gradRank, gradShapeOf, coords);
+      sd::LongType gradOffset;
+      COORDS2INDEX(gradRank, gradStride, coords, gradOffset);
 
+      const T v = gradBuffer[gradOffset];
       for (sd::LongType i = 0; i < numArgs; i++) {
-        outArrs[i]->p<T>(e, v);
+        sd::LongType outOffset;
+        if (vbSameShapeAndStrides[i]) {
+          outOffset = gradOffset;
+        } else {
+          COORDS2INDEX(vRanks[i], vStridePtrs[i], coords, outOffset);
+        }
+        vOutBuffers[i][outOffset] = v;
       }
     }
   };
 
-  samediff::Threads::parallel_for(func, 0, gradient.lengthOf());
+  samediff::Threads::parallel_for(func, 0, length);
 }
 
 void mergeAddBp(sd::LaunchContext* context, NDArray& gradient, std::vector<NDArray*>& outArrs) {
