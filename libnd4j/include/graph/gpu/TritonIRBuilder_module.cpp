@@ -163,6 +163,456 @@ static mlir::Value emitDtypeCast(mlir::OpBuilder& builder, mlir::Location loc,
   return castTo(builder, loc, value, targetElemType);
 }
 
+// ── scatter_nd / scatter_nd_update ───────────────────────────────────────────
+//
+// The contract is helpers::scatterND's, on every backend. Index row r is the r-th run of
+// K = indices.shape[-1] elements of indices in logical (row-major) order. It names the leading K
+// coordinates of the output, which flatten (Horner over output.shape[0..K)) to the destination slice d
+// of sliceLen = prod(output.shape[K..]) elements. Update slice r is the r-th run of sliceLen elements of
+// updates in logical order, and element p of a slice is its p-th in logical order. A row with a
+// coordinate outside the output is skipped. scatter_nd starts from zeros and sums; scatter_nd_update
+// starts from its input and overwrites. Rows apply in index order, so a repeated destination sums in
+// row order, or keeps its last row.
+//
+// Lowering: every output element has one owner, the lane that stores it. A program takes a block of the
+// output, starts it (zeros, or the input's elements), walks every index row in order, applies the rows
+// that name its lanes' destinations to the block it holds in registers, and stores the block once. No
+// two programs write an element, so nothing is ordered between programs: there is no zero/copy phase to
+// fence before a scatter phase and no atomic, and a repeated destination resolves in row order whatever
+// the launch order. The price is that every program tests every row: rows * K scalar index loads and
+// rows lane tests per program, N * rows lane tests in all, against rows * sliceLen useful updates. That
+// is the order of the copy itself for the short walks scatter ops usually carry (a KV-cache or window
+// update: a few rows, unrolled below), and it grows linearly with rows beyond that. A phased lowering
+// (copy, then a row-parallel scatter) would be O(N + rows * sliceLen), but it needs a launch barrier
+// between the phases (the multi-phase launch) and, for scatter_nd_update with a repeated destination,
+// a test that drops every row a later row shadows to keep the last row. Output, input, indices and
+// updates are addressed through their own strides, so views and F-order arrays are read and written
+// in place.
+static constexpr int kScatterNdUnrolledRows = 16;
+
+static bool isScatterNdIndexType(DataType type) {
+  switch (type) {
+    case INT8:
+    case UINT8:
+    case INT16:
+    case UINT16:
+    case INT32:
+    case UINT32:
+    case INT64:
+    case UINT64:
+      return true;
+    default:
+      return false;
+  }
+}
+
+// The element types getMLIRType maps to an MLIR type of their own.
+static bool isScatterNdValueType(DataType type) {
+  switch (type) {
+    case FLOAT32:
+    case HALF:
+    case BFLOAT16:
+    case DOUBLE:
+      return true;
+    default:
+      return isScatterNdIndexType(type);
+  }
+}
+
+static std::string scatterNdShapeString(const std::vector<LongType>& shape) {
+  std::string text = "[";
+  for (size_t d = 0; d < shape.size(); ++d) text += (d ? "," : "") + std::to_string(shape[d]);
+  return text + "]";
+}
+
+static std::vector<LongType> scatterNdDenseStrides(const std::vector<LongType>& shape) {
+  std::vector<LongType> strides(shape.size(), 1);
+  for (size_t d = shape.size(); d-- > 1;) strides[d - 1] = strides[d] * std::max<LongType>(shape[d], 1);
+  return strides;
+}
+
+// The strides the argument was compiled against; dense when none were recorded.
+static std::vector<LongType> scatterNdStrides(const TritonKernelArg& arg) {
+  if (arg.strides.size() == arg.shape.size()) return arg.strides;
+  return scatterNdDenseStrides(arg.shape);
+}
+
+// The element count of a shape: 0 when a dimension is empty, -1 when one is negative or the count
+// exceeds int32 (the kernel addresses with int32 offsets).
+static LongType scatterNdLength(const std::vector<LongType>& shape) {
+  constexpr LongType limit = std::numeric_limits<int32_t>::max();
+  for (LongType dim : shape) {
+    if (dim < 0) return -1;
+  }
+  for (LongType dim : shape) {
+    if (dim == 0) return 0;
+  }
+  LongType length = 1;
+  for (LongType dim : shape) {
+    if (length > limit / dim) return -1;
+    length *= dim;
+  }
+  return length;
+}
+
+// The largest offset, in elements, a layout addresses; -1 for a negative stride or a span beyond int32.
+static LongType scatterNdExtent(const std::vector<LongType>& shape, const std::vector<LongType>& strides) {
+  constexpr LongType limit = std::numeric_limits<int32_t>::max();
+  LongType extent = 0;
+  for (size_t d = 0; d < shape.size(); ++d) {
+    if (shape[d] <= 1) continue;
+    if (strides[d] < 0 || strides[d] > limit) return -1;
+    if (strides[d] > 0 && shape[d] - 1 > (limit - extent) / strides[d]) return -1;
+    extent += (shape[d] - 1) * strides[d];
+  }
+  return extent;
+}
+
+// The offset, in elements, of logical index `linear` over dimensions [first, last) of a layout: the
+// row-major coordinates within that range, projected through the layout's own strides. `linear` is an
+// i32 scalar or an i32 tensor and the result has its shape. A singleton dimension has coordinate 0 and is
+// skipped, and a range that is itself dense (each stride is the extent inside it times the innermost
+// stride) is a scaling of `linear`.
+static mlir::Value emitScatterNdOffset(mlir::OpBuilder& builder, mlir::Location loc, mlir::Value linear,
+                                       const std::vector<LongType>& shape, const std::vector<LongType>& strides,
+                                       size_t first, size_t last) {
+  auto constant = [&](LongType value) -> mlir::Value {
+    mlir::Value scalar =
+        builder.create<mlir::arith::ConstantIntOp>(loc, static_cast<int64_t>(value), 32).getResult();
+    if (auto tensorType = mlir::dyn_cast<mlir::RankedTensorType>(linear.getType()))
+      return builder.create<mlir::triton::SplatOp>(loc, tensorType, scalar).getResult();
+    return scalar;
+  };
+
+  std::vector<size_t> dims;
+  for (size_t d = first; d < last; ++d) {
+    if (shape[d] != 1) dims.push_back(d);
+  }
+  if (dims.empty()) return constant(0);
+
+  const LongType unit = strides[dims.back()];
+  bool dense = true;
+  LongType run = shape[dims.back()];
+  for (size_t i = dims.size() - 1; i-- > 0;) {
+    if (strides[dims[i]] != unit * run) dense = false;
+    run *= shape[dims[i]];
+  }
+  if (dense) {
+    if (unit == 1) return linear;
+    return builder.create<mlir::arith::MulIOp>(loc, linear, constant(unit)).getResult();
+  }
+
+  mlir::Value remaining = linear;
+  mlir::Value offset;
+  for (size_t i = dims.size(); i-- > 0;) {
+    const size_t d = dims[i];
+    mlir::Value coordinate = remaining;
+    if (i > 0) {
+      coordinate = builder.create<mlir::arith::RemSIOp>(loc, remaining, constant(shape[d])).getResult();
+      remaining = builder.create<mlir::arith::DivSIOp>(loc, remaining, constant(shape[d])).getResult();
+    }
+    mlir::Value term = coordinate;
+    if (strides[d] != 1) {
+      term = builder.create<mlir::arith::MulIOp>(loc, coordinate, constant(strides[d])).getResult();
+    }
+    if (offset) {
+      offset = builder.create<mlir::arith::AddIOp>(loc, offset, term).getResult();
+    } else {
+      offset = term;
+    }
+  }
+  return offset;
+}
+
+// Emits the scatter of `slot` (scatter_nd or scatter_nd_update) into the kernel body. A slot the lowering
+// cannot express (wiring, shapes, dtypes or layouts outside the contract above) fails the compilation.
+static void emitScatterNdSlot(mlir::OpBuilder& builder, mlir::Location loc, mlir::Value pid, int blockSize,
+                              const NativeSlot& slot, int slotIndex,
+                              const std::vector<TritonKernelArg>& args,
+                              const std::unordered_map<int, int>& slotToArgIdx,
+                              const std::function<mlir::Value(int)>& bufferArg) {
+  auto fail = [&](const std::string& why) {
+    std::string msg = "TritonIRBuilder: " + slot.ident.opName + " at slot " + std::to_string(slotIndex) +
+                      " — " + why + ". Cannot compile.";
+    THROW_EXCEPTION(msg.c_str());
+  };
+
+  // scatter_nd takes (indices, updates, shape) and sums into zeros; scatter_nd_update takes (input,
+  // indices, updates) and overwrites a copy of its input. scatter_nd_add/sub have other semantics.
+  const std::string token = normalizeOpToken(slot.ident.opName);
+  const bool accumulate = token == "scatternd";
+  if (!accumulate && token != "scatterndupdate") fail("is neither scatter_nd nor scatter_nd_update");
+  if (slot.wiring.numInputs < 3 || slot.wiring.numOutputs < 1) {
+    fail("expects 3 inputs and 1 output but is wired with " + std::to_string(slot.wiring.numInputs) +
+         " inputs and " + std::to_string(slot.wiring.numOutputs) + " outputs");
+  }
+  // checkIndices makes the native op raise an error for a bad index; a kernel can only skip the row.
+  if (slot.args.numBArgs > 1 && slot.args.bArgs != nullptr && slot.args.bArgs[1]) {
+    fail("requested checkIndices, whose error report a compiled kernel cannot raise");
+  }
+
+  auto argIndex = [&](int source, const char* role) -> int {
+    auto found = slotToArgIdx.find(source);
+    if (found == slotToArgIdx.end()) {
+      fail(std::string("has no kernel argument for its ") + role + " (slot " + std::to_string(source) + ")");
+      return 0;
+    }
+    return found->second;
+  };
+  const int outputIndex = argIndex(slot.wiring.outputSlotIndices[0], "output");
+  const int indicesIndex = argIndex(slot.wiring.inputSourceIndices[accumulate ? 0 : 1], "indices");
+  const int updatesIndex = argIndex(slot.wiring.inputSourceIndices[accumulate ? 1 : 2], "updates");
+  const int inputIndex = accumulate ? -1 : argIndex(slot.wiring.inputSourceIndices[0], "input");
+  const TritonKernelArg& output = args[outputIndex];
+  const TritonKernelArg& indices = args[indicesIndex];
+  const TritonKernelArg& updates = args[updatesIndex];
+  const TritonKernelArg* input = accumulate ? nullptr : &args[inputIndex];
+  const mlir::Value outputPtr = bufferArg(outputIndex);
+  const mlir::Value indicesPtr = bufferArg(indicesIndex);
+  const mlir::Value updatesPtr = bufferArg(updatesIndex);
+  const mlir::Value inputPtr = accumulate ? mlir::Value() : bufferArg(inputIndex);
+  if (!outputPtr || !indicesPtr || !updatesPtr || (!accumulate && !inputPtr)) {
+    fail("could not bind every kernel pointer (output=" + std::string(outputPtr ? "OK" : "NULL") +
+         " indices=" + (indicesPtr ? "OK" : "NULL") + " updates=" + (updatesPtr ? "OK" : "NULL") +
+         " input=" + (accumulate ? "none" : (inputPtr ? "OK" : "NULL")) + ")");
+  }
+  for (const TritonKernelArg* operand : {&output, &indices, &updates}) {
+    if (!operand->shapeKnown) fail("has an operand whose shape was not resolved");
+  }
+  if (input != nullptr && !input->shapeKnown) fail("has an input whose shape was not resolved");
+
+  // ── Contract: K, rows, destinations, sliceLen ──
+  const std::vector<LongType>& outShape = output.shape;
+  const size_t outRank = outShape.size();
+  const size_t indicesRank = indices.shape.size();
+  if (outRank == 0 || indicesRank == 0) fail("needs an output and indices of rank >= 1");
+  const LongType outLength = scatterNdLength(outShape);
+  // The last block's masked lanes count past the output: they must not wrap int32.
+  if (outLength < 0 || outLength > std::numeric_limits<int32_t>::max() - blockSize) {
+    fail("output " + scatterNdShapeString(outShape) + " exceeds int32 addressing");
+  }
+  if (outLength == 0) return;  // an empty output has nothing to write
+  const LongType indexLength = indices.shape.back();
+  if (indexLength > static_cast<LongType>(outRank)) {
+    fail("indices of shape " + scatterNdShapeString(indices.shape) + " name " + std::to_string(indexLength) +
+         " coordinates of an output of rank " + std::to_string(outRank));
+  }
+  const LongType indicesLength = scatterNdLength(indices.shape);
+  if (indicesLength < 0) fail("indices " + scatterNdShapeString(indices.shape) + " exceed int32 addressing");
+  const LongType rows = (indicesLength == 0 || indexLength <= 0) ? 0 : indicesLength / indexLength;
+  LongType destinations = 1;
+  for (LongType j = 0; j < indexLength; ++j) destinations *= outShape[j];
+  const LongType sliceLength = outLength / destinations;
+
+  if (rows > 0) {
+    std::vector<LongType> expected(indices.shape.begin(), indices.shape.end() - 1);
+    expected.insert(expected.end(), outShape.begin() + indexLength, outShape.end());
+    if (updates.shape != expected) {
+      fail("updates " + scatterNdShapeString(updates.shape) + " do not match indices " +
+           scatterNdShapeString(indices.shape) + " and output " + scatterNdShapeString(outShape) +
+           " (expected " + scatterNdShapeString(expected) + ")");
+    }
+    if (!isScatterNdIndexType(indices.dtype)) {
+      fail("has " + DataTypeUtils::asString(indices.dtype) + " indices, which are not an integer type");
+    }
+    if (!isScatterNdValueType(updates.dtype)) {
+      fail("has " + DataTypeUtils::asString(updates.dtype) + " updates, which Triton does not store");
+    }
+  }
+  if (!isScatterNdValueType(output.dtype)) {
+    fail("has a " + DataTypeUtils::asString(output.dtype) + " output, which Triton does not store");
+  }
+  if (input != nullptr) {
+    if (input->shape != outShape) {
+      fail("input " + scatterNdShapeString(input->shape) + " differs from output " +
+           scatterNdShapeString(outShape));
+    }
+    if (!isScatterNdValueType(input->dtype)) {
+      fail("has a " + DataTypeUtils::asString(input->dtype) + " input, which Triton does not store");
+    }
+  }
+
+  const std::vector<LongType> outStrides = scatterNdStrides(output);
+  const std::vector<LongType> indicesStrides = scatterNdStrides(indices);
+  const std::vector<LongType> updatesStrides = scatterNdStrides(updates);
+  const std::vector<LongType> inputStrides = input != nullptr ? scatterNdStrides(*input) : std::vector<LongType>();
+  auto requireLayout = [&](const char* role, const std::vector<LongType>& shape,
+                           const std::vector<LongType>& strides) {
+    if (scatterNdExtent(shape, strides) < 0) {
+      fail(std::string(role) + " layout " + scatterNdShapeString(shape) + " with strides " +
+           scatterNdShapeString(strides) + " has a negative stride or addresses beyond int32");
+    }
+  };
+  requireLayout("output", outShape, outStrides);
+  if (input != nullptr) requireLayout("input", input->shape, inputStrides);
+  if (rows > 0) {
+    requireLayout("indices", indices.shape, indicesStrides);
+    requireLayout("updates", updates.shape, updatesStrides);
+  }
+
+  // scatter_nd sums rows in the accumulator type the framework gives HALF and BFLOAT16 (FLOAT) and casts
+  // once when it stores. scatter_nd_update only moves values, so it carries the output type.
+  const DataType outDtype = output.dtype;
+  const bool narrowFloat = outDtype == HALF || outDtype == BFLOAT16;
+  const DataType accDtype = accumulate && narrowFloat ? FLOAT32 : outDtype;
+  const mlir::Type outElemType = mlir::cast<mlir::triton::PointerType>(outputPtr.getType()).getPointeeType();
+  const mlir::Type accElemType = accumulate && narrowFloat ? mlir::Type(builder.getF32Type()) : outElemType;
+
+  DSP_DIAG(JIT, "emitScatterNdSlot: %s slot=%d out=%s K=%lld rows=%lld destinations=%lld sliceLen=%lld "
+           "indices=%s(%s) updates=%s(%s) acc=%s %s",
+           slot.ident.opName.c_str(), slotIndex, scatterNdShapeString(outShape).c_str(),
+           static_cast<long long>(indexLength), static_cast<long long>(rows),
+           static_cast<long long>(destinations), static_cast<long long>(sliceLength),
+           scatterNdShapeString(indices.shape).c_str(), DataTypeUtils::asString(indices.dtype).c_str(),
+           scatterNdShapeString(updates.shape).c_str(), DataTypeUtils::asString(updates.dtype).c_str(),
+           DataTypeUtils::asString(accDtype).c_str(),
+           rows > kScatterNdUnrolledRows ? "row loop" : "unrolled rows");
+
+  // ── Kernel body ──
+  auto i32Type = builder.getI32Type();
+  auto i64Type = builder.getI64Type();
+  auto i32TensorType = mlir::RankedTensorType::get({blockSize}, i32Type);
+  auto scalarInt = [&](LongType value, unsigned width) -> mlir::Value {
+    return builder.create<mlir::arith::ConstantIntOp>(loc, static_cast<int64_t>(value), width).getResult();
+  };
+  auto splatI32 = [&](mlir::Value scalar) -> mlir::Value {
+    return builder.create<mlir::triton::SplatOp>(loc, i32TensorType, scalar).getResult();
+  };
+  auto vectorI32 = [&](LongType value) -> mlir::Value { return splatI32(scalarInt(value, 32)); };
+
+  // The block's lanes in logical (row-major) output order, and each lane's destination slice and its
+  // position within the slice.
+  mlir::Value blockStart =
+      builder.create<mlir::arith::MulIOp>(loc, pid, scalarInt(blockSize, 32)).getResult();
+  mlir::Value lanes = builder.create<mlir::triton::MakeRangeOp>(loc, i32TensorType, 0, blockSize).getResult();
+  mlir::Value offsets = builder.create<mlir::arith::AddIOp>(loc, splatI32(blockStart), lanes).getResult();
+  mlir::Value laneMask = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, offsets,
+                                                             vectorI32(outLength)).getResult();
+  mlir::Value sliceOfLane = offsets;
+  mlir::Value positionInSlice = vectorI32(0);
+  if (sliceLength > 1) {
+    sliceOfLane = builder.create<mlir::arith::DivSIOp>(loc, offsets, vectorI32(sliceLength)).getResult();
+    positionInSlice = builder.create<mlir::arith::RemSIOp>(loc, offsets, vectorI32(sliceLength)).getResult();
+  }
+
+  // Start the block: zeros, or the input's elements.
+  mlir::Value acc;
+  if (accumulate) {
+    auto zero = builder.create<mlir::arith::ConstantOp>(loc, accElemType, builder.getZeroAttr(accElemType));
+    acc = builder.create<mlir::triton::SplatOp>(loc, mlir::RankedTensorType::get({blockSize}, accElemType),
+                                                zero).getResult();
+  } else {
+    auto inputPtrType = mlir::cast<mlir::triton::PointerType>(inputPtr.getType());
+    auto inputPtrTensorType = mlir::RankedTensorType::get({blockSize}, inputPtrType);
+    mlir::Value inputOffsets = emitScatterNdOffset(builder, loc, offsets, input->shape, inputStrides, 0, outRank);
+    mlir::Value inputSplat = builder.create<mlir::triton::SplatOp>(loc, inputPtrTensorType, inputPtr).getResult();
+    mlir::Value inputPtrs =
+        builder.create<mlir::triton::AddPtrOp>(loc, inputPtrTensorType, inputSplat, inputOffsets).getResult();
+    mlir::Value loaded = builder.create<mlir::triton::LoadOp>(loc, inputPtrs, laneMask, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false).getResult();
+    acc = emitDtypeCast(builder, loc, loaded, accElemType, input->dtype, accDtype);
+  }
+
+  // The rows. Everything the rows share is built once, before the (possible) loop.
+  if (rows > 0) {
+    auto updatesPtrType = mlir::cast<mlir::triton::PointerType>(updatesPtr.getType());
+    auto updatesPtrTensorType = mlir::RankedTensorType::get({blockSize}, updatesPtrType);
+    mlir::Value updatesSplat =
+        builder.create<mlir::triton::SplatOp>(loc, updatesPtrTensorType, updatesPtr).getResult();
+    // Element p of an update slice: the row picks the batch coordinates of updates, the lane's position
+    // in the slice the trailing ones.
+    mlir::Value trailingOffsets = emitScatterNdOffset(builder, loc, positionInSlice, updates.shape, updatesStrides,
+                                                      indicesRank - 1, updates.shape.size());
+
+    auto applyRow = [&](mlir::Value row, mlir::Value current) -> mlir::Value {
+      // The row's destination slice, or -1 when one of its coordinates is outside the output.
+      mlir::Value indexBase =
+          emitScatterNdOffset(builder, loc, row, indices.shape, indicesStrides, 0, indicesRank - 1);
+      mlir::Value destination;
+      mlir::Value valid;
+      for (LongType j = 0; j < indexLength; ++j) {
+        mlir::Value indexOffset = indexBase;
+        if (j > 0) {
+          indexOffset = builder.create<mlir::arith::AddIOp>(
+              loc, indexBase, scalarInt(j * indicesStrides[indicesRank - 1], 32)).getResult();
+        }
+        mlir::Value address =
+            builder.create<mlir::triton::AddPtrOp>(loc, indicesPtr.getType(), indicesPtr, indexOffset).getResult();
+        mlir::Value raw = builder.create<mlir::triton::LoadOp>(loc, address,
+            mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false).getResult();
+        // Range-check in 64 bits, signedness following the index dtype: only then is the coordinate narrowed.
+        mlir::Value coordinate = emitDtypeCast(builder, loc, raw, i64Type, indices.dtype, INT64);
+        mlir::Value atLeastZero = builder.create<mlir::arith::CmpIOp>(
+            loc, mlir::arith::CmpIPredicate::sge, coordinate, scalarInt(0, 64)).getResult();
+        mlir::Value belowExtent = builder.create<mlir::arith::CmpIOp>(
+            loc, mlir::arith::CmpIPredicate::slt, coordinate, scalarInt(outShape[j], 64)).getResult();
+        mlir::Value inRange = builder.create<mlir::arith::AndIOp>(loc, atLeastZero, belowExtent).getResult();
+        if (valid) {
+          valid = builder.create<mlir::arith::AndIOp>(loc, valid, inRange).getResult();
+        } else {
+          valid = inRange;
+        }
+        mlir::Value narrow = builder.create<mlir::arith::TruncIOp>(loc, i32Type, coordinate).getResult();
+        if (destination) {
+          mlir::Value scaled =
+              builder.create<mlir::arith::MulIOp>(loc, destination, scalarInt(outShape[j], 32)).getResult();
+          destination = builder.create<mlir::arith::AddIOp>(loc, scaled, narrow).getResult();
+        } else {
+          destination = narrow;
+        }
+      }
+      mlir::Value effective =
+          builder.create<mlir::arith::SelectOp>(loc, valid, destination, scalarInt(-1, 32)).getResult();
+
+      // The lanes that hold the destination; an out-of-range row (-1) holds none.
+      mlir::Value named = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::eq, sliceOfLane,
+                                                              splatI32(effective)).getResult();
+      mlir::Value hit = builder.create<mlir::arith::AndIOp>(loc, laneMask, named).getResult();
+      mlir::Value updateBase =
+          emitScatterNdOffset(builder, loc, row, updates.shape, updatesStrides, 0, indicesRank - 1);
+      mlir::Value updateOffsets =
+          builder.create<mlir::arith::AddIOp>(loc, splatI32(updateBase), trailingOffsets).getResult();
+      mlir::Value updatePtrs =
+          builder.create<mlir::triton::AddPtrOp>(loc, updatesPtrTensorType, updatesSplat, updateOffsets).getResult();
+      mlir::Value loadedUpdate = builder.create<mlir::triton::LoadOp>(loc, updatePtrs, hit, mlir::Value(),
+          mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false).getResult();
+      mlir::Value update = emitDtypeCast(builder, loc, loadedUpdate, accElemType, updates.dtype, accDtype);
+      mlir::Value applied = update;
+      if (accumulate) {
+        if (mlir::isa<mlir::FloatType>(accElemType)) {
+          applied = builder.create<mlir::arith::AddFOp>(loc, current, update).getResult();
+        } else {
+          applied = builder.create<mlir::arith::AddIOp>(loc, current, update).getResult();
+        }
+      }
+      return builder.create<mlir::arith::SelectOp>(loc, hit, applied, current).getResult();
+    };
+
+    if (rows <= kScatterNdUnrolledRows) {
+      for (LongType row = 0; row < rows; ++row) acc = applyRow(scalarInt(row, 32), acc);
+    } else {
+      auto loop = builder.create<mlir::scf::ForOp>(loc, scalarInt(0, 32), scalarInt(rows, 32), scalarInt(1, 32),
+                                                   mlir::ValueRange{acc});
+      builder.setInsertionPointToStart(loop.getBody());
+      mlir::Value next = applyRow(loop.getInductionVar(), loop.getRegionIterArgs()[0]);
+      builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{next});
+      builder.setInsertionPointAfter(loop);
+      acc = loop.getResult(0);
+    }
+  }
+
+  // Store the block once, through the output's own strides.
+  auto outputPtrType = mlir::cast<mlir::triton::PointerType>(outputPtr.getType());
+  auto outputPtrTensorType = mlir::RankedTensorType::get({blockSize}, outputPtrType);
+  mlir::Value outputOffsets = emitScatterNdOffset(builder, loc, offsets, outShape, outStrides, 0, outRank);
+  mlir::Value outputSplat = builder.create<mlir::triton::SplatOp>(loc, outputPtrTensorType, outputPtr).getResult();
+  mlir::Value outputPtrs =
+      builder.create<mlir::triton::AddPtrOp>(loc, outputPtrTensorType, outputSplat, outputOffsets).getResult();
+  mlir::Value stored = emitDtypeCast(builder, loc, acc, outElemType, accDtype, outDtype);
+  builder.create<mlir::triton::StoreOp>(loc, outputPtrs, stored, laneMask, mlir::triton::CacheModifier::NONE,
+                                        mlir::triton::EvictionPolicy::NORMAL);
+}
+
 // The register RoPE emitter gathers each element's partner from the current SSA
 // tile. A tile is safe when it contains whole heads, or when head-aligned sub-tiles
 // still contain every possible pair. Split-half RoPE needs the entire rotary prefix
@@ -1512,9 +1962,14 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         isBroadcastToSlot = (opL == "broadcast_to" || opL == "broadcastto");
       }
     }
+    // scatter_nd: skip input[2], its shape tensor — metadata only; the output's own shape is the lowered
+    // shape and the kernel never reads the tensor.
+    const bool isScatterNdSlot = slots[i].wiring.numInputs == 3 &&
+        normalizeOpToken(slots[i].ident.opName) == "scatternd";
     for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
       // Skip shape tensor (input[1]) for broadcast_to
       if (isBroadcastToSlot && inp == 1) continue;
+      if (isScatterNdSlot && inp == 2) continue;
       int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (seenInputs.count(srcIdx)) continue;
 
@@ -4352,53 +4807,19 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           THROW_EXCEPTION(msg.c_str());
         }
 
-      } else if (opLower == "scatter_nd" || opLower == "scatter_nd_update") {
-        // ─── SCATTER_ND: copy data + scatter updates at indexed positions ───
-        // scatter_nd needs 3 inputs: data, indices, updates
-        // Output = copy of data with updates scattered at indexed positions
-        if (slot.wiring.numInputs >= 3 && slot.wiring.numOutputs >= 1) {
-          int dataSrc = slot.wiring.inputSourceIndices[0];
-          int idxSrc = slot.wiring.inputSourceIndices[1];
-          int updSrc = slot.wiring.inputSourceIndices[2];
-          int outSlot = slot.wiring.outputSlotIndices[0];
+      } else if (normalizeOpToken(slot.ident.opName) == "scatternd" ||
+                 normalizeOpToken(slot.ident.opName) == "scatterndupdate") {
+        // ─── SCATTER_ND / SCATTER_ND_UPDATE ───
+        // Each lane owns its output element (see emitScatterNdSlot), so one pass over the output blocks is
+        // the whole lowering and the skeleton's single grid is enough. A slot the lowering cannot express
+        // fails the compilation; it is never forwarded or skipped.
+        emitScatterNdSlot(builder, loc, pid, blockSize, slot, si, result.args, slotToArgIdx, getBufferArg);
 
-          auto dataArgIt = slotToArgIdx.find(dataSrc);
-          auto idxArgIt = slotToArgIdx.find(idxSrc);
-          auto updArgIt = slotToArgIdx.find(updSrc);
-          auto outArgIt = slotToArgIdx.find(outSlot);
-
-          NDArray* dataArr = resolveArr(dataSrc);
-          int nElem = dataArr ? static_cast<int>(dataArr->lengthOf()) : 0;
-
-          if (dataArgIt != slotToArgIdx.end() && idxArgIt != slotToArgIdx.end() &&
-              updArgIt != slotToArgIdx.end() && outArgIt != slotToArgIdx.end() && nElem > 0) {
-            auto dPtr = getBufferArg(dataArgIt->second);
-            auto iPtr = getBufferArg(idxArgIt->second);
-            auto uPtr = getBufferArg(updArgIt->second);
-            auto oPtr = getBufferArg(outArgIt->second);
-
-            std::vector<LongType> dataShape;
-            if (dataArr) {
-              for (int d = 0; d < dataArr->rankOf(); d++) dataShape.push_back(dataArr->sizeAt(d));
-            }
-            emitScatterNdSection(builder, loc, pid, blockSize, dPtr, iPtr, uPtr, oPtr, dataShape, nElem);
-
-            // Load result back for downstream SSA consumers
-            DataType outDtype = resolveDtypeLocal(outSlot);
-            auto result = loadBackFromBuffer(outSlot, outDtype);
-            if (result) {
-              for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = result;
-            }
-          } else {
-            std::string msg = "TritonIRBuilder: scatter_nd '" + slot.ident.opName + "' at slot " + std::to_string(si) +
-                " — missing kernel arg ptrs. Cannot compile.";
-            THROW_EXCEPTION(msg.c_str());
-          }
-        } else if (slot.wiring.numInputs >= 1) {
-          auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
-          if (inputIt != ssaValues.end()) {
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = inputIt->second;
-          }
+        // Load result back for downstream SSA consumers
+        const int outSlot = slot.wiring.outputSlotIndices[0];
+        auto loaded = loadBackFromBuffer(outSlot, resolveDtypeLocal(outSlot));
+        if (loaded) {
+          for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
         }
 
       } else {
@@ -4793,6 +5214,34 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     sd_debug("TritonIRBuilder::buildSectionedModule: no sections identified for seg [%d-%d]\n",
               startSlot, endSlot);
     return result;
+  }
+
+  // A scatter is emitted as a section of its own. Scatter slots that identifySections merged into one
+  // section share a program range and are ordered only by program order: the output of one that the
+  // next reads is no cross-section intermediate, so it would get no kernel argument, and the section-level
+  // hazard analysis below (barriers, byte-range aliasing of different tensors, program ranges) would not
+  // see the slots as separate readers and writers of memory.
+  {
+    std::vector<KernelSection> perSlot;
+    perSlot.reserve(sections.size());
+    for (const auto& merged : sections) {
+      const bool scatter = merged.type == KernelSectionType::SCATTER_ND ||
+                           merged.type == KernelSectionType::SCATTER_ND_UPDATE;
+      if (!scatter || merged.startSlot == merged.endSlot) {
+        perSlot.push_back(merged);
+        continue;
+      }
+      DSP_DIAG(COMPILE, "TritonIRBuilder::buildSectionedModule: splitting scatter section [%d-%d] into %d "
+               "single-slot sections", merged.startSlot, merged.endSlot, merged.endSlot - merged.startSlot + 1);
+      for (int slotIndex = merged.startSlot; slotIndex <= merged.endSlot; slotIndex++) {
+        KernelSection single = merged;
+        single.startSlot = slotIndex;
+        single.endSlot = slotIndex;
+        single.numOps = 1;
+        perSlot.push_back(single);
+      }
+    }
+    sections = std::move(perSlot);
   }
 
   sd_debug("TritonIRBuilder::buildSectionedModule: identified %d sections\n",
@@ -5198,8 +5647,13 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         isBroadcastToSlot = (opL == "broadcast_to" || opL == "broadcastto");
       }
     }
+    // scatter_nd: skip input[2], its shape tensor — metadata only; the output's own shape is the lowered
+    // shape and the kernel never reads the tensor.
+    const bool isScatterNdSlot = slots[i].wiring.numInputs == 3 &&
+        normalizeOpToken(slots[i].ident.opName) == "scatternd";
     for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
       if (isBroadcastToSlot && inp == 1) continue;
+      if (isScatterNdSlot && inp == 2) continue;
       int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (seenInputs.count(srcIdx)) continue;
       seenInputs.insert(srcIdx);
@@ -8480,25 +8934,13 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
       case KernelSectionType::SCATTER_ND:
       case KernelSectionType::SCATTER_ND_UPDATE: {
+        // One slot per section (see the split after identifySections). Each lane owns its output element
+        // (see emitScatterNdSlot), so the section is a single pass: no zero/copy phase needs fencing
+        // before a scatter phase, and a repeated destination resolves in row order. A slot the lowering
+        // cannot express fails the compilation; it is never skipped. No consumer reads the output through
+        // ssaValues: a later scatter and later sections read the buffer through the output's kernel argument.
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-          auto& slot = slots[si];
-          if (slot.wiring.numInputs < 3 || slot.wiring.numOutputs < 1) continue;
-          int dataSrc = slot.wiring.inputSourceIndices[0];
-          int idxSrc = slot.wiring.inputSourceIndices[1];
-          int updSrc = slot.wiring.inputSourceIndices[2];
-          int outSlot = slot.wiring.outputSlotIndices[0];
-          auto dataPtr = getSlotArgPtr(dataSrc);
-          auto idxPtr = getSlotArgPtr(idxSrc);
-          auto updPtr = getSlotArgPtr(updSrc);
-          auto outPtr = getSlotArgPtr(outSlot);
-          auto dataShape = resolveShape(dataSrc);
-          auto outShape = resolveShape(outSlot);
-          if (dataPtr && idxPtr && updPtr && outPtr && !dataShape.empty() && !outShape.empty()) {
-            int nElements = static_cast<int>(shapeLength(outShape));
-            emitScatterNdSection(builder, loc, pid, blockSize, dataPtr, idxPtr, updPtr, outPtr, dataShape, nElements);
-            auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
-            if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
-          }
+          emitScatterNdSlot(builder, loc, pid, blockSize, slots[si], si, result.args, slotToArgIdx, getBufferArg);
         }
         break;
       }

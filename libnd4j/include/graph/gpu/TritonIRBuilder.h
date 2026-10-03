@@ -589,14 +589,6 @@ class TritonIRBuilder {
                               const std::vector<int>& repeats,
                               int nElements);
 
-  // ScatterNd: store(output + load(indices + offsets), load(updates + offsets))
-  static void emitScatterNdSection(mlir::OpBuilder& builder, mlir::Location loc,
-                                   mlir::Value pid, int blockSize,
-                                   mlir::Value dataPtr, mlir::Value indicesPtr,
-                                   mlir::Value updatesPtr, mlir::Value outputPtr,
-                                   const std::vector<LongType>& dataShape,
-                                   int nElements);
-
   // Shape manipulation: proper stride/offset recomputation for non-contiguous views
   static void emitShapeManipulationSection(mlir::OpBuilder& builder, mlir::Location loc,
                                            mlir::Value pid, int blockSize,
