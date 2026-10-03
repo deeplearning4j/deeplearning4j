@@ -70,6 +70,14 @@ They bind the selected device, manage Vulkan resources and transfers, and
 coordinate replay lifetime. Shared DSP utilities remain chip-neutral functions;
 they do not make Vulkan execute CPU or CUDA platform hooks.
 
+A plan's slots go only to devices that exchange data with the caller's device
+in both directions (`AffinityManager.canTransferBetweenDevices`, which on Vulkan
+holds for logical devices of one physical device), and a plan with no input
+placed on any device runs on the caller's device. A device that could not
+receive the plan's inputs or return its outputs (llvmpipe beside a GPU) never
+takes part in a plan, whatever its free memory. Each slot's prezero runs on the
+stream of the device the slot executes on.
+
 ### Java layer
 
 The Vulkan affinity, memory, workspace, buffer, constant, and shape providers

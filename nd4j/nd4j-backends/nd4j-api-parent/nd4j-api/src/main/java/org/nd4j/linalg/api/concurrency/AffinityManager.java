@@ -167,6 +167,20 @@ public interface AffinityManager {
     void allowCrossDeviceAccess(boolean reallyAllow);
 
     /**
+     * Returns whether data can move from one device to the other at all, directly or staged through host memory.
+     * Work split across devices needs it in both directions: a device that cannot exchange data with the others can
+     * neither receive their outputs nor return its own. Backends that stage every pair they cannot copy directly
+     * (CUDA devices without peer access) keep this default.
+     *
+     * @param sourceDevice      the device holding the data
+     * @param destinationDevice the device that needs it
+     * @return true if the data can be moved
+     */
+    default boolean canTransferBetweenDevices(int sourceDevice, int destinationDevice) {
+        return true;
+    }
+
+    /**
      * Returns the device type for the given device ID.
      * CPU_DEVICE_ID (-1) returns CPU. The default accelerator type is CUDA_GPU;
      * non-CUDA affinity managers must override this method with their backend type.

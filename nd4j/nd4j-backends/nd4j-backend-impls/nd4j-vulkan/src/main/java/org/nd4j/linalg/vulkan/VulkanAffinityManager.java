@@ -296,6 +296,12 @@ public class VulkanAffinityManager extends BasicAffinityManager {
         crossDeviceAccessAllowed.set(reallyAllow);
     }
 
+    /** Vulkan copies only between logical devices of one physical device; it stages nothing through the host. */
+    @Override
+    public boolean canTransferBetweenDevices(int sourceDevice, int destinationDevice) {
+        return isPeerCopyAllowed(sourceDevice, destinationDevice);
+    }
+
     @Override
     public INDArray replicateToDevice(Integer deviceId, INDArray array) {
         if (array == null) {

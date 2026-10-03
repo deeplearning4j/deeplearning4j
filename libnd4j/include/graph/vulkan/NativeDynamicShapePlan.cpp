@@ -1307,6 +1307,16 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(
        slotIndex <= segment.def.endSlot && slotIndex < numSlots_; ++slotIndex) {
     NativeSlot& slot = slots_[slotIndex];
     if (!slot.needsPrezero()) continue;
+    // A slot runs on its target device's stream (platformExecuteSlot), where its
+    // outputs live: they are zeroed there, in order with the slot.
+    VulkanExecutionStream* slotStream = executionStream;
+    if (slot.targetDeviceId >= 0 &&
+        slot.targetDeviceId != executionStream->deviceId()) {
+      slotStream = resolveExecutionStream(nullptr, slot.targetDeviceId);
+      if (slotStream == nullptr) {
+        throw std::runtime_error("Vulkan prezero stream is unavailable");
+      }
+    }
     bool zeroed = false;
     for (int output = 0; output < slot.wiring.numOutputs; ++output) {
       const int outputIndex = slot.wiring.outputSlotIndices[output];
@@ -1320,8 +1330,12 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(
       if (buffer->special() == nullptr) buffer->syncToSpecial(false);
       const size_t bytes = static_cast<size_t>(buffer->getLenInBytes());
       if (bytes > 0 &&
-          !executionStream->enqueueFill(buffer->special(), 0, bytes)) {
-        throw std::runtime_error("Vulkan segment prezero failed");
+          !slotStream->enqueueFill(buffer->special(), 0, bytes)) {
+        throw std::runtime_error(
+            "Vulkan segment prezero failed: slot " + std::to_string(slotIndex) +
+            " (" + slot.ident.opName + ") output " + std::to_string(output) +
+            ", " + std::to_string(bytes) + " bytes on the device " +
+            std::to_string(slotStream->deviceId()) + " stream");
       }
       buffer->writeSpecial();
       zeroed = true;

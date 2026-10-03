@@ -4901,10 +4901,19 @@ public class DynamicShapePlanExecutor implements Closeable {
                 int bestDevice;
                 if (bestDataDevice >= 0 && !dataTied) {
                     bestDevice = bestDataDevice;
+                } else if (bestDataDevice < 0 && previousDevice >= 0 && previousDevice < numDevices) {
+                    // No data placed on any device: run where the caller is, which is where the
+                    // outputs are wanted, so nothing moves. Free memory alone picked another device
+                    // (on Vulkan the llvmpipe CPU device, whose free memory is the host's), and a
+                    // device with no path to the caller's then could not return the outputs.
+                    bestDevice = previousDevice;
                 } else {
-                    // No data placed on any device, or exact tie: fall back to
-                    // pool-aware free-memory selection.
-                    bestDevice = DeviceMemoryManager.getInstance().selectBestGpu();
+                    // Exact tie: the tied device with the most pool-aware free memory.
+                    List<Integer> tied = new ArrayList<>();
+                    for (int d = 0; d < numDevices; d++) {
+                        if (deviceBytes[d] == bestDataBytes) tied.add(d);
+                    }
+                    bestDevice = DeviceMemoryManager.getInstance().selectBestGpu(tied);
                 }
                 long bestFree = nOps.getDeviceFreeMemory(bestDevice);
                 nativeExecutionDevice = bestDevice;

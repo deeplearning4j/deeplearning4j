@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.device.MultiGpuTracer;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.Shape;
@@ -285,8 +286,20 @@ public class DynamicShapePlan implements Closeable {
         // from placement. Use pool-aware capacity because cudaMemGetInfo excludes
         // reserved-but-reusable cudaMallocAsync blocks, then cap it by the remaining
         // per-device allocation allowance when one is configured.
+        //
+        // A device that cannot exchange data with the caller's at all (a Vulkan device of another
+        // physical device: Vulkan stages nothing through host memory) could neither receive the
+        // plan's inputs nor return its outputs, so it takes no part. Devices without peer access
+        // whose transfers stage through host memory stay in.
+        AffinityManager affinity = Nd4j.getAffinityManager();
+        int callerDevice = affinity.getDeviceForCurrentThread();
         Map<Integer, Long> freeMemory = new LinkedHashMap<>();
         for (int d = 0; d < numDevices; d++) {
+            if (callerDevice >= 0 && d != callerDevice
+                    && (!affinity.canTransferBetweenDevices(callerDevice, d)
+                            || !affinity.canTransferBetweenDevices(d, callerDevice))) {
+                continue;
+            }
             long cudaFree = nativeOps.getDeviceFreeMemory(d);
             long total = nativeOps.getDeviceTotalMemory(d);
             boolean p2p = (d == 0) || nativeOps.isPeerAccessSupported(0, d);
