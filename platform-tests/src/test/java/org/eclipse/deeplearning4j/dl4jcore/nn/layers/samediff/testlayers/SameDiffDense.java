@@ -98,8 +98,12 @@ public class SameDiffDense extends SameDiffLayer {
                 if(DefaultParamInitializer.BIAS_KEY.equals(e.getKey())){
                     e.getValue().assign(0.0);
                 } else {
-                    //Normally use 'c' order, but use 'f' for direct comparison to DL4J DenseLayer
-                    WeightInitUtil.initWeights(nIn, nOut, new long[]{nIn, nOut}, weightInit, null, 'f', e.getValue());
+                    //Normally use 'c' order, but use 'f' for direct comparison to DL4J DenseLayer. initWeights fills the
+                    //flat view it is given and reads it in that order, as DenseLayer's initializer passes its flat
+                    //parameter slice: pass the weight's memory as a flat view, so the same seed gives DenseLayer's weights
+                    INDArray weight = e.getValue();
+                    WeightInitUtil.initWeights(nIn, nOut, new long[]{nIn, nOut}, weightInit, null, 'f',
+                            weight.reshape(weight.ordering(), new long[]{weight.length()}));
                 }
             }
         }

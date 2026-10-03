@@ -184,7 +184,11 @@ public abstract class AbstractSameDiffLayer extends Layer {
     }
 
     protected void initWeights(int fanIn, int fanOut, WeightInit weightInit, INDArray array) {
-        WeightInitUtil.initWeights(fanIn, fanOut, array.shape(), weightInit, null, paramReshapeOrder(null), array);
+        // initWeights fills the flat view it is given and reads it as paramReshapeOrder: hand it the parameter's memory
+        // as a flat view, as DL4J's own initializers pass their flat parameter slices. Given the parameter array itself,
+        // a fill in its logical order put the draws of an 'f' parameter in transposed positions.
+        WeightInitUtil.initWeights(fanIn, fanOut, array.shape(), weightInit, null, paramReshapeOrder(null),
+                array.reshape(array.ordering(), new long[]{array.length()}));
     }
 
     public void applyGlobalConfig(NeuralNetConfiguration.Builder b) {

@@ -35,7 +35,6 @@ import org.eclipse.deeplearning4j.dl4jcore.nn.layers.samediff.testlayers.SameDif
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -59,7 +58,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.SAMEDIFF)
 @Tag(TagNames.CUSTOM_FUNCTIONALITY)
 @Tag(TagNames.DL4J_OLD_API)
-@Disabled
 public class TestSameDiffDense extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
@@ -231,20 +229,20 @@ public class TestSameDiffDense extends BaseDL4JTest {
                     INDArray out = net.output(in);
                     INDArray outExp = net2.output(in);
 
-                    assertEquals(outExp, out);
+                    assertOutputsClose(outExp, out, a + " " + wsm);
 
                     //Also check serialization:
                     MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
                     INDArray outLoaded = netLoaded.output(in);
 
-                    assertEquals(outExp, outLoaded);
+                    assertOutputsClose(outExp, outLoaded, a + " " + wsm + " loaded");
 
 
                     //Sanity check different minibatch sizes
                     in = Nd4j.rand(2 * minibatch, nIn);
                     out = net.output(in);
                     outExp = net2.output(in);
-                    assertEquals(outExp, out);
+                    assertOutputsClose(outExp, out, a + " " + wsm + " minibatch " + (2 * minibatch));
                 }
             }
         }
@@ -466,6 +464,21 @@ public class TestSameDiffDense extends BaseDL4JTest {
                 INDArray newIn = Nd4j.vstack(f, f);
                 net.output(newIn);
             }
+        }
+    }
+
+    /**
+     * SameDiff's graph and DL4J's layers compute the same products and sums in another order (the graph optimizer may
+     * fuse the matmul and bias add), so outputs agree to float rounding, not bit for bit. With CUBE three layers grow
+     * the outputs past 3e5, where one float ulp is 0.03 and INDArray.equals' absolute 1e-5 demands identical bits:
+     * compare each element within 1e-5 of its magnitude (absolute 1e-5 up to magnitude 1).
+     */
+    private static void assertOutputsClose(INDArray expected, INDArray actual, String label) {
+        assertArrayEquals(expected.shape(), actual.shape(), label + " shape");
+        double[] e = expected.dup().data().asDouble();
+        double[] o = actual.dup().data().asDouble();
+        for (int i = 0; i < e.length; i++) {
+            assertEquals(e[i], o[i], 1e-5 * Math.max(1.0, Math.abs(e[i])), label + " element " + i);
         }
     }
 }
