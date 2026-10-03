@@ -916,6 +916,8 @@ NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::L
   this->_shapeInfoBuffer = constShapeInfo;
   this->_shapeInfo = constShapeInfo->primary();
   this->_shapeInfoD = constShapeInfo->special();
+  // p(), e() and r() bound-check against _length itself, not lengthOf().
+  _length = shape::length(_shapeInfo);
   _buffer = buffer;
   // This overload is the explicit DataBuffer ownership-transfer constructor.
   // Borrowing callers pass isBuffAlloc=false; pool consumers pass true.
@@ -2043,6 +2045,14 @@ NDArray &NDArray::operator=(NDArray &other) {
     if (!other.isEmpty()) {
       this->assign(&other);
     }
+  } else if (!other.isEmpty()) {
+    // Across shapes this array becomes a dense copy of other's own elements. other may be a
+    // view: duplicating its parent's whole buffer under its shapeInfo kept the view's strides but
+    // dropped its offset (the copy read the parent's first elements, not the view's), and the
+    // view flag left the copy unfreed.
+    NDArray *copy = other.dup(other.ordering());
+    *this = std::move(*copy);
+    delete copy;
   } else {
     // Cache owns all buffers - must maintain reference counting symmetry
     _context = other._context;
@@ -2058,23 +2068,14 @@ NDArray &NDArray::operator=(NDArray &other) {
     _shapeInfo = constDesc->primary();
     _shapeInfoD = constDesc->special();
     _length = other._length;
+    _offset = 0;
 
-    if (!other.isEmpty()) {
-      // Manually delete old buffer before assigning new one if we own it
-      if (_ownsBuffer) {
-        delete _buffer;
-      }
-      int len = other.isScalar() ? 1 : other.lengthOf();
-      _buffer = new DataBuffer(other.getDataBuffer()->dup());
-      _ownsBuffer = true;  // We created this buffer, we own it
-    } else {
-      // Manually delete old buffer before assigning new one if we own it
-      if (_ownsBuffer) {
-        delete _buffer;
-      }
-      _buffer = new DataBuffer();
-      _ownsBuffer = true;  // We created this buffer, we own it
+    // Manually delete old buffer before assigning new one if we own it
+    if (_ownsBuffer) {
+      delete _buffer;
     }
+    _buffer = new DataBuffer();
+    _ownsBuffer = true;  // We created this buffer, we own it
   }
   return *this;
 }
@@ -2405,11 +2406,17 @@ NDArray &NDArray::operator=(NDArray &&other) noexcept {
 
   _context = other._context;
   _length = other._length;
+  // The buffer's window and placement move with it: keeping this array's old offset made an
+  // array that had been a view read the moved buffer from the old view's position.
+  _offset = other._offset;
+  _isAttached = other._isAttached;
+  _deviceId = other._deviceId;
 
   // Clear moved-from object
   other._shapeInfoBuffer = nullptr;
   other._shapeInfo = other._shapeInfoD = nullptr;
   other._length = 0;
+  other._offset = 0;
 
   return *this;
 }
@@ -2490,6 +2497,7 @@ void NDArray::assign(T &value, bool allowParallelism) {
                                   temp->buffer(), temp->shapeInfo(), temp->specialBuffer(), temp->specialShapeInfo(),
                                   nullptr, allowParallelism);
   registerUse(std::vector<NDArray *>{this}, std::vector<NDArray *>{temp});
+  delete temp;
 }
 
 

@@ -36,6 +36,15 @@
 
 namespace sd {
 
+// A factory array owns the DataBuffer the factory allocated for it. NDArray(buffer, shapeInfo,
+// context) borrows its buffer (it wraps callers' and Java's buffers), so every factory array,
+// down to the scalar temporaries of `array op scalar`, leaked its buffer: about 70 KB each with
+// the host allocation padding.
+static NDArray* adoptBuffer(DataBuffer* buffer, char order, const std::vector<LongType>& shape, DataType dtype,
+                            LaunchContext* context) {
+  return new NDArray(buffer, order, shape, dtype, context, true, false, 0);
+}
+
 SD_LIB_EXPORT NDArray* NDArrayFactory::create(DataType dataType, char order, const std::vector<LongType>& shape, LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
     THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32");
@@ -43,7 +52,7 @@ SD_LIB_EXPORT NDArray* NDArrayFactory::create(DataType dataType, char order, con
   auto shapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dataType, order, shape);
   LongType allocSize = shape::length(shapeInfo) * DataTypeUtils::sizeOfElement(dataType);
   DataBuffer* buffer = new DataBuffer(allocSize, dataType, context->getWorkspace());
-  NDArray* result = new NDArray(buffer, shapeInfo, context);
+  NDArray* result = adoptBuffer(buffer, order, shape, dataType, context);
   result->nullify();
   return result;
 }
@@ -70,8 +79,7 @@ SD_LIB_EXPORT NDArray* NDArrayFactory::create<bool>(const char order, const std:
 
   DataBuffer * buffer = new DataBuffer(hostBuffer, data.size() * sizeof(bool), BOOL, true, context->getWorkspace());
 
-  NDArray *result = new NDArray(buffer, shapeInfo, context);
-  return result;
+  return adoptBuffer(buffer, order, shape, BOOL, context);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -96,8 +104,7 @@ NDArray* NDArrayFactory::create(const char order,
   DataBuffer *  buffer = new DataBuffer(
       data.data(), DataTypeUtils::fromT<T>(), data.size() * sizeof(T), context->getWorkspace());
 
-  NDArray *result = new NDArray(buffer, shapeInfo, context);
-  return result;
+  return adoptBuffer(buffer, order, shape, DataTypeUtils::fromT<T>(), context);
 }
 
 // Update the instantiation macro to use the expanded type pattern
@@ -180,16 +187,11 @@ NDArray* NDArrayFactory::create_(const T scalar, LaunchContext* context) {
                      context->getWorkspace(),
                      true);
 
-  auto desc = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>());
-  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
-  auto recast = const_cast<LongType*>(constDesc->primary());
-  NDArray* res = new NDArray(buffer, recast, context);
+  NDArray* res = adoptBuffer(buffer, 'c', {}, DataTypeUtils::fromT<T>(), context);
   res->p<T>(0,scalar);
 
   res->tickWriteHost();
   res->syncToDevice();
-
-  delete[] desc;  // Free allocated shape info
 
   return res;
 }
@@ -233,8 +235,7 @@ NDArray* NDArrayFactory::create(const T scalar, LaunchContext* context) {
   DataBuffer *  buffer =
       new DataBuffer(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-  auto shapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(DataTypeUtils::fromT<T>());
-  NDArray *res = new NDArray(buffer, shapeInfo, context);
+  NDArray *res = adoptBuffer(buffer, 'c', {}, DataTypeUtils::fromT<T>(), context);
   res->bufferAsT<T>()[0] = scalar;
 
   res->tickWriteHost();
@@ -345,16 +346,11 @@ template <typename T>
 NDArray* NDArrayFactory::vector(LongType length,  T value, LaunchContext* context) {
   DataBuffer *  buffer =
       new DataBuffer(length * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
-  auto desc = ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(),length);
-  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
-  auto recast = const_cast<LongType*>(constDesc->primary());
-  auto res = new NDArray(buffer, recast, context);
+  auto res = adoptBuffer(buffer, 'c', {length}, DataTypeUtils::fromT<T>(), context);
   if (value == (T)0.0f)
     res->nullify();
   else
     res->assign(value);
-
-  delete[] desc;  // Free allocated shape info
 
   return res;
 }
@@ -392,7 +388,7 @@ NDArray *NDArrayFactory::create(const char order, const std::vector<LongType>& s
   DataBuffer *  buffer = new DataBuffer(
       shape::length(shapeInfo) * DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace());
 
-  NDArray *result = new NDArray(buffer, shapeInfo, context);
+  NDArray *result = adoptBuffer(buffer, order, shape, dtype, context);
   result->nullify();
 
   return result;
@@ -406,11 +402,7 @@ NDArray* NDArrayFactory::create_(DataType dtype, LaunchContext* context) {
 template <typename T>
 static NDArray *create(DataType type, const std::vector<LongType>& shape, LaunchContext* context) {
   auto buffer = new DataBuffer(DataTypeUtils::sizeOfElement(type) * shape::prodLong(shape.data(),shape.size()), type, context->getWorkspace());
-  auto desc = ShapeBuilders::createShapeInfo(type,'c',shape);
-  auto cachedDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
-  NDArray *result = new NDArray(buffer, cachedDesc->primary(), context);
-  delete[] desc;
-  return result;
+  return adoptBuffer(buffer, 'c', shape, type, context);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -419,8 +411,7 @@ NDArray *NDArrayFactory::create(const std::vector<T>& values, LaunchContext* con
   DataBuffer *  buffer =
       new DataBuffer(values.size() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-  auto shapeInfo = ConstantShapeHelper::getInstance().vectorShapeInfo(values.size(), DataTypeUtils::fromT<T>());
-  NDArray *res = new NDArray(buffer, shapeInfo, context);
+  NDArray *res = adoptBuffer(buffer, 'c', {static_cast<LongType>(values.size())}, DataTypeUtils::fromT<T>(), context);
   memcpyFromVector<T>(res->buffer(), values);
 
   res->tickWriteHost();
@@ -510,8 +501,8 @@ NDArray *NDArrayFactory::create(T* buffer, const char order, const std::initiali
   DataBuffer *  pBuffer = new DataBuffer(
       buffer, shape::length(shapeInfo) * sizeof(T), DataTypeUtils::fromT<T>(), false, context->getWorkspace());
 
-  NDArray *result = new NDArray(pBuffer, shapeInfo, context);
-  return result;
+  // The array owns the DataBuffer object, which borrows the caller's memory (isOwner false).
+  return adoptBuffer(pBuffer, order, shp, DataTypeUtils::fromT<T>(), context);
 }
 
 // Replace TMPL_INSTANTIATE_CREATE_H
