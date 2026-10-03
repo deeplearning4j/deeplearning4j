@@ -35,8 +35,11 @@ OP_IMPL(scatter_mul, 3, 1, true) {
   auto updates = INPUT_VARIABLE(2);
 
   auto output = OUTPUT_VARIABLE(0);
-  if(indices->isEmpty())
+  // No indices: nothing to scatter, the output is the input.
+  if (indices->isEmpty()) {
+    if (!block.isInplace()) output->assign(input);
     return Status::OK;
+  }
 
   const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
   const bool checkIndices = block.getBArguments()->size() <= 1 ? false : B_ARG(1);

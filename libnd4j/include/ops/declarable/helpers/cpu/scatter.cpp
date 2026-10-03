@@ -74,134 +74,237 @@ sd::LongType checkIndices(sd::LaunchContext* context, NDArray& indices, NDArray&
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatter(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDArray& updates,
-             NDArray& output, const bool lock) {
-  const int outRank = output.rankOf();
-  const int indRank = indices.rankOf();
-  const int updRank = updates.rankOf();
-  const sd::LongType indLen = indices.lengthOf();
-
-  if (outRank == 1) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        sd::LongType idx = indices.e<sd::LongType>(i);
-        NDArray *out = output({idx, idx + 1});
-        NDArray updateE = updates.e(i);
-        out->applyPairwiseTransform(op, &updateE);
-        delete out;
-      }
-    };
-
-    samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::env_maxThreads());
-  } else {  // outRank > 1
-
-    int sizeOfDims = indRank;
-    if (outRank == updRank && indices.isVector()) sizeOfDims = 1;
-
-    std::vector<sd::LongType > dimsToExcludeUpd(sizeOfDims);
-    std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
-
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        NDArray *outSubArr = output(indices.e<sd::LongType>(i), std::vector<sd::LongType >({0}));
-        NDArray *updSubArr = updates(i, dimsToExcludeUpd);
-        outSubArr->applyPairwiseTransform(op, updSubArr);
-        delete outSubArr;
-        delete updSubArr;
-      }
-    };
-
-    samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::env_maxThreads());
+// Applies update y to output element z.
+template <typename Y>
+static SD_INLINE void applyScatterUpdate(const pairwise::Ops op, Y& z, const Y y) {
+  switch (op) {
+    case pairwise::Add:
+      z += y;
+      break;
+    case pairwise::Subtract:
+      z -= y;
+      break;
+    case pairwise::Multiply:
+      z *= y;
+      break;
+    case pairwise::Divide:
+      z /= y;
+      break;
+    case pairwise::ReverseSubtract:
+      z = y - z;
+      break;
+    case pairwise::ReverseDivide:
+      z = y / z;
+      break;
+    case pairwise::CopyPws:
+      z = y;
+      break;
+    case pairwise::MaxPairwise:
+      z = sd::math::sd_max<Y>(z, y);
+      break;
+    case pairwise::MinPairwise:
+      z = sd::math::sd_min<Y>(z, y);
+      break;
+    default:
+      break;
   }
 }
 
 ///////////////////////////////////////////////////////////////////
-// Direct buffer scatterND — matches the CUDA implementation's approach.
-// Uses raw buffer access with coordinate math instead of subarray views
-// and applyPairwiseTransform, which crash due to view lifetime issues.
+// scatter: index k, the k-th element of indices in logical order, names slice indices[k] of output along its
+// first dimension (numSlices of them, sliceLen elements each); update slice k is the k-th run of sliceLen
+// elements of updates in logical order, and element p of a slice is its p-th in logical order. That pairing
+// serves every updates layout the ops accept: indices.shape + output.shape[1:], [indices.length] +
+// output.shape[1:] for vector indices, and indices' shape for a vector output. Indices outside
+// [0, numSlices) are skipped.
+//
+// Updates sharing a destination apply one after another in index order: when an index repeats (or lock is
+// set), each thread owns element p of every slice and walks the indices in turn. Otherwise the updates are
+// independent and the threads split them.
 template <typename X, typename Y>
-static void scatterND_(pairwise::Ops op, NDArray& indices, NDArray& updates,
-                       NDArray& output, const bool lock) {
-  const auto x = indices.bufferAsT<X>();           // indices buffer
-  const auto y = updates.bufferAsT<Y>();            // updates buffer
-  auto z = output.bufferAsT<Y>();                   // output buffer
-
+static void scatter_(pairwise::Ops op, NDArray& indices, NDArray& updates, NDArray& output, const bool lock) {
+  const auto x = indices.bufferAsT<X>();
+  const auto y = updates.bufferAsT<Y>();
+  auto z = output.bufferAsT<Y>();
   const auto xShapeInfo = indices.shapeInfo();
   const auto yShapeInfo = updates.shapeInfo();
   const auto zShapeInfo = output.shapeInfo();
-
   const int xRank = indices.rankOf();
   const int yRank = updates.rankOf();
   const int zRank = output.rankOf();
-  const LongType xLastDim = indices.sizeAt(-1);
-  const LongType yLen = updates.lengthOf();
+  const LongType xLen = indices.lengthOf();
+  const LongType numSlices = zRank == 0 ? 1 : output.sizeAt(0);
+  const LongType sliceLen = output.lengthOf() / numSlices;
 
-  auto func = PRAGMA_THREADS_FOR {
-    LongType yCoords[SD_MAX_RANK];
-    LongType zCoords[SD_MAX_RANK];
-
-    for (auto i = start; i < stop; i++) {
-      // Convert linear update index to multi-dimensional coordinates
-      INDEX2COORDS(i, yRank, shape::shapeOf(yShapeInfo), yCoords);
-      LongType yOffset;
-      COORDS2INDEX(yRank, shape::stride(yShapeInfo), yCoords, yOffset);
-
-      // Read index values from indices array to determine output position.
-      // For each dimension in the last axis of indices, read the target
-      // coordinate in the output array.
-      bool validIndex = true;
-      for (LongType j = 0; j < xLastDim; ++j) {
-        // Build indices coordinate: same leading dims as y, last dim = j
-        LongType xCoords[SD_MAX_RANK];
-        for (int d = 0; d < xRank - 1; d++) {
-          xCoords[d] = yCoords[d];
-        }
-        xCoords[xRank - 1] = j;
-        LongType xOffset;
-        COORDS2INDEX(xRank, shape::stride(xShapeInfo), xCoords, xOffset);
-        zCoords[j] = x[xOffset];
-
-        // Bounds check
-        if (zCoords[j] < 0 || zCoords[j] >= shape::shapeOf(zShapeInfo)[j]) {
-          validIndex = false;
-          break;
-        }
-      }
-
-      if (!validIndex) continue;
-
-      // Fill remaining z coordinates from trailing y coordinates
-      for (LongType j = xLastDim; j < zRank; ++j) {
-        zCoords[j] = yCoords[yRank - zRank + j];
-      }
-
-      // Compute output offset
-      LongType zOffset;
-      COORDS2INDEX(zRank, shape::stride(zShapeInfo), zCoords, zOffset);
-
-      // Apply the operation
-      switch (op) {
-        case pairwise::Add:            z[zOffset] += y[yOffset]; break;
-        case pairwise::Subtract:       z[zOffset] -= y[yOffset]; break;
-        case pairwise::Multiply:       z[zOffset] *= y[yOffset]; break;
-        case pairwise::Divide:         z[zOffset] /= y[yOffset]; break;
-        case pairwise::ReverseSubtract: z[zOffset] = y[yOffset] - z[zOffset]; break;
-        case pairwise::ReverseDivide:  z[zOffset] = y[yOffset] / z[zOffset]; break;
-        case pairwise::CopyPws:        z[zOffset] = y[yOffset]; break;
-        case pairwise::MaxPairwise:    z[zOffset] = sd::math::sd_max(z[zOffset], y[yOffset]); break;
-        case pairwise::MinPairwise:    z[zOffset] = sd::math::sd_min(z[zOffset], y[yOffset]); break;
-        default: break;
-      }
+  bool ordered = lock;
+  if (!ordered) {
+    std::vector<bool> named(numSlices, false);
+    LongType coords[SD_MAX_RANK];
+    for (LongType k = 0; k < xLen && !ordered; ++k) {
+      LongType xOffset;
+      INDEX2COORDS(k, xRank, shape::shapeOf(xShapeInfo), coords);
+      COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+      const auto slice = static_cast<LongType>(x[xOffset]);
+      if (slice < 0 || slice >= numSlices) continue;
+      ordered = named[slice];
+      named[slice] = true;
     }
-  };
+  }
 
-  samediff::Threads::parallel_for(func, 0, yLen, 1, lock ? 1 : sd::env_maxThreads());
+  if (ordered) {
+    auto func = PRAGMA_THREADS_FOR {
+      LongType coords[SD_MAX_RANK];
+      for (auto p = start; p < stop; p++) {
+        for (LongType k = 0; k < xLen; ++k) {
+          LongType xOffset, yOffset, zOffset;
+          INDEX2COORDS(k, xRank, shape::shapeOf(xShapeInfo), coords);
+          COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+          const auto slice = static_cast<LongType>(x[xOffset]);
+          if (slice < 0 || slice >= numSlices) continue;
+
+          INDEX2COORDS(k * sliceLen + p, yRank, shape::shapeOf(yShapeInfo), coords);
+          COORDS2INDEX(yRank, shape::stride(yShapeInfo), coords, yOffset);
+          INDEX2COORDS(slice * sliceLen + p, zRank, shape::shapeOf(zShapeInfo), coords);
+          COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
+          applyScatterUpdate<Y>(op, z[zOffset], y[yOffset]);
+        }
+      }
+    };
+    samediff::Threads::parallel_for(func, 0, sliceLen);
+  } else {
+    auto func = PRAGMA_THREADS_FOR {
+      LongType coords[SD_MAX_RANK];
+      for (auto i = start; i < stop; i++) {
+        LongType xOffset, yOffset, zOffset;
+        INDEX2COORDS(i / sliceLen, xRank, shape::shapeOf(xShapeInfo), coords);
+        COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+        const auto slice = static_cast<LongType>(x[xOffset]);
+        if (slice < 0 || slice >= numSlices) continue;
+
+        INDEX2COORDS(i, yRank, shape::shapeOf(yShapeInfo), coords);
+        COORDS2INDEX(yRank, shape::stride(yShapeInfo), coords, yOffset);
+        INDEX2COORDS(slice * sliceLen + i % sliceLen, zRank, shape::shapeOf(zShapeInfo), coords);
+        COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
+        applyScatterUpdate<Y>(op, z[zOffset], y[yOffset]);
+      }
+    };
+    samediff::Threads::parallel_for(func, 0, updates.lengthOf());
+  }
 }
 
+///////////////////////////////////////////////////////////////////
+void scatter(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDArray& updates,
+             NDArray& output, const bool lock) {
+  if (indices.lengthOf() == 0 || updates.lengthOf() == 0 || output.lengthOf() == 0) return;
+  // The updates are read in output's type.
+  NDArray* castUpdates = updates.dataType() == output.dataType() ? nullptr : updates.cast(output.dataType());
+  NDArray& typedUpdates = castUpdates != nullptr ? *castUpdates : updates;
+  BUILD_DOUBLE_SELECTOR(indices.dataType(), output.dataType(), scatter_, (op, indices, typedUpdates, output, lock),
+                        SD_INTEGER_TYPES, SD_COMMON_TYPES);
+  delete castUpdates;
+}
+
+///////////////////////////////////////////////////////////////////
+// scatterND: index row r, the r-th run of indexLength elements of indices in logical order, names output's
+// leading indexLength coordinates, flattened into destination slice d (sliceLen elements each); update slice r
+// is the r-th run of sliceLen elements of updates, and element p of a slice is its p-th in logical order.
+// Rows with a coordinate out of range are skipped. The destination slice of row r, or -1 when a coordinate
+// is out of range:
+template <typename X>
+static LongType scatterNdDestination(const X* x, const LongType* xShapeInfo, const LongType* zShapeInfo,
+                                     const LongType indexLength, const LongType row, LongType* coords) {
+  const int xRank = shape::rank(xShapeInfo);
+  const LongType* zShape = shape::shapeOf(zShapeInfo);
+  LongType destination = 0;
+  for (LongType j = 0; j < indexLength; ++j) {
+    LongType xOffset;
+    INDEX2COORDS(row * indexLength + j, xRank, shape::shapeOf(xShapeInfo), coords);
+    COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+    const auto index = static_cast<LongType>(x[xOffset]);
+    if (index < 0 || index >= zShape[j]) return -1;
+    destination = destination * zShape[j] + index;
+  }
+  return destination;
+}
+
+// As scatter_: repeated destinations (or lock) give each thread element p of every slice to walk the rows in
+// order; otherwise the threads split the updates.
+template <typename X, typename Y>
+static void scatterND_(pairwise::Ops op, NDArray& indices, NDArray& updates, NDArray& output, const bool lock) {
+  const auto x = indices.bufferAsT<X>();
+  const auto y = updates.bufferAsT<Y>();
+  auto z = output.bufferAsT<Y>();
+  const auto xShapeInfo = indices.shapeInfo();
+  const auto yShapeInfo = updates.shapeInfo();
+  const auto zShapeInfo = output.shapeInfo();
+  const int yRank = updates.rankOf();
+  const int zRank = output.rankOf();
+  const LongType indexLength = indices.sizeAt(-1);
+  const LongType rows = indices.lengthOf() / indexLength;
+  LongType numDestinations = 1;
+  for (LongType j = 0; j < indexLength; ++j) numDestinations *= output.sizeAt(j);
+  const LongType sliceLen = output.lengthOf() / numDestinations;
+
+  bool ordered = lock;
+  if (!ordered) {
+    std::vector<bool> named(numDestinations, false);
+    LongType coords[SD_MAX_RANK];
+    for (LongType r = 0; r < rows && !ordered; ++r) {
+      const LongType destination = scatterNdDestination<X>(x, xShapeInfo, zShapeInfo, indexLength, r, coords);
+      if (destination < 0) continue;
+      ordered = named[destination];
+      named[destination] = true;
+    }
+  }
+
+  if (ordered) {
+    auto func = PRAGMA_THREADS_FOR {
+      LongType coords[SD_MAX_RANK];
+      for (auto p = start; p < stop; p++) {
+        for (LongType r = 0; r < rows; ++r) {
+          const LongType destination = scatterNdDestination<X>(x, xShapeInfo, zShapeInfo, indexLength, r, coords);
+          if (destination < 0) continue;
+
+          LongType yOffset, zOffset;
+          INDEX2COORDS(r * sliceLen + p, yRank, shape::shapeOf(yShapeInfo), coords);
+          COORDS2INDEX(yRank, shape::stride(yShapeInfo), coords, yOffset);
+          INDEX2COORDS(destination * sliceLen + p, zRank, shape::shapeOf(zShapeInfo), coords);
+          COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
+          applyScatterUpdate<Y>(op, z[zOffset], y[yOffset]);
+        }
+      }
+    };
+    samediff::Threads::parallel_for(func, 0, sliceLen);
+  } else {
+    auto func = PRAGMA_THREADS_FOR {
+      LongType coords[SD_MAX_RANK];
+      for (auto i = start; i < stop; i++) {
+        const LongType destination =
+            scatterNdDestination<X>(x, xShapeInfo, zShapeInfo, indexLength, i / sliceLen, coords);
+        if (destination < 0) continue;
+
+        LongType yOffset, zOffset;
+        INDEX2COORDS(i, yRank, shape::shapeOf(yShapeInfo), coords);
+        COORDS2INDEX(yRank, shape::stride(yShapeInfo), coords, yOffset);
+        INDEX2COORDS(destination * sliceLen + i % sliceLen, zRank, shape::shapeOf(zShapeInfo), coords);
+        COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
+        applyScatterUpdate<Y>(op, z[zOffset], y[yOffset]);
+      }
+    };
+    samediff::Threads::parallel_for(func, 0, updates.lengthOf());
+  }
+}
+
+///////////////////////////////////////////////////////////////////
 void scatterND(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDArray& updates,
                NDArray& output, const bool lock) {
-  BUILD_DOUBLE_SELECTOR(indices.dataType(), updates.dataType(), scatterND_,
-                        (op, indices, updates, output, lock), SD_INTEGER_TYPES, SD_COMMON_TYPES);
+  if (indices.lengthOf() == 0 || updates.lengthOf() == 0 || output.lengthOf() == 0) return;
+  // The updates are read in output's type.
+  NDArray* castUpdates = updates.dataType() == output.dataType() ? nullptr : updates.cast(output.dataType());
+  NDArray& typedUpdates = castUpdates != nullptr ? *castUpdates : updates;
+  BUILD_DOUBLE_SELECTOR(indices.dataType(), output.dataType(), scatterND_, (op, indices, typedUpdates, output, lock),
+                        SD_INTEGER_TYPES, SD_COMMON_TYPES);
+  delete castUpdates;
 }
 
 void scatterForLoss(sd::LaunchContext* context, NDArray& indices, NDArray& updates, NDArray& output,

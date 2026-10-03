@@ -110,7 +110,7 @@ LongType checkIndices(LaunchContext *context, NDArray&indices, NDArray&output, c
   NDArray::prepareSpecialUse({&numOfBadIndx}, {&indices});
   BUILD_SINGLE_SELECTOR(
       xType, checkIndicesCudaLauncher,
-      (scatterDimsIndices.y, scatterDimsIndices.x, scatterDimsIndices.z, context->getCudaStream(),
+      (scatterDimsIndices.x, scatterDimsIndices.y, scatterDimsIndices.z, context->getCudaStream(),
        indices.specialBuffer(), indices.specialShapeInfo(),
        reinterpret_cast<sd::LongType *>(numOfBadIndx.specialBuffer()), output.specialShapeInfo(), axis),
       SD_INTEGER_TYPES);
@@ -122,537 +122,421 @@ LongType checkIndices(LaunchContext *context, NDArray&indices, NDArray&output, c
 }
 
 ///////////////////////////////////////////////////////////////////
-// x - indices, y - updates, z - input/output
-template <typename X, typename Y>
-SD_KERNEL static void scatterLockCuda(const int opCode, const void *vx, const LongType *xShapeInfo, const void *vy,
-                                      const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo) {
-  const auto x = reinterpret_cast<const X *>(vx);
-  const auto y = reinterpret_cast<const Y *>(vy);
-  auto z = reinterpret_cast<Y *>(vz);
-
-  __shared__ LongType xRank, yRank, zRank, xNonUnitDim, yNonUnitDim, zNonUnitDim;
-  __shared__ const LongType *xShape, *yShape, *zShape, *xStride, *yStride, *zStride;
-  __shared__ LongType xLen, zLen;
-  __shared__ bool is1Dcase, xySameStride;
-  __shared__ LongType *coords;
-
-  if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<LongType *>(shmem);
-
-    xRank = shape::rank(xShapeInfo);
-    yRank = shape::rank(yShapeInfo);
-    zRank = shape::rank(zShapeInfo);
-
-    xShape = shape::shapeOf(xShapeInfo);
-    yShape = shape::shapeOf(yShapeInfo);
-    zShape = shape::shapeOf(zShapeInfo);
-
-    xStride = shape::stride(xShapeInfo);
-    yStride = shape::stride(yShapeInfo);
-    zStride = shape::stride(zShapeInfo);
-
-    xLen = shape::length(xShapeInfo);
-    zLen = shape::length(zShapeInfo);
-
-    xNonUnitDim = yNonUnitDim = zNonUnitDim = 0;
-
-    is1Dcase = (shape::isCommonVector(zShapeInfo, zNonUnitDim) || shape::isScalar(zShapeInfo)) &&
-               (shape::isCommonVector(yShapeInfo, yNonUnitDim) || shape::isScalar(yShapeInfo)) &&
-               (shape::isCommonVector(xShapeInfo, xNonUnitDim) || shape::isScalar(xShapeInfo));
-
-    if (is1Dcase) xySameStride = xStride[xNonUnitDim] == yStride[yNonUnitDim];
-  }
-  __syncthreads();
-
-  LongType yOffset, zOffset;
-  LongType zFirstCoord, *yCoords, *zCoords;
-
-  for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
-    if (!is1Dcase) {
-      yCoords = coords + threadIdx.x * (yRank + zRank);
-      zCoords = yCoords + yRank;
-      INDEX2COORDS(i, zRank, zShape, zCoords);
-    }
-
-    for (LongType j = 0; j < xLen; ++j) {
-      if (is1Dcase) {
-        yOffset = j * yStride[yNonUnitDim];
-        zFirstCoord = x[xySameStride ? yOffset : j];
-
-        if (i != zFirstCoord) continue;
-
-        zOffset = i * zStride[zNonUnitDim];
-      } else {
-        INDEX2COORDS(j, xRank, xShape, yCoords);
-
-        LongType xOffset;
-        COORDS2INDEX(xRank, xStride, yCoords, xOffset);
-        zFirstCoord = x[xOffset];
-
-        if (zCoords[0] != zFirstCoord) continue;
-
-        for (LongType k = 0; k < yRank - xRank; ++k) yCoords[xRank + k] = zCoords[k + 1];
-
-        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
-        COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-      }
-
-      switch (opCode) {
-        case pairwise::Add:
-          z[zOffset] += y[yOffset];
-          break;
-        case pairwise::Subtract:
-          z[zOffset] -= y[yOffset];
-          break;
-        case pairwise::Multiply:
-          z[zOffset] *= y[yOffset];
-          break;
-        case pairwise::Divide:
-          z[zOffset] /= y[yOffset];
-          break;
-        case pairwise::ReverseSubtract:
-          z[zOffset] = y[yOffset] - z[zOffset];
-          break;
-        case pairwise::ReverseDivide:
-          z[zOffset] = y[yOffset] / z[zOffset];
-          break;
-        case pairwise::CopyPws:
-          z[zOffset] = y[yOffset];
-          break;
-        case pairwise::MaxPairwise:
-          if (z[zOffset] < y[yOffset]) z[zOffset] = y[yOffset];
-          break;
-        case pairwise::MinPairwise:
-          if (z[zOffset] > y[yOffset]) z[zOffset] = y[yOffset];
-          break;
-        default:
-          continue;
-      }
-    }
+// Applies update y to output element *z. An ordered kernel gives each output element one thread, so it
+// updates in place; a per-update kernel meets a repeated destination only for Add and Subtract, which it
+// accumulates atomically.
+template <typename Y>
+static SD_DEVICE void applyScatterUpdate(const int opCode, Y *z, const Y y, const bool atomicAccumulate) {
+  switch (opCode) {
+    case pairwise::Add:
+      if (atomicAccumulate)
+        sd::math::atomics::sd_atomicAdd<Y>(z, y);
+      else
+        *z += y;
+      break;
+    case pairwise::Subtract:
+      if (atomicAccumulate)
+        sd::math::atomics::sd_atomicAdd<Y>(z, static_cast<Y>(-y));
+      else
+        *z -= y;
+      break;
+    case pairwise::Multiply:
+      *z *= y;
+      break;
+    case pairwise::Divide:
+      *z /= y;
+      break;
+    case pairwise::ReverseSubtract:
+      *z = y - *z;
+      break;
+    case pairwise::ReverseDivide:
+      *z = y / *z;
+      break;
+    case pairwise::CopyPws:
+      *z = y;
+      break;
+    case pairwise::MaxPairwise:
+      *z = sd::math::sd_max<Y>(*z, y);
+      break;
+    case pairwise::MinPairwise:
+      *z = sd::math::sd_min<Y>(*z, y);
+      break;
+    default:
+      break;
   }
 }
 
 ///////////////////////////////////////////////////////////////////
-// x - indices, y - updates, z - input/output
+// scatter: index k, x's k-th element in logical order, names slice x[k] of z along its first dimension
+// (numSlices of them, sliceLen elements each); update slice k is y's k-th run of sliceLen elements in logical
+// order, and element p of a slice is its p-th in logical order. That pairing serves every updates layout the
+// ops accept: x.shape + z.shape[1:], [x.length] + z.shape[1:] for vector indices, and x's shape for a vector
+// z. Indices outside [0, numSlices) are skipped.
+
+// x - indices, y - updates, z - input/output. One thread per update. With repeated given, runs only when
+// *repeated is zero (scatterLockCuda runs otherwise).
 template <typename X, typename Y>
 SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const LongType *xShapeInfo, const void *vy,
-                                  const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo) {
+                                  const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo,
+                                  const LongType numSlices, const LongType sliceLen, const int *repeated) {
+  if (repeated != nullptr && *repeated != 0) return;
   const auto x = reinterpret_cast<const X *>(vx);
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Y *>(vz);
+  const int xRank = shape::rank(xShapeInfo);
+  const int yRank = shape::rank(yShapeInfo);
+  const int zRank = shape::rank(zShapeInfo);
+  const LongType yLen = shape::length(yShapeInfo);
+  LongType coords[SD_MAX_RANK];
 
-  __shared__ LongType xRank, yRank, zRank, xNonUnitDim, yNonUnitDim, zNonUnitDim;
-  __shared__ const LongType *xShape, *yShape, *zShape, *xStride, *yStride, *zStride;
-  __shared__ LongType yLen;
-  __shared__ bool is1Dcase, xySameStride;
-  __shared__ LongType *coords;
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < yLen;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    LongType xOffset, yOffset, zOffset;
+    INDEX2COORDS(i / sliceLen, xRank, shape::shapeOf(xShapeInfo), coords);
+    COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+    const auto slice = static_cast<LongType>(x[xOffset]);
+    if (slice < 0 || slice >= numSlices) continue;
 
-  if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<LongType *>(shmem);
-
-    xRank = shape::rank(xShapeInfo);
-    yRank = shape::rank(yShapeInfo);
-    zRank = shape::rank(zShapeInfo);
-
-    xShape = shape::shapeOf(xShapeInfo);
-    yShape = shape::shapeOf(yShapeInfo);
-    zShape = shape::shapeOf(zShapeInfo);
-
-    xStride = shape::stride(xShapeInfo);
-    yStride = shape::stride(yShapeInfo);
-    zStride = shape::stride(zShapeInfo);
-
-    yLen = shape::length(yShapeInfo);
-
-    xNonUnitDim = yNonUnitDim = zNonUnitDim = 0;
-
-    is1Dcase = (shape::isCommonVector(zShapeInfo, zNonUnitDim) || shape::isScalar(zShapeInfo)) &&
-               (shape::isCommonVector(yShapeInfo, yNonUnitDim) || shape::isScalar(yShapeInfo)) &&
-               (shape::isCommonVector(xShapeInfo, xNonUnitDim) || shape::isScalar(xShapeInfo));
-
-    if (is1Dcase) xySameStride = xStride[xNonUnitDim] == yStride[yNonUnitDim];
-  }
-  __syncthreads();
-
-  LongType xOffset, yOffset, zOffset;
-  LongType *yCoords, *zCoords;
-
-  if (!is1Dcase) {
-    yCoords = coords + threadIdx.x * (yRank + zRank);
-    zCoords = yCoords + yRank;
-  }
-
-  for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < yLen; i += gridDim.x * blockDim.x) {
-    if (is1Dcase) {
-      yOffset = i * yStride[yNonUnitDim];
-      zOffset = x[xySameStride ? yOffset : i * xStride[xNonUnitDim]] * zStride[zNonUnitDim];
-    } else {
-      INDEX2COORDS(i, yRank, yShape, yCoords);
-
-      COORDS2INDEX(yRank, yStride, yCoords, yOffset);
-      COORDS2INDEX(xRank, xStride, yCoords, xOffset);
-
-      zCoords[0] = x[xOffset];
-
-      for (LongType j = 0; j < yRank - xRank; ++j) {
-        zCoords[j + 1] = yCoords[xRank + j];
-      }
-
-      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-    }
-
-    switch (opCode) {
-      case pairwise::Add:
-        z[zOffset] += y[yOffset];
-        break;
-      case pairwise::Subtract:
-        z[zOffset] -= y[yOffset];
-        break;
-      case pairwise::Multiply:
-        z[zOffset] *= y[yOffset];
-        break;
-      case pairwise::Divide:
-        z[zOffset] /= y[yOffset];
-        break;
-      case pairwise::ReverseSubtract:
-        z[zOffset] = y[yOffset] - z[zOffset];
-        break;
-      case pairwise::ReverseDivide:
-        z[zOffset] = y[yOffset] / z[zOffset];
-        break;
-      case pairwise::CopyPws:
-        z[zOffset] = y[yOffset];
-        break;
-      case pairwise::MaxPairwise:
-        if (z[zOffset] < y[yOffset]) z[zOffset] = y[yOffset];
-        break;
-      case pairwise::MinPairwise:
-        if (z[zOffset] > y[yOffset]) z[zOffset] = y[yOffset];
-        break;
-      default:
-        continue;
-    }
+    INDEX2COORDS(i, yRank, shape::shapeOf(yShapeInfo), coords);
+    COORDS2INDEX(yRank, shape::stride(yShapeInfo), coords, yOffset);
+    INDEX2COORDS(slice * sliceLen + i % sliceLen, zRank, shape::shapeOf(zShapeInfo), coords);
+    COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
+    applyScatterUpdate<Y>(opCode, &z[zOffset], y[yOffset], true);
   }
 }
 
 ///////////////////////////////////////////////////////////////////
+// x - indices, y - updates, z - input/output. Thread p owns element p of every slice and walks the indices in
+// order, so updates sharing a destination apply one after another in index order, as on the CPU. With
+// repeated given, runs only when *repeated is non-zero (scatterCuda runs otherwise).
 template <typename X, typename Y>
-static void scatterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                const cudaStream_t *stream, const int opCode, const void *vx,
-                                const LongType *xShapeInfo, const void *vy, const LongType *yShapeInfo, void *vz,
-                                const LongType *zShapeInfo, const bool lock) {
-  if (lock)
-    scatterLockCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(opCode, vx, xShapeInfo, vy,
-                                                                                  yShapeInfo, vz, zShapeInfo);
-  else
-    scatterCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(opCode, vx, xShapeInfo, vy, yShapeInfo,
-                                                                              vz, zShapeInfo);
-  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "scatterLockCuda failed");
+SD_KERNEL static void scatterLockCuda(const int opCode, const void *vx, const LongType *xShapeInfo, const void *vy,
+                                      const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo,
+                                      const LongType numSlices, const LongType sliceLen, const int *repeated) {
+  if (repeated != nullptr && *repeated == 0) return;
+  const auto x = reinterpret_cast<const X *>(vx);
+  const auto y = reinterpret_cast<const Y *>(vy);
+  auto z = reinterpret_cast<Y *>(vz);
+  const int xRank = shape::rank(xShapeInfo);
+  const int yRank = shape::rank(yShapeInfo);
+  const int zRank = shape::rank(zShapeInfo);
+  const LongType xLen = shape::length(xShapeInfo);
+  LongType coords[SD_MAX_RANK];
+
+  for (LongType p = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; p < sliceLen;
+       p += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    for (LongType k = 0; k < xLen; ++k) {
+      LongType xOffset, yOffset, zOffset;
+      INDEX2COORDS(k, xRank, shape::shapeOf(xShapeInfo), coords);
+      COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+      const auto slice = static_cast<LongType>(x[xOffset]);
+      if (slice < 0 || slice >= numSlices) continue;
+
+      INDEX2COORDS(k * sliceLen + p, yRank, shape::shapeOf(yShapeInfo), coords);
+      COORDS2INDEX(yRank, shape::stride(yShapeInfo), coords, yOffset);
+      INDEX2COORDS(slice * sliceLen + p, zRank, shape::shapeOf(zShapeInfo), coords);
+      COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
+      applyScatterUpdate<Y>(opCode, &z[zOffset], y[yOffset], false);
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatter(LaunchContext *context, pairwise::Ops op, NDArray&indices, NDArray&updates, NDArray &output,
-             const bool lock) {
-  const auto xType = indices.dataType();
-  const auto yType = updates.dataType();
+// x - indices, each naming a destination in [0, numDestinations). Sets each destination's bit in marks and
+// *repeated when a bit was already set.
+template <typename X>
+SD_KERNEL static void markRepeatedDestinationsCuda(const void *vx, const LongType *xShapeInfo,
+                                                   const LongType numDestinations, unsigned int *marks,
+                                                   int *repeated) {
+  const auto x = reinterpret_cast<const X *>(vx);
+  const LongType xLen = shape::length(xShapeInfo);
+  const int xRank = shape::rank(xShapeInfo);
+  LongType coords[SD_MAX_RANK];
 
-  dim3 launchDims = scatterDims(lock ? output.lengthOf() : updates.lengthOf(), updates.rankOf() + output.rankOf());
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < xLen;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    LongType xOffset;
+    INDEX2COORDS(i, xRank, shape::shapeOf(xShapeInfo), coords);
+    COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+    const auto destination = static_cast<LongType>(x[xOffset]);
+    if (destination < 0 || destination >= numDestinations) continue;
+    const unsigned int bit = 1u << (destination & 31);
+    if ((atomicOr(&marks[destination >> 5], bit) & bit) != 0) *repeated = 1;
+  }
+}
+
+template <typename X>
+static void markRepeatedDestinationsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
+                                                 const cudaStream_t *stream, const void *vx,
+                                                 const LongType *xShapeInfo, const LongType numDestinations,
+                                                 unsigned int *marks, int *repeated) {
+  markRepeatedDestinationsCuda<X><<<blocksPerGrid, threadsPerBlock, 0, *stream>>>(vx, xShapeInfo, numDestinations,
+                                                                                  marks, repeated);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "markRepeatedDestinationsCuda failed");
+}
+
+///////////////////////////////////////////////////////////////////
+// lock: scatterLockCuda applies every update in index order. Otherwise scatterCuda applies one update per
+// thread, and when repeated is given both kernels run, its device value choosing the one that does the work.
+template <typename X, typename Y>
+static void scatterCudaLauncher(const dim3 &perUpdateDims, const dim3 &orderedDims, const cudaStream_t *stream,
+                                const int opCode, const void *vx, const LongType *xShapeInfo, const void *vy,
+                                const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo,
+                                const LongType numSlices, const LongType sliceLen, const bool lock,
+                                const int *repeated) {
+  if (!lock)
+    scatterCuda<X, Y><<<perUpdateDims.x, perUpdateDims.y, 0, *stream>>>(opCode, vx, xShapeInfo, vy, yShapeInfo, vz,
+                                                                       zShapeInfo, numSlices, sliceLen, repeated);
+  if (lock || repeated != nullptr)
+    scatterLockCuda<X, Y><<<orderedDims.x, orderedDims.y, 0, *stream>>>(
+        opCode, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, numSlices, sliceLen, lock ? nullptr : repeated);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "scatterCuda failed");
+}
+
+///////////////////////////////////////////////////////////////////
+void scatter(LaunchContext *context, pairwise::Ops op, NDArray&indices, NDArray&updatesIn, NDArray &output,
+             const bool lock) {
+  if (indices.lengthOf() == 0 || updatesIn.lengthOf() == 0 || output.lengthOf() == 0) return;
+  // The kernels read the updates in output's type.
+  NDArray *castUpdates = updatesIn.dataType() == output.dataType() ? nullptr : updatesIn.cast(output.dataType());
+  NDArray &updates = castUpdates != nullptr ? *castUpdates : updatesIn;
+  const auto xType = indices.dataType();
+  const auto yType = output.dataType();
+  const LongType numSlices = output.rankOf() == 0 ? 1 : output.sizeAt(0);
+  const LongType sliceLen = output.lengthOf() / numSlices;
   PointersManager manager(context, "scatter");
 
-  NDArray::prepareSpecialUse({&output}, {&updates, &indices});
+  // Repeated indices give several updates one destination. scatterCuda accumulates addition and
+  // subtraction atomically. For any other op markRepeatedDestinationsCuda flags a repeated destination
+  // on the device, and the flag hands the updates to scatterLockCuda, which applies them one at a time
+  // in index order, as the CPU helper does. The flag is never read on the host: no synchronization,
+  // and the choice is recorded under graph capture.
+  NDArray *marks = nullptr, *repeated = nullptr;
+  if (!lock && op != pairwise::Add && op != pairwise::Subtract && indices.lengthOf() > 1) {
+    std::vector<LongType> marksShape = {(numSlices + 31) / 32};
+    marks = new NDArray('c', marksShape, INT32, context);
+    repeated = new NDArray(INT32, context, true);
+    marks->nullify();
+    repeated->nullify();
+    dim3 markDims = scatterDims(indices.lengthOf(), indices.rankOf());
+
+    NDArray::prepareSpecialUse({marks, repeated}, {&indices});
+    BUILD_SINGLE_SELECTOR(xType, markRepeatedDestinationsCudaLauncher,
+                          (markDims.x, markDims.y, context->getCudaStream(), indices.specialBuffer(),
+                           indices.specialShapeInfo(), numSlices,
+                           reinterpret_cast<unsigned int *>(marks->specialBuffer()),
+                           reinterpret_cast<int *>(repeated->specialBuffer())),
+                          SD_INDEXING_TYPES);
+    NDArray::registerSpecialUse({marks, repeated}, {&indices});
+  }
+
+  dim3 perUpdateDims = scatterDims(updates.lengthOf(), updates.rankOf());
+  dim3 orderedDims = scatterDims(sliceLen, updates.rankOf());
+  const int *repeatedFlag = repeated != nullptr ? reinterpret_cast<const int *>(repeated->specialBuffer()) : nullptr;
+
+  NDArray::prepareSpecialUse({&output}, {&updates, &indices, repeated});
   BUILD_DOUBLE_SELECTOR(xType, yType, scatterCudaLauncher,
-                        (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), op,
-                         indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(),
-                         updates.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), lock),
+                        (perUpdateDims, orderedDims, context->getCudaStream(), op, indices.specialBuffer(),
+                         indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(),
+                         output.specialBuffer(), output.specialShapeInfo(), numSlices, sliceLen, lock, repeatedFlag),
                         SD_INDEXING_TYPES, SD_GENERIC_NUMERIC_TYPES);
-  NDArray::registerSpecialUse({&output}, {&updates, &indices});
+  NDArray::registerSpecialUse({&output}, {&updates, &indices, repeated});
 
   manager.synchronize();
+  delete marks;
+  delete repeated;
+  delete castUpdates;
 }
 
 ///////////////////////////////////////////////////////////////////
-// x - indices, y - updates, z - output
+// scatterND: index row r, x's r-th run of indexLength elements in logical order, names z's leading
+// indexLength coordinates, flattened into destination slice d (sliceLen elements each); update slice r is
+// y's r-th run of sliceLen elements, and element p of a slice is its p-th in logical order. Rows with a
+// coordinate out of range are skipped.
+
+// The destination slice of index row r, or -1 when a coordinate is out of range.
+template <typename X>
+static SD_DEVICE LongType scatterNdDestination(const X *x, const LongType *xShapeInfo, const LongType *zShapeInfo,
+                                               const LongType indexLength, const LongType row, LongType *coords) {
+  const int xRank = shape::rank(xShapeInfo);
+  const LongType *zShape = shape::shapeOf(zShapeInfo);
+  LongType destination = 0;
+  for (LongType j = 0; j < indexLength; ++j) {
+    LongType xOffset;
+    INDEX2COORDS(row * indexLength + j, xRank, shape::shapeOf(xShapeInfo), coords);
+    COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+    const auto index = static_cast<LongType>(x[xOffset]);
+    if (index < 0 || index >= zShape[j]) return -1;
+    destination = destination * zShape[j] + index;
+  }
+  return destination;
+}
+
+///////////////////////////////////////////////////////////////////
+// x - indices, y - updates, z - output. One thread per update. With repeated given, runs only when *repeated
+// is zero (scatterNDLockCuda runs otherwise).
 template <typename X, typename Y>
-SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const LongType *xShapeInfo, const void *vy,
-                                        const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo) {
+SD_KERNEL static void scatterNDCuda(const int opCode, const void *vx, const LongType *xShapeInfo, const void *vy,
+                                    const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo,
+                                    const LongType indexLength, const LongType sliceLen, const int *repeated) {
+  if (repeated != nullptr && *repeated != 0) return;
   const auto x = reinterpret_cast<const X *>(vx);
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Y *>(vz);
+  const int yRank = shape::rank(yShapeInfo);
+  const int zRank = shape::rank(zShapeInfo);
+  const LongType yLen = shape::length(yShapeInfo);
+  LongType coords[SD_MAX_RANK];
 
-  __shared__ LongType xRank, yRank, zRank, biggerXYRank, xLastDim, xNonUnitDim, yNonUnitDim, zNonUnitDim;
-  __shared__ const LongType *xShape, *yShape, *zShape, *xStride, *yStride, *zStride;
-  __shared__ LongType zLen, len;
-  __shared__ bool is1Dcase;
-  __shared__ LongType *coords;
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < yLen;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const LongType destination = scatterNdDestination<X>(x, xShapeInfo, zShapeInfo, indexLength, i / sliceLen, coords);
+    if (destination < 0) continue;
 
-  if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<LongType *>(shmem);
-
-    xRank = shape::rank(xShapeInfo);
-    yRank = shape::rank(yShapeInfo);
-    zRank = shape::rank(zShapeInfo);
-    xLastDim = shape::sizeAt(xShapeInfo, -1);
-
-    xShape = shape::shapeOf(xShapeInfo);
-    yShape = shape::shapeOf(yShapeInfo);
-    zShape = shape::shapeOf(zShapeInfo);
-
-    xStride = shape::stride(xShapeInfo);
-    yStride = shape::stride(yShapeInfo);
-    zStride = shape::stride(zShapeInfo);
-
-    biggerXYRank = xRank > yRank ? xRank : yRank;
-
-    xNonUnitDim = yNonUnitDim = zNonUnitDim = 0;
-
-    is1Dcase = (shape::isCommonVector(zShapeInfo, zNonUnitDim) || shape::isScalar(zShapeInfo)) &&
-               (shape::isCommonVector(yShapeInfo, yNonUnitDim) || shape::isScalar(yShapeInfo)) &&
-               (shape::isCommonVector(xShapeInfo, xNonUnitDim) || shape::isScalar(xShapeInfo));
-
-    len = is1Dcase ? shape::length(xShapeInfo) : shape::length(xShapeInfo) / xLastDim;
-    zLen = shape::length(zShapeInfo);
-  }
-  __syncthreads();
-
-  LongType yOffset, zOffset, xOffset;
-  LongType *yCoords, *zCoords;
-
-  if (!is1Dcase) {
-    yCoords = coords + threadIdx.x * (biggerXYRank + zRank);
-    zCoords = yCoords + biggerXYRank;
-  }
-
-  for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
-    if (!is1Dcase) INDEX2COORDS(i, zRank, zShape, zCoords);
-
-    for (LongType j = 0; j < len; j++) {
-      if (is1Dcase) {
-        // For 1D case, x contains the index values directly
-        // j iterates through x elements, i iterates through z positions
-        // We check if x[j] == i (meaning update z[i] with y[j])
-        if (x[j * xStride[xNonUnitDim]] != i) continue;
-
-        // Compute offsets directly for 1D case (coords not initialized for this path)
-        yOffset = j * yStride[yNonUnitDim];
-        zOffset = i * zStride[zNonUnitDim];
-      } else {
-        INDEX2COORDS(j, xRank - 1, xShape, yCoords);
-
-        yCoords[xRank - 1] = 0;
-        COORDS2INDEX(xRank, xStride, yCoords, xOffset);
-        if (zCoords[0] != x[xOffset]) continue;
-
-        bool matched = true;
-        for (LongType k = 1; k < xLastDim; k++) {
-          yCoords[xRank - 1] = k;
-          COORDS2INDEX(xRank, xStride, yCoords, xOffset);
-          if (zCoords[k] != x[xOffset]) {
-            matched = false;
-            break;
-          }
-        }
-
-        if (!matched) continue;
-
-        for (LongType k = xLastDim; k < zRank; ++k) yCoords[yRank - zRank + k] = zCoords[k];
-
-        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
-        COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-      }
-
-      switch (opCode) {
-        case pairwise::Add:
-          z[zOffset] += y[yOffset];
-          break;
-        case pairwise::Subtract:
-          z[zOffset] -= y[yOffset];
-          break;
-        case pairwise::Multiply:
-          z[zOffset] *= y[yOffset];
-          break;
-        case pairwise::Divide:
-          z[zOffset] /= y[yOffset];
-          break;
-        case pairwise::ReverseSubtract:
-          z[zOffset] = y[yOffset] - z[zOffset];
-          break;
-        case pairwise::ReverseDivide:
-          z[zOffset] = y[yOffset] / z[zOffset];
-          break;
-        case pairwise::CopyPws:
-          z[zOffset] = y[yOffset];
-          break;
-        case pairwise::MaxPairwise:
-          if (z[zOffset] < y[yOffset]) z[zOffset] = y[yOffset];
-          break;
-        case pairwise::MinPairwise:
-          if (z[zOffset] > y[yOffset]) z[zOffset] = y[yOffset];
-          break;
-        default:
-          continue;
-      }
-    }
-  }
-}
-
-///////////////////////////////////////////////////////////////////
-// x - indices, y - updates, z - output
-template <typename X, typename Y>
-SD_KERNEL static void scatterNDCuda(const int opCode, const void* vx, const LongType* xShapeInfo, const void* vy,
-                                    const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo) {
-  // Cast input and output pointers
-  const auto x = reinterpret_cast<const X*>(vx);
-  const auto y = reinterpret_cast<const Y*>(vy);
-  auto z = reinterpret_cast<Y*>(vz);
-
-  // Shared memory for shape information and flags
-  __shared__ LongType xRank, yRank, zRank, biggerXYRank, xLastDim, xNonUnitDim, yNonUnitDim, zNonUnitDim, yLen;
-  __shared__ bool is1Dcase;
-
-  // Shared memory for coordinates
-  __shared__ LongType* coords;
-
-  if (threadIdx.x == 0) {
-    // Dynamically allocated shared memory
-    extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<LongType*>(shmem);
-
-    // Initialize shared values
-    xRank = shape::rank(xShapeInfo);
-    yRank = shape::rank(yShapeInfo);
-    zRank = shape::rank(zShapeInfo);
-    xLastDim = shape::sizeAt(xShapeInfo, -1);
-    yLen = shape::length(yShapeInfo);
-
-    biggerXYRank = max(xRank, yRank);
-
-    xNonUnitDim = yNonUnitDim = zNonUnitDim = 0;
-
-    // Check if the operation involves 1D cases
-    is1Dcase = (shape::isCommonVector(zShapeInfo, zNonUnitDim) || shape::isScalar(zShapeInfo)) &&
-               (shape::isCommonVector(yShapeInfo, yNonUnitDim) || shape::isScalar(yShapeInfo)) &&
-               (shape::isCommonVector(xShapeInfo, xNonUnitDim) || shape::isScalar(xShapeInfo));
-  }
-  __syncthreads();
-
-  // Dynamically allocated memory for local coordinates
-  LongType* yCoords = coords + threadIdx.x * (biggerXYRank + zRank);
-  LongType* zCoords = yCoords + biggerXYRank;
-
-  // Process each element in y
-  for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < yLen; i += gridDim.x * blockDim.x) {
     LongType yOffset, zOffset;
+    INDEX2COORDS(i, yRank, shape::shapeOf(yShapeInfo), coords);
+    COORDS2INDEX(yRank, shape::stride(yShapeInfo), coords, yOffset);
+    INDEX2COORDS(destination * sliceLen + i % sliceLen, zRank, shape::shapeOf(zShapeInfo), coords);
+    COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
+    applyScatterUpdate<Y>(opCode, &z[zOffset], y[yOffset], true);
+  }
+}
 
-    // Convert linear index to multi-dimensional coordinates for y
-    INDEX2COORDS(i, yRank, shape::shapeOf(yShapeInfo), yCoords);
-    COORDS2INDEX(yRank, shape::stride(yShapeInfo), yCoords, yOffset);
+///////////////////////////////////////////////////////////////////
+// x - indices, y - updates, z - output. Thread p owns element p of every destination slice and walks the
+// index rows in order, as scatterLockCuda does. With repeated given, runs only when *repeated is non-zero
+// (scatterNDCuda runs otherwise).
+template <typename X, typename Y>
+SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const LongType *xShapeInfo, const void *vy,
+                                        const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo,
+                                        const LongType indexLength, const LongType sliceLen, const int *repeated) {
+  if (repeated != nullptr && *repeated == 0) return;
+  const auto x = reinterpret_cast<const X *>(vx);
+  const auto y = reinterpret_cast<const Y *>(vy);
+  auto z = reinterpret_cast<Y *>(vz);
+  const int yRank = shape::rank(yShapeInfo);
+  const int zRank = shape::rank(zShapeInfo);
+  const LongType rows = shape::length(xShapeInfo) / indexLength;
+  LongType coords[SD_MAX_RANK];
 
-    // Save the last coordinate of y if needed
-    if (yRank >= xRank) {
-      zCoords[xLastDim] = yCoords[xRank - 1];
-    }
+  for (LongType p = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; p < sliceLen;
+       p += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    for (LongType r = 0; r < rows; ++r) {
+      const LongType destination = scatterNdDestination<X>(x, xShapeInfo, zShapeInfo, indexLength, r, coords);
+      if (destination < 0) continue;
 
-    // Map y coordinates to x and z coordinates
-    // Read the index values from x (indices array) to determine which z position to update
-    bool validIndex = true;
-    for (LongType j = 0; j < xLastDim; ++j) {
-      yCoords[xRank - 1] = j;
-      LongType xOffset;
-      COORDS2INDEX(xRank, shape::stride(xShapeInfo), yCoords, xOffset);
-      zCoords[j] = x[xOffset];  // Get the actual index value from x
-      // Bounds check: ensure index is within z's dimension
-      if (zCoords[j] < 0 || zCoords[j] >= shape::shapeOf(zShapeInfo)[j]) {
-        validIndex = false;
-        break;
-      }
-    }
-
-    if (!validIndex) continue;
-
-    // Adjust remaining coordinates for z
-    for (LongType j = xLastDim + 1; j < zRank; ++j) {
-      zCoords[j] = yCoords[yRank - zRank + j];
-    }
-
-    // Compute linear index for z
-    COORDS2INDEX(zRank, shape::stride(zShapeInfo), zCoords, zOffset);
-
-    // Perform the operation based on opCode
-    switch (opCode) {
-      case pairwise::Add:
-        z[zOffset] += y[yOffset];
-        break;
-      case pairwise::Subtract:
-        z[zOffset] -= y[yOffset];
-        break;
-      case pairwise::Multiply:
-        z[zOffset] *= y[yOffset];
-        break;
-      case pairwise::Divide:
-        z[zOffset] /= y[yOffset];
-        break;
-      case pairwise::ReverseSubtract:
-        z[zOffset] = y[yOffset] - z[zOffset];
-        break;
-      case pairwise::ReverseDivide:
-        z[zOffset] = y[yOffset] / z[zOffset];
-        break;
-      case pairwise::CopyPws:
-        z[zOffset] = y[yOffset];
-        break;
-      case pairwise::MaxPairwise:
-        z[zOffset] = max(z[zOffset], y[yOffset]);
-        break;
-      case pairwise::MinPairwise:
-        z[zOffset] = min(z[zOffset], y[yOffset]);
-        break;
-      default:
-        break;
+      LongType yOffset, zOffset;
+      INDEX2COORDS(r * sliceLen + p, yRank, shape::shapeOf(yShapeInfo), coords);
+      COORDS2INDEX(yRank, shape::stride(yShapeInfo), coords, yOffset);
+      INDEX2COORDS(destination * sliceLen + p, zRank, shape::shapeOf(zShapeInfo), coords);
+      COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
+      applyScatterUpdate<Y>(opCode, &z[zOffset], y[yOffset], false);
     }
   }
 }
 
 ///////////////////////////////////////////////////////////////////
+// x - indices. Sets the bit of each index row's destination slice in marks and *repeated when a bit was
+// already set.
+template <typename X>
+SD_KERNEL static void markRepeatedNdDestinationsCuda(const void *vx, const LongType *xShapeInfo,
+                                                     const LongType *zShapeInfo, const LongType indexLength,
+                                                     unsigned int *marks, int *repeated) {
+  const auto x = reinterpret_cast<const X *>(vx);
+  const LongType rows = shape::length(xShapeInfo) / indexLength;
+  LongType coords[SD_MAX_RANK];
+
+  for (LongType row = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; row < rows;
+       row += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const LongType destination = scatterNdDestination<X>(x, xShapeInfo, zShapeInfo, indexLength, row, coords);
+    if (destination < 0) continue;
+    const unsigned int bit = 1u << (destination & 31);
+    if ((atomicOr(&marks[destination >> 5], bit) & bit) != 0) *repeated = 1;
+  }
+}
+
+template <typename X>
+static void markRepeatedNdDestinationsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
+                                                   const cudaStream_t *stream, const void *vx,
+                                                   const LongType *xShapeInfo, const LongType *zShapeInfo,
+                                                   const LongType indexLength, unsigned int *marks,
+                                                   int *repeated) {
+  markRepeatedNdDestinationsCuda<X><<<blocksPerGrid, threadsPerBlock, 0, *stream>>>(vx, xShapeInfo, zShapeInfo,
+                                                                                    indexLength, marks, repeated);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "markRepeatedNdDestinationsCuda failed");
+}
+
+///////////////////////////////////////////////////////////////////
+// As scatterCudaLauncher, with scatterNDCuda and scatterNDLockCuda.
 template <typename X, typename Y>
-static void scatterNDCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                  const cudaStream_t *stream, const int opCode, const void *vx,
-                                  const LongType *xShapeInfo, const void *vy, const LongType *yShapeInfo, void *vz,
-                                  const LongType *zShapeInfo, const bool lock) {
-  if (lock)
-    scatterNDLockCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(opCode, vx, xShapeInfo, vy,
-                                                                                    yShapeInfo, vz, zShapeInfo);
-  else
-    scatterNDCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(opCode, vx, xShapeInfo, vy, yShapeInfo,
-                                                                                vz, zShapeInfo);
+static void scatterNDCudaLauncher(const dim3 &perUpdateDims, const dim3 &orderedDims, const cudaStream_t *stream,
+                                  const int opCode, const void *vx, const LongType *xShapeInfo, const void *vy,
+                                  const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo,
+                                  const LongType indexLength, const LongType sliceLen, const bool lock,
+                                  const int *repeated) {
+  if (!lock)
+    scatterNDCuda<X, Y><<<perUpdateDims.x, perUpdateDims.y, 0, *stream>>>(
+        opCode, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, indexLength, sliceLen, repeated);
+  if (lock || repeated != nullptr)
+    scatterNDLockCuda<X, Y><<<orderedDims.x, orderedDims.y, 0, *stream>>>(
+        opCode, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, indexLength, sliceLen, lock ? nullptr : repeated);
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "scatterNDCuda failed");
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatterND(LaunchContext *context, pairwise::Ops op, NDArray&indices, NDArray&updates,
+void scatterND(LaunchContext *context, pairwise::Ops op, NDArray&indices, NDArray&updatesIn,
                NDArray &output, const bool lock) {
-  const int xRank = indices.rankOf();
-  const int yRank = updates.rankOf();
-  const int zRank = output.rankOf();
-
-  dim3 launchDims =
-      scatterNdDims(lock ? output.lengthOf() : updates.lengthOf(), ((yRank > xRank ? yRank : xRank) + zRank));
+  if (indices.lengthOf() == 0 || updatesIn.lengthOf() == 0 || output.lengthOf() == 0) return;
+  // The kernels read the updates in output's type.
+  NDArray *castUpdates = updatesIn.dataType() == output.dataType() ? nullptr : updatesIn.cast(output.dataType());
+  NDArray &updates = castUpdates != nullptr ? *castUpdates : updatesIn;
   const auto xType = indices.dataType();
-  const auto yType = updates.dataType();
-
+  const auto yType = output.dataType();
+  const LongType indexLength = indices.sizeAt(-1);
+  const LongType rows = indices.lengthOf() / indexLength;
+  LongType numDestinations = 1;
+  for (LongType j = 0; j < indexLength; ++j) numDestinations *= output.sizeAt(j);
+  const LongType sliceLen = output.lengthOf() / numDestinations;
   PointersManager manager(context, "scatterND");
 
-  NDArray::prepareSpecialUse({&output}, {&updates, &indices});
+  // As in scatter(): addition and subtraction accumulate atomically in scatterNDCuda, and for any other op
+  // a repeated destination, flagged on the device, hands the updates to scatterNDLockCuda.
+  NDArray *marks = nullptr, *repeated = nullptr;
+  if (!lock && op != pairwise::Add && op != pairwise::Subtract && rows > 1) {
+    std::vector<LongType> marksShape = {(numDestinations + 31) / 32};
+    marks = new NDArray('c', marksShape, INT32, context);
+    repeated = new NDArray(INT32, context, true);
+    marks->nullify();
+    repeated->nullify();
+    dim3 markDims = scatterNdDims(rows, indices.rankOf());
+
+    NDArray::prepareSpecialUse({marks, repeated}, {&indices});
+    BUILD_SINGLE_SELECTOR(xType, markRepeatedNdDestinationsCudaLauncher,
+                          (markDims.x, markDims.y, context->getCudaStream(), indices.specialBuffer(),
+                           indices.specialShapeInfo(), output.specialShapeInfo(), indexLength,
+                           reinterpret_cast<unsigned int *>(marks->specialBuffer()),
+                           reinterpret_cast<int *>(repeated->specialBuffer())),
+                          SD_INDEXING_TYPES);
+    NDArray::registerSpecialUse({marks, repeated}, {&indices});
+  }
+
+  dim3 perUpdateDims = scatterNdDims(updates.lengthOf(), updates.rankOf());
+  dim3 orderedDims = scatterNdDims(sliceLen, updates.rankOf());
+  const int *repeatedFlag = repeated != nullptr ? reinterpret_cast<const int *>(repeated->specialBuffer()) : nullptr;
+
+  NDArray::prepareSpecialUse({&output}, {&updates, &indices, repeated});
   BUILD_DOUBLE_SELECTOR(xType, yType, scatterNDCudaLauncher,
-                        (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), op,
-                         indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(),
-                         updates.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), lock),
+                        (perUpdateDims, orderedDims, context->getCudaStream(), op, indices.specialBuffer(),
+                         indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(),
+                         output.specialBuffer(), output.specialShapeInfo(), indexLength, sliceLen, lock,
+                         repeatedFlag),
                         SD_INDEXING_TYPES, SD_GENERIC_NUMERIC_TYPES);
-  NDArray::registerSpecialUse({&output}, {&updates, &indices});
+  NDArray::registerSpecialUse({&output}, {&updates, &indices, repeated});
 
   manager.synchronize();
+  delete marks;
+  delete repeated;
+  delete castUpdates;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -745,14 +629,14 @@ void scatterForLoss(LaunchContext *context, NDArray&indices, NDArray &updates, N
     NDArray::prepareSpecialUse({&updates}, {&indices});
     BUILD_DOUBLE_SELECTOR(
         indices.dataType(), updates.dataType(), scatterForLossCudaLauncher,
-        (launchDIms.y, launchDIms.x, launchDIms.z, context->getCudaStream(), indices.specialBuffer(),
+        (launchDIms.x, launchDIms.y, launchDIms.z, context->getCudaStream(), indices.specialBuffer(),
          indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(), nullptr, nullptr),
         SD_INDEXING_TYPES, SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({&updates}, {&indices});
   } else {
     NDArray::prepareSpecialUse({&output}, {&indices, &updates});
     BUILD_DOUBLE_SELECTOR(indices.dataType(), updates.dataType(), scatterForLossCudaLauncher,
-                          (launchDIms.y, launchDIms.x, launchDIms.z, context->getCudaStream(), indices.specialBuffer(),
+                          (launchDIms.x, launchDIms.y, launchDIms.z, context->getCudaStream(), indices.specialBuffer(),
                            indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(),
                            output.specialBuffer(), output.specialShapeInfo()),
                           SD_INDEXING_TYPES, SD_FLOAT_TYPES);

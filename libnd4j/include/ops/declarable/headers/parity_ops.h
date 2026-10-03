@@ -230,7 +230,22 @@ DECLARE_CUSTOM_OP(listdiff, 2, 2, false, 0, 0);
  * updates: array containing elements to be interfered with input
  */
 #if NOT_EXCLUDED(OP_scatter_add)
-DECLARE_OP(scatter_add, 3, 1, true);
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT scatter_add : public sd::ops::DeclarableOp {
+ public:
+  scatter_add();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(scatter_add)
 #endif
 
 /**
@@ -241,7 +256,22 @@ DECLARE_OP(scatter_add, 3, 1, true);
  * updates: array containing elements to be interfered with input
  */
 #if NOT_EXCLUDED(OP_scatter_sub)
-DECLARE_OP(scatter_sub, 3, 1, true);
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT scatter_sub : public sd::ops::DeclarableOp {
+ public:
+  scatter_sub();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(scatter_sub)
 #endif
 
 /**
@@ -252,7 +282,22 @@ DECLARE_OP(scatter_sub, 3, 1, true);
  * updates: array containing elements to be interfered with input
  */
 #if NOT_EXCLUDED(OP_scatter_mul)
-DECLARE_OP(scatter_mul, 3, 1, true);
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT scatter_mul : public sd::ops::DeclarableOp {
+ public:
+  scatter_mul();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(scatter_mul)
 #endif
 
 /**
@@ -263,7 +308,22 @@ DECLARE_OP(scatter_mul, 3, 1, true);
  * updates: array containing elements to be interfered with input
  */
 #if NOT_EXCLUDED(OP_scatter_div)
-DECLARE_OP(scatter_div, 3, 1, true);
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT scatter_div : public sd::ops::DeclarableOp {
+ public:
+  scatter_div();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(scatter_div)
 #endif
 
 /**
@@ -274,7 +334,22 @@ DECLARE_OP(scatter_div, 3, 1, true);
  * updates: array containing elements to be interfered with input
  */
 #if NOT_EXCLUDED(OP_scatter_upd)
-DECLARE_OP(scatter_upd, 3, 1, true);
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT scatter_upd : public sd::ops::DeclarableOp {
+ public:
+  scatter_upd();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(scatter_upd)
 #endif
 
 /**
@@ -285,7 +360,22 @@ DECLARE_OP(scatter_upd, 3, 1, true);
  * updates: array containing elements to be interfered with input
  */
 #if NOT_EXCLUDED(OP_scatter_max)
-DECLARE_OP(scatter_max, 3, 1, true);
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT scatter_max : public sd::ops::DeclarableOp {
+ public:
+  scatter_max();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(scatter_max)
 #endif
 
 /**
@@ -296,7 +386,22 @@ DECLARE_OP(scatter_max, 3, 1, true);
  * updates: array containing elements to be interfered with input
  */
 #if NOT_EXCLUDED(OP_scatter_min)
-DECLARE_OP(scatter_min, 3, 1, true);
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT scatter_min : public sd::ops::DeclarableOp {
+ public:
+  scatter_min();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(scatter_min)
 #endif
 
 /**
@@ -307,7 +412,21 @@ DECLARE_OP(scatter_min, 3, 1, true);
  * output array
  */
 #if NOT_EXCLUDED(OP_scatter_nd)
-DECLARE_CUSTOM_OP(scatter_nd, 3, 1, false, 0, 0);
+// Expanded from DECLARE_CUSTOM_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices the output
+// is all zeros, which EMPTY_SKIP left unwritten.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT scatter_nd : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+
+ public:
+  scatter_nd();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(scatter_nd)
 #endif
 
 /**
@@ -318,7 +437,22 @@ DECLARE_CUSTOM_OP(scatter_nd, 3, 1, false, 0, 0);
  * updates: array containing elements to be inserted into input array
  */
 #if NOT_EXCLUDED(OP_scatter_nd_update)
-DECLARE_OP(scatter_nd_update, 3, 1, true);
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT scatter_nd_update : public sd::ops::DeclarableOp {
+ public:
+  scatter_nd_update();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(scatter_nd_update)
 #endif
 
 /**
@@ -328,8 +462,23 @@ DECLARE_OP(scatter_nd_update, 3, 1, true);
  * indices: array containing elements/slices indexes of input array to add "updates" elements to
  * updates: array containing elements to be interfered with input
  */
-#if NOT_EXCLUDED(OP_scatter_add)
-DECLARE_OP(scatter_nd_add, 3, 1, true);
+#if NOT_EXCLUDED(OP_scatter_nd_add)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT scatter_nd_add : public sd::ops::DeclarableOp {
+ public:
+  scatter_nd_add();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(scatter_nd_add)
 #endif
 
 /**
@@ -339,8 +488,23 @@ DECLARE_OP(scatter_nd_add, 3, 1, true);
  * indices: array containing elements/slices indexes of input array to subtract "updates" elements from
  * updates: array containing elements to be interfered with input
  */
-#if NOT_EXCLUDED(OP_scatter_sub)
-DECLARE_OP(scatter_nd_sub, 3, 1, true);
+#if NOT_EXCLUDED(OP_scatter_nd_sub)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT scatter_nd_sub : public sd::ops::DeclarableOp {
+ public:
+  scatter_nd_sub();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(scatter_nd_sub)
 #endif
 
 /**

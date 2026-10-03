@@ -34,13 +34,13 @@ OP_IMPL(scatter_add, 3, 1, true) {
     auto input = INPUT_VARIABLE(0);
     auto indices = INPUT_VARIABLE(1);
     auto updates = INPUT_VARIABLE(2);
-    if(indices->isEmpty())
-      return Status::OK;
-
     auto output = OUTPUT_VARIABLE(0);
 
     if (!block.isInplace())
         output->assign(input);
+    // No indices: nothing to scatter, the output is the input.
+    if (indices->isEmpty())
+      return Status::OK;
 
     const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
     const bool checkIndices = block.getBArguments()->size() <= 1 ? false : B_ARG(1);
@@ -60,9 +60,11 @@ OP_IMPL(scatter_add, 3, 1, true) {
         auto* inShapeVec  = input->getShapeAsVector();
         std::vector<LongType> expectedUpdShape = {indices->lengthOf()};
         expectedUpdShape.insert(expectedUpdShape.end(), inShapeVec->begin()+1, inShapeVec->end());
+        const bool shapeMatches = expectedUpdShape == *updShapeVec;
+        const std::string updShape = ShapeUtils::shapeAsString(*updShapeVec);
         delete updShapeVec;
         delete inShapeVec;
-
+        REQUIRE_TRUE(shapeMatches, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), updShape.c_str());
     }
     else {
 
@@ -73,10 +75,12 @@ OP_IMPL(scatter_add, 3, 1, true) {
         auto* indShapeVec = indices->getShapeAsVector();
         std::vector<LongType> expectedUpdShape = *indShapeVec;
         expectedUpdShape.insert(expectedUpdShape.end(), inShapeVec->begin() + LongType(1L), inShapeVec->end());
+        const bool shapeMatches = expectedUpdShape == *updShapeVec;
+        const std::string updShape = ShapeUtils::shapeAsString(*updShapeVec);
         delete updShapeVec;
         delete inShapeVec;
         delete indShapeVec;
-
+        REQUIRE_TRUE(shapeMatches, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), updShape.c_str());
     }
 
     if (!indices->isEmpty()) {

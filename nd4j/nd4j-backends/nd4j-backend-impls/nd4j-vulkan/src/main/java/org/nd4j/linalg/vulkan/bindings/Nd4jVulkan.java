@@ -19404,6 +19404,9 @@ public static final long
  * updates: array containing elements to be interfered with input
  */
 // #if NOT_EXCLUDED(OP_scatter_add)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
 // #endif
 
 /**
@@ -19414,6 +19417,9 @@ public static final long
  * updates: array containing elements to be interfered with input
  */
 // #if NOT_EXCLUDED(OP_scatter_sub)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
 // #endif
 
 /**
@@ -19424,6 +19430,9 @@ public static final long
  * updates: array containing elements to be interfered with input
  */
 // #if NOT_EXCLUDED(OP_scatter_mul)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
 // #endif
 
 /**
@@ -19434,6 +19443,9 @@ public static final long
  * updates: array containing elements to be interfered with input
  */
 // #if NOT_EXCLUDED(OP_scatter_div)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
 // #endif
 
 /**
@@ -19444,6 +19456,9 @@ public static final long
  * updates: array containing elements to be interfered with input
  */
 // #if NOT_EXCLUDED(OP_scatter_upd)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
 // #endif
 
 /**
@@ -19454,6 +19469,9 @@ public static final long
  * updates: array containing elements to be interfered with input
  */
 // #if NOT_EXCLUDED(OP_scatter_max)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
 // #endif
 
 /**
@@ -19464,6 +19482,9 @@ public static final long
  * updates: array containing elements to be interfered with input
  */
 // #if NOT_EXCLUDED(OP_scatter_min)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
 // #endif
 
 /**
@@ -19474,6 +19495,8 @@ public static final long
  * output array
  */
 // #if NOT_EXCLUDED(OP_scatter_nd)
+// Expanded from DECLARE_CUSTOM_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices the output
+// is all zeros, which EMPTY_SKIP left unwritten.
 // #endif
 
 /**
@@ -19484,6 +19507,9 @@ public static final long
  * updates: array containing elements to be inserted into input array
  */
 // #if NOT_EXCLUDED(OP_scatter_nd_update)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
 // #endif
 
 /**
@@ -19493,7 +19519,10 @@ public static final long
  * indices: array containing elements/slices indexes of input array to add "updates" elements to
  * updates: array containing elements to be interfered with input
  */
-// #if NOT_EXCLUDED(OP_scatter_add)
+// #if NOT_EXCLUDED(OP_scatter_nd_add)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
 // #endif
 
 /**
@@ -19503,7 +19532,10 @@ public static final long
  * indices: array containing elements/slices indexes of input array to subtract "updates" elements from
  * updates: array containing elements to be interfered with input
  */
-// #if NOT_EXCLUDED(OP_scatter_sub)
+// #if NOT_EXCLUDED(OP_scatter_nd_sub)
+// Expanded from DECLARE_OP to override emptyHandling() = EMPTY_EXECUTE: with empty indices there is nothing
+// to scatter and the output is the input. The default EMPTY_SKIP returned before the op ran and left a
+// non-in-place output unwritten.
 // #endif
 
 /**

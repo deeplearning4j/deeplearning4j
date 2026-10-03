@@ -33,10 +33,11 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
   auto indices = INPUT_VARIABLE(0);
   auto updates = INPUT_VARIABLE(1);
   auto shape = INPUT_VARIABLE(2);
-  if(indices->isEmpty())
-    return Status::OK;
-
   auto output = OUTPUT_VARIABLE(0);
+  // The updates add onto zeros, and with no indices the output is all zeros: the op clears its own output
+  // rather than relying on a zeroed allocation.
+  output->nullify();
+  if (indices->isEmpty()) return Status::OK;
 
   const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
   const bool checkIndices = block.getBArguments()->size() <= 1 ? false : B_ARG(1);
