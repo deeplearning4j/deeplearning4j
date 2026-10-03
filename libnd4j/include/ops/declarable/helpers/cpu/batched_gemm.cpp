@@ -22,6 +22,7 @@
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
 #include <ops/declarable/helpers/batched_gemm.h>
+#include <ops/op_types.h>
 #include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/float16.h>
@@ -72,14 +73,28 @@ void bgemm(NDArray *a,  NDArray *b,  NDArray *c,   NDArray *alphas,   NDArray *b
 
 }
 
+// Whether m lies column-major and dense, as BLAS reads it with leading dimension m's row count.
+static bool isColumnMajorDense(NDArray *m) {
+  return m->rankOf() == 2 && m->ordering() == 'f' && m->strideAt(0) == 1 && m->strideAt(1) == m->sizeAt(0);
+}
+
 template <typename T>
 static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
                     NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
                     int lda,  int ldb,  int ldc) {
   int batchSize = vA.size();
 
+  // The leading dimensions are BLAS's column-major ones (lda is A's row count), so every matrix is read in
+  // 'f' order, as the CUDA helper reads it: an operand laid out otherwise is copied to 'f' first, and an output
+  // laid out otherwise receives its 'f' result afterwards. 'c' matrices, SameDiff's default, were read as
+  // their transposes.
+  std::vector<NDArray *> pA(batchSize), pB(batchSize), pC(batchSize);
+  for (int e = 0; e < batchSize; e++) {
+    pA[e] = isColumnMajorDense(vA[e]) ? vA[e] : vA[e]->dup('f');
+    pB[e] = isColumnMajorDense(vB[e]) ? vB[e] : vB[e]->dup('f');
+    pC[e] = isColumnMajorDense(vC[e]) ? vC[e] : vC[e]->dup('f');
+  }
 
-  
   // Use batched BLAS only when: 1) batched GEMM is available AND 2) BLAS is enabled
   // Previously used || which incorrectly entered BLAS path when BLAS was disabled
   if (BlasHelper::getInstance().hasBatchedGEMM<T>() && sd::env_isEnableBlas()) {
@@ -115,9 +130,9 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
 
 
     for (int e = 0; e < batchSize; e++) {
-      buffersA.push_back(reinterpret_cast<T *>(vA[e]->buffer()));
-      buffersB.push_back(reinterpret_cast<T *>(vB[e]->buffer()));
-      buffersC.push_back(reinterpret_cast<T *>(vC[e]->buffer()));
+      buffersA.push_back(reinterpret_cast<T *>(pA[e]->buffer()));
+      buffersB.push_back(reinterpret_cast<T *>(pB[e]->buffer()));
+      buffersC.push_back(reinterpret_cast<T *>(pC[e]->buffer()));
     }
 
     // Acquire BLAS lock to prevent OpenBLAS TLS corruption and race conditions
@@ -149,30 +164,32 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
     RELEASE(tsize, arr->getContext()->getWorkspace());
   } else {
 
+    // Products accumulate in AccT: float for the 16-bit types, whose own sums lose low bits at every term.
+    using AccT = typename simdOps::AggregateType<T>::type;
     CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE)transA;
     CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE)transB;
     int vaSize = vA.size();
     auto func = PRAGMA_THREADS_FOR {
       for (auto p = start; p < stop; p++) {
-        auto A = reinterpret_cast<T *>(vA.at(p)->buffer());
-        auto B = reinterpret_cast<T *>(vB.at(p)->buffer());
-        auto C = reinterpret_cast<T *>(vC.at(p)->buffer());
+        auto A = reinterpret_cast<T *>(pA.at(p)->buffer());
+        auto B = reinterpret_cast<T *>(pB.at(p)->buffer());
+        auto C = reinterpret_cast<T *>(pC.at(p)->buffer());
         // Handle scalar, single-element, or empty arrays (use defaults for empty)
         auto alpha = (alphas->isScalar() || alphas->lengthOf() <= 1)
-                     ? (alphas->lengthOf() > 0 ? alphas->e<T>(0) : static_cast<T>(1))
-                     : alphas->e<T>(p);
+                     ? (alphas->lengthOf() > 0 ? alphas->e<AccT>(0) : static_cast<AccT>(1))
+                     : alphas->e<AccT>(p);
         auto beta = (betas->isScalar() || betas->lengthOf() <= 1)
-                    ? (betas->lengthOf() > 0 ? betas->e<T>(0) : static_cast<T>(0))
-                    : betas->e<T>(p);
+                    ? (betas->lengthOf() > 0 ? betas->e<AccT>(0) : static_cast<AccT>(0))
+                    : betas->e<AccT>(p);
         for (int m = 0; m < M; m++) {
           for (int n = 0; n < N; n++) {
-            T c_mnp = static_cast<T>(0);
+            AccT c_mnp = static_cast<AccT>(0);
             PRAGMA_OMP_SIMD
             for (int k = 0; k < K; k++) {
-              c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] *
-                       B[tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n)];
+              c_mnp += static_cast<AccT>(A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)]) *
+                       static_cast<AccT>(B[tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n)]);
             }
-            C[m + n * ldc] = alpha * c_mnp + beta * C[m + n * ldc];
+            C[m + n * ldc] = static_cast<T>(alpha * c_mnp + beta * static_cast<AccT>(C[m + n * ldc]));
           }
         }
       }
@@ -180,6 +197,15 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
 
     samediff::Threads::parallel_tad(func, 0, vaSize);
 
+  }
+
+  for (int e = 0; e < batchSize; e++) {
+    if (pC[e] != vC[e]) {
+      vC[e]->assign(pC[e]);
+      delete pC[e];
+    }
+    if (pA[e] != vA[e]) delete pA[e];
+    if (pB[e] != vB[e]) delete pB[e];
   }
 }
 
