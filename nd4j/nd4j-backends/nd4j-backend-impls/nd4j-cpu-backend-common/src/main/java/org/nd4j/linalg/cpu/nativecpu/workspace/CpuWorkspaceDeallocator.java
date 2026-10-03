@@ -94,18 +94,6 @@ public class CpuWorkspaceDeallocator implements Deallocator {
         }
 
         // purging all pinned pointers
-        // purging all spilled pointers
-        for (PointersPair pair2 : externalPointers) {
-            if (pair2 != null) {
-                if (pair2.getHostPointer() != null)
-                    Nd4j.getMemoryManager().release(pair2.getHostPointer(), MemoryKind.HOST);
-
-                if (pair2.getDevicePointer() != null)
-                    Nd4j.getMemoryManager().release(pair2.getDevicePointer(), MemoryKind.DEVICE);
-            }
-        }
-
-        // purging all pinned pointers
         PointersPair pair = null;
         while ((pair = pinnedPointers.poll()) != null) {
             if (pair.getHostPointer() != null)

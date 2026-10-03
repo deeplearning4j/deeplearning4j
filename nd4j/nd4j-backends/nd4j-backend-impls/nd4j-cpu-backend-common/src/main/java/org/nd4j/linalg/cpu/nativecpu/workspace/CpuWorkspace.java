@@ -56,6 +56,10 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     public final static long BASE_CPU_WORK_SPACE_OFFSET = RandomUtils.nextLong();
 
+    // One id for the workspace's life: the deallocator service files it under this id and removes it by the id its
+    // reference holds, and workspace events are logged under it.
+    private final long uniqueId = BASE_CPU_WORK_SPACE_OFFSET + Nd4j.getDeallocatorService().nextValue();
+
 
     public CpuWorkspace(@NonNull WorkspaceConfiguration configuration) {
         super(configuration);
@@ -77,7 +81,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     @Override
     public long getUniqueId() {
-        return BASE_CPU_WORK_SPACE_OFFSET + Nd4j.getDeallocatorService().nextValue();
+        return uniqueId;
     }
 
     @Override

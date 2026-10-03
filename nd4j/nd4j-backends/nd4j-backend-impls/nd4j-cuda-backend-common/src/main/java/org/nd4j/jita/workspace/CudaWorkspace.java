@@ -59,6 +59,10 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     public final static long BASE_CUDA_DATA_BUFFER_OFFSET = RandomUtils.nextLong();
 
+    // One id for the workspace's life: the deallocator service files it under this id and removes it by the id its
+    // reference holds, and workspace events are logged under it.
+    private final long uniqueId = BASE_CUDA_DATA_BUFFER_OFFSET + Nd4j.getDeallocatorService().nextValue();
+
     public CudaWorkspace(@NonNull WorkspaceConfiguration configuration) {
         super(configuration);
         Nd4j.getDeallocatorService().pickObject(this);
@@ -471,7 +475,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     public long getUniqueId() {
-        return BASE_CUDA_DATA_BUFFER_OFFSET + Nd4j.getDeallocatorService().nextValue();
+        return uniqueId;
     }
 
     @Override

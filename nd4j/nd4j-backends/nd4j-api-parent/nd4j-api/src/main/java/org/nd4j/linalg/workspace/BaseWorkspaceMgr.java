@@ -114,7 +114,8 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     }
 
     protected void recordWorkspaceEvent(WorkspaceUseMetaData.EventTypes eventType, MemoryWorkspace workspace, T arrayType) {
-        if(workspace == null)
+        //An event holds a stack trace and the event log keeps every one: record only while tracking is on
+        if(workspace == null || !Nd4j.getEnvironment().isTrackWorkspaceOpenClose())
             return;
         WorkspaceUseMetaData workspaceUseMetaData = WorkspaceUseMetaData.builder()
                 .stackTrace(Thread.currentThread().getStackTrace())

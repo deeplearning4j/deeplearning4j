@@ -68,6 +68,11 @@ public class VulkanWorkspace extends Nd4jWorkspace {
     private static final String STANDALONE_WORKSPACE_MANAGER_ID =
             "vulkan:" + Long.toUnsignedString(BASE_VULKAN_WORKSPACE_ID);
 
+    // One id for the workspace's life: workspace events are logged under it, and a deallocator service removes an
+    // object by the id it was filed under.
+    private final long uniqueId =
+            BASE_VULKAN_WORKSPACE_ID + VulkanRuntime.getInstance().deallocatorService().nextValue();
+
     /**
      * Reusable Vulkan allocations in logical workspace order. Each entry owns
      * one pool token and records its capacity in bytes.
@@ -466,8 +471,7 @@ public class VulkanWorkspace extends Nd4jWorkspace {
 
     @Override
     public long getUniqueId() {
-        return BASE_VULKAN_WORKSPACE_ID
-                + VulkanRuntime.getInstance().deallocatorService().nextValue();
+        return uniqueId;
     }
 
     @Override
