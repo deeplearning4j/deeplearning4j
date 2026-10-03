@@ -332,7 +332,10 @@ public class GradCheckUtil {
 
 
                 double relError;
-                if(numericalGrad == 0.0 || analyticGrad == 0.0) {
+                //Only two zeros agree exactly. With one of them zero the relative error is 1, and only the minimum
+                //absolute error below can pass it: an analytic gradient of 0 against a non-zero numerical one (a
+                //gradient that was never computed) used to count as no error at all.
+                if(numericalGrad == 0.0 && analyticGrad == 0.0) {
                     relError = 0.0;
                 } else {
                     relError = Math.abs(analyticGrad - numericalGrad) / (Math.abs(Math.abs(analyticGrad) + Math.abs(numericalGrad)));

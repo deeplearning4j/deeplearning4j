@@ -167,14 +167,20 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
                 INDArray in3Arr = Nd4j.randn(new int[]{3, 4, 5}).muli(100);
                 INDArray in2Arr = Nd4j.randn(in2Shape).muli(100);
+                if ("div".equals(name)) {
+                    // A divisor near 0 makes the quotient's derivatives as large as the finite difference's error.
+                    in2Arr = Transforms.sign(in2Arr).muli(Transforms.abs(in2Arr).addi(50));
+                }
+                if ("floordiv".equals(name) || "floormod".equals(name)) {
+                    // floor(in3 / in2) jumps where the quotient crosses an integer, and a finite difference across a
+                    // jump is no derivative: every quotient is an integer plus a fraction in [0.25, 0.75).
+                    INDArray quotient = Transforms.floor(Nd4j.randn(new int[]{3, 4, 5}).muli(5))
+                            .addi(Nd4j.rand(new int[]{3, 4, 5}).muli(0.5).addi(0.25));
+                    in3Arr = quotient.muli(in2Arr.broadcast(3, 4, 5));
+                }
 
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);
-
-                // mul and div broadcast gradients fail numerical gradient checks; skip these ops.
-                if("mul".equals(name) || "div".equals(name)) {
-                    continue;
-                }
 
                 TestCase tc = new TestCase(sd);
 
