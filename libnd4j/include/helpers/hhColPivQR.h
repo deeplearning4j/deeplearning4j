@@ -38,6 +38,14 @@ class HHcolPivQR {
 
   HHcolPivQR() = delete;
   HHcolPivQR(NDArray &matrix);
+  // Owns the three arrays the constructor allocates.
+  HHcolPivQR(const HHcolPivQR &) = delete;
+  HHcolPivQR &operator=(const HHcolPivQR &) = delete;
+  ~HHcolPivQR() {
+    delete _qr;
+    delete _coeffs;
+    delete _permut;
+  }
 
   template <typename T>
   void _evalData();

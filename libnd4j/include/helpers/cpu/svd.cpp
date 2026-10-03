@@ -50,10 +50,13 @@ SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool 
   }
 
   _switchSize = switchSize;
-  _calcU = calcU;
-  _calcV = calcV;
   _fullUV = fullUV;
 
+  // _calcU and _calcV say which vector sets the divide and conquer computes (Eigen's m_compU and m_compV). It
+  // solves the bidiagonal B^T, so its U belongs to the matrix's V and its V to the matrix's U, and a wide
+  // matrix is solved through its transpose, which exchanges them once more.
+  _calcU = calcV;
+  _calcV = calcU;
   if (_transp) math::sd_swap<bool>(_calcU, _calcV);
   std::vector<sd::LongType> sShape = {_diagSize};
   std::vector<sd::LongType> mShape = {_diagSize + 1, _diagSize};
@@ -98,10 +101,13 @@ SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool 
   }
 
   _switchSize = switchSize;
-  _calcU = calcU;
-  _calcV = calcV;
   _fullUV = fullUV;
 
+  // _calcU and _calcV say which vector sets the divide and conquer computes (Eigen's m_compU and m_compV). It
+  // solves the bidiagonal B^T, so its U belongs to the matrix's V and its V to the matrix's U, and a wide
+  // matrix is solved through its transpose, which exchanges them once more.
+  _calcU = calcV;
+  _calcV = calcU;
   if (_transp) math::sd_swap<bool>(_calcU, _calcV);
   std::vector<sd::LongType> sShape = {_diagSize};
   std::vector<sd::LongType> mShape = {_diagSize + 1, _diagSize};
@@ -248,7 +254,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
   {
     bool totDefl = true;
     for (int i = 1; i < len; i++)
-      if (colVec0.template t<T>(i) >= almostZero) {
+      if (math::sd_abs<T,T>(colVec0.template t<T>(i)) >= almostZero) {
         totDefl = false;
         break;
       }
@@ -363,15 +369,18 @@ T SVD<T>::secularEq(const T diff, NDArray& col0, NDArray& diag, NDArray permut,
                     NDArray& diagShifted, const T shift) {
   auto len = permut.lengthOf();
   T res = static_cast<T>(1.);
-  T item;
   for (int i = 0; i < len; ++i) {
     int j = (int)permut.t<T>(i);
-    item = col0.t<T>(j) / ((diagShifted.t<T>(j) - diff) * (diag.t<T>(j) + shift + diff));
-    res += item * col0.t<T>(j);
+    // Two quotients, as Eigen keeps them: one division by the product of the denominators overflows sooner.
+    res += (col0.t<T>(j) / (diagShifted.t<T>(j) - diff)) * (col0.t<T>(j) / (diag.t<T>(j) + shift + diff));
   }
 
   return res;
 }
+
+// Rational-interpolation steps calcSingVals takes for one singular value before it bisects. The
+// iteration converges superlinearly: a few steps reach the working precision.
+static constexpr int kMaxRationalSteps = 64;
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -411,7 +420,20 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
     T fMid = secularEq(mid, col0, diag, permut, diag, static_cast<T>(0.));
     T shift = (k == curLen - 1 || fMid > (T)0.) ? left : right;
 
-    auto diagShifted = diag - shift;
+    NDArray* diagShifted = diag - shift;
+
+    // f at the middle of [left, right], measured from the shift, must be negative: f(mid)
+    // evaluated before the shift can carry the wrong sign, and the search below would then
+    // bracket no root.
+    if (k != curLen - 1) {
+      T midShifted = (right - left) / (T)2.;
+      if (shift == right) midShifted = -midShifted;
+      if (secularEq(midShifted, col0, diag, permut, *diagShifted, shift) > (T)0.) {
+        shift = left;
+        delete diagShifted;
+        diagShifted = diag - shift;
+      }
+    }
 
     T muPrev, muCur;
     if (shift == left) {
@@ -433,11 +455,23 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
       math::sd_swap<T>(muPrev, muCur);
     }
 
+    // Rational interpolation (Eigen 3.4, BDCSVD::computeSingVals): fit f(mu) = a / mu + b through
+    // the last two iterates and step to its zero. A step that leaves the bracket, or that does
+    // not decrease |f|, hands the root to bisection. (This port also demanded
+    // |fCur - fPrev| > 16 eps before bisecting, so float iterates whose |f| had reached the
+    // evaluation noise cycled forever.) The step count is bounded the same way: the iteration
+    // converges superlinearly, so a long run is one that has stopped making progress.
     bool useBisection = fPrev * fCur > (T)0.;
-    while (fCur != (T).0 &&
-           math::sd_abs<T,T>(muCur - muPrev) >
-           (T)8. * DataTypeUtils::eps<T>() * math::sd_max(math::sd_abs<T,T>(muCur), math::sd_abs<T,T>(muPrev)) &&
-           math::sd_abs<T,T>(fCur - fPrev) > DataTypeUtils::eps<T>() && !useBisection) {
+    for (int step = 0;
+         fCur != (T).0 &&
+         math::sd_abs<T,T>(muCur - muPrev) >
+             (T)8. * DataTypeUtils::eps<T>() * math::sd_max(math::sd_abs<T,T>(muCur), math::sd_abs<T,T>(muPrev)) &&
+         math::sd_abs<T,T>(fCur - fPrev) > DataTypeUtils::eps<T>() && !useBisection;
+         ++step) {
+      if (step == kMaxRationalSteps) {
+        useBisection = true;
+        break;
+      }
       T a = (fCur - fPrev) / ((T)1. / muCur - (T)1. / muPrev);
       T jac = fCur - a / muCur;
       T muZero = -a / jac;
@@ -448,41 +482,50 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
       muCur = muZero;
       fCur = fZero;
 
-      if (shift == left && (muCur < (T)0. || muCur > right - left))
-        useBisection = true;
-      else if (shift == right && (muCur < -(right - left) || muCur > (T)0.))
-        useBisection = true;
-      else if (math::sd_abs<T,T>(fCur) > math::sd_abs<T,T>(fPrev) &&
-               math::sd_abs<T,T>(fCur - fPrev) > (T)16. * DataTypeUtils::eps<T>())
-        useBisection = true;
+      if (shift == left && (muCur < (T)0. || muCur > right - left)) useBisection = true;
+      if (shift == right && (muCur < -(right - left) || muCur > (T)0.)) useBisection = true;
+      if (math::sd_abs<T,T>(fCur) > math::sd_abs<T,T>(fPrev)) useBisection = true;
     }
 
     if (useBisection) {
+      // Bounds keep (z / mu)^2 finite: mu stays above max(min_positive, 2 |z(k)| / sqrt(max)).
+      const T sqrtMax = math::sd_sqrt<T, T>(DataTypeUtils::max<T>());
       T leftShifted, rightShifted;
       if (shift == left) {
-        leftShifted = DataTypeUtils::min_positive<T>();
-        rightShifted = (k == curLen - 1) ? right : ((right - left) * (T)0.6);
+        leftShifted = math::sd_max<T>(DataTypeUtils::min_positive<T>(),
+                                      (T)2. * math::sd_abs<T,T>(col0.t<T>(k)) / sqrtMax);
+        rightShifted = (k == curLen - 1) ? right : ((right - left) * (T)0.51);
       } else {
-        leftShifted = -(right - left) * (T)0.6;
-        rightShifted = -DataTypeUtils::min_positive<T>();
+        leftShifted = -(right - left) * (T)0.51;
+        rightShifted = k + 1 < len ? -math::sd_max<T>(DataTypeUtils::min_positive<T>(),
+                                                      math::sd_abs<T,T>(col0.t<T>(k + 1)) / sqrtMax)
+                                   : -DataTypeUtils::min_positive<T>();
       }
 
       T fLeft = secularEq(leftShifted, col0, diag, permut, *diagShifted, shift);
 
-      while (rightShifted - leftShifted >
-             (T)2.f * DataTypeUtils::eps<T>() *
-             math::sd_max(math::sd_abs<T,T>(leftShifted), math::sd_abs<T,T>(rightShifted))) {
-        T midShifted = (leftShifted + rightShifted) / (T)2.;
-        fMid = secularEq(midShifted, col0, diag, permut, *diagShifted, shift);
-        if (fLeft * fMid < (T)0.)
-          rightShifted = midShifted;
-        else {
-          leftShifted = midShifted;
-          fLeft = fMid;
+      if (fLeft < (T)0.) {
+        while (rightShifted - leftShifted >
+               (T)2.f * DataTypeUtils::eps<T>() *
+               math::sd_max(math::sd_abs<T,T>(leftShifted), math::sd_abs<T,T>(rightShifted))) {
+          T midShifted = (leftShifted + rightShifted) / (T)2.;
+          fMid = secularEq(midShifted, col0, diag, permut, *diagShifted, shift);
+          if (fLeft * fMid < (T)0.)
+            rightShifted = midShifted;
+          else {
+            leftShifted = midShifted;
+            fLeft = fMid;
+          }
         }
+        muCur = (leftShifted + rightShifted) / (T)2.;
+      } else {
+        // f keeps one sign over the bracket: take the middle of [left, right] rather than
+        // bisecting towards an end.
+        muCur = (right - left) * (T)0.5;
+        if (shift == right) muCur = -muCur;
       }
-      muCur = (leftShifted + rightShifted) / (T)2.;
     }
+    delete diagShifted;
     singVals.template r<T>(k) = shift + muCur;
     shifts.template r<T>(k) = shift;
     mus.template r<T>(k) = muCur;
@@ -512,6 +555,11 @@ void SVD<T>::perturb(NDArray col0, NDArray& diag, NDArray permut, NDArray& singV
       for (int l = 0; l < m; ++l) {
         int i = (int)permut.t<T>(l);
         if (i != k) {
+          // As Eigen: with no earlier entry to pair with (it read permut(-1)), zhat(k) is 0.
+          if (i >= k && l == 0) {
+            prod = (T)0;
+            break;
+          }
           int j = i < k ? i : (int)permut.t<T>(l - 1);
           prod *= ((singVals.t<T>(j) + dk) / ((diag.t<T>(i) + dk))) *
                   ((mus.t<T>(j) + (shifts.t<T>(j) - dk)) / ((diag.t<T>(i) - dk)));
@@ -536,20 +584,15 @@ void SVD<T>::calcSingVecs(NDArray zhat, NDArray& diag, NDArray perm, NDArray& si
     delete colUPtr;
     colU.nullify();
 
-    // Initialize colV as a scalar placeholder (will be reassigned if _calcV is true)
-    NDArray colV(_m.dataType(), _m.getContext(), true);
-
-    if (_calcV) {
-      NDArray *colVPtr = V({0, 0, k, k + 1});
-      colV = *colVPtr;
-      delete colVPtr;
-      colV.nullify();
-    }
+    // V's column k as a view. It was copy-assigned into a scalar placeholder, which made a
+    // detached copy: V's columns were neither cleared, set nor normalized below.
+    NDArray *colV = _calcV ? V({0, 0, k, k + 1}) : nullptr;
+    if (colV != nullptr) colV->nullify();
 
     if (zhat.t<T>(k) == (T)0.f) {
       colU.template r<T>(k) = (T)1;
 
-      if (_calcV) colV.template r<T>(k) = (T)1;
+      if (colV != nullptr) colV->template r<T>(k) = (T)1;
     } else {
       for (int l = 0; l < m; ++l) {
         int i = (int)perm.t<T>(l);
@@ -557,8 +600,9 @@ void SVD<T>::calcSingVecs(NDArray zhat, NDArray& diag, NDArray perm, NDArray& si
             zhat.t<T>(i) / (((diag.t<T>(i) - shifts.t<T>(k)) - mus.t<T>(k))) / ((diag.t<T>(i) + singVals.t<T>(k)));
       }
       U.template r<T>(n, k) = (T)0;
+      // As Eigen's normalize(): a column whose norm is 0 is left alone rather than divided into NaNs
       auto reduce = colU.reduceNumber(reduce::Norm2);
-      colU /= *reduce;
+      if (reduce->template t<T>(0) > (T)0) colU /= *reduce;
       delete reduce;
 
       if (_calcV) {
@@ -568,11 +612,12 @@ void SVD<T>::calcSingVecs(NDArray zhat, NDArray& diag, NDArray perm, NDArray& si
                                   ((diag.t<T>(i) + singVals.t<T>(k)));
         }
         V.template r<T>(0, k) = (T)-1;
-        auto reduce = colV.reduceNumber(reduce::Norm2);
-        colV /= *reduce;
+        auto reduce = colV->reduceNumber(reduce::Norm2);
+        if (reduce->template t<T>(0) > (T)0) *colV /= *reduce;
         delete reduce;
       }
     }
+    delete colV;
   }
 
   NDArray *colUPtr = U({0, 0, n, n + 1});
@@ -592,10 +637,14 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
   NDArray col0 = *col0Ptr;
   delete col0Ptr;
   
+  // A copy, as Eigen's workspace is: the view aliased _m, so clearing diag(0) also cleared
+  // _m(col1, col1), which is col0(0).
   NDArray *viewPtr = _m({col1, end, col1, end}, true);
-  NDArray diag = viewPtr->diagonal('c');
+  NDArray *diagCopy = viewPtr->diagonal('c').dup('c');
   delete viewPtr;
-  
+  NDArray diag(std::move(*diagCopy));
+  delete diagCopy;
+
   diag.template r<T>(0) = (T)0;
   std::vector<sd::LongType> shape2 = {size, 1};
   std::vector<sd::LongType> shape3 = {size + 1, size + 1};
@@ -700,8 +749,12 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   NDArray f(_u.ordering(), fShape, _u.dataType(), _u.getContext());
 
   if (n <= _switchSize) {
+    // A leaf's U is always the full (n + 1) x (n + 1) block, also when U is not wanted: both
+    // branches below copy all n + 1 of its columns (Eigen's BDCSVD computes the leaf with
+    // ComputeFullU). Passing the caller's fullUV made a non-full SVD copy an (n + 1) x n U into
+    // the block and throw.
     NDArray *mViewPtr = _m({col1, col1 + n + 1, col1, col1 + n}, true);
-    JacobiSVD<T> jac(*mViewPtr, _calcU, _calcV, _fullUV);
+    JacobiSVD<T> jac(*mViewPtr, true, _calcV, true);
     delete mViewPtr;
 
     if (_calcU) {
@@ -888,7 +941,9 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   }
 
   if (_calcV) {
-    NDArray *tempPtr = _v({row1W, row1W + n, row1W, row1W + n}, true);
+    // Rows from row1W and columns from col1W, as Eigen's m_naiveV.block(firstRowW, firstColW, n, n):
+    // a node reached through a left child has col1W != row1W.
+    NDArray *tempPtr = _v({row1W, row1W + n, col1W, col1W + n}, true);
     NDArray temp = *tempPtr;
     delete tempPtr;
     NDArray *assign2 = mmul(temp, VofSVD);
@@ -908,7 +963,31 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void SVD<T>::exchangeUV(HHsequence& hhU, HHsequence& hhV, NDArray& U, NDArray& V) {
-  if (_calcU) {
+  // U and V hold the bidiagonal problem's singular vectors, and they are _u and _v themselves
+  // (the transposed call passes _v and _u). Copy the blocks the rebuild reads first, as Eigen keeps
+  // m_naiveU and m_naiveV apart from the results: rebuilding _u replaced the vectors that the
+  // rebuild of _v (or, transposed, of _u itself) then read.
+  //
+  // _u is the matrix's U and _v its V, rebuilt from V's and U's blocks: they are wanted as asked for (Eigen's
+  // computeU() and computeV()), which _calcU and _calcV, describing the bidiagonal problem, say the other way
+  // round unless the matrix is wide.
+  const bool wantU = _transp ? _calcU : _calcV;
+  const bool wantV = _transp ? _calcV : _calcU;
+
+  NDArray *naiveV = nullptr;
+  NDArray *naiveU = nullptr;
+  if (wantU) {
+    NDArray *view = V({0, _diagSize, 0, _diagSize}, true);
+    naiveV = view->dup();
+    delete view;
+  }
+  if (wantV) {
+    NDArray *view = U({0, _diagSize, 0, _diagSize}, true);
+    naiveU = view->dup();
+    delete view;
+  }
+
+  if (wantU) {
     int colsU = _fullUV ? hhU.rows() : _diagSize;
     std::vector<sd::LongType> tempShape = {hhU.rows(), colsU};
     NDArray temp1(_u.ordering(), tempShape, _u.dataType(), _u.getContext());
@@ -916,26 +995,23 @@ void SVD<T>::exchangeUV(HHsequence& hhU, HHsequence& hhV, NDArray& U, NDArray& V
     _u = temp1;
 
     NDArray *uViewPtr = _u({0, _diagSize, 0, _diagSize}, true);
-    NDArray *vViewPtr = V({0, _diagSize, 0, _diagSize}, true);
-    uViewPtr->assign(vViewPtr);
+    uViewPtr->assign(naiveV);
     delete uViewPtr;
-    delete vViewPtr;
+    delete naiveV;
     const_cast<HHsequence&>(hhU).mulLeft(&_u);
   }
 
-  if (_calcV) {
+  if (wantV) {
     int colsV = _fullUV ? hhV.rows() : _diagSize;
     std::vector<sd::LongType> tempShape = {hhV.rows(), colsV};
     NDArray temp1(_v.ordering(), tempShape, _v.dataType(), _v.getContext());
     temp1.setIdentity();
     _v = temp1;
 
-    NDArray *assignPtr = U({0, _diagSize, 0, _diagSize}, true);
-    NDArray assign = *assignPtr;
-    delete assignPtr;
     NDArray *vViewPtr = _v({0, _diagSize, 0, _diagSize}, true);
-    vViewPtr->assign(&assign);
+    vViewPtr->assign(naiveU);
     delete vViewPtr;
+    delete naiveU;
     const_cast<HHsequence&>(hhV).mulLeft(&_v);
   }
 }
@@ -945,11 +1021,16 @@ template <typename T>
 void SVD<T>::evalData(NDArray& matrix) {
   const T almostZero = DataTypeUtils::min_positive<T>();
 
-  if (matrix.sizeAt(1) <= _switchSize) {
-    JacobiSVD<T> jac(matrix, _calcU, _calcV, _fullUV);
+  // The vector sets the caller asked for (Eigen's computeU() and computeV()): _calcU and _calcV describe the
+  // bidiagonal problem, whose U belongs to the matrix's V.
+  const bool wantU = _transp ? _calcU : _calcV;
+  const bool wantV = _transp ? _calcV : _calcU;
 
-    if (_calcU) _u = jac._u;
-    if (_calcV) _v = jac._v;
+  if (matrix.sizeAt(1) <= _switchSize) {
+    JacobiSVD<T> jac(matrix, wantU, wantV, _fullUV);
+
+    if (wantU) _u = jac._u;
+    if (wantV) _v = jac._v;
     _s.assign(&jac._s);
 
     return;
@@ -959,7 +1040,11 @@ void SVD<T>::evalData(NDArray& matrix) {
   T scale = reduce->t<T>(0);
   delete reduce;
   if (scale == (T)0.) scale = 1.;
-  NDArray *input = _transp ? matrix.transpose() : new NDArray((matrix / scale));
+  // Both orientations work on matrix / scale, and the singular values are scaled back below (Eigen's
+  // BDCSVD::compute). The transposed one used to skip the division, so a wide matrix's singular
+  // values came out multiplied by its largest |element|.
+  NDArray *scaled = matrix / scale;
+  NDArray *input = _transp ? scaled->transpose() : scaled;
   BiDiagonalUp biDiag(*input);
 
   _u.nullify();
@@ -981,9 +1066,13 @@ void SVD<T>::evalData(NDArray& matrix) {
     T a = math::sd_abs<T,T>(_m.t<T>(i, i));
     _s.template r<T>(i) = a * scale;
     if (a < almostZero) {
-      NDArray *sNullifyPtr = _s({i + 1, _diagSize});
-      sNullifyPtr->nullify();
-      delete sNullifyPtr;
+      // The values after i. For the last i the range would be empty, which a sub-array reads as the whole of
+      // _s: it cleared every singular value.
+      if (i + 1 < _diagSize) {
+        NDArray *sNullifyPtr = _s({i + 1, _diagSize});
+        sNullifyPtr->nullify();
+        delete sNullifyPtr;
+      }
       break;
     } else if (i == _diagSize - 1)
       break;
@@ -996,7 +1085,8 @@ void SVD<T>::evalData(NDArray& matrix) {
     exchangeUV(hhV, hhU, _v, _u);
   else
     exchangeUV(hhU, hhV, _u, _v);
-  delete input;
+  if (input != scaled) delete input;
+  delete scaled;
 
 }
 

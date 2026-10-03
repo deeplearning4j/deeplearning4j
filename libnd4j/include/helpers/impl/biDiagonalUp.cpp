@@ -32,7 +32,8 @@ namespace helpers {
 BiDiagonalUp::BiDiagonalUp(NDArray& matrix)
     : _HHmatrix(matrix.dataType(), matrix.getContext(), true),
       _HHbidiag(matrix.dataType(), matrix.getContext(), true),
-      _hhCoeffs(matrix.dataType(), matrix.getContext(), true) {
+      _hhCoeffsU(matrix.dataType(), matrix.getContext(), true),
+      _hhCoeffsV(matrix.dataType(), matrix.getContext(), true) {
       // input validation
   if (matrix.rankOf() != 2 || matrix.isScalar())
     THROW_EXCEPTION("ops::helpers::biDiagonalizeUp constructor: input array must be 2D matrix !");
@@ -146,15 +147,18 @@ template <typename T>
 HHsequence BiDiagonalUp::makeHHsequence_(const char type) {
   const int diagSize = type == 'u' ? _HHbidiag.sizeAt(0) : _HHbidiag.sizeAt(0) - 1;
 
+  // Each type owns its coefficients: a 'u' and a 'v' sequence of one bidiagonalization are used
+  // together, and one shared array left both reading whichever type was made last.
+  NDArray &coeffs = type == 'u' ? _hhCoeffsU : _hhCoeffsV;
   std::vector<LongType> shape = {diagSize};
-  _hhCoeffs = NDArray(_HHmatrix.ordering(),shape, _HHmatrix.dataType(), _HHmatrix.getContext());
+  coeffs = NDArray(_HHmatrix.ordering(),shape, _HHmatrix.dataType(), _HHmatrix.getContext());
 
   if (type == 'u')
-    for (int i = 0; i < diagSize; ++i) _hhCoeffs.r<T>(i) = _HHmatrix.t<T>(i, i);
+    for (int i = 0; i < diagSize; ++i) coeffs.r<T>(i) = _HHmatrix.t<T>(i, i);
   else
-    for (int i = 0; i < diagSize; ++i) _hhCoeffs.r<T>(i) = _HHmatrix.t<T>(i, i + 1);
+    for (int i = 0; i < diagSize; ++i) coeffs.r<T>(i) = _HHmatrix.t<T>(i, i + 1);
 
-  HHsequence result(&_HHmatrix, &_hhCoeffs, type);
+  HHsequence result(&_HHmatrix, &coeffs, type);
 
   if (type != 'u') {
     result._diagSize = diagSize;

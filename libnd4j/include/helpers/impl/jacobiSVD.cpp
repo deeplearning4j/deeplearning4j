@@ -316,7 +316,8 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
     HHsequence hhSeg(qr._qr, qr._coeffs, 'u');
 
-    if (_fullUV)
+    // Only when U is wanted: otherwise _u is a column and has no room for the full matrix
+    if (_fullUV && _calcU)
       hhSeg.applyTo(&_u);
     else if (_calcU) {
       _u.setIdentity();
@@ -342,7 +343,8 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
     HHsequence hhSeg(qr._qr, qr._coeffs, 'u');  // type = 'u' is not mistake here !
 
-    if (_fullUV)
+    // Only when V is wanted: otherwise _v is a column and has no room for the full matrix
+    if (_fullUV && _calcV)
       hhSeg.applyTo(&_v);
     else if (_calcV) {
       _v.setIdentity();

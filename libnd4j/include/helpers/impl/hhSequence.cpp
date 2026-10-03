@@ -70,50 +70,63 @@ void HHsequence::mulLeft_(NDArray* matrix) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray HHsequence::getTail(const int idx) const {
-  int first = idx + 1 + _shift;
-  NDArray vectorsRef =  *_vectors;
+// The essential part of the idx-th Householder vector as a view of the vectors matrix (the column below the
+// diagonal for type 'u', the row right of it for type 'v'). The view is handed back through a pointer: a named
+// NDArray returned by value goes through NDArray's move constructor, which does not carry the view's offset over,
+// so the tail came back pointing at the first element of the vectors' buffer instead of at its own column or row.
+static NDArray *tailView(NDArray &vectors, const char type, const int shift, const int idx) {
+  const int first = idx + 1 + shift;
 
-  if (_type == 'u') {
-    NDArray *tailPtr = vectorsRef({first, -1, idx, idx + 1}, true);
-    NDArray tail = *tailPtr;
-    delete tailPtr;
-    return tail;
-  } else {
-    NDArray *tailPtr = vectorsRef({idx, idx + 1, first, -1}, true);
-    NDArray tail = *tailPtr;
-    delete tailPtr;
-    return tail;
-  }
+  if (type == 'u') return vectors({first, -1, idx, idx + 1}, true);
+
+  return vectors({idx, idx + 1, first, -1}, true);
 }
+
+//////////////////////////////////////////////////////////////////////////
+NDArray HHsequence::getTail(const int idx) const {
+  NDArray vectorsRef = *_vectors;
+  NDArray *tailPtr = tailView(vectorsRef, _type, _shift, idx);
+
+  // Frees the view once the array handed back has been built from it.
+  struct ViewHolder {
+    NDArray *view;
+    explicit ViewHolder(NDArray *v) : view(v) {}
+    ~ViewHolder() { delete view; }
+  } holder(tailPtr);
+
+  // A temporary built by the copy constructor, which keeps the view's offset. Returning a named local would
+  // use the move constructor, which resets the offset to 0 unless the compiler elides the move.
+  return NDArray(*tailPtr);
+}
+
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void HHsequence::applyTo_(NDArray* dest) {
-  int size = _type == 'u' ? _vectors->sizeAt(0) : _vectors->sizeAt(1);
- NDArray *originalDest = dest;
- NDArray destRef = *dest;
-  std::vector<LongType> sizeShape = {size,size};
+  const int size = _type == 'u' ? _vectors->sizeAt(0) : _vectors->sizeAt(1);
+
+  // A destination of another size is replaced by a size x size array, as Eigen's evalTo resizes its destination.
+  // The replacement goes into *dest: it used to be built as a separate array that was freed before the caller
+  // could see it.
   if (dest->rankOf() != 2 || (dest->sizeAt(0) != size && dest->sizeAt(1) != size)) {
-    dest = new NDArray(dest->ordering(), sizeShape, dest->dataType(), dest->getContext());
-    destRef = *dest;
+    std::vector<LongType> sizeShape = {size, size};
+    *dest = NDArray(dest->ordering(), sizeShape, dest->dataType(), dest->getContext());
   }
   dest->setIdentity();
+
+  NDArray destRef = *dest;
+  NDArray vectorsRef = *_vectors;
 
   for (int k = _diagSize - 1; k >= 0; --k) {
     int curNum = size - k - _shift;
     if (curNum < 1 || (k + 1 + _shift) >= size) continue;
-    
+
     NDArray *blockPtr = destRef({dest->sizeAt(0) - curNum, dest->sizeAt(0), dest->sizeAt(1) - curNum, dest->sizeAt(1)}, true);
     NDArray block = *blockPtr;
-
-    NDArray tailK = getTail(k);
-    Householder<T>::mulLeft(block, tailK, _coeffs->t<T>(k));
-    
     delete blockPtr;
-  }
 
-  if(originalDest != dest) {
-    delete dest;
+    NDArray *tailPtr = tailView(vectorsRef, _type, _shift, k);
+    Householder<T>::mulLeft(block, *tailPtr, _coeffs->t<T>(k));
+    delete tailPtr;
   }
 }
 

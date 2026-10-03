@@ -591,6 +591,53 @@ public class NdArrayMmulSvdTest extends BaseNd4jTestWithBackends {
         assertEquals(expected, actual);
     }
 
+    /**
+     * The SVD of random wide, tall and square FLOAT matrices returns, and U diag(s) V^T rebuilds
+     * the input, both through divide and conquer (switchNum 16: Jacobi leaves merged by the
+     * secular equation) and through one Jacobi leaf (the default switchNum, 128), with full and
+     * thin U and V. On CPU the secular-equation root finder cycled forever once float evaluation
+     * noise stalled its rational steps, a wide matrix's singular values came out multiplied by its
+     * largest |element|, and a thin SVD copied an (n + 1) x n leaf U into an (n + 1) x (n + 1)
+     * block and threw.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdDivideAndConquerReconstructsInput(Nd4jBackend backend) {
+        List<String> failures = new ArrayList<>();
+        for (long[] shape : new long[][] {{96, 384}, {384, 96}, {40, 40}}) {
+            long k = Math.min(shape[0], shape[1]);
+            for (int switchNum : new int[] {16, Svd.DEFAULT_SWITCHNUM}) {
+                for (boolean fullUV : new boolean[] {false, true}) {
+                    for (long seed = 1; seed <= 3; seed++) {
+                        Nd4j.getRandom().setSeed(seed);
+                        INDArray input = Nd4j.randn(DataType.FLOAT, shape);
+                        INDArray original = input.dup();
+                        INDArray[] usv = Nd4j.exec(new Svd(input, fullUV, true, switchNum));
+                        INDArray u = usv[1].get(NDArrayIndex.all(), NDArrayIndex.interval(0, k));
+                        INDArray v = usv[2].get(NDArrayIndex.all(), NDArrayIndex.interval(0, k));
+                        INDArray rebuilt = u.mulRowVector(usv[0]).mmul(v.transpose());
+                        double error = rebuilt.sub(original).norm2Number().doubleValue()
+                                / original.norm2Number().doubleValue();
+                        double uOrthogonality = u.transpose().mmul(u).sub(Nd4j.eye(k).castTo(DataType.FLOAT))
+                                .norm2Number().doubleValue();
+                        double vOrthogonality = v.transpose().mmul(v).sub(Nd4j.eye(k).castTo(DataType.FLOAT))
+                                .norm2Number().doubleValue();
+                        String label = "shape " + shape[0] + "x" + shape[1] + ", switchNum " + switchNum
+                                + ", fullUV " + fullUV + ", seed " + seed + ": reconstruction " + error
+                                + ", |U'U - I| " + uOrthogonality + ", |V'V - I| " + vOrthogonality
+                                + (input.equals(original) ? "" : ", input modified");
+                        // Written as !(x < limit) so that a NaN fails: x >= limit is false for NaN.
+                        if (!(error < 1e-4) || !(uOrthogonality < 1e-3) || !(vOrthogonality < 1e-3)
+                                || !input.equals(original)) {
+                            failures.add(label);
+                        }
+                    }
+                }
+            }
+        }
+        assertTrue(failures.isEmpty(), failures.size() + " cases:\n" + String.join("\n", failures));
+    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSvdLargeRectangularFullUV(Nd4jBackend backend) {

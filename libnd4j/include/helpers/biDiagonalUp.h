@@ -31,9 +31,10 @@ namespace helpers {
 
 class BiDiagonalUp {
  public:
-  NDArray _HHmatrix;  // 2D Householder matrix
-  NDArray _HHbidiag;  // vector which contains Householder coefficients
-  NDArray _hhCoeffs;  // vector of Householder coefficients
+  NDArray _HHmatrix;   // 2D Householder matrix
+  NDArray _HHbidiag;   // vector which contains Householder coefficients
+  NDArray _hhCoeffsU;  // coefficients of the 'u' sequence: the diagonal of _HHmatrix
+  NDArray _hhCoeffsV;  // coefficients of the 'v' sequence: the superdiagonal of _HHmatrix
 
   /**
    *  constructor
