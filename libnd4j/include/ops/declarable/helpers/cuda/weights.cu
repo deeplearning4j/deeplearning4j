@@ -19,118 +19,94 @@
 //
 //  @author sgazeos@gmail.com
 //
+#include <system/op_boilerplate.h>
+#if NOT_EXCLUDED(OP_bincount)
 #include <execution/cuda/LaunchDims.h>
+#include <helpers/DebugHelper.h>
+#include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/weights.h>
+#include <ops/op_types.h>
 
+#include <type_traits>
 
-#include "helpers/DebugHelper.h"
 namespace sd {
 namespace ops {
 namespace helpers {
 
-template <typename T>
-static SD_DEVICE void adjustWeightsKernelD(void* inputBuffer, LongType const* inputShape, void* weightsBuffer,
-                                           LongType const* weightsShape, void* outputBuffer, LongType inputLength,
-                                           LongType outputLength, int val) {
-  if(inputBuffer == nullptr || outputBuffer == nullptr) return;
+// sums[v] += weights[i] (or 1) for each value v = values[i] in [0, bins); other values add nothing. values and
+// weights (same shape) are read through their own strides; sums is a dense accumulator.
+template <typename T, typename AccT>
+static SD_KERNEL void bincountKernel(const LongType* values, const LongType* valuesShapeInfo, const T* weights,
+                                     const LongType* weightsShapeInfo, AccT* sums, const LongType bins) {
+  const LongType length = shape::length(valuesShapeInfo);
+  const int rank = shape::rank(valuesShapeInfo);
+  const LongType* shape = shape::shapeOf(valuesShapeInfo);
+  const LongType* valueStrides = shape::stride(valuesShapeInfo);
+  const LongType* weightStrides = weights != nullptr ? shape::stride(weightsShapeInfo) : nullptr;
 
-  auto tid = threadIdx.x;
-
-  // Cache shape and stride information
-  const sd::LongType inputRank = shape::rank(inputShape);
-  const sd::LongType* inputShapePtr = shape::shapeOf(inputShape);
-  const sd::LongType* inputStridePtr = shape::stride(inputShape);
-
-  // Cache weights shape and stride if weightsBuffer exists
-  const sd::LongType weightsRank = weightsBuffer != nullptr ? shape::rank(weightsShape) : 0;
-  const sd::LongType* weightsShapePtr = weightsBuffer != nullptr ? shape::shapeOf(weightsShape) : nullptr;
-  const sd::LongType* weightsStridePtr = weightsBuffer != nullptr ? shape::stride(weightsShape) : nullptr;
-
-  LongType xCoords[SD_MAX_RANK];
-  LongType yCoords[SD_MAX_RANK];
-  LongType xOffset;
-  LongType yOffset;
-
-  for (LongType e = tid; e < inputLength; e += blockDim.x) {
-    INDEX2COORDS(e, inputRank, inputShapePtr, xCoords);
-    COORDS2INDEX(inputRank, inputStridePtr, xCoords, xOffset);
-
-    if (xOffset >= inputLength) return;
-
-    LongType current = *(reinterpret_cast<LongType*>(inputBuffer) + xOffset);
-    if (current == val) {
-      if (weightsBuffer != nullptr) {
-        INDEX2COORDS(e, weightsRank, weightsShapePtr, yCoords);
-        COORDS2INDEX(weightsRank, weightsStridePtr, yCoords, yOffset);
-        math::atomics::sd_atomicAdd(
-            reinterpret_cast<T*>(outputBuffer),
-            reinterpret_cast<T*>(weightsBuffer)[yOffset]);
-      } else {
-        math::atomics::sd_atomicAdd(reinterpret_cast<T*>(outputBuffer), T(1));
-      }
+  LongType coords[SD_MAX_RANK];
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < length;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    INDEX2COORDS(i, rank, shape, coords);
+    LongType valueOffset;
+    COORDS2INDEX(rank, valueStrides, coords, valueOffset);
+    const LongType v = values[valueOffset];
+    if (v < 0 || v >= bins) continue;
+    AccT add = static_cast<AccT>(1);
+    if (weights != nullptr) {
+      LongType weightOffset;
+      COORDS2INDEX(rank, weightStrides, coords, weightOffset);
+      add = static_cast<AccT>(weights[weightOffset]);
     }
+    math::atomics::sd_atomicAdd<AccT>(sums + v, add);
   }
 }
 
+// input holds INT64 values and weights, when given, the output's type and the input's shape
 template <typename T>
-static SD_KERNEL void adjustWeightsKernel(void* inputBuffer, LongType const* inputShape, void* weightsBuffer,
-                                          LongType const* weightsShape, void* outputBuffer, LongType const* outputShape,
-                                          int minLength, int maxLength) {
-  // Shared variables for shape information
-  __shared__ sd::LongType inputLen;
-  __shared__ sd::LongType outputLen;
-  __shared__ sd::LongType outputRank;
-  __shared__ const sd::LongType* outputShapePtr;
-  __shared__ const sd::LongType* outputStridePtr;
-
-  // Cache shape information in thread 0
-  if (threadIdx.x == 0) {
-    inputLen = shape::length(inputShape);
-    outputLen = shape::length(outputShape);
-    outputRank = shape::rank(outputShape);
-    outputShapePtr = shape::shapeOf(outputShape);
-    outputStridePtr = shape::stride(outputShape);
+static void adjustWeights_(LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output) {
+  // Sums in a wider type than the bins hold: 64-bit integers, or FLOAT for HALF and BFLOAT16
+  using AccT = typename std::conditional<std::is_integral<T>::value, LongType,
+                                         typename simdOps::AggregateType<T>::type>::type;
+  const LongType bins = output->lengthOf();
+  if (bins == 0) return;
+  if (input->lengthOf() == 0) {
+    output->nullify();
+    return;
   }
-  __syncthreads();
 
-  int threadCount = gridDim.x * blockDim.x;
-  LongType borderLen = 1;
+  std::vector<LongType> sumsShape = {bins};
+  NDArray sums('c', sumsShape, DataTypeUtils::fromT<AccT>(), context);
+  sums.nullify();
 
-  LongType zCoords[SD_MAX_RANK];
-  LongType zOffset;
-
-  for (LongType e = blockIdx.x; e < outputLen; e += threadCount) {
-    INDEX2COORDS(e, outputRank, outputShapePtr, zCoords);
-    COORDS2INDEX(outputRank, outputStridePtr, zCoords, zOffset);
-
-    T* outputBufferZ = reinterpret_cast<T*>(outputBuffer) + zOffset;
-    adjustWeightsKernelD<T>(inputBuffer, inputShape, weightsBuffer, weightsShape,
-                            (void*)outputBufferZ, inputLen, outputLen, (int)zOffset);
+  dim3 launchDims = getLaunchDims("adjustWeights");
+  auto stream = context->getCudaStream();
+  NDArray::prepareSpecialUse({&sums}, {input, weights});
+  bincountKernel<T, AccT><<<launchDims.x, launchDims.y, 0, *stream>>>(
+      reinterpret_cast<const LongType*>(input->specialBuffer()), input->specialShapeInfo(),
+      weights != nullptr ? reinterpret_cast<const T*>(weights->specialBuffer()) : nullptr,
+      weights != nullptr ? weights->specialShapeInfo() : nullptr, reinterpret_cast<AccT*>(sums.specialBuffer()), bins);
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode("bincountKernel failed");
   }
-}
-template <typename T>
-static void adjustWeights_(LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
-                          int maxLength) {
- dim3 launchDims = getLaunchDims("adjustWeights");
- auto stream = context->getCudaStream();
- adjustWeightsKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
-     input->specialBuffer(), input->specialShapeInfo(), weights ? weights->specialBuffer() : nullptr,
-     weights ? weights->specialShapeInfo() : nullptr, output->specialBuffer(), output->specialShapeInfo(), minLength,
-     maxLength);
- sd::DebugHelper::checkErrorCode(stream, "adjustWeightsKernel failed");
+  NDArray::registerSpecialUse({&sums}, {input, weights});
 
+  output->assign(&sums);
+
+  // sums is released when this returns: wait for the kernel and the assign that read it
+  PointersManager manager(context, "bincount");
+  manager.synchronize();
 }
 
 void adjustWeights(LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
-                  int maxLength) {
- BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (context, input, weights, output, minLength, maxLength),
-                       SD_GENERIC_NUMERIC_TYPES);
+                   int maxLength) {
+  BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (context, input, weights, output), SD_NUMERIC_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE( void adjustWeights_,
-                     (sd::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
-                      int maxLength),
-                     SD_GENERIC_NUMERIC_TYPES);
+BUILD_SINGLE_TEMPLATE(void adjustWeights_, (sd::LaunchContext * context, NDArray* input, NDArray* weights,
+                                            NDArray* output),
+                      SD_NUMERIC_TYPES);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

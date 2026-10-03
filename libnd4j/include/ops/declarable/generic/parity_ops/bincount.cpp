@@ -38,82 +38,33 @@ DECLARE_TYPES(bincount) {
 }
 
 CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
-  auto values = INPUT_VARIABLE(0)->cast(INT64);
-
-  NDArray *weights = nullptr;
-
-  LongType maxLength = -1;
-  LongType minLength = 0;
-  LongType maxIndex = values->argMax();
-  maxLength = values->e<LongType>(maxIndex) + 1;
-
-  if (block.numI() > 0) {
-    minLength = math::sd_max(INT_ARG(0), (LongType) 0L);
-    if (block.numI() == 2) maxLength = math::sd_min(maxLength, INT_ARG(1));
-  }
-
-  if (block.width() == 2) {  // the second argument is weights
-    weights = INPUT_VARIABLE(1);
-    if (weights->lengthOf() < 1) {
-      auto* valuesShape = values->getShapeAsVector();
-      weights = NDArrayFactory::create_('c', *valuesShape, values->dataType());
-      delete valuesShape;
-      int one = 1;
-      weights->assign(one);
-    } else if (weights->isScalar()) {
-      auto value = weights->cast(INT64)->asVectorT<LongType>();
-      auto* valuesShape = values->getShapeAsVector();
-      weights = NDArrayFactory::create_('c', *valuesShape, values->dataType());
-      delete valuesShape;
-      weights->assign(value[0]);
-    }
-
-
-    REQUIRE_TRUE(values->isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
-  } else if (block.width() == 3) {  // the second argument is min and the third is max
-    auto min = INPUT_VARIABLE(1);
-    auto max = min;
-    if (INPUT_VARIABLE(2)->lengthOf() > 0) {
-      max = INPUT_VARIABLE(2);
-    }
-    minLength = min->e<LongType>(0);
-    maxLength = max->e<LongType>(0);
-  } else if (block.width() > 3) {
-    auto min = INPUT_VARIABLE(2);
-    auto max = INPUT_VARIABLE(3);
-    minLength = min->e<LongType>(0);
-    if (INPUT_VARIABLE(2)->lengthOf() > 0) {
-      maxLength = max->e<LongType>(0);
-    } else
-      maxLength = minLength;
-    weights = INPUT_VARIABLE(1);
-    if (weights->lengthOf() < 1) {
-      auto* valuesShape = values->getShapeAsVector();
-      weights = NDArrayFactory::create_('c', *valuesShape, values->dataType());
-      delete valuesShape;
-      int one = 1;
-      weights->assign(one);
-    } else if (weights->isScalar()) {
-      auto value = weights->asVectorT<LongType>();
-      auto* valuesShape = values->getShapeAsVector();
-      weights = NDArrayFactory::create_('c', *valuesShape, values->dataType());
-      delete valuesShape;
-      weights->assign(value[0]);
-    }
-    REQUIRE_TRUE(values->isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
-  }
-
-  minLength = math::sd_max(minLength, (LongType) 0);
-  maxLength = math::sd_min(maxLength, values->e<LongType>(maxIndex) + 1);
-
+  // The shape function sizes the output: max(values) + 1 bins, raised to minLength and capped at maxLength (from
+  // iArgs or from inputs 1 and 2 when there are three inputs). Values outside the bins add nothing.
+  auto input = INPUT_VARIABLE(0);
   auto result = OUTPUT_VARIABLE(0);
-  float zero = 0.0f;
-  result->assign(zero);
 
-  helpers::adjustWeights(block.launchContext(), values, weights, result, minLength, maxLength);
-  if(weights->isScalar()) {
-    delete weights;
+  // Input 1 holds the weights with two inputs, and with four (then inputs 2 and 3 are minLength and maxLength). No
+  // weights, or an empty array, counts each value once; a scalar weighs every value the same.
+  NDArray* weightsIn = (block.width() == 2 || block.width() > 3) ? INPUT_VARIABLE(1) : nullptr;
+  if (weightsIn != nullptr && weightsIn->lengthOf() > 1)
+    REQUIRE_TRUE(input->isSameShape(weightsIn), 0, "bincount: the input and weights shapes should be equals");
+
+  // The helpers read INT64 values and weights of the output's type
+  NDArray* values = input->dataType() == INT64 ? input : input->cast(INT64);
+  NDArray* weights = nullptr;
+  if (weightsIn != nullptr && weightsIn->lengthOf() == 1) {
+    std::vector<LongType> valuesShape(values->shapeOf(), values->shapeOf() + values->rankOf());
+    weights = new NDArray('c', valuesShape, result->dataType(), block.launchContext());
+    weights->assign(weightsIn);
+  } else if (weightsIn != nullptr && weightsIn->lengthOf() > 1) {
+    weights = weightsIn->dataType() == result->dataType() ? weightsIn : weightsIn->cast(result->dataType());
   }
+
+  // the helpers write every bin
+  helpers::adjustWeights(block.launchContext(), values, weights, result, 0, static_cast<int>(result->lengthOf()));
+
+  if (weights != weightsIn) delete weights;
+  if (values != input) delete values;
   return Status::OK;
 }
 
