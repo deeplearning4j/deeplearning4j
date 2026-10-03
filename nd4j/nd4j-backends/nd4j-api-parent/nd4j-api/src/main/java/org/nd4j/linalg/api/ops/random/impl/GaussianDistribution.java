@@ -78,13 +78,18 @@ public class GaussianDistribution extends BaseRandomOp {
     }
 
 
+    /**
+     * Each element's mean is the corresponding element of means. The op is (z, means, z), as
+     * LogNormalDistribution's and TruncatedNormalDistribution's: it used to set z alone, so
+     * execution passed z as the means and every element's mean was 0.
+     */
     public GaussianDistribution(@NonNull INDArray z, @NonNull INDArray means, double stddev) {
+        super(z, means, z);
         if (z.length() != means.length())
             throw new IllegalStateException("Result length should be equal to provided Means length");
 
         this.mean = 0.0;
         this.stddev = stddev;
-        this.z = z;
         this.extraArgs = new Object[] {this.mean, this.stddev};
     }
 
