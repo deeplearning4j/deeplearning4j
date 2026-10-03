@@ -748,12 +748,18 @@ NDArray::NDArray(NDArray &&other) noexcept {
 
   _context = other._context;
   _length = other._length;
+  // A view's place in its buffer, as the move assignment carries it: without it a view moved out of a
+  // function (HHsequence::getTail returned one) read from the start of its buffer.
+  _offset = other._offset;
+  _isAttached = other._isAttached;
+  _deviceId = other._deviceId;
 
   other._buffer = nullptr;  // Clear source
   other._ownsBuffer = false;  // Source no longer owns
   other._shapeInfoBuffer = nullptr;
   other._shapeInfo = other._shapeInfoD = nullptr;
   other._length = 0;
+  other._offset = 0;
 
 #if defined(SD_GCC_FUNCTRACE)
   creationTrace = StackTrace();
