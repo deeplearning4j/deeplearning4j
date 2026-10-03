@@ -29,14 +29,12 @@ namespace ops {
 namespace helpers {
 
 void crossBatched(sd::LaunchContext *context, NDArray *a, NDArray *b, NDArray *o) {
-  std::vector<sd::LongType> shape2= {-1,3};
-  auto _a = a->reshape(a->ordering(), shape2);
-  auto _b = b->reshape(b->ordering(), shape2);
-  auto _o = o->reshape(o->ordering(), shape2, false);
-
-  auto tadsA = _a->allTensorsAlongDimension({1});
-  auto tadsB = _b->allTensorsAlongDimension({1});
-  auto tadsO = _o->allTensorsAlongDimension({1});
+  // One cross product per vector along the last axis. The TADs pair the vectors by their logical position whatever
+  // each array's layout, and the results are written through o's own strides.
+  std::vector<sd::LongType> lastAxis = {a->rankOf() - 1};
+  auto tadsA = a->allTensorsAlongDimension(lastAxis);
+  auto tadsB = b->allTensorsAlongDimension(lastAxis);
+  auto tadsO = o->allTensorsAlongDimension(lastAxis);
 
   int tads = tadsA.size();
 

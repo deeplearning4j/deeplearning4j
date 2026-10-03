@@ -58,8 +58,9 @@ public class BatchToSpace extends DynamicCustomOp {
     }
 
     public BatchToSpace(INDArray x, int[] blocks, int[] croppingTop, int... croppingBottom) {
-        addInputArgument(x);
+        //The native op takes the crops as its second input: [[top, bottom], [left, right]]
         int[][] crops = new int[][]{croppingTop, croppingBottom};
+        addInputArgument(x, Nd4j.createFromArray(crops));
         this.blocks = blocks;
         this.crops = crops;
 

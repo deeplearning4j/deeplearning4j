@@ -84,6 +84,9 @@ static void batchToSpaceCudaLauncher(const int blocksPerGrid, const int threadsP
                                      const LongType cropLeft) {
   batchToSpaceCuda<T>
       <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, cropBottom, cropLeft);
+  if (!sd::DebugHelper::inGraphCapture(const_cast<cudaStream_t *>(stream))) {
+    sd::DebugHelper::checkGlobalErrorCode("batchToSpaceCuda failed");
+  }
 }
 BUILD_SINGLE_TEMPLATE( void batchToSpaceCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -100,17 +103,14 @@ void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output,
   // oW = W - cropLeft - cropRight
 
   std::vector<sd::LongType> rearrShape =  {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)};
-  auto inputRearranged0 = input.reshape(
-      input.ordering(), rearrShape,false);
+  auto inputRearranged0 = input.reshape('c', rearrShape,false);
   inputRearranged0->permutei({2, 3, 0, 4, 1, 5}, false, false);
 
   if (input.lengthOf() == output.lengthOf()) {
     output.assign(inputRearranged0);
   } else {
     std::vector<sd::LongType> outputShape =  {output.sizeAt(0), input.sizeAt(1) * blockSize, input.sizeAt(2) * blockSize, input.sizeAt(3)};
-    auto inputRearranged1 = inputRearranged0->reshape(
-        input.ordering(),
-        outputShape);
+    auto inputRearranged1 = inputRearranged0->reshape('c', outputShape);
 
     const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -191,7 +191,9 @@ static void batchToSpaceNDCudaLauncher(const int blocksPerGrid, const int thread
                                        const LongType* zShapeInfo, const LongType numOfSpatialDims) {
   batchToSpaceNDCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz,
                                                                                    zShapeInfo, numOfSpatialDims);
-  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "batchToSpaceNDCuda failed");
+  if (!sd::DebugHelper::inGraphCapture(const_cast<cudaStream_t *>(stream))) {
+    sd::DebugHelper::checkGlobalErrorCode("batchToSpaceNDCuda failed");
+  }
 
 }
 BUILD_DOUBLE_TEMPLATE( void batchToSpaceNDCudaLauncher,
@@ -220,7 +222,7 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
   temp[i++] = output.sizeAt(0);
   for (int j = 1; j < rank; ++i, ++j) temp[i] = input.sizeAt(j);
 
-  auto inputRearranged0 = input.reshape(input.ordering(), temp);
+  auto inputRearranged0 = input.reshape('c', temp);
 
   //*** construct permuting std::vector for permutation of input array ***//
 
@@ -246,7 +248,7 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
     for (i = 1; i < rank; ++i)
       temp[i] = (i <= numOfSpatialDims) ? input.sizeAt(i) * blockShape.e<LongType>(i - 1) : input.sizeAt(i);
 
-    auto inputRearranged1 = inputRearranged0->reshape(input.ordering(), temp);
+    auto inputRearranged1 = inputRearranged0->reshape('c', temp);
 
     dim3 launchDims = batchToSpaceNdLaunch(output.lengthOf(),output.rankOf());
 
@@ -329,7 +331,9 @@ static void spaceToBatchCudaLauncher(const int blocksPerGrid, const int threadsP
                                      const LongType padTop, const LongType padLeft, const LongType padRight) {
   spaceToBatchCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, padBottom,
                                                                               padTop, padLeft, padRight);
-  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "spaceToBatchCudaLauncher failed");
+  if (!sd::DebugHelper::inGraphCapture(const_cast<cudaStream_t *>(stream))) {
+    sd::DebugHelper::checkGlobalErrorCode("spaceToBatchCudaLauncher failed");
+  }
 
 }
 BUILD_SINGLE_TEMPLATE( void spaceToBatchCudaLauncher,
@@ -347,8 +351,7 @@ void spaceToBatch(LaunchContext* context, NDArray& input, NDArray& output, const
   // padLeft + padRight)/blockSize, iC]
 
   std::vector<sd::LongType> outputShape = {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), input.sizeAt(3)};
-  auto outputRearranged0 = output.reshape(
-      output.ordering(), outputShape,
+  auto outputRearranged0 = output.reshape('c', outputShape,
       false);
   outputRearranged0->permutei({2, 3, 0, 4, 1, 5}, false, false);
 
@@ -356,9 +359,7 @@ void spaceToBatch(LaunchContext* context, NDArray& input, NDArray& output, const
     outputRearranged0->assign(&input);
   } else {
     std::vector<sd::LongType> outReArrShape =  {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, input.sizeAt(3)};
-    auto outputRearranged1 = outputRearranged0->reshape(
-        output.ordering(),
-        outReArrShape, false);
+    auto outputRearranged1 = outputRearranged0->reshape('c', outReArrShape, false);
 
 
     dim3 launchDims = spaceToBatchLaunch(output.lengthOf(),output.rankOf());
@@ -456,7 +457,9 @@ static void spaceToBatchNDCudaLauncher(const int blocksPerGrid, const int thread
                                        const LongType* zShapeInfo, const LongType numOfSpatialDims) {
   spaceToBatchNDCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz,
                                                                                    zShapeInfo, numOfSpatialDims);
-  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "spaceToBatchNDCuda failed");
+  if (!sd::DebugHelper::inGraphCapture(const_cast<cudaStream_t *>(stream))) {
+    sd::DebugHelper::checkGlobalErrorCode("spaceToBatchNDCuda failed");
+  }
 
 }
 BUILD_DOUBLE_TEMPLATE( void spaceToBatchNDCudaLauncher,
@@ -485,7 +488,7 @@ void spaceToBatchND(LaunchContext* context, NDArray& input, NDArray& blockShape,
   temp[i++] = input.sizeAt(0);
   for (int j = 1; j < rank; ++i, ++j) temp[i] = output.sizeAt(j);
 
-  auto outputRearranged0 = output.reshape(output.ordering(), temp, false);
+  auto outputRearranged0 = output.reshape('c', temp, false);
 
   //*** construct permuting std::vector for permutation of output array ***//
 
@@ -512,7 +515,7 @@ void spaceToBatchND(LaunchContext* context, NDArray& input, NDArray& blockShape,
     for (i = 1; i < rank; ++i)
       temp[i] = (i <= numOfSpatialDims) ? output.sizeAt(i) * blockShape.e<LongType>(i - 1) : output.sizeAt(i);
 
-    auto outputRearranged1 = outputRearranged0->reshape(output.ordering(), temp, false);
+    auto outputRearranged1 = outputRearranged0->reshape('c', temp, false);
 
     dim3 launchDims = spaceToBatchNdLaunch(output.lengthOf(),output.rankOf());
     PointersManager manager(context, "spaceToBatchND");

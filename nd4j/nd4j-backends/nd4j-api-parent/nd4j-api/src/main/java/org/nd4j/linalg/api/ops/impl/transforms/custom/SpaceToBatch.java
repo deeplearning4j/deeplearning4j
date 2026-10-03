@@ -39,7 +39,7 @@ public class SpaceToBatch extends DynamicCustomOp {
     }
 
     public SpaceToBatch(SameDiff sameDiff, SDVariable x, int[] blocks, int[] paddingTop, int... paddingBottom) {
-        this(sameDiff, new SDVariable[]{x}, blocks, new int[][]{paddingBottom, paddingBottom}, false);
+        this(sameDiff, new SDVariable[]{x}, blocks, new int[][]{paddingTop, paddingBottom}, false);
     }
 
     public SpaceToBatch(SameDiff sameDiff, SDVariable[] args, int[] blocks, int[][] padding, boolean inPlace) {
@@ -52,7 +52,9 @@ public class SpaceToBatch extends DynamicCustomOp {
     }
 
     public SpaceToBatch(INDArray x, int[] blocks, int[] paddingTop, int... paddingBottom) {
-        addInputArgument(x);
+        //The native op takes the padding as its second input: [[top, bottom], [left, right]]
+        int[][] padding = new int[][]{paddingTop, paddingBottom};
+        addInputArgument(x, Nd4j.createFromArray(padding));
         this.blocks = blocks;
         this.padding = padding;
 

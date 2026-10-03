@@ -49,7 +49,8 @@ CUSTOM_OP_IMPL(flatten_2d, 1, 1, false, 0, -2) {
   auto* zShapeVec = z->getShapeAsVector();
   if (sd::env_isDebugAndVerbose()) sd_printv("Reshape: new shape", *zShapeVec);
 
-  auto xReshaped = x->reshape(z->ordering(), *zShapeVec);
+  // Flatten keeps x's elements in logical (C) order whatever the memory order of x or z
+  auto xReshaped = x->reshape('c', *zShapeVec);
   delete zShapeVec;
   z->assign(xReshaped);
   delete xReshaped;

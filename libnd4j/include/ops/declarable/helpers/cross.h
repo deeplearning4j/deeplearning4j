@@ -72,34 +72,6 @@ void SD_INLINE cross(LaunchContext *context, NDArray *a, NDArray *b, NDArray *o)
   }
 }
 
-void SD_INLINE _crossBatched(LaunchContext *context, NDArray *a, NDArray *b, NDArray *o) {
-  std::vector<sd::LongType> reshape = {-1,3};
-  auto a_ = a->reshape(a->ordering(), reshape);
-  auto b_ = b->reshape(b->ordering(), reshape);
-  auto o_ = o->reshape(o->ordering(),reshape, false);
-
-  auto tadsA = a_->allTensorsAlongDimension({1});
-  auto tadsB = b_->allTensorsAlongDimension({1});
-  auto tadsO = o_->allTensorsAlongDimension({1});
-
-  int tads = tadsA.size();
-
-  auto func = PRAGMA_THREADS_FOR {
-    for (auto e = start; e < stop; e++) {
-      auto a_ = tadsA.at(e);
-      auto b_ = tadsB.at(e);
-      auto o_ = tadsO.at(e);
-
-      cross(context, a_, b_, o_);
-    }
-  };
-
-  samediff::Threads::parallel_tad(func, 0, tads);
-
-  delete a_;
-  delete b_;
-  delete o_;
-}
 
 void weightedCrossEntropyWithLogitsFunctor(LaunchContext *context, NDArray *targets, NDArray *input,
                                            NDArray *weights, NDArray *output);
