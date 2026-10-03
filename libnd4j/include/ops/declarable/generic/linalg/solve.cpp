@@ -60,14 +60,13 @@ CUSTOM_OP_IMPL(solve, 2, 1, false, 0, 0) {
   if (useAdjoint) {
     auto adjointA = a->ulike();
     helpers::adjointMatrix(block.launchContext(), a, adjointA);
-    input = new NDArray(adjointA);
+    input = adjointA;
   }
 
   auto res = helpers::solveFunctor(block.launchContext(), input, b, useAdjoint, z);
+  if (input != a) delete input;
   if(res != Status::OK)
     return res;
-
-  if (input != a) delete input;
 
   return Status::OK;
 }

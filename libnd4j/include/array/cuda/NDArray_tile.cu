@@ -24,10 +24,13 @@ NDArray NDArray::tile(const std::vector<LongType>& reps) {
   int diff = rankOld - dim;
 
   if (product == 1) {
-    NDArray result(*this);
+    // a copy: the copy constructor would give a view sharing this array's buffer
+    std::vector<LongType> shapeOld(shapeOf(), shapeOf() + rankOld);
+    NDArray result(ordering(), shapeOld, dataType(), getContext());
+    result.assign(this);
     if (diff < 0) {
       std::vector<LongType> shapeNew = reps;
-      memcpy(&shapeNew[-diff], result.shapeInfo() + 1, rankOld * sizeof(LongType));
+      memcpy(&shapeNew[-diff], shapeOld.data(), rankOld * sizeof(LongType));
       result.reshapei(ordering(), shapeNew);
     }
     return result;

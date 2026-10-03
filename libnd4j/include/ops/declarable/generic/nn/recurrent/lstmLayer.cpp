@@ -302,7 +302,9 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
     if (h) {
       if (directionMode == 2) {  // sum
         hFwd = h;
-        hBwd = new NDArray(h, false, h->getContext());
+        // an array of its own (zeroed): NDArray(NDArray*, bool, context) wraps the other array's buffer, so the
+        // backward pass overwrote the forward outputs and the sum doubled the backward ones
+        hBwd = new NDArray(h->shapeInfo(), false, h->getContext());
       } else if (directionMode == 3) {  // concat
         hFwd = dataFormat <= 1 ? (*h)({0, 0, 0, 0, 0, nOut}) : (*h)({0, 0, 0, nOut, 0, 0});
         hBwd = dataFormat <= 1 ? (*h)({0, 0, 0, 0, nOut, 2 * nOut}) : (*h)({0, 0, nOut, 2 * nOut, 0, 0});

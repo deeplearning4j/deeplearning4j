@@ -211,7 +211,10 @@ NDArray NDArray::tile(const std::vector<LongType>& repetitions) {
       inputRank - static_cast<int>(repetitions.size());
 
   if (identity) {
-    NDArray result(*this);
+    // a copy: the copy constructor would give a view sharing this array's buffer
+    std::vector<LongType> inputShape(shapeOf(), shapeOf() + inputRank);
+    NDArray result(ordering(), inputShape, dataType(), getContext());
+    result.assign(this);
     if (rankDifference < 0) {
       std::vector<LongType> alignedShape = repetitions;
       std::copy(shapeInfo() + 1, shapeInfo() + 1 + inputRank,

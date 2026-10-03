@@ -231,7 +231,9 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   const float Ninv = 1.f * shape::tadLength(input->shapeInfo(), (axes.data()), axes.size()) / input->lengthOf();
 
   // input - mean
-  NDArray xMinusMean(input);  // empty array with same shape as input
+  // an array of its own: NDArray(NDArray*, bool, context) wraps input's buffer, so x - mean (and the terms added to it
+  // below) were written into the input
+  NDArray xMinusMean(input->shapeInfo(), false, block.launchContext());
   input->applyBroadcast(sd::broadcast::Subtract, &axes, mean, &xMinusMean);
 
   // stdInv = 1 / (variance + epsilon)^0.5

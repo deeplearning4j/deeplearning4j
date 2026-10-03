@@ -31,7 +31,8 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 static SD_INLINE NDArray sigmoid(NDArray& arr) {
   NDArray* result = (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
-  NDArray copy = *result;
+  // moved, not copied: the copy constructor gives a view of the buffer the delete below frees
+  NDArray copy = std::move(*result);
   delete result;
   return copy;
 }
@@ -43,7 +44,8 @@ static SD_INLINE void sigmoidInplace(NDArray& arr) {
 //////////////////////////////////////////////////////////////////////////
 static SD_INLINE NDArray tanh(NDArray& arr) {
   NDArray* result = (const_cast<NDArray&>(arr)).transform(transform::Tanh);
-  NDArray copy = *result;
+  // moved, not copied: the copy constructor gives a view of the buffer the delete below frees
+  NDArray copy = std::move(*result);
   delete result;
   return copy;
 }

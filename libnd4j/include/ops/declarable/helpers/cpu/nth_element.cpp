@@ -33,17 +33,18 @@ namespace helpers {
 
 template <typename T>
 void nthElementFunctor_(NDArray* input, sd::LongType n, NDArray* output, bool reverse) {
-  NDArray sortedVals(*input);
+  // the sort runs on a copy: the input stays as it is
+  NDArray* sortedVals = input->dup('c');
   if (input->isVector()) {
-    SpecialMethods<T>::sortGeneric(input, reverse);
-    output->p(0, input->e<T>(n));
+    SpecialMethods<T>::sortGeneric(sortedVals, reverse);
+    output->p(0, sortedVals->e<T>(n));
   } else {  // rank greater than 1
     std::vector<sd::LongType> lastDims(
         {input->rankOf() - 1});
-    SpecialMethods<T>::sortTadGeneric(&sortedVals, lastDims.data(), lastDims.size(),
+    SpecialMethods<T>::sortTadGeneric(sortedVals, lastDims.data(), lastDims.size(),
                                       reverse);
 
-    ResultSet rows = sortedVals.allTensorsAlongDimension(lastDims);
+    ResultSet rows = sortedVals->allTensorsAlongDimension(lastDims);
     sd::LongType oL = output->lengthOf();
 
     auto func = PRAGMA_THREADS_FOR {
@@ -55,6 +56,7 @@ void nthElementFunctor_(NDArray* input, sd::LongType n, NDArray* output, bool re
 
     samediff::Threads::parallel_for(func, 0, oL);
   }
+  delete sortedVals;
 }
 
 void nthElementFunctor(sd::LaunchContext* launchContext, NDArray* input, sd::LongType n, NDArray* output,

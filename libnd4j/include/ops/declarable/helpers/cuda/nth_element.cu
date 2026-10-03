@@ -81,42 +81,44 @@ static SD_KERNEL SD_INLINE void fillUpElementKernel(void* outputBuffer, const Lo
 template <typename T>
 void nthElementFunctor_(LaunchContext* context, NDArray* input, LongType n, NDArray* output, bool reverse) {
   NDArray::prepareSpecialUse({output}, {input});
-  NDArray sortedVals(*input);
+  // the sort runs on a copy: the input stays as it is
+  NDArray* sortedVals = input->dup('c');
   Pointer params[2];
   params[0] = context;
   params[1] = context->getCudaStream();
   auto stream = context->getCudaStream();
   // Nth element in sorted sequence : basic algorithm sort and retrieve nth element in sorted
   if (input->isVector()) {
-    sort(params, &sortedVals, reverse);
+    sort(params, sortedVals, reverse);
 
-    cudaMemcpyAsync(reinterpret_cast<T*>(output->specialBuffer()), reinterpret_cast<T*>(sortedVals.specialBuffer()) + n,
+    cudaMemcpyAsync(reinterpret_cast<T*>(output->specialBuffer()), reinterpret_cast<T*>(sortedVals->specialBuffer()) + n,
                sizeof(T), cudaMemcpyDeviceToDevice, *stream);
   } else {  // rank greater than 1
     std::vector<LongType> lastDims(
         {input->rankOf() - 1});
-    NDArray *dimData = NDArrayFactory::create_<LongType>('c',{2},lastDims, context);
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), &lastDims);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(sortedVals->shapeInfo(), &lastDims);
 
     auto pTadShape = packX->specialShapeInfo();
-    auto pTadShapeH = packX->primaryShapeInfo();
     auto pTadOffsets = packX->specialOffsets();
-    sortTad(params, &sortedVals,
+    sortTad(params, sortedVals,
             reinterpret_cast<sd::LongType *>(lastDims.data()),
            lastDims.size(),
             const_cast<sd::LongType *>(pTadShape),
             const_cast<sd::LongType *>(pTadOffsets),
             reverse);
-    sortedVals.tickWriteDevice();
-    sortedVals.syncToHost();
     dim3 launchDims = getLaunchDims("nth_element_fill");
     fillUpElementKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
-                                                      sortedVals.specialBuffer(), sortedVals.specialShapeInfo(),
+                                                      sortedVals->specialBuffer(), sortedVals->specialShapeInfo(),
                                                       pTadShape, pTadOffsets, n);
     sd::DebugHelper::checkErrorCode(stream, "fillUpElementKernel failed");
 
   }
   NDArray::registerSpecialUse({output}, {input});
+
+  // the sorted copy is released when this returns: wait for the copy or kernel that read it
+  PointersManager manager(context, "nth_element");
+  manager.synchronize();
+  delete sortedVals;
 }
 BUILD_SINGLE_TEMPLATE(void nthElementFunctor_, (LaunchContext* context, NDArray* input, LongType n, NDArray* output, bool reverse), SD_COMMON_TYPES);
 

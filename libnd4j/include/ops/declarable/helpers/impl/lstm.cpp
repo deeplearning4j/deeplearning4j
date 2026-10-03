@@ -134,8 +134,9 @@ void lstmTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* h0, NDArray* 
 
   const int time = x->sizeAt(0);
 
-  NDArray currentH(*h0);
-  NDArray currentC(*c0);
+  // the previous output and cell state start as copies of h0 and c0: the loop overwrites them every step
+  NDArray* currentH = h0->dup();
+  NDArray* currentC = c0->dup();
 
   // loop through time steps
   for (int t = 0; t < time; ++t) {
@@ -143,12 +144,16 @@ void lstmTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* h0, NDArray* 
     auto ht = (*h)({t, t + 1, 0, 0, 0, 0});
     auto ct = (*c)({t, t + 1, 0, 0, 0, 0});
 
-    helpers::lstmCell(context, xt, &currentH, &currentC, Wx, Wh, Wc, Wp, b, ht, ct, params);
-    currentH.assign(ht);
-    currentC.assign(ct);
+    helpers::lstmCell(context, xt, currentH, currentC, Wx, Wh, Wc, Wp, b, ht, ct, params);
+    currentH->assign(ht);
+    currentC->assign(ct);
+    delete xt;
     delete ht;
     delete ct;
   }
+
+  delete currentH;
+  delete currentC;
 }
 
 }  // namespace helpers

@@ -291,14 +291,15 @@ PLATFORM_IMPL(batchnorm, ENGINE_CUDA) {
     output = tmpOutput.get();
   }
 
-  // cudnn requires gamma and beta to be non-nullptr
+  // cudnn requires gamma and beta to be non-nullptr. The stand-ins are arrays of their own shaped like mean:
+  // NDArray(NDArray*, bool, context) wraps mean's buffer, so filling them overwrote mean.
   if (!applyScale) {
-    tmpGamma.reset(new NDArray(mean));
+    tmpGamma.reset(new NDArray(mean->shapeInfo(), false, mean->getContext()));
     gamma = tmpGamma.get();
     *gamma = 1;
   }
   if (!applyOffset) {
-    tmpBeta.reset(new NDArray(mean));
+    tmpBeta.reset(new NDArray(mean->shapeInfo(), false, mean->getContext()));
     beta = tmpBeta.get();
     *beta = 0;
   }
@@ -468,16 +469,17 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CUDA) {
     gradI = tmpGradI.get();
   }
 
-  // cudnn requires gamma, gradG, gradB to be non-nullptr
+  // cudnn requires gamma, gradG, gradB to be non-nullptr. The stand-ins are arrays of their own shaped like mean:
+  // NDArray(NDArray*, bool, context) wraps mean's buffer, so filling them (and the gradients cudnn writes) overwrote mean.
   if (!applyScale) {
-    tmpGamma.reset(new NDArray(mean));
-    tmpGradG.reset(new NDArray(mean));
+    tmpGamma.reset(new NDArray(mean->shapeInfo(), false, mean->getContext()));
+    tmpGradG.reset(new NDArray(mean->shapeInfo(), false, mean->getContext()));
     gamma = tmpGamma.get();
     gradG = tmpGradG.get();
     *gamma = 1;
   }
   if (!applyOffset) {
-    tmpGradB.reset(new NDArray(mean));
+    tmpGradB.reset(new NDArray(mean->shapeInfo(), false, mean->getContext()));
     gradB = tmpGradB.get();
   }
 

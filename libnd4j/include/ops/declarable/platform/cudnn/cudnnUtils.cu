@@ -205,12 +205,28 @@ void pooling2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
   const void* beta =
       gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
-  NDArray::prepareSpecialUse({gradI}, {input, gradO});
+  // cudnn's max-pooling backward compares the input with the forward output to find each window's maximum, which
+  // gradO is not: compute the forward output into a packed array of its own (average pooling does not read it)
+  NDArray *y = nullptr;
+  CudnnTensor yDesc;
+  if (mode == CUDNN_POOLING_MAX) {
+    std::vector<LongType> yShape(gradO->shapeOf(), gradO->shapeOf() + gradO->rankOf());
+    y = new NDArray('c', yShape, gradO->dataType(), gradO->getContext());
+    yDesc.set4D(format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
+  }
+
+  NDArray::prepareSpecialUse({gradI, y}, {input, gradO});
+
+  if (y != nullptr)
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnPoolingForward),
+        cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, yDesc, y->specialBuffer()));
 
   // run calculation for gradI
   CHECK_CUDNN_FAILURE_MSG(
       STRINGIZE(cudnnPoolingBackward),
-      cudnnPoolingBackward(*handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x,
+      cudnnPoolingBackward(*handle, pooling, alpha, y != nullptr ? (cudnnTensorDescriptor_t)yDesc : (cudnnTensorDescriptor_t)dz,
+                           y != nullptr ? y->specialBuffer() : gradO->specialBuffer(), dz, gradO->specialBuffer(), x,
                            input->specialBuffer(), beta, x, gradI->specialBuffer()));
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
@@ -218,7 +234,8 @@ void pooling2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
     if (cudaErr != 0) { std::string msg = "pooling2dBpCUDNN: cudaStreamSynchronize failed !; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
-  NDArray::registerSpecialUse({gradI}, {input, gradO});
+  NDArray::registerSpecialUse({gradI, y}, {input, gradO});
+  delete y;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -378,23 +395,29 @@ void pooling3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
   const void* beta =
       gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
-  // cudnn maxpool2d_bp api requires ff output as one of input arguments
+  // cudnn's max-pooling backward compares the input with the forward output to find each window's maximum: the
+  // forward output goes to a packed array of its own (NDArray(NDArray*, bool, context) wrapped gradO's buffer, so the
+  // forward pass wrote over gradO, which the backward pass then read as both the output and its gradient)
+  NDArray *y = nullptr;
   if (mode == CUDNN_POOLING_MAX) {
-    NDArray temp(gradO);
-    NDArray::prepareSpecialUse({gradI}, {input, gradO, &temp});
+    std::vector<LongType> yShape(gradO->shapeOf(), gradO->shapeOf() + gradO->rankOf());
+    y = new NDArray('c', yShape, gradO->dataType(), gradO->getContext());
+    CudnnTensor yDesc;
+    yDesc.setEx(format, cudnnDataType(gradO->dataType()), numDims, dzShape);
+    NDArray::prepareSpecialUse({gradI, y}, {input, gradO});
 
     // run ff calculation
     CHECK_CUDNN_FAILURE_MSG(
         STRINGIZE(cudnnPoolingForward),
-        cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, dz, temp.specialBuffer()));
+        cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, yDesc, y->specialBuffer()));
 
     // run bp calculation for gradI
     CHECK_CUDNN_FAILURE_MSG(
         STRINGIZE(cudnnPoolingBackward),
-        cudnnPoolingBackward(*handle, pooling, alpha, dz, temp.specialBuffer(), dz, gradO->specialBuffer(), x,
+        cudnnPoolingBackward(*handle, pooling, alpha, yDesc, y->specialBuffer(), dz, gradO->specialBuffer(), x,
                              input->specialBuffer(), beta, x, gradI->specialBuffer()));
 
-    NDArray::registerSpecialUse({gradI}, {input, gradO, &temp});
+    NDArray::registerSpecialUse({gradI, y}, {input, gradO});
   } else {
     NDArray::prepareSpecialUse({gradI}, {input, gradO});
     // run bp calculation for gradI
@@ -409,6 +432,7 @@ void pooling3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
     auto cudaErr = cudaStreamSynchronize(stream);
     if (cudaErr != 0) { std::string msg = "pooling3dBpCUDNN: cudaStreamSynchronize failed !; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
+  delete y;
 }
 
 SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END

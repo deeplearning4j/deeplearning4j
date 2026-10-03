@@ -321,34 +321,33 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
   // inversed batch size 1 / N
   const auto Ninv = 1.f * mean->lengthOf() / x->lengthOf();
 
-  // x - mean
-  NDArray xMinusMean(*x);  // empty array with same shape as x
+  // x - mean. The temporaries are arrays of their own: the copy constructor would give views of the inputs
+  // they are shaped like, and the steps below would write into x, mean and variance.
+  NDArray xMinusMean(x->shapeInfo(), false, x->getContext());
   const_cast<NDArray*>(x)->applyBroadcast(sd::broadcast::Subtract, &axes, mean, &xMinusMean);
 
   // stdInv
-  NDArray* stdInvPtr = *variance + epsilon;
-  NDArray stdInv(*stdInvPtr);
-  delete stdInvPtr;
-  stdInv.applyTransform(transform::Reciprocal, &stdInv);  // 1 / (variance + epsilon)
-  stdInv.applyTransform(transform::Sqrt, &stdInv);        // 1 / (variance + epsilon)^0.5
+  NDArray* stdInv = *variance + epsilon;
+  stdInv->applyTransform(transform::Reciprocal, stdInv);  // 1 / (variance + epsilon)
+  stdInv->applyTransform(transform::Sqrt, stdInv);        // 1 / (variance + epsilon)^0.5
 
   // dfdm / N
   NDArray* dfdm = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes);
-  *dfdm *= stdInv;
+  *dfdm *= *stdInv;
   *dfdm *= -Ninv;
 
   // dvdm / 2
-  NDArray dvdm(*mean);  // empty array with same shape as mean
+  NDArray dvdm(mean->shapeInfo(), false, mean->getContext());
   xMinusMean.reduceAlongDimension(sd::reduce::Sum, &dvdm, excludedAxes);
   dvdm *= -Ninv;
 
   // (2/N)*dfdv
-  NDArray dfdv(*variance);  // empty array with same shape as variance
+  NDArray dfdv(variance->shapeInfo(), false, variance->getContext());
   NDArray* temp = xMinusMean * *dLdO;
   temp->reduceAlongDimension(sd::reduce::Sum, &dfdv, excludedAxes);
   delete temp;
-  NDArray* stdInvCubed = stdInv * stdInv;
-  *stdInvCubed *= stdInv;
+  NDArray* stdInvCubed = *stdInv * *stdInv;
+  *stdInvCubed *= *stdInv;
   dfdv *= *stdInvCubed;
   delete stdInvCubed;
   dfdv *= -Ninv;
@@ -366,6 +365,8 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
   *dLdI += xMinusMean;
   delete gamma;
   delete dfdm;
+  delete stdInv;
+  delete excludedAxes;
 }
 
 PLATFORM_IMPL(batchnorm, ENGINE_ONEDNN) {

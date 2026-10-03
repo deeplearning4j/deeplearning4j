@@ -325,7 +325,9 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   auto* sum1 = *xWrx + *hLastWrh;
   auto* rTemp = (*sum1) + (*br);
   delete sum1;
-  NDArray r = *rTemp;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+  // r, u, c, dcdZc and dhdu are moved out of the temporaries, not copied: the copy constructor gives a view of the
+  // buffer each delete frees
+  NDArray r = std::move(*rTemp);  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
   delete rTemp;
   r.applyTransform(transform::Sigmoid, &r);
 
@@ -335,7 +337,7 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   auto* sum2 = *xWux + *hLastWuh;
   auto* uTemp = (*sum2) + (*bu);
   delete sum2;
-  NDArray u = *uTemp;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+  NDArray u = std::move(*uTemp);  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
   delete uTemp;
   delete xWux;
   u.applyTransform(transform::Sigmoid, &u);
@@ -350,7 +352,7 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   delete sum3;
   delete xWcx;
   delete rTimesHLast2Wch;
-  NDArray c = *cTemp;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+  NDArray c = std::move(*cTemp);  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
   delete cTemp;
   c.applyTransform(transform::Tanh, &c);
 
@@ -368,7 +370,7 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   auto* cSquared = c * c;
   auto* oneMinusCSquared = 1.f - (*cSquared);
   delete cSquared;
-  auto dcdZc = *oneMinusCSquared;
+  NDArray dcdZc = std::move(*oneMinusCSquared);
   delete oneMinusCSquared;
   auto* dLdZc = (*dLdc) * dcdZc;
   auto* dLdZu = (*dLdu) * (*dudZu);
@@ -377,7 +379,7 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
   delete drdZr;
 
   NDArray *dhdc = 1.f - u;         // [bS, nU]
-  NDArray dhdu = *hLastMinusC;      // [bS, nU]
+  NDArray dhdu = std::move(*hLastMinusC);  // [bS, nU]
   delete hLastMinusC;
 
   // dLdx = dLdZu × WuxT + dLdZc × WcxT + dLdZr × WrxT

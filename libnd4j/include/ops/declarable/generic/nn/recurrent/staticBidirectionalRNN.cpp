@@ -125,8 +125,9 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
                bS, ShapeUtils::shapeAsString(maxTimeStep).c_str());
 
   // forward steps
-  std::vector<sd::LongType> expectedHshape = {time, bS, numUnitsFW + numUnitsBW};
-  auto hFW = new NDArray(x->ordering(),expectedHshape, x->dataType(), block.launchContext());
+  // the forward outputs alone: concatenated with the backward ones into h below
+  std::vector<sd::LongType> hFWShape = {time, bS, numUnitsFW};
+  auto hFW = new NDArray(x->ordering(), hFWShape, x->dataType(), block.launchContext());
   helpers::rnnTimeLoop(block.launchContext(), x, WxFW, WhFW, bFW, h0FW, maxTimeStep, hFW, hFWFinal);
 
   auto seqLen = maxTimeStep;
@@ -137,7 +138,9 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
   }
 
   // reverse x
-  auto revOut = new NDArray(x, false, block.launchContext());
+  // an array of its own: NDArray(NDArray*, bool, context) wraps the other array's buffer, so the reversal wrote
+  // into the input it was reading
+  auto revOut = new NDArray(x->shapeInfo(), false, block.launchContext());
   helpers::reverseSequence(block.launchContext(), x, seqLen, revOut, 0, 1);
 
   std::vector<sd::LongType> shape = {time, bS, numUnitsBW};
@@ -146,8 +149,9 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
 
   helpers::rnnTimeLoop(block.launchContext(), revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep, hBW, hBWFinal);
 
-  // reverse hBW
-  auto hBWcopy = new NDArray(*hBW);
+  // reverse hBW: from a copy, since the copy constructor would give a view and the reversal would read
+  // elements it had already overwritten
+  auto hBWcopy = hBW->dup();
   helpers::reverseSequence(block.launchContext(), hBWcopy, seqLen, hBW, 0, 1);
 
   // concatenate hFW and hBW along last third dimension

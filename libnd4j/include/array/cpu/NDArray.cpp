@@ -347,11 +347,14 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps)  {
   int rankOld = rankOf();
   int diff = rankOld - repsSize;
   if (product == 1) {  // in this case 2 possibilities are present: just reshape or nothing to do
-    NDArray result(*this);
+    // a copy: the copy constructor would give a view sharing this array's buffer
+    std::vector<sd::LongType> shapeOld(shapeOf(), shapeOf() + rankOld);
+    NDArray result(ordering(), shapeOld, dataType(), getContext());
+    result.assign(this);
     if (diff < 0) {  // reshape to higher dimension
       std::vector<sd::LongType> shapeNew =
           reps;  // there is requirement to have unities at first "diff" positions of new shape
-      memcpy(&shapeNew[-diff], result.shapeInfo() + 1,
+      memcpy(&shapeNew[-diff], shapeOld.data(),
              rankOld * sizeof(sd::LongType));  // put old shape numbers at rest of positions
       result.reshapei(ordering(), shapeNew);
     }

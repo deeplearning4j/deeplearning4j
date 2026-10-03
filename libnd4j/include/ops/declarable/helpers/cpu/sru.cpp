@@ -32,8 +32,10 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 static SD_INLINE NDArray activation(NDArray& arr) {
-  auto result = NDArray(&arr, false, arr.getContext());
-  (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, &result);
+  // an array of its own: NDArray(NDArray*, bool, context) wraps arr's buffer from its start, so tanh(c) of a time
+  // step's view of the cell states was written over the first cell states
+  NDArray result(arr.shapeInfo(), false, arr.getContext());
+  arr.applyTransform(transform::Tanh, &result);
   return result;
 }
 
@@ -123,7 +125,8 @@ void sruTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w
 
   const int time = x->sizeAt(2);
 
-  NDArray ct_1(*c0);
+  // the previous cell state starts as a copy of c0: the loop overwrites it every step
+  NDArray* ct_1 = c0->dup();
 
   // loop through time steps
   for (int t = 0; t < time; ++t) {
@@ -131,14 +134,15 @@ void sruTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w
     NDArray *ht = (*h)({0, 0, 0, 0, t, t + 1});
     NDArray *ct = (*c)({0, 0, 0, 0, t, t + 1});
 
-    helpers::sruCell(context, xt, &ct_1, wT, b, ht, ct);
-    ct_1.assign(ct);
+    helpers::sruCell(context, xt, ct_1, wT, b, ht, ct);
+    ct_1->assign(ct);
 
     delete xt;
     delete ht;
     delete ct;
   }
 
+  delete ct_1;
   delete wT;
 }
 

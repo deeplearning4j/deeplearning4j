@@ -118,8 +118,8 @@ OpArgsHolder OpArgsHolder::createArgsHolderForBP(const std::vector<NDArray*>& in
 
   for (int i = 0; i < _numInArrs; ++i) {
     if (isInPlace) {
-      NDArray &arr2 = *_inArrs[i];
-      result._inArrs[i] = new NDArray(arr2);  // make copy
+      // a copy of its own: the copy constructor gives a view, which the in-place op would write through
+      result._inArrs[i] = _inArrs[i]->dup();
       result._isArrAlloc[i] = true;
     } else
       result._inArrs[i] = _inArrs[i];

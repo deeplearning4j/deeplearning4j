@@ -103,9 +103,13 @@ void rnnTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* Wx, NDArray* W
 
      if (t >= maxStep) {
        *ht = 0.;
-       NDArray *hPrevAssign = (*h)({maxStep - 1, maxStep, e, e + 1, 0, 0});
-       if (maxStep != 0) hPrev->assign(hPrevAssign);
-       delete hPrevAssign;
+       // past the sequence's end the final output stays the last step's (the initial one for an empty sequence,
+       // whose slice h[maxStep - 1] does not exist)
+       if (maxStep != 0) {
+         NDArray *hPrevAssign = (*h)({maxStep - 1, maxStep, e, e + 1, 0, 0});
+         hPrev->assign(hPrevAssign);
+         delete hPrevAssign;
+       }
      } else {
        helpers::rnnCell(context, xt, Wx, Wh, b, hPrev, ht);
        hPrev->assign(ht);
