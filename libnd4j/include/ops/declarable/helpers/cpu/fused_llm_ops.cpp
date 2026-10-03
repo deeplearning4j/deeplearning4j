@@ -29,6 +29,7 @@
 #include <helpers/shape.h>
 #include <execution/Threads.h>
 #include <math/templatemath.h>
+#include <ops/op_types.h>
 #include <system/type_boilerplate.h>
 #include <cmath>
 #include <random>
@@ -133,9 +134,36 @@ void fusedGELUBackward(NDArray* input, NDArray* gradOut, NDArray* gradIn, Launch
 // Fused Layer Norm with Welford's algorithm
 //////////////////////////////////////////////////////////////////////////////
 
+// The layer norm kernels walk dense C-order rows (row r at r * rowLen) and read the gain and bias as dense vectors, all
+// in the input's type, as the CUDA kernels do: any other layout or type goes through a copy. Rows taken at multiples
+// of the second-to-last stride were wrong for every layout whose leading dimensions are not one run (an F-ordered
+// rank-3 array, a permuted view). The strides decide whether a layout is dense row-major (a view's offset is already
+// in bufferAsT()); the order flag does not.
+//
+// `a` as a dense array of the given type: `a` itself when it is one, else a copy the caller deletes.
+static NDArray* denseInType(NDArray* a, DataType dataType) {
+  if (a == nullptr) return nullptr;
+  NDArray* typed = a->dataType() == dataType ? a : a->cast(dataType);
+  if (shape::isDenseRowMajor(typed->shapeInfo())) return typed;
+  NDArray* dense = typed->dup('c');
+  if (typed != a) delete typed;
+  return dense;
+}
+
+// The array a kernel writes in place of `a`: `a` itself when it is dense and of the given type, else a dense
+// temporary the caller assigns to `a` and deletes.
+static NDArray* denseOutputInType(NDArray* a, DataType dataType, LaunchContext* context) {
+  if (a == nullptr || (a->dataType() == dataType && shape::isDenseRowMajor(a->shapeInfo()))) return a;
+  std::vector<LongType> dims(a->shapeOf(), a->shapeOf() + a->rankOf());
+  return new NDArray('c', dims, dataType, context);
+}
+
 template <typename T>
 static void fusedLayerNorm_(NDArray* input, NDArray* gain, NDArray* bias, NDArray* output,
                             float epsilon) {
+  // statistics in the type's aggregate type: float for the 16-bit types, the type itself otherwise (a double row
+  // accumulated in float lost its precision)
+  using Acc = typename simdOps::AggregateType<T>::type;
   const LongType numRows = input->lengthOf() / input->sizeAt(-1);
   const LongType rowLen  = input->sizeAt(-1);
 
@@ -144,54 +172,33 @@ static void fusedLayerNorm_(NDArray* input, NDArray* gain, NDArray* bias, NDArra
   const T* gBuf  = gain->bufferAsT<T>();
   const T* bBuf  = (bias != nullptr) ? bias->bufferAsT<T>() : nullptr;
 
-  // Strides along the innermost (feature) dimension.
-  // For a contiguous [B..., rowLen] tensor the last stride is 1.
-  // For a non-contiguous view we must respect the actual stride.
-  const LongType xRankM1  = input->rankOf()  - 1;
-  const LongType zRankM1  = output->rankOf() - 1;
-  const LongType gRankM1  = gain->rankOf()   - 1;
-  const LongType xS1 = input->strideAt(xRankM1);
-  const LongType zS1 = output->strideAt(zRankM1);
-  const LongType gS1 = gain->strideAt(gRankM1);
-  const LongType bS1 = (bias != nullptr) ? bias->strideAt(bias->rankOf() - 1) : 1;
-
-  // Row stride: how many T elements to advance xBuf/zBuf per row.
-  // For a rank-1 input this equals rowLen*xS1 but we compute it directly from
-  // the second-to-last stride when available (handles arbitrary views).
-  const LongType xRowStride = (input->rankOf()  >= 2) ? input->strideAt(xRankM1 - 1)
-                                                        : rowLen * xS1;
-  const LongType zRowStride = (output->rankOf() >= 2) ? output->strideAt(zRankM1 - 1)
-                                                        : rowLen * zS1;
-
   auto func = PRAGMA_THREADS_FOR {
     for (auto row = start; row < stop; row++) {
-      const T* xRow = xBuf + row * xRowStride;
-      T*       zRow = zBuf + row * zRowStride;
+      const T* xRow = xBuf + row * rowLen;
+      T*       zRow = zBuf + row * rowLen;
 
-      // Welford's online algorithm for mean and variance (accumulate in float)
-      float mean  = 0.0f;
-      float M2    = 0.0f;
-      float count = 0.0f;
+      // Welford's online algorithm for mean and variance
+      Acc mean  = 0;
+      Acc M2    = 0;
+      Acc count = 0;
       for (LongType i = 0; i < rowLen; i++) {
-        const float val = static_cast<float>(xRow[i * xS1]);
-        count += 1.0f;
-        const float delta  = val - mean;
+        const Acc val = static_cast<Acc>(xRow[i]);
+        count += static_cast<Acc>(1);
+        const Acc delta  = val - mean;
         mean  += delta / count;
-        const float delta2 = val - mean;
+        const Acc delta2 = val - mean;
         M2    += delta * delta2;
       }
-      const float variance = M2 / count;
-      const float invStd   = 1.0f / sd::math::sd_sqrt<float, float>(variance + epsilon);
+      const Acc variance = M2 / count;
+      const Acc invStd   = static_cast<Acc>(1) / sd::math::sd_sqrt<Acc, Acc>(variance + static_cast<Acc>(epsilon));
 
       // Normalize, scale and shift
       PRAGMA_OMP_SIMD
       for (LongType i = 0; i < rowLen; i++) {
-        const float val        = static_cast<float>(xRow[i * xS1]);
-        const float normalized = (val - mean) * invStd;
-        const float g          = static_cast<float>(gBuf[i * gS1]);
-        float result = normalized * g;
-        if (bBuf != nullptr) result += static_cast<float>(bBuf[i * bS1]);
-        zRow[i * zS1] = static_cast<T>(result);
+        const Acc normalized = (static_cast<Acc>(xRow[i]) - mean) * invStd;
+        Acc result = normalized * static_cast<Acc>(gBuf[i]);
+        if (bBuf != nullptr) result += static_cast<Acc>(bBuf[i]);
+        zRow[i] = static_cast<T>(result);
       }
     }
   };
@@ -199,31 +206,31 @@ static void fusedLayerNorm_(NDArray* input, NDArray* gain, NDArray* bias, NDArra
   samediff::Threads::parallel_tad(func, 0, numRows);
 }
 
-void fusedLayerNorm(NDArray* input, NDArray* gain, NDArray* bias, NDArray* output,
+void fusedLayerNorm(NDArray* originalInput, NDArray* originalGain, NDArray* originalBias, NDArray* originalOutput,
                     float epsilon, LaunchContext* context) {
-  NDArray::preparePrimaryUse({output}, {input, gain, bias});
+  if (originalInput->lengthOf() == 0) return;
+  const auto dataType = originalInput->dataType();
 
-  // Cast gain/bias to input dtype if needed (CPU: cast rather than dual template)
-  NDArray* gainToUse  = gain;
-  NDArray* biasToUse  = bias;
-  NDArray* gainCast   = nullptr;
-  NDArray* biasCast   = nullptr;
-  if (gain != nullptr && gain->dataType() != input->dataType()) {
-    gainCast  = gain->cast(input->dataType());
-    gainToUse = gainCast;
+  NDArray::preparePrimaryUse({originalOutput}, {originalInput, originalGain, originalBias});
+
+  // The CUDA helper's staging: the kernel gets dense arrays in the input's type (the op takes any float type for
+  // the gain, the bias and the output), and a copy is assigned to an output that is not one.
+  NDArray* input = denseInType(originalInput, dataType);
+  NDArray* gain = denseInType(originalGain, dataType);
+  NDArray* bias = denseInType(originalBias, dataType);
+  NDArray* output = denseOutputInType(originalOutput, dataType, context);
+
+  BUILD_SINGLE_SELECTOR(dataType, fusedLayerNorm_, (input, gain, bias, output, epsilon), SD_FLOAT_TYPES);
+
+  if (output != originalOutput) {
+    originalOutput->assign(output);
+    delete output;
   }
-  if (bias != nullptr && bias->dataType() != input->dataType()) {
-    biasCast  = bias->cast(input->dataType());
-    biasToUse = biasCast;
-  }
+  if (input != originalInput) delete input;
+  if (gain != originalGain) delete gain;
+  if (bias != originalBias) delete bias;
 
-  BUILD_SINGLE_SELECTOR(input->dataType(), fusedLayerNorm_,
-                         (input, gainToUse, biasToUse, output, epsilon), SD_FLOAT_TYPES);
-
-  if (gainCast  != nullptr) delete gainCast;
-  if (biasCast  != nullptr) delete biasCast;
-
-  NDArray::registerPrimaryUse({output}, {input, gain, bias});
+  NDArray::registerPrimaryUse({originalOutput}, {originalInput, originalGain, originalBias});
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -863,13 +870,10 @@ template <typename T>
 static void fusedLayerNormBackward_(NDArray* input, NDArray* gain, NDArray* gradOut,
                                     NDArray* gradInput, NDArray* gradGain, NDArray* gradBias,
                                     float epsilon) {
+  // in the type's aggregate type, as the forward pass
+  using Acc = typename simdOps::AggregateType<T>::type;
   const LongType numRows = input->lengthOf() / input->sizeAt(-1);
   const LongType rowLen  = input->sizeAt(-1);
-
-  // Zero out gradient accumulators
-  double zero = 0.0;
-  gradGain->assign(zero);
-  if (gradBias != nullptr) gradBias->assign(zero);
 
   const T* xBuf  = input->bufferAsT<T>();
   const T* gBuf  = gain->bufferAsT<T>();
@@ -878,137 +882,112 @@ static void fusedLayerNormBackward_(NDArray* input, NDArray* gain, NDArray* grad
   T*       dgBuf = gradGain->bufferAsT<T>();
   T*       dbBuf = (gradBias != nullptr) ? gradBias->bufferAsT<T>() : nullptr;
 
-  // All tensors are assumed contiguous C-order (last stride = 1).
-  // strideAt(-1) would require rank checking; simpler to rely on the last dim stride.
-  const LongType xS  = input->strideAt(input->rankOf()   - 1);
-  const LongType doS = gradOut->strideAt(gradOut->rankOf() - 1);
-  const LongType diS = gradInput->strideAt(gradInput->rankOf() - 1);
-  const LongType gS  = gain->strideAt(gain->rankOf()     - 1);
-  const LongType dgS = gradGain->strideAt(gradGain->rankOf() - 1);
-  const LongType dbS = (gradBias != nullptr) ? gradBias->strideAt(gradBias->rankOf() - 1) : 1;
+  // every operand is dense, in the input's type (fusedLayerNormBackward stages any other layout or type): the rows
+  // of input, gradOut and gradInput are numRows runs of rowLen elements, and gain and the gradients of the gain and
+  // the bias are rowLen elements
 
-  // Row strides
-  const LongType xRowS  = (input->rankOf()    >= 2) ? input->strideAt(input->rankOf()    - 2) : rowLen * xS;
-  const LongType doRowS = (gradOut->rankOf()   >= 2) ? gradOut->strideAt(gradOut->rankOf()  - 2) : rowLen * doS;
-  const LongType diRowS = (gradInput->rankOf() >= 2) ? gradInput->strideAt(gradInput->rankOf() - 2) : rowLen * diS;
+  // each row's mean and 1 / std, for the column pass
+  std::vector<Acc> rowMean(static_cast<size_t>(numRows));
+  std::vector<Acc> rowInvStd(static_cast<size_t>(numRows));
 
-  // NOTE: gradGain and gradBias accumulate across rows — they must be updated atomically
-  // or with per-thread buffers merged at the end. Since numRows can be large, we use a
-  // simple serial accumulation with a parallel row loop for the input gradient, then
-  // do a separate parallel reduction for gain/bias gradients. This matches what the
-  // reference PyTorch backward does (sum over batch+seq dims).
-
-  // Allocate per-row temp buffers for gain/bias gradient accumulation to avoid
-  // atomic contention. We store [numRows, rowLen] for gain and (optionally) bias.
-  // This is safe because rowLen is typically small (e.g. 4096).
-  std::vector<float> dgAcc(static_cast<size_t>(numRows * rowLen), 0.0f);
-  std::vector<float> dbAcc;
-  if (gradBias != nullptr) dbAcc.resize(static_cast<size_t>(numRows * rowLen), 0.0f);
-
-  auto func = PRAGMA_THREADS_FOR {
+  // rows: the statistics, then dx = invStd * (dnorm - mean(dnorm) - xhat * mean(dnorm * xhat)), dnorm = dy * gain
+  auto rowsFunc = PRAGMA_THREADS_FOR {
     for (auto row = start; row < stop; row++) {
-      const T* xRow  = xBuf  + row * xRowS;
-      const T* doRow = doBuf + row * doRowS;
-      T*       diRow = diBuf + row * diRowS;
+      const T* xRow  = xBuf  + row * rowLen;
+      const T* doRow = doBuf + row * rowLen;
+      T*       diRow = diBuf + row * rowLen;
 
-      // Welford mean/variance recomputation (float for numerical stability)
-      float mean  = 0.0f;
-      float M2    = 0.0f;
-      float count = 0.0f;
+      Acc mean  = 0;
+      Acc M2    = 0;
+      Acc count = 0;
       for (LongType i = 0; i < rowLen; i++) {
-        const float val = static_cast<float>(xRow[i * xS]);
-        count += 1.0f;
-        const float delta  = val - mean;
+        const Acc val = static_cast<Acc>(xRow[i]);
+        count += static_cast<Acc>(1);
+        const Acc delta  = val - mean;
         mean  += delta / count;
         M2    += delta * (val - mean);
       }
-      const float variance = M2 / count;
-      const float invStd   = 1.0f / sd::math::sd_sqrt<float, float>(variance + epsilon);
+      const Acc invStd = static_cast<Acc>(1) / sd::math::sd_sqrt<Acc, Acc>(M2 / count + static_cast<Acc>(epsilon));
+      rowMean[static_cast<size_t>(row)] = mean;
+      rowInvStd[static_cast<size_t>(row)] = invStd;
 
-      // Accumulate dvar and dmean, and fill per-row gain/bias grad accumulators
-      float dvar  = 0.0f;
-      float dmean = 0.0f;
+      Acc sumDnorm = 0;
+      Acc sumDnormXhat = 0;
       for (LongType i = 0; i < rowLen; i++) {
-        const float val        = static_cast<float>(xRow[i * xS]);
-        const float normalized = (val - mean) * invStd;
-        const float dout       = static_cast<float>(doRow[i * doS]);
-        const float g          = static_cast<float>(gBuf[i * gS]);
-
-        // Per-element gain gradient (accumulate over rows later)
-        dgAcc[static_cast<size_t>(row * rowLen + i)] = dout * normalized;
-        if (gradBias != nullptr) {
-          dbAcc[static_cast<size_t>(row * rowLen + i)] = dout;
-        }
-
-        const float dnorm = dout * g;
-        dvar  += dnorm * (val - mean) * (-0.5f) * invStd * invStd * invStd;
-        dmean += dnorm * (-invStd);
+        const Acc xhat  = (static_cast<Acc>(xRow[i]) - mean) * invStd;
+        const Acc dnorm = static_cast<Acc>(doRow[i]) * static_cast<Acc>(gBuf[i]);
+        sumDnorm     += dnorm;
+        sumDnormXhat += dnorm * xhat;
       }
-      // mean(x - mean) == 0, so the dvar contribution to dmean vanishes
-      // dmean += dvar * (-2.0f / count) * 0.0f;  // omitted — always zero
 
-      // Compute input gradient
       PRAGMA_OMP_SIMD
       for (LongType i = 0; i < rowLen; i++) {
-        const float val   = static_cast<float>(xRow[i * xS]);
-        const float dout  = static_cast<float>(doRow[i * doS]);
-        const float g     = static_cast<float>(gBuf[i * gS]);
-        const float dnorm = dout * g;
-        const float dx    = dnorm * invStd
-                           + dvar * 2.0f * (val - mean) / count
-                           + dmean / count;
-        diRow[i * diS] = static_cast<T>(dx);
+        const Acc xhat  = (static_cast<Acc>(xRow[i]) - mean) * invStd;
+        const Acc dnorm = static_cast<Acc>(doRow[i]) * static_cast<Acc>(gBuf[i]);
+        diRow[i] = static_cast<T>(invStd * (dnorm - sumDnorm / count - xhat * sumDnormXhat / count));
       }
     }
   };
-  samediff::Threads::parallel_tad(func, 0, numRows);
+  samediff::Threads::parallel_tad(rowsFunc, 0, numRows);
 
-  // Reduce gain/bias gradients across rows: dgBuf[i] = sum_row dgAcc[row*rowLen + i]
-  auto gainReduceFunc = PRAGMA_THREADS_FOR {
+  // columns: the gain and bias gradients sum dy * xhat and dy over the rows, in row order
+  auto columnsFunc = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
-      float acc = 0.0f;
+      Acc gainSum = 0;
+      Acc biasSum = 0;
       for (LongType row = 0; row < numRows; row++) {
-        acc += dgAcc[static_cast<size_t>(row * rowLen + i)];
+        const Acc dout = static_cast<Acc>(doBuf[row * rowLen + i]);
+        gainSum += dout * (static_cast<Acc>(xBuf[row * rowLen + i]) - rowMean[static_cast<size_t>(row)]) *
+                   rowInvStd[static_cast<size_t>(row)];
+        biasSum += dout;
       }
-      dgBuf[i * dgS] = static_cast<T>(acc);
+      dgBuf[i] = static_cast<T>(gainSum);
+      if (dbBuf != nullptr) dbBuf[i] = static_cast<T>(biasSum);
     }
   };
-  samediff::Threads::parallel_for(gainReduceFunc, 0, rowLen);
-
-  if (gradBias != nullptr) {
-    auto biasReduceFunc = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        float acc = 0.0f;
-        for (LongType row = 0; row < numRows; row++) {
-          acc += dbAcc[static_cast<size_t>(row * rowLen + i)];
-        }
-        dbBuf[i * dbS] = static_cast<T>(acc);
-      }
-    };
-    samediff::Threads::parallel_for(biasReduceFunc, 0, rowLen);
-  }
+  samediff::Threads::parallel_for(columnsFunc, 0, rowLen);
 }
 
-void fusedLayerNormBackward(NDArray* input, NDArray* gain, NDArray* gradOut,
-                             NDArray* gradInput, NDArray* gradGain, NDArray* gradBias,
+void fusedLayerNormBackward(NDArray* originalInput, NDArray* originalGain, NDArray* originalGradOut,
+                             NDArray* originalGradInput, NDArray* originalGradGain, NDArray* originalGradBias,
                              float epsilon, LaunchContext* context) {
-  NDArray::preparePrimaryUse({gradInput, gradGain, gradBias}, {input, gain, gradOut});
+  if (originalInput->lengthOf() == 0) return;
+  const auto dataType = originalInput->dataType();
 
-  // Cast gain to input dtype if needed
-  NDArray* gainToUse = gain;
-  NDArray* gainCast  = nullptr;
-  if (gain != nullptr && gain->dataType() != input->dataType()) {
-    gainCast  = gain->cast(input->dataType());
-    gainToUse = gainCast;
-  }
+  NDArray::preparePrimaryUse({originalGradInput, originalGradGain, originalGradBias},
+                             {originalInput, originalGain, originalGradOut});
 
-  BUILD_SINGLE_SELECTOR(input->dataType(), fusedLayerNormBackward_,
-                         (input, gainToUse, gradOut, gradInput, gradGain, gradBias, epsilon),
+  // The CUDA helper's staging: the kernel gets dense arrays in the input's type, and a copy is assigned to each
+  // gradient that is not one (the gain and bias gradients keep their parameters' types).
+  NDArray* input = denseInType(originalInput, dataType);
+  NDArray* gain = denseInType(originalGain, dataType);
+  NDArray* gradOut = denseInType(originalGradOut, dataType);
+  NDArray* gradInput = denseOutputInType(originalGradInput, dataType, context);
+  NDArray* gradGain = denseOutputInType(originalGradGain, dataType, context);
+  NDArray* gradBias = denseOutputInType(originalGradBias, dataType, context);
+
+  BUILD_SINGLE_SELECTOR(dataType, fusedLayerNormBackward_,
+                         (input, gain, gradOut, gradInput, gradGain, gradBias, epsilon),
                          SD_FLOAT_TYPES);
 
-  if (gainCast != nullptr) delete gainCast;
+  if (gradInput != originalGradInput) {
+    originalGradInput->assign(gradInput);
+    delete gradInput;
+  }
+  if (gradGain != originalGradGain) {
+    originalGradGain->assign(gradGain);
+    delete gradGain;
+  }
+  if (gradBias != originalGradBias) {
+    originalGradBias->assign(gradBias);
+    delete gradBias;
+  }
+  if (gain != originalGain) delete gain;
+  if (gradOut != originalGradOut) delete gradOut;
+  if (input != originalInput) delete input;
 
-  NDArray::registerPrimaryUse({gradInput, gradGain, gradBias}, {input, gain, gradOut});
+  NDArray::registerPrimaryUse({originalGradInput, originalGradGain, originalGradBias},
+                              {originalInput, originalGain, originalGradOut});
 }
 
 //////////////////////////////////////////////////////////////////////////////

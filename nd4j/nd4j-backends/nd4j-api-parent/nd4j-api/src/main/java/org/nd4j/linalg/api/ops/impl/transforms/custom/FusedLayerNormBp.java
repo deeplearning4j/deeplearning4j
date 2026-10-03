@@ -75,13 +75,17 @@ public class FusedLayerNormBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
-        DataType dt = inputDataTypes.get(0);
-        // Output: gradInput, gradGain (same shapes as input, gain)
-        return Arrays.asList(dt, dt);
+        // gradInput, gradGain and, with a bias (input 3), gradBias: each in its input's type, as the native shape
+        // function gives them
+        if (inputDataTypes.size() > 3) {
+            return Arrays.asList(inputDataTypes.get(0), inputDataTypes.get(1), inputDataTypes.get(3));
+        }
+        return Arrays.asList(inputDataTypes.get(0), inputDataTypes.get(1));
     }
 
     @Override
     public int getNumOutputs() {
-        return 2;
+        // inputs: input, gain, gradOut and an optional bias, whose gradient is the third output
+        return args().length == 4 ? 3 : 2;
     }
 }

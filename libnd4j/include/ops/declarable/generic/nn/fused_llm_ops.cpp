@@ -77,6 +77,18 @@ DECLARE_TYPES(fused_gelu_bp) {
 // fused_layer_norm - Fused layer normalization with Welford's algorithm
 //////////////////////////////////////////////////////////////////////////
 #if NOT_EXCLUDED(OP_fused_layer_norm)
+
+// The shape of an output that is a fresh array shaped like `source`: its type, shape and order on dense strides.
+// The source's own strides, flags and view offset say where its elements sit in some other buffer, while the output
+// gets a buffer of its own holding exactly length() elements: the cached shape of the source itself gave the output of
+// a stepped view (every second column of a wider array) strides that address several times that, and the helpers'
+// copy back into it ran past the end of the buffer.
+static LongType* denseShapeLike(const LongType* source) {
+    return ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(source), shape::order(source), shape::rank(source), shape::shapeOf(source),
+        shape::isEmptyConst(source) ? ARRAY_EMPTY : 0);
+}
+
 CUSTOM_OP_IMPL(fused_layer_norm, 2, 1, false, 0, 0) {
     auto input = INPUT_VARIABLE(0);
     auto gain = INPUT_VARIABLE(1);
@@ -85,14 +97,25 @@ CUSTOM_OP_IMPL(fused_layer_norm, 2, 1, false, 0, 0) {
 
     float epsilon = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
 
+    // The kernels normalize rows of the last dimension's length, read a gain and a bias of that length and write one
+    // output element per input element: any other size reads or writes out of bounds.
+    REQUIRE_TRUE(input->rankOf() >= 1, 0, "fused_layer_norm: input must have rank >= 1, got rank %i",
+                 input->rankOf());
+    const LongType rowLen = input->sizeAt(-1);
+    REQUIRE_TRUE(gain->lengthOf() == rowLen, 0,
+                 "fused_layer_norm: gain length %lld must equal the last input dimension %lld", gain->lengthOf(),
+                 rowLen);
+    REQUIRE_TRUE(bias == nullptr || bias->lengthOf() == rowLen, 0,
+                 "fused_layer_norm: bias length must equal the last input dimension %lld", rowLen);
+    REQUIRE_TRUE(output->isSameShape(input), 0, "fused_layer_norm: output must have the input's shape");
+
     helpers::fusedLayerNorm(input, gain, bias, output, epsilon, block.launchContext());
 
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(fused_layer_norm) {
-    auto inShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+    return SHAPELIST(denseShapeLike(inputShape->at(0)));
 }
 
 DECLARE_TYPES(fused_layer_norm) {
@@ -113,6 +136,21 @@ CUSTOM_OP_IMPL(fused_layer_norm_bp, 3, 2, false, 0, 0) {
 
     float epsilon = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
 
+    // As in the forward pass: the kernels read and write rows of the last dimension's length and vectors of that
+    // length, so any other size reads or writes out of bounds.
+    REQUIRE_TRUE(input->rankOf() >= 1, 0, "fused_layer_norm_bp: input must have rank >= 1, got rank %i",
+                 input->rankOf());
+    const LongType rowLen = input->sizeAt(-1);
+    REQUIRE_TRUE(gain->lengthOf() == rowLen, 0,
+                 "fused_layer_norm_bp: gain length %lld must equal the last input dimension %lld", gain->lengthOf(),
+                 rowLen);
+    REQUIRE_TRUE(gradOut->isSameShape(input), 0, "fused_layer_norm_bp: gradient must have the input's shape");
+    REQUIRE_TRUE(gradInput->isSameShape(input), 0, "fused_layer_norm_bp: input gradient must have the input's shape");
+    REQUIRE_TRUE(gradGain->lengthOf() == rowLen, 0,
+                 "fused_layer_norm_bp: gain gradient length must equal the last input dimension %lld", rowLen);
+    REQUIRE_TRUE(gradBias == nullptr || gradBias->lengthOf() == rowLen, 0,
+                 "fused_layer_norm_bp: bias gradient length must equal the last input dimension %lld", rowLen);
+
     helpers::fusedLayerNormBackward(input, gain, gradOut, gradInput, gradGain, gradBias,
                                      epsilon, block.launchContext());
 
@@ -120,12 +158,11 @@ CUSTOM_OP_IMPL(fused_layer_norm_bp, 3, 2, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(fused_layer_norm_bp) {
-    auto inShape = inputShape->at(0);
-    auto gainShape = inputShape->at(1);
-
-    return SHAPELIST(
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary(),
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(gainShape)->primary());
+    // dx, dgain and, with a bias (input 3), dbias: each a dense array shaped like the input it is the gradient of
+    // (the type and shape of the gain and the bias are theirs, whatever the input's type)
+    auto shapes = SHAPELIST(denseShapeLike(inputShape->at(0)), denseShapeLike(inputShape->at(1)));
+    if (inputShape->size() > 3) shapes->push_back(denseShapeLike(inputShape->at(3)));
+    return shapes;
 }
 
 DECLARE_TYPES(fused_layer_norm_bp) {

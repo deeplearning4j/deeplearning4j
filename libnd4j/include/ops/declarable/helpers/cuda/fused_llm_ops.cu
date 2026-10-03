@@ -27,6 +27,8 @@
 #include <curand_kernel.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/MmulHelper.h>
+#include <helpers/PointersManager.h>
+#include <ops/op_types.h>
 #include <array/NDArray.h>
 #include <execution/cuda/LaunchDims.h>
 #include <types/float16.h>
@@ -39,11 +41,9 @@ namespace helpers {
 
 constexpr int WARP_SIZE = 32;
 
-// Accumulator type: use double when T=double for full precision, float otherwise.
-template <typename T>
-struct AccType { using type = float; };
-template <>
-struct AccType<double> { using type = double; };
+// Every kernel here accumulates in the framework's aggregate type (simdOps::AggregateType, ops/op_types.h): float for
+// HALF and BFLOAT16, the type itself for FLOAT and DOUBLE. The kernels take SD_FLOAT_TYPES only, where this is the
+// policy of the file-local accumulator type it replaced (float for everything but double).
 
 //////////////////////////////////////////////////////////////////////////////
 // Utility device functions
@@ -53,7 +53,7 @@ struct AccType<double> { using type = double; };
 //  uses sd::device::blockReduceSum from device_primitives.cuh.)
 
 // (Dead fastSigmoid/silu inline helpers removed — they duplicated sd::math::sd_sigmoid
-//  and were unused after the GELU/activation paths were converted to AccType.)
+//  and were unused after the GELU/activation paths were converted to simdOps::AggregateType.)
 
 //////////////////////////////////////////////////////////////////////////////
 // Fused GELU Kernel - x * sigmoid(1.702 * x)
@@ -65,7 +65,7 @@ static SD_KERNEL __launch_bounds__(256, 2) void fusedGELUKernel(
     T* __restrict__ output,
     const LongType totalElements) {
 
-  using AccT = typename AccType<T>::type;
+  using AccT = typename simdOps::AggregateType<T>::type;
 
   const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= totalElements) return;
@@ -86,7 +86,7 @@ static SD_KERNEL __launch_bounds__(256, 2) void fusedGELUBackwardKernel(
     T* __restrict__ gradIn,
     const LongType totalElements) {
 
-  using AccT = typename AccType<T>::type;
+  using AccT = typename simdOps::AggregateType<T>::type;
 
   const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= totalElements) return;
@@ -116,7 +116,7 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedLayerNormKernel(
     const LongType rowLen,
     const float epsilon) {
 
-  using AccT = typename AccType<T>::type;
+  using AccT = typename simdOps::AggregateType<T>::type;
 
   const LongType row = blockIdx.x;
   if (row >= numRows) return;
@@ -228,7 +228,7 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedRoPEKernel(
   const LongType s = rem % seqLen;
   const LongType b = rem / seqLen;
 
-  using AccT = typename AccType<T>::type;
+  using AccT = typename simdOps::AggregateType<T>::type;
 
   // Read position from device pointer — capture-safe (no host sync).
   const LongType pos = static_cast<LongType>(positionPtr[0]) + s;
@@ -287,7 +287,7 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedRoPEBackwardKernel(
   const LongType s = rem % seqLen;
   const LongType b = rem / seqLen;
 
-  using AccT = typename AccType<T>::type;
+  using AccT = typename simdOps::AggregateType<T>::type;
 
   const LongType pos = positionOffset + s;
 
@@ -342,7 +342,7 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedRoPECachedKernel(
   const LongType totalPairs = batch * seqLen * numHeads * halfDim;
   if (idx >= totalPairs) return;
 
-  using AccT = typename AccType<T>::type;
+  using AccT = typename simdOps::AggregateType<T>::type;
 
   const LongType pairIdx = idx % halfDim;
   LongType rem = idx / halfDim;
@@ -467,21 +467,166 @@ void launchFusedLayerNorm(
     float epsilon,
     cudaStream_t stream) {
 
-  int threadsPerBlock = 256;
-  if (rowLen > 256) threadsPerBlock = 512;
-  if (rowLen > 512) threadsPerBlock = 1024;
-
-  if (rowLen < threadsPerBlock) {
-    threadsPerBlock = ((rowLen + WARP_SIZE - 1) / WARP_SIZE) * WARP_SIZE;
-    if (threadsPerBlock < WARP_SIZE) threadsPerBlock = WARP_SIZE;
-  }
+  // a power of two (the Welford merge halves the block) of at most 256 threads (the kernel's __launch_bounds__: a
+  // longer row is strided): 512 or 1024 threads failed to launch, and a multiple of 32 such as 96 or 224 dropped
+  // partial statistics in the merge
+  int threadsPerBlock = WARP_SIZE;
+  while (threadsPerBlock < 256 && threadsPerBlock < rowLen) threadsPerBlock *= 2;
 
   // 3 arrays of AccT per thread (mean, M2, count for Welford)
-  size_t sharedMemSize = 3 * threadsPerBlock * sizeof(typename AccType<T>::type);
+  size_t sharedMemSize = 3 * threadsPerBlock * sizeof(typename simdOps::AggregateType<T>::type);
 
   fusedLayerNormKernel<T><<<numRows, threadsPerBlock, sharedMemSize, stream>>>(
       input, gain, bias, output, numRows, rowLen, epsilon);
-  DebugHelper::checkGlobalErrorCode("fusedLayerNormKernel failed");
+  if (!DebugHelper::inGraphCapture(&stream)) {
+    DebugHelper::checkGlobalErrorCode("fusedLayerNormKernel failed");
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Fused Layer Norm backward: one block per row for the input gradient, one thread per column for the gain and bias
+// gradients
+//////////////////////////////////////////////////////////////////////////////
+
+// Each block takes rows blockIdx.x, blockIdx.x + gridDim.x, ...: the row's Welford statistics (merged as the forward
+// kernel merges them), then sums of dnorm and dnorm * xhat (dnorm = dy * gain, xhat the normalized input), then
+// dx = invStd * (dnorm - mean(dnorm) - xhat * mean(dnorm * xhat)). The row's mean and 1 / std go to stats for the
+// column kernel. blockDim.x is a power of two (the merges halve the block).
+template <typename T>
+SD_KERNEL __launch_bounds__(256, 2) void fusedLayerNormBackwardRowsKernel(
+    const T* input, const T* gain, const T* gradOut, T* gradInput, typename simdOps::AggregateType<T>::type* stats,
+    const LongType numRows, const LongType rowLen, const float epsilon) {
+  using AccT = typename simdOps::AggregateType<T>::type;
+
+  extern __shared__ char sharedMem[];
+  AccT* sFirst = reinterpret_cast<AccT*>(sharedMem);
+  AccT* sSecond = sFirst + blockDim.x;
+  AccT* sCount = sFirst + 2 * blockDim.x;
+  __shared__ AccT rowMean;
+  __shared__ AccT rowInvStd;
+  __shared__ AccT rowSumDnorm;
+  __shared__ AccT rowSumDnormXhat;
+
+  for (LongType row = blockIdx.x; row < numRows; row += gridDim.x) {
+    const T* x = input + row * rowLen;
+    const T* dy = gradOut + row * rowLen;
+    T* dx = gradInput + row * rowLen;
+
+    AccT mean = static_cast<AccT>(0);
+    AccT m2 = static_cast<AccT>(0);
+    AccT count = static_cast<AccT>(0);
+    for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+      const AccT value = static_cast<AccT>(x[i]);
+      count += static_cast<AccT>(1);
+      const AccT delta = value - mean;
+      mean += delta / count;
+      m2 += delta * (value - mean);
+    }
+    sFirst[threadIdx.x] = mean;
+    sSecond[threadIdx.x] = m2;
+    sCount[threadIdx.x] = count;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+      if (threadIdx.x < s) {
+        const AccT na = sCount[threadIdx.x];
+        const AccT nb = sCount[threadIdx.x + s];
+        const AccT nab = na + nb;
+        if (nab > static_cast<AccT>(0)) {
+          const AccT delta = sFirst[threadIdx.x + s] - sFirst[threadIdx.x];
+          sFirst[threadIdx.x] = (na * sFirst[threadIdx.x] + nb * sFirst[threadIdx.x + s]) / nab;
+          sSecond[threadIdx.x] = sSecond[threadIdx.x] + sSecond[threadIdx.x + s] + delta * delta * na * nb / nab;
+          sCount[threadIdx.x] = nab;
+        }
+      }
+      __syncthreads();
+    }
+    if (threadIdx.x == 0) {
+      rowMean = sFirst[0];
+      rowInvStd = static_cast<AccT>(1) /
+                  sd::math::sd_sqrt<AccT, AccT>(sSecond[0] / sCount[0] + static_cast<AccT>(epsilon));
+      stats[2 * row] = rowMean;
+      stats[2 * row + 1] = rowInvStd;
+    }
+    __syncthreads();
+
+    AccT sumDnorm = static_cast<AccT>(0);
+    AccT sumDnormXhat = static_cast<AccT>(0);
+    for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+      const AccT xhat = (static_cast<AccT>(x[i]) - rowMean) * rowInvStd;
+      const AccT dnorm = static_cast<AccT>(dy[i]) * static_cast<AccT>(gain[i]);
+      sumDnorm += dnorm;
+      sumDnormXhat += dnorm * xhat;
+    }
+    sFirst[threadIdx.x] = sumDnorm;
+    sSecond[threadIdx.x] = sumDnormXhat;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+      if (threadIdx.x < s) {
+        sFirst[threadIdx.x] += sFirst[threadIdx.x + s];
+        sSecond[threadIdx.x] += sSecond[threadIdx.x + s];
+      }
+      __syncthreads();
+    }
+    if (threadIdx.x == 0) {
+      rowSumDnorm = sFirst[0];
+      rowSumDnormXhat = sSecond[0];
+    }
+    __syncthreads();
+
+    const AccT n = static_cast<AccT>(rowLen);
+    for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+      const AccT xhat = (static_cast<AccT>(x[i]) - rowMean) * rowInvStd;
+      const AccT dnorm = static_cast<AccT>(dy[i]) * static_cast<AccT>(gain[i]);
+      dx[i] = static_cast<T>(rowInvStd * (dnorm - rowSumDnorm / n - xhat * rowSumDnormXhat / n));
+    }
+    // the shared row values and partials belong to the block's next row from here
+    __syncthreads();
+  }
+}
+
+// One thread per column: the gain gradient sums dy * xhat and the bias gradient dy over the rows, in row order (no
+// atomics: the order, and so the result, is fixed).
+template <typename T>
+SD_KERNEL void fusedLayerNormBackwardColumnsKernel(
+    const T* input, const T* gradOut, const typename simdOps::AggregateType<T>::type* stats, T* gradGain, T* gradBias,
+    const LongType numRows, const LongType rowLen) {
+  using AccT = typename simdOps::AggregateType<T>::type;
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < rowLen;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    AccT gainSum = static_cast<AccT>(0);
+    AccT biasSum = static_cast<AccT>(0);
+    for (LongType row = 0; row < numRows; row++) {
+      const AccT dy = static_cast<AccT>(gradOut[row * rowLen + i]);
+      gainSum += dy * (static_cast<AccT>(input[row * rowLen + i]) - stats[2 * row]) * stats[2 * row + 1];
+      biasSum += dy;
+    }
+    gradGain[i] = static_cast<T>(gainSum);
+    if (gradBias != nullptr) gradBias[i] = static_cast<T>(biasSum);
+  }
+}
+
+template <typename T>
+void launchFusedLayerNormBackward(const T* input, const T* gain, const T* gradOut, T* gradInput, T* gradGain,
+                                  T* gradBias, typename simdOps::AggregateType<T>::type* stats, LongType numRows,
+                                  LongType rowLen, float epsilon, cudaStream_t* stream) {
+  using AccT = typename simdOps::AggregateType<T>::type;
+  // the forward kernel's block: a power of two of at most 256 threads (__launch_bounds__)
+  int threadsPerBlock = WARP_SIZE;
+  while (threadsPerBlock < 256 && threadsPerBlock < rowLen) threadsPerBlock *= 2;
+  const size_t sharedMemSize = 3 * threadsPerBlock * sizeof(AccT);
+  fusedLayerNormBackwardRowsKernel<T><<<numRows, threadsPerBlock, sharedMemSize, *stream>>>(
+      input, gain, gradOut, gradInput, stats, numRows, rowLen, epsilon);
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode("fusedLayerNormBackwardRowsKernel failed");
+  }
+
+  const int columnThreads = 256;
+  const LongType columnBlocks = (rowLen + columnThreads - 1) / columnThreads;
+  fusedLayerNormBackwardColumnsKernel<T><<<columnBlocks, columnThreads, 0, *stream>>>(
+      input, gradOut, stats, gradGain, gradBias, numRows, rowLen);
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode("fusedLayerNormBackwardColumnsKernel failed");
+  }
 }
 
 template <typename T, typename P>
@@ -682,42 +827,59 @@ void fusedGELUBackward(NDArray* input, NDArray* gradOut, NDArray* gradIn, Launch
   NDArray::registerSpecialUse({gradIn}, {input, gradOut});
 }
 
-void fusedLayerNorm(NDArray* input, NDArray* gain, NDArray* bias, NDArray* output,
-                    float epsilon, LaunchContext* context) {
-  const int rank = input->rankOf();
-  const LongType numRows = input->lengthOf() / input->sizeAt(-1);
+template <typename T>
+static void fusedLayerNorm_(NDArray* input, NDArray* gain, NDArray* bias, NDArray* output, float epsilon,
+                            LaunchContext* context) {
   const LongType rowLen = input->sizeAt(-1);
+  const LongType numRows = input->lengthOf() / rowLen;
+  launchFusedLayerNorm<T>(reinterpret_cast<const T*>(input->specialBuffer()),
+                          reinterpret_cast<const T*>(gain->specialBuffer()),
+                          bias != nullptr ? reinterpret_cast<const T*>(bias->specialBuffer()) : nullptr,
+                          reinterpret_cast<T*>(output->specialBuffer()), numRows, rowLen, epsilon,
+                          *context->getCudaStream());
+}
+
+void fusedLayerNorm(NDArray* originalInput, NDArray* originalGain, NDArray* originalBias, NDArray* originalOutput,
+                    float epsilon, LaunchContext* context) {
+  if (originalInput->lengthOf() == 0) return;
+  const auto dataType = originalInput->dataType();
+
+  // The kernel reads and writes dense C-order rows and vectors in the input's type: another layout (an F-ordered or
+  // permuted array, a stepped view), or a gain or bias of another type (the op takes any float type for each), goes
+  // through a copy. The strides decide whether a layout is dense row-major (a view's offset is already in the
+  // buffer); the order flag and the element-wise stride do not.
+  auto readable = [&](NDArray* a) -> NDArray* {
+    if (a == nullptr) return nullptr;
+    NDArray* typed = a->dataType() == dataType ? a : a->cast(dataType);
+    if (shape::isDenseRowMajor(typed->shapeInfo())) return typed;
+    NDArray* dense = typed->dup('c');
+    if (typed != a) delete typed;
+    return dense;
+  };
+  NDArray* input = readable(originalInput);
+  NDArray* gain = readable(originalGain);
+  NDArray* bias = readable(originalBias);
+  // An output that is not dense, or not in the input's type, is written dense and assigned to the caller's array.
+  std::vector<LongType> outputShape(originalOutput->shapeOf(), originalOutput->shapeOf() + originalOutput->rankOf());
+  NDArray* output = originalOutput->dataType() == dataType && shape::isDenseRowMajor(originalOutput->shapeInfo())
+                        ? originalOutput
+                        : new NDArray('c', outputShape, dataType, context);
 
   NDArray::prepareSpecialUse({output}, {input, gain, bias});
-  auto stream = context->getCudaStream();
-  auto dtype = input->dataType();
-
-  if (dtype == DataType::FLOAT32) {
-    launchFusedLayerNorm<float>(
-        reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<const float*>(gain->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const float*>(bias->specialBuffer()) : nullptr,
-        reinterpret_cast<float*>(output->specialBuffer()),
-        numRows, rowLen, epsilon, *stream);
-  } else if (dtype == DataType::DOUBLE) {
-    launchFusedLayerNorm<double>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<const double*>(gain->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const double*>(bias->specialBuffer()) : nullptr,
-        reinterpret_cast<double*>(output->specialBuffer()),
-        numRows, rowLen, epsilon, *stream);
-  } else if (dtype == DataType::HALF) {
-    launchFusedLayerNorm<float16>(
-        reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<const float16*>(gain->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
-        reinterpret_cast<float16*>(output->specialBuffer()),
-        numRows, rowLen, epsilon, *stream);
-  } else {
-    THROW_EXCEPTION("fusedLayerNorm: Unsupported data type");
-  }
-
+  BUILD_SINGLE_SELECTOR(dataType, fusedLayerNorm_, (input, gain, bias, output, epsilon, context), SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({output}, {input, gain, bias});
+
+  if (output != originalOutput) originalOutput->assign(output);
+  const bool staged =
+      input != originalInput || gain != originalGain || bias != originalBias || output != originalOutput;
+  if (staged) {
+    // the copies go once the stream is past the kernel and the copy back
+    PointersManager(context, "fusedLayerNorm").synchronize();
+    if (input != originalInput) delete input;
+    if (gain != originalGain) delete gain;
+    if (bias != originalBias) delete bias;
+    if (output != originalOutput) delete output;
+  }
 }
 
 template <typename T, typename P>
@@ -957,7 +1119,7 @@ static SD_KERNEL __launch_bounds__(512, 1) void rmsNormGammaKernel(
     const LongType rowLen,
     const float epsilon) {
 
-  using AccT = typename AccType<T>::type;
+  using AccT = typename simdOps::AggregateType<T>::type;
 
   const LongType row = blockIdx.x;
   if (row >= numRows) return;
@@ -1001,7 +1163,7 @@ static SD_KERNEL __launch_bounds__(256, 2) void siluMultiplyKernel(
   const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= totalElements) return;
 
-  using AccT = typename AccType<T>::type;
+  using AccT = typename simdOps::AggregateType<T>::type;
   AccT g = static_cast<AccT>(gate[idx]);
   AccT u = static_cast<AccT>(up[idx]);
 
@@ -1032,7 +1194,7 @@ void fusedRmsNormSwiGLU(NDArray* input, NDArray* gamma, NDArray* wGate, NDArray*
   NDArray normalized('c', normShape, input->dataType(), context);
 
   // Step 1: RMS norm + gamma scaling
-  // sharedMem must match AccType<T>::type size (double when T=double, float otherwise)
+  // sharedMem must match the size of simdOps::AggregateType<T>::type (double when T=double, float otherwise)
   dim3 block(512);
   dim3 grid(static_cast<unsigned int>(numRows));
   size_t sharedMem = block.x * (dtype == DataType::DOUBLE ? sizeof(double) : sizeof(float));
@@ -1107,10 +1269,73 @@ void fusedRmsNormSwiGLUBackward(NDArray* input, NDArray* gamma, NDArray* wGate, 
   THROW_EXCEPTION("fusedRmsNormSwiGLUBackward: Full kernel not yet implemented");
 }
 
-void fusedLayerNormBackward(NDArray* input, NDArray* gain, NDArray* gradOut,
-                             NDArray* gradInput, NDArray* gradGain, NDArray* gradBias,
+template <typename T>
+static void fusedLayerNormBackward_(NDArray* input, NDArray* gain, NDArray* gradOut, NDArray* gradInput,
+                                    NDArray* gradGain, NDArray* gradBias, float epsilon, LaunchContext* context) {
+  using AccT = typename simdOps::AggregateType<T>::type;
+  const LongType rowLen = input->sizeAt(-1);
+  const LongType numRows = input->lengthOf() / rowLen;
+  PointersManager manager(context, "fusedLayerNormBackward");
+  // each row's mean and 1 / std; freed stream-ordered with the manager
+  auto stats = reinterpret_cast<AccT*>(manager.allocateDevMem(2 * numRows * sizeof(AccT)));
+  launchFusedLayerNormBackward<T>(
+      reinterpret_cast<const T*>(input->specialBuffer()), reinterpret_cast<const T*>(gain->specialBuffer()),
+      reinterpret_cast<const T*>(gradOut->specialBuffer()), reinterpret_cast<T*>(gradInput->specialBuffer()),
+      reinterpret_cast<T*>(gradGain->specialBuffer()),
+      gradBias != nullptr ? reinterpret_cast<T*>(gradBias->specialBuffer()) : nullptr, stats, numRows, rowLen,
+      epsilon, context->getCudaStream());
+}
+
+void fusedLayerNormBackward(NDArray* originalInput, NDArray* originalGain, NDArray* originalGradOut,
+                             NDArray* originalGradInput, NDArray* originalGradGain, NDArray* originalGradBias,
                              float epsilon, LaunchContext* context) {
-  THROW_EXCEPTION("fusedLayerNormBackward: Full kernel not yet implemented");
+  if (originalInput->lengthOf() == 0) return;
+  const auto dataType = originalInput->dataType();
+
+  // The kernels read and write dense C-order rows and vectors in the input's type: another layout (an F-ordered or
+  // permuted array, a stepped view) or type goes through a copy, as in the forward pass (the gain and bias gradients
+  // keep their parameters' types: they are written dense in the input's type and assigned back).
+  auto readable = [&](NDArray* a) -> NDArray* {
+    NDArray* typed = a->dataType() == dataType ? a : a->cast(dataType);
+    if (shape::isDenseRowMajor(typed->shapeInfo())) return typed;
+    NDArray* dense = typed->dup('c');
+    if (typed != a) delete typed;
+    return dense;
+  };
+  auto writable = [&](NDArray* a) -> NDArray* {
+    if (a == nullptr || (a->dataType() == dataType && shape::isDenseRowMajor(a->shapeInfo()))) return a;
+    std::vector<LongType> dims(a->shapeOf(), a->shapeOf() + a->rankOf());
+    return new NDArray('c', dims, dataType, context);
+  };
+  NDArray* input = readable(originalInput);
+  NDArray* gain = readable(originalGain);
+  NDArray* gradOut = readable(originalGradOut);
+  NDArray* gradInput = writable(originalGradInput);
+  NDArray* gradGain = writable(originalGradGain);
+  NDArray* gradBias = writable(originalGradBias);
+
+  NDArray::prepareSpecialUse({gradInput, gradGain, gradBias}, {input, gain, gradOut});
+  BUILD_SINGLE_SELECTOR(dataType, fusedLayerNormBackward_,
+                        (input, gain, gradOut, gradInput, gradGain, gradBias, epsilon, context),
+                        SD_FLOAT_TYPES);
+  NDArray::registerSpecialUse({gradInput, gradGain, gradBias}, {input, gain, gradOut});
+
+  if (gradInput != originalGradInput) originalGradInput->assign(gradInput);
+  if (gradGain != originalGradGain) originalGradGain->assign(gradGain);
+  if (gradBias != originalGradBias) originalGradBias->assign(gradBias);
+  const bool staged = input != originalInput || gain != originalGain || gradOut != originalGradOut ||
+                      gradInput != originalGradInput || gradGain != originalGradGain ||
+                      gradBias != originalGradBias;
+  if (staged) {
+    // the copies go once the stream is past the kernels and the copies back
+    PointersManager(context, "fusedLayerNormBackward").synchronize();
+    if (input != originalInput) delete input;
+    if (gain != originalGain) delete gain;
+    if (gradOut != originalGradOut) delete gradOut;
+    if (gradInput != originalGradInput) delete gradInput;
+    if (gradGain != originalGradGain) delete gradGain;
+    if (gradBias != originalGradBias) delete gradBias;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
