@@ -66,16 +66,16 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
     // NOTE: Index validation is done in the main gather op when checkIndices=true
     // We skip redundant validation here for performance
 
-    // Pre-fetch all indices to avoid virtual function calls in hot loop
+    // Pre-fetch all indices to avoid virtual function calls in hot loop. An index outside the gathered
+    // axis gathers zeros, as on CUDA: it used to be clamped to the nearest element in the 1D case (another
+    // element's value) and skipped elsewhere (an unwritten output slice).
     const sd::LongType numIndices = indices->lengthOf();
-    const sd::LongType inputLen = input->lengthOf();
+    const sd::LongType limit = input->sizeAt(axis);
     std::vector<sd::LongType> indicesVec(numIndices);
+    bool anyOutOfRange = false;
     for (sd::LongType i = 0; i < numIndices; i++) {
-      sd::LongType idx = indices->e<sd::LongType>(i);
-      // Clamp to valid range [0, inputLen-1] to prevent OOB
-      if (idx < 0) idx = 0;
-      if (idx >= inputLen) idx = inputLen - 1;
-      indicesVec[i] = idx;
+      indicesVec[i] = indices->e<sd::LongType>(i);
+      if (indicesVec[i] < 0 || indicesVec[i] >= limit) anyOutOfRange = true;
     }
 
     if (is1DFlatGather) {
@@ -90,7 +90,8 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         auto outBuff = output->bufferAsT<float>();
         auto func = PRAGMA_THREADS_FOR {
           for (auto i = start; i < stop; i++) {
-            outBuff[i] = inBuff[indicesVec[i]];
+            const auto idx = indicesVec[i];
+            outBuff[i] = idx >= 0 && idx < limit ? inBuff[idx] : 0;
           }
         };
         samediff::Threads::parallel_for(func, 0, numIndices);
@@ -99,7 +100,8 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         auto outBuff = output->bufferAsT<double>();
         auto func = PRAGMA_THREADS_FOR {
           for (auto i = start; i < stop; i++) {
-            outBuff[i] = inBuff[indicesVec[i]];
+            const auto idx = indicesVec[i];
+            outBuff[i] = idx >= 0 && idx < limit ? inBuff[idx] : 0;
           }
         };
         samediff::Threads::parallel_for(func, 0, numIndices);
@@ -108,7 +110,8 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         auto outBuff = output->bufferAsT<sd::LongType>();
         auto func = PRAGMA_THREADS_FOR {
           for (auto i = start; i < stop; i++) {
-            outBuff[i] = inBuff[indicesVec[i]];
+            const auto idx = indicesVec[i];
+            outBuff[i] = idx >= 0 && idx < limit ? inBuff[idx] : 0;
           }
         };
         samediff::Threads::parallel_for(func, 0, numIndices);
@@ -116,8 +119,8 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         // Fallback for other types
         auto func = PRAGMA_THREADS_FOR {
           for (auto i = start; i < stop; i++) {
-            auto value = input->e<double>(indicesVec[i]);
-            output->p(i, value);
+            const auto idx = indicesVec[i];
+            output->p(i, idx >= 0 && idx < limit ? input->e<double>(idx) : 0.0);
           }
         };
         samediff::Threads::parallel_for(func, 0, numIndices);
@@ -163,6 +166,9 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
       auto inputBuffer = input->buffer();
       auto outputBuffer = output->buffer();
 
+      // The loops below skip an index outside the axis; its output slice is zeros.
+      if (anyOutOfRange) output->nullify();
+
       if (canUseMemcpy) {
         // Fast path: memcpy for contiguous sub-arrays
         auto func = PRAGMA_THREADS_FOR {
@@ -202,6 +208,11 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         };
         samediff::Threads::parallel_tad(func, 0, numGatherOps);
       }
+
+      RELEASE(inSubArrShapeInfo, input->getContext()->getWorkspace());
+      RELEASE(inSubArrOffsets, input->getContext()->getWorkspace());
+      RELEASE(outSubArrShapeInfo, output->getContext()->getWorkspace());
+      RELEASE(outSubArrOffsets, output->getContext()->getWorkspace());
     }
 
   } else {
@@ -209,8 +220,12 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
     // NOTE: Index validation is done in the main gather op when checkIndices=true
     // We skip redundant validation here for performance
 
+    // As with an indices array, an index outside the gathered axis gathers zeros.
+    const sd::LongType limit = input->sizeAt(axis);
     if (numOfIntArgs == 2) {
-      if (is1DFlatGather) {
+      if (intArgs[1] < 0 || intArgs[1] >= limit) {
+        output->nullify();
+      } else if (is1DFlatGather) {
         // For 1D flat gather with single index
         auto value = input->e<double>(intArgs[1]);
         output->assign(value);
@@ -223,14 +238,9 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
     } else {
       if (is1DFlatGather) {
         // Multiple indices for 1D flat gather
-        const sd::LongType inputLen2 = input->lengthOf();
         for (int i = 1; i < numOfIntArgs; ++i) {
           auto idx = intArgs[i];
-          // Clamp to valid range to prevent OOB
-          if (idx < 0) idx = 0;
-          if (idx >= inputLen2) idx = inputLen2 - 1;
-          auto value = input->e<double>(idx);
-          output->p(i - 1, value);
+          output->p(i - 1, idx >= 0 && idx < limit ? input->e<double>(idx) : 0.0);
         }
       } else {
         // Standard multiple indices gather
@@ -286,6 +296,14 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         }
 
         auto numInputTads = tadPack->numberOfTads();
+
+        // The loops below skip an index outside the axis; its output TAD is zeros.
+        for (sd::LongType i = 1; i < numOfIntArgs; ++i) {
+          if (intArgs[i] < 0 || intArgs[i] >= numInputTads) {
+            output->nullify();
+            break;
+          }
+        }
 
         // Check if we can use memcpy (contiguous TADs with same type)
         bool canUseMemcpy = isTadContiguous(tadShapeInfo) &&

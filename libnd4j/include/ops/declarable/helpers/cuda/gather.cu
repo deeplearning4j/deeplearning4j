@@ -88,8 +88,11 @@ SD_KERNEL static void gatherCudaLinearKernel(const void* vx, const LongType* xSh
     // Get the gather index directly from y - this is the element index to gather from x
     LongType gatherIdx = y[yIndex];
 
-    // Bounds check: skip if gather index is out of range
-    if (gatherIdx < 0 || gatherIdx >= xLen) continue;
+    // An index outside x gathers zero, as on the CPU: skipping it left z's element unwritten.
+    if (gatherIdx < 0 || gatherIdx >= xLen) {
+      z[zIndex] = static_cast<X>(0);
+      continue;
+    }
 
     // For linear gather, use the gather index directly with x stride
     // x is 1D so we just need to multiply by stride
@@ -110,6 +113,7 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const int numInputTads,
 
   __shared__ const X* x;
   __shared__ X* z;
+  __shared__ bool inRange;
   __shared__ LongType xLen, yRank, xRank, zRank;
   __shared__ const LongType *xShapePtr, *xStridePtr, *yShapePtr, *yStridePtr, *zShapePtr, *zStridePtr;
 
@@ -140,13 +144,13 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const int numInputTads,
       // Get the gather index directly from y - this is the TAD index to gather from input
       LongType gatherIdx = y[yIndex];
 
-      // Bounds-clamp to prevent OOB access on xOffsets array
-      if (gatherIdx < 0) gatherIdx = 0;
-      if (gatherIdx >= numInputTads) gatherIdx = numInputTads - 1;
+      // An index outside the input's TADs gathers zeros, as on the CPU. It used to be clamped to the
+      // nearest TAD, which copied another slice's data.
+      inRange = gatherIdx >= 0 && gatherIdx < numInputTads;
 
       // Use gather index directly to look up input TAD offset
       // Use i directly for output TAD offset (output TADs are in order)
-      x = reinterpret_cast<const X*>(vx) + xOffsets[gatherIdx];
+      x = reinterpret_cast<const X*>(vx) + (inRange ? xOffsets[gatherIdx] : 0);
       z = reinterpret_cast<X*>(vz) + zOffsets[i];
     }
     __syncthreads();
@@ -165,7 +169,7 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const int numInputTads,
       COORDS2INDEX(xRank, xStridePtr, xCoords, xIndex);
 
       // Copy value
-      z[zIndex] = x[xIndex];
+      z[zIndex] = inRange ? x[xIndex] : static_cast<X>(0);
     }
     __syncthreads();
   }
