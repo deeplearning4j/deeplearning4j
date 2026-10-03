@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.List;
 
@@ -36,6 +37,13 @@ public class TensorMmulBp  extends DynamicCustomOp {
 
     public TensorMmulBp(SameDiff samediff, SDVariable x, SDVariable y,SDVariable c, SDVariable gradAtOutput, int[][] axes) {
         this(samediff, x, y, c,gradAtOutput, axes[0], axes[1]);
+    }
+
+    /** With the forward op's transposes: x, y and the output each reversed in their axes before or after the product. */
+    public TensorMmulBp(SameDiff samediff, SDVariable x, SDVariable y, SDVariable c, SDVariable gradAtOutput, int[][] axes,
+                        MMulTranspose transposes) {
+        this(samediff, x, y, c, gradAtOutput, axes[0], axes[1]);
+        addBArgument(transposes.isTransposeA(), transposes.isTransposeB(), transposes.isTransposeResult());
     }
 
     public TensorMmulBp(SameDiff samediff, SDVariable x, SDVariable y,SDVariable c, SDVariable gradAtOutput, int[] axesX, int[] axesY ) {

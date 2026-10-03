@@ -27,10 +27,35 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/headers/blas.h>
 
+#include <algorithm>
 #include <numeric>
+#include <vector>
 
 namespace sd {
 namespace ops {
+
+////////////////////////////////////////////////////////////////////////
+// The boolean arguments transpose the first input, the second input and the result: a transposed array has its axes
+// reversed (numpy's .T), and the contracted axes refer to the transposed inputs. A rank-0 or rank-1 array is its own
+// transpose.
+
+// The permutation that transposes an array of the given rank: its axes in reverse order.
+static std::vector<LongType> tmmulReversedAxes(const LongType rank) {
+  std::vector<LongType> axes(rank);
+  for (LongType i = 0; i < rank; ++i) axes[i] = rank - 1 - i;
+  return axes;
+}
+
+static bool tmmulTransposeArgument(Context& block, const int index) {
+  return block.numB() > index && block.getBArguments()->at(index);
+}
+
+// The array transposed as a view, or nullptr when it is not transposed (or is its own transpose).
+static NDArray* tmmulTransposedView(NDArray* array, const bool transpose) {
+  if (!transpose || array->rankOf() < 2) return nullptr;
+  std::vector<LongType> reversed = tmmulReversedAxes(array->rankOf());
+  return array->permute(reversed, false, false);
+}
 
 ////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(tensormmul, 2, 1, false, 0, -1) {
@@ -65,9 +90,16 @@ CUSTOM_OP_IMPL(tensormmul, 2, 1, false, 0, -1) {
   for (LongType e = 0; e < axe1_size; e++) axes_1[e] = INT_ARG(e + axe0_size + 2);
 
 
+  NDArray* aTransposed = tmmulTransposedView(a, tmmulTransposeArgument(block, 0));
+  NDArray* bTransposed = tmmulTransposedView(b, tmmulTransposeArgument(block, 1));
+  // A transposed result: the product is written through c's transposed view.
   std::vector<sd::LongType> permuteC = {};
-  MmulHelper::tensorDot(a, b, c, axes_0, axes_1,permuteC);
+  if (tmmulTransposeArgument(block, 2) && c->rankOf() > 1) permuteC = tmmulReversedAxes(c->rankOf());
+  MmulHelper::tensorDot(aTransposed != nullptr ? aTransposed : a, bTransposed != nullptr ? bTransposed : b, c, axes_0,
+                        axes_1, permuteC);
 
+  delete aTransposed;
+  delete bTransposed;
   delete aCast;
   delete bCast;
 
@@ -89,12 +121,24 @@ DECLARE_SHAPE_FN(tensormmul) {
   for (LongType e = 0; e < axe1_size; e++) axes_1[e] = INT_ARG(e + axe0_size + 2);
 
   sd_verbose("axe0: %i; axe1: %i;\n", axes_0.size(), axes_1.size());
+  // A transposed input contracts over its reversed axes: evaluate the product on the transposed shapes.
+  auto transposedShape = [](LongType* shapeInfo, const bool transpose) -> LongType* {
+    const LongType rank = shape::rank(shapeInfo);
+    if (!transpose || rank < 2) return shapeInfo;
+    std::vector<LongType> reversed(rank);
+    for (LongType i = 0; i < rank; ++i) reversed[i] = shape::shapeOf(shapeInfo)[rank - 1 - i];
+    return ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(shapeInfo), 'c', reversed);
+  };
+  LongType* aEffective = transposedShape(aShapeInfo, tmmulTransposeArgument(block, 0));
+  LongType* bEffective = transposedShape(bShapeInfo, tmmulTransposeArgument(block, 1));
+
   // evaluate shapes
   std::vector<LongType> permutAt, permutBt;
   std::vector<LongType> shapeAt, shapeBt;
   auto outShape =
-      ShapeUtils::evalShapeForTensorDot(aShapeInfo, bShapeInfo, axes_0, axes_1, permutAt, permutBt,
+      ShapeUtils::evalShapeForTensorDot(aEffective, bEffective, axes_0, axes_1, permutAt, permutBt,
                                                         shapeAt, shapeBt);
+  if (tmmulTransposeArgument(block, 2)) std::reverse(outShape.begin(), outShape.end());
 
   auto outType = DataTypeUtils::pickPairwiseResultType(ArrayOptions::dataType(aShapeInfo),
                                                        ArrayOptions::dataType(bShapeInfo));
@@ -113,142 +157,230 @@ DECLARE_TYPES(tensormmul) {
 
 }
 
-// Comparator for sorting indices vector based on comparison of array values
-struct IndexComparator
-{
-  const std::vector<LongType>& array;
+////////////////////////////////////////////////////////////////////////
+// Helpers of tensormmul_bp. The names are prefixed because translation units may be unity-built.
 
-  IndexComparator(const std::vector<LongType>& arr): array(arr) {}
+// The axes of an array of the given rank that are not contracted, ascending.
+static std::vector<LongType> tmmulBpUncontractedAxes(const LongType rank, const std::vector<LongType>& contracted) {
+  std::vector<LongType> axes;
+  for (LongType axis = 0; axis < rank; ++axis)
+    if (std::find(contracted.begin(), contracted.end(), axis) == contracted.end()) axes.push_back(axis);
+  return axes;
+}
 
-  bool operator() (LongType i1, LongType i2)
-  {
-    return array[i1] < array[i2];
+// The shape of the array along the given axes, in the order given.
+static std::vector<LongType> tmmulBpShapeAlong(NDArray* array, const std::vector<LongType>& axes) {
+  std::vector<LongType> shape(axes.size());
+  for (size_t i = 0; i < axes.size(); ++i) shape[i] = array->sizeAt(static_cast<int>(axes[i]));
+  return shape;
+}
+
+static LongType tmmulBpElementCount(const std::vector<LongType>& shape) {
+  LongType count = 1;
+  for (const auto dim : shape) count *= dim;
+  return count;
+}
+
+static std::vector<LongType> tmmulBpConcatenated(const std::vector<LongType>& first,
+                                                 const std::vector<LongType>& second) {
+  std::vector<LongType> result(first);
+  result.insert(result.end(), second.begin(), second.end());
+  return result;
+}
+
+// The permutation that undoes `order`: inverse[order[i]] = i.
+static std::vector<LongType> tmmulBpInversePermutation(const std::vector<LongType>& order) {
+  std::vector<LongType> inverse(order.size());
+  for (size_t i = 0; i < order.size(); ++i) inverse[order[i]] = static_cast<LongType>(i);
+  return inverse;
+}
+
+// Drops an array derived from `source` by reshape: a wrapper over the source's DataBuffer is only a view, anything
+// else owns a buffer of its own that CUDA kernels may still be reading.
+static void tmmulBpRelease(NDArray* derived, NDArray* source) {
+  if (derived == source) return;
+  if (derived->getDataBuffer() != source->getDataBuffer())
+    MmulHelper::deleteTemporary(derived);
+  else
+    delete derived;
+}
+
+// An owned, C-contiguous [rows, cols] copy of the array whose axes are reordered as `order` (the leading axes
+// of `order` make up the rows). Row and column index run over their axes in C order.
+static NDArray* tmmulBpFold(NDArray* array, std::vector<LongType>& order, const LongType rows, const LongType cols,
+                            LaunchContext* context) {
+  std::vector<LongType> matrixShape = {rows, cols};
+  if (array->rankOf() == 0) {
+    NDArray* single = new NDArray('c', matrixShape, array->dataType(), context);
+    single->assign(array);
+    return single;
   }
-};
 
+  NDArray* permuted = array->permute(order, false, false);
+  NDArray* matrix = permuted->dup('c');
+  delete permuted;
+  matrix->reshapei('c', matrixShape);
+  return matrix;
+}
 
-std::vector<LongType> argsort(const std::vector<LongType>& array)
-{
-  std::vector<LongType> indices(array.size());
-  for (size_t i = 0; i < array.size(); ++i) indices[i] = i;
+// The inverse of tmmulBpFold: writes the [rows, cols] matrix, whose rows and columns run over the target's axes
+// listed in `order` (C order), into the target in the target's own axis order.
+static void tmmulBpUnfold(NDArray* matrix, std::vector<LongType>& order, NDArray* target) {
+  if (target->rankOf() == 0) {
+    target->assign(matrix);
+    return;
+  }
 
-  std::sort(indices.begin(), indices.end(), IndexComparator(array));
-
-  return indices;
+  std::vector<LongType> orderedShape = tmmulBpShapeAlong(target, order);
+  matrix->reshapei('c', orderedShape);
+  std::vector<LongType> inverse = tmmulBpInversePermutation(order);
+  NDArray* inTargetOrder = matrix->permute(inverse, false, false);
+  target->assign(inTargetOrder);
+  delete inTargetOrder;
 }
 
 ////////////////////////////////////////////////////////////////////////
+// Gradients of C = tensordot(A, B, axesA, axesB) given dC, the gradient at C.
+//
+// C's axes are A's uncontracted axes (freeA) followed by B's (freeB), and
+//   C[a_free, b_free] = sum over k of A[a_free, k] * B[k, b_free]
+// where k runs over the contracted axes of A in the order of axesA and of B in the order of axesB. Folding every
+// operand into a matrix turns both gradients into one matrix product each:
+//   dC  -> [FA, FB]   (FA, FB: the element counts of freeA and freeB)
+//   B   -> [FB, K]    (B's axes reordered freeB, axesB; K: the element count of the contracted axes)
+//   A^T -> [K, FA]    (A's axes reordered axesA, freeA)
+//   dA = dC * B   : [FA, K], its axes are freeA then axesA of A
+//   dB = A^T * dC : [K, FB], its axes are axesB then freeB of B
+// Each product is unfolded back into the shape of its input by the inverse of that axis order.
+//
+// dC is a scalar when the output feeds the loss directly: then every element of C has that same gradient.
 CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   auto A = INPUT_VARIABLE(0);
   auto B = INPUT_VARIABLE(1);
-  auto C = INPUT_VARIABLE(2);
+  // INPUT_VARIABLE(2) is C itself; its shape follows from A, B and the axes, so it is not read.
   auto dC = INPUT_VARIABLE(3);
-  auto originalDC = dC;
-
-  //scalar case, tile value to be whatever the c value is. common when directly attached to the loss
-  if(dC->isScalar()) {
-    auto newVec = const_cast<NDArray *>(C);
-    auto* newShapeVec = newVec->getShapeAsVector();
-    dC = new NDArray('c', *newShapeVec, dC->dataType(), dC->getContext());
-    delete newShapeVec;
-  }
-
 
   auto gradA = OUTPUT_VARIABLE(0);
   auto gradB = OUTPUT_VARIABLE(1);
 
-  LongType axe0_size = INT_ARG(0);
-  LongType axe1_size = INT_ARG(axe0_size + 1);
-  std::vector<LongType> axes0Sum(axe0_size), axes1Sum(axe1_size);
+  // With transposes the forward op multiplied the transposed inputs and transposed the product: differentiate that
+  // product, reading the inputs and writing their gradients through transposed views, with the gradient at the
+  // product the transposed gradient at the output.
+  const bool transposeA = tmmulTransposeArgument(block, 0);
+  const bool transposeB = tmmulTransposeArgument(block, 1);
+  NDArray* aTransposed = tmmulTransposedView(A, transposeA);
+  NDArray* bTransposed = tmmulTransposedView(B, transposeB);
+  NDArray* gradATransposed = tmmulTransposedView(gradA, transposeA);
+  NDArray* gradBTransposed = tmmulTransposedView(gradB, transposeB);
+  NDArray* dCTransposed = dC->lengthOf() > 1 ? tmmulTransposedView(dC, tmmulTransposeArgument(block, 2)) : nullptr;
+  auto releaseTransposedViews = [&]() {
+    delete aTransposed;
+    delete bTransposed;
+    delete gradATransposed;
+    delete gradBTransposed;
+    delete dCTransposed;
+  };
+  if (aTransposed != nullptr) A = aTransposed;
+  if (bTransposed != nullptr) B = bTransposed;
+  if (gradATransposed != nullptr) gradA = gradATransposed;
+  if (gradBTransposed != nullptr) gradB = gradBTransposed;
+  if (dCTransposed != nullptr) dC = dCTransposed;
 
-  //find the passed in axes for the feed forward
-  for (LongType e = 0; e < axe0_size; e++) axes0Sum[e] = INT_ARG(e + 1);
-  for (LongType e = 0; e < axe1_size; e++) axes1Sum[e] = INT_ARG(e + axe0_size + 2);
+  const LongType aRank = A->rankOf();
+  const LongType bRank = B->rankOf();
+  const LongType numArgs = static_cast<LongType>(block.numI());
 
+  // The integer arguments are [numAxesA, axesA..., numAxesB, axesB...].
+  REQUIRE_TRUE(numArgs >= 2, 0, "TENSORMMUL_BP: expected the contracted axes of both inputs as integer arguments");
+  const LongType numAxesA = INT_ARG(0);
+  REQUIRE_TRUE(numAxesA >= 0 && numAxesA + 2 <= numArgs, 0,
+               "TENSORMMUL_BP: the integer arguments do not hold %lld axes of the first input",
+               static_cast<long long>(numAxesA));
+  const LongType numAxesB = INT_ARG(numAxesA + 1);
+  REQUIRE_TRUE(numAxesB == numAxesA && numAxesA + numAxesB + 2 <= numArgs, 0,
+               "TENSORMMUL_BP: both inputs need the same number of contracted axes, got %lld and %lld",
+               static_cast<long long>(numAxesA), static_cast<long long>(numAxesB));
 
-  auto Arank = A->rankOf();
-  auto Brank = B->rankOf();
-  auto dCrank = dC->rankOf();
-
-
-  //part of the permtue axes before matrix multiply happens
-  std::vector<LongType> axes_a_grad;
-  for (LongType i = 0; i < Arank; ++i)
-    axes_a_grad.push_back(i);
-
-  for (size_t i = 0; i < axes0Sum.size(); ++i)
-    axes_a_grad.erase(std::remove(axes_a_grad.begin(), axes_a_grad.end(), axes0Sum[i]), axes_a_grad.end());
-
-
-
-  //part of matrix multiply axes before matrix multiply happens
-  std::vector<LongType> axes_b_grad;
-  for (LongType i = 0; i < Brank; ++i)
-    axes_b_grad.push_back(i);
-
-  for (size_t i = 0; i < axes1Sum.size(); ++i)
-    axes_b_grad.erase(std::remove(axes_b_grad.begin(), axes_b_grad.end(), axes1Sum[i]), axes_b_grad.end());
-
-  //used for post result permute to reshape result to be expected output
-  std::vector<LongType> grad_a_axes;
-  grad_a_axes.insert(grad_a_axes.end(), axes_a_grad.begin(), axes_a_grad.end());
-  grad_a_axes.insert(grad_a_axes.end(), axes1Sum.begin(), axes1Sum.end());
-
-  //used for post result permute to reshape result to be expected output
-  std::vector<LongType> grad_b_axes;
-  grad_b_axes.insert(grad_b_axes.end(), axes0Sum.begin(), axes0Sum.end());
-  grad_b_axes.insert(grad_b_axes.end(), axes_b_grad.begin(), axes_b_grad.end());
-
-  LongType starting = dCrank - axes_a_grad.size();
-  std::vector<LongType> axes_a_gradA;
-  for (LongType i = starting; i < dCrank; i++) {
-    axes_a_gradA.push_back(i);
+  std::vector<LongType> axesA(numAxesA), axesB(numAxesB);
+  for (LongType e = 0; e < numAxesA; e++) {
+    axesA[e] = INT_ARG(e + 1);
+    axesB[e] = INT_ARG(e + numAxesA + 2);
+    if (axesA[e] < 0) axesA[e] += aRank;
+    if (axesB[e] < 0) axesB[e] += bRank;
+    REQUIRE_TRUE(axesA[e] >= 0 && axesA[e] < aRank && axesB[e] >= 0 && axesB[e] < bRank, 0,
+                 "TENSORMMUL_BP: contracted axes %lld and %lld are out of range for ranks %lld and %lld",
+                 static_cast<long long>(axesA[e]), static_cast<long long>(axesB[e]), static_cast<long long>(aRank),
+                 static_cast<long long>(bRank));
+    REQUIRE_TRUE(A->sizeAt(static_cast<int>(axesA[e])) == B->sizeAt(static_cast<int>(axesB[e])), 0,
+                 "TENSORMMUL_BP: contracted axes %lld and %lld have different sizes %lld and %lld",
+                 static_cast<long long>(axesA[e]), static_cast<long long>(axesB[e]),
+                 static_cast<long long>(A->sizeAt(static_cast<int>(axesA[e]))),
+                 static_cast<long long>(B->sizeAt(static_cast<int>(axesB[e]))));
+    for (LongType p = 0; p < e; p++) {
+      REQUIRE_TRUE(axesA[p] != axesA[e] && axesB[p] != axesB[e], 0, "TENSORMMUL_BP: contracted axes must be unique");
+    }
   }
 
-  std::vector<LongType> axes_b_gradA;
-  for (size_t i = 0; i < axes_b_grad.size(); i++) {
-    axes_b_gradA.push_back(i);
+  const std::vector<LongType> freeA = tmmulBpUncontractedAxes(aRank, axesA);
+  const std::vector<LongType> freeB = tmmulBpUncontractedAxes(bRank, axesB);
+  const LongType freeASize = tmmulBpElementCount(tmmulBpShapeAlong(A, freeA));
+  const LongType freeBSize = tmmulBpElementCount(tmmulBpShapeAlong(B, freeB));
+  const LongType contractedSize = tmmulBpElementCount(tmmulBpShapeAlong(A, axesA));
+  const LongType cLength = freeASize * freeBSize;
+
+  REQUIRE_TRUE(dC->lengthOf() == cLength || dC->lengthOf() == 1, 0,
+               "TENSORMMUL_BP: the gradient at the output has %lld elements, expected %lld or a scalar",
+               static_cast<long long>(dC->lengthOf()), static_cast<long long>(cLength));
+
+  // With nothing to sum over or nothing to differentiate, the gradients are zero.
+  if (A->isEmpty() || B->isEmpty() || dC->isEmpty() || cLength == 0 || contractedSize == 0) {
+    if (!gradA->isEmpty()) gradA->nullify();
+    if (!gradB->isEmpty()) gradB->nullify();
+    releaseTransposedViews();
+    return Status::OK;
   }
 
-  std::vector<LongType> axes_a_gradB;
-  for (size_t i = 0; i < axes_a_grad.size(); i++) {
-    axes_a_gradB.push_back(i);
+  LaunchContext* context = block.launchContext();
+
+  // dC as a [FA, FB] matrix: a scalar gradient is spread over every element of C.
+  std::vector<LongType> cMatrixShape = {freeASize, freeBSize};
+  NDArray* dCMatrix = nullptr;
+  if (dC->lengthOf() == 1) {
+    dCMatrix = new NDArray('c', cMatrixShape, dC->dataType(), context);
+    dCMatrix->assign(dC);
+  } else {
+    // A view that cannot be reshaped in place (a transposed one, say) is copied first.
+    dCMatrix = dC->reshape('c', cMatrixShape, false);
+    if (dCMatrix == nullptr) {
+      dCMatrix = dC->dup('c');
+      dCMatrix->reshapei('c', cMatrixShape);
+    }
   }
 
-  LongType start = dCrank - axes_a_gradA.size();
-  std::vector<LongType> axes_b_gradB;
-  for (LongType i = start; i < dCrank; i++) {
-    axes_b_gradB.push_back(i);
-  }
+  std::vector<LongType> bOrder = tmmulBpConcatenated(freeB, axesB);
+  std::vector<LongType> aOrder = tmmulBpConcatenated(axesA, freeA);
+  NDArray* bMatrix = tmmulBpFold(B, bOrder, freeBSize, contractedSize, context);
+  NDArray* aMatrix = tmmulBpFold(A, aOrder, contractedSize, freeASize, context);
 
-  //create final axes before for matrix multiply
-  std::vector<LongType> aPermuteAxesBefore;
-  aPermuteAxesBefore.insert(aPermuteAxesBefore.end(), axes_a_grad.begin(), axes_a_grad.end());
-  aPermuteAxesBefore.insert(aPermuteAxesBefore.end(), axes0Sum.begin(), axes0Sum.end());
+  std::vector<LongType> gradAShape = {freeASize, contractedSize};
+  std::vector<LongType> gradBShape = {contractedSize, freeBSize};
+  NDArray* gradAMatrix = new NDArray('c', gradAShape, gradA->dataType(), context);
+  NDArray* gradBMatrix = new NDArray('c', gradBShape, gradB->dataType(), context);
 
+  MmulHelper::mmul(dCMatrix, bMatrix, gradAMatrix, 1.0, 0.0);
+  MmulHelper::mmul(aMatrix, dCMatrix, gradBMatrix, 1.0, 0.0);
 
+  std::vector<LongType> gradAOrder = tmmulBpConcatenated(freeA, axesA);
+  std::vector<LongType> gradBOrder = tmmulBpConcatenated(axesB, freeB);
+  tmmulBpUnfold(gradAMatrix, gradAOrder, gradA);
+  tmmulBpUnfold(gradBMatrix, gradBOrder, gradB);
 
-  //create final axes before for matrix multiply
-  std::vector<LongType> bPermuteAxesBefore;
-  bPermuteAxesBefore.insert(bPermuteAxesBefore.end(), axes_b_grad.begin(), axes_b_grad.end());
-  bPermuteAxesBefore.insert(bPermuteAxesBefore.end(), axes1Sum.begin(), axes1Sum.end());
-
-  auto aPermArgsAfter = argsort(grad_a_axes);
-  auto bPermArgsAfter = argsort(grad_b_axes);
-  auto newA = A->permute(aPermuteAxesBefore, false, false);
-  std::vector<LongType> empty;
-  auto newB = B->permute(bPermuteAxesBefore, false, false);
-
-
-  //perform the actual matrix multiplication
-  MmulHelper::tensorDot2(dC, newB, gradA, axes_a_gradA, axes_b_gradA, empty, empty, aPermArgsAfter, gradA);
-  MmulHelper::tensorDot2(newA, dC, gradB, axes_a_gradB, axes_b_gradB, empty, empty, bPermArgsAfter, gradB);
-
-  delete newA;
-  delete newB;
-  if(dC != originalDC) {
-    delete dC;
-  }
+  tmmulBpRelease(dCMatrix, dC);
+  MmulHelper::deleteTemporary(bMatrix);
+  MmulHelper::deleteTemporary(aMatrix);
+  MmulHelper::deleteTemporary(gradAMatrix);
+  MmulHelper::deleteTemporary(gradBMatrix);
+  releaseTransposedViews();
 
   return Status::OK;
 }

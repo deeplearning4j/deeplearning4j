@@ -77,6 +77,8 @@ public class TensorMmul extends DynamicCustomOp {
                       boolean transposeX, boolean transposeY, boolean transposeZ) {
         super(null,new INDArray[]{x, y},null);
         this.axes = new int[][]{dimensionsX, dimensionsY};
+        this.mMulTranspose = MMulTranspose.builder().transposeA(transposeX).transposeB(transposeY)
+                .transposeResult(transposeZ).build();
         addIArgument(dimensionsX.length);
         addIArgument(dimensionsX);
         addIArgument(dimensionsY.length);
@@ -108,6 +110,8 @@ public class TensorMmul extends DynamicCustomOp {
         addIArgument(dimensions[0]);
         addIArgument(dimensions[1].length);
         addIArgument(dimensions[1]);
+        if (mMulTranspose != null)
+            addBArgument(mMulTranspose.isTransposeA(), mMulTranspose.isTransposeB(), mMulTranspose.isTransposeResult());
     }
 
     public TensorMmul(SameDiff sameDiff, SDVariable x, SDVariable y, int[] dimensionsX,
@@ -115,6 +119,8 @@ public class TensorMmul extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{x,y});
         this.sameDiff = sameDiff;
         this.axes = new int[][]{dimensionsX, dimensionsY};
+        this.mMulTranspose = MMulTranspose.builder().transposeA(transposeX).transposeB(transposeY)
+                .transposeResult(transposeZ).build();
         addIArgument(dimensionsX.length);
         addIArgument(dimensionsX);
         addIArgument(dimensionsY.length);
@@ -124,7 +130,9 @@ public class TensorMmul extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients) {
-        return Arrays.asList(new TensorMmulBp(sameDiff, larg(), rarg(), outputVariable(),gradients.get(0), axes).outputVariables());
+        MMulTranspose transposes = mMulTranspose != null ? mMulTranspose : MMulTranspose.allFalse();
+        return Arrays.asList(new TensorMmulBp(sameDiff, larg(), rarg(), outputVariable(), gradients.get(0), axes,
+                transposes).outputVariables());
     }
 
     @Override
