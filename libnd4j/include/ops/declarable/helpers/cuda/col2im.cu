@@ -22,6 +22,7 @@
 //
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/col2im.h>
+#include <ops/op_types.h>
 
 #include <execution/cuda/LaunchDims.h>
 
@@ -31,11 +32,13 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-// columns [bS, iC, kH, kW, oH, oW] to be de-convoluted to image [bS, iC, iH, iW]
+// columns [bS, iC, kH, kW, oH, oW] to be de-convoluted to image [bS, iC, iH, iW]. Every image element is written with
+// the sum, in AggregateType<T>, of the column entries im2col reads from it; the CPU helper sums in the same order.
 template <typename T>
 static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeInfo, void* image,
                                  const LongType* imShapeInfo, const LongType sH, const LongType sW, const LongType pH,
                                  const LongType pW, const LongType dH, const LongType dW) {
+  using AccT = typename simdOps::AggregateType<T>::type;
   const T* col = reinterpret_cast<const T*>(columns);
   T* im = reinterpret_cast<T*>(image);
 
@@ -67,9 +70,10 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
 
   LongType coords[SD_MAX_RANK];
 
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const LongType tid = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
 
-  for (LongType i = tid; i < imLen; i += gridDim.x * blockDim.x) {
+  for (LongType i = tid; i < imLen; i += step) {
     INDEX2COORDS(i, imRank, imShape, coords);
 
     LongType imOffset;
@@ -88,7 +92,7 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
     const LongType bCoord = coords[0];
     const LongType cCoord = coords[1];
 
-    T val = static_cast<T>(0);
+    AccT val = static_cast<AccT>(0);
 
     for (coords[4] = colHstart; coords[4] < colHend; ++coords[4]) {
       coords[2] = imH - coords[4] * sH;
@@ -103,14 +107,14 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
         LongType colOffset;
         COORDS2INDEX(colRank, colStride, coords, colOffset);
 
-        val += col[colOffset];
+        val += static_cast<AccT>(col[colOffset]);
       }
     }
 
     // Restore coords for next iteration's INDEX2COORDS
     coords[0] = bCoord;
     coords[1] = cCoord;
-    im[imOffset] = val;
+    im[imOffset] = static_cast<T>(val);
   }
 }
 ////////////////////////////////////////////////////////////////////////
@@ -124,15 +128,24 @@ static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
                                const LongType pW, const LongType dH, const LongType dW) {
   col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH,
                                                                         sW, pH, pW, dH, dW);
-  DebugHelper::checkGlobalErrorCode( "col2im(...) failed");
-
+  if (!DebugHelper::inGraphCapture(const_cast<cudaStream_t*>(stream))) {
+    DebugHelper::checkGlobalErrorCode("col2im(...) failed");
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
 void col2im(LaunchContext& context,  NDArray* input, NDArray* output, const LongType sH, const LongType sW, const LongType pH,
             const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW){
+  if (input->rankOf() != 6 || output->rankOf() != 4) {
+    THROW_EXCEPTION("ops::helpers::col2im: input must have rank 6 and output rank 4");
+  }
+  if (output->sizeAt(2) != iH || output->sizeAt(3) != iW) {
+    THROW_EXCEPTION("ops::helpers::col2im: the image size must equal the output's height and width");
+  }
+  if (output->lengthOf() == 0) return;
+
   PointersManager manager(&context, "col2im");
-  dim3 dims = getCol2imLaunchParams(*input,*output);
+  dim3 dims = getCol2imLaunchParams(*output, *input);
 
   NDArray::prepareSpecialUse({output}, {input});
   BUILD_SINGLE_SELECTOR(input->dataType(), col2imCudaLauncher,

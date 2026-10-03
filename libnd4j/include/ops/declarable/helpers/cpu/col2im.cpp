@@ -22,13 +22,17 @@
 
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/col2im.h>
+#include <ops/op_types.h>
 #if NOT_EXCLUDED(OP_col2im)
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-// [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
+// [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]. Every image element is written: it is the sum, in
+// AggregateType<T>, of the column entries im2col reads from it (0 when no window covers it), so the result does not
+// depend on what the output held before (conv2d_bp passes its gradI output uninitialized). The sum runs over the
+// windows in row-major order, as the CUDA kernel's does.
 template <typename T>
 static void col2im_(sd::LaunchContext& context, NDArray* input, NDArray* output, const LongType sH, const LongType sW,
                     const LongType pH, const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
@@ -40,14 +44,20 @@ static void col2im_(sd::LaunchContext& context, NDArray* input, NDArray* output,
     THROW_EXCEPTION("ops::helpers::col2im: output array must have rank = 4");
   }
 
-  auto colBuff = input->bufferAsT<T>();
-  auto imBuff = output->bufferAsT<T>();
-  auto colShapeBuffer = input->shapeInfo();
-  auto imShapeBuffer = output->shapeInfo();
-  auto colShape = shape::shapeOf(colShapeBuffer);
-  auto colStride = shape::stride(colShapeBuffer);
-  auto imShape = shape::shapeOf(imShapeBuffer);
-  auto imStride = shape::stride(imShapeBuffer);
+  if (output->sizeAt(2) != iH || output->sizeAt(3) != iW) {
+    THROW_EXCEPTION("ops::helpers::col2im: the image size must equal the output's height and width");
+  }
+
+  using AccT = typename simdOps::AggregateType<T>::type;
+
+  NDArray::preparePrimaryUse({output}, {input});
+
+  const T* colBuff = input->bufferAsT<T>();
+  T* imBuff = output->bufferAsT<T>();
+  const LongType* colShape = shape::shapeOf(input->shapeInfo());
+  const LongType* colStride = shape::stride(input->shapeInfo());
+  const LongType* imShape = shape::shapeOf(output->shapeInfo());
+  const LongType* imStride = shape::stride(output->shapeInfo());
 
   const LongType bS = imShape[0];
   const LongType iC = imShape[1];
@@ -55,52 +65,45 @@ static void col2im_(sd::LaunchContext& context, NDArray* input, NDArray* output,
   const LongType kW = colShape[3];
   const LongType oH = colShape[4];
   const LongType oW = colShape[5];
-  const sd::LongType colStride0 = colStride[0];
-  const sd::LongType colStride1 = colStride[1];
-  const sd::LongType colStride2 = colStride[2];
-  const sd::LongType colStride3 = colStride[3];
-  const sd::LongType colStride4 = colStride[4];
-  const sd::LongType colStride5 = colStride[5];
-  const sd::LongType imStride0 = imStride[0];
-  const sd::LongType imStride1 = imStride[1];
-  const sd::LongType imStride2 = imStride[2];
-  const sd::LongType imStride3 = imStride[3];
+  // extent of a dilated window
+  const LongType ekH = dH * (kH - 1) + 1;
+  const LongType ekW = dW * (kW - 1) + 1;
 
   auto func = PRAGMA_THREADS_FOR {
-    for (auto b = start; b < stop; b++) {
-      LongType im0Offset = b * imStride0;
-      LongType col4Offset = b * colStride0;
-      for (int colH = 0; colH < oH; ++colH) {
-        LongType col5Offset = col4Offset + colH * colStride4;
-        for (int colW = 0; colW < oW; ++colW) {
-          LongType col1Offset = col5Offset + colW * colStride5;
-          LongType im1Offset = im0Offset;
-          for (int c = 0; c < iC; ++c) {
-            int imRow = (-pH + colH * sH);
-            LongType col2Offset = col1Offset + c * colStride1;
-            LongType im2Offset = im1Offset + c * imStride1 + imRow * imStride2;
-            for (int kRow = 0; kRow < kH; ++kRow) {
-              int imCol = -pW + colW * sW;
-              LongType col3Offset = col2Offset + kRow * colStride2;
-              LongType im3Offset = im2Offset + kRow * dH * imStride2 + imCol * imStride3;
-              for (int kCol = 0; kCol < kW; ++kCol) {
-                if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) &&
-                    static_cast<unsigned>(imCol) < static_cast<unsigned>(iW)) {
-                  imBuff[im3Offset] += colBuff[col3Offset];
-                }
-                col3Offset += colStride3;
-                imCol += dW;
-                im3Offset += dW * imStride3;
-              }
-              imRow += dH;
+    for (auto plane = start; plane < stop; plane += increment) {
+      const LongType b = plane / iC;
+      const LongType c = plane % iC;
+      const T* colPlane = colBuff + b * colStride[0] + c * colStride[1];
+      T* imPlane = imBuff + b * imStride[0] + c * imStride[1];
+      for (LongType h = 0; h < iH; ++h) {
+        // windows colH that cover padded row h + pH: colH * sH <= h + pH < colH * sH + ekH
+        const LongType imH = h + pH;
+        const LongType colHstart = imH < ekH ? 0 : (imH - ekH) / sH + 1;
+        const LongType colHend = sd::math::sd_min<LongType>(imH / sH + 1, oH);
+        for (LongType w = 0; w < iW; ++w) {
+          const LongType imW = w + pW;
+          const LongType colWstart = imW < ekW ? 0 : (imW - ekW) / sW + 1;
+          const LongType colWend = sd::math::sd_min<LongType>(imW / sW + 1, oW);
+          AccT sum = static_cast<AccT>(0);
+          for (LongType colH = colHstart; colH < colHend; ++colH) {
+            const LongType kRowOffset = imH - colH * sH;
+            if (kRowOffset % dH != 0) continue;
+            const T* colRow = colPlane + (kRowOffset / dH) * colStride[2] + colH * colStride[4];
+            for (LongType colW = colWstart; colW < colWend; ++colW) {
+              const LongType kColOffset = imW - colW * sW;
+              if (kColOffset % dW != 0) continue;
+              sum += static_cast<AccT>(colRow[(kColOffset / dW) * colStride[3] + colW * colStride[5]]);
             }
           }
+          imPlane[h * imStride[2] + w * imStride[3]] = static_cast<T>(sum);
         }
       }
     }
   };
 
-  samediff::Threads::parallel_tad(func, 0, bS);
+  samediff::Threads::parallel_for(func, 0, bS * iC);
+
+  NDArray::registerPrimaryUse({output}, {input});
 }
 void col2im(LaunchContext& context,  NDArray* input, NDArray* output, const LongType sH, const LongType sW, const LongType pH,
             const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
