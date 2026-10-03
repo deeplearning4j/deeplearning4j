@@ -51,7 +51,11 @@ namespace sd {
 //  function is applied element-wise with a shared canonical (C-order) coordinate
 //  decomposition -- identical pairing semantics to the CPU implementation, so
 //  operands of differing ordering ('c' vs 'f') are never mis-paired -- and the
-//  result is published back to the device via registerPrimaryUse.
+//  result is published back to the device via registerPrimaryUse. bufferAsT()
+//  already points at a view's first element, so element offsets come from the
+//  strides alone. A caller that then registers the target as device-written
+//  (registerSpecialUse) discards the result, and a CUDA graph capturing the
+//  caller never sees the host work.
 //
 //  Performance-critical paths (e.g. activation derivatives) must NOT rely on
 //  these; they use real device ops. Lambdas are a correctness fallback for
@@ -75,8 +79,6 @@ void NDArray::applyLambda(std::function<T(T)>& func, NDArray* target) {
   auto xShape = this->shapeOf();
   auto xStride = this->stridesOf();
   auto zStride = target->stridesOf();
-  const sd::LongType xBase = this->offset();
-  const sd::LongType zBase = target->offset();
   const sd::LongType len = this->lengthOf();
 
   for (sd::LongType e = 0; e < len; e++) {
@@ -85,7 +87,7 @@ void NDArray::applyLambda(std::function<T(T)>& func, NDArray* target) {
     sd::LongType xOffset, zOffset;
     COORDS2INDEX(rank, xStride, coords, xOffset);
     COORDS2INDEX(rank, zStride, coords, zOffset);
-    z[zBase + zOffset] = func(f[xBase + xOffset]);
+    z[zOffset] = func(f[xOffset]);
   }
 
   NDArray::registerPrimaryUse({target}, {this});
@@ -108,8 +110,6 @@ void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>& func, NDArra
   auto xShape = this->shapeOf();
   auto xStride = this->stridesOf();
   auto zStride = target->stridesOf();
-  const sd::LongType xBase = this->offset();
-  const sd::LongType zBase = target->offset();
   const sd::LongType len = this->lengthOf();
 
   for (sd::LongType e = 0; e < len; e++) {
@@ -118,7 +118,7 @@ void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>& func, NDArra
     sd::LongType xOffset, zOffset;
     COORDS2INDEX(rank, xStride, coords, xOffset);
     COORDS2INDEX(rank, zStride, coords, zOffset);
-    z[zBase + zOffset] = func(e, f[xBase + xOffset]);
+    z[zOffset] = func(e, f[xOffset]);
   }
 
   NDArray::registerPrimaryUse({target}, {this});
@@ -149,20 +149,17 @@ void NDArray::applyPairwiseLambda(NDArray* other, std::function<T(T, T)>& func, 
   auto xStride = this->stridesOf();
   auto yStride = other->stridesOf();
   auto zStride = target->stridesOf();
-  const sd::LongType xBase = this->offset();
-  const sd::LongType yBase = other->offset();
-  const sd::LongType zBase = target->offset();
   const sd::LongType len = this->lengthOf();
 
   if (isScalar) {
-    const T otherVal = s[other->offset()];
+    const T otherVal = s[0];
     for (sd::LongType e = 0; e < len; e++) {
       sd::LongType coords[SD_MAX_RANK];
       INDEX2COORDS(e, rank, xShape, coords);
       sd::LongType xOffset, zOffset;
       COORDS2INDEX(rank, xStride, coords, xOffset);
       COORDS2INDEX(rank, zStride, coords, zOffset);
-      z[zBase + zOffset] = func(f[xBase + xOffset], otherVal);
+      z[zOffset] = func(f[xOffset], otherVal);
     }
   } else {
     for (sd::LongType e = 0; e < len; e++) {
@@ -172,7 +169,7 @@ void NDArray::applyPairwiseLambda(NDArray* other, std::function<T(T, T)>& func, 
       COORDS2INDEX(rank, xStride, coords, xOffset);
       COORDS2INDEX(rank, yStride, coords, yOffset);
       COORDS2INDEX(rank, zStride, coords, zOffset);
-      z[zBase + zOffset] = func(f[xBase + xOffset], s[yBase + yOffset]);
+      z[zOffset] = func(f[xOffset], s[yOffset]);
     }
   }
 
@@ -202,9 +199,6 @@ void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<T(sd::Lon
   auto xStride = this->stridesOf();
   auto yStride = other->stridesOf();
   auto zStride = target->stridesOf();
-  const sd::LongType xBase = this->offset();
-  const sd::LongType yBase = other->offset();
-  const sd::LongType zBase = target->offset();
   const sd::LongType len = this->lengthOf();
 
   for (sd::LongType e = 0; e < len; e++) {
@@ -214,7 +208,7 @@ void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<T(sd::Lon
     COORDS2INDEX(rank, xStride, coords, xOffset);
     COORDS2INDEX(rank, yStride, coords, yOffset);
     COORDS2INDEX(rank, zStride, coords, zOffset);
-    z[zBase + zOffset] = func((sd::LongType)e, f[xBase + xOffset], s[yBase + yOffset]);
+    z[zOffset] = func((sd::LongType)e, f[xOffset], s[yOffset]);
   }
 
   NDArray::registerPrimaryUse({target}, {this, other});
@@ -255,10 +249,6 @@ void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::functi
   auto yStride = second->stridesOf();
   auto wStride = third->stridesOf();
   auto zStride = target->stridesOf();
-  const sd::LongType xBase = this->offset();
-  const sd::LongType yBase = second->offset();
-  const sd::LongType wBase = third->offset();
-  const sd::LongType zBase = target->offset();
   const sd::LongType len = this->lengthOf();
 
   for (sd::LongType e = 0; e < len; e++) {
@@ -269,7 +259,7 @@ void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::functi
     COORDS2INDEX(rank, yStride, coords, yOffset);
     COORDS2INDEX(rank, wStride, coords, wOffset);
     COORDS2INDEX(rank, zStride, coords, zOffset);
-    z[zBase + zOffset] = func(f[xBase + xOffset], s[yBase + yOffset], t[wBase + wOffset]);
+    z[zOffset] = func(f[xOffset], s[yOffset], t[wOffset]);
   }
 
   NDArray::registerPrimaryUse({target}, {this, second, third});

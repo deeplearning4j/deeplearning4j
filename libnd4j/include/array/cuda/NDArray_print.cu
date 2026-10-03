@@ -31,7 +31,7 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
       }
 
       const T* buff = bufferAsT<T>();
-      printf("%.*f\n", precision, (double)buff[getOffset(0)]);
+      printf("%.*f\n", precision, (double)buff[0]);
       return;
     } else {
       if (msg) printf("%s", msg);
@@ -56,23 +56,27 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
 
   if (msg) printf("%s", msg);
 
+  // getOffset(i) counts from the start of the data buffer, but bufferAsT() and specialBuffer() already point at the
+  // view's first element
+  const LongType viewStart = offset();
+
   // Helper lambda to print elements with truncation
   auto printElements = [&](const T* buff) {
     printf("[");
     if (summarize && _length > 2 * edgeItems) {
       // Print first edgeItems
       for (LongType i = 0; i < edgeItems; i++) {
-        printf("%.*f, ", precision, (double)buff[getOffset(i)]);
+        printf("%.*f, ", precision, (double)buff[getOffset(i) - viewStart]);
       }
       printf("..., ");
       // Print last edgeItems
       for (LongType i = _length - edgeItems; i < _length; i++) {
-        printf("%.*f", precision, (double)buff[getOffset(i)]);
+        printf("%.*f", precision, (double)buff[getOffset(i) - viewStart]);
         if (i < _length - 1) printf(", ");
       }
     } else {
       for (LongType i = 0; i < _length; i++) {
-        printf("%.*f", precision, (double)buff[getOffset(i)]);
+        printf("%.*f", precision, (double)buff[getOffset(i) - viewStart]);
         if (i < _length - 1) printf(", ");
       }
     }
@@ -101,7 +105,7 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
       elementsToFetch = _length;
     }
 
-    const auto sizeOfBuffer = sizeOfT() * (getOffset(elementsToFetch - 1) + 1);
+    const auto sizeOfBuffer = sizeOfT() * (getOffset(elementsToFetch - 1) - viewStart + 1);
     void* pHost = operator new(sizeOfBuffer);
 
     cudaMemcpyAsync(pHost, specialBuffer(), sizeOfBuffer, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());

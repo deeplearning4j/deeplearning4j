@@ -54,10 +54,6 @@ SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* thir
   auto lambdaYStride = second->stridesOf();
   auto lambdaWStride = third->stridesOf();
   auto lambdaZStride = target->stridesOf();
-  const sd::LongType lambdaXBase = this->offset();
-  const sd::LongType lambdaYBase = second->offset();
-  const sd::LongType lambdaWBase = third->offset();
-  const sd::LongType lambdaZBase = target->offset();
 
   auto loop = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
@@ -68,8 +64,8 @@ SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* thir
         COORDS2INDEX(lambdaRank, lambdaYStride, lambdaCoords, uOffset);
         COORDS2INDEX(lambdaRank, lambdaWStride, lambdaCoords, vOffset);
         COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
-        z[lambdaZBase + zOffset] =
-            func(f[lambdaXBase + tOffset], s[lambdaYBase + uOffset], t[lambdaWBase + vOffset]);
+        z[zOffset] =
+            func(f[tOffset], s[uOffset], t[vOffset]);
       }
   };
 
@@ -166,12 +162,9 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other, std::function<T(
   auto lambdaXStride = this->stridesOf();
   auto lambdaYStride = other->stridesOf();
   auto lambdaZStride = target->stridesOf();
-  const sd::LongType lambdaXBase = this->offset();
-  const sd::LongType lambdaYBase = other->offset();
-  const sd::LongType lambdaZBase = target->offset();
 
   if (other->isScalar()) {
-    auto otherVal = s[other->getOffset(0)];
+    auto otherVal = s[0];
     if (isTargetOrderEws) {
       auto loop = PRAGMA_THREADS_FOR {
           for (auto e = start; e < stop; e++) z[e] = func(f[e], otherVal);
@@ -185,7 +178,7 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other, std::function<T(
             INDEX2COORDS(e, lambdaRank, lambdaXShape, lambdaCoords);
             sd::LongType xOffset;
             COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
-            f[lambdaXBase + xOffset] = func(f[lambdaXBase + xOffset], otherVal);
+            f[xOffset] = func(f[xOffset], otherVal);
           }
       };
 
@@ -198,7 +191,7 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other, std::function<T(
             sd::LongType xOffset, zOffset;
             COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
             COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
-            z[lambdaZBase + zOffset] = func(f[lambdaXBase + xOffset], otherVal);
+            z[zOffset] = func(f[xOffset], otherVal);
           }
       };
 
@@ -226,7 +219,7 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other, std::function<T(
           COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
           COORDS2INDEX(lambdaRank, lambdaYStride, lambdaCoords, yOffset);
           COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
-          z[lambdaZBase + zOffset] = func(f[lambdaXBase + xOffset], s[lambdaYBase + yOffset]);
+          z[zOffset] = func(f[xOffset], s[yOffset]);
         }
     };
 
@@ -316,9 +309,17 @@ SD_LIB_HIDDEN void NDArray::applyLambda(std::function<T(T)>& func, NDArray* targ
   auto z = target->bufferAsT<T>();
 
   if (f == z) {
+    // bufferAsT() already points at the view's first element: offsets come from the strides alone (getOffset(e)
+    // would add the view's offset a second time).
+    const sd::LongType lambdaRank = this->rankOf();
+    auto lambdaXShape  = this->shapeOf();
+    auto lambdaXStride = this->stridesOf();
     auto loop = PRAGMA_THREADS_FOR {
         for (auto e = start; e < stop; e+= increment) {
-          auto xOffset = this->getOffset(e);
+          sd::LongType lambdaCoords[SD_MAX_RANK];
+          INDEX2COORDS(e, lambdaRank, lambdaXShape, lambdaCoords);
+          sd::LongType xOffset;
+          COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
           f[xOffset] = func(f[xOffset]);
         }
     };
@@ -331,8 +332,6 @@ SD_LIB_HIDDEN void NDArray::applyLambda(std::function<T(T)>& func, NDArray* targ
     auto lambdaXShape  = this->shapeOf();
     auto lambdaXStride = this->stridesOf();
     auto lambdaZStride = target->stridesOf();
-    const sd::LongType lambdaXBase = this->offset();
-    const sd::LongType lambdaZBase = target->offset();
     auto loop = PRAGMA_THREADS_FOR {
         for (auto e = start; e < stop; e+= increment) {
           sd::LongType lambdaCoords[SD_MAX_RANK];
@@ -340,7 +339,7 @@ SD_LIB_HIDDEN void NDArray::applyLambda(std::function<T(T)>& func, NDArray* targ
           sd::LongType xOffset, zOffset;
           COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
           COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
-          z[lambdaZBase + zOffset] = func(f[lambdaXBase + xOffset]);
+          z[zOffset] = func(f[xOffset]);
         }
     };
 
@@ -415,8 +414,6 @@ SD_LIB_HIDDEN void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>
     auto lambdaXShape  = this->shapeOf();
     auto lambdaXStride = this->stridesOf();
     auto lambdaZStride = target->stridesOf();
-    const sd::LongType lambdaXBase = this->offset();
-    const sd::LongType lambdaZBase = target->offset();
     auto loop = PRAGMA_THREADS_FOR {
         for (auto e = start; e < stop; e++) {
           sd::LongType lambdaCoords[SD_MAX_RANK];
@@ -424,7 +421,7 @@ SD_LIB_HIDDEN void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>
           sd::LongType xOffset, zOffset;
           COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
           COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
-          z[lambdaZBase + zOffset] = func(e, f[lambdaXBase + xOffset]);
+          z[zOffset] = func(e, f[xOffset]);
         }
     };
 
@@ -511,9 +508,6 @@ SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::func
   auto lambdaXStride = this->stridesOf();
   auto lambdaYStride = other->stridesOf();
   auto lambdaZStride = target->stridesOf();
-  const sd::LongType lambdaXBase = this->offset();
-  const sd::LongType lambdaYBase = other->offset();
-  const sd::LongType lambdaZBase = target->offset();
 
   auto loop = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
@@ -523,8 +517,8 @@ SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::func
         COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
         COORDS2INDEX(lambdaRank, lambdaYStride, lambdaCoords, yOffset);
         COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
-        z[lambdaZBase + zOffset] =
-            func((sd::LongType)e, f[lambdaXBase + xOffset], s[lambdaYBase + yOffset]);
+        z[zOffset] =
+            func((sd::LongType)e, f[xOffset], s[yOffset]);
       }
   };
 
