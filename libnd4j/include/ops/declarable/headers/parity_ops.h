@@ -1680,7 +1680,22 @@ DECLARE_CUSTOM_OP(extract_image_patches, 1, 1, false, 0, 7);
  *    0 - 4D tensor with same shape as images (input 0)
  */
 #if NOT_EXCLUDED(OP_draw_bounding_boxes)
-DECLARE_OP(draw_bounding_boxes, 3, 1, true);
+// Hand-expanded DECLARE_OP(draw_bounding_boxes, 3, 1, true) so the op can override emptyHandling() (defined in
+// draw_bounding_boxes.cpp) -> EMPTY_EXECUTE: an empty color table draws the default colors and images without boxes
+// are copied, so the op runs on empty inputs.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT draw_bounding_boxes : public sd::ops::DeclarableOp {
+ public:
+  draw_bounding_boxes();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override;
+
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(draw_bounding_boxes)
 #endif
 
 /**

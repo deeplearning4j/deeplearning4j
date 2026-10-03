@@ -44,6 +44,13 @@ OP_IMPL(draw_bounding_boxes, 3, 1, true) {
                images->rankOf());
   REQUIRE_TRUE(boxes->rankOf() == 3, 0, "draw_bounding_boxes: Boxes should be 3D tensor, but %i occured.",
                boxes->rankOf());
+  // as TF: the helpers read four coordinates per box and colors of at most four channels (the default table's)
+  REQUIRE_TRUE(images->sizeAt(3) == 1 || images->sizeAt(3) == 3 || images->sizeAt(3) == 4, 0,
+               "draw_bounding_boxes: Images depth should be 1 (GRY), 3 (RGB) or 4 (RGBA), but %lld occured.",
+               images->sizeAt(3));
+  REQUIRE_TRUE(boxes->sizeAt(2) == 4, 0,
+               "draw_bounding_boxes: Boxes last dim should be 4 (y_start, x_start, y_end, x_end), but %lld occured.",
+               boxes->sizeAt(2));
   if (colors) {
     REQUIRE_TRUE(colors->rankOf() == 2, 0, "draw_bounding_boxes: Color set should be 2D matrix, but %i occured.",
                  colors->rankOf());
@@ -59,6 +66,12 @@ OP_IMPL(draw_bounding_boxes, 3, 1, true) {
                images->sizeAt(0), boxes->sizeAt(0));
   helpers::drawBoundingBoxesFunctor(block.launchContext(), images, boxes, colors, output);
   return Status::OK;
+}
+
+// An empty color table draws the default colors and images without boxes are copied, so the op runs on empty inputs:
+// the default EMPTY_SKIP would leave the output unwritten.
+samediff::EmptyHandling SD_BACKEND_OPS_CLASS(draw_bounding_boxes)::emptyHandling() {
+  return samediff::EmptyHandling::EMPTY_EXECUTE;
 }
 
 DECLARE_TYPES(draw_bounding_boxes) {

@@ -64,10 +64,14 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
                                               const LongType* colorTableShape, T* output,
                                               const LongType* outputShape,
                                               LongType batchSize, LongType width, LongType height, LongType channels,
-                                              LongType boxSize, LongType colorTableLen) {
+                                              LongType boxSize, LongType numColors, LongType colorChannels) {
   for (auto batch = blockIdx.x; batch < (int)batchSize; batch += gridDim.x) {  // loop by batch
     for (auto boxIndex = 0; boxIndex < boxSize; ++boxIndex) {
-      auto colorIndex = boxIndex % colorTableLen;  // colorSet->at(c);
+      // a later box draws over an earlier one where they overlap, as on the CPU: the block's threads finish the
+      // previous box first (batch and boxIndex are the same for all of them)
+      __syncthreads();
+      // a color per box, cycling through the table's rows (colors), as on the CPU
+      auto colorIndex = boxIndex % numColors;
       LongType indices0[] = {batch, boxIndex, 0};
       LongType indices1[] = {batch, boxIndex, 1};
       LongType indices2[] = {batch, boxIndex, 2};
@@ -102,9 +106,9 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
             LongType zPos[] = {batch, rowStart, j, c};
             LongType cPos[] = {colorIndex, c};
             LongType cIndex, zIndex;
-            COORDS2INDEX(2,  shape::stride(colorTableShape), cPos, cIndex);
+            COORDS2INDEX(2, shape::stride(colorTableShape), cPos, cIndex);
             COORDS2INDEX(4, shape::stride(outputShape), zPos, zIndex);
-            output[zIndex] = (T)colorTable[cIndex];
+            output[zIndex] = c < colorChannels ? (T)colorTable[cIndex] : T(1.f);
           }
       }
       // Draw bottom line.
@@ -114,9 +118,9 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
             LongType zPos[] = {batch, rowEnd, j, c};
             LongType cPos[] = {colorIndex, c};
             LongType cIndex, zIndex;
-            COORDS2INDEX(2,  shape::stride(colorTableShape), cPos, cIndex);
+            COORDS2INDEX(2, shape::stride(colorTableShape), cPos, cIndex);
             COORDS2INDEX(4, shape::stride(outputShape), zPos, zIndex);
-            output[zIndex] = (T)colorTable[cIndex];
+            output[zIndex] = c < colorChannels ? (T)colorTable[cIndex] : T(1.f);
           }
       }
 
@@ -129,7 +133,7 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
             LongType cIndex, zIndex;
             COORDS2INDEX(2, shape::stride(colorTableShape), cPos, cIndex);
             COORDS2INDEX(4, shape::stride(outputShape), zPos, zIndex);
-            output[zIndex] = (T)colorTable[cIndex];
+            output[zIndex] = c < colorChannels ? (T)colorTable[cIndex] : T(1.f);
           }
       }
       // Draw right line.
@@ -141,7 +145,7 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
             LongType cIndex, zIndex;
             COORDS2INDEX(2, shape::stride(colorTableShape), cPos, cIndex);
             COORDS2INDEX(4, shape::stride(outputShape), zPos, zIndex);
-            output[zIndex] = (T)colorTable[cIndex];
+            output[zIndex] = c < colorChannels ? (T)colorTable[cIndex] : T(1.f);
           }
       }
     }
@@ -162,15 +166,16 @@ void drawBoundingBoxesH(LaunchContext* context, NDArray * images, NDArray * boxe
     colorsTable = *colors;
   }
 
-  auto imagesBuf = images->getDataBuffer()->template specialAsT<T>();
-  auto boxesBuf = boxes->getDataBuffer()->specialAsT<float>();             // boxes should be float32
-  auto colorsTableBuf = colorsTable.getDataBuffer()->specialAsT<float>();  // color table is float32
-  auto outputBuf = output->dataBuffer()->template specialAsT<T>();
+  // the arrays' own buffers from their offsets (a view's data starts past its buffer's start)
+  auto imagesBuf = reinterpret_cast<T const*>(images->specialBuffer());
+  auto boxesBuf = reinterpret_cast<float const*>(boxes->specialBuffer());             // boxes should be float32
+  auto colorsTableBuf = reinterpret_cast<float const*>(colorsTable.specialBuffer());  // color table is float32
+  auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
   dim3 launchDims = getLaunchDims("draw_bounding_boxes");
   drawBoundingBoxesKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       imagesBuf, images->specialShapeInfo(), boxesBuf, boxes->specialShapeInfo(), colorsTableBuf,
       colorsTable.specialShapeInfo(), outputBuf, output->specialShapeInfo(), batchSize, width, height, channels,
-      boxSize, colorsTable.lengthOf());
+      boxSize, colorsTable.sizeAt(0), colorsTable.sizeAt(1));
 }
 
 void drawBoundingBoxesFunctor(LaunchContext* context, NDArray* images, NDArray* boxes, NDArray* colors,
