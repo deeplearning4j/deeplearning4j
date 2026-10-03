@@ -71,17 +71,17 @@ public class ScatterMax extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradOut){
         //3 args: ref, indices, updates
-        //For non-modified indices, input gradient (reference) is same as output gradient
-        //For modified indices, dL/dref = dL/dOut if(ref[index[i],j] == max) or 0 otherwise
-        //And for updates, dL/du = dL/dOut if(update[i,j]==max) or 0 otherwise
+        //out is the largest of ref and the updates at its index. dL/dOut goes to whichever of them equal out, split
+        //evenly when several do (ref tied with an update, or updates tied with each other), so it is used once.
 
-        SDVariable notModified = arg(0).eq(outputVariable()).castTo(arg(0).dataType());   //0 if modified, 1 otherwise
-        SDVariable refGrad = gradOut.get(0).mul(notModified);
+        SDVariable grad = gradOut.get(0);
+        SDVariable refIsMax = arg(0).eq(outputVariable()).castTo(arg(0).dataType());
+        SDVariable updateIsMax = sameDiff.gather(outputVariable(), arg(1), 0).eq(arg(2)).castTo(arg(2).dataType());
+        //How many of ref and the updates reach each element's maximum; at least 1 unless out is NaN
+        SDVariable share = grad.div(sameDiff.scalarMax(sameDiff.scatterAdd(refIsMax, arg(1), updateIsMax), 1.0));
 
-        SDVariable gatherOut = sameDiff.gather(outputVariable(), arg(1), 0);
-        SDVariable gatherGrad = sameDiff.gather(gradOut.get(0), arg(1), 0);
-        SDVariable outIsUpdate = gatherOut.eq(arg(2)).castTo(arg(2).dataType());
-        SDVariable updateGrad = gatherGrad.mul(outIsUpdate);
+        SDVariable refGrad = share.mul(refIsMax);
+        SDVariable updateGrad = sameDiff.gather(share, arg(1), 0).mul(updateIsMax);
 
         return Arrays.asList(refGrad, sameDiff.zerosLike(arg(1)), updateGrad);
     }

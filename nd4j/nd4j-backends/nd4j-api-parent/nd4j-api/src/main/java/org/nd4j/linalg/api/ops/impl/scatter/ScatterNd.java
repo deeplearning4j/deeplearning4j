@@ -30,6 +30,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,15 @@ public class ScatterNd extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradOut){
-        throw new UnsupportedOperationException("Not yet implemented");
+        //out = zeros plus the updates at their index rows, a repeated row adding each of them: an update's gradient is
+        //dL/dOut at its row (a gatherNd). The indices, and the shape where one is given, get none.
+        List<SDVariable> ret = new ArrayList<>(args().length);
+        ret.add(sameDiff.zerosLike(arg(0)));
+        ret.add(sameDiff.gatherNd(gradOut.get(0), arg(0)));
+        for (int i = 2; i < args().length; i++) {
+            ret.add(sameDiff.zerosLike(arg(i)));
+        }
+        return ret;
     }
 
     @Override

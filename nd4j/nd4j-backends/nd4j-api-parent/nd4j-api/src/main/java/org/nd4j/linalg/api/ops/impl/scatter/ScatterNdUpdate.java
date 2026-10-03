@@ -27,10 +27,12 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -67,7 +69,28 @@ public class ScatterNdUpdate extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradOut){
-        throw new UnsupportedOperationException("Not yet implemented");
+        //out = ref with each index row's slice replaced by its update. scatter_nd_update applies the rows in order, so
+        //where a row repeats, out holds the last of its updates. dL/dref is dL/dOut with the replaced slices zeroed;
+        //an update's gradient is dL/dOut at its row for the update written last there, and 0 for the ones it replaced.
+        SDVariable ref = arg(0);
+        SDVariable indices = arg(1);
+        SDVariable updates = arg(2);
+        SDVariable grad = gradOut.get(0);
+
+        SDVariable gradRef = sameDiff.scatterNdUpdate(grad, indices, sameDiff.zerosLike(updates));
+
+        //Each update element numbered by its row: the number left at an output element once the rows are applied in
+        //order is the row written last there.
+        SDVariable rows = sameDiff.size(indices).div(sameDiff.sizeAt(indices, -1));
+        SDVariable sliceLength = sameDiff.size(updates).div(rows);
+        SDVariable elements = sameDiff.range(sameDiff.constant(Nd4j.scalar(0L)), sameDiff.size(updates),
+                sameDiff.constant(Nd4j.scalar(1L)), DataType.INT64);
+        SDVariable row = sameDiff.reshape(elements.div(sliceLength), sameDiff.shape(updates));
+        SDVariable lastRow = sameDiff.scatterNdUpdate(sameDiff.fill(sameDiff.shape(ref), DataType.INT64, -1),
+                indices, row);
+        SDVariable written = sameDiff.gatherNd(lastRow, indices).eq(row).castTo(updates.dataType());
+
+        return Arrays.asList(gradRef, sameDiff.zerosLike(indices), sameDiff.gatherNd(grad, indices).mul(written));
     }
 
     @Override

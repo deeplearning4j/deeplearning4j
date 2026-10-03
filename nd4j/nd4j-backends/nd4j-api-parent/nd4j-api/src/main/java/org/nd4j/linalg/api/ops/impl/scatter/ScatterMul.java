@@ -74,22 +74,31 @@ public class ScatterMul extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradOut){
         //3 args: ref, indices, updates
-        //For non-modified indices, input gradient (reference) is same as output gradient
-        //For modified indices, dL/dref = dL/dOut * dOut/dRef = dL/dOut * d(ref * update)/dRef = dL/dOut * update
-        //And for updates, dL/du = dL/dOut * dOut/du = dL/dOut * d(ref * update)/du = dL/dOut * ref
+        //out = ref times every update at its index, so dL/dref = dL/dOut times those updates (a scatterMul of the
+        //gradient), and dL/du = dL/dOut * ref * the OTHER updates at u's index: ref alone only when no index repeats.
+        //That product is (ref * the non-zero updates there) / u when u != 0 and no other update there is 0, the same
+        //product itself when u is the one zero update there, and 0 otherwise, so no zero is ever divided by.
 
         SDVariable ref = arg(0);
         SDVariable indices = arg(1);
         SDVariable updates = arg(2);
+        SDVariable grad = gradOut.get(0);
 
         List<SDVariable> ret = new ArrayList<>(3);
-        SDVariable gradRef = sameDiff.scatterMul(gradOut.get(0), indices, updates);
+        SDVariable gradRef = sameDiff.scatterMul(grad, indices, updates);
         ret.add(gradRef);            //Reference array
         ret.add(sameDiff.zerosLike(arg(1)));  //Indices
 
-        SDVariable gatherOutGrad = sameDiff.gather(gradOut.get(0), indices, 0);       //Updates
-        SDVariable gatherRef = sameDiff.gather(ref, indices, 0);
-        SDVariable updateGrad = gatherOutGrad.mul(gatherRef);
+        SDVariable isZero = updates.eq(0.0).castTo(updates.dataType());
+        SDVariable nonZero = updates.add(isZero);   //each zero update replaced by 1
+        SDVariable nonZeroProduct = sameDiff.scatterMul(ref, indices, nonZero);
+        SDVariable zeroCount = sameDiff.scatterAdd(sameDiff.zerosLike(ref), indices, isZero);
+        //1 where every OTHER update at the index is non-zero: the zero count there is u's own
+        SDVariable othersNonZero = sameDiff.gather(zeroCount, indices, 0).eq(isZero).castTo(updates.dataType());
+        SDVariable updateGrad = sameDiff.gather(grad, indices, 0)
+                .mul(sameDiff.gather(nonZeroProduct, indices, 0))
+                .div(nonZero)
+                .mul(othersNonZero);
         ret.add(updateGrad);
 
         return ret;

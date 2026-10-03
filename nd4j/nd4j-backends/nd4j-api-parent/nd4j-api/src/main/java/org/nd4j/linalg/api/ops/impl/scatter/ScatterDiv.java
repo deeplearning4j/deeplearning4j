@@ -69,11 +69,10 @@ public class ScatterDiv extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradOut){
         //3 args: ref, indices, updates
-        //For non-modified indices, input gradient (referenc) is same as output gradient
-        //For modified indices, dL/dref = dL/dOut * dOut/dRef = dL/dOut * d(ref / update)/dRef = dL/dOut / update
-        //And for updates, dL/du = dL/dOut * dOut/du = dL/dOut * d(ref / update)/du = dL/dOut * ref / u^2
+        //out = ref divided by every update at its index, so dL/dref = dL/dOut divided by those updates (a scatterDiv
+        //of the gradient), and dL/du = -dL/dOut * out / u. That is -dL/dOut * ref / u^2 only when no index repeats:
+        //out also holds the other updates' divisions.
 
-        SDVariable ref = arg(0);
         SDVariable indices = arg(1);
         SDVariable updates = arg(2);
 
@@ -83,8 +82,8 @@ public class ScatterDiv extends DynamicCustomOp {
         ret.add(sameDiff.zerosLike(arg(1)));  //Indices
 
         SDVariable gatherOutGrad = sameDiff.gather(gradOut.get(0), indices, 0);       //Updates
-        SDVariable gatherRef = sameDiff.gather(ref, indices, 0);
-        SDVariable updateGrad = gatherOutGrad.mul(gatherRef).div(sameDiff.math.square(updates)).neg();
+        SDVariable gatherOut = sameDiff.gather(outputVariable(), indices, 0);
+        SDVariable updateGrad = gatherOutGrad.mul(gatherOut).div(updates).neg();
         ret.add(updateGrad);
 
         return ret;

@@ -408,15 +408,23 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
             SameDiff sd = SameDiff.create();
 
+            // Indices 4 and 10 repeat, so each gradient has to account for every update at one index: the other
+            // factors for mul, the other divisors for div, only the last write for update. Factors and divisors
+            // stay at least 0.5 from 0, where these gradients grow without bound. The loss weighs each output
+            // element differently, so a gradient sent to the wrong element shows.
             // Keep raw arrays for expected computation -- in.getArr() may return
             // a stale/partially-updated view via DeviceLocalNDArray; use the raw arrays directly.
             INDArray inArr = Nd4j.rand(DataType.DOUBLE, 20, 10);
-            INDArray indicesArr = Nd4j.create(new double[]{3, 4, 5, 10, 18}).castTo(DataType.INT);
-            INDArray updatesArr = Nd4j.rand(DataType.DOUBLE, 5, 10).muli(2).subi(1);
+            INDArray indicesArr = Nd4j.create(new double[]{3, 4, 5, 10, 18, 4, 10}).castTo(DataType.INT);
+            INDArray updatesArr = Nd4j.rand(DataType.DOUBLE, 7, 10).muli(2).subi(1);
+            if (i == 2 || i == 3) {
+                updatesArr = Transforms.sign(updatesArr).muli(Transforms.abs(updatesArr).addi(0.5));
+            }
+            INDArray weightsArr = Nd4j.rand(DataType.DOUBLE, 20, 10).addi(0.5);
 
             SDVariable in = sd.var("in", DataType.DOUBLE, 20, 10);
-            SDVariable indices = sd.var("indices", DataType.INT, new long[]{5});
-            SDVariable updates = sd.var("updates", DataType.DOUBLE, 5, 10);
+            SDVariable indices = sd.var("indices", DataType.INT, new long[]{7});
+            SDVariable updates = sd.var("updates", DataType.DOUBLE, 7, 10);
 
             in.setArray(inArr);
             indices.setArray(indicesArr);
@@ -442,10 +450,9 @@ public class TestMiscOpValidation extends BaseOpValidation {
                     name = "scatterDiv";
                     break;
                 case 4:
-                  /*  scatter = sd.scatterUpdate("s", in, indices, updates);
+                    scatter = sd.scatterUpdate("s", in, indices, updates);
                     name = "scatterUpdate";
-                    break;*/
-                    continue;
+                    break;
                 case 5:
                     scatter = sd.scatterMax("s", in, indices, updates);
                     name = "scatterMax";
@@ -491,14 +498,11 @@ public class TestMiscOpValidation extends BaseOpValidation {
                 }
             }
 
-            SDVariable loss = sd.sum(scatter);  //.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
+            SDVariable loss = scatter.mul(sd.constant("weights", weightsArr)).sum();
 
-
-            // Scatter op gradients have known numerical gradient check failures; disable gradient check,
-            // forward pass correctness is still validated via expected().
             TestCase tc = new TestCase(sd)
                     .expected(scatter, exp)
-                    .gradientCheck(false)
+                    .gradientCheck(true)
                     .gradCheckSkipVariables(indices.name());
 
             String error = OpValidation.validate(tc, true);

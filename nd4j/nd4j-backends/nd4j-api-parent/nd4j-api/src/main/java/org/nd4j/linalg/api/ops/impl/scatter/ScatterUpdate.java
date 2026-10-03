@@ -27,6 +27,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -88,21 +89,30 @@ public class  ScatterUpdate extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradOut) {
         //3 args: ref, indices, updates
-        //For non-modified indices, input gradient (reference) is same as output gradient
-        //For modified indices, dL/dref = dL/dOut * dOut/dRef = dL/dOut * d(update)/dRef = 0
-        //And for updates, dL/du = dL/dOut * dOut/du = dL/dOut * d(update)/du = dL/dOut -> gather op
+        //out is ref with each indexed slice replaced by its update. scatter_upd applies the updates in index order,
+        //so where an index repeats, out holds the last of them. dL/dref is dL/dOut with the replaced slices zeroed;
+        //dL/du is dL/dOut at u's index for the update written last there, and 0 for the updates it replaced.
 
+        SDVariable ref = arg(0);
         SDVariable indices = arg(1);
         SDVariable updates = arg(2);
+        SDVariable grad = gradOut.get(0);
 
         List<SDVariable> ret = new ArrayList<>(3);
-        SDVariable zerosUpdate = sameDiff.zerosLike(updates);
-        SDVariable gradRef = sameDiff.scatterMul(gradOut.get(0), indices, zerosUpdate);  //TODO optimize
+        SDVariable gradRef = sameDiff.scatterUpdate(grad, indices, sameDiff.zerosLike(updates));
         ret.add(gradRef);            //Reference array gradient
         ret.add(sameDiff.zerosLike(arg(1)));  //Indices
 
-        SDVariable gather = sameDiff.gather(gradOut.get(0), indices, 0);       //Updates
-        ret.add(gather);
+        //Each update element numbered by its update's position in indices: the largest number to reach an output
+        //element is the update written last there.
+        SDVariable sliceLength = sameDiff.size(updates).div(sameDiff.size(indices));
+        SDVariable elements = sameDiff.range(sameDiff.constant(Nd4j.scalar(0L)), sameDiff.size(updates),
+                sameDiff.constant(Nd4j.scalar(1L)), DataType.INT64);
+        SDVariable position = sameDiff.reshape(elements.div(sliceLength), sameDiff.shape(updates));
+        SDVariable lastPosition = sameDiff.scatterMax(sameDiff.fill(sameDiff.shape(ref), DataType.INT64, -1),
+                indices, position);
+        SDVariable written = sameDiff.gather(lastPosition, indices, 0).eq(position).castTo(updates.dataType());
+        ret.add(sameDiff.gather(grad, indices, 0).mul(written));       //Updates
 
         return ret;
     }
