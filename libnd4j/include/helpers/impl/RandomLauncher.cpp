@@ -138,6 +138,36 @@ void RandomLauncher::fillExponential(LaunchContext* context, graph::RandomGenera
   NDArray::registerSpecialUse({array}, {});
 }
 
+void RandomLauncher::fillPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array,
+                                 double lambda) {
+  ExtraArguments arguments({lambda});
+  PointersManager pm(context, "fillPoisson");
+
+  NDArray::prepareSpecialUse({array}, {});
+
+  NativeOpExecutioner::execRandom(context, random::PoissonDistribution, &rng, array->buffer(), array->shapeInfo(),
+                                  array->specialBuffer(), array->specialShapeInfo(),
+                                  arguments.argumentsAsT(array->dataType()));
+  pm.synchronize();
+
+  NDArray::registerSpecialUse({array}, {});
+}
+
+void RandomLauncher::fillGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array, double alpha,
+                               double beta) {
+  ExtraArguments arguments({alpha, beta});
+  PointersManager pm(context, "fillGamma");
+
+  NDArray::prepareSpecialUse({array}, {});
+
+  NativeOpExecutioner::execRandom(context, random::GammaDistribution, &rng, array->buffer(), array->shapeInfo(),
+                                  array->specialBuffer(), array->specialShapeInfo(),
+                                  arguments.argumentsAsT(array->dataType()));
+  pm.synchronize();
+
+  NDArray::registerSpecialUse({array}, {});
+}
+
 void RandomLauncher::fillLogNormal(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array,
                                    double mean, double stdev) {
   ExtraArguments arguments({mean, stdev});

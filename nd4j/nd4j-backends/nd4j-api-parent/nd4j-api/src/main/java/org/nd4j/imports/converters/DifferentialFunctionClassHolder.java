@@ -21,6 +21,8 @@
 package org.nd4j.imports.converters;
 
 import org.eclipse.deeplearning4j.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNormBp;
+import org.eclipse.deeplearning4j.nd4j.linalg.api.ops.random.impl.GammaDistribution;
+import org.eclipse.deeplearning4j.nd4j.linalg.api.ops.random.impl.PoissonDistribution;
 import dorkbox.annotation.AnnotationDefaults;
 import dorkbox.annotation.AnnotationDetector;
 import lombok.Getter;
@@ -734,6 +736,8 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.random.impl.Range.class,
                 org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution.class,
                 org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class,
+                PoissonDistribution.class,
+                GammaDistribution.class,
                 org.nd4j.linalg.api.ops.util.PrintAffinity.class,
                 org.nd4j.linalg.api.ops.util.PrintVariable.class,
                 org.nd4j.linalg.api.ops.compat.CompatSparseToDense.class,

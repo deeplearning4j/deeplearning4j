@@ -22,6 +22,8 @@ package org.nd4j.autodiff.samediff.serde;
 
 
 
+import org.eclipse.deeplearning4j.nd4j.linalg.api.ops.random.impl.GammaDistribution;
+import org.eclipse.deeplearning4j.nd4j.linalg.api.ops.random.impl.PoissonDistribution;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMax;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMin;
@@ -554,6 +556,10 @@ public class LegacyOpMapper {
                 return TruncatedNormalDistribution.class;
             case 12:
                 return AlphaDropOut.class;
+            case 15:
+                return PoissonDistribution.class;
+            case 16:
+                return GammaDistribution.class;
             default:
                 throw new UnsupportedOperationException("No known random op for op number: " + opNum);
 //            case 13:

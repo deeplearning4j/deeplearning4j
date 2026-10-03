@@ -91,6 +91,9 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
   if (stateHost == nullptr) {
     THROW_EXCEPTION("execRandom: stateHost is nullptr - RandomGenerator pointer is invalid");
   }
+  // The op reads x as z's type
+  if (sd::ArrayOptions::dataType(hXShapeInfo) != sd::ArrayOptions::dataType(hZShapeInfo))
+    THROW_EXCEPTION("execRandom: x must have the output's data type");
 
   auto stream = lc->getCudaStream();
 
@@ -126,6 +129,10 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
   if (stateHost == nullptr) {
     THROW_EXCEPTION("execRandom: stateHost is nullptr - RandomGenerator pointer is invalid");
   }
+  // The op reads x and y as z's type
+  if (sd::ArrayOptions::dataType(hXShapeInfo) != sd::ArrayOptions::dataType(hZShapeInfo) ||
+      sd::ArrayOptions::dataType(hYShapeInfo) != sd::ArrayOptions::dataType(hZShapeInfo))
+    THROW_EXCEPTION("execRandom: x and y must have the output's data type");
 
   auto stream = lc->getCudaStream();
   auto sizeOf = sizeof(sd::graph::RandomGenerator);

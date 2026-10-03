@@ -53,5 +53,10 @@ class SD_LIB_EXPORT RandomLauncher {
                            double prob);
 
   static void fillBernoulli(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array, double prob);
+
+  static void fillPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array, double lambda);
+
+  static void fillGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array, double alpha,
+                        double beta);
 };
 }  // namespace sd

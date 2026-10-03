@@ -61,7 +61,9 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
   auto length = shape::length(zShapeInfo);
   sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
 
-  if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
+  // Element i draws at index i in logical (C) order: only dense row-major arrays have element i at memory offset i
+  // (same-stride 'f' arrays or strided views do not).
+  if (shape::isDenseRowMajor(xShapeInfo) && shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
       shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
     auto func = PRAGMA_THREADS_FOR {
       // Do NOT use PRAGMA_OMP_SIMD here: relativeT<T> uses union-based type punning

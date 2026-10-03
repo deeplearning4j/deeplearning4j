@@ -39,9 +39,6 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-// Samples in float, or in double for a double output.
-template <typename Z>
-using RandomComputeT = typename std::conditional<std::is_same<Z, double>::value, double, float>::type;
 
 // The generator is passed by value: kernels only read it, and the host rewinds it after the launch.
 template <typename Z, typename C>

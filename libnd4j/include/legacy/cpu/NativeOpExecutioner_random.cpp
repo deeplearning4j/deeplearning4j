@@ -34,6 +34,9 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext *lc, int opNum, sd::Point
                                      void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
                                      const sd::LongType *dZShapeInfo, void *extraArguments) {
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+  // The op reads x as z's type
+  if (sd::ArrayOptions::dataType(hXShapeInfo) != zType)
+    THROW_EXCEPTION("execRandom: x must have the output's data type");
   BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction,
                         ::execTransform(opNum, state, hX, hXShapeInfo, hZ, hZShapeInfo, extraArguments),
                         SD_FLOAT_TYPES);
@@ -48,6 +51,9 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext *lc, int opNum, sd::Point
                                      const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
                                      void *dZ, const sd::LongType *dZShapeInfo, void *extraArguments) {
   auto xType = sd::ArrayOptions::dataType(hZShapeInfo);
+  // The op reads x and y as z's type
+  if (sd::ArrayOptions::dataType(hXShapeInfo) != xType || sd::ArrayOptions::dataType(hYShapeInfo) != xType)
+    THROW_EXCEPTION("execRandom: x and y must have the output's data type");
   BUILD_SINGLE_SELECTOR(
       xType, functions::random::RandomFunction,
       ::execTransform(opNum, state, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraArguments), SD_FLOAT_TYPES);

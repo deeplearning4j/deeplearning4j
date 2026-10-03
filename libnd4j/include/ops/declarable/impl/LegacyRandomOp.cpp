@@ -234,6 +234,52 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
 
       RandomLauncher::fillTruncatedNormal(block.launchContext(), block.randomGenerator(), z, mean, stdev);
     } break;
+    case random::PoissonDistribution: {
+      // Poisson samples with rate lambda
+      T lambda;
+      if (block.width() > 1) {
+        auto arg1 = INPUT_VARIABLE(1);
+        REQUIRE_TRUE(arg1->isScalar(), 0, "Poisson: Second argument must be scalar");
+
+        lambda = arg1->e<T>(0);
+      } else if (block.getTArguments()->size() == 1) {
+        lambda = T_ARG(0);
+      } else {
+        REQUIRE_TRUE(false, 0, "Poisson requires either 1 TArg or 2 arguments to be present");
+      }
+
+      // Generator-only form: no shape tensor; the output already has the shape either way.
+      REQUIRE_TRUE(input == nullptr || input->isVector(), 0, "Poisson requires pure shape as first argument");
+
+      auto z = OUTPUT_VARIABLE(0);
+
+      RandomLauncher::fillPoisson(block.launchContext(), block.randomGenerator(), z, lambda);
+    } break;
+    case random::GammaDistribution: {
+      // Gamma samples with shape alpha and rate beta
+      T alpha, beta;
+      if (block.width() > 2) {
+        auto arg1 = INPUT_VARIABLE(1);
+        auto arg2 = INPUT_VARIABLE(2);
+        REQUIRE_TRUE(arg1->isScalar(), 0, "Gamma: Second argument must be scalar");
+        REQUIRE_TRUE(arg2->isScalar(), 0, "Gamma: Third argument must be scalar");
+
+        alpha = arg1->e<T>(0);
+        beta = arg2->e<T>(0);
+      } else if (block.getTArguments()->size() == 2) {
+        alpha = T_ARG(0);
+        beta = T_ARG(1);
+      } else {
+        REQUIRE_TRUE(false, 0, "Gamma requires either 2 TArgs or 3 arguments to be present");
+      }
+
+      // Generator-only form: no shape tensor; the output already has the shape either way.
+      REQUIRE_TRUE(input == nullptr || input->isVector(), 0, "Gamma requires pure shape as first argument");
+
+      auto z = OUTPUT_VARIABLE(0);
+
+      RandomLauncher::fillGamma(block.launchContext(), block.randomGenerator(), z, alpha, beta);
+    } break;
     case random::AlphaDropOut: {
       auto z = OUTPUT_VARIABLE(0);
 

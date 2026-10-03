@@ -30,9 +30,6 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-// Samples in float, or in double for a double output.
-template <typename Z>
-using RandomComputeT = typename std::conditional<std::is_same<Z, double>::value, double, float>::type;
 
 template <typename Z>
 static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
