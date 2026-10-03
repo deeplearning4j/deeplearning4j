@@ -213,6 +213,16 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_MATMUL_SERIAL_FMA_TILED getEnvVariable("BLOCK_SIZE_MATMUL_SERIAL_FMA_TILED", 128)
 #define SHARED_MEM_SIZE_MATMUL_SERIAL_FMA_TILED getEnvVariable("SHARED_MEM_SIZE_MATMUL_SERIAL_FMA_TILED", 17408)
 
+// Mixed GEMV (MmulHelper): one warp per depth-major row, in small blocks so that a few hundred
+// rows still reach every SM; row-major W in tiles of 32 rows whose block's warps split the depth.
+// Blocks are whole warps; the column kernel's shared memory is one sum per thread.
+#define GRID_SIZE_MIXED_GEMV_ROWS getEnvVariable("GRID_SIZE_MIXED_GEMV_ROWS", 4096)
+#define BLOCK_SIZE_MIXED_GEMV_ROWS getEnvVariable("BLOCK_SIZE_MIXED_GEMV_ROWS", 128)
+#define SHARED_MEM_SIZE_MIXED_GEMV_ROWS getEnvVariable("SHARED_MEM_SIZE_MIXED_GEMV_ROWS", 0)
+#define GRID_SIZE_MIXED_GEMV_COLUMNS getEnvVariable("GRID_SIZE_MIXED_GEMV_COLUMNS", 1024)
+#define BLOCK_SIZE_MIXED_GEMV_COLUMNS getEnvVariable("BLOCK_SIZE_MIXED_GEMV_COLUMNS", 512)
+#define SHARED_MEM_SIZE_MIXED_GEMV_COLUMNS getEnvVariable("SHARED_MEM_SIZE_MIXED_GEMV_COLUMNS", 0)
+
 #define GRID_SIZE_MATRIX_MULTIPLY getEnvVariable("GRID_SIZE_MATRIX_MULTIPLY", 256)
 #define BLOCK_SIZE_MATRIX_MULTIPLY getEnvVariable("BLOCK_SIZE_MATRIX_MULTIPLY", 256)
 #define SHARED_MEM_SIZE_MATRIX_MULTIPLY getEnvVariable("SHARED_MEM_SIZE_MATRIX_MULTIPLY", 256)

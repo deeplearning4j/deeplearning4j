@@ -17,6 +17,7 @@
 
 #include <array/DataTypeUtils.h>
 #include <helpers/MmulHelper.h>
+#include <ops/declarable/helpers/matmul.h>
 #include <helpers/shape.h>
 
 #include <vector>
@@ -77,7 +78,7 @@ NDArray* MmulHelper::mmul(NDArray* A, NDArray* B, NDArray* C,
       }
       C = new NDArray(
           outOrder, cShape,
-          DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
+          ops::helpers::matmulOutputType(A->dataType(), B->dataType()),
           A->getContext());
     }
     if (C->isEmpty()) return C;

@@ -293,8 +293,8 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
   T2* Y = reinterpret_cast<T2*>(const_cast<void*>(vY));
   T3* Z = reinterpret_cast<T3*>(vZ);
 
-  // Widen low-precision storage only; integer and double contracts stay unchanged.
-  using AccT = typename simdOps::AggregateType<T3>::type;
+  // Widen low-precision storage only; one storage type throughout keeps its contract.
+  using AccT = ops::helpers::ProductAccumulator<T1, T2, T3>;
   const AccT alphaZ = static_cast<AccT>(alpha);
   const AccT betaZ = static_cast<AccT>(beta);
 
@@ -326,6 +326,75 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// Mixed GEMV (ops::helpers::MixedGemvLayout): W, x and y are read in place in their storage
+// types and summed in the accumulator type, so no operand is copied.
+template <typename W, typename X, typename Y>
+static void mixedGemv_(NDArray* w, NDArray* x, NDArray* y, const ops::helpers::MixedGemvLayout& layout,
+                       double alpha, double beta) {
+  using AccT = ops::helpers::ProductAccumulator<W, X, Y>;
+  const W* weights = w->bufferAsT<W>();
+  const X* vector = x->bufferAsT<X>();
+  Y* output = y->bufferAsT<Y>();
+  const AccT alphaAcc = static_cast<AccT>(alpha);
+  const AccT betaAcc = static_cast<AccT>(beta);
+  auto store = [&](sd::LongType row, AccT sum) {
+    Y& out = output[row * layout.yStride];
+    AccT result = alphaAcc * sum;
+    if (beta != 0.0) result += betaAcc * static_cast<AccT>(out);
+    out = static_cast<Y>(result);
+  };
+
+  if (layout.depthMajor()) {
+    // A row's weights are adjacent: one dot product per row.
+    auto rows = PRAGMA_THREADS_FOR {
+      for (auto row = start; row < stop; ++row) {
+        const W* rowWeights = weights + row * layout.rowStride;
+        AccT sum = static_cast<AccT>(0);
+        for (sd::LongType k = 0; k < layout.depth; ++k)
+          sum += static_cast<AccT>(rowWeights[k * layout.depthStride]) * static_cast<AccT>(vector[k * layout.xStride]);
+        store(row, sum);
+      }
+    };
+    samediff::Threads::parallel_tad(rows, 0, layout.rows);
+    return;
+  }
+
+  // Neighbouring rows' weights are adjacent: a thread sweeps the depth over a block of rows, so
+  // it reads W in storage order.
+  constexpr sd::LongType kBlockRows = 256;
+  const sd::LongType blocks = (layout.rows + kBlockRows - 1) / kBlockRows;
+  auto rowBlocks = PRAGMA_THREADS_FOR {
+    AccT sums[kBlockRows];
+    for (auto block = start; block < stop; ++block) {
+      const sd::LongType first = block * kBlockRows;
+      const sd::LongType count = std::min(kBlockRows, layout.rows - first);
+      std::fill(sums, sums + count, static_cast<AccT>(0));
+      for (sd::LongType k = 0; k < layout.depth; ++k) {
+        const AccT value = static_cast<AccT>(vector[k * layout.xStride]);
+        const W* depthWeights = weights + k * layout.depthStride + first * layout.rowStride;
+        for (sd::LongType r = 0; r < count; ++r)
+          sums[r] += static_cast<AccT>(depthWeights[r * layout.rowStride]) * value;
+      }
+      for (sd::LongType r = 0; r < count; ++r) store(first + r, sums[r]);
+    }
+  };
+  samediff::Threads::parallel_tad(rowBlocks, 0, blocks);
+}
+
+static void mixedGemv(NDArray* w, NDArray* x, NDArray* y, const ops::helpers::MixedGemvLayout& layout,
+                      double alpha, double beta) {
+  BUILD_TRIPLE_SELECTOR(w->dataType(), x->dataType(), y->dataType(), mixedGemv_, (w, x, y, layout, alpha, beta),
+                        SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+}
+
+// Host BLAS reads one FLOAT32 or DOUBLE type throughout, so the mixed GEMV and usualDot take every
+// product of float storage whose types are not all one, reading each operand in place.
+static bool mixedFloatStorage(DataType a, DataType b, DataType c) {
+  return (a != b || a != c) && ops::helpers::mixedGemvStorage(a) && ops::helpers::mixedGemvStorage(b) &&
+         ops::helpers::mixedGemvStorage(c);
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double alpha, const double beta,
                               const char outOrder) {
@@ -348,7 +417,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
 
   if (C == nullptr) {
     std::vector<sd::LongType> shape = {M, N};
-    C = new NDArray(outOrder, shape, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
+    C = new NDArray(outOrder, shape, ops::helpers::matmulOutputType(A->dataType(), B->dataType()),
                     A->getContext());
   }
   if (C->isEmpty()) return C;
@@ -357,7 +426,34 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
   const auto bType = B->dataType();
   const auto cType = C->dataType();
 
-  const bool ABC = (aType == bType) && (aType == cType);
+  // One output row or column of mixed float storage: the mixed GEMV reads every operand in place
+  // instead of widening it.
+  if (M == 1 || N == 1) {
+    NDArray* matrix = M == 1 ? B : A;
+    NDArray* vector = M == 1 ? A : B;
+    if (mixedFloatStorage(matrix->dataType(), vector->dataType(), cType)) {
+      mixedGemv(matrix, vector, C, ops::helpers::mixedGemvLayoutOfGemm(A, B, C), alpha, beta);
+      return C;
+    }
+  }
+
+  // Any other mix of storage types computes in one type that narrows no operand
+  // (ops::helpers::mixedGemmComputeType) and lands in C: the kernels below read all three
+  // operands through one element type.
+  if (aType != bType || aType != cType) {
+    const DataType computeType = ops::helpers::mixedGemmComputeType(aType, bType, cType);
+    NDArray* computeA = aType == computeType ? A : A->cast(computeType);
+    NDArray* computeB = bType == computeType ? B : B->cast(computeType);
+    NDArray* computeC = cType == computeType ? C : C->cast(computeType);
+    mmulMxM(computeA, computeB, computeC, alpha, beta, outOrder);
+    if (computeC != C) {
+      C->assign(computeC);
+      delete computeC;
+    }
+    if (computeA != A) delete computeA;
+    if (computeB != B) delete computeB;
+    return C;
+  }
 
   // Fast path: check for row-major contiguous arrays (most common case in BERT)
   // Row-major means stride(-1)=1 and stride(-2)=ncols
@@ -365,7 +461,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
   const bool bRowMajor = (B->strideAt(1) == 1) && (B->strideAt(0) == N);
   const bool cRowMajor = (C->strideAt(1) == 1) && (C->strideAt(0) == N);
 
-  if (ABC && aRowMajor && bRowMajor && cRowMajor && sd::env_isEnableBlas()) {
+  if (aRowMajor && bRowMajor && cRowMajor && sd::env_isEnableBlas()) {
     // Validate dimensions before BLAS call to prevent crashes
     if (M <= 0 || N <= 0 || K <= 0) {
       std::string errorMessage = "MmulHelper::mmul (fast path): Invalid matrix dimensions. ";
@@ -393,80 +489,11 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
 
   // General path for non-contiguous or non-standard layouts
   const bool hasGemm = BlasHelper::getInstance().hasGEMM(aType);
-  const bool typeDouble = hasGemm && ABC && aType == DataType::DOUBLE;
-  const bool typeFloat = hasGemm && ABC && aType == DataType::FLOAT32;
-
-  // Low-precision storage is handled by usualGemm's FP32 accumulator. Do not
-  // materialize entire FP32 weights or reinterpret F-order casts as row-major.
-
-  // Mixed-type safe path: when A is FP32/FP64 but types don't all match (ABC=false),
-  // usualGemm would reinterpret B and C buffers using float pointer arithmetic — this
-  // produces wrong element offsets for non-FP32 B (e.g., FLOAT16: 2 bytes/element but
-  // accessed as 4 bytes/element → buffer overrun → SEGV_ACCERR on guard page).
-  // Fix: cast all inputs to A's type, use a tight-packed temp C, then assign back.
-  if (!ABC && sd::env_isEnableBlas()) {
-    if (aType == DataType::FLOAT32 && BlasHelper::getInstance().hasGEMM(DataType::FLOAT32)) {
-      // Cast A and B to contiguous FP32; use a tight FP32 temp for C.
-      NDArray* aF32 = (aType == DataType::FLOAT32 && A->strideAt(1) == 1 && A->strideAt(0) == K)
-                          ? nullptr : A->cast(DataType::FLOAT32);
-      NDArray* bF32 = (bType == DataType::FLOAT32 && B->strideAt(1) == 1 && B->strideAt(0) == N)
-                          ? nullptr : B->cast(DataType::FLOAT32);
-      NDArray* aEff = (aF32 != nullptr) ? aF32 : const_cast<NDArray*>(A);
-      NDArray* bEff = (bF32 != nullptr) ? bF32 : const_cast<NDArray*>(B);
-      std::vector<LongType> cShape = {M, N};
-      NDArray cF32('c', cShape, DataType::FLOAT32, A->getContext());
-      if (beta != 0.0) cF32.assign(C);
-      auto blasLock3 = BlasHelper::getInstance().lockBlas();
-      BlasHelper::getInstance().sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
-                         aEff->bufferAsT<float>(), K, bEff->bufferAsT<float>(), N, (float)beta,
-                         cF32.bufferAsT<float>(), N);
-      C->assign(&cF32);
-      delete aF32;
-      delete bF32;
-      return C;
-    } else if (aType == DataType::DOUBLE && BlasHelper::getInstance().hasGEMM(DataType::DOUBLE)) {
-      NDArray* aF64 = (aType == DataType::DOUBLE && A->strideAt(1) == 1 && A->strideAt(0) == K)
-                          ? nullptr : A->cast(DataType::DOUBLE);
-      NDArray* bF64 = (bType == DataType::DOUBLE && B->strideAt(1) == 1 && B->strideAt(0) == N)
-                          ? nullptr : B->cast(DataType::DOUBLE);
-      NDArray* aEff = (aF64 != nullptr) ? aF64 : const_cast<NDArray*>(A);
-      NDArray* bEff = (bF64 != nullptr) ? bF64 : const_cast<NDArray*>(B);
-      std::vector<LongType> cShape = {M, N};
-      NDArray cF64('c', cShape, DataType::DOUBLE, A->getContext());
-      if (beta != 0.0) cF64.assign(C);
-      auto blasLock4 = BlasHelper::getInstance().lockBlas();
-      BlasHelper::getInstance().dgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, alpha,
-                         aEff->bufferAsT<double>(), K, bEff->bufferAsT<double>(), N, beta,
-                         cF64.bufferAsT<double>(), N);
-      C->assign(&cF64);
-      delete aF64;
-      delete bF64;
-      return C;
-    }
-  }
+  const bool typeDouble = hasGemm && aType == DataType::DOUBLE;
+  const bool typeFloat = hasGemm && aType == DataType::FLOAT32;
 
   if ((!typeFloat && !typeDouble) || !sd::env_isEnableBlas()) {
-    // When all three types match, usualGemm is safe as-is.
-    // When types differ (ABC=false), we must cast to a common type first —
-    // BUILD_SINGLE_SELECTOR_THRICE uses aType for all template params,
-    // which would reinterpret B/C buffers with wrong element size.
-    if (!ABC) {
-      // Promote to A's type — cast B and C if they differ.
-      NDArray* castB = (bType != aType) ? B->cast(aType) : nullptr;
-      std::vector<LongType> cShape = {M, N};
-      NDArray* castC = (cType != aType) ? new NDArray(NDArray('c', cShape, aType, C->getContext())) : nullptr;
-      if (castC != nullptr && beta != 0.0) castC->assign(C);
-      NDArray* effB = (castB != nullptr) ? castB : const_cast<NDArray*>(B);
-      NDArray* effC = (castC != nullptr) ? castC : const_cast<NDArray*>(C);
-      BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, effB, effC, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
-      if (castC != nullptr) {
-        C->assign(effC);
-      }
-      delete castB;
-      delete castC;
-    } else {
-      BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
-    }
+    BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
   } else {
     NDArray *pA = const_cast<NDArray*>(A);
     NDArray *pB = const_cast<NDArray*>(B);
@@ -550,20 +577,6 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
 // MXN x N = M
 NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const double alpha, const double beta,
                               const char outOrder) {
-  if (X->dataType() != A->dataType()) {
-    std::string errorMessage;
-    errorMessage = "mmulMxV expects all data types to be the same";
-    errorMessage += "A: " + DataTypeUtils::asString(A->dataType());
-    errorMessage += "X: " + DataTypeUtils::asString(X->dataType());
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  if (Y != nullptr && X->dataType() != Y->dataType()) {
-    std::string errorMessage;
-    errorMessage = "mmulMxV expects all data types to be the same";
-    errorMessage += "X: " + DataTypeUtils::asString(X->dataType());
-    errorMessage += "Y: " + DataTypeUtils::asString(Y->dataType());
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   sd::LongType xLenDim, yLenDim(0);
 
   if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxV: rank of A array is not equal 2 !");
@@ -580,23 +593,47 @@ NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const doub
 
   if (Y == nullptr) {
     std::vector<sd::LongType> shape = {M};
-    Y = new NDArray(outOrder,shape, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()),
+    Y = new NDArray(outOrder,shape, ops::helpers::matmulOutputType(A->dataType(), X->dataType()),
                     A->getContext());
   }
   if (Y->isEmpty()) return Y;
-
-  const int incx = X->stridesOf()[xLenDim];
-  const int incy = Y->stridesOf()[yLenDim];
 
   const auto aType = A->dataType();
   const auto xType = X->dataType();
   const auto yType = Y->dataType();
 
-  const bool AX(aType == xType), AY(aType == yType), AXY(AX && AY);
+  // Mixed float storage: the mixed GEMV reads every operand in place instead of widening it.
+  if (mixedFloatStorage(aType, xType, yType)) {
+    mixedGemv(A, X, Y, {M, N, A->strideAt(0), A->strideAt(1), X->strideAt(xLenDim), Y->strideAt(yLenDim)}, alpha,
+              beta);
+    return Y;
+  }
+
+  // Any other mix of storage types computes in one type that narrows no operand
+  // (ops::helpers::mixedGemmComputeType) and lands in Y: usualGemv reads all three operands
+  // through one element type.
+  if (aType != xType || aType != yType) {
+    const DataType computeType = ops::helpers::mixedGemmComputeType(aType, xType, yType);
+    NDArray* computeA = aType == computeType ? A : A->cast(computeType);
+    NDArray* computeX = xType == computeType ? X : X->cast(computeType);
+    NDArray* computeY = yType == computeType ? Y : Y->cast(computeType);
+    mmulMxV(computeA, computeX, computeY, alpha, beta, outOrder);
+    if (computeY != Y) {
+      Y->assign(computeY);
+      delete computeY;
+    }
+    if (computeA != A) delete computeA;
+    if (computeX != X) delete computeX;
+    return Y;
+  }
+
+  const int incx = X->stridesOf()[xLenDim];
+  const int incy = Y->stridesOf()[yLenDim];
+
   const bool hasGemv = BlasHelper::getInstance().hasGEMV(aType);
 
-  const bool typeDouble = hasGemv && AXY && aType == DataType::DOUBLE;
-  const bool typeFloat = hasGemv && AXY && aType == DataType::FLOAT32;
+  const bool typeDouble = hasGemv && aType == DataType::DOUBLE;
+  const bool typeFloat = hasGemv && aType == DataType::FLOAT32;
 
   if ((!typeDouble && !typeFloat) || !sd::env_isEnableBlas()) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemv, (A, X, Y, incx, incy, 0, alpha, beta), SD_NUMERIC_TYPES);
@@ -639,18 +676,6 @@ NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const doub
 ////////////////////////////////////////////////////////////////////////////
 // (X * Y) = Z[0]
 NDArray* MmulHelper::dot(NDArray* X, NDArray* Y, sd::NDArray* Z, const double alpha, const double beta) {
-  if (X->dataType() != Y->dataType()) {
-    std::string errorMessage = "Dot expects all data types to be the same. ";
-    errorMessage += "X datatype: " + DataTypeUtils::asString(X->dataType()) + ", ";
-    errorMessage += "Y datatype: " + DataTypeUtils::asString(Y->dataType());
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  if (Z != nullptr && X->dataType() != Z->dataType()) {
-    std::string errorMessage = "Dot expects all data types to be the same. ";
-    errorMessage += "X datatype: " + DataTypeUtils::asString(X->dataType()) + ", ";
-    errorMessage += "Z datatype: " + DataTypeUtils::asString(Z->dataType());
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   sd::LongType xLenDim(0), yLenDim(0);
 
   if (!shape::isCommonVector(X->shapeInfo(), xLenDim)) {
@@ -684,7 +709,7 @@ NDArray* MmulHelper::dot(NDArray* X, NDArray* Y, sd::NDArray* Z, const double al
   }
 
   if (Z == nullptr)
-    Z = new NDArray(DataTypeUtils::pickPairwiseResultType(X->dataType(), Y->dataType()), X->getContext());
+    Z = new NDArray(ops::helpers::matmulOutputType(X->dataType(), Y->dataType()), X->getContext());
 
   const sd::LongType incx = X->stridesOf()[xLenDim];
   const sd::LongType incy = Y->stridesOf()[yLenDim];
@@ -692,6 +717,30 @@ NDArray* MmulHelper::dot(NDArray* X, NDArray* Y, sd::NDArray* Z, const double al
   const auto xType = X->dataType();
   const auto yType = Y->dataType();
   const auto zType = Z->dataType();
+
+  if (mixedFloatStorage(xType, yType, zType)) {
+    BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot,
+                          (length, alpha, X->buffer(), incx, Y->buffer(), incy, beta, Z->buffer()),
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+    return Z;
+  }
+
+  // Any other mix of storage types computes in one type that narrows no operand
+  // (ops::helpers::mixedGemmComputeType) and lands in Z.
+  if (xType != yType || xType != zType) {
+    const DataType computeType = ops::helpers::mixedGemmComputeType(xType, yType, zType);
+    NDArray* computeX = xType == computeType ? X : X->cast(computeType);
+    NDArray* computeY = yType == computeType ? Y : Y->cast(computeType);
+    NDArray* computeZ = zType == computeType ? Z : Z->cast(computeType);
+    dot(computeX, computeY, computeZ, alpha, beta);
+    if (computeZ != Z) {
+      Z->assign(computeZ);
+      delete computeZ;
+    }
+    if (computeX != X) delete computeX;
+    if (computeY != Y) delete computeY;
+    return Z;
+  }
 
   BUILD_SINGLE_SELECTOR_THRICE(
       xType, usualDot, (length, alpha, X->buffer(), incx, Y->buffer(), incy, beta, Z->buffer()), SD_NUMERIC_TYPES);

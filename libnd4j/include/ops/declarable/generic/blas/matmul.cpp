@@ -236,8 +236,8 @@ DECLARE_SHAPE_FN(matmul) {
   auto yOrder = shape::order(yShapeInfo);
   auto zOrder = xOrder == 'c' && yOrder == 'c' ? 'c' : 'f';
 
-  // we just pick the higher data type out of X and Y
-  auto dtypeZ = dtypeX > dtypeY ? dtypeX : dtypeY;
+  // The enum order put BFLOAT16 and every integer type above FLOAT32 and DOUBLE.
+  auto dtypeZ = helpers::matmulOutputType(dtypeX, dtypeY);
   if (iSize > 3 && INT_ARG(3) == 1 && block.numD() > 0) dtypeZ = D_ARG(0);
   if(shape::isEmptyConst(xShapeInfo) || shape::isEmptyConst(yShapeInfo)) {
     const auto emptyType = iSize > 3 && INT_ARG(3) == 1 ? dtypeZ : dtypeX;

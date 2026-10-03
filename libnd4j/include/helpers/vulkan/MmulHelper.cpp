@@ -13,6 +13,7 @@
 
 #include <execution/LaunchContext.h>
 #include <helpers/MmulHelper.h>
+#include <ops/declarable/helpers/matmul.h>
 #include <helpers/shape.h>
 #include <ops/declarable/headers/blas.h>
 
@@ -267,7 +268,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* a, NDArray* b, NDArray* c,
     std::vector<LongType> outputShape{rows, columns};
     c = new NDArray(
         outOrder, outputShape,
-        DataTypeUtils::pickPairwiseResultType(a->dataType(), b->dataType()),
+        ops::helpers::matmulOutputType(a->dataType(), b->dataType()),
         a->getContext());
   }
   if (!c->isEmpty()) {
@@ -305,7 +306,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* a, NDArray* x, NDArray* y,
     std::vector<LongType> outputShape{rows};
     y = new NDArray(
         outOrder, outputShape,
-        DataTypeUtils::pickPairwiseResultType(a->dataType(), x->dataType()),
+        ops::helpers::matmulOutputType(a->dataType(), x->dataType()),
         a->getContext());
   }
   if (!y->isEmpty()) {
@@ -334,7 +335,7 @@ NDArray* MmulHelper::dot(NDArray* x, NDArray* y, NDArray* z,
 
   if (z == nullptr) {
     z = new NDArray(
-        DataTypeUtils::pickPairwiseResultType(x->dataType(), y->dataType()),
+        ops::helpers::matmulOutputType(x->dataType(), y->dataType()),
         x->getContext());
   }
   if (!z->isEmpty()) {
@@ -390,7 +391,7 @@ NDArray* MmulHelper::mmulNxN(NDArray* a, NDArray* b, NDArray* c,
   if (c == nullptr) {
     c = new NDArray(
         outOrder, expectedShape,
-        DataTypeUtils::pickPairwiseResultType(a->dataType(), b->dataType()),
+        ops::helpers::matmulOutputType(a->dataType(), b->dataType()),
         a->getContext());
   }
   if (c->isEmpty()) {
