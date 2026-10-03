@@ -2116,8 +2116,10 @@ public class TestMiscOpValidation extends BaseOpValidation {
         INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
         INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
+        // P(n, n) = 1 - e^-n sum_{k<n} n^k / k!. The values here used to be the old series' output, which
+        // stopped once its denominator passed 1e12 and drifted from n = 4 on (0.5323 for P(12, 12)).
         INDArray expected = Nd4j.createFromArray(new double[]{
-                0.63212055,0.59399414,0.5768099,0.56652874,0.5595013,0.5542634,0.5501591,0.5463888,0.54329145,0.54048204,0.5378594,0.53233755
+                0.63212056,0.59399415,0.57680992,0.56652988,0.55950671,0.55432036,0.55028894,0.54703919,0.54434740,0.54207029,0.54011130,0.53840267
         }).reshape(3,4);
 
         val tc = new OpTestCase(new Igamma(in1, in2)).expectedOutput(0, expected);
@@ -2134,8 +2136,9 @@ public class TestMiscOpValidation extends BaseOpValidation {
         INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
 
+        // Q(n, n) = e^-n sum_{k<n} n^k / k!, likewise.
         INDArray expected = Nd4j.createFromArray(new double[]{
-                0.36787945,0.40600586,0.42319012,0.43347126,0.4404987,0.44573656,0.4498409,0.45361117,0.45670855,0.459518,0.46214062,0.46766248
+                0.36787944,0.40600585,0.42319008,0.43347012,0.44049329,0.44567964,0.44971106,0.45296081,0.45565260,0.45792971,0.45988870,0.46159733
         }).reshape(3,4);
 
         val tc = new OpTestCase(new Igammac(in1, in2)).expectedOutput(0, expected);

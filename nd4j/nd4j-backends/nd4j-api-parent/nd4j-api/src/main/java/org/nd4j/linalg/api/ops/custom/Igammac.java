@@ -33,9 +33,8 @@ import java.util.List;
 
 @NoArgsConstructor
 public class Igammac extends DynamicCustomOp {
+    /** n and x broadcast against each other; the native op checks that their shapes do. */
     public Igammac(@NonNull INDArray n, @NonNull INDArray x) {
-        Preconditions.checkArgument(n.shape() != x.shape(),
-                "Igamma: n and x must have the same shapes");
         addInputArgument(n,x);
     }
 

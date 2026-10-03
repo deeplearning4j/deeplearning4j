@@ -941,62 +941,138 @@ SD_HOST_DEVICE SD_INLINE sd::LongType sd_copysign<sd::LongType>(sd::LongType val
 }
 #endif // HAS_LONG
 
+// The regularized incomplete gamma functions P(a, x) (sd_igamma) and Q(a, x) = 1 - P(a, x)
+// (sd_igammac), as Eigen computes TensorFlow's Igamma and Igammac (after Cephes igam and igamc), in
+// double: P by its power series where x <= 1 or x <= a, Q by Legendre's continued fraction elsewhere,
+// and each as one minus the other on the opposite side, so neither is a difference that cancels. Both
+// scale by x^a e^-x / Gamma through its logarithm, which neither overflows nor underflows early.
+// a <= 0 or x < 0 is a domain error (NaN) and NaN propagates; P(a, 0) = 0 and Q(a, 0) = 1 exactly.
+// The series used to stop once a (a + 1) ... (a + i) passed 1e12 however large x^i still was, which
+// truncated P past x of about 10; its x^a / (e^x Gamma(a)) overflowed, with e^x clamped at x = 88; Q
+// was 1 - P, which cancels to 0 where Q is small; and a below 1e-6 gave P = 0 rather than about 1.
+namespace igamma_detail {
+
+// x^a e^-x / Gamma(g), given logGamma = log Gamma(g), or 0 where it underflows; x > 0 (platformmath's
+// log answers log(0) with log(1e-5), so x = 0 never reaches here).
+SD_HOST_DEVICE SD_INLINE double prefactor(double a, double x, double logGamma) {
+  const double logTerm = a * p_log<double>(x) - x - logGamma;
+  if (logTerm < -709.782712893384 || sd_isnan<double>(logTerm)) return 0.0;
+  return p_exp<double>(logTerm);
+}
+
+// P(a, x) by its power series; a > 0, x > 0. The series is scaled by x^a e^-x / Gamma(a + 1), as Eigen
+// does: Gamma(a + 1) stays near 1 for small a, where log Gamma(a), about -log a, would round away P's
+// low digits (and those of Q = 1 - P).
+SD_HOST_DEVICE SD_INLINE double series(double a, double x) {
+  const double scale = prefactor(a, x, sd_lgamma<double, double>(a + 1.0));
+  if (scale == 0.0) return 0.0;
+  const double epsilon = 2.220446049250313e-16;
+  double r = a;
+  double term = 1.0;
+  double sum = 1.0;
+  for (int i = 0; i < 2000; i++) {
+    r += 1.0;
+    term *= x / r;
+    sum += term;
+    if (term <= epsilon * sum) break;
+  }
+  return sum * scale;
+}
+
+// Q(a, x) by its continued fraction; a > 0, x > 1.
+SD_HOST_DEVICE SD_INLINE double continuedFraction(double a, double x) {
+  if (sd_isinf<double>(x)) return 0.0;
+  const double scale = prefactor(a, x, sd_lgamma<double, double>(a));
+  if (scale == 0.0) return 0.0;
+  const double epsilon = 2.220446049250313e-16;
+  const double big = 4.503599627370496e15;
+  const double bigInverse = 2.22044604925031308085e-16;
+  double y = 1.0 - a;
+  double z = x + y + 1.0;
+  double c = 0.0;
+  double pkm2 = 1.0;
+  double qkm2 = x;
+  double pkm1 = x + 1.0;
+  double qkm1 = z * x;
+  double fraction = pkm1 / qkm1;
+  for (int i = 0; i < 2000; i++) {
+    c += 1.0;
+    y += 1.0;
+    z += 2.0;
+    const double yc = y * c;
+    const double pk = pkm1 * z - pkm2 * yc;
+    const double qk = qkm1 * z - qkm2 * yc;
+    if (qk != 0.0) {
+      const double previous = fraction;
+      fraction = pk / qk;
+      if (sd_abs<double, double>(fraction - previous) <= epsilon * sd_abs<double, double>(fraction)) break;
+    }
+    pkm2 = pkm1;
+    pkm1 = pk;
+    qkm2 = qkm1;
+    qkm1 = qk;
+    if (sd_abs<double, double>(pk) > big) {
+      pkm2 *= bigInverse;
+      pkm1 *= bigInverse;
+      qkm2 *= bigInverse;
+      qkm1 *= bigInverse;
+    }
+  }
+  return fraction * scale;
+}
+
+SD_HOST_DEVICE SD_INLINE double lower(double a, double x) {
+  if (x == 0.0) return 0.0;
+  if (x < 0.0 || a <= 0.0 || sd_isnan<double>(a) || sd_isnan<double>(x)) return DataTypeUtils::nanOrZero<double>();
+  if (x > 1.0 && x > a) return 1.0 - continuedFraction(a, x);
+  return series(a, x);
+}
+
+SD_HOST_DEVICE SD_INLINE double upper(double a, double x) {
+  if (x < 0.0 || a <= 0.0 || sd_isnan<double>(a) || sd_isnan<double>(x)) return DataTypeUtils::nanOrZero<double>();
+  if (x == 0.0) return 1.0;
+  if (x < 1.0 || x < a) return 1.0 - series(a, x);
+  return continuedFraction(a, x);
+}
+
+}  // namespace igamma_detail
+
+// Each input widens to double on its own: converting through the other input's storage type can lose
+// values in mixed-type instantiations.
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
-  Z result;
-  if (a <= X(0.000001)) {
-   result = Z(0);
-  } else {
-   // Widen each input independently: converting through the other input's
-   // storage type can lose values in mixed-type instantiations. Keep the
-   // convergence threshold and normalization in the accumulator type; do not
-   // instantiate an unused storage-precision gamma/power/exp expression here.
-   double d_x = static_cast<double>(x);
-   double d_a = static_cast<double>(a);
-   double d_aim = sd_pow<double, double, double>(d_x, d_a) /
-                  (sd_exp<double, double>(d_x) * sd_gamma<double, double>(d_a));
-   double d_sum = 0.;
-   double d_denom = 1.;
-   for (int i = 0; 1. / d_denom > 1.0e-12; i++) {
-     d_denom *= d_a + i;
-     d_sum += sd_pow<double, int, double>(d_x, i) / d_denom;
-   }
-   double d_result = d_aim * d_sum;
-   result = static_cast<Z>(d_result);
-  }
+  Z result = static_cast<Z>(igamma_detail::lower(static_cast<double>(a), static_cast<double>(x)));
   SD_PRINT_MATH_FUNC2("sd_igamma", a, x, result, Z);
   return result;
 }
 
+template <typename X, typename Y, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_igammac(X a, Y x) {
+  Z result = static_cast<Z>(igamma_detail::upper(static_cast<double>(a), static_cast<double>(x)));
+  SD_PRINT_MATH_FUNC2("sd_igammac", a, x, result, Z);
+  return result;
+}
+
 #ifdef HAS_FLOAT16
-// Deduced low-precision calls and explicit template dispatch use the same
-// promoted implementation, including gamma (not log-gamma) normalization.
+// Deduced low-precision calls use the same double implementation as explicit template dispatch.
 SD_HOST_DEVICE SD_INLINE float16 sd_igamma(float16 a, float16 x) {
   return sd_igamma<float16, float16, float16>(a, x);
 }
 
 SD_HOST_DEVICE SD_INLINE float16 sd_igammac(float16 a, float16 x) {
-  return static_cast<float16>(1. - sd_igamma<float16, float16, double>(a, x));
+  return sd_igammac<float16, float16, float16>(a, x);
 }
 #endif // HAS_FLOAT16
 
 #ifdef HAS_BFLOAT16
-// Use the same accumulator and normalization for bfloat16.
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_igamma(bfloat16 a, bfloat16 x) {
   return sd_igamma<bfloat16, bfloat16, bfloat16>(a, x);
 }
 
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_igammac(bfloat16 a, bfloat16 x) {
-  return static_cast<bfloat16>(1. - sd_igamma<bfloat16, bfloat16, double>(a, x));
+  return sd_igammac<bfloat16, bfloat16, bfloat16>(a, x);
 }
 #endif // HAS_BFLOAT16
-
-template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE SD_INLINE Z sd_igammac(X a, Y x) {
-  Z result = static_cast<Z>(1. - sd_igamma<X, Y, double>(a, x));
-  SD_PRINT_MATH_FUNC2("sd_igammac", a, x, result,Z);
-  return result;
-}
 
 /**
 * This func is special case - it must return floating point value, and optionally Y arg can be floating point argument
@@ -1148,11 +1224,39 @@ SD_HOST_DEVICE SD_INLINE float16 sd_exp<float16, float16>(float16 val) {
 }
 #endif // HAS_FLOAT16
 
-// Implement sd_lgamma with print statements
+// sin(pi x), from the half-integer n / 2 nearest x and the exact remainder r = x - n / 2, |r| <= 1/4: by n mod 4 it is
+// sin(pi r), cos(pi r), -sin(pi r) or -cos(pi r). pi x keeps x's fraction near every integer and half-integer (a
+// reduction by x - 2 floor(x / 2) turned -1e-300 into 2.0 and lost it), and it is exactly 0 at the integers, which is
+// every double from 2^52 on.
+SD_HOST_DEVICE SD_INLINE double sinPiReduced(double x) {
+  // From 2^52 on x is an integer: 0. x - x is that 0, and NaN for an infinite or NaN x.
+  if (!(sd_abs<double, double>(x) < 4503599627370496.0)) return x - x;
+  const double n = rint(2.0 * x);
+  const double r = x - 0.5 * n;
+  const int quadrant = static_cast<int>(n - 4.0 * floor(0.25 * n));
+  const double angle = M_PI * r;
+  switch (quadrant) {
+    case 0:
+      return sd_sin<double, double>(angle);
+    case 1:
+      return sd_cos<double, double>(angle);
+    case 2:
+      return -sd_sin<double, double>(angle);
+    default:
+      return -sd_cos<double, double>(angle);
+  }
+}
+
+// log |Gamma(x)|: below 0 through the reflection, log (pi / |sin(pi x)|) - lgamma(1 - x), which stays
+// finite where Gamma itself overflows; Stirling's series from 12 on.
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_lgamma(X x) {
   Z result;
-  if (x < X(12.0)) {
+  if (x < X(0.0)) {
+    const double v = static_cast<double>(x);
+    result = Z(sd_log<double, double>(M_PI / sd_abs<double, double>(sinPiReduced(v))) -
+               sd_lgamma<double, double>(1.0 - v));
+  } else if (x < X(12.0)) {
     result = sd_log<Z, Z>(sd_gamma<X, Z>(x));
   } else {
     static const double c[8] = {1.0 / 12.0,   -1.0 / 360.0,      1.0 / 1260.0, -1.0 / 1680.0,
@@ -1372,21 +1476,23 @@ SD_HOST_DEVICE SD_INLINE  void  sd_swap(T& val1, T& val2) {
   val2 = temp;
 };
 
-// Implement sd_gamma with print statements
+// Gamma(a): Cody's rational approximation of Gamma(1 + z) on z in [0, 1), the recurrence up to 12,
+// exp(lgamma) beyond, and the reflection Gamma(a) = pi / (sin(pi a) Gamma(1 - a)) below 0. Below 1 the
+// result is Gamma(1 + a) / a with z = a itself: forming 1 + a and subtracting 1 again drops a's low bits
+// (all of them below 1e-16), and the old 1 / (a (1 + gamma a)) for a below 0.001 erred by up to 6.6e-7.
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_gamma(X a) {
   Z result;
-  if (a < X(0.001)) {
-    const double eulerGamma = 0.577215664901532860606512090;
-    result = Z(1.0 / ((double)a * (1.0 + eulerGamma * (double)a)));
+  if (a < X(0.0)) {
+    const double x = static_cast<double>(a);
+    result = Z(M_PI / (sinPiReduced(x) * sd_gamma<double, double>(1.0 - x)));
   } else if (a < X(12.0)) {
-    double y = (double)a;
+    const double x = static_cast<double>(a);
+    double y = x;
     int n = 0;
     bool argWasLessThanOne = y < 1.0;
 
-    if (argWasLessThanOne) {
-      y += 1.0;
-    } else {
+    if (!argWasLessThanOne) {
       n = static_cast<int>(floor(y)) - 1;
       y -= n;
     }
@@ -1404,7 +1510,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_gamma(X a) {
     double num = 0.0;
     double den = 1.0;
 
-    double z = y - 1;
+    const double z = argWasLessThanOne ? x : y - 1;
     for (auto i = 0; i < 8; i++) {
       num = (num + p[i]) * z;
       den = den * z + q[i];
@@ -1412,7 +1518,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_gamma(X a) {
     double result_temp = num / den + 1.0;
 
     if (argWasLessThanOne) {
-      result_temp /= (y - 1.0);
+      result_temp /= x;
     } else {
       for (auto i = 0; i < n; i++) result_temp *= y++;
     }
