@@ -407,6 +407,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                         .syn1(configuration.isUseHierarchicSoftmax() ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
                         .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
                         .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
+                        .nsRounds(negative > 0 ? (int) negative : 0)
                         .indices(configuration.isUseHierarchicSoftmax() ? indices : Nd4j.empty(DataType.INT32))
                         .codes(configuration.isUseHierarchicSoftmax() ? codes: Nd4j.empty(DataType.INT8))
                         .alpha(alphasArray)
@@ -480,8 +481,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                         .syn1(configuration.isUseHierarchicSoftmax() ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
                         .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
                         .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
+                        .nsRounds(negative > 0 ? (int) negative : 0)
                         .alpha(new double[]{alpha})
-                        .iteration(1)
+                        .iteration(inferenceVector != null ? configuration.getIterations() * configuration.getEpochs() : 1)
 
                         .ngStarter(ngStarter)
                         .indices(indices)

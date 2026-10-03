@@ -28,6 +28,7 @@ import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.IsNonDecreasing;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.IsStrictlyIncreasing;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,8 +49,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * monotonicity checks at 768 elements (the same reduction, one verdict in three lost), log_softmax of a vector (256
  * blocks raced in place), percentile along leading axes (a TAD read as if dense), dilation2d with several images and
  * channels (x read at a batch and channel never set), scatter_update with repeated indices (CUDA read 64-bit indices
- * from a 32-bit copy; CPU threads raced on a repeated row), barnes_gains (launch key missing on CUDA: every call
- * threw) and pooling3d's backprop past half a million gradients.
+ * from a 32-bit copy; CPU threads raced on a repeated row), barnes_gains and skipgram (launch keys missing on CUDA:
+ * every call threw) and pooling3d's backprop past half a million gradients.
  */
 @NativeTag
 @Tag(TagNames.CUSTOM_FUNCTIONALITY)
@@ -316,6 +317,63 @@ public class LaunchSweepSemanticsTest extends BaseNd4jTestWithBackends {
             if (result < 0.01) result = 0.01f;
             assertEquals(result, actual[i], 0.0f, "barnes_gains at " + i);
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void skipgramHierarchicalSoftmaxRound(Nd4jBackend backend) {
+        int vocab = 10, dim = 50, expLength = 1000, target = 3;
+        int[] points = {1, 5, 7};
+        byte[] codes = {0, 1, 1};
+        double alpha = 0.025;
+        float[] expTable = new float[expLength];
+        for (int i = 0; i < expLength; i++) {
+            double e = Math.exp((i / (double) expLength * 2 - 1) * 6.0);
+            expTable[i] = (float) (e / (e + 1));
+        }
+        INDArray syn0 = uniform(DataType.FLOAT, 41, -0.5, 0.5, vocab, dim);
+        INDArray syn1 = uniform(DataType.FLOAT, 42, -0.5, 0.5, vocab, dim);
+        float[][] s0 = syn0.toFloatMatrix();
+        float[][] s1 = syn1.toFloatMatrix();
+
+        // word2vec's hierarchical softmax step (sg_cb.cpp hSoftmax_), then the target row takes the accumulated error
+        float[] neu1e = new float[dim];
+        for (int r = 0; r < points.length; r++) {
+            float[] row = s1[points[r]];
+            double dot = 0;
+            for (int e = 0; e < dim; e++) dot += s0[target][e] * row[e];
+            if (dot < -6 || dot >= 6) continue;
+            int idx = (int) (((float) dot + 6.0f) * ((float) expLength / 6.0f / 2.0f));
+            if (idx < 0 || idx >= expLength) continue;
+            float g = (1.0f - codes[r] - expTable[idx]) * (float) alpha;
+            for (int e = 0; e < dim; e++) {
+                neu1e[e] += g * row[e];
+                row[e] += g * s0[target][e];
+            }
+        }
+        for (int e = 0; e < dim; e++) s0[target][e] += neu1e[e];
+
+        SkipGramRound op = SkipGramRound.builder()
+                .target(Nd4j.scalar(target))
+                .ngStarter(Nd4j.empty(DataType.INT32))
+                .syn0(syn0)
+                .syn1(syn1)
+                .syn1Neg(Nd4j.empty(DataType.FLOAT))
+                .expTable(Nd4j.createFromArray(expTable))
+                .negTable(Nd4j.empty(DataType.FLOAT))
+                .nsRounds(0)
+                .indices(Nd4j.createFromArray(points))
+                .codes(Nd4j.createFromArray(codes))
+                .alpha(Nd4j.scalar(alpha))
+                .randomValue(Nd4j.scalar(119L))
+                .inferenceVector(Nd4j.empty(DataType.FLOAT))
+                .preciseMode(false)
+                .numWorkers(1)
+                .iterations(1)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        assertTrue(Nd4j.createFromArray(s0).equalsWithEps(syn0, 1e-5), "skipgram syn0");
+        assertTrue(Nd4j.createFromArray(s1).equalsWithEps(syn1, 1e-5), "skipgram syn1");
     }
 
     @ParameterizedTest

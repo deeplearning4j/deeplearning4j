@@ -60,6 +60,7 @@ public class CbowInference extends DynamicCustomOp {
                          @NonNull int randomValue,
                          INDArray inferenceVector,
                          boolean preciseMode,
+                         boolean trainWords,
                          int numWorkers,
                          int numLabels,
                          int iterations) {
@@ -107,6 +108,8 @@ public class CbowInference extends DynamicCustomOp {
 
         tArguments.add(alpha);
 
+        // the native op reads trainWords from the first boolean argument, as cbow does
+        bArguments.add(trainWords);
         bArguments.add(!inferenceVector.isEmpty());
         bArguments.add(preciseMode);
 

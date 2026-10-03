@@ -23,14 +23,26 @@
 #ifndef DEV_TESTS_SG_CB_H
 #define DEV_TESTS_SG_CB_H
 #include <array/NDArray.h>
+#include <array/NDArrayFactory.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
+
+#include <vector>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
+/**
+ * The integer arguments of an *_inference op (its codes, indices, context and locked words) as an array for the helpers:
+ * an INT32 vector, or the empty array when there are none, as an array cannot be made of no data. The caller owns it.
+ */
+inline NDArray *integerArgumentsArray(const std::vector<int> &values) {
+  if (values.empty()) return NDArrayFactory::empty(DataType::INT32);
 
+  std::vector<sd::LongType> shape = {static_cast<sd::LongType>(values.size())};
+  return NDArrayFactory::create_<int>('c', shape, values, LaunchContext::defaultContext());
+}
 
 SD_LIB_HIDDEN void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable,
                             NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes,

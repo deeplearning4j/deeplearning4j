@@ -204,6 +204,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     public static class IterationArraysKey {
         private int itemSize;
         private int maxCols;
+        private int maxWinWordsCols;
     }
 
 
@@ -223,9 +224,10 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
                 boolean hasNumLabels = false;
 
-                int maxWinWordsCols = -1;
+                // the width of a window is the number of words of the longest one; the shorter ones are padded with -1
+                int maxWinWordsCols = 1;
                 for (int i = 0; i < items.size(); ++i) {
-                    int curr = items.get(i).getWord().getCodeLength();
+                    int curr = items.get(i).getWindowWords().length;
                     if (curr > maxWinWordsCols)
                         maxWinWordsCols = curr;
                 }
@@ -246,7 +248,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
                 IterationArraysKey key = IterationArraysKey.builder()
                         .itemSize(items.size())
-                        .maxCols(maxCols).build();
+                        .maxCols(maxCols)
+                        .maxWinWordsCols(maxWinWordsCols).build();
                 Queue<IterationArrays> iterationArraysQueue = iterationArrays.getIfPresent(key);
                 IterationArrays iterationArrays1;
                 if(iterationArraysQueue == null) {
@@ -262,7 +265,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                             iterationArrays1 = iterationArraysQueue.remove();
                             iterationArrays1.initCodes();
                         } catch (NoSuchElementException e) {
-                            iterationArrays1 = new IterationArrays(items.size(),maxCols);
+                            iterationArrays1 = new IterationArrays(items.size(),maxCols,maxWinWordsCols);
                         }
 
                     }
@@ -280,8 +283,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
                 for (int cnt = 0; cnt < items.size(); cnt++) {
                     T currentWord = items.get(cnt).getWord();
-                    currentWindowIndexes.putScalar(0, currentWord.getIndex());
-                    currentWindowIndexesArr[0] = currentWord.getIndex();
+                    currentWindowIndexes.putScalar(cnt, currentWord.getIndex());
+                    currentWindowIndexesArr[cnt] = currentWord.getIndex();
                     int[] windowWords = items.get(cnt).getWindowWords().clone();
                     boolean[] windowStatuses = items.get(cnt).getWordStatuses().clone();
 
@@ -423,6 +426,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                         .numLabels(numLabels)
                         .nsRounds(useNegative ? (int) negative : 0)
                         .preciseMode(configuration.isPreciseMode())
+                        .trainWords(configuration.isTrainElementsVectors())
                         .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
                         .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
                         .build();
