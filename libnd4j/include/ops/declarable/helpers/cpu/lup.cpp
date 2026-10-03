@@ -22,6 +22,7 @@
 #include <array/NDArrayFactory.h>
 #include <execution/Threads.h>
 #include <helpers/MmulHelper.h>
+#include <ops/op_types.h>
 #include <ops/declarable/helpers/top_k.h>
 #include <system/env_functions.h>
 #if NOT_EXCLUDED(OP_lup)
@@ -452,19 +453,34 @@ sd::Status logAbsDeterminant_(LaunchContext* context, NDArray* input, NDArray* o
 
   NDArray *matrix =
       NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), context);  //, block.getWorkspace());
+  NDArray *compound = NDArrayFactory::create('c', {n, n}, input->dataType(), context);
+  using AccT = typename simdOps::AggregateType<T>::type;
   for (sd::LongType e = 0; e < output->lengthOf(); e++) {
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
       matrix->r<T>(row) = input->t<T>(k);
     }
     matrix->tickWriteHost();
     matrix->syncToDevice();
-    NDArray det = lup_<T, sd::LongType>(context, matrix, (NDArray*)nullptr, (NDArray*)nullptr);
-    if (det.t<T>(0) != 0.f) output->r<T>(e) = sd::math::sd_log<T, T>(sd::math::sd_abs<T,T>(det.t<T>(0)));
+    lup_<T, sd::LongType>(context, matrix, compound, (NDArray*)nullptr);
+    // log |det| = sum log |U_ii|: no product to overflow or underflow, and a singular matrix gives -inf. Every
+    // output element is written.
+    AccT logAbsDet = static_cast<AccT>(0);
+    for (sd::LongType k = 0; k < n; k++) {
+      const AccT u = static_cast<AccT>(compound->t<T>(k, k));
+      // a zero pivot is a singular matrix: log |det| = -inf (sd_log takes log 0 as log epsilon)
+      if (u == static_cast<AccT>(0)) {
+        logAbsDet = -DataTypeUtils::infOrMax<AccT>();
+        break;
+      }
+      logAbsDet += sd::math::sd_log<AccT, AccT>(sd::math::sd_abs<AccT, AccT>(u));
+    }
+    output->r<T>(e) = static_cast<T>(logAbsDet);
   }
   output->tickWriteHost();
   output->syncToDevice();
 
   delete matrix;
+  delete compound;
   return sd::Status::OK;
 }
 
@@ -493,10 +509,15 @@ static sd::Status inverse_(LaunchContext* context, NDArray* input, NDArray* outp
     }
     matrix->tickWriteHost();
     matrix->syncToDevice();
-    T det = lup_<T, sd::LongType>(context, matrix, compound, permutation).template t<T>(0);
+    lup_<T, sd::LongType>(context, matrix, compound, permutation);
 
-    if (sd::math::sd_abs<T,T>(det) < T(0.000001)) {
-      sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", (int)e, (double)det);
+    // singular when a pivot is negligible (lup_ skips eliminating with such a pivot): the determinant's size says
+    // nothing about it, 0.1 * I of size 8 has determinant 1e-8 and an exact inverse
+    bool singular = false;
+    for (sd::LongType k = 0; k < n && !singular; k++)
+      singular = sd::math::sd_abs<T, T>(compound->template t<T>(k, k)) <= DataTypeUtils::min_positive<T>();
+    if (singular) {
+      sd_printf("matrix_inverse: The matrix %i has no inverse: its LU factorization has a zero pivot.\n", (int)e);
       delete matrix;
       delete compound;
       delete permutation;
@@ -631,7 +652,8 @@ static bool checkCholeskyInput_(sd::LaunchContext* context, NDArray * input) {
     NDArray *output = NDArrayFactory::create<T>(static_cast<T>(0.), context);
     if (sd::Status::OK != determinant(context, thisMatrix, output)) { delete output; return false; }
     if (output->t<T>(0) <= T(0)) { delete output; return false; }
-    NDArray reversedMatrix(*thisMatrix);
+    // the inverse goes to an array of its own: the copy constructor would give a view of the matrix
+    NDArray reversedMatrix(thisMatrix->shapeInfo(), false, context);
     if (sd::Status::OK != inverse(context, thisMatrix, &reversedMatrix)) { delete output; return false; }
     if (sd::Status::OK != determinant(context, &reversedMatrix, output)) { delete output; return false; }
     if (output->t<T>(0) <= T(0)) { delete output; return false; }
@@ -711,11 +733,17 @@ sd::Status logdetFunctor_(LaunchContext* context, NDArray* input, NDArray* outpu
   if (res != sd::Status::OK) { delete tempOutput; return res; }
   auto n = input->sizeAt(-1);
   auto totalCount = output->lengthOf();
+  using AccT = typename simdOps::AggregateType<T>::type;
 
-  // For unbatched (2D) inputs, process directly to avoid rank-0 TAD issues
+  // For unbatched (2D) inputs, process directly to avoid rank-0 TAD issues.
+  // Each output element is written, not accumulated into: an op's output starts uninitialized.
   if (input->rankOf() == 2) {
-    for (sd::LongType i = 0; i < n; ++i)
-      output->r<T>(0) += sd::math::sd_log<T, T>(sd::math::sd_pow<T, T, T>(tempOutput->t<T>(i, i), T(2)));
+    AccT sum = static_cast<AccT>(0);
+    for (sd::LongType i = 0; i < n; ++i) {
+      const AccT diagonal = static_cast<AccT>(tempOutput->t<T>(i, i));
+      sum += sd::math::sd_log<AccT, AccT>(diagonal * diagonal);
+    }
+    output->r<T>(0) = static_cast<T>(sum);
     output->tickWriteHost();
     output->syncToDevice();
     delete tempOutput;
@@ -725,8 +753,12 @@ sd::Status logdetFunctor_(LaunchContext* context, NDArray* input, NDArray* outpu
   ResultSet matrices = tempOutput->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
 
   for (sd::LongType e = 0; e < totalCount; e++) {
-    for (sd::LongType i = 0; i < n; ++i)
-      output->r<T>(e) += sd::math::sd_log<T, T>(sd::math::sd_pow<T, T, T>(matrices.at(e)->t<T>(i, i), T(2)));
+    AccT sum = static_cast<AccT>(0);
+    for (sd::LongType i = 0; i < n; ++i) {
+      const AccT diagonal = static_cast<AccT>(matrices.at(e)->t<T>(i, i));
+      sum += sd::math::sd_log<AccT, AccT>(diagonal * diagonal);
+    }
+    output->r<T>(e) = static_cast<T>(sum);
   }
   output->tickWriteHost();
   output->syncToDevice();
