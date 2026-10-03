@@ -812,13 +812,15 @@ dim3 getConcat(int length) {
 }
 
 dim3 getBetaInc(int maxIter,int length,int dataTypeSize) {
-  int threadsPerBlock = maxIter;
+  // a block per element, whose threads take turns computing the continued fraction's 2 * maxIter coefficients;
+  // the shared memory holds them all whatever the block size
+  int threadsPerBlock = maxIter < 256 ? maxIter : 256;
   int blocksPerGrid = length;
-  int sharedMem = 2 * dataTypeSize * threadsPerBlock + 128;
+  int sharedMem = 2 * dataTypeSize * maxIter + 128;
 
 
-  threadsPerBlock = getEnvVariable("GRID_SIZE_BETA_INC", threadsPerBlock);
-  blocksPerGrid = getEnvVariable("BLOCK_SIZE_BETA_INC", blocksPerGrid);
+  blocksPerGrid = getEnvVariable("GRID_SIZE_BETA_INC", blocksPerGrid);
+  threadsPerBlock = getEnvVariable("BLOCK_SIZE_BETA_INC", threadsPerBlock);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_BETA_INC", sharedMem);
   return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }

@@ -92,20 +92,14 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const LongType* aShapeInfo, c
   T* sharedMem = reinterpret_cast<T*>(shmem);
   T* z = reinterpret_cast<T*>(vz);
 
-  __shared__ LongType aLen, bLen, xLen, zLen, aOffset, bOffset, xOffset, zOffset;
+  __shared__ LongType zLen, zOffset;
   __shared__ int aRank, bRank, xRank, zRank;
   __shared__ const LongType *aShape, *bShape, *xShape, *zShape;
   __shared__ const LongType *aStride, *bStride, *xStride, *zStride;
   __shared__ T a, b, x;
   __shared__ bool symmCond;
 
-  const LongType j = blockIdx.x;  // one block per each element
-
   if (threadIdx.x == 0) {
-    // Cache lengths
-    aLen = shape::length(aShapeInfo);
-    bLen = shape::length(bShapeInfo);
-    xLen = shape::length(xShapeInfo);
     zLen = shape::length(zShapeInfo);
 
     // Cache ranks
@@ -125,74 +119,79 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const LongType* aShapeInfo, c
     bStride = shape::stride(bShapeInfo);
     xStride = shape::stride(xShapeInfo);
     zStride = shape::stride(zShapeInfo);
-
-    LongType aCoords[SD_MAX_RANK];
-    LongType bCoords[SD_MAX_RANK];
-    LongType xCoords[SD_MAX_RANK];
-    LongType zCoords[SD_MAX_RANK];
-
-    INDEX2COORDS(j, aRank, aShape, aCoords);
-    COORDS2INDEX(aRank, aStride, aCoords, aOffset);
-    INDEX2COORDS(j, bRank, bShape, bCoords);
-    COORDS2INDEX(bRank, bStride, bCoords, bOffset);
-    INDEX2COORDS(j, xRank, xShape, xCoords);
-    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
-    INDEX2COORDS(j, zRank, zShape, zCoords);
-    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-
-    if (aOffset >= aLen || bOffset >= bLen || xOffset >= xLen || zOffset >= zLen)
-      return;
-
-    a = *(reinterpret_cast<const T*>(va) + aOffset);
-    b = *(reinterpret_cast<const T*>(vb) + bOffset);
-    x = *(reinterpret_cast<const T*>(vx) + xOffset);
-    symmCond = x > (a + T(1)) / (a + b + T(2));
-
-    if (symmCond) {  // swap a and b, x = 1 - x
-      T temp = a;
-      a = b;
-      b = temp;
-      x = T(1) - x;
-    }
   }
+  // every thread reads zLen in the loop condition below
   __syncthreads();
 
-  // t^{n-1} * (1 - t)^{n-1} is symmetric function with respect to x = 0.5
-  if (zOffset < zLen && a == b && x == T(0.5)) {
-    z[zOffset] = T(0.5);
-    return;
-  }
+  // A block computes one element at a time, the grid striding over the elements. Thread 0 writes an element's shared
+  // values and the continued fraction reads the coefficients every thread wrote: the barrier opening each iteration
+  // keeps the next element from overwriting them while the previous one is still being computed.
+  for (LongType j = blockIdx.x; j < zLen; j += gridDim.x) {
+    __syncthreads();
 
-  if (zOffset < zLen && (x == T(0) || x == T(1))) {
-    if (symmCond) {
-      z[zOffset] = T(1) - x;
-    } else {
-      z[zOffset] = x;
+    if (threadIdx.x == 0) {
+      LongType aCoords[SD_MAX_RANK];
+      LongType bCoords[SD_MAX_RANK];
+      LongType xCoords[SD_MAX_RANK];
+      LongType zCoords[SD_MAX_RANK];
+      LongType aOffset, bOffset, xOffset;
+
+      // the offsets come from in-range coordinates and each array's own strides (a view's may exceed its length)
+      INDEX2COORDS(j, aRank, aShape, aCoords);
+      COORDS2INDEX(aRank, aStride, aCoords, aOffset);
+      INDEX2COORDS(j, bRank, bShape, bCoords);
+      COORDS2INDEX(bRank, bStride, bCoords, bOffset);
+      INDEX2COORDS(j, xRank, xShape, xCoords);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+      INDEX2COORDS(j, zRank, zShape, zCoords);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+
+      a = *(reinterpret_cast<const T*>(va) + aOffset);
+      b = *(reinterpret_cast<const T*>(vb) + bOffset);
+      x = *(reinterpret_cast<const T*>(vx) + xOffset);
+      symmCond = x > (a + T(1)) / (a + b + T(2));
+
+      if (symmCond) {  // swap a and b, x = 1 - x
+        T temp = a;
+        a = b;
+        b = temp;
+        x = T(1) - x;
+      }
     }
-    return;
-  }
+    __syncthreads();
 
-  // calculate two coefficients per thread
-  if (threadIdx.x != 0) {
-    const int i = threadIdx.x;
-    const T aPlus2i = a + T(2) * T(i);
-    sharedMem[2 * i] = T(i) * (b - T(i)) * x / ((aPlus2i - T(1)) * aPlus2i);
-    sharedMem[2 * i + 1] = -(a + T(i)) * (a + b + T(i)) * x / ((aPlus2i + T(1)) * aPlus2i);
-  }
+    // t^{n-1} * (1 - t)^{n-1} is symmetric function with respect to x = 0.5
+    if (a == b && x == T(0.5)) {
+      if (threadIdx.x == 0) z[zOffset] = T(0.5);
+      continue;
+    }
 
-  __syncthreads();
+    if (x == T(0) || x == T(1)) {
+      if (threadIdx.x == 0) z[zOffset] = symmCond ? T(1) - x : x;
+      continue;
+    }
 
-  if (threadIdx.x == 0) {
-    const T gammaPart = static_cast<T>(lgamma(a)) + static_cast<T>(lgamma(b)) - static_cast<T>(lgamma(a + b));
-    const T front = math::sd_exp<T, T>(math::sd_log<T, T>(x) * a + math::sd_log<T, T>(T(1) - x) * b - gammaPart);
+    // two coefficients for each iteration 1..maxIter of the continued fraction, whatever the block size
+    for (int i = threadIdx.x + 1; i <= maxIter; i += blockDim.x) {
+      const T aPlus2i = a + T(2) * T(i);
+      sharedMem[2 * i] = T(i) * (b - T(i)) * x / ((aPlus2i - T(1)) * aPlus2i);
+      sharedMem[2 * i + 1] = -(a + T(i)) * (a + b + T(i)) * x / ((aPlus2i + T(1)) * aPlus2i);
+    }
 
-    sharedMem[0] = T(1) - (a + b) * x / (a + T(1));
-    sharedMem[1] = T(1);
+    __syncthreads();
 
-    z[zOffset] = front * continuedFractionCuda(a, b, x) / a;
+    if (threadIdx.x == 0) {
+      const T gammaPart = static_cast<T>(lgamma(a)) + static_cast<T>(lgamma(b)) - static_cast<T>(lgamma(a + b));
+      const T front = math::sd_exp<T, T>(math::sd_log<T, T>(x) * a + math::sd_log<T, T>(T(1) - x) * b - gammaPart);
 
-    if (symmCond) {  // symmetry relation
-      z[zOffset] = T(1) - z[zOffset];
+      sharedMem[0] = T(1) - (a + b) * x / (a + T(1));
+      sharedMem[1] = T(1);
+
+      z[zOffset] = front * continuedFractionCuda(a, b, x) / a;
+
+      if (symmCond) {  // symmetry relation
+        z[zOffset] = T(1) - z[zOffset];
+      }
     }
   }
 }
@@ -211,7 +210,10 @@ static void betaIncForArrayCudaLauncher(const int blocksPerGrid, const int threa
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
 void betaInc(LaunchContext* context, NDArray& a, NDArray& b, NDArray& x, NDArray& output) {
-  dim3 launchDims = getBetaInc(maxIter,output.lengthOf(),output.sizeOfT());
+  // getBetaInc gives (blocks, threads per block, shared memory): a block per element, a thread per pair of
+  // continued-fraction coefficients. The kernel strides over the elements, so the grid may be capped.
+  const LongType blocks = sd::math::sd_min<LongType>(output.lengthOf(), static_cast<LongType>(1) << 20);
+  dim3 launchDims = getBetaInc(maxIter, static_cast<int>(blocks), output.sizeOfT());
 
   const auto xType = x.dataType();
 
@@ -219,7 +221,7 @@ void betaInc(LaunchContext* context, NDArray& a, NDArray& b, NDArray& x, NDArray
 
   NDArray::prepareSpecialUse({&output}, {&a, &b, &x});
   BUILD_SINGLE_SELECTOR(xType, betaIncForArrayCudaLauncher,
-                        (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), a.specialBuffer(),
+                        (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), a.specialBuffer(),
                             a.specialShapeInfo(), b.specialBuffer(), b.specialShapeInfo(), x.specialBuffer(),
                             x.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()),
                         SD_FLOAT_TYPES);

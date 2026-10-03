@@ -180,8 +180,8 @@ static SD_KERNEL void mirrorPadLinearKernel(void const* vx, const LongType* xSha
   }
   __syncthreads();
 
-  const auto start = blockIdx.x * blockDim.x + threadIdx.x;
-  const auto step = blockDim.x * gridDim.x;
+  const LongType start = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType step = static_cast<LongType>(blockDim.x) * gridDim.x;
 
   LongType zCoords[SD_MAX_RANK];
   LongType xOffset, zOffset;
@@ -203,10 +203,8 @@ static SD_KERNEL void mirrorPadLinearKernel(void const* vx, const LongType* xSha
       COORDS2INDEX(rankX, strideX, &mirrorIndex, xOffset);
     }
 
-    // Assign value from input to output
-    if (zOffset < zLen && xOffset < xLen) {
-      z[zOffset] = x[xOffset];
-    }
+    // The offsets come from in-range indices and each array's own stride: a view's may exceed its length
+    z[zOffset] = x[xOffset];
   }
 }
 
