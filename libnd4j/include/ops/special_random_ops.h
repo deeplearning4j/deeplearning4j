@@ -265,6 +265,11 @@ class BinomialDistribution {
 
   static const bool requiresSpecial = true;
 
+  // Trial t (1-based) of element e: its uniform draw is index e * trials + t - 1, one per draw
+  // ((e + 1) * t gave element 0's second trial element 1's first draw), and its probability is
+  // element t - 1 of y when y holds one probability per trial (Java's BinomialDistribution(z,
+  // trials, probabilities)); y == z means the extra argument. y used to be read at z's
+  // coordinates, past its end once z is longer than trials.
 #ifdef __CUDACC__
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
                                                 T const *y, sd::LongType const *yShapeBuffer, T *z,
@@ -277,6 +282,7 @@ class BinomialDistribution {
     sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
     sd::LongType *zStride = shape::stride(zShapeBuffer);
     sd::LongType yRank = shape::rank(yShapeBuffer);
+    sd::LongType *yShape = shape::shapeOf(yShapeBuffer);
     sd::LongType *yStride = shape::stride(yShapeBuffer);
     sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
 
@@ -289,15 +295,16 @@ class BinomialDistribution {
       sd::LongType zOffset;
       COORDS2INDEX(zRank, zStride, coords, zOffset);
       int success = 0;
-      T localProb = prob;
       for (int t = 1; t <= trials; t++) {
-        T randVal = rng->relativeT<T>((e + 1) * t);
+        T trialProb = prob;
         if (y != z) {
+          sd::LongType yCoords[SD_MAX_RANK];
+          INDEX2COORDS(t - 1, yRank, yShape, yCoords);
           sd::LongType yOffset;
-          COORDS2INDEX(yRank, yStride, coords, yOffset);
-          localProb = y[yOffset];
+          COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+          trialProb = y[yOffset];
         }
-        if (randVal < localProb) success++;
+        if (rng->relativeT<T>(e * trials + t - 1) < trialProb) success++;
       }
       z[zOffset] = static_cast<T>(success);
     }
@@ -315,16 +322,13 @@ class BinomialDistribution {
     int _threads = sd::math::sd_max(1, elementsPerThread);
     _threads = sd::math::sd_min(_threads, sd::env_maxThreads());
 
-    T prob = extraArguments[1];
+    const T prob = extraArguments[1];
     sd::LongType zRank = shape::rank(zShapeBuffer);
     sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
     sd::LongType *zStride = shape::stride(zShapeBuffer);
     sd::LongType yRank = shape::rank(yShapeBuffer);
     sd::LongType *yShape = shape::shapeOf(yShapeBuffer);
     sd::LongType *yStride = shape::stride(yShapeBuffer);
-    sd::LongType  *xShape = shape::shapeOf(xShapeBuffer);
-    sd::LongType xRank = shape::rank(xShapeBuffer);
-    sd::LongType *xStride = shape::stride(xShapeBuffer);
     sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
@@ -334,15 +338,15 @@ class BinomialDistribution {
         COORDS2INDEX(zRank, zStride, coords, zOffset);
         int success = 0;
         for (int t = 1; t <= trials; t++) {
-          T randVal = rng->relativeT<T>((e + 1) * t);
+          T trialProb = prob;
           if (y != z) {
-            // we're using external probs
+            sd::LongType yCoords[SD_MAX_RANK];
+            INDEX2COORDS(t - 1, yRank, yShape, yCoords);
             sd::LongType yOffset;
-            COORDS2INDEX(yRank,yStride, coords, yOffset);
-            prob = y[yOffset];
+            COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+            trialProb = y[yOffset];
           }
-
-          if (randVal < prob) success++;
+          if (rng->relativeT<T>(e * trials + t - 1) < trialProb) success++;
         }
 
         // if trials is set to 0, effectively we just have successful memset
@@ -362,6 +366,9 @@ class BinomialDistributionEx {
 
   static const bool requiresSpecial = true;
 
+  // As BinomialDistribution, but y holds one probability per element (Java checks that its length
+  // is z's): element e's probability is y's linear element e, read through y's own shape and
+  // strides rather than z's coordinates.
 #ifdef __CUDACC__
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
                                                 T const *y, sd::LongType const *yShapeBuffer, T *z,
@@ -374,6 +381,7 @@ class BinomialDistributionEx {
     sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
     sd::LongType *zStride = shape::stride(zShapeBuffer);
     sd::LongType yRank = shape::rank(yShapeBuffer);
+    sd::LongType *yShape = shape::shapeOf(yShapeBuffer);
     sd::LongType *yStride = shape::stride(yShapeBuffer);
     sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
 
@@ -385,16 +393,17 @@ class BinomialDistributionEx {
       INDEX2COORDS(e, zRank, zShape, coords);
       sd::LongType zOffset;
       COORDS2INDEX(zRank, zStride, coords, zOffset);
+      T elementProb = prob;
+      if (y != z) {
+        sd::LongType yCoords[SD_MAX_RANK];
+        INDEX2COORDS(e, yRank, yShape, yCoords);
+        sd::LongType yOffset;
+        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+        elementProb = y[yOffset];
+      }
       int success = 0;
-      T localProb = prob;
       for (int t = 1; t <= trials; t++) {
-        T randVal = rng->relativeT<T>((e + 1) * t);
-        if (y != z) {
-          sd::LongType yOffset;
-          COORDS2INDEX(yRank, yStride, coords, yOffset);
-          localProb = y[yOffset];
-        }
-        if (randVal < localProb) success++;
+        if (rng->relativeT<T>(e * trials + t - 1) < elementProb) success++;
       }
       z[zOffset] = static_cast<T>(success);
     }
@@ -417,10 +426,7 @@ class BinomialDistributionEx {
     sd::LongType yRank = shape::rank(yShapeBuffer);
     sd::LongType *yShape = shape::shapeOf(yShapeBuffer);
     sd::LongType *yStride = shape::stride(yShapeBuffer);
-    sd::LongType  *xShape = shape::shapeOf(xShapeBuffer);
-    sd::LongType xRank = shape::rank(xShapeBuffer);
-    sd::LongType *xStride = shape::stride(xShapeBuffer);
-    T prob = extraArguments[1];
+    const T prob = extraArguments[1];
 
     auto rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
     auto func = PRAGMA_THREADS_FOR {
@@ -429,17 +435,17 @@ class BinomialDistributionEx {
         INDEX2COORDS(e,zRank, zShape, coords);
         sd::LongType zOffset;
         COORDS2INDEX(zRank, zStride, coords, zOffset);
+        T elementProb = prob;
+        if (y != z) {
+          sd::LongType yCoords[SD_MAX_RANK];
+          INDEX2COORDS(e, yRank, yShape, yCoords);
+          sd::LongType yOffset;
+          COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+          elementProb = y[yOffset];
+        }
         int success = 0;
         for (int t = 1; t <= trials; t++) {
-          T randVal = rng->relativeT<T>((e + 1) * t);
-          if (y != z) {
-            // we're using external probs
-            sd::LongType yOffset;
-            COORDS2INDEX(shape::rank(yShapeBuffer), shape::stride(yShapeBuffer), coords, yOffset);
-            prob = y[yOffset];
-          }
-
-          if (randVal < prob) success++;
+          if (rng->relativeT<T>(e * trials + t - 1) < elementProb) success++;
         }
 
         // if trials is set to 0, effectively we just have successful memset
