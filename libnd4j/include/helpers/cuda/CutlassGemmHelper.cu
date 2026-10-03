@@ -190,6 +190,11 @@ bool CutlassGemmHelper::gemm(NDArray* A, NDArray* B, NDArray* C,
   if (A == nullptr || B == nullptr || C == nullptr) return false;
   if (A->rankOf() != 2 || B->rankOf() != 2 || C->rankOf() != 2) return false;
 
+  // Each instantiation reads A and B and writes C through one element type. A FLOAT32 product
+  // into a HALF C ran the FP32 kernel over C: it read C's HALF values as floats and wrote twice
+  // C's size. Other storage mixes take MmulHelper's typed paths.
+  if (A->dataType() != B->dataType() || A->dataType() != C->dataType()) return false;
+
   // CUTLASS RowMajor kernels require contiguous row-major layout: strideAt(1)==1.
   // Permuted views (e.g. weight.permute(1,0)) have strideAt(0)==1 (column-major).
   // Dispatching such views to a RowMajor kernel reads elements at wrong offsets,
@@ -209,8 +214,8 @@ bool CutlassGemmHelper::gemm(NDArray* A, NDArray* B, NDArray* C,
     return false;
   }
 
-  // Ensure data is on device
-  NDArray::prepareSpecialUse({C}, {A, B});
+  // Ensure data is on device; beta reads C's current values.
+  NDArray::prepareSpecialUse({C}, {A, B, beta != 0.0 ? C : nullptr});
 
   bool result = false;
   auto aType = A->dataType();
