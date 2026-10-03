@@ -249,20 +249,17 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
     }
   }
 
-  NDArray* pA = const_cast<NDArray*>(A);
-
   const bool aForder = m == 1 || A->strideAt(0) == 1;
   const bool aCorder = n == 1 || A->strideAt(1) == 1;
 
   const bool transA = !aForder && aCorder;
-  const bool dupA = !aForder && !aCorder;
 
   std::vector<NDArray*> toDelete;
 
-  if (dupA) {
-    pA = A->dup('f');
-    toDelete.push_back(pA);
-  }
+  // gesvdj overwrites the matrix it decomposes, so it works on a copy: the op's input used to
+  // come back destroyed whenever it was already C- or F-contiguous.
+  NDArray* pA = A->dup(transA ? 'c' : 'f');
+  toDelete.push_back(pA);
 
   NDArray* pS = S;
 
@@ -362,6 +359,9 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
   int svdDevId2 = 0; cudaGetDevice(&svdDevId2);
   dWork = sd::memory::CudaMemoryPool::getInstance().allocate(A->sizeOfT() * lwork, svdDevId2, nullptr);
   if (dWork == nullptr) THROW_EXCEPTION("svdJcb: Cannot allocate memory for dWork");
+  // gesvdj writes its status through devInfo, a device int; it was passed as nullptr.
+  devInfo = static_cast<int*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(int), svdDevId2, nullptr));
+  if (devInfo == nullptr) THROW_EXCEPTION("svdJcb: Cannot allocate memory for devInfo");
 
   PointersManager manager(context, "svdJcb");
 
