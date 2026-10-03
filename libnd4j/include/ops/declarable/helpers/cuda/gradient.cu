@@ -26,22 +26,14 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-template <typename T>
-void applyGradientDescent_(LaunchContext* context, NDArray* input, NDArray* step, double weight,
-                                  NDArray* output) {
-  // classic one
-  auto lambda = LAMBDA_TT(_x, _y, weight) { return _x - (_y * weight); });
-
-  input->applyPairwiseLambda(step, lambda, output);
-}
-
+// output = input - step * weight, with array operations on the device (a lambda here runs on the host, where a CUDA
+// graph capturing the op never sees it). The step is scaled into a temporary: the op may run in place, its output the
+// input array.
 void applyGradientDescent(LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), applyGradientDescent_, (context, input, step, weight, output),
-                        SD_FLOAT_TYPES);
+  NDArray scaled(step->shapeInfo(), step->dataType(), false, context, false);
+  step->applyScalar(scalar::Multiply, weight, &scaled);
+  input->applyPairwiseTransform(pairwise::Subtract, &scaled, output);
 }
-BUILD_SINGLE_TEMPLATE( void applyGradientDescent_,
-                      (LaunchContext * context, NDArray* input, NDArray* step, double weight, NDArray* output),
-                      SD_FLOAT_TYPES);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

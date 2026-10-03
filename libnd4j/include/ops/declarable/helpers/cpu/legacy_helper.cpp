@@ -305,43 +305,6 @@ void logSumExp(sd::LaunchContext* context, NDArray* input, NDArray* subtrah, NDA
   BUILD_SINGLE_SELECTOR(input->dataType(), logSumExp_, (input, subtrah, axis, output), SD_FLOAT_TYPES);
 }
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-static void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * input, NDArray * weights,
-                                                   NDArray* output) {
-  T posWeight = weights->e<T>(0);
-
-  auto mainRoutineT1 = LAMBDA_TT(_x, _z, posWeight) {
-    T targetWeight = (1. + (posWeight - (T)1.f) * _z);
-    return (1. - _z) * _x +
-           targetWeight * (sd::math::sd_log<T, T>((T)1.f + sd::math::sd_exp<T, T>(-sd::math::sd_abs<T,T>(_x))) +
-                           sd::math::sd_max(-_x, T(0.f)));
-  });
-
-  auto mainRoutineT2 = LAMBDA_TTT(_x, _z, _w) {
-    return (((T)1.0 - _z) * _x) + _w * (sd::math::sd_log<T, T>(T(1.) + sd::math::sd_exp<T, T>(-sd::math::sd_abs<T,T>(_x))) +
-                                        sd::math::sd_max(-_x, T(0.f)));
-  });
-
-  if (weights->isScalar()) {
-    input->applyPairwiseLambda<T>(targets, mainRoutineT1, output);
-  } else {
-    weights->applyScalar(scalar::Add, -1.f, weights);
-    auto add = (*targets * *targets);
-    auto addOne = (*add) + T(1.f);
-    *targets = *addOne;
-    delete addOne;
-    delete add;
-    input->applyTriplewiseLambda<T>(targets, targets,mainRoutineT2, output);
-  }
-}
-
-void weightedCrossEntropyWithLogitsFunctor(sd::LaunchContext* context, NDArray * targets, NDArray * input,
-                                           NDArray * weights, NDArray* output) {
-  BUILD_SINGLE_SELECTOR(targets->dataType(), weightedCrossEntropyWithLogitsFunctor_, (targets, input, weights, output),
-                        SD_FLOAT_TYPES);
-}
-
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

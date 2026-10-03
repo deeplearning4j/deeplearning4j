@@ -987,14 +987,13 @@ void softmaxDerivative(LaunchContext *context, NDArray *input, NDArray *output, 
   }
 }
 
-template <typename T>
-void thresholdRelu_(NDArray  *input, double threshold, NDArray *output) {
-  auto routine = LAMBDA_T(_x, threshold) { return _x > (T)threshold ? _x : (T)0.f; });
-  input->applyLambda(routine, output);
-}
-
+// output = input > threshold ? input : 0 (NaN and -inf give 0, as on the CPU), on the device: the pairwise
+// CompareAndSet takes y where y meets its condition (mode 3, greater than) and x, here zeros, elsewhere. A lambda here
+// runs on the host, where a CUDA graph capturing the op never sees it.
 void thresholdRelu(LaunchContext *context, NDArray *input, double threshold, NDArray *output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), thresholdRelu_, (input, threshold, output), SD_FLOAT_TYPES);
+  NDArray zeros(input->shapeInfo(), input->dataType(), false, context, true);
+  ExtraArguments greaterThanThreshold({threshold, 0.0, 0.0, 3.0});
+  zeros.applyPairwiseTransform(pairwise::CompareAndSet, input, output, &greaterThanThreshold);
 }
 
 template <typename T>

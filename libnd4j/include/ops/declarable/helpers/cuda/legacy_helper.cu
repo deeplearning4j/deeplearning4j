@@ -185,50 +185,6 @@ void logSumExp(LaunchContext* context, NDArray* input, NDArray* subtrah, NDArray
   BUILD_SINGLE_SELECTOR(input->dataType(), logSumExp_, (input, subtrah, axis, output), SD_FLOAT_TYPES);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template <typename T>
-void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * input, NDArray * weights,
-                                            NDArray* output) {
-  T posWeight = weights->e<T>(0);
-
-  auto mainRoutineT1 = LAMBDA_TT(_x, _z, posWeight) {
-    T targetWeight = (1. + (posWeight - (T)1.f) * _z);
-    return (1. - _z) * _x +
-           targetWeight * (math::sd_log<T, T>((T)1.f + math::sd_exp<T, T>(-math::sd_abs<T,T>(_x))) +
-                                            math::sd_max(-_x, T(0.f)));
-  });
-
-  auto mainRoutineT2 = LAMBDA_TTT(_x, _z, _w) {
-    return (((T)1.0 - _z) * _x) + _w * (math::sd_log<T, T>(T(1.) + math::sd_exp<T, T>(-math::sd_abs<T,T>(_x))) + math::sd_max(-_x, T(0.f)));
-  });
-
-  if (weights->isScalar()) {
-    input->applyPairwiseLambda(targets, mainRoutineT1, output);
-  } else {
-    std::unique_ptr<NDArray> targetVector(new NDArray(*weights));
-    targetVector->applyScalar(scalar::Add, -1.f, targetVector.get());
-
-    NDArray* temp = (*targetVector) * (*targets);
-    *temp += T(1.f);
-    targets->assign(temp);
-    delete temp;
-    input->applyPairwiseLambda(targets, mainRoutineT1, output);
-
-  }
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void weightedCrossEntropyWithLogitsFunctor(LaunchContext* context, NDArray * targets, NDArray * input,
-                                           NDArray * weights, NDArray* output) {
-  NDArray::prepareSpecialUse({output}, {targets, input, weights});
-
-  BUILD_SINGLE_SELECTOR(targets->dataType(), weightedCrossEntropyWithLogitsFunctor_, (targets, input, weights, output),
-                        SD_FLOAT_TYPES);
-
-  NDArray::registerSpecialUse({output}, {targets, input, weights});
-}
-
-
-
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
