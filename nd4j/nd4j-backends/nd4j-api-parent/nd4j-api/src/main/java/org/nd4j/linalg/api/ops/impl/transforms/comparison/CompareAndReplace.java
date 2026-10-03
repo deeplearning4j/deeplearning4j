@@ -104,45 +104,29 @@ public class CompareAndReplace extends BaseTransformSameOp {
 
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
-        if(properties.containsKey("mode")) {
-            if(properties.get("mode") instanceof Integer) {
-                Integer mode = (Integer) properties.get("mode");
-                this.mode = Conditions.ConditionMode.fromNumber(mode);
-                // no comparison value, just use default
-                if(!properties.containsKey("compare")) {
-                    this.condition = Conditions.fromInt(mode);
-                }
-            } else if(properties.get("mode") instanceof Conditions.ConditionMode) {
-                Conditions.ConditionMode mode = (Conditions.ConditionMode) properties.get("mode");
-                this.mode = mode;
-                // no comparison value, just use default
-                if(!properties.containsKey("compare")) {
-                    this.condition = Conditions.fromInt(mode.index);
-                }
-            }
+        this.mode = conditionMode(properties.get("mode"), this.mode);
+        if(properties.containsKey("compare"))
+            this.compare = (Double) properties.get("compare");
+        if(properties.containsKey("set"))
+            this.set = (Double) properties.get("set");
+        if(properties.containsKey("eps"))
+            this.eps = (Double) properties.get("eps");
+        //Without a comparison value the condition compares against 0
+        if(properties.containsKey("mode") && mode != null)
+            this.condition = Conditions.fromInt(mode.index, compare);
+    }
 
-        }
-
-        if(properties.containsKey("compare")) {
-            Double compare = (Double) properties.get("compare");
-            this.compare = compare;
-            //condition was set
-            if(properties.containsKey("mode")) {
-                this.condition = Conditions.fromInt(mode.index,compare);
-            }
-        }
-
-        if(properties.containsKey("set")) {
-            Double set = (Double) properties.get("set");
-            this.set = set;
-        }
-
-        if(properties.containsKey("eps")) {
-            Double eps = (Double) properties.get("eps");
-            this.eps = eps;
-        }
-
-
+    /**
+     * The condition mode a property holds: the enum itself, its number, or (in a deserialized graph) its name.
+     */
+    static Conditions.ConditionMode conditionMode(Object property, Conditions.ConditionMode current) {
+        if(property instanceof Conditions.ConditionMode)
+            return (Conditions.ConditionMode) property;
+        if(property instanceof Integer)
+            return Conditions.ConditionMode.fromNumber((Integer) property);
+        if(property instanceof String)
+            return Conditions.ConditionMode.valueOf((String) property);
+        return current;
     }
 
     @Override

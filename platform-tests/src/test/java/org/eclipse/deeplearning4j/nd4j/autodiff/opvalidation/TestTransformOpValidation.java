@@ -1494,7 +1494,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
 
             SDVariable loss = where.std(true);
 
-            TestCase tc = new TestCase(sd);
+            TestCase tc = new TestCase(sd).expectedOutput(where.name(), exp);
 
             String err = OpValidation.validate(tc);
             assertNull(err);

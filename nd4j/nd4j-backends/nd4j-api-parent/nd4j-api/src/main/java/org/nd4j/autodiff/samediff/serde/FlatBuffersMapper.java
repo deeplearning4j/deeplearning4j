@@ -585,7 +585,7 @@ public class FlatBuffersMapper {
                 ((CustomOp) op).configureFromArguments();
             return op;
         } else {
-            Class<?> c = LegacyOpMapper.getLegacyOpClassForId(opType, (int) opNum);
+            Class<?> c = legacyOpClass(opType, (int) opNum, fn.opName());
             Op op;
             try {
                 op = (Op) c.newInstance();
@@ -635,6 +635,23 @@ public class FlatBuffersMapper {
             df.setPropertiesForFunction(props);
             return df;
         }
+    }
+
+    /**
+     * The class of a legacy (numbered) op node. A type and number do not always name one class: an op whose
+     * number depends on its inputs can share it with another class (CompareAndReplace and the one-input
+     * CompareAndSet are both TRANSFORM_SAME 13), and the number-to-class table names only one of them. Every
+     * node records its op name, so the class registered under that name is used when it is a legacy op of the
+     * recorded type; the number decides only for nodes without a name (older files) and for names held by
+     * another kind of op (the custom DropOut wrapper shares "dropout" with the legacy random op).
+     */
+    private static Class<?> legacyOpClass(Type opType, int opNum, String opName) {
+        if (opName != null && !opName.isEmpty()) {
+            DifferentialFunction named = DifferentialFunctionClassHolder.getInstance(opName);
+            if (named != null && !(named instanceof CustomOp) && named.opType() == opType)
+                return named.getClass();
+        }
+        return LegacyOpMapper.getLegacyOpClassForId(opType, opNum);
     }
 
     private static final boolean[] EMPTY_BOOLEAN = new boolean[0];

@@ -199,65 +199,25 @@ public class CompareAndSet extends BaseTransformSameOp {
 
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
-        if(properties.containsKey("mode")) {
-            if(properties.get("mode") instanceof Integer) {
-                Integer mode = (Integer) properties.get("mode");
-                this.mode = Conditions.ConditionMode.fromNumber(mode);
-                // no comparison value, just use default
-                if(!properties.containsKey("compare")) {
-                    this.condition = Conditions.fromInt(mode);
-                }
-            } else if(properties.get("mode") instanceof Conditions.ConditionMode) {
-                Conditions.ConditionMode mode = (Conditions.ConditionMode) properties.get("mode");
-                this.mode = mode;
-                // no comparison value, just use default
-                if(!properties.containsKey("compare")) {
-                    this.condition = Conditions.fromInt(mode.index);
-                }
-            }
-
-        }
-
-        if(properties.containsKey("compare")) {
-            Double compare = (Double) properties.get("compare");
-            this.compare = compare;
-            //condition was set
-            if(properties.containsKey("mode")) {
-                if(properties.get("mode") instanceof  String) {
-                    Conditions.ConditionMode mode = Conditions.ConditionMode.valueOf(properties.get("mode").toString());
-                    this.condition = Conditions.fromInt(mode.index,compare);
-                } else {
-                    Integer mode2 = (Integer) properties.get("mode");
-                    this.condition = Conditions.fromInt(mode2,compare);
-                }
-
-            }
-        }
-
-        if(properties.containsKey("set")) {
-            Double set = (Double) properties.get("set");
-            this.set = set;
-        }
-
-        if(properties.containsKey("eps")) {
-            Double eps = (Double) properties.get("eps");
-            this.eps = eps;
-        }
-
-
+        this.mode = CompareAndReplace.conditionMode(properties.get("mode"), this.mode);
+        if(properties.containsKey("compare"))
+            this.compare = (Double) properties.get("compare");
+        if(properties.containsKey("set"))
+            this.set = (Double) properties.get("set");
+        if(properties.containsKey("eps"))
+            this.eps = (Double) properties.get("eps");
+        //Without a comparison value the condition compares against 0
+        if(properties.containsKey("mode") && mode != null)
+            this.condition = Conditions.fromInt(mode.index, compare);
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
         //Pass through gradient where condition is NOT matched (condition matched: output replaced by scalar)
+        //A SameDiff CompareAndSet has one input; the two-input replaceWhere is CompareAndReplace
         SDVariable maskNotMatched = sameDiff.matchCondition(arg(), condition).castTo(arg().dataType()).rsub(1.0);
-        SDVariable gradAtIn = gradient.get(0).mul(maskNotMatched);
-        SDVariable[] args = args();
-        if(args.length == 1)
-            return Arrays.asList(gradAtIn);
-        else
-            return Arrays.asList(gradAtIn,gradAtIn);
+        return Collections.singletonList(gradient.get(0).mul(maskNotMatched));
     }
 }
 
