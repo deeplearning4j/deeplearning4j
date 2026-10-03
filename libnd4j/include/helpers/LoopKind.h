@@ -143,26 +143,10 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const LongType* xShapeInfo, c
     }
   }
 
-  // Check higher dimension cases
-  bool bNDLoopsRanks = (xRank == zRank && yRank <= xRank && yRank >= 2);
-
-  int countUnityDimsInY = 0, countUnityDimsInX = 0;
-  for (LongType i = 0; i < xRank; i++) {
-    if (i < yRank) countUnityDimsInY += (1 == shape::sizeAt(yShapeInfo, i)) ? 1 : 0;
-    countUnityDimsInX += (1 == shape::sizeAt(xShapeInfo, i)) ? 1 : 0;
-  }
-
-
-  // Only use fast ND paths when all arrays have the same rank.
-  // When yRank < xRank, the start/stop range is numTads (not the full element count),
-  // which is incompatible with these fast paths that iterate over all dimensions.
-  if (xRank == yRank && yRank == zRank) {
-    if (3 == xRank) return BROADCAST_3D;
-    if (4 == xRank) return BROADCAST_4D;
-    if (5 == xRank) return BROADCAST_5D;
-  }
-
-
+  // No 3D, 4D or 5D kind: the caller (the TAD broadcast) ranges over TADs and pairs element j of
+  // each TAD with y's element j. Those loops ranged over z's leading axes with y's own strides, so
+  // they read past y wherever it has unit axes (y [1, 1, 1, 1] dividing x [1, 2, 3, 3] along axis 0)
+  // and paired the wrong elements wherever the TAD count is not z's leading extent.
   return COMMON;
 }
 //////////////////////////////////////////////////////////////////////////////
