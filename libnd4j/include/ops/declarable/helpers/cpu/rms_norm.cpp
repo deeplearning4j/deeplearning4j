@@ -43,6 +43,31 @@ static LongType rmsRowOffset(LongType row, const LongType* info) {
     return offset;
 }
 
+// The sum of value(i)^2 over a row, ordered as the CUDA kernels order it: strided partial sums
+// (lane j takes elements j, j + kSumLanes, ...) merged pairwise. One running sum loses accuracy
+// linearly with the row length (4097 FLOAT values of 300: 2.4e-5 relative), the tree only
+// logarithmically; the independent lanes also vectorize.
+static constexpr int kSumLanes = 32;
+
+template <typename AccT, typename Value>
+static AccT rowSumOfSquares(LongType rowLen, const Value& value) {
+    AccT lanes[kSumLanes] = {};
+    LongType i = 0;
+    for (; i + kSumLanes <= rowLen; i += kSumLanes) {
+        for (int lane = 0; lane < kSumLanes; ++lane) {
+            const AccT v = value(i + lane);
+            lanes[lane] += v * v;
+        }
+    }
+    for (int lane = 0; i < rowLen; ++i, ++lane) {
+        const AccT v = value(i);
+        lanes[lane] += v * v;
+    }
+    for (int width = kSumLanes / 2; width > 0; width /= 2)
+        for (int lane = 0; lane < width; ++lane) lanes[lane] += lanes[lane + width];
+    return lanes[0];
+}
+
 template <typename T, typename G, typename Z = T>
 static void rmsNorm_(NDArray* input, NDArray* gamma, NDArray* output, double epsilon) {
     if (input->isEmpty()) return;
@@ -58,11 +83,8 @@ static void rmsNorm_(NDArray* input, NDArray* gamma, NDArray* output, double eps
         for (LongType row = start; row < stop; row += increment) {
             const LongType xo = rmsRowOffset(row, input->shapeInfo());
             const LongType zo = rmsRowOffset(row, output->shapeInfo());
-            AccT sumSq = 0;
-            for (LongType i = 0; i < rowLen; ++i) {
-                const AccT v = static_cast<AccT>(x[xo + i * xs]);
-                sumSq += v * v;
-            }
+            const AccT sumSq =
+                rowSumOfSquares<AccT>(rowLen, [&](LongType i) { return static_cast<AccT>(x[xo + i * xs]); });
             const AccT inv = AccT(1) / math::sd_sqrt<AccT, AccT>(sumSq / AccT(rowLen) + AccT(epsilon));
             for (LongType i = 0; i < rowLen; ++i) {
                 const AccT scale = g != nullptr ? static_cast<AccT>(g[i * gs]) : AccT(1);
@@ -168,12 +190,11 @@ static void skipRmsNorm_(NDArray* input, NDArray* skip, NDArray* gamma, NDArray*
             const LongType so = rmsRowOffset(row, skip->shapeInfo());
             const LongType zo = rmsRowOffset(row, output->shapeInfo());
             const LongType ho = h != nullptr ? rmsRowOffset(row, hiddenOut->shapeInfo()) : 0;
-            AccT sumSq = 0;
-            for (LongType i = 0; i < rowLen; ++i) {
+            const AccT sumSq = rowSumOfSquares<AccT>(rowLen, [&](LongType i) {
                 AccT v = static_cast<AccT>(x[xo + i * xs]) + static_cast<AccT>(s[so + i * ss]);
                 if (b != nullptr) v += static_cast<AccT>(b[i * bs]);
-                sumSq += v * v;
-            }
+                return v;
+            });
             const AccT inv = AccT(1) / math::sd_sqrt<AccT, AccT>(sumSq / AccT(rowLen) + AccT(epsilon));
             for (LongType i = 0; i < rowLen; ++i) {
                 AccT v = static_cast<AccT>(x[xo + i * xs]) + static_cast<AccT>(s[so + i * ss]);
