@@ -101,9 +101,10 @@ public class ClipByNorm extends DynamicCustomOp {
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();
-        if(!iArguments.isEmpty()) {
-            this.dimensions = Longs.toArray(iArguments);
-        }
+        // The integer arguments are the dimensions; none means the norm of the whole array. An op rebuilt from its
+        // serialized form (the gradient graph is built from such copies) must come back with an empty array then, not
+        // with none: doDiff hands the dimensions on to the backward op.
+        this.dimensions = Longs.toArray(iArguments);
 
         if(!tArguments.isEmpty()) {
             this.clipValue = tArguments.get(0);

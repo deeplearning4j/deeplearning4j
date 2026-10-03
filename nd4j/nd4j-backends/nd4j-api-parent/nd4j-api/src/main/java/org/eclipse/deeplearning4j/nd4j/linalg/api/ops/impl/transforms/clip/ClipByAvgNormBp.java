@@ -17,56 +17,44 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.linalg.api.ops.impl.transforms.clip;
 
-import lombok.NoArgsConstructor;
+package org.eclipse.deeplearning4j.nd4j.linalg.api.ops.impl.transforms.clip;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.shade.guava.primitives.Longs;
-import org.eclipse.deeplearning4j.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNormBp;
 
 import java.util.Collections;
 import java.util.List;
 
-
-@NoArgsConstructor
-public class ClipByAvgNorm extends DynamicCustomOp {
+/**
+ * The gradient of {@link org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm}: from the op's input and the
+ * gradient at its output, the gradient at its input.
+ */
+public class ClipByAvgNormBp extends DynamicCustomOp {
 
     private double clipValue;
 
+    public ClipByAvgNormBp() {
+    }
 
-    public ClipByAvgNorm(SameDiff sameDiff, SDVariable x, double clipValue, long... dimensions) {
-        super("clipbyavgnorm", sameDiff, new SDVariable[]{x});
+    public ClipByAvgNormBp(SameDiff sameDiff, SDVariable x, SDVariable eps, double clipValue, long... dimensions) {
+        super(null, sameDiff, new SDVariable[]{x, eps});
         this.clipValue = clipValue;
         this.dimensions = dimensions;
         addIArgument(dimensions);
         addTArgument(clipValue);
     }
 
-    public ClipByAvgNorm(INDArray in, double clipValue, long... dimensions){
-        this(in, null, clipValue, dimensions);
-    }
-
-    public ClipByAvgNorm(INDArray in, INDArray out, double clipValue, long... dimensions){
-        super("clipbyavgnorm", new INDArray[]{in}, wrapOrNull(out), Collections.singletonList(clipValue), dimensions);
-    }
-
     @Override
     public String opName() {
-        return "clipbyavgnorm";
+        return "clipbyavgnorm_bp";
     }
 
-
-
-    /**
-     * Restores the fields from the arguments: the integer ones are the dimensions (none: the whole array), the floating
-     * point one the clip value. An op rebuilt from its serialized form (the gradient graph is built from such copies)
-     * gets its arguments back but not these fields, and {@link #doDiff(List)} hands them to the backward op.
-     */
+    /** The integer arguments are the dimensions (none: the whole array), the floating point one the clip value. */
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();
@@ -77,16 +65,9 @@ public class ClipByAvgNorm extends DynamicCustomOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return new ClipByAvgNormBp(sameDiff, arg(), grad.get(0), clipValue, dimensions).outputs();
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2,
+                "Expected exactly 2 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
-
-    @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), inputDataTypes);
-        return inputDataTypes;
-    }
-
 }
-
-

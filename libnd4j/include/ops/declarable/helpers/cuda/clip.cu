@@ -109,54 +109,39 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
     output->assign(input);
     z = output;
   }
+  if (z->lengthOf() == 0) return;
 
-  if (dims.empty()) {
-    std::vector<LongType> empty;
-    NDArray* actualNormPtr = z->reduceAlongDimension(reduce::Norm2, &empty);
-    NDArray* actualNorm = useAverage ? (*actualNormPtr / static_cast<double>(z->lengthOf())) : actualNormPtr;
+  // The norm of every tensor along dims and its comparison with the clip value stay on the device; with no dims (or
+  // dims covering every axis) the whole array is one tensor, whose norm is a scalar the kernel reads at offset 0. A
+  // host read of the norm forced a synchronization and could not be captured in a CUDA graph. The kernel reads the
+  // clip value as z's type: clipbyavgnorm's from a floating point argument is DOUBLE, and an input clip value may be
+  // any type.
+  NDArray* clipCast = clipNorm->dataType() == z->dataType() ? nullptr : clipNorm->cast(z->dataType());
+  NDArray* clip = clipCast != nullptr ? clipCast : clipNorm;
+  NDArray* actualNorms = z->reduceAlongDimension(reduce::Norm2, &dims);
 
-    if (actualNorm->e<double>(0) > clipNorm->e<double>(0)) {
-      auto scaleFactor = *clipNorm / *actualNorm;
-      *z *= *scaleFactor;
-      delete scaleFactor;
-    }
-    if (useAverage && actualNorm != actualNormPtr) delete actualNorm;
-    delete actualNormPtr;
-  } else {
-    NDArray* actualNorms = z->reduceAlongDimension(reduce::Norm2, &dims);
+  std::vector<LongType>* dimsToExclude = ShapeUtils::evalDimsToExclude(z->rankOf(), dims.size(), dims.data());
 
-    std::vector<LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(z->rankOf(), dims.size(),dims.data());
+  // clipDims gives (blocks, threads, shared memory)
+  dim3 launchDims = clipDims(z->lengthOf());
+  PointersManager manager(context, "clipByNorm");
 
-    const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-    const int blocksPerGrid = (z->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+  const LongType* dimensions = reinterpret_cast<const LongType*>(
+      manager.replicatePointer(dimsToExclude->data(), dimsToExclude->size() * sizeof(LongType)));
 
-    PointersManager manager(context, "clipByNorm");
+  NDArray::prepareSpecialUse({z}, {z, actualNorms, clip});
 
-    const LongType* dimensions = reinterpret_cast<const LongType*>(
-        manager.replicatePointer(dimsToExclude->data(), dimsToExclude->size() * sizeof(LongType)));
+  BUILD_SINGLE_SELECTOR(z->dataType(), clipByNormCudaLauncher,
+                        (launchDims.x, launchDims.y, context->getCudaStream(), clip->specialBuffer(),
+                         actualNorms->specialBuffer(), actualNorms->specialShapeInfo(), z->specialBuffer(),
+                         z->specialShapeInfo(), dimensions, dimsToExclude->size(), useAverage),
+                        SD_FLOAT_TYPES);
+  NDArray::registerSpecialUse({z}, {z, actualNorms, clip});
 
-    NDArray::prepareSpecialUse({z}, {z, actualNorms, clipNorm});
-
-
-    BUILD_SINGLE_SELECTOR(z->dataType(), clipByNormCudaLauncher,
-                          (blocksPerGrid,
-                              threadsPerBlock,
-                              context->getCudaStream(),
-                              clipNorm->specialBuffer(),
-                              actualNorms->specialBuffer(),
-                              actualNorms->specialShapeInfo(),
-                              z->specialBuffer(),
-                              z->specialShapeInfo(),
-                              dimensions,
-                              dimsToExclude->size(),
-                              useAverage),
-                          SD_FLOAT_TYPES);
-    NDArray::registerSpecialUse({z}, {z, actualNorms, clipNorm});
-
-    manager.synchronize();
-    delete dimsToExclude;
-    delete actualNorms;
-  }
+  manager.synchronize();
+  delete dimsToExclude;
+  delete actualNorms;
+  delete clipCast;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -230,7 +215,8 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
     LongType normOffset;
     COORDS2INDEX(normRank, normStride, normCoords, normOffset);
 
-    const T actualNorm = useAverage ? norm[normOffset] / tadLen : norm[normOffset];
+    const T plainNorm = norm[normOffset];
+    const T actualNorm = useAverage ? plainNorm / tadLen : plainNorm;
 
     if (actualNorm > clipNorm) {
       LongType sumOffset, xOffset;
@@ -241,9 +227,10 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
         COORDS2INDEX(xRank, xStride, zCoords, xOffset);
       }
 
-      const T sumVal = sum[sumOffset];
-      z[zOffset] = (clipNorm / actualNorm) * y[yOffset] *
-                   (static_cast<T>(1.f) - (x[xOffset] * sumVal) / (actualNorm * actualNorm));
+      // dL/dx = (clip / a) * (gradO - x * dot(gradO, x) / |x|^2), the dot product taken over the whole tensor and
+      // a the norm compared with clip (|x|, or |x| / n for the average norm). `sum` holds that dot product per tensor.
+      const T dotVal = sum[sumOffset];
+      z[zOffset] = (clipNorm / actualNorm) * (y[yOffset] - (x[xOffset] * dotVal) / (plainNorm * plainNorm));
     } else {
       z[zOffset] = y[yOffset];
     }
@@ -253,66 +240,42 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
 template <typename T>
 void clipByNormBp_(LaunchContext* context, NDArray* input, NDArray* gradO, NDArray* gradI,
                    const std::vector<LongType>& dims, NDArray* clipNorm, const bool useAverage) {
-  const int rank = input->rankOf();
+  if (gradI->lengthOf() == 0) return;
+  // The norm and dot(gradO, input) of every tensor, the comparison with clipNorm and the gradient all stay on the
+  // device; the whole array is one tensor when the dimensions cover every axis (its norm and dot product are scalars,
+  // which the kernel reads at offset 0). A host read of the norm here forced a synchronization and could not be
+  // captured in a CUDA graph.
+  NDArray* norms = input->reduceAlongDimension(reduce::Norm2, &dims);
+  // dot(gradO, input) of every tensor: the gradient's component along the input. A sum of the input alone only
+  // equals it where gradO is the same everywhere in the tensor.
+  NDArray* weighted = (*input) * (*gradO);
+  NDArray* sums = weighted->reduceAlongDimension(reduce::Sum, &dims);
 
-  auto actualNorms = input->reduceAlongDimension(reduce::Norm2, &dims);
+  std::vector<LongType>* dimsToExclude = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dims.size(), dims.data());
 
-  if (actualNorms->lengthOf() == 1) {
-    const T norm = useAverage ? actualNorms->e<T>(0) / static_cast<T>(input->lengthOf()) : actualNorms->e<T>(0);
+  // clipDims gives (blocks, threads, shared memory); launching it as (threads, blocks) ran ceil(length / 512) threads
+  // per block, past the 1024 limit for arrays of more than 512 * 1024 elements.
+  dim3 launchDims = clipDims(gradI->lengthOf());
+  PointersManager manager(context, "clipByNormBp");
 
-    auto clipVal = clipNorm->e<T>(0);
+  const LongType* dimensions = reinterpret_cast<const LongType*>(
+      manager.replicatePointer(dimsToExclude->data(), dimsToExclude->size() * sizeof(LongType)));
 
-    if (norm > clipVal) {
-      // dot(input, gradO) = sum(input * gradO) — matches CPU clip.cpp reference
-      NDArray* prodArr = (*input) * (*gradO);
-      NDArray* dotArr = prodArr->reduceNumber(reduce::Sum);
-      const T dot = dotArr->e<T>(0);
-      delete dotArr;
-      delete prodArr;
+  NDArray::prepareSpecialUse({gradI}, {norms, sums, clipNorm, input, gradO});
+  clipByNormBpCuda<T><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+      clipNorm->specialBuffer(), input->specialBuffer(), input->specialShapeInfo(), gradO->specialBuffer(),
+      gradO->specialShapeInfo(), norms->specialBuffer(), norms->specialShapeInfo(), sums->specialBuffer(),
+      sums->specialShapeInfo(), gradI->specialBuffer(), gradI->specialShapeInfo(), dimensions,
+      (LongType)dimsToExclude->size(), useAverage);
+  sd::DebugHelper::checkGlobalErrorCode("clipByNorm  failed");
 
-      const T factor1 = clipVal / norm;
-      const T factor2 = static_cast<T>(1.f) / (norm * norm);
-      const T scale2 = factor1 * factor2 * dot;  // coefficient for input term
+  NDArray::registerSpecialUse({gradI}, {norms, sums, clipNorm, input, gradO});
 
-      // gradI = factor1 * gradO - scale2 * input
-      // matches CPU: factor1 * y - factor1 * factor2 * x * dot
-      gradI->assign(gradO);
-      gradI->applyScalar(scalar::Multiply, factor1, gradI);
-      NDArray* scaledInput = (*input) * scale2;
-      *gradI -= *scaledInput;
-      delete scaledInput;
-    } else
-      gradI->assign(gradO);
-    delete actualNorms;
-  } else {
-    NDArray* actualNormsInner = input->reduceAlongDimension(reduce::Norm2, &dims);
-    NDArray* sums = input->reduceAlongDimension(reduce::Sum, &dims);
-
-    std::vector<LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dims.size(),dims.data());
-
-
-    dim3 launchDims = clipDims(gradI->lengthOf());
-    PointersManager manager(context, "clipByNormBp");
-
-    const LongType* dimensions = reinterpret_cast<const LongType*>(
-        manager.replicatePointer(dimsToExclude->data(), dimsToExclude->size() * sizeof(LongType)));
-
-    NDArray::prepareSpecialUse({gradI}, {actualNormsInner, sums, clipNorm, input, gradO});
-    clipByNormBpCuda<T><<<launchDims.y, launchDims.x,launchDims.z, *context->getCudaStream()>>>(
-        clipNorm->specialBuffer(), input->specialBuffer(), input->specialShapeInfo(), gradO->specialBuffer(),
-        gradO->specialShapeInfo(), actualNormsInner->specialBuffer(), actualNormsInner->specialShapeInfo(), sums->specialBuffer(),
-        sums->specialShapeInfo(), gradI->specialBuffer(), gradI->specialShapeInfo(), dimensions, (LongType)dimsToExclude->size(),
-        useAverage);
-    sd::DebugHelper::checkGlobalErrorCode("clipByNorm  failed");
-
-    NDArray::registerSpecialUse({gradI}, {actualNormsInner, sums, clipNorm, input, gradO});
-
-    manager.synchronize();
-    delete dimsToExclude;
-    delete actualNormsInner;
-    delete sums;
-    delete actualNorms;
-  }
+  manager.synchronize();
+  delete dimsToExclude;
+  delete norms;
+  delete weighted;
+  delete sums;
 }
 BUILD_SINGLE_TEMPLATE( void clipByNormBp_,
                       (sd::LaunchContext * context, NDArray* input, NDArray* gradO, NDArray* gradI,

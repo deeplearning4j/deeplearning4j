@@ -46,6 +46,8 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
   // Using e<double>() on a FLOAT array can cause boundary-exact cases to be
   // incorrectly clipped when float norm computes as 2.0000001f vs clip 2.0f.
   // Read both in float precision for FLOAT32 arrays; double precision for others.
+  // The clip value may have any type (an input clip value is whatever the caller gives), so each tensor's scale
+  // clip / norm is a scalar applied to the tensor rather than a division of NDArrays, which requires one type.
   const double clipNormVal = (z->dataType() == DataType::FLOAT32)
       ? (double)clipNorm->e<float>(0)
       : clipNorm->e<double>(0);
@@ -62,18 +64,10 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
       const double divVal = (z->dataType() == DataType::FLOAT32)
           ? (double)divResult->e<float>(0)
           : divResult->e<double>(0);
-      if (divVal > clipNormVal) {
-        NDArray *clipDivResult = (*clipNorm) / (*divResult);
-        *z *= (*clipDivResult);
-        delete clipDivResult;
-      }
+      if (divVal > clipNormVal) *z *= clipNormVal / divVal;
       delete divResult;
     } else {
-      if (norm2Val > clipNormVal) {
-        NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
-        *z *= (*clipDivResult);
-        delete clipDivResult;
-      }
+      if (norm2Val > clipNormVal) *z *= clipNormVal / norm2Val;
     }
     delete norm2Result;
   } else if (dimensions.size() >= (size_t)z->rankOf()) {
@@ -90,18 +84,10 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
       const double divVal = (z->dataType() == DataType::FLOAT32)
           ? (double)divResult->e<float>(0)
           : divResult->e<double>(0);
-      if (divVal > clipNormVal) {
-        NDArray *clipDivResult = (*clipNorm) / (*divResult);
-        *z *= (*clipDivResult);
-        delete clipDivResult;
-      }
+      if (divVal > clipNormVal) *z *= clipNormVal / divVal;
       delete divResult;
     } else {
-      if (norm2Val > clipNormVal) {
-        NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
-        *z *= (*clipDivResult);
-        delete clipDivResult;
-      }
+      if (norm2Val > clipNormVal) *z *= clipNormVal / norm2Val;
     }
     delete norm2Result;
   } else {
@@ -120,18 +106,10 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
           const double divVal = isFP32
               ? (double)divResult->e<float>(0)
               : divResult->e<double>(0);
-          if (divVal > clipNormVal) {
-            NDArray *clipDivResult = (*clipNorm) / (*divResult);
-            *listOfSubArrs.at(i) *= (*clipDivResult);
-            delete clipDivResult;
-          }
+          if (divVal > clipNormVal) *listOfSubArrs.at(i) *= clipNormVal / divVal;
           delete divResult;
         } else {
-          if (norm2Val > clipNormVal) {
-            NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
-            *listOfSubArrs.at(i) *= (*clipDivResult);
-            delete clipDivResult;
-          }
+          if (norm2Val > clipNormVal) *listOfSubArrs.at(i) *= clipNormVal / norm2Val;
         }
         delete norm2Result;
       }
@@ -144,9 +122,11 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
 template <typename T>
 static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
                           const std::vector<LongType>& dimensions, NDArray *clipNorm, const bool useAverage) {
-  // Correct gradient formula for clipByNorm:
-  // dL/dx_j = (clip/norm)*gradO_j - (clip/norm^3)*x_j*dot(gradO,x)
-  // where dot(gradO,x) = sum_k(gradO_k * x_k) is the inner product over the TAD.
+  // Gradient of y = x * clip / a when a > clip, with a = |x| (or |x| / n, the average norm, over n elements):
+  // da/dx_j = x_j * a / |x|^2 either way, so
+  //   dL/dx_j = (clip / a) * (gradO_j - x_j * dot(gradO, x) / |x|^2)
+  // where dot(gradO, x) = sum_k(gradO_k * x_k) is the inner product over the TAD. The second term divides by the
+  // plain norm squared also for the average norm.
   //
   // Implementation note: norm is computed via a single global reduceAlongDimension call,
   // then indexed per-TAD. This is consistent with the known-good baseline.
@@ -174,7 +154,7 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
       delete dotRes;
 
       const T factor1 = clipVal / norm;
-      const T factor2 = static_cast<T>(1.f) / (norm * norm);
+      const T factor2 = static_cast<T>(1.f) / (norm2Raw * norm2Raw);
       auto lambda = LAMBDA_TT(x, y, dot, factor1, factor2) {
         return factor1 * y - factor1 * factor2 * x * dot;
       });
@@ -218,7 +198,7 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
           delete subDot;
 
           const T factor1 = clipVal / norm;
-          const T factor2 = static_cast<T>(1.f) / (norm * norm);
+          const T factor2 = static_cast<T>(1.f) / (norm2Raw * norm2Raw);
           auto lambda = LAMBDA_TT(x, y, dot, factor1, factor2) {
             return factor1 * y - factor1 * factor2 * x * dot;
           });

@@ -33,7 +33,9 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, false, -2, 0) {
-  if (block.inputs()->size() > 1) {
+  // block.width() counts the inputs of either execution path; block.inputs() holds only a graph's input references,
+  // and is empty when the op runs from given arrays (Java's exec), which then read a clip argument it did not have
+  if (block.width() > 1) {
     auto input = INPUT_VARIABLE(0);
     auto clipNorm = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
@@ -44,7 +46,8 @@ CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, false, -2, 0) {
     auto output = OUTPUT_VARIABLE(0);
 
     const bool isInplace = block.isInplace();
-    auto clipNorm = NDArrayFactory::create(T_ARG(0), block.launchContext());
+    // In the output's type, as clipbynorm and both backward ops create theirs
+    auto clipNorm = NDArrayFactory::create(output->dataType(), T_ARG(0), block.launchContext());
 
     helpers::clipByNorm(block.launchContext(), input, output, *block.getIArguments(), clipNorm, isInplace, true);
     delete clipNorm;
@@ -64,7 +67,8 @@ CUSTOM_OP_IMPL(clipbyavgnorm_bp, -2, 1, false, -1, 0) {
   auto gradO = INPUT_VARIABLE(1);
 
   auto gradI = OUTPUT_VARIABLE(0);
-  if (block.inputs()->size() > 2) {
+  // block.width(), as in the forward op: block.inputs() is empty for an op run from given arrays
+  if (block.width() > 2) {
     const auto clipNorm = INPUT_VARIABLE(2);
     helpers::clipByNormBp(block.launchContext(), input, gradO, gradI, *block.getIArguments(), clipNorm, true);
   } else {

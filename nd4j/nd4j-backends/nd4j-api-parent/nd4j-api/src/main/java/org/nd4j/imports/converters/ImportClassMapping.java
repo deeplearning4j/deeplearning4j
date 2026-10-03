@@ -20,6 +20,7 @@
 
 package org.nd4j.imports.converters;
 
+import org.eclipse.deeplearning4j.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNormBp;
 import dorkbox.annotation.AnnotationDefaults;
 import dorkbox.annotation.AnnotationDetector;
 import lombok.extern.slf4j.Slf4j;
@@ -372,6 +373,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.bool.IsNaN.class,
             org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform.class,
             org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm.class,
+            ClipByAvgNormBp.class,
             org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm.class,
             org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNormBp.class,
             org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue.class,
