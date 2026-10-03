@@ -1060,7 +1060,11 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
   constexpr bool isAssignOp = std::is_same_v<OpType, simdOps::Assign<X, Z>>;
   if constexpr (isAssignOp && std::is_same_v<X, Z>) {
     bool sameOrder = (shape::order(xShapeInfo) == shape::order(zShapeInfo));
-    if (sameOrder && isContiguousLayoutForLoops(xShapeInfo) && isContiguousLayoutForLoops(zShapeInfo)) {
+    // A memory copy pairs the elements in memory order, the loop below in logical (C) order: they agree for
+    // C-contiguous arrays, but for F-contiguous ones only when the shapes are equal
+    bool memoryOrderIsLogical = shape::order(xShapeInfo) == 'c' || shape::shapeEquals(xShapeInfo, zShapeInfo);
+    if (sameOrder && memoryOrderIsLogical && isContiguousLayoutForLoops(xShapeInfo) &&
+        isContiguousLayoutForLoops(zShapeInfo)) {
       // Calculate this thread's portion of the data
       auto span = samediff::Span::build(threadId, numThreads, 0, zLen, 1);
       const LongType startIdx = span.startX();

@@ -86,7 +86,7 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
   //  xm = x * mask
   auto xm = x;
   if (mask) {
-    xm = new NDArray(x->shapeInfo(), true, block.launchContext());
+    xm = new NDArray(x->shapeInfo(), false, block.launchContext());
     std::vector<LongType> dims = {0, 1};
     x->applyBroadcast(broadcast::Multiply,&dims , mask, xm);
   }

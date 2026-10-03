@@ -189,18 +189,11 @@ LongType NDArray::getOffset(const LongType i) {
     return _offset;
   }
 
+  // i is a logical index in C order whatever the memory order, as for p(i, value), shape::getIndexOffset and the
+  // kernels: e(i) and p(i) of differently ordered arrays then pair the same elements
   sd::LongType coords[SD_MAX_RANK] = {};
   const auto rank = rankOf();
-
-  if (ordering() == 'f') {
-    sd::LongType idx = i;
-    for (int dim = 0; dim < rank; ++dim) {
-      coords[dim] = idx % sizeAt(dim);
-      idx /= sizeAt(dim);
-    }
-  } else {
-    INDEX2COORDS(i, rank, shapeOf(), coords);
-  }
+  INDEX2COORDS(i, rank, shapeOf(), coords);
 
   sd::LongType offset = 0;
   COORDS2INDEX(rank, stridesOf(), coords, offset);
@@ -3466,7 +3459,11 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
     bool sameOrder = (shape::order(thisArray->shapeInfo()) == shape::order(other->shapeInfo()));
     bool srcContiguous = isContiguousLayout(thisArray->shapeInfo());
     bool dstContiguous = isContiguousLayout(other->shapeInfo());
-    bool canUseFastCopy = sameType && sameLength && sameOrder && srcContiguous && dstContiguous;
+    // A memory copy pairs the elements in memory order, assign in logical (C) order: they agree for C-contiguous
+    // arrays, but for F-contiguous ones only when the shapes are equal
+    bool sameShape = shape::shapeEquals(thisArray->shapeInfo(), other->shapeInfo());
+    bool canUseFastCopy = sameType && sameLength && sameOrder && srcContiguous && dstContiguous &&
+                          (sameShape || shape::order(thisArray->shapeInfo()) == 'c');
 
 #if defined(SD_CUDA)
     // CUDA D2D fast path: use cudaMemcpyAsync DeviceToDevice when both arrays
@@ -3664,7 +3661,9 @@ NDArray *NDArray::reshape(char order, std::vector<sd::LongType>& shape, bool cop
   }
 
   if (copyToNewBuff) {
-    NDArray* ret = new NDArray(newShapeInfo, true, getContext(), false);
+    // A dense new buffer gets dense strides in the requested order: newShapeInfo may carry this view's strides
+    // (reshapeNoAlloc keeps them when a view would do), which would address the copy past its allocation
+    NDArray* ret = new NDArray(newShapeInfo, false, getContext(), false);
     if(this->isScalar() || this->lengthOf() <= 1) {
       ret->p(0,this);
     } else {
@@ -6559,70 +6558,77 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
         THROW_EXCEPTION("Unknown or unsupported string type");
     }
   } else {
+    // i is a logical index: write the element through the array's own strides
+    sd::LongType xOffset = 0;
+    if (rankOf() > 0) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(i, rankOf(), shapeOf(), coords);
+      COORDS2INDEX(rankOf(), stridesOf(), coords, xOffset);
+    }
     switch(scalar->dataType()) {
 #ifdef HAS_FLOAT32
       case FLOAT32:
-        templatedSet<float, float>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<float, float>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_DOUBLE
       case DOUBLE:
-        templatedSet<double, double>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<double, double>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_FLOAT16
       case HALF:
-        templatedSet<float16, float16>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<float16, float16>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_BFLOAT16
       case BFLOAT16:
-        templatedSet<bfloat16, bfloat16>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<bfloat16, bfloat16>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_BOOL
       case BOOL:
-        templatedSet<bool, bool>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<bool, bool>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_INT8
       case INT8:
-        templatedSet<int8_t, int8_t>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<int8_t, int8_t>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_INT16
       case INT16:
-        templatedSet<int16_t, int16_t>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<int16_t, int16_t>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_INT32
       case INT32:
-        templatedSet<Int32Type, Int32Type>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<Int32Type, Int32Type>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_INT64
       case INT64:
-        templatedSet<LongType, LongType>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<LongType, LongType>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_UINT8
       case UINT8:
-        templatedSet<uint8_t, uint8_t>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<uint8_t, uint8_t>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_UINT16
       case UINT16:
-        templatedSet<uint16_t, uint16_t>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<uint16_t, uint16_t>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_UINT32
       case UINT32:
-        templatedSet<uint32_t, uint32_t>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<uint32_t, uint32_t>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
 #ifdef HAS_UNSIGNEDLONG
       case UINT64:
-        templatedSet<UnsignedLong, UnsignedLong>(buffer(), i, dataType(), scalar->buffer());
+        templatedSet<UnsignedLong, UnsignedLong>(buffer(), xOffset, dataType(), scalar->buffer());
         break;
 #endif
       default:
@@ -6637,11 +6643,10 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
 
 template <typename T, typename Y, typename>
 void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
-  int len = isScalar() ? 1 : lengthOf();
-
-  if (offset < 0 || offset >= len) {
-    std::string errorMessage = "NDArray::templatedSet: offset out of bounds "
-                               + std::to_string(offset) + " vs " + std::to_string(len);
+  // offset is a memory offset from the array's own strides, which a view's may take beyond its length: the
+  // callers check the logical index
+  if (offset < 0) {
+    std::string errorMessage = "NDArray::templatedSet: negative offset " + std::to_string(offset);
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
