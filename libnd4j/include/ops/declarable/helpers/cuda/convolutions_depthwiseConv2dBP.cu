@@ -130,14 +130,14 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
     std::vector<sd::LongType> go3dShape = {iC, bS * oH * oW, mC};
     if (isNCHW) {
       std::vector<sd::LongType> shape5d = {bS, iC, mC, oH, oW};
-      gradO5d = gradO->reshape(gradO->ordering(), shape5d);
+      gradO5d = gradO->reshape('c', shape5d);
       std::vector<sd::LongType> perm5d = {1, 0, 3, 4, 2};  // [bS,iC,mC,oH,oW] -> [iC,bS,oH,oW,mC]
       NDArray* gradOPerm5d = gradO5d->permute(perm5d, false, false);
       gradO3d_forW = gradOPerm5d->reshape('c', go3dShape, false);
       delete gradOPerm5d;
     } else {
       std::vector<sd::LongType> shape5d = {bS, oH, oW, iC, mC};
-      gradO5d = gradO->reshape(gradO->ordering(), shape5d);
+      gradO5d = gradO->reshape('c', shape5d);
       std::vector<sd::LongType> perm5d = {3, 0, 1, 2, 4};  // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC]
       NDArray* gradOPerm5d = gradO5d->permute(perm5d, false, false);
       gradO3d_forW = gradOPerm5d->reshape('c', go3dShape, false);
@@ -178,7 +178,7 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
     NDArray* gradBR = gradB;
     if (gradB->rankOf() == 2) {
       std::vector<sd::LongType> lenShape = {gradB->lengthOf()};
-      gradBR = gradB->reshape(gradB->ordering(), lenShape, false);
+      gradBR = gradB->reshape('c', lenShape, false);
     }
     std::vector<LongType> dims = {0, indOoH, indOoH + 1};
     gradO->reduceAlongDimension(reduce::Sum, gradBR, &dims, false);  // sum over bS, oH, oW
@@ -196,14 +196,14 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
     std::vector<sd::LongType> go3dShape = {iC, mC, bS * oH * oW};
     if (isNCHW) {
       std::vector<sd::LongType> shape5d = {bS, iC, mC, oH, oW};
-      gradO5d_forI = gradO->reshape(gradO->ordering(), shape5d);
+      gradO5d_forI = gradO->reshape('c', shape5d);
       std::vector<sd::LongType> perm5d = {1, 2, 0, 3, 4};  // [bS,iC,mC,oH,oW] -> [iC,mC,bS,oH,oW]
       NDArray* gradOPerm5d = gradO5d_forI->permute(perm5d, false, false);
       gradO3d_forI = gradOPerm5d->reshape('c', go3dShape, false);
       delete gradOPerm5d;
     } else {
       std::vector<sd::LongType> shape5d = {bS, oH, oW, iC, mC};
-      gradO5d_forI = gradO->reshape(gradO->ordering(), shape5d);
+      gradO5d_forI = gradO->reshape('c', shape5d);
       std::vector<sd::LongType> perm5d = {3, 4, 0, 1, 2};  // [bS,oH,oW,iC,mC] -> [iC,mC,bS,oH,oW]
       NDArray* gradOPerm5d = gradO5d_forI->permute(perm5d, false, false);
       gradO3d_forI = gradOPerm5d->reshape('c', go3dShape, false);

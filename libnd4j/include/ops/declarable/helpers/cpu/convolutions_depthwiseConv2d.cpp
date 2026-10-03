@@ -88,8 +88,10 @@ static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray*
     ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
   std::vector<sd::LongType> colShape = {bS, iC, kH, kW, oH, oW};
-  NDArray columns(input->ordering(),colShape, input->dataType(), input->getContext());
-  NDArray *outputReshaped = output->reshape(output->ordering(), outReShape, false);
+  // Output channel c * mC + m is filter m of input channel c: the output's channels split in logical
+  // (C) order whatever its memory order (splitting one axis always gives a view)
+  NDArray columns('c', colShape, input->dataType(), input->getContext());
+  NDArray *outputReshaped = output->reshape('c', outReShape, false);
   NDArray *zero = NDArrayFactory::create(0.f, input->getContext());
   helpers::im2col(
       *output->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,

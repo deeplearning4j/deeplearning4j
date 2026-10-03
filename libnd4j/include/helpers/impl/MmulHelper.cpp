@@ -681,11 +681,13 @@ NDArray* MmulHelper::tensorDot(NDArray* A, NDArray* B, const std::vector<LongTyp
   NDArray* aP = permutAt.empty() ? A : A->permute(permutAt, false, false);
   NDArray* bP = permutBt.empty() ? B : B->permute(permutBt, false, false);
 
-  NDArray* aPR = aP->isSameShape(shapeAt) ? aP : aP->reshape(aP->ordering(), shapeAt);
-  NDArray* bPR = bP->isSameShape(shapeAt) ? bP : bP->reshape(bP->ordering(), shapeBt);
+  // Both operands flatten their axes in logical (C) order whatever their memory order, so the
+  // contracted elements pair up and the free axes come back in outShape's order.
+  NDArray* aPR = aP->isSameShape(shapeAt) ? aP : aP->reshape('c', shapeAt);
+  NDArray* bPR = bP->isSameShape(shapeBt) ? bP : bP->reshape('c', shapeBt);
 
   NDArray* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
-  c->reshapei(outShape);
+  c->reshapei('c', outShape);
 
   if (aPR != A && aPR != aP) delete aPR;
   if (bPR != B && bPR != bP) delete bPR;
@@ -812,45 +814,29 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
   NDArray* aP = permutAt.empty() ? a : a->permute(permutAt, false, false);
   NDArray* bP = permutBt.empty() ? b : b->permute(permutBt, false, false);
 
-  NDArray* aPR = aP->isSameShape(shapeAt) ? aP : aP->reshape(aP->ordering(), shapeAt, false);
-  NDArray* bPR = bP->isSameShape(shapeBt) ? bP : bP->reshape(bP->ordering(), shapeBt, false);
-
-  // reshape returns nullptr when the array is non-contiguous and can't be reshaped as a view.
-  // In that case, make a contiguous copy.
-  bool aPROwned = false, bPROwned = false, cPROwned = false;
-  if (aPR == nullptr) {
-    aPR = new NDArray(aP->dup(aP->ordering()));
-    aPR->reshapei(aP->ordering(), shapeAt);
-    aPROwned = true;
-  }
-  if (bPR == nullptr) {
-    bPR = new NDArray(bP->dup(bP->ordering()));
-    bPR->reshapei(bP->ordering(), shapeBt);
-    bPROwned = true;
-  }
+  // A, B and C flatten their axes in logical (C) order whatever their memory order, so the
+  // contracted elements pair up and the free axes land where permutForC puts them. reshape returns
+  // a view when the strides allow one and a copy otherwise.
+  NDArray* aPR = aP->isSameShape(shapeAt) ? aP : aP->reshape('c', shapeAt, false);
+  NDArray* bPR = bP->isSameShape(shapeBt) ? bP : bP->reshape('c', shapeBt, false);
 
   std::vector<LongType> requiredCshape = {aPR->sizeAt(0), bPR->sizeAt(1)};
-  NDArray* cPR = cP->isSameShape(requiredCshape) ? cP : cP->reshape(cP->ordering(), requiredCshape, false);
-  if (cPR == nullptr) {
-    cPR = new NDArray(cP->dup(cP->ordering()));
-    cPR->reshapei(cP->ordering(), requiredCshape);
-    cPROwned = true;
-  }
+  NDArray* cPR = cP->isSameShape(requiredCshape) ? cP : cP->reshape('c', requiredCshape, false);
 
   mmul(aPR, bPR, cPR, 1.0, 0.0);
 
   if (cPR->buffer() != c->buffer()) {
-    // When cPR is a separate buffer, the matmul result must be assigned
-    // to cP (the permuted view of c) so values go through the correct strides.
-    cP->assign(cPR);
+    // cPR is a copy: write the product back through cP's strides, element for element in the
+    // same logical order (an assign across shapes would pair the elements differently)
+    std::vector<LongType> cPShape(cP->shapeOf(), cP->shapeOf() + cP->rankOf());
+    NDArray* product = cPR->reshape('c', cPShape, false);
+    cP->assign(product);
+    if (product != cPR) delete product;
   }
 
-  if (aPROwned) delete aPR;
-  else if (aPR != aP && !aPR->isView()) delete aPR;
-  if (bPROwned) delete bPR;
-  else if (bPR != bP && !bPR->isView()) delete bPR;
-  if (cPROwned) delete cPR;
-  else if (cPR != cP && !cPR->isView()) delete cPR;
+  if (aPR != aP && !aPR->isView()) delete aPR;
+  if (bPR != bP && !bPR->isView()) delete bPR;
+  if (cPR != cP && !cPR->isView()) delete cPR;
   if (aP != a && !aP->isView()) delete aP;
   if (bP != b && !bP->isView()) delete bP;
   if (cP != c && !cP->isView()) delete cP;
@@ -875,38 +861,27 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
     whatToDoWithC = (std::find(arr.begin(), arr.end(), 0) != arr.end())
                     ? whatToDoWithC + "p" : whatToDoWithC + "r";
 
+  // The modifiers are permutations and logical (C order) reshapes: a reshape keeps an array's
+  // elements in C order whatever its memory order, as the callers' axis bookkeeping assumes.
+  // reshape/reshapei give a view when the strides allow one and a copy otherwise.
   if (!whatToDoWithA.empty())
     aPR = (whatToDoWithA[0] == 'p') ? a->permute(modifA[0], false, false)
-                                    : a->reshape(a->ordering(), modifA[0], false);
+                                    : a->reshape('c', modifA[0], false);
   if (!whatToDoWithB.empty())
     bPR = (whatToDoWithB[0] == 'p') ? b->permute(modifB[0], false, false)
-                                    : b->reshape(b->ordering(), modifB[0], false);
+                                    : b->reshape('c', modifB[0], false);
 
   for (size_t i = 1; i < whatToDoWithA.size(); ++i)
     if (whatToDoWithA[i] == 'p')
       aPR->permutei(modifA[i], false, false);
-    else {
-      if (!aPR->reshapei(modifA[i])) {
-        // reshapei failed because the array is non-contiguous (e.g., after permute).
-        // Make a contiguous copy, then reshape.
-        auto dup = aPR->dup(aPR->ordering());
-        if (aPR != a) delete aPR;
-        aPR = dup;
-        aPR->reshapei(modifA[i]);
-      }
-    }
+    else
+      aPR->reshapei('c', modifA[i]);
 
   for (size_t i = 1; i < whatToDoWithB.size(); ++i)
     if (whatToDoWithB[i] == 'p')
       bPR->permutei(modifB[i], false, false);
-    else {
-      if (!bPR->reshapei(modifB[i])) {
-        auto dup = bPR->dup(bPR->ordering());
-        if (bPR != b) delete bPR;
-        bPR = dup;
-        bPR->reshapei(modifB[i]);
-      }
-    }
+    else
+      bPR->reshapei('c', modifB[i]);
 
   std::vector<NDArray*> cArrs = {c};
   if (!whatToDoWithC.empty()) {
@@ -914,7 +889,7 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
     for (size_t i = 0; i < cArrs.size() - 1; ++i)
       cArrs[i + 1] = (whatToDoWithC[i] == 'p')
                      ? cArrs[i]->permute(modifC[i], false, false)
-                     : cArrs[i]->reshape(c->ordering(), modifC[i], false);
+                     : cArrs[i]->reshape('c', modifC[i], false);
   }
 
   mmul(aPR, bPR, cArrs[cArrs.size() - 1], 1.0, 0.0);
@@ -928,8 +903,8 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
         // target's shape so assign can do a correct element-wise copy.
         if (cArrs[i]->lengthOf() == cArrs[i - 1]->lengthOf() &&
             !cArrs[i]->isSameShape(cArrs[i - 1])) {
-          auto shapeVec = *cArrs[i - 1]->getShapeAsVector();
-          auto reshaped = cArrs[i]->reshape(cArrs[i]->ordering(), shapeVec, false);
+          std::vector<LongType> shapeVec(cArrs[i - 1]->shapeOf(), cArrs[i - 1]->shapeOf() + cArrs[i - 1]->rankOf());
+          auto reshaped = cArrs[i]->reshape('c', shapeVec, false);
           cArrs[i - 1]->assign(reshaped);
           delete reshaped;
         } else {
@@ -958,24 +933,25 @@ NDArray* MmulHelper::tensorDot(NDArray* a, NDArray* b,
     whatToDoWithB = (std::find(arr.begin(), arr.end(), 0) != arr.end())
                     ? whatToDoWithB + "p" : whatToDoWithB + "r";
 
+  // Permutations and logical (C order) reshapes, as in the overload that writes into c
   if (!whatToDoWithA.empty())
     aPR = (whatToDoWithA[0] == 'p') ? a->permute(modifA[0], false, false)
-                                    : a->reshape(a->ordering(), modifA[0], false);
+                                    : a->reshape('c', modifA[0], false);
   if (!whatToDoWithB.empty())
     bPR = (whatToDoWithB[0] == 'p') ? b->permute(modifB[0], false, false)
-                                    : b->reshape(b->ordering(), modifB[0], false);
+                                    : b->reshape('c', modifB[0], false);
 
   for (size_t i = 1; i < whatToDoWithA.size(); ++i)
     if (whatToDoWithA[i] == 'p')
       aPR->permutei(modifA[i], false, false);
     else
-      aPR->reshapei(modifA[i]);
+      aPR->reshapei('c', modifA[i]);
 
   for (size_t i = 1; i < whatToDoWithB.size(); ++i)
     if (whatToDoWithB[i] == 'p')
       bPR->permutei(modifB[i], false, false);
     else
-      bPR->reshapei(modifB[i]);
+      bPR->reshapei('c', modifB[i]);
 
   NDArray* result = mmul(aPR, bPR, nullptr, 1.0, 0.0);
 

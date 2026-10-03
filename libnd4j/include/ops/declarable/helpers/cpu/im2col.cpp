@@ -83,21 +83,16 @@ static void im2col_(sd::LaunchContext& context, NDArray& input, NDArray& output,
                 imRow = (-pH + kRow * dH) + colH * sH;
                 imCol = (-pW + kCol * dW) + colW * sW;
 
+                // Offsets come from in-range coordinates and each array's own strides, so they address
+                // the array's elements whatever its layout: a view's offsets may exceed its length.
                 colIndex = b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
                            colH * colStride4 + colW * colStride5;
 
-                if (static_cast<LongType>(imRow) >= static_cast<LongType>(iH) ||
-                    static_cast<LongType>(imRow) < 0 ||
-                    static_cast<LongType>(imCol) >= static_cast<LongType>(iW) ||
-                    static_cast<LongType>(imCol) < 0) {
-                  if (colIndex < output.lengthOf()) {
-                    colBuff[colIndex] = zeroPadVal;
-                  }
+                if (imRow >= iH || imRow < 0 || imCol >= iW || imCol < 0) {
+                  colBuff[colIndex] = zeroPadVal;
                 } else {
                   imIndex = b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
-                  if (colIndex < output.lengthOf() && imIndex < input.lengthOf()) {
-                    colBuff[colIndex] = static_cast<T>(imBuff[imIndex]);
-                  }
+                  colBuff[colIndex] = static_cast<T>(imBuff[imIndex]);
                 }
               }
             }

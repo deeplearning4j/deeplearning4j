@@ -35,77 +35,60 @@ template <typename T>
 SD_KERNEL static void im2colCuda(const void *image, void *columns, const LongType *imShapeInfo,
                                  const LongType *colShapeInfo, const LongType sH, const LongType sW, const LongType pH,
                                  const LongType pW, const LongType dH, const LongType dW, const double zeroPadValD) {
-  T zeroPadVal = static_cast<T>(zeroPadValD);  // Value to use when value is padding
+  // image [bS, iC, iH, iW] is convoluted to columns [bS, iC, kH, kW, oH, oW]
+  const T zeroPadVal = static_cast<T>(zeroPadValD);
   const auto im = reinterpret_cast<const T *>(image);
   auto col = reinterpret_cast<T *>(columns);
 
-  // Shared memory caching
-  __shared__ LongType colLen, imLen, iH, iW;
-  __shared__ LongType imRank, colRank;
-  __shared__ const LongType *imShapePtr, *imStridePtr;
-  __shared__ const LongType *colShapePtr, *colStridePtr;
+  constexpr int colRank = 6;
+  constexpr int imRank = 4;
+  const LongType colLen = shape::length(colShapeInfo);
+  const LongType iH = shape::shapeOf(imShapeInfo)[2];
+  const LongType iW = shape::shapeOf(imShapeInfo)[3];
+  const LongType *colShape = shape::shapeOf(colShapeInfo);
+  const LongType *colStride = shape::stride(colShapeInfo);
+  const LongType *imStride = shape::stride(imShapeInfo);
 
-  if (threadIdx.x == 0) {
-    colRank = 6;
-    imRank = 4;
+  LongType coords[colRank];
+  for (LongType colInd = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; colInd < colLen;
+       colInd += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    INDEX2COORDS(colInd, colRank, colShape, coords);
 
-    colLen = shape::length(colShapeInfo);
-    imLen = shape::length(imShapeInfo);
+    // Offsets come from in-range coordinates and each array's own strides, so they address the
+    // array's elements whatever its layout: a view's offsets may exceed its length.
+    LongType colOffset;
+    COORDS2INDEX(colRank, colStride, coords, colOffset);
 
-    iH = shape::shapeOf(imShapeInfo)[2];
-    iW = shape::shapeOf(imShapeInfo)[3];
+    coords[2] = (-pH + coords[2] * dH) + coords[4] * sH;  // imH
+    coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;  // imW
 
-    imShapePtr = shape::shapeOf(imShapeInfo);
-    imStridePtr = shape::stride(imShapeInfo);
-
-    colShapePtr = shape::shapeOf(colShapeInfo);
-    colStridePtr = shape::stride(colShapeInfo);
-  }
-  __syncthreads();
-
-  const auto colInd = threadIdx.x + blockIdx.x * blockDim.x;
-
-  if (colInd >= colLen) return;  // Boundary check for threads
-
-  LongType coords[SD_MAX_RANK];
-
-  // Calculate coordinates and offsets
-  INDEX2COORDS(colInd, colRank, colShapePtr, coords);
-
-  LongType colOffset;
-  COORDS2INDEX(colRank, colStridePtr, coords, colOffset);
-
-  coords[2] = (-pH + coords[2] * dH) + coords[4] * sH;  // imH
-  coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;  // imW
-
-  // Check bounds and assign appropriate values
-  if (coords[2] >= iH || coords[3] >= iW || coords[2] < 0 || coords[3] < 0) {
-    if (colOffset < colLen)
+    if (coords[2] >= iH || coords[3] >= iW || coords[2] < 0 || coords[3] < 0) {
       col[colOffset] = zeroPadVal;
-  } else {
-    LongType imOffset;
-    COORDS2INDEX(imRank, imStridePtr, coords, imOffset);
-    if (imOffset < imLen && colOffset < colLen)
+    } else {
+      LongType imOffset;
+      COORDS2INDEX(imRank, imStride, coords, imOffset);
       col[colOffset] = im[imOffset];
+    }
   }
 }
 
-//////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
                                LaunchContext &context, const void *image, void *columns,
                                const LongType *imShapeInfo, const LongType *colShapeInfo, LongType sH,
                                LongType sW, LongType pH, LongType pW, LongType dH, LongType dW, double zeroPadVal) {
-  im2colCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory /* rank of columns = 6 */, *context.getCudaStream()>>>(
+  auto stream = context.getCudaStream();
+  im2colCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(
       image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
-  DebugHelper::checkErrorCode(context.getCudaStream(), "im2colCuda(...) failed");
-
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode("im2colCuda(...) failed");
+  }
 }
 
-//////////////////////////////////////////////////////////////////////////
 void im2col(LaunchContext &context, NDArray&image, NDArray &columns, const LongType kH, const LongType kW,
             const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
             NDArray&arrZeroPadVal) {
+  if (columns.lengthOf() == 0) return;
   PointersManager manager(&context, "im2col");
 
   dim3 im2colDevs = getim2ColLaunchParams(columns);

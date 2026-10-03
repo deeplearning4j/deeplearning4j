@@ -101,8 +101,10 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
     ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
   std::vector<LongType> colShape = {bS, iC, kH, kW, oH, oW};
-  NDArray columns(input->ordering(), colShape, input->dataType(), input->getContext());
-  NDArray *gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
+  // Output channel c * mC + m is filter m of input channel c: gradO's channels split in logical (C)
+  // order whatever its memory order
+  NDArray columns('c', colShape, input->dataType(), input->getContext());
+  NDArray *gradOreshaped = gradO->reshape('c', gradOreShape);
 
   // ----- calculation of gradW and gradB ----- //
   NDArray *zero = NDArrayFactory::create(0.f, input->getContext());
@@ -117,7 +119,7 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
   if (gradB) {
     NDArray* gradBR = gradB;
     std::vector<LongType> shape = {gradB->lengthOf()};
-    if (gradB->rankOf() == 2) gradBR =gradB->reshape(gradB->ordering(), shape, false);
+    if (gradB->rankOf() == 2) gradBR = gradB->reshape('c', shape, false);
     std::vector<sd::LongType> axes = {0, indOoH, indOoH + 1};
     gradO->reduceAlongDimension(reduce::Sum, gradBR, &axes);  // sum over bS, oH, oW
 
