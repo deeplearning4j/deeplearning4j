@@ -157,12 +157,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
   softmax.applyTrueBroadcast(BroadcastOpsTuple::Divide(), sumSoftmax, &softmax, false);
 
   // dEdp = softmax * sum_i(labels_i) - labels
-  // labelsPlusEps = labels + 1e-6  (stack)
-  NDArray labelsPlusEps(labels->shapeInfo(), false, ctx);
-  labels->applyScalar(scalar::Add, (double)1e-6, &labelsPlusEps);
-
+  // The labels are summed as they are: nothing divides by the sum, and the 1e-6 once added to every label
+  // added softmax * classes * 1e-6 to each gradient (the whole gradient where the labels are all 0, whose
+  // loss is 0 whatever the logits).
   // labelSum: heap
-  NDArray* labelSum = labelsPlusEps.reduceAlongDimension(reduce::Sum, &dimension, true);
+  NDArray* labelSum = labels->reduceAlongDimension(reduce::Sum, &dimension, true);
 
   // softmaxTimesLabelSum = softmax * labelSum  (broadcast multiply for keepDims shape)
   NDArray softmaxTimesLabelSum(softmax.shapeInfo(), false, ctx);
