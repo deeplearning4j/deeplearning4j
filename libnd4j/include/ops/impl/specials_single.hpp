@@ -67,6 +67,30 @@ SD_INLINE int isShapeExtendedWithOnes(NDArray&input, LongType axis) {
   return true;
 }
 
+/**
+ * Whether the array's elements fill its buffer densely in its own order: each axis longer than one
+ * steps by the product of the extents inside it. The view flag does not tell: an in-place permute
+ * keeps a non-view array's buffer under reordered strides.
+ */
+SD_INLINE bool isDenseInItsOrder(NDArray &input) {
+  const auto rank = input.rankOf();
+  const sd::LongType *shapes = shape::shapeOf(input.shapeInfo());
+  const sd::LongType *strides = shape::stride(input.shapeInfo());
+  sd::LongType expected = 1;
+  if (input.ordering() == 'c') {
+    for (int i = rank - 1; i >= 0; i--) {
+      if (shapes[i] != 1 && strides[i] != expected) return false;
+      expected *= shapes[i];
+    }
+  } else {
+    for (int i = 0; i < rank; i++) {
+      if (shapes[i] != 1 && strides[i] != expected) return false;
+      expected *= shapes[i];
+    }
+  }
+  return true;
+}
+
 template <typename T>
 struct InputArgsCase2 {
   const T *ptr;
@@ -112,7 +136,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
 
   bool shapeExtendedWithOnes = isShapeExtendedWithOnes(output, axis);
   bool matchesOutputOrdering = true;
-  bool allInputsContiguous = !shape::isViewConst(output.shapeInfo());
+  bool allInputsContiguous = isDenseInItsOrder(output);
   const char outputOrdering = output.ordering();
   for (int i = 0; i < numOfInArrs; ++i) {
     // Early exit if conditions already failed
@@ -123,7 +147,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
       matchesOutputOrdering = inArrs[i]->ordering() == outputOrdering;
     }
     if (allInputsContiguous) {
-      allInputsContiguous = !shape::isViewConst(inArrs[i]->shapeInfo());
+      allInputsContiguous = isDenseInItsOrder(*inArrs[i]);
     }
     // If all are false, no need to continue checking
     if (!shapeExtendedWithOnes && !matchesOutputOrdering && !allInputsContiguous) break;
