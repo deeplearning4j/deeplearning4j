@@ -117,14 +117,15 @@ sd::Status dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* out
 
     // check dims to fit input
     REQUIRE_TRUE(fit, 0, "dropout: Noise shape should fit to input rank.");
-    std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), output->getContext()));
+    NDArray *chunk = new NDArray('c', dims, output->dataType(), output->getContext());
     float assign = 1.f;
     chunk->assign(assign);
-    dropoutSimple<T>(rng, chunk.get(), chunk.get(), probValue, nullptr);
-    // broadcast chunk to full matrix
-    mask->assign(assign);
+    dropoutSimple<T>(rng, chunk, chunk, probValue, nullptr);
+    // broadcast the chunk's keep decisions (1 kept, 0 dropped) to the full mask: zeros plus the chunk
+    mask->nullify();
 
     *mask += *chunk;
+    delete chunk;
     NDArray *assign5 = *input * *mask;
     output->assign(assign5);
     delete assign5;
@@ -178,7 +179,8 @@ static Status alphaDropOutFunctor_(graph::Context& context, NDArray* input, NDAr
       T randVal = nodeRng.relativeT(e, T(0.f), T(1.f));
       auto inOffset = input->getOffset(e);
       T xVal = inputBuf[inOffset];
-      T maskVal = randVal >= static_cast<T>(probValue) ? static_cast<T>(alpha * beta + alpha1) : static_cast<T>(alpha + alpha1);
+      // the mask records the keep decision (1 kept, 0 dropped): alpha_dropout_bp's gradient is gradOut * mask * alpha
+      T maskVal = randVal >= static_cast<T>(probValue) ? static_cast<T>(0) : static_cast<T>(1);
       auto maskOffset = mask->getOffset(e);
       maskBuf[maskOffset] = maskVal;
       auto outOffset = output->getOffset(e);

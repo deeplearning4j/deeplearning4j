@@ -113,7 +113,7 @@ DECLARE_TYPES(dropout_bp) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {
+CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 3, 1, false, 4, 1) {
   NDArray* input = INPUT_VARIABLE(0);    // lookup param
   NDArray *mask = INPUT_VARIABLE(1);     // lookup param
   NDArray* gradOut = INPUT_VARIABLE(2);  // lookup param
@@ -129,11 +129,8 @@ CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {
   double betaValue = T_ARG(3);
 
   REQUIRE_TRUE(probValue > 0. && probValue <= 1., 0, "dropout_bp: Probability should be with range 0 to 1.");
-  if (probValue == 1.0) {
-    double zero = 0.0;
-    output->assign(zero);  // fill up output with 0
-    return Status::OK;
-  }
+  // No special case for a keep probability of 1: the forward then keeps every element (alpha * x + alpha1), the
+  // mask is all ones, and gradOut * mask * alpha is the gradient, which zeroing would lose.
 
   return helpers::alphaDropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue, alphaValue,
                                         alpha1Value, betaValue, mask);

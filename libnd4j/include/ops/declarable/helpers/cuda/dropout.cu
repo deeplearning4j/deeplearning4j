@@ -145,18 +145,17 @@ Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* out
 
     // check dims to fit input
     REQUIRE_TRUE(fit, 0, "dropout: Noise shape should fit to input rank.");
-    std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), context.launchContext()));
+    NDArray *chunk = new NDArray('c', dims, output->dataType(), context.launchContext());
     float one = 1.f;
     chunk->assign(one);
 
-    dropoutSimple<T>(context.launchContext(), rng, chunk.get(), chunk.get(), probValue, nullptr);
-    // broadcast chunk to full matrix
-    std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
-    dropOutMultiplier->assign(one);
+    dropoutSimple<T>(context.launchContext(), rng, chunk, chunk, probValue, nullptr);
+    // broadcast the chunk's keep decisions (1 kept, 0 dropped) to the full mask: zeros plus the chunk
+    mask->nullify();
+    *mask += *chunk;
+    delete chunk;
 
-    *dropOutMultiplier += *chunk;
-
-    NDArray* ret = (*input) * (*dropOutMultiplier);
+    NDArray* ret = (*input) * (*mask);
     output->assign(ret);
     delete ret;
   }
@@ -187,16 +186,19 @@ static Status dropOutFunctorBP_(sd::graph::Context& context, NDArray* input, NDA
 
 template <typename T>
 static SD_KERNEL void alphaDropoutSimpleKernel(void const* inputBuf, LongType const* inputShape, void* outputBuf,
-                                               LongType const* outputShape, double probValue, double alpha,
-                                               double alpha1, double beta, int inLen, RandomGenerator* nodeRng) {
+                                               LongType const* outputShape, void* maskBuf, LongType const* maskShape,
+                                               double probValue, double alpha, double alpha1, double beta, int inLen,
+                                               RandomGenerator* nodeRng) {
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
   T const* input = reinterpret_cast<T const*>(inputBuf);
   T* output = reinterpret_cast<T*>(outputBuf);
+  T* mask = reinterpret_cast<T*>(maskBuf);
 
-  __shared__ LongType inputRank, outputRank;
+  __shared__ LongType inputRank, outputRank, maskRank;
   __shared__ const LongType *inputShapePtr, *inputStridePtr;
   __shared__ const LongType *outputShapePtr, *outputStridePtr;
+  __shared__ const LongType *maskShapePtr, *maskStridePtr;
 
   if (threadIdx.x == 0) {
     inputRank = shape::rank(inputShape);
@@ -206,16 +208,25 @@ static SD_KERNEL void alphaDropoutSimpleKernel(void const* inputBuf, LongType co
     outputRank = shape::rank(outputShape);
     outputShapePtr = shape::shapeOf(outputShape);
     outputStridePtr = shape::stride(outputShape);
+
+    if (maskShape != nullptr) {
+      maskRank = shape::rank(maskShape);
+      maskShapePtr = shape::shapeOf(maskShape);
+      maskStridePtr = shape::stride(maskShape);
+    }
   }
   __syncthreads();
 
   LongType inputCoords[SD_MAX_RANK];
   LongType outputCoords[SD_MAX_RANK];
+  LongType maskCoords[SD_MAX_RANK];
   LongType inputOffset;
   LongType outputOffset;
+  LongType maskOffset;
 
   for (auto e = tid; e < inLen; e += step) {
     T val = nodeRng->relativeT(e, T(0.f), T(1.f));
+    const bool keep = !(val >= T(probValue));
 
     INDEX2COORDS(e, inputRank, inputShapePtr, inputCoords);
     COORDS2INDEX(inputRank, inputStridePtr, inputCoords, inputOffset);
@@ -223,21 +234,26 @@ static SD_KERNEL void alphaDropoutSimpleKernel(void const* inputBuf, LongType co
     INDEX2COORDS(e, outputRank, outputShapePtr, outputCoords);
     COORDS2INDEX(outputRank, outputStridePtr, outputCoords, outputOffset);
 
-    output[outputOffset] = (val >= T(probValue)
-                                ? T(alpha * beta + alpha1)
-                                : T(alpha * static_cast<double>(input[inputOffset]) + alpha1));
+    // the mask records the keep decision (1 kept, 0 dropped): alpha_dropout_bp's gradient is gradOut * mask * alpha
+    if (mask != nullptr) {
+      INDEX2COORDS(e, maskRank, maskShapePtr, maskCoords);
+      COORDS2INDEX(maskRank, maskStridePtr, maskCoords, maskOffset);
+      mask[maskOffset] = keep ? T(1) : T(0);
+    }
+
+    output[outputOffset] = keep ? T(alpha * static_cast<double>(input[inputOffset]) + alpha1) : T(alpha * beta + alpha1);
   }
 }
 
 template <typename T>
-static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray* output, int seed,
+static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray* output, NDArray* mask, int seed,
                                double probValue, double alpha, double alpha1, double beta) {
   RandomGenerator nodeRng(3019L, seed), *dRandom;
   auto stream = context->getCudaStream();
   int deviceId = 0;
   cudaGetDevice(&deviceId);
   dRandom = reinterpret_cast<RandomGenerator*>(memory::CudaMemoryPool::getInstance().allocate(sizeof(RandomGenerator), deviceId, *stream));
-  NDArray::prepareSpecialUse({output}, {input});
+  NDArray::prepareSpecialUse({output, mask}, {input});
   if (dRandom == nullptr) {
     THROW_EXCEPTION("helpers::alphaDropoutSimple: Cannot allocate device memory for random generator.");
   }
@@ -248,20 +264,21 @@ static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray*
 
   dim3 launchDims = getLaunchDims("dropout");
   alphaDropoutSimpleKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
-      input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), probValue,
-      alpha, alpha1, beta, output->lengthOf(), dRandom);
+      input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
+      mask != nullptr ? mask->specialBuffer() : nullptr, mask != nullptr ? mask->specialShapeInfo() : nullptr,
+      probValue, alpha, alpha1, beta, output->lengthOf(), dRandom);
 
   DebugHelper::checkGlobalErrorCode( "alphaDropoutSimpleKernel(...) failed");
 
   memory::CudaMemoryPool::getInstance().free(dRandom, deviceId, *stream);
-  NDArray::registerSpecialUse({output}, {input});
+  NDArray::registerSpecialUse({output, mask}, {input});
 }
 
 template <typename T>
 static Status alphaDropOutFunctor_(sd::graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue, double alpha,
                                        double alpha1, double beta, NDArray* mask) {
   if (reduceShape == nullptr) {
-    alphaDropoutSimple<T>(context.launchContext(), input, output, seed, probValue, alpha, alpha1, beta);
+    alphaDropoutSimple<T>(context.launchContext(), input, output, mask, seed, probValue, alpha, alpha1, beta);
   } else {
     REQUIRE_TRUE(reduceShape->lengthOf() <= input->rankOf(), 0, "dropout: Noise shape should be fittable to input");
 
@@ -282,19 +299,25 @@ static Status alphaDropOutFunctor_(sd::graph::Context& context, NDArray* input, 
 
     // check dims to fit input
     REQUIRE_TRUE(fit, 0, "alpha_dropout: Noise shape should fit to input rank.");
-    std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), context.launchContext()));
+    NDArray *chunk = new NDArray('c', dims, output->dataType(), context.launchContext());
+    NDArray *chunkMask = new NDArray('c', dims, output->dataType(), context.launchContext());
     float one = 1.f;
-
     chunk->assign(one);
 
-    alphaDropoutSimple<T>(context.launchContext(), chunk.get(), chunk.get(), seed, probValue, alpha, alpha1, beta);
+    // one keep decision per chunk element, broadcast to the full mask (1 kept, 0 dropped)
+    alphaDropoutSimple<T>(context.launchContext(), chunk, chunk, chunkMask, seed, probValue, alpha, alpha1, beta);
+    mask->nullify();
+    *mask += *chunkMask;
+    delete chunk;
+    delete chunkMask;
 
-    // broadcast chunk to full matrix
-    std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
-    dropOutMultiplier->assign(one);
-
-    *dropOutMultiplier += *chunk;
-    NDArray* ret = (*input) * (*dropOutMultiplier);
+    // kept elements map to alpha * x + alpha1, dropped ones to alpha * beta + alpha1:
+    // alpha * (mask * (x - beta) + beta) + alpha1
+    NDArray* ret = (*input) - beta;
+    *ret *= *mask;
+    *ret += beta;
+    *ret *= alpha;
+    *ret += alpha1;
     output->assign(ret);
     delete ret;
   }
