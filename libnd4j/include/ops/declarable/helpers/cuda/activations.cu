@@ -805,8 +805,8 @@ void SD_KERNEL __launch_bounds__(256, 2) logSoftMaxForVectorCuda(const void *vx,
 template <typename T>
 void logSoftMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx, const LongType *xzShapeInfo,
                                      void *vz) {
-  dim3 launchDims = getLaunchDims("softmax");
-  logSoftMaxForVectorCuda<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xzShapeInfo, vz);
+  // one block reduces the whole vector (several blocks raced each other in place), as softMaxForVectorCudaLauncher
+  logSoftMaxForVectorCuda<T><<<1, SD_CUDA_BLOCK_SIZE, 0, *stream>>>(vx, xzShapeInfo, vz);
   sd::DebugHelper::checkGlobalErrorCode("logsoftmax  failed");
 
 }

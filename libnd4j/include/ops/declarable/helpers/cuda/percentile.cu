@@ -57,6 +57,16 @@ static SD_KERNEL void percentileKernel(void* vx, const LongType* xTadShapeInfo, 
   }
   __syncthreads();
 
+  // a TAD's element k through the TAD's own shape and strides (a TAD of a C-ordered copy is strided unless it spans
+  // the trailing dimensions)
+  auto elementOffset = [&](LongType k) {
+    LongType coords[SD_MAX_RANK];
+    LongType offset;
+    INDEX2COORDS(k, xRank, xShape, coords);
+    COORDS2INDEX(xRank, xStride, coords, offset);
+    return offset;
+  };
+
   for (LongType t = blockIdx.x; t < numTads; t += gridDim.x) {
     auto tad = x + xTadOffsets[t];
 
@@ -65,23 +75,26 @@ static SD_KERNEL void percentileKernel(void* vx, const LongType* xTadShapeInfo, 
       for (LongType tid = threadIdx.x; tid < tadLength; tid += blockDim.x) {
         const auto top = (m % 2 == 0) ? 2 * tid + 1 : 2 * tid + 2;
         if (top < tadLength) {
-          if (tad[top - 1] > tad[top]) {
+          const LongType below = elementOffset(top - 1);
+          const LongType above = elementOffset(top);
+          if (tad[below] > tad[above]) {
             // Swap values
-            X temp = tad[top - 1];
-            tad[top - 1] = tad[top];
-            tad[top] = temp;
+            X temp = tad[below];
+            tad[below] = tad[above];
+            tad[above] = temp;
           }
         }
       }
       __syncthreads();
     }
 
-    // Save the final value to the output
+    // Save the final value to the output: element t of z, through its coordinates
     if (threadIdx.x == 0) {
-      const auto value = tad[position];
+      const auto value = tad[elementOffset(position)];
+      LongType zCoords[SD_MAX_RANK];
       LongType zOffset;
-
-      COORDS2INDEX(zRank, zStride, &t, zOffset);
+      INDEX2COORDS(t, zRank, zShape, zCoords);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
       z[zOffset] = value;
     }
     __syncthreads();
@@ -121,7 +134,7 @@ static void _percentile(LaunchContext* context, NDArray& input, NDArray& output,
   position = tadLength - position - 1;
 
   dim3 launchDims = getLaunchDims("percentile");
-  percentileKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
+  percentileKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
       tempArray->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), packX->numberOfTads(), tadLength,
       output.specialBuffer(), output.specialShapeInfo(), output.lengthOf(), position);
 

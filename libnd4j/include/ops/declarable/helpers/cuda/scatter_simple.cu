@@ -95,7 +95,7 @@ SD_HOST static void scatterSimpleCopyCudaLauncher(
     const LongType tadLen) {
 
   dim3 launchDims = getLaunchDims("scatter_simple");
-  scatterSimpleCopyCuda<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+  scatterSimpleCopyCuda<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       vInput, vUpdates, indicesBuffer, tadShapeInfo, tadOffsets, numTads, tadLen);
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "scatterSimpleCopy");
 }

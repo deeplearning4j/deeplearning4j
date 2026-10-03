@@ -210,7 +210,7 @@ void ConvolutionUtils::pooling3dBP(graph::Context& block, NDArray& input, NDArra
  gradI.nullify();
  BUILD_SINGLE_SELECTOR(
      input.dataType(), pooling3dBPCudaLauncher,
-     (poolingDims.y, poolingDims.x, poolingDims.z, block.launchContext()->getCudaStream(), input.specialBuffer(),
+     (poolingDims.x, poolingDims.y, poolingDims.z, block.launchContext()->getCudaStream(), input.specialBuffer(),
       input.specialShapeInfo(), gradO.specialBuffer(), gradO.specialShapeInfo(), gradI.specialBuffer(),
       gradI.specialShapeInfo(), kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0),
      SD_FLOAT_TYPES);

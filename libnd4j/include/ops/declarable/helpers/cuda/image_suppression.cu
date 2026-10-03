@@ -293,7 +293,7 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
       }
 
       dim3 selectDims = getLaunchDims("image_suppress_select");
-      shouldSelectKernel<T, I><<<selectDims.y,selectDims.x,selectDims.z, *stream>>>(
+      shouldSelectKernel<T, I><<<selectDims.x, selectDims.y,selectDims.z, *stream>>>(
           boxesBuf, boxes->specialShapeInfo(), indexBuf, selectedIndicesData, threshold, numSelected, i, shouldSelectD);
       err = cudaMemcpyAsync(&shouldSelect, shouldSelectD, sizeof(bool), cudaMemcpyDeviceToHost, *stream);
       if (err) {

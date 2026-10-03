@@ -127,7 +127,7 @@ SD_HOST void TransformStrict<X>::intermediateShaped(dim3 launchDims, cudaStream_
                                                    sd::LongType *allocationPointer,
                                                    void *reductionPointer, const sd::LongType *tadShapeInfo,
                                                    const sd::LongType *tadOffsets) {
- transformStrictSimple<X, OpType><<<launchDims.x, launchDims.x, launchDims.z, *stream>>>(
+ transformStrictSimple<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
      x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
  sd::DebugHelper::checkErrorCode(stream, "transformStrict(...) failed");
 }

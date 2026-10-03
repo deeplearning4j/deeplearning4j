@@ -107,7 +107,7 @@ void nthElementFunctor_(LaunchContext* context, NDArray* input, LongType n, NDAr
             const_cast<sd::LongType *>(pTadOffsets),
             reverse);
     dim3 launchDims = getLaunchDims("nth_element_fill");
-    fillUpElementKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
+    fillUpElementKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
                                                       sortedVals->specialBuffer(), sortedVals->specialShapeInfo(),
                                                       pTadShape, pTadOffsets, n);
     sd::DebugHelper::checkErrorCode(stream, "fillUpElementKernel failed");

@@ -231,7 +231,7 @@ SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, cons
   const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   // Allocate space in shared memory for coordinates
-  LongType* coords = sharedMem + threadIdx.x * (rank - 1); // Only last two dimensions {bS, 2*K}
+  LongType* coords = sharedMem + threadIdx.x * rank;  // the last two dimensions {bS, 2*K}, and a third index read below
 
   if (tid >= shared_len) return;
 
@@ -635,11 +635,8 @@ void sruBIBP(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray
 
   PointersManager manager(context, "sru_bi_bp");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (x->sizeAt(1) * x->sizeAt(2) + threadsPerBlock - 1) /
-                            threadsPerBlock;  // loop through last two dimensions of x array -> bS, 2*K
-  const int sharedMem = threadsPerBlock * sizeof(LongType) * x->rankOf() + 128;
-  dim3 sruBiBpDims = sruBiDims(x->sizeAt(1) + x->sizeAt(2),x->rankOf());
+  // a thread per (b, k) of the last two dimensions of x: bS * 2K
+  dim3 sruBiBpDims = sruBiDims(x->sizeAt(1) * x->sizeAt(2), x->rankOf());
   NDArray::prepareSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, wi, b, c0, ct, gradCt, gradHt, mask});
   BUILD_SINGLE_SELECTOR(
       x->dataType(), sruBIBPCudaLauncher,

@@ -18,7 +18,7 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const LongType* xShap
   const auto x = reinterpret_cast<const T*>(vx);
   auto z = reinterpret_cast<T*>(vz);
 
-  __shared__ LongType zRank, xRank, areSameOffsets, *sharedMem;
+  __shared__ LongType zRank, xRank, areSameOffsets;
   __shared__ LongType zLen, totalThreads;
   __shared__ LongType *zShape;
   __shared__ LongType *zStride;
@@ -26,8 +26,6 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const LongType* xShap
   __shared__ LongType *xStride;
 
   if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<LongType*>(shmem);
     areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
     xRank = shape::rank(xShapeInfo);
     zRank = shape::rank(zShapeInfo);
@@ -40,7 +38,7 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const LongType* xShap
   }
   __syncthreads();
 
-  auto coords = sharedMem + threadIdx.x * zRank;
+  LongType coords[SD_MAX_RANK];
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   bool dirU = direction == 'u';
@@ -104,11 +102,8 @@ SD_KERNEL static void identityMatrixCuda(void* vx, const LongType* xShapeInfo, c
   __shared__ LongType totalThreads;
   __shared__ const LongType* shapePtr;
   __shared__ const LongType* stridePtr;
-  __shared__ LongType* sharedMem;
 
   if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<LongType*>(shmem);
     rank = shape::rank(xShapeInfo);
     len = shape::length(xShapeInfo);
     shapePtr = shape::shapeOf(xShapeInfo);
@@ -117,7 +112,7 @@ SD_KERNEL static void identityMatrixCuda(void* vx, const LongType* xShapeInfo, c
   }
   __syncthreads();
 
-  auto coords = sharedMem + threadIdx.x * rank;
+  LongType coords[SD_MAX_RANK];
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < len; i += totalThreads) {

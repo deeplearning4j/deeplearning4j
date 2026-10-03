@@ -23,6 +23,8 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/transforms.h>
+
+#include <unordered_map>
 #if NOT_EXCLUDED(OP_scatter_update)
 namespace sd {
 namespace ops {
@@ -90,47 +92,63 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
   std::vector<sd::LongType> indices;
   for (; e < static_cast<sd::LongType>(intArgs->size()); e++) indices.push_back((*intArgs)[e]);
 
+  // The updates of one sub-array apply in index order, one thread per distinct sub-array: threads over the update
+  // positions raced on repeated indices.
+  std::vector<sd::LongType> targets;                 // distinct indices, in order of first appearance
+  std::vector<std::vector<sd::LongType>> positions;  // each target's update positions, in order
+  {
+    std::unordered_map<sd::LongType, size_t> slotOf;
+    for (size_t i = 0; i < indices.size(); i++) {
+      auto found = slotOf.find(indices[i]);
+      if (found == slotOf.end()) {
+        slotOf.emplace(indices[i], targets.size());
+        targets.push_back(indices[i]);
+        positions.push_back({static_cast<sd::LongType>(i)});
+      } else {
+        positions[found->second].push_back(static_cast<sd::LongType>(i));
+      }
+    }
+  }
+
   auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i < stop; i++) {
-      auto inSubArr = input(indices[i], *dimsToExclude, true);
-      auto updSubArr = updates(i, *dimsToExclude, true);
-      if (inSubArr->lengthOf() != updSubArr->lengthOf())  {
-        delete inSubArr;
-        continue;
+    for (auto t = start; t < stop; t++) {
+      NDArray* inSubArr = input(targets[t], *dimsToExclude, true);
+      for (sd::LongType i : positions[t]) {
+        NDArray* updSubArr = updates(i, *dimsToExclude, true);
+        if (inSubArr->lengthOf() == updSubArr->lengthOf()) {
+          switch (opCode) {
+            case 0:
+              inSubArr->applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
+              break;
+            case 1:
+              inSubArr->applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
+              break;
+            case 2:
+              inSubArr->applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
+              break;
+            case 3:
+              inSubArr->applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
+              break;
+            case 4:
+              inSubArr->applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
+              break;
+            case 5:
+              inSubArr->applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
+              break;
+            case 6:
+              inSubArr->applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
+              break;
+            default:
+              break;
+          }
+        }
+        delete updSubArr;
       }
-
-      switch (opCode) {
-        case 0:
-          inSubArr->applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
-          break;
-        case 1:
-          inSubArr->applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
-          break;
-        case 2:
-          inSubArr->applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
-          break;
-        case 3:
-          inSubArr->applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
-          break;
-        case 4:
-          inSubArr->applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
-          break;
-        case 5:
-          inSubArr->applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
-          break;
-        case 6:
-          inSubArr->applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
-          break;
-        default:
-          continue;
-      }
-
       delete inSubArr;
-      delete updSubArr;
     }
   };
 
-  samediff::Threads::parallel_tad(func, 0, indices.size());
+  samediff::Threads::parallel_tad(func, 0, static_cast<sd::LongType>(targets.size()));
 
 
   delete dimsToExclude;

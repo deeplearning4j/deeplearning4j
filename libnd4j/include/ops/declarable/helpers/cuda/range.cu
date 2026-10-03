@@ -44,7 +44,7 @@ static SD_KERNEL void global_range(void* output, LongType length, T start, T del
 template <typename T>
 static void _range(LaunchContext* context, NDArray& start, NDArray& delta, NDArray& outVector) {
  dim3 launchDims = getLaunchDims("range");
-  global_range<T><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(outVector.specialBuffer(), outVector.lengthOf(),
+  global_range<T><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(outVector.specialBuffer(), outVector.lengthOf(),
                                                                  start.e<T>(0), delta.e<T>(0));
   sd::DebugHelper::checkErrorCode(context->getCudaStream(), "global_range failed");
 

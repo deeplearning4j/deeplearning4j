@@ -119,7 +119,7 @@
 
     dim3 launchDims = getLaunchDims("swap_unsafe");
 
-    swapUnsafeKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *theStream>>>(
+    swapUnsafeKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *theStream>>>(
         theFirstBuffer,
         theFirstShape,
         theSecondBuffer,

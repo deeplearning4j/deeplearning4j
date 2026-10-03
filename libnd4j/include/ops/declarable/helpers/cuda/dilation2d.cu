@@ -70,18 +70,19 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const LongType* xShapeInfo,
   }
   __syncthreads();
 
-  const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;
-
-  if (zInd >= zLen) return;
-
   LongType zCoords[SD_MAX_RANK];
   LongType yCoords[SD_MAX_RANK];
   LongType xCoords[SD_MAX_RANK];
   LongType zOffset;
 
+  for (LongType zInd = threadIdx.x + blockIdx.x * static_cast<LongType>(blockDim.x); zInd < zLen;
+       zInd += static_cast<LongType>(gridDim.x) * blockDim.x) {
   INDEX2COORDS(zInd, zRank, zShape, zCoords);
   COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
+  // x is read at the output's batch and channel (they were never set: the reads used whatever the array held)
+  xCoords[0] = zCoords[0];
+  xCoords[3] = zCoords[3];
   yCoords[2] = zCoords[3]; // iC coordinate is the same for x, y, and z
   const auto oh = zCoords[1];
   const auto ow = zCoords[2];
@@ -106,6 +107,7 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const LongType* xShapeInfo,
   }
 
   z[zOffset] = static_cast<Z>(max);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////

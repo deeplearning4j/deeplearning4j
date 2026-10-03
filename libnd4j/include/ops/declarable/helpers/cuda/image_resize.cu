@@ -1046,7 +1046,8 @@ void cropAndResizeFunctor_(LaunchContext* context, NDArray * images, NDArray * b
 
   int threadsPerBlock = math::sd_max(imageHeight * imageWidth, cropHeight * cropWidth);
   if (threadsPerBlock > SD_MAX_NUM_THREADS / 4) threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  dim3 cropAndResizeDims = cropAndResize(batchSize,imageHeight,imageWidth,cropHeight,cropWidth);
+  // a block per box
+  dim3 cropAndResizeDims = cropAndResize(numBoxes, imageHeight, imageWidth, cropHeight, cropWidth);
   NDArray::prepareSpecialUse({crops}, {images, boxes, indices, cropSize});
   cropAndResizeKernel<T, Z, I><<<cropAndResizeDims.y, cropAndResizeDims.x, cropAndResizeDims.z, *stream>>>(
       imagesBuf, images->specialShapeInfo(), boxesBuf, boxes->specialShapeInfo(), indexBuf, indices->specialShapeInfo(),

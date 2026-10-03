@@ -322,7 +322,7 @@ static void countTrueElementsLauncher(const cudaStream_t* stream, const void* vx
                                        const LongType* xShapeInfo, LongType* count,
                                        LongType length) {
     dim3 whereDims = getLaunchDims("where");
-    countTrueElementsKernel<T><<<whereDims.y, whereDims.x, whereDims.z, *stream>>>(
+    countTrueElementsKernel<T><<<whereDims.x, whereDims.y, whereDims.z, *stream>>>(
         vx, xShapeInfo, count);
     DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "countTrueElementsKernel failed");
 }
@@ -334,7 +334,7 @@ static void computeFlagsLauncher(const cudaStream_t* stream, const void* vx,
                                   const LongType* xShapeInfo, LongType* flags,
                                   LongType length) {
     dim3 whereDims = getLaunchDims("where");
-    computeFlagsKernel<T><<<whereDims.y, whereDims.x, whereDims.z, *stream>>>(
+    computeFlagsKernel<T><<<whereDims.x, whereDims.y, whereDims.z, *stream>>>(
         vx, xShapeInfo, flags);
     DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "computeFlagsKernel failed");
 }
@@ -349,7 +349,7 @@ static void writeOrderedCoordinatesLauncher(const cudaStream_t* stream, const vo
                                              const LongType* flags,
                                              LongType length) {
     dim3 whereDims = getLaunchDims("where");
-    writeOrderedCoordinatesKernel<T, Z><<<whereDims.y, whereDims.x, whereDims.z, *stream>>>(
+    writeOrderedCoordinatesKernel<T, Z><<<whereDims.x, whereDims.y, whereDims.z, *stream>>>(
         vx, xShapeInfo, vz, zShapeInfo, positions, flags);
     DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "writeOrderedCoordinatesKernel failed");
 }
@@ -364,7 +364,7 @@ static void whereElementWiseLauncher(const cudaStream_t* stream,
                                       void* vz, const LongType* zShapeInfo,
                                       LongType length) {
     dim3 whereDims = getLaunchDims("where");
-    whereElementWiseKernel<T, X><<<whereDims.y, whereDims.x, whereDims.z, *stream>>>(
+    whereElementWiseKernel<T, X><<<whereDims.x, whereDims.y, whereDims.z, *stream>>>(
         vcond, condShapeInfo, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
     DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "whereElementWiseKernel failed");
 }
@@ -379,7 +379,7 @@ static void whereTadLauncher(const cudaStream_t* stream,
                               void* vz, const LongType* zTadShapeInfo, const LongType* zTadOffsets,
                               LongType numTads, LongType tadLen) {
     dim3 whereDims = getLaunchDims("where");
-    whereTadKernel<T, X><<<whereDims.y, whereDims.x, whereDims.z, *stream>>>(
+    whereTadKernel<T, X><<<whereDims.x, whereDims.y, whereDims.z, *stream>>>(
         vcond, condShapeInfo, vx, xTadShapeInfo, xTadOffsets,
         vy, yTadShapeInfo, yTadOffsets, vz, zTadShapeInfo, zTadOffsets,
         numTads, tadLen);

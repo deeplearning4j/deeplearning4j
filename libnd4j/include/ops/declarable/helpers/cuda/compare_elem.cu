@@ -31,7 +31,7 @@ static SD_KERNEL void comparator(void *vx, const LongType *xShapeInfo, LongType 
   auto reduction = reinterpret_cast<uint32_t *>(reductionBuffer);
 
   extern __shared__ uint32_t shared[];
-  auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+  LongType tid = threadIdx.x + blockIdx.x * static_cast<LongType>(blockDim.x);
 
   // Cache shape information in shared memory
   __shared__ LongType xRank;
@@ -52,7 +52,7 @@ static SD_KERNEL void comparator(void *vx, const LongType *xShapeInfo, LongType 
   LongType xOffset1;
 
   // each thread will compare 2 elements: E and E+1
-  for (int e = tid; e < length - 1; e += blockDim.x * gridDim.x) {
+  for (LongType e = tid; e < length - 1; e += static_cast<LongType>(blockDim.x) * gridDim.x) {
     INDEX2COORDS(e, xRank, xShape, xCoords);
     COORDS2INDEX(xRank, xStride, xCoords, xOffset0);
     INDEX2COORDS(e + 1, xRank, xShape, xCoords);
@@ -73,9 +73,12 @@ static SD_KERNEL void comparator(void *vx, const LongType *xShapeInfo, LongType 
   __syncthreads();
 
   // aggregate sums in shared memory
-  for (LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
-    if (threadIdx.x < activeThreads) shared[threadIdx.x] += shared[threadIdx.x + activeThreads];
+  for (LongType n = blockDim.x; n > 1;) {
+    // the upper half folds onto the lower (rounded up): any block size sums every partial
+    const LongType half = (n + 1) / 2;
+    if (threadIdx.x + half < n) shared[threadIdx.x] += shared[threadIdx.x + half];
     __syncthreads();
+    n = half;
   }
 
   // store over the grid if we have more than 1 block
@@ -104,9 +107,12 @@ static SD_KERNEL void comparator(void *vx, const LongType *xShapeInfo, LongType 
 
       __syncthreads();
 
-      for (LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
-        if (threadIdx.x < activeThreads) shared[threadIdx.x] += shared[threadIdx.x + activeThreads];
+      for (LongType n = blockDim.x; n > 1;) {
+        // the upper half folds onto the lower (rounded up): any block size sums every partial
+        const LongType half = (n + 1) / 2;
+        if (threadIdx.x + half < n) shared[threadIdx.x] += shared[threadIdx.x + half];
         __syncthreads();
+        n = half;
       }
 
       __syncthreads();
@@ -130,7 +136,8 @@ static void _compare_elem(LaunchContext *context, NDArray *input, bool isStrictl
   auto z = NDArrayFactory::create<bool>(false, context);
 
   dim3 compareElemDims = getCompareElem(input->lengthOf());
-  comparator<T><<<compareElemDims.x,compareElemDims.y,compareElemDims.z, *context->getCudaStream()>>>(
+  // getCompareElem returns (threads, blocks, shared)
+  comparator<T><<<compareElemDims.y, compareElemDims.x, compareElemDims.z, *context->getCudaStream()>>>(
       input->specialBuffer(), input->specialShapeInfo(), input->lengthOf(), isStrictlyIncreasing,
       context->getReductionPointer(), reinterpret_cast<bool *>(z->specialBuffer()));
 

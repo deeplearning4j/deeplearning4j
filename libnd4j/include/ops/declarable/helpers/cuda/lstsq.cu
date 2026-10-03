@@ -59,7 +59,7 @@ static void fillRegularizer(LaunchContext* context, NDArray* ioMatrix, double co
   auto stream = context->getCudaStream();
   auto rows = ioMatrix->sizeAt(-2);
   dim3 launchDims = getLaunchDims("lstsq_reg");
-  fillRegularizerKernel<T><<<launchDims.y,launchDims.x,launchDims.z, *stream>>>(
+  fillRegularizerKernel<T><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(
       ioMatrix->dataBuffer()->template specialAsT<T>(), ioMatrix->specialShapeInfo(), lastDimsTads->specialShapeInfo(),
       lastDimsTads->specialOffsets(), lastDimsTads->numberOfTads(), rows, (T)value);
 

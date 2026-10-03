@@ -52,7 +52,7 @@ static void scaleGradientsTyped(sd::LaunchContext* context, NDArray* gradients, 
   NDArray::prepareSpecialUse({gradients}, {gradients});
 
   dim3 dims = getLaunchDims("updater");
-  scaleGradientsKernel<T><<<dims.y, dims.x, dims.z, *stream>>>(
+  scaleGradientsKernel<T><<<dims.x, dims.y, dims.z, *stream>>>(
       reinterpret_cast<T*>(gradients->specialBuffer()), length, static_cast<T>(scale));
   DebugHelper::checkErrorCode(stream, "scaleGradientsKernel");
 
@@ -95,7 +95,7 @@ static bool hasInfOrNanTyped(sd::LaunchContext* context, NDArray* arr) {
   cudaMemsetAsync(dFlag, 0, sizeof(int), *stream);
 
   dim3 dims = getLaunchDims("updater");
-  hasInfOrNanKernel<T><<<dims.y, dims.x, dims.z, *stream>>>(
+  hasInfOrNanKernel<T><<<dims.x, dims.y, dims.z, *stream>>>(
       reinterpret_cast<const T*>(arr->specialBuffer()), length, dFlag);
   DebugHelper::checkErrorCode(stream, "hasInfOrNanKernel");
 
@@ -138,7 +138,7 @@ static void castAndScaleImpl(sd::LaunchContext* context, NDArray* input, NDArray
   NDArray::prepareSpecialUse({output}, {const_cast<NDArray*>(input)});
 
   dim3 dims = getLaunchDims("updater");
-  castAndScaleKernel<Tsrc, Tdst><<<dims.y, dims.x, dims.z, *stream>>>(
+  castAndScaleKernel<Tsrc, Tdst><<<dims.x, dims.y, dims.z, *stream>>>(
       reinterpret_cast<const Tsrc*>(input->specialBuffer()),
       reinterpret_cast<Tdst*>(output->specialBuffer()),
       length, scale);
@@ -197,7 +197,7 @@ static bool unscaleAndCheckTyped(sd::LaunchContext* context, NDArray* gradients,
 
   T invScale = static_cast<T>(1.0 / lossScale);
   dim3 dims = getLaunchDims("updater");
-  unscaleAndCheckKernel<T><<<dims.y, dims.x, dims.z, *stream>>>(
+  unscaleAndCheckKernel<T><<<dims.x, dims.y, dims.z, *stream>>>(
       reinterpret_cast<T*>(gradients->specialBuffer()), length, invScale, dFlag);
   DebugHelper::checkErrorCode(stream, "unscaleAndCheckKernel");
 
@@ -242,7 +242,7 @@ static void updateMasterWeightImpl(sd::LaunchContext* context, NDArray* masterWe
   NDArray::prepareSpecialUse({masterWeight}, {masterWeight, const_cast<NDArray*>(gradient)});
 
   dim3 dims = getLaunchDims("updater");
-  updateMasterWeightKernel<Tmaster, Tgrad><<<dims.y, dims.x, dims.z, *stream>>>(
+  updateMasterWeightKernel<Tmaster, Tgrad><<<dims.x, dims.y, dims.z, *stream>>>(
       reinterpret_cast<Tmaster*>(masterWeight->specialBuffer()),
       reinterpret_cast<const Tgrad*>(gradient->specialBuffer()),
       length, scaledLr);
@@ -287,7 +287,7 @@ static void syncMasterToComputeImpl(sd::LaunchContext* context, NDArray* masterW
   NDArray::prepareSpecialUse({computeWeight}, {const_cast<NDArray*>(masterWeight)});
 
   dim3 dims = getLaunchDims("updater");
-  syncMasterToComputeKernel<Tsrc, Tdst><<<dims.y, dims.x, dims.z, *stream>>>(
+  syncMasterToComputeKernel<Tsrc, Tdst><<<dims.x, dims.y, dims.z, *stream>>>(
       reinterpret_cast<const Tsrc*>(masterWeight->specialBuffer()),
       reinterpret_cast<Tdst*>(computeWeight->specialBuffer()),
       length);

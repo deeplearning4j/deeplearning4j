@@ -200,9 +200,9 @@ static void lowerTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
 
     dim3 launchDims = getLaunchDims("triangular_solve");
     LongType totalWork = 1 * cols;
-    dim3 grid(math::sd_min<LongType>((totalWork + launchDims.x - 1) / launchDims.x, launchDims.y));
+    dim3 grid(math::sd_min<LongType>((totalWork + launchDims.y - 1) / launchDims.y, launchDims.x));
 
-    lowerTriangularSolveKernel<T><<<grid, launchDims.x, launchDims.z, *stream>>>(
+    lowerTriangularSolveKernel<T><<<grid, launchDims.y, launchDims.z, *stream>>>(
         leftBuf, leftInput->specialShapeInfo(), dOffset,
         rightBuf, rightInput->specialShapeInfo(), dOffset,
         outputBuf, output->specialShapeInfo(), dOffset,
@@ -225,9 +225,9 @@ static void lowerTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
 
     dim3 launchDims = getLaunchDims("triangular_solve");
     LongType totalWork = batchSize * cols;
-    dim3 grid(math::sd_min<LongType>((totalWork + launchDims.x - 1) / launchDims.x, launchDims.y));
+    dim3 grid(math::sd_min<LongType>((totalWork + launchDims.y - 1) / launchDims.y, launchDims.x));
 
-    lowerTriangularSolveKernel<T><<<grid, launchDims.x, launchDims.z, *stream>>>(
+    lowerTriangularSolveKernel<T><<<grid, launchDims.y, launchDims.z, *stream>>>(
         leftBuf, leftTads->specialShapeInfo(), leftTads->specialOffsets(),
         rightBuf, rightTads->specialShapeInfo(), rightTads->specialOffsets(),
         outputBuf, outputTads->specialShapeInfo(), outputTads->specialOffsets(),
@@ -261,9 +261,9 @@ static void upperTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
 
     dim3 launchDims = getLaunchDims("triangular_solve");
     LongType totalWork = 1 * cols;
-    dim3 grid(math::sd_min<LongType>((totalWork + launchDims.x - 1) / launchDims.x, launchDims.y));
+    dim3 grid(math::sd_min<LongType>((totalWork + launchDims.y - 1) / launchDims.y, launchDims.x));
 
-    upperTriangularSolveKernel<T><<<grid, launchDims.x, launchDims.z, *stream>>>(
+    upperTriangularSolveKernel<T><<<grid, launchDims.y, launchDims.z, *stream>>>(
         leftBuf, leftInput->specialShapeInfo(), dOffset,
         rightBuf, rightInput->specialShapeInfo(), dOffset,
         outputBuf, output->specialShapeInfo(), dOffset,
@@ -285,9 +285,9 @@ static void upperTriangularSolve(LaunchContext* context, NDArray* leftInput, NDA
 
     dim3 launchDims = getLaunchDims("triangular_solve");
     LongType totalWork = batchSize * cols;
-    dim3 grid(math::sd_min<LongType>((totalWork + launchDims.x - 1) / launchDims.x, launchDims.y));
+    dim3 grid(math::sd_min<LongType>((totalWork + launchDims.y - 1) / launchDims.y, launchDims.x));
 
-    upperTriangularSolveKernel<T><<<grid, launchDims.x, launchDims.z, *stream>>>(
+    upperTriangularSolveKernel<T><<<grid, launchDims.y, launchDims.z, *stream>>>(
         leftBuf, leftTads->specialShapeInfo(), leftTads->specialOffsets(),
         rightBuf, rightTads->specialShapeInfo(), rightTads->specialOffsets(),
         outputBuf, outputTads->specialShapeInfo(), outputTads->specialOffsets(),
@@ -411,12 +411,12 @@ static void adjointTriangularMatrix_(LaunchContext* context, NDArray * input, bo
     cudaMemcpyAsync(dOffset, &zeroOffset, sizeof(LongType), cudaMemcpyHostToDevice, *stream);
 
     if (lower) {
-      lowerAdjointKernel<T><<<launchDims.y, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, 1, rows, columns,
+      lowerAdjointKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, 1, rows, columns,
                                                                                    input->specialShapeInfo(), dOffset,
                                                                                    output->specialShapeInfo(), dOffset);
       sd::DebugHelper::checkErrorCode(stream, "lowerAdjointKernel failed");
     } else {
-      upperAdjointKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(inputBuf, outputBuf, 1, rows, columns,
+      upperAdjointKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, 1, rows, columns,
                                                                                    input->specialShapeInfo(), dOffset,
                                                                                    output->specialShapeInfo(), dOffset);
       sd::DebugHelper::checkErrorCode(stream, "upperAdjointKernel failed");
@@ -429,12 +429,12 @@ static void adjointTriangularMatrix_(LaunchContext* context, NDArray * input, bo
     auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dims);
 
     if (lower) {
-      lowerAdjointKernel<T><<<launchDims.y, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
+      lowerAdjointKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
                                                                                    inputTads->specialShapeInfo(), inputTads->specialOffsets(),
                                                                                    outputTads->specialShapeInfo(), outputTads->specialOffsets());
       sd::DebugHelper::checkErrorCode(stream, "lowerAdjointKernel failed");
     } else {
-      upperAdjointKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
+      upperAdjointKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
                                                                                    inputTads->specialShapeInfo(), inputTads->specialOffsets(),
                                                                                    outputTads->specialShapeInfo(), outputTads->specialOffsets());
       sd::DebugHelper::checkErrorCode(stream, "upperAdjointKernel failed");

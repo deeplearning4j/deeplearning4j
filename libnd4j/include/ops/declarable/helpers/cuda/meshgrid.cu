@@ -142,7 +142,7 @@ static void meshgrid_(LaunchContext *context, const std::vector<NDArray *> &inAr
       reinterpret_cast<LongType *>(pm.replicatePointer(hNumTads.data(), hNumTads.size() * sizeof(LongType)));
 
   dim3 launchDims = getLaunchDims("meshgrid");
-  meshgridKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(rank, dOutBuffers, dOutTadShapes, dOutTadOffsets,
+  meshgridKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(rank, dOutBuffers, dOutTadShapes, dOutTadOffsets,
                                                                    dNumTads, dInBuffers, dInShapes);
   sd::DebugHelper::checkErrorCode(context->getCudaStream(), "meshgridKernel failed");
 

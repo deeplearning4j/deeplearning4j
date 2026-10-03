@@ -130,7 +130,7 @@ SD_HOST static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const 
                                               void* vy, const LongType* yShapeInfo, const LongType* yOffsets,
                                               const LongType* indexes) {
   dim3 launchDims = getLaunchDims("scatter_update");
-  scatterUpdateCuda<T><<<launchDims.y, launchDims.x, SD_MAX_NUM_THREADS, *stream>>>(opCode, numOfInd, vx, xShapeInfo, xOffsets, vy,
+  scatterUpdateCuda<T><<<launchDims.x, launchDims.y, SD_MAX_NUM_THREADS, *stream>>>(opCode, numOfInd, vx, xShapeInfo, xOffsets, vy,
                                                                   yShapeInfo, yOffsets, indexes);
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "scatterUpdateCuda failed");
 
@@ -148,8 +148,10 @@ void scatterUpdate(LaunchContext* context, NDArray& input, NDArray& updates, con
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &tadDimensions);
   auto packY = ConstantTadHelper::getInstance().tadForDimensions(updates.shapeInfo(), &tadDimensions);
 
+  // the indices are LongType integer arguments, and the kernel reads them as LongType (an INT32 array copied half of
+  // them to the device and the kernel read each index from two of its halves)
   std::vector<LongType> shape = {numOfInd};
-  NDArray indices(const_cast<LongType*>(intArgs->data()) + numOfDims + 3, 'c', shape, INT32, context);
+  NDArray indices(const_cast<LongType*>(intArgs->data()) + numOfDims + 3, 'c', shape, INT64, context);
 
   PointersManager manager(context, "scatterUpdate");
 

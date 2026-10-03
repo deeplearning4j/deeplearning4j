@@ -149,11 +149,12 @@ SD_KERNEL static void traceCuda(const void* vx, const LongType* xShapeInfo, void
    __syncthreads();
 
    // Aggregate sum
-   for (LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
-     if (threadIdx.x < activeThreads) {
-       sharedMem[threadIdx.x] += sharedMem[threadIdx.x + activeThreads];
-     }
+   for (LongType n = blockDim.x; n > 1;) {
+     // the upper half folds onto the lower (rounded up): any block size sums every partial
+     const LongType half = (n + 1) / 2;
+     if (threadIdx.x + half < n) sharedMem[threadIdx.x] += sharedMem[threadIdx.x + half];
      __syncthreads();
+     n = half;
    }
 
    if (threadIdx.x == 0) {
@@ -177,14 +178,13 @@ void trace(LaunchContext* context, NDArray& input, NDArray& output) {
  PointersManager manager(context, "trace");
 
  const LongType diagLen = input.sizeAt(-1) < input.sizeAt(-2) ? input.sizeAt(-1) : input.sizeAt(-2);
- const int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
- const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
- const int sharedMem = 1024;
 
  dim3 traceDims2 = traceDims(output.lengthOf());
+ // the kernel sums a matrix's diagonal in a static array of SD_CUDA_BLOCK_SIZE partials
+ if (traceDims2.y > SD_CUDA_BLOCK_SIZE) traceDims2.y = SD_CUDA_BLOCK_SIZE;
  NDArray::prepareSpecialUse({&output}, {&input});
  BUILD_SINGLE_SELECTOR(input.dataType(), traceCudaLauncher,
-                       (traceDims2.y, traceDims2.x, traceDims2.z, context->getCudaStream(), input.specialBuffer(),
+                       (traceDims2.x, traceDims2.y, traceDims2.z, context->getCudaStream(), input.specialBuffer(),
                         input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), diagLen),
                        SD_COMMON_TYPES);
  NDArray::registerSpecialUse({&output}, {&input});

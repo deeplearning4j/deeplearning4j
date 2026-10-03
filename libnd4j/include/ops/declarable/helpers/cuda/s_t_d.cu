@@ -99,7 +99,7 @@ template <typename T>
 static void _spaceTodepth_(LaunchContext *context, NDArray&input, NDArray *output, int block_size,
                            bool isNHWC) {
   dim3 launchDims = getLaunchDims("space_to_depth");
-  spaceToDepthKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(input.specialBuffer(), input.specialShapeInfo(),
+  spaceToDepthKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(input.specialBuffer(), input.specialShapeInfo(),
                                                                        output->specialBuffer(),
                                                                        output->specialShapeInfo(), block_size, isNHWC);
   sd::DebugHelper::checkErrorCode(context->getCudaStream(), "spaceToDepthKernel failed");

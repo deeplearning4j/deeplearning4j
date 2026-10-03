@@ -231,9 +231,9 @@ void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArr
   {
     dim3 w2vDims = getLaunchDims("word2vec");
     if (infVector == nullptr) {
-      addInfVectorKernel<T><<<w2vDims.y, w2vDims.x, w2vDims.z, *stream>>>(syn0row, neu1e, vectorLength);
+      addInfVectorKernel<T><<<w2vDims.x, w2vDims.y, w2vDims.z, *stream>>>(syn0row, neu1e, vectorLength);
     } else {
-      addInfVectorKernel<T><<<w2vDims.y, w2vDims.x, w2vDims.z, *stream>>>(infVector, neu1e, vectorLength);
+      addInfVectorKernel<T><<<w2vDims.x, w2vDims.y, w2vDims.z, *stream>>>(infVector, neu1e, vectorLength);
     }
     sd::DebugHelper::checkErrorCode(stream, "addInfVectorKernel failed");
   }
@@ -332,7 +332,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
     }
     {
       dim3 w2vDims = getLaunchDims("word2vec");
-      addInfVectorKernel<T><<<w2vDims.y, w2vDims.x, w2vDims.z, *stream>>>(syn0row, neu1e, vectorLength);
+      addInfVectorKernel<T><<<w2vDims.x, w2vDims.y, w2vDims.z, *stream>>>(syn0row, neu1e, vectorLength);
       sd::DebugHelper::checkErrorCode(stream, "addInfVectorKernel failed");
     }
     err = cudaStreamSynchronize(*stream);
@@ -489,7 +489,7 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
   // for inference we add additional inference vector
   if (infVector != nullptr) {
     dim3 w2vDims = getLaunchDims("word2vec");
-    addInfVectorKernel<T><<<w2vDims.y, w2vDims.x, w2vDims.z, *stream>>>(neu1, infVector, vectorLength);
+    addInfVectorKernel<T><<<w2vDims.x, w2vDims.y, w2vDims.z, *stream>>>(neu1, infVector, vectorLength);
     sd::DebugHelper::checkErrorCode(stream, "addInfVectorKernel failed");
 
   }
@@ -543,7 +543,7 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
   } else {
     // infVector and neu1e are both device pointers — must use a kernel, not a host loop
     dim3 w2vDims = getLaunchDims("word2vec");
-    addInfVectorKernel<T><<<w2vDims.y, w2vDims.x, w2vDims.z, *stream>>>(infVector, neu1e, vectorLength);
+    addInfVectorKernel<T><<<w2vDims.x, w2vDims.y, w2vDims.z, *stream>>>(infVector, neu1e, vectorLength);
     sd::DebugHelper::checkErrorCode(stream, "addInfVectorKernel (cbow infVector) failed");
   }
   err = cudaStreamSynchronize(*stream);

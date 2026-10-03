@@ -488,7 +488,7 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
 
     dim3 launchDims = getLaunchDims("top_k_mover");
     // copy values on specified indices
-    topValuesMover<X, Y><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
+    topValuesMover<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
         input->specialBuffer(), xTadShapeInfo, xTadOffsets, indices->specialBuffer(),
         iTadShapeInfo, iTadOffsets, values->specialBuffer(), zTadShapeInfo,
         zTadOffsets, tadLength, numTads, k);

@@ -182,7 +182,7 @@ SD_HOST static void gatherCudaLinear(const cudaStream_t* stream, const void* vx,
                                      const LongType* zShapeInfo) {
  //note gather linear and gather are different kernels
    dim3 gatherLinear = getLaunchDims("gather_linear");
-  gatherCudaLinearKernel<X, Y><<<gatherLinear.y, gatherLinear.x, gatherLinear.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
+  gatherCudaLinearKernel<X, Y><<<gatherLinear.x, gatherLinear.y, gatherLinear.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
   DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream),"gatherCudaLinearKernel failed");
 
 }

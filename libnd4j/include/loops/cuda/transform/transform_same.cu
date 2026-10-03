@@ -126,7 +126,7 @@ SD_HOST void TransformSame<X>::intermediateShaped(dim3 launchDims, cudaStream_t 
                                                  sd::LongType *allocationPointer,
                                                  void *reductionPointer, const sd::LongType *tadShapeInfo,
                                                  const sd::LongType *tadOffsets) {
- transformSameSimple<X, OpType><<<launchDims.x, launchDims.x, launchDims.z, *stream>>>(
+ transformSameSimple<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
      x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
  sd::DebugHelper::checkErrorCode(stream, "transformSame(...) failed");
 }

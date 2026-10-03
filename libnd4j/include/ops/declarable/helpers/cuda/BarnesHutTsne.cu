@@ -342,7 +342,7 @@ void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* ou
   auto stream = output->getContext()->getCudaStream();
 
   BUILD_SINGLE_SELECTOR(input->dataType(), barnesGainsCudaLauncher,
-                        (launchDims.y, launchDims.x, launchDims.z, stream,
+                        (launchDims.x, launchDims.y, launchDims.z, stream,
                          input->specialBuffer(),   input->specialShapeInfo(),
                          gradX->specialBuffer(),   gradX->specialShapeInfo(),
                          epsilon->specialBuffer(), epsilon->specialShapeInfo(),

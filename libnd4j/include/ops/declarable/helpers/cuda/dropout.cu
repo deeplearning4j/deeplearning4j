@@ -263,7 +263,7 @@ static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray*
   }
 
   dim3 launchDims = getLaunchDims("dropout");
-  alphaDropoutSimpleKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+  alphaDropoutSimpleKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
       mask != nullptr ? mask->specialBuffer() : nullptr, mask != nullptr ? mask->specialShapeInfo() : nullptr,
       probValue, alpha, alpha1, beta, output->lengthOf(), dRandom);

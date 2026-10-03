@@ -219,7 +219,7 @@ static void reverseTad(LaunchContext* context, NDArray* input, NDArray* output,
   auto stream = context->getCudaStream();
   dim3 launchDims = getLaunchDims("reverse");
 
-  reverseTadKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+  reverseTadKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                                                    output->specialBuffer(), output->specialShapeInfo(), inputTadShape,
                                                    inputTadOffsets, outputTadShape, outputTadOffsets, input->lengthOf(),
                                                    tadLength, input->lengthOf() / tadLength);
@@ -234,7 +234,7 @@ static void reverseArray(LaunchContext* context, NDArray* input, NDArray* output
   if (numOfElemsToReverse == 0) numOfReverse = input->lengthOf();
   dim3 launchDims = getLaunchDims("reverse");
 
-  reverseArrayKernel<T><<<launchDims.y,launchDims.x, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+  reverseArrayKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                                                      output->specialBuffer(), output->specialShapeInfo(), numOfReverse);
   sd::DebugHelper::checkErrorCode(stream, "reverseArrayKernel failed");
 
@@ -253,7 +253,7 @@ static void reverseSequence_(LaunchContext* context, NDArray* input, NDArray* se
     if ((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
       output->assign(input);
     else
-      reverseArrayKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+      reverseArrayKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
           input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
           numOfElemsToReverse);
     sd::DebugHelper::checkErrorCode(stream, "reverseArrayKernel failed");
@@ -280,7 +280,7 @@ static void reverseSequence_(LaunchContext* context, NDArray* input, NDArray* se
           // (allTensorsAlongDimension on a 1D array produces scalar TADs which breaks reversal)
           LongType numOfReverse = numOfElemsToReverse;
           if (numOfReverse == 0) numOfReverse = inSub->lengthOf();
-          reverseArrayKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+          reverseArrayKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
               inSub->specialBuffer(), inSub->specialShapeInfo(),
               outSub->specialBuffer(), outSub->specialShapeInfo(), numOfReverse);
         } else {
@@ -292,7 +292,7 @@ static void reverseSequence_(LaunchContext* context, NDArray* input, NDArray* se
             LongType numOfReverse = numOfElemsToReverse;
             if (numOfReverse == 0) numOfReverse = inArr->lengthOf();
 
-            reverseArrayKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+            reverseArrayKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
                 inArr->specialBuffer(), inArr->specialShapeInfo(),
                 outArr->specialBuffer(), outArr->specialShapeInfo(), numOfReverse);
           }

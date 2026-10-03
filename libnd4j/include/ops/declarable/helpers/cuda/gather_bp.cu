@@ -130,7 +130,7 @@ SD_HOST static void gatherBpCudaLauncher(const cudaStream_t* stream,
                                                void*    vDInput,      const LongType* dInputShapeInfo,
                                          LongType axis, LongType gradLen, LongType dimSize) {
   dim3 launchDims = getLaunchDims("gather_linear");
-  gatherBpCudaKernel<X, Y><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+  gatherBpCudaKernel<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       vGradOut, gradOutShapeInfo, vIndices, indicesShapeInfo, vDInput, dInputShapeInfo,
       axis, gradLen, dimSize);
   DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "gatherBpCudaKernel failed");

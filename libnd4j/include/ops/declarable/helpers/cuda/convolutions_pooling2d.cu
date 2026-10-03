@@ -129,7 +129,7 @@ static void avgPooling2dCudaLauncher(LaunchContext &block, const void *vx, const
                                     const LongType sH, const LongType sW, const LongType pH, const LongType pW,
                                     const LongType dH, const LongType dW, const int extraParam0) {
  dim3 launchDims = getLaunchDims("avg_pooling");
- avgPooling2dCuda<X, Z><<<launchDims.y, launchDims.x, launchDims.z, *block.getCudaStream()>>>(
+ avgPooling2dCuda<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *block.getCudaStream()>>>(
      vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
  DebugHelper::checkErrorCode(block.getCudaStream(), "avgb pooling 2d failed");
 
@@ -226,7 +226,7 @@ static void pnormPooling2dCudaLauncher(LaunchContext &block, const void *vx, con
                                       const LongType sH, const LongType sW, const LongType pH, const LongType pW,
                                       const LongType dH, const LongType dW, const int extraParam0) {
  dim3 launchDims = getLaunchDims("avg_pooling");
- pnormPooling2dCuda<X, Z><<<launchDims.y, launchDims.x, launchDims.z, *block.getCudaStream()>>>(
+ pnormPooling2dCuda<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *block.getCudaStream()>>>(
      vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
  DebugHelper::checkErrorCode(block.getCudaStream(), "pnorm pooling 2d failed");
 
