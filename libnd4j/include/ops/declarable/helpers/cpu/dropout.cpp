@@ -64,12 +64,12 @@ static void dropoutSimple(graph::RandomGenerator& nodeRng, NDArray* input, NDArr
         auto maskOffset = flattenedMask->getOffset(e);
         maskBuf[maskOffset] = keep ? static_cast<T>(1) : static_cast<T>(0);
       }
-      // Output is input when kept, 0 otherwise (OUTPUT_NULLIFIED already zeros it)
-      if (keep) {
-        auto outOffset = flattenedOutput->getOffset(e);
-        auto inOffset = flattenedInput->getOffset(e);
-        outputBuf[outOffset] = inputBuf[inOffset];
-      }
+      // Every output element is written: the input when kept, 0 when dropped. The op does not pre-zero its
+      // output, so a dropped element must be stored here. Each element is read before it is written at the
+      // same offset, which keeps the in-place form (output aliasing the input) correct.
+      auto outOffset = flattenedOutput->getOffset(e);
+      auto inOffset = flattenedInput->getOffset(e);
+      outputBuf[outOffset] = keep ? inputBuf[inOffset] : static_cast<T>(0);
     }
   };
 
@@ -151,8 +151,9 @@ template <typename T>
 static Status dropOutFunctorBP_(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
                                 NDArray* reduceShape, int seed, double probValue, NDArray* mask) {
   // Use assign and in-place multiply to avoid temporary NDArray creation
-  // which can cause ownership issues with the assignment operator
-  output->assign(gradOut);
+  // which can cause ownership issues with the assignment operator.
+  // The gradient may be computed in place (output aliasing gradOut): there is nothing to copy then.
+  if (output != gradOut) output->assign(gradOut);
   *output *= *mask;
   return sd::Status::OK;
 }

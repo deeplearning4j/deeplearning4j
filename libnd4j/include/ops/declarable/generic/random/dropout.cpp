@@ -32,12 +32,17 @@ namespace ops {
 CONFIGURABLE_OP_IMPL(dropout, 1, 2, true, 1, 1) {
   auto input = INPUT_VARIABLE(0);  // lookup param
   bool inverted = block.numB() > 0 ? B_ARG(0) : false;
-  NDArray* reduceShape = nullptr;     // this param is optional
-  auto output = OUTPUT_NULLIFIED(0);  //
-  auto mask = OUTPUT_NULLIFIED(1);
+  NDArray* reduceShape = nullptr;  // this param is optional
+  // The helpers write every element of both outputs (a dropped element is stored as 0 and the mask records every
+  // decision), so neither is pre-zeroed. Zeroing an output that aliases the input (the in-place form) would erase
+  // the input before it is read.
+  auto output = OUTPUT_VARIABLE(0);
+  auto mask = OUTPUT_VARIABLE(1);
 
   int seed = INT_ARG(0);
 
+  // probValue is the probability of KEEPING an element. The probability argument is that keep probability, or, with
+  // the inverted flag set, the probability of dropping (probValue = 1 - argument).
   double probValue = T_ARG(0);
   if(inverted) {
     probValue = 1 - probValue;
@@ -76,23 +81,23 @@ CONFIGURABLE_OP_IMPL(dropout_bp, 3, 1, false, 1, 1) {
   bool inverted = block.numB() > 0 ? B_ARG(0) : false;
 
   NDArray* reduceShape = nullptr;         // this param is optional
-  auto output = OUTPUT_NULLIFIED(0);  //
+  // The gradient writes every output element (gradOut * mask), so the output is not pre-zeroed: it may alias gradOut
+  // (the in-place form), and zeroing it would erase the gradient before it is read.
+  auto output = OUTPUT_VARIABLE(0);
 
   int seed = INT_ARG(0);
 
+  // Same probability convention as the forward: the keep probability, or 1 - argument with the inverted flag set.
   double probValue = T_ARG(0);
   if(inverted) {
     probValue = 1 - probValue;
   }
 
+  REQUIRE_TRUE((probValue >= 0. && probValue <= 1.), 0, "dropout_bp: Probability should be with range 0 to 1.");
 
-  REQUIRE_TRUE((probValue > 0. && probValue <= 1.), 0, "dropout_bp: Probability should be with range 0 to 1.");
-  if (probValue == 1.0) {
-    float zero = 0.0f;
-    output->assign(zero);  // fill up output with 0
-    return Status::OK;
-  }
-
+  // No special case for probValue == 1 (nothing dropped) or 0 (everything dropped): the mask the forward produced
+  // records exactly which elements it kept (all ones, respectively all zeros), and gradOut * mask is the gradient in
+  // every case. A keep probability of 1 must pass the gradient through, not zero it.
   REQUIRE_TRUE(sd::ops::helpers::dropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue,
                                                   mask) == sd::Status::OK,
                0, "dropout_bp: Cannot backprop dropout.");

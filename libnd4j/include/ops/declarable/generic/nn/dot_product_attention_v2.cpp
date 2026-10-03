@@ -41,6 +41,116 @@
 namespace sd {
 namespace ops {
 
+namespace {
+
+// A rank-4 BSHD attention that goes through AttentionHelper is evaluated as `batch * heads` independent rank-3
+// attentions, the layout AttentionHelper works on. The forward and the backward move tensors into that head-major
+// layout and back through the helpers below, so the two cannot drift apart.
+
+// Copies a BSHD tensor [batch, seq, heads, dim] into the head-major [batch * heads * group, seq, dim]: row
+// (b * heads + h) * group + g is head h of batch b, repeated `group` times in a row. That is the grouped-query layout:
+// with `heads` KV heads and group = queryHeads / kvHeads, the row of query head q reads KV head q / group. The caller
+// owns the result, a C-contiguous array.
+NDArray* toHeadMajor3d(NDArray* bshd, const LongType group, LaunchContext* context) {
+  const LongType batch = bshd->sizeAt(0);
+  const LongType seq = bshd->sizeAt(1);
+  const LongType heads = bshd->sizeAt(2);
+  const LongType dim = bshd->sizeAt(3);
+
+  std::vector<LongType> permOrder = {0, 2, 1, 3};
+  NDArray* headMajorView = bshd->permute(permOrder, false, false);  // [batch, heads, seq, dim], a view of bshd
+  NDArray* headMajor = headMajorView->dup('c');                     // C-contiguous copy of that view
+  delete headMajorView;
+
+  if (group > 1) {
+    std::vector<LongType> unitGroupShape = {batch, heads, 1, seq, dim};
+    headMajor->reshapei(unitGroupShape);
+    std::vector<LongType> groupedShape = {batch, heads, group, seq, dim};
+    NDArray* grouped = new NDArray('c', groupedShape, bshd->dataType(), context);
+    std::vector<LongType> reps = {1, 1, group, 1, 1};
+    headMajor->tile(reps, *grouped);
+    // The tile runs on headMajor's stream and reads its buffer asynchronously on CUDA: flush that stream before the
+    // buffer is freed.
+    headMajor->synchronizeExecStream("dpa_v2 head-major temp free");
+    delete headMajor;
+    headMajor = grouped;
+  }
+
+  std::vector<LongType> flatShape = {batch * heads * group, seq, dim};
+  headMajor->reshapei(flatShape);
+  return headMajor;
+}
+
+// The inverse of toHeadMajor3d for a gradient: writes the head-major [batch * heads * group, seq, dim] array into the
+// BSHD tensor `bshd` [batch, seq, heads, dim], summing the `group` copies of each head (the gradient of a KV head
+// shared by `group` query heads is the sum over them).
+void fromHeadMajor3d(NDArray* headMajor, NDArray* bshd, const LongType group, LaunchContext* context) {
+  const LongType batch = bshd->sizeAt(0);
+  const LongType seq = bshd->sizeAt(1);
+  const LongType heads = bshd->sizeAt(2);
+  const LongType dim = bshd->sizeAt(3);
+
+  NDArray* perHead = nullptr;     // [batch, heads, seq, dim]
+  NDArray* summed = nullptr;      // owned, only when copies had to be summed
+  NDArray* groupedView = nullptr;
+  if (group > 1) {
+    std::vector<LongType> groupedShape = {batch, heads, group, seq, dim};
+    groupedView = headMajor->reshape('c', groupedShape, false);
+    std::vector<LongType> perHeadShape = {batch, heads, seq, dim};
+    summed = new NDArray('c', perHeadShape, headMajor->dataType(), context);
+    std::vector<LongType> sumDims = {2};
+    groupedView->reduceAlongDimension(reduce::Sum, summed, &sumDims, false);
+    perHead = summed;
+  } else {
+    std::vector<LongType> perHeadShape = {batch, heads, seq, dim};
+    perHead = headMajor->reshape('c', perHeadShape, false);  // a view of the C-contiguous head-major array
+  }
+
+  std::vector<LongType> permOrder = {0, 2, 1, 3};
+  NDArray* bshdView = perHead->permute(permOrder, false, false);  // [batch, seq, heads, dim]
+  bshd->assign(bshdView);
+  // The kernels above read the temporaries asynchronously on CUDA (the sum on the head-major gradient's stream, the
+  // copy on the stream of its source): flush the streams before the temporaries are freed.
+  perHead->synchronizeExecStream("dpa_v2 head-major gradient temp free (source)");
+  bshd->synchronizeExecStream("dpa_v2 head-major gradient temp free (target)");
+  delete bshdView;
+  delete groupedView;
+  delete summed;
+  if (group <= 1) delete perHead;
+}
+
+// The head-major attention has `batch * heads` rows, so a [batch, length] mask of a multi-head, multi-batch attention
+// has to be expanded to [batch * heads, length]: row b * heads + h is the mask row of batch b. Every other mask already
+// broadcasts against the head-major rows and is left alone: a batch-shared [1, length] mask, and the [1, 1, 1, length]
+// views graphs hand over (AttentionHelper squeezes those). Returns the expanded mask in the attention's floating point
+// type (BOOL and integer masks are accepted), owned by the caller, or nullptr when `mask` needs no expansion.
+NDArray* expandMaskPerHead(NDArray* mask, const LongType batch, const LongType heads, const LongType length,
+                           const DataType floatType, LaunchContext* context) {
+  if (mask == nullptr || heads <= 1 || mask->rankOf() != 2 || mask->sizeAt(0) == 1) return nullptr;
+  REQUIRE_TRUE(mask->sizeAt(0) == batch && mask->sizeAt(1) == length, 0,
+               "dot_product_attention_v2: a [batch, length] mask of a rank-4 attention must be [%lld, %lld], got "
+               "[%lld, %lld]",
+               static_cast<long long>(batch), static_cast<long long>(length), static_cast<long long>(mask->sizeAt(0)),
+               static_cast<long long>(mask->sizeAt(1)));
+
+  NDArray* numeric = mask->cast(floatType);  // a C-contiguous float copy
+  std::vector<LongType> unitHeadShape = {batch, 1, length};
+  numeric->reshapei(unitHeadShape);
+  std::vector<LongType> tiledShape = {batch, heads, length};
+  NDArray* tiled = new NDArray('c', tiledShape, floatType, context);
+  std::vector<LongType> reps = {1, heads, 1};
+  numeric->tile(reps, *tiled);
+  // The tile runs on numeric's stream and reads its buffer asynchronously on CUDA: flush that stream before the buffer
+  // is freed.
+  numeric->synchronizeExecStream("dpa_v2 per-head mask temp free");
+  delete numeric;
+  std::vector<LongType> flatShape = {batch * heads, length};
+  tiled->reshapei(flatShape);
+  return tiled;
+}
+
+}  // namespace
+
 CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto queriesOrig = INPUT_VARIABLE(0);
   auto valuesOrig = INPUT_VARIABLE(1);
@@ -508,9 +618,24 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     REQUIRE_TRUE(!hasAttentionBias, 0,
                  "dot_product_attention_v2: additive attention bias with query/value masks or dropout is not "
                  "supported in this path yet");
+    REQUIRE_TRUE(dropout >= 0.0 && dropout <= 1.0, 0,
+                 "dot_product_attention_v2: the dropout probability must be in [0, 1], got %f", dropout);
+
     // Fallback to AttentionHelper for masks/dropout support.
     // AttentionHelper::doAttention expects 3D [batch*heads, seq, dim] format.
     // For rank-4 BSHD inputs, we must reshape to 3D and handle GQA (KV head expansion).
+
+    // Dropout draws its mask from this op's own generator: one draw of it names the seed of the dropout op and the
+    // generator advances, so every execution drops different weights (and the draws follow whatever state the executor
+    // gave the context). block.randomSeed() is not used: nothing ever assigns it.
+    int dropoutSeed = 0;
+    if (dropout > 0.0 && training) {
+      auto& rng = block.randomGenerator();
+      dropoutSeed = rng.relativeInt(0) & 0x7fffffff;
+      if (dropoutSeed == 0) dropoutSeed = 1;
+      rng.rewindH(1);
+    }
+
     std::vector<sd::NDArray*> inputs;
     // Note: mask nullification already done above for hasInputMasks check
     std::vector<sd::NDArray*> masks = {qMask, vMask};
@@ -518,11 +643,8 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     NDArray* q3d = nullptr;
     NDArray* k3d = nullptr;
     NDArray* v3d = nullptr;
-    NDArray* qPerm = nullptr;
-    NDArray* kPerm = nullptr;
-    NDArray* vPerm = nullptr;
-    NDArray* kExpanded = nullptr;
-    NDArray* vExpanded = nullptr;
+    NDArray* qMaskPerHead = nullptr;
+    NDArray* vMaskPerHead = nullptr;
     std::vector<sd::LongType> scoresShape3d;
 
     // Save 4D dimensions BEFORE any modifications (they may be corrupted by doAttention)
@@ -536,58 +658,30 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     }
 
     if (isRank4) {
-      auto numKvHeads = keys->sizeAt(2);
-      int headsPerKv = numHeads4d / numKvHeads;
+      const sd::LongType numKvHeads = keys->sizeAt(2);
+      REQUIRE_TRUE(numKvHeads > 0 && numHeads4d % numKvHeads == 0 && keys->rankOf() == 4 && values->rankOf() == 4 &&
+                       values->sizeAt(1) == seqKV4d && values->sizeAt(2) == numKvHeads &&
+                       keys->sizeAt(3) == headDim4d && values->sizeAt(3) == headDim4d,
+                   0,
+                   "dot_product_attention_v2: a rank-4 attention with masks or dropout needs keys and values "
+                   "[batch, seqKV, kvHeads, headDim] with the query head count a multiple of kvHeads and the same "
+                   "headDim as the queries (%lld heads, %lld head dim); got keys rank %i and values rank %i",
+                   static_cast<long long>(numHeads4d), static_cast<long long>(headDim4d), keys->rankOf(),
+                   values->rankOf());
+      const sd::LongType group = numHeads4d / numKvHeads;
 
-      // Permute Q from BSHD [batch, seq, heads, dim] to BHSD [batch, heads, seq, dim]
-      std::vector<sd::LongType> permOrder = {0, 2, 1, 3};
-      qPerm = queries->permute(permOrder, false, false);
-      kPerm = keys->permute(permOrder, false, false);
-      vPerm = values->permute(permOrder, false, false);
-
-      // Reshape Q to 3D: [batch*heads, seq, dim]
-      std::vector<sd::LongType> qShape3d = {batch4d * numHeads4d, seqQ4d, headDim4d};
-      q3d = qPerm->reshape('c', qShape3d);
-
-      // Handle GQA: expand KV heads if needed
-      k3d = kPerm;
-      v3d = vPerm;
-      if (headsPerKv > 1) {
-        // Tile KV heads: [batch, numKvHeads, seq, dim] -> [batch, numHeads, seq, dim]
-        std::vector<sd::LongType> tiledShape = {batch4d, numKvHeads, static_cast<sd::LongType>(headsPerKv), seqKV4d, headDim4d};
-        NDArray* kTiled = new NDArray('c', tiledShape, keys->dataType(), block.launchContext());
-        NDArray* vTiled = new NDArray('c', tiledShape, values->dataType(), block.launchContext());
-
-        std::vector<sd::LongType> reshapeForTile = {batch4d, numKvHeads, 1, seqKV4d, headDim4d};
-        kPerm->reshapei(reshapeForTile);
-        vPerm->reshapei(reshapeForTile);
-
-        std::vector<sd::LongType> reps = {1, 1, static_cast<sd::LongType>(headsPerKv), 1, 1};
-        kPerm->tile(reps, *kTiled);
-        vPerm->tile(reps, *vTiled);
-
-        std::vector<sd::LongType> expandedShape = {batch4d, numHeads4d, seqKV4d, headDim4d};
-        kTiled->reshapei(expandedShape);
-        vTiled->reshapei(expandedShape);
-
-        kExpanded = kTiled;
-        vExpanded = vTiled;
-
-        // Restore kPerm/vPerm shapes
-        kPerm->reshapei({batch4d, numKvHeads, seqKV4d, headDim4d});
-        vPerm->reshapei({batch4d, numKvHeads, seqKV4d, headDim4d});
-
-        // Reshape expanded KV to 3D: [batch*heads, seq, dim]
-        std::vector<sd::LongType> kvShape3d = {batch4d * numHeads4d, seqKV4d, headDim4d};
-        k3d = kExpanded->reshape('c', kvShape3d);
-        v3d = vExpanded->reshape('c', kvShape3d);
-      } else {
-        std::vector<sd::LongType> kvShape3d = {batch4d * numHeads4d, seqKV4d, headDim4d};
-        k3d = kPerm->reshape('c', kvShape3d);
-        v3d = vPerm->reshape('c', kvShape3d);
-      }
-
+      // Head-major [batch*heads, seq, dim] copies; KV heads are repeated `group` times for grouped-query attention.
+      // The backward builds exactly the same layout through the same helpers.
+      q3d = toHeadMajor3d(queries, 1, block.launchContext());
+      k3d = toHeadMajor3d(keys, group, block.launchContext());
+      v3d = toHeadMajor3d(values, group, block.launchContext());
       inputs = {q3d, v3d, k3d};
+
+      // A [batch, length] mask has one row per batch but the head-major attention has one per (batch, head).
+      qMaskPerHead = expandMaskPerHead(qMask, batch4d, numHeads4d, seqQ4d, queries->dataType(), block.launchContext());
+      vMaskPerHead = expandMaskPerHead(vMask, batch4d, numHeads4d, seqKV4d, queries->dataType(), block.launchContext());
+      masks = {qMaskPerHead != nullptr ? qMaskPerHead : qMask, vMaskPerHead != nullptr ? vMaskPerHead : vMask};
+
       scoresShape3d = {batch4d * numHeads4d, seqQ4d, seqKV4d};
 
       // Reshape output tensors to 3D for doAttention
@@ -602,27 +696,33 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     }
 
     AttentionHelper::doAttention(inputs, masks, training, useCausalMask, dropout, scale, attentionScores,
-                                 block.randomSeed(), applyScoresOut, attentionLogits, dropoutMask);
+                                 dropoutSeed, applyScoresOut, attentionLogits, dropoutMask);
 
     // Restore 4D shapes after doAttention (use saved dimensions, not from arrays)
     if (isRank4) {
-      // Restore output shapes to 4D BSHD
-      applyScoresOut->reshapei({batch4d, seqQ4d, numHeads4d, headDim4d});
+      // The weights, logits and dropout mask are head-major [batch*heads, seqQ, seqKV]: row b * heads + h, so
+      // [batch, heads, seqQ, seqKV] in memory.
       attentionLogits->reshapei({batch4d, numHeads4d, seqQ4d, seqKV4d});
       attentionScores->reshapei({batch4d, numHeads4d, seqQ4d, seqKV4d});
       if (dropoutMask != nullptr) {
         dropoutMask->reshapei({batch4d, numHeads4d, seqQ4d, seqKV4d});
       }
 
-      // Permute applyScoresOut from BHSD back to BSHD.
+      // The attention output is head-major as well: [batch*heads, seqQ, headDim] is [batch, heads, seqQ, headDim] in
+      // memory. View it as that (the output still carries its 3D shape), permute it back to BSHD
+      // [batch, seqQ, heads, headDim], and write it to the output with its BSHD shape restored.
       // outPerm is a strided VIEW over applyScoresOut's own buffer — assigning it
       // directly back is an in-place transpose (aliased read+write through different
       // index maps) and races on CUDA: nondeterministic corruption/NaN per run.
       // Materialize the permuted order into a fresh buffer first.
+      std::vector<sd::LongType> headMajorShape = {batch4d, numHeads4d, seqQ4d, headDim4d};
+      applyScoresOut->reshapei(headMajorShape);
       std::vector<sd::LongType> permBack = {0, 2, 1, 3};
       auto outPerm = applyScoresOut->permute(permBack, false, false);
       auto outPermDup = outPerm->dup('c');
       delete outPerm;
+      std::vector<sd::LongType> bshdShape = {batch4d, seqQ4d, numHeads4d, headDim4d};
+      applyScoresOut->reshapei(bshdShape);
       applyScoresOut->assign(outPermDup);
 
       // The kernels doAttention enqueued (QK matmul, softmax, PV matmul, and the
@@ -637,15 +737,12 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
       applyScoresOut->synchronizeExecStream("dpa_v2 BSHD temp free (output)");
       delete outPermDup;
 
-      // Cleanup temporary arrays — reshape() creates new NDArray objects that must be freed
-      delete q3d;   // reshape of qPerm
-      delete k3d;   // reshape of kExpanded (GQA) or kPerm (non-GQA)
-      delete v3d;   // reshape of vExpanded (GQA) or vPerm (non-GQA)
-      delete qPerm; // permute of queries
-      delete kPerm; // permute of keys
-      delete vPerm; // permute of values
-      delete kExpanded;  // nullptr when non-GQA
-      delete vExpanded;  // nullptr when non-GQA
+      // Cleanup temporary arrays — the head-major copies and the per-head masks are new NDArray objects
+      delete q3d;
+      delete k3d;
+      delete v3d;
+      delete qMaskPerHead;  // nullptr when the mask needed no expansion
+      delete vMaskPerHead;
     }
   }
 
@@ -840,25 +937,27 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   auto qMaskOrig = block.width() > 8 ? INPUT_VARIABLE(8) : nullptr;
   auto vMaskOrig = block.width() > 9 ? INPUT_VARIABLE(9) : nullptr;
 
-  // Treat empty arrays as no mask
-  if(qMaskOrig != nullptr && qMaskOrig->isEmpty()) {
+  // Treat empty or rank-0 arrays as no mask, exactly as the forward op does: SameDiff and the DSP wiring can hand an
+  // absent optional input over as a rank-0 placeholder, and a rank-0 value mask would otherwise be broadcast over the
+  // whole gradient (all of dQ and dK zero for a placeholder of 0).
+  if(qMaskOrig != nullptr && (qMaskOrig->isEmpty() || qMaskOrig->rankOf() == 0)) {
     qMaskOrig = nullptr;
   }
-  if(vMaskOrig != nullptr && vMaskOrig->isEmpty()) {
+  if(vMaskOrig != nullptr && (vMaskOrig->isEmpty() || vMaskOrig->rankOf() == 0)) {
     vMaskOrig = nullptr;
   }
 
-  // Reshape masks if needed
-  // For 2D masks [batch, seq], reshape to [batch, 1, seq] to broadcast correctly with attention scores [batch, Tq, Tv]
-  if(qMaskOrig != nullptr && qMaskOrig->rankOf() == 2) {
-    std::vector<sd::LongType> qmShape = {qMaskOrig->sizeAt(0), 1, qMaskOrig->sizeAt(1)};
+  // The masks are prepared exactly as the forward prepares them before AttentionHelper expands them (the same way in
+  // both directions, AttentionHelper::doAttention and doAttentionBp): unbatched inputs get a leading batch dimension.
+  if(qMaskOrig != nullptr && reshapedQ) {
+    std::vector<sd::LongType> qmShape = {1, qMaskOrig->sizeAt(0), qMaskOrig->sizeAt(1)};
     qMask = qMaskOrig->reshape('c', qmShape);
   } else {
     qMask = qMaskOrig;
   }
 
-  if(vMaskOrig != nullptr && vMaskOrig->rankOf() == 2) {
-    std::vector<sd::LongType> vmShape = {vMaskOrig->sizeAt(0), 1, vMaskOrig->sizeAt(1)};
+  if(vMaskOrig != nullptr && reshapedQ) {
+    std::vector<sd::LongType> vmShape = {1, vMaskOrig->sizeAt(0), vMaskOrig->sizeAt(1)};
     vMask = vMaskOrig->reshape('c', vmShape);
   } else {
     vMask = vMaskOrig;
@@ -892,25 +991,97 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
 
   int seed = block.randomSeed();
 
-  if (queries->rankOf() == 4) {
-    // Rank-4 BSHD path: use FlashAttentionHelper::backward which handles the
-    // BSHD [batch, seq, numHeads, headDim] layout correctly.
-    // attentionScoresOut (input 3) is the forward pass context output (the weighted sum),
-    // which backward4D uses to recompute attention weights internally.
+  // The backward differentiates what the forward recorded: its weights (input 4, the softmax output the result was
+  // formed from, after dropout) and logits (input 5). Those carry every mask, the causal mask, dropout and an additive
+  // bias alike, so AttentionHelper's backward is right whichever path the forward took: rank 4 runs it on the
+  // head-major [batch * heads, seq, dim] layout the forward's helper path uses, through the same layout helpers. Only
+  // when the forward's weights were not materialized does the rank-4 backward recompute them the flash way, which
+  // knows no masks or dropout (or bias).
+  const bool haveForwardWeights = attentionScoresWeights != nullptr && !attentionScoresWeights->isEmpty() &&
+                                  attentionScoreLogits != nullptr && !attentionScoreLogits->isEmpty();
+  if (queries->rankOf() == 4 && !haveForwardWeights) {
+    REQUIRE_TRUE(qMask == nullptr && vMask == nullptr && dropout == 0.0, 0,
+                 "dot_product_attention_v2_bp: query/value masks or dropout need the forward's attention weights and "
+                 "logits (outputs 1 and 2)");
     FlashAttentionHelper::Config config;
     config.scale = static_cast<float>(scale);
     config.isCausal = useCausalMask;
-    config.dropout = static_cast<float>(dropout);
+    config.dropout = 0.0f;
     config.numHeads = static_cast<int>(queries->sizeAt(2));
     config.numKvHeads = static_cast<int>(keys->sizeAt(2));
     FlashAttentionHelper::backward(eps, queries, keys, values,
                                    attentionScoresOut, nullptr,
                                    dLdq, dLdk, dLdv,
                                    config, block.launchContext());
+  } else if (queries->rankOf() == 4) {
+    const sd::LongType batch = queries->sizeAt(0);
+    const sd::LongType seqQ = queries->sizeAt(1);
+    const sd::LongType heads = queries->sizeAt(2);
+    const sd::LongType headDim = queries->sizeAt(3);
+    const sd::LongType seqKV = keys->sizeAt(1);
+    const sd::LongType kvHeads = keys->sizeAt(2);
+    REQUIRE_TRUE(kvHeads > 0 && heads % kvHeads == 0, 0,
+                 "dot_product_attention_v2_bp: the query head count %lld must be a multiple of the KV head count %lld",
+                 static_cast<long long>(heads), static_cast<long long>(kvHeads));
+    const sd::LongType group = heads / kvHeads;
+    auto context = block.launchContext();
+
+    NDArray* q3d = toHeadMajor3d(queries, 1, context);
+    NDArray* k3d = toHeadMajor3d(keys, group, context);
+    NDArray* v3d = toHeadMajor3d(values, group, context);
+    NDArray* eps3d = toHeadMajor3d(eps, 1, context);
+
+    // The weights, logits and dropout multiplier are head-major [batch, heads, seqQ, seqKV] already.
+    std::vector<sd::LongType> scores3d = {batch * heads, seqQ, seqKV};
+    auto asScores3d = [&](NDArray* scores) -> NDArray* {
+      if (scores == nullptr) return nullptr;
+      NDArray* view = scores->reshape('c', scores3d, false);
+      if (view == nullptr) {
+        view = scores->dup('c');
+        view->reshapei('c', scores3d);
+      }
+      return view;
+    };
+    NDArray* weights3d = asScores3d(attentionScoresWeights);
+    NDArray* logits3d = asScores3d(attentionScoreLogits);
+    NDArray* dropout3d = asScores3d(dropoutMask);
+
+    NDArray* qMaskPerHead = expandMaskPerHead(qMask, batch, heads, seqQ, queries->dataType(), context);
+    NDArray* vMaskPerHead = expandMaskPerHead(vMask, batch, heads, seqKV, queries->dataType(), context);
+
+    std::vector<sd::LongType> qShape3d = {batch * heads, seqQ, headDim};
+    std::vector<sd::LongType> kvShape3d = {batch * heads, seqKV, headDim};
+    NDArray dLdq3d('c', qShape3d, dLdq->dataType(), context);
+    NDArray dLdk3d('c', kvShape3d, dLdk->dataType(), context);
+    NDArray dLdv3d('c', kvShape3d, dLdv->dataType(), context);
+
+    // attentionScoresOut is passed through untouched: the backward does not read the forward's result.
+    std::vector<NDArray*> inputs3d = {q3d, v3d, k3d, attentionScoresOut, weights3d, logits3d, eps3d, dropout3d};
+    std::vector<NDArray*> masks3d = {qMaskPerHead != nullptr ? qMaskPerHead : qMask,
+                                     vMaskPerHead != nullptr ? vMaskPerHead : vMask};
+    AttentionHelper::doAttentionBp(inputs3d, masks3d, training, useCausalMask, dropout, scale,
+                                   {&dLdq3d, &dLdv3d, &dLdk3d}, seed);
+
+    // Back to BSHD; a KV head's gradient sums the copies its `group` query heads used. fromHeadMajor3d fences the
+    // streams before it returns, so the temporaries can go.
+    fromHeadMajor3d(&dLdq3d, dLdq, 1, context);
+    fromHeadMajor3d(&dLdk3d, dLdk, group, context);
+    fromHeadMajor3d(&dLdv3d, dLdv, group, context);
+    dLdq->synchronizeExecStream("dpa_v2_bp head-major temp free");
+    delete q3d;
+    delete k3d;
+    delete v3d;
+    delete eps3d;
+    delete weights3d;
+    delete logits3d;
+    delete dropout3d;
+    delete qMaskPerHead;
+    delete vMaskPerHead;
   } else {
-    AttentionHelper::dotProductAttentionBpHelper(queries, keys, values, scale, dLdq, dLdk, dLdv, eps, seed, qMask, vMask,
-                                                 useCausalMask, dropout, training, attentionScoresWeights,
-                                                 attentionScoreLogits, dropoutMask);
+    std::vector<NDArray*> inputs3d = {queries, values, keys, attentionScoresOut, attentionScoresWeights,
+                                      attentionScoreLogits, eps, dropoutMask};
+    std::vector<NDArray*> masks = {qMask, vMask};
+    AttentionHelper::doAttentionBp(inputs3d, masks, training, useCausalMask, dropout, scale, {dLdq, dLdv, dLdk}, seed);
   }
 
   // Cleanup and restore shapes
@@ -941,6 +1112,9 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
 
 DECLARE_TYPES(dot_product_attention_v2_bp) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+  // The masks may be boolean or integer, as the forward's masks may: they are cast where they are used.
+  getOpDescriptor()->setAllowedInputTypes(8, {ALL_FLOATS, ALL_INTS, BOOL});  // queryMask (optional)
+  getOpDescriptor()->setAllowedInputTypes(9, {ALL_FLOATS, ALL_INTS, BOOL});  // valueMask (optional)
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
   getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }

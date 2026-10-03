@@ -91,7 +91,11 @@ NDArray * AttentionHelper::lowerTriangularMask(std::vector<LongType> *shape) {
   auto ones = NDArrayFactory::valueOf(*shape, 1.0f, 'c');
   auto lower = matrixBandPart.evaluate({ones}, {}, {-1, causalOffset});
   auto ret = lower.at(0)->cast(BOOL);
-  lower.setNonRemovable();
+  // The band-part and cast kernels read `ones` and the band-part output asynchronously on CUDA, and both buffers are
+  // released through the device allocator's free-stream: flush the exec stream before they go (capture-aware, a no-op
+  // on CPU). `lower` frees the band-part output when it leaves scope; it used to be marked non-removable, which leaked
+  // that array on every call.
+  ret->synchronizeExecStream("lowerTriangularMask: sync before temp free");
   delete ones;
   return ret;
 }
@@ -321,7 +325,27 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
   auto weights = scores;
 
   if (dropout > 0) {
-    dropoutOp.execute({weights},{weights,dropoutMask},{dropout},{randomSeed});
+    REQUIRE_TRUE(dropoutMask != nullptr, 0,
+                 "AttentionHelper::applyAttentionScores: dropout needs the dropout mask output to record the draw");
+    REQUIRE_TRUE(dropout <= 1.0, 0,
+                 "AttentionHelper::applyAttentionScores: the dropout probability must be in [0, 1], got %f", dropout);
+    // `dropout` is the probability of DROPPING a weight (the Keras rate). The dropout op reads its probability argument
+    // as the probability of KEEPING an element unless its inverted flag is set, which makes it the drop probability, so
+    // the flag is set here. The op runs in place on the weights (it writes every element: a dropped weight becomes 0)
+    // and fills the mask output with 1 for kept and 0 for dropped weights.
+    if (dropoutOp.execute({weights},{weights,dropoutMask},{dropout},{randomSeed},{true}) != Status::OK) {
+      THROW_EXCEPTION("AttentionHelper::applyAttentionScores: the dropout op failed");
+    }
+
+    // Inverted dropout, as Keras applies it: the kept weights are scaled by 1 / (1 - dropout), so the expected value
+    // of the attention output in training equals the inference output. The mask output then holds the multiplier the
+    // weights were scaled by (0 for dropped, 1 / (1 - dropout) for kept weights), which is exactly what the backward
+    // multiplies the weight gradient by. A dropout of 1 drops everything and leaves nothing to scale.
+    if (dropout < 1.0) {
+      const double keepScale = 1.0 / (1.0 - dropout);
+      weights->applyScalar(sd::scalar::Multiply, keepScale, weights);
+      dropoutMask->applyScalar(sd::scalar::Multiply, keepScale, dropoutMask);
+    }
   }
 
   //batch size, tq tv
@@ -331,11 +355,53 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
 
 }
 
+// Backward of the forward in doAttention (Keras' Attention layer):
+//
+//   logits  = scale * Q K^T, plus the additive value/causal mask      (op output 2)
+//   weights = softmax(logits)
+//   dropped = weights * multiplier                                    (op output 1; multiplier is op output 3, 0 or
+//                                                                      1 / (1 - dropout), 1 without dropout)
+//   result  = (dropped @ V) * queryMask[..., None]                    (op output 0)
+//
+// For the gradient E of the result:
+//
+//   E'        = E * queryMask[..., None]            the query mask multiplies the RESULT, so a masked query's rows
+//                                                   receive no gradient (everything below uses E')
+//   dV        = dropped^T E'
+//   d dropped = E' V^T,   dWeights = d dropped * multiplier
+//   dLogits   = weights * (dWeights - rowsum(dWeights * weights))     softmax backward
+//   dQ        = scale * (dLogits * valueAndCausalMask) K,   dK = scale * (dLogits * valueAndCausalMask)^T Q
+//
+// The masks are passed already expanded: qMask [..., Tq, 1] and vMask [..., 1, Tv]. Without dropout the weights tensor
+// the forward returned (op output 1) is the softmax output; with dropout it holds the post-dropout weights, so the
+// softmax backward gets the pre-dropout weights recomputed from the logits (a dropped weight's softmax value is not
+// recoverable from the dropped tensor).
 void AttentionHelper::dotProductAttentionBpHelper(NDArray *query, NDArray *key, NDArray *values,
                                                   double scale,
                                                   NDArray *dLdq, NDArray *dLdk, NDArray *dLdv, NDArray *eps, LongType dropoutSeed, NDArray *qMask, NDArray *vMask, bool useCausalMask, double dropout, bool training,
                                                   NDArray *attentionScoresWeights, NDArray *attentionLogits,
                                                   NDArray *dropoutMask) {
+  // Dropout needs no seed here: the forward's mask output records every draw.
+  (void)dropoutSeed;
+
+  const bool hasQueryMask = qMask != nullptr && !qMask->isEmpty() && qMask->rankOf() > 0;
+  const bool useDropout = dropout > 0.0 && training;
+
+  if(hasQueryMask) {
+    REQUIRE_TRUE(qMask->sizeAt(-1) == 1 && qMask->sizeAt(-2) == eps->sizeAt(-2), 0,
+                 "dot_product_attention_v2_bp: the query mask must be expanded to [..., queries, 1] (queries %lld), got "
+                 "last dimensions %lld, %lld",
+                 static_cast<long long>(eps->sizeAt(-2)), static_cast<long long>(qMask->sizeAt(-2)),
+                 static_cast<long long>(qMask->sizeAt(-1)));
+  }
+  if(useDropout) {
+    REQUIRE_TRUE(dropoutMask != nullptr && !dropoutMask->isEmpty(), 0,
+                 "dot_product_attention_v2_bp: dropout %f in training needs the dropout mask output of the forward",
+                 dropout);
+    REQUIRE_TRUE(attentionLogits != nullptr && !attentionLogits->isEmpty(), 0,
+                 "dot_product_attention_v2_bp: dropout in training needs the attention logits output of the forward");
+  }
+
   ops::matmul_bp matMulBp;
   ops::softmax_bp softmaxBp;
   NDArray dldW(attentionScoresWeights->shapeInfo());
@@ -356,18 +422,46 @@ void AttentionHelper::dotProductAttentionBpHelper(NDArray *query, NDArray *key, 
     causalPointer = lowerTriangularMask(&causalMaskShape2);
   }
 
+  // mergeMasks returns vMask, causalPointer or (when both exist) a new array: only the last is owned here
   mask = mergeMasks(vMask,causalPointer);
 
+  // Temporaries of this call; all are freed together below after the stream fence.
+  NDArray *queryMaskCast = nullptr;
+  NDArray *maskedEps = nullptr;
+  NDArray *preDropoutWeights = nullptr;
+  NDArray *valueMaskCast = nullptr;
 
-
-  matMulBp.execute({attentionScoresWeights,values,eps},{&dldW,dLdv},{},{});
-  if(dropout > 0.0 && training) {
-    ops::dropout_bp dropoutOp;
-    auto inputs = {attentionScoresWeights,dropoutMask,&dldW};
-    dropoutOp.execute(inputs,{&dldW},{dropout},{dropoutSeed},{false});
+  // The query mask multiplies the forward's result, so the gradient of the result is masked the same way.
+  NDArray *gradOutput = eps;
+  if(hasQueryMask) {
+    queryMaskCast = qMask->cast(eps->dataType());
+    maskedEps = new NDArray(eps->shapeInfo());
+    eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), queryMaskCast, maskedEps, false);
+    gradOutput = maskedEps;
   }
 
-  softmaxBp.execute({attentionLogits,&dldW,attentionScoresWeights},{&dldS},{},{-1},{});
+  // The softmax backward differentiates the pre-dropout weights; without dropout those are the weights output itself.
+  NDArray *softmaxWeights = attentionScoresWeights;
+  if(useDropout) {
+    preDropoutWeights = new NDArray(attentionScoresWeights->shapeInfo());
+    ops::softmax softmaxOp;
+    if(softmaxOp.execute({attentionLogits},{preDropoutWeights},{},{-1},{}) != Status::OK) {
+      delete preDropoutWeights;
+      delete maskedEps;
+      delete queryMaskCast;
+      THROW_EXCEPTION("dot_product_attention_v2_bp: softmax of the attention logits failed");
+    }
+    softmaxWeights = preDropoutWeights;
+  }
+
+  // dV = dropped^T E', and d dropped = E' V^T (the weights output is the dropped tensor)
+  matMulBp.execute({attentionScoresWeights,values,gradOutput},{&dldW,dLdv},{},{});
+  if(useDropout) {
+    // dWeights = d dropped * multiplier: the mask output is the multiplier the forward scaled the weights by
+    dldW.applyPairwiseTransform(sd::pairwise::Multiply, dropoutMask, &dldW);
+  }
+
+  softmaxBp.execute({attentionLogits,&dldW,softmaxWeights},{&dldS},{},{-1},{});
 
   if(scale != 0.0 && scale != 1.0) {
     // Use applyScalar instead of *= to avoid type mismatch between FLOAT arrays and double scalar
@@ -375,16 +469,27 @@ void AttentionHelper::dotProductAttentionBpHelper(NDArray *query, NDArray *key, 
   }
 
   if(mask != nullptr && !mask->isEmpty()) {
-    auto maskCast = mask->cast(query->dataType());
+    valueMaskCast = mask->cast(query->dataType());
     // Use applyTrueBroadcast to handle potentially different shapes safely
-    dldS.applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), maskCast, &dldS, false);
-    // Only delete maskCast if it's a different array than mask (i.e., cast created a new array)
-    if(maskCast != mask) {
-      delete maskCast;
-    }
+    dldS.applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), valueMaskCast, &dldS, false);
   }
 
   matMulBp.execute({query,key,&dldS},{dLdq,dLdk},{},{0,1,0});
+
+  // The kernels above read these temporaries asynchronously on CUDA, and their buffers are released through the device
+  // allocator's free-stream, which can recycle a block while a kernel still reads it. Flush the exec stream before
+  // anything is freed (capture-aware, a no-op on CPU), as the other temporaries in this file do.
+  const bool ownsMergedMask = mask != nullptr && mask != vMask && mask != causalPointer;
+  if(queryMaskCast != nullptr || maskedEps != nullptr || preDropoutWeights != nullptr || valueMaskCast != nullptr ||
+     causalPointer != nullptr || ownsMergedMask) {
+    dLdq->synchronizeExecStream("dotProductAttentionBpHelper: sync before temp free");
+  }
+  delete queryMaskCast;
+  delete maskedEps;
+  delete preDropoutWeights;
+  delete valueMaskCast;
+  if(ownsMergedMask) delete mask;
+  delete causalPointer;
 }
 
 
@@ -454,7 +559,8 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs, std::vector<
   auto attentionScoresLogits = inputs[5];
   auto eps = inputs[6];
 
-  auto dropoutMask = inputs.size() > 7 ? inputs[7] : inputs[7];
+  // An absent dropout multiplier is a null entry or no entry at all
+  auto dropoutMask = inputs.size() > 7 ? inputs[7] : nullptr;
 
   ops::expand_dims expandDims;
   ops::ones_as onesAs;
@@ -510,8 +616,9 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs, std::vector<
   attentionBpHelper(q, k, v, scale, dLdq, dLdk, dLdv, eps, dropoutSeed, qMaskInternal, vmaskInternal, useCausalMask,
                     dropout, training, attentionScoresOut, attentionScoresWeights, attentionScoresLogits, dropoutMask);
 
-  // Clean up squeezed mask if we created one
+  // Clean up squeezed mask if we created one: the kernels above may still read it on CUDA, so fence first
   if(squeezedVMask != nullptr) {
+    dLdq->synchronizeExecStream("doAttentionBp squeezed mask free");
     delete squeezedVMask;
   }
 }
@@ -597,6 +704,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
     casualPointer = lowerTriangularMask(&causalMaskShape2);
   }
 
+  // mergeMasks returns vmaskInternal, casualPointer or (when both exist) a new array: only the last is owned here
   auto scoresMask = mergeMasks(vmaskInternal,casualPointer);
 
   //compute actual softmax now
@@ -606,28 +714,42 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
   } else {
     applyAttentionScores(attentionScores, v, scoresMask, 0, dropoutSeed, applyScoresOut, attentionLogits, dropoutMask);
   }
+
+  // The dropout mask output is the multiplier the weights were scaled by; when no dropout ran every weight passed
+  // through unchanged, so the multiplier is 1 rather than whatever the output buffer held.
+  if(dropoutMask != nullptr && !(training && dropout > 0)) {
+    double passThrough = 1.0;
+    dropoutMask->assign(passThrough);
+  }
+
+  // Keras applies the query mask to the RESULT (result *= query_mask[..., None]) and returns the attention weights
+  // unmasked: a masked query's output row is zero, and the weights it attended with stay visible.
   //inputs: scores:  batch size tq tv value:batch size, tv,dim scoresmask: batch size 1 tv or batch size tq tv
   if(qMask != nullptr && !qMask->isEmpty()) {
     qMaskExpandResult = expandDims.evaluate({qMaskInternal},{},{-1});
     qMaskInternal = qMaskExpandResult.at(0);
-    auto casted = qMaskInternal->cast(attentionScores->dataType());
+    REQUIRE_TRUE(qMaskInternal->sizeAt(-2) == applyScoresOut->sizeAt(-2), 0,
+                 "dot_product_attention_v2: the query mask needs one entry per query (%lld queries), got %lld",
+                 static_cast<long long>(applyScoresOut->sizeAt(-2)), static_cast<long long>(qMaskInternal->sizeAt(-2)));
+    auto casted = qMaskInternal->cast(applyScoresOut->dataType());
     // Use applyTrueBroadcast to handle potentially different shapes safely
-    attentionScores->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), casted, attentionScores, false);
-    // Clean up casted array if it's different from qMaskInternal — the broadcast
-    // above reads it asynchronously; flush the exec stream before freeing (see
+    applyScoresOut->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), casted, applyScoresOut, false);
+    // The broadcast above reads `casted` asynchronously; flush the exec stream before freeing it (see the
     // applyAttentionScores mask-temps comment for the free-under-read hazard).
-    if(casted != qMaskInternal) {
-      attentionScores->synchronizeExecStream("doAttention qMask temp");
-      delete casted;
-    }
+    applyScoresOut->synchronizeExecStream("doAttention qMask temp");
+    delete casted;
   }
 
-  // Clean up squeezed mask if we created one — read asynchronously by the mask-add
-  // kernels in applyAttentionScores; the synchronizeExecStream there already fenced
-  // those reads, so freeing here is ordered-safe.
-  if(squeezedVMask != nullptr) {
-    delete squeezedVMask;
+  // Free what was created here. A temporary mask is read asynchronously by the kernels above (the mask-add kernels in
+  // applyAttentionScores were already fenced by its own stream flush, the merge by the flush below), so fence first.
+  const bool ownsMergedMask = scoresMask != nullptr && scoresMask != vmaskInternal && scoresMask != casualPointer;
+  if(casualPointer != nullptr || ownsMergedMask || squeezedVMask != nullptr) {
+    applyScoresOut->synchronizeExecStream("doAttention mask temps");
   }
+  if(ownsMergedMask) delete scoresMask;
+  delete casualPointer;
+  // Clean up squeezed mask if we created one
+  delete squeezedVMask;
 }
 
 

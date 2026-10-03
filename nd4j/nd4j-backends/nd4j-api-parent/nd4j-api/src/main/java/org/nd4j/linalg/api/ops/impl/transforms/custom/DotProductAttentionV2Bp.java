@@ -130,11 +130,11 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         DataType first = dataTypes.get(0);
-        for( int i = 0; i < dataTypes.size(); i++) {
-            Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
-            if(i > 0){
-                Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
-            }
+        // Inputs 8 and 9 are the query and value masks, which may be boolean or integer like the forward op's masks;
+        // every other input is a floating point tensor of the queries' type.
+        for( int i = 0; i < dataTypes.size() && i < 8; i++) {
+            Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datatypes %s", i, dataTypes);
+            Preconditions.checkState(first == dataTypes.get(i), "All non-mask datatypes must be the same type, got input datatypes %s", dataTypes);
         }
 
         return Arrays.asList(first, first, first);

@@ -1306,7 +1306,10 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
 
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,sd.constant(Nd4j.ones(query.dataType(),10,3)),sd.constant(Nd4j.ones(query.dataType(),10,3)),0.5,0.5,true,true);
+        // Keras masks: the query mask has one entry per query [batch, Tq], the value mask one per key [batch, Tv]
+        SDVariable queryMask = sd.constant(Nd4j.ones(query.dataType(), 10, 1));
+        SDVariable valueMask = sd.constant(Nd4j.ones(query.dataType(), 10, 3));
+        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,queryMask,valueMask,0.5,0.5,true,true);
 
         SDVariable loss = t.norm1("out");
         loss.markAsLoss();

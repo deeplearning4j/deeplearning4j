@@ -85,11 +85,12 @@ static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, LongType const* 
       mask[maskOffset] = keep ? T(1) : T(0);
     }
 
-    if (keep) {
-      INDEX2COORDS(e, inputRank, inputShapePtr, inputCoords);
-      COORDS2INDEX(inputRank, inputStridePtr, inputCoords, inputOffset);
-      output[outputOffset] = input[inputOffset];
-    }
+    // Every output element is written: the input when kept, 0 when dropped. The op does not pre-zero its
+    // output, so a dropped element must be stored here. Each element is read before it is written at the
+    // same offset, which keeps the in-place form (output aliasing the input) correct.
+    INDEX2COORDS(e, inputRank, inputShapePtr, inputCoords);
+    COORDS2INDEX(inputRank, inputStridePtr, inputCoords, inputOffset);
+    output[outputOffset] = keep ? input[inputOffset] : T(0);
   }
 }
 
@@ -178,7 +179,8 @@ static Status dropOutFunctorBP_(sd::graph::Context& context, NDArray* input, NDA
   // The forward passes kept elements through unscaled, and its mask (input 1) records which: the
   // gradient is gradOut where the mask is 1 and 0 where it is 0. Re-running the forward would
   // overwrite that input and, unseeded, drop other elements than the forward did.
-  output->assign(gradOut);
+  // The gradient may be computed in place (output aliasing gradOut): there is nothing to copy then.
+  if (output != gradOut) output->assign(gradOut);
   *output *= *mask;
   return Status::OK;
 }
