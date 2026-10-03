@@ -20,6 +20,7 @@
 //  @author sgazeos@gmail.com
 //
 #include <array/NDArrayFactory.h>
+#include <helpers/PointersManager.h>
 #include <legacy/NativeOps.h>
 #include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/image_suppression.h>
@@ -209,9 +210,10 @@ static SD_KERNEL void shouldSelectKernel(T* boxesBuf, LongType const* boxesShape
   }
   __syncthreads();
 
-  // final move: collect result
-  if (threadIdx.x == 0) {
-    *shouldSelect = shouldSelectShared > 0;
+  // final move: collect result. The host sets the flag before the launch and blocks only clear it: a block that found
+  // no overlap must not write it back, or the last block to finish would decide for all of them
+  if (threadIdx.x == 0 && shouldSelectShared == 0) {
+    *shouldSelect = false;
   }
 }
 
@@ -254,18 +256,18 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {boxes, scales});
   std::vector<sd::LongType> shape = {scales->lengthOf()};
-  NDArray indices (NDArrayFactory::create_<I>(
-      'c', shape, context));  // - 1, scales->lengthOf()); //, scales->getContext());
+  NDArray indices('c', shape, DataTypeUtils::fromT<I>(), context);
 
-  NDArray scores(*scales);
+  // suppressScores and the sort rewrite the scores: they work on a dense copy, so the input stays as it is
+  NDArray* scores = scales->dup('c');
   Pointer extras[2] = {nullptr, stream};
   auto indexBuf = indices.dataBuffer()->template specialAsT<I>();
-  auto scoreBuf = scores.dataBuffer()->template specialAsT<T>();
+  auto scoreBuf = scores->dataBuffer()->template specialAsT<T>();
   dim3 launchDims = getLaunchDims("image_suppress_scores");
-  suppressScores<T, I><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(scoreBuf, indexBuf, scores.lengthOf(), T(scoreThreshold));
+  suppressScores<T, I><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(scoreBuf, indexBuf, scores->lengthOf(), T(scoreThreshold));
   indices.tickWriteDevice();
   sortByValue(extras, &indices,
-              &scores,true);
+              scores,true);
   indices.tickWriteDevice();
   NDArray* selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()}, context);
   int numSelected = 0;
@@ -309,8 +311,14 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
     }
   }
 
+  NDArray::registerSpecialUse({output}, {boxes, scales});
+
+  // the temporaries are released when this returns: wait for the copies that read them
+  PointersManager manager(context, "nonMaxSuppressionV2");
+  manager.synchronize();
   sd::memory::CudaMemoryPool::getInstance().free(shouldSelectD, devId, nullptr);
   delete selectedIndices;
+  delete scores;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

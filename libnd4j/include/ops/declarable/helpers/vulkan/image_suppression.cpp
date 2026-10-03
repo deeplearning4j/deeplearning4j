@@ -85,6 +85,17 @@ LongType executeNms(Op& descriptor, LaunchContext* context, NDArray* boxes,
 
 }  // namespace
 
+// non_max_suppression's shape function selects into a bounded array to size the output.
+void nonMaxSuppression(LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize,
+                       double overlapThreshold, double scoreThreshold, NDArray* output) {
+#if NOT_EXCLUDED(OP_non_max_suppression)
+  sd::ops::non_max_suppression descriptor;
+  executeNms(descriptor, context, boxes, scales, maxSize, overlapThreshold, scoreThreshold, output);
+#else
+  THROW_EXCEPTION("Vulkan non_max_suppression is excluded from this build");
+#endif
+}
+
 LongType nonMaxSuppressionV3(LaunchContext* context, NDArray* boxes,
                              NDArray* scores, int maxSize,
                              double overlapThreshold, double scoreThreshold,

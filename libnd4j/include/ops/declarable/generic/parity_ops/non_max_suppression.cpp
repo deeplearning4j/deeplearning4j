@@ -92,16 +92,27 @@ DECLARE_SHAPE_FN(non_max_suppression) {
   else
   REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
 
+  // the thresholds as the op reads them
+  double overlayThreshold = 0.5;
+  double scoreThreshold = -DataTypeUtils::infOrMax<float>();
+  if (block.width() > 3) {
+    overlayThreshold = INPUT_VARIABLE(3)->e<double>(0);
+  } else if (block.getTArguments()->size() > 0) {
+    overlayThreshold = T_ARG(0);
+  }
+  if (block.width() > 4) {
+    scoreThreshold = INPUT_VARIABLE(4)->e<double>(0);
+  } else if (block.getTArguments()->size() > 1) {
+    scoreThreshold = T_ARG(1);
+  }
+
   if (maxOutputSize > 0) {
     auto actualIndicesCount = shape::sizeAt(in, static_cast<LongType>(0));
-    if (block.getTArguments()->size() > 1 || block.width() > 4) {
-      auto scoreThreshold = block.getTArguments()->size() > 1 ? T_ARG(1) : INPUT_VARIABLE(4)->e<double>(0);
-      auto scales = INPUT_VARIABLE(1);
-      scales->syncToHost();
-      for (auto e = 0; e < scales->lengthOf(); e++) {
-        if (scales->e<float>(e) < (float)scoreThreshold) {
-          actualIndicesCount--;
-        }
+    auto scales = INPUT_VARIABLE(1);
+    scales->syncToHost();
+    for (auto e = 0; e < scales->lengthOf(); e++) {
+      if (scales->e<float>(e) < (float)scoreThreshold) {
+        actualIndicesCount--;
       }
     }
     if (actualIndicesCount < maxOutputSize) maxOutputSize = actualIndicesCount;
@@ -111,6 +122,31 @@ DECLARE_SHAPE_FN(non_max_suppression) {
   if(shape::isEmptyConst(in)) {
     std::vector<LongType> shape = {maxOutputSize};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(DataType::INT32,shape));
+  }
+
+  // The output holds the boxes the selection keeps, which overlap suppression can make fewer than the bound above
+  // (every element of an output is written): select into a bound-sized array marked -1 and count what was written.
+  auto boxes = INPUT_VARIABLE(0);
+  auto scales = INPUT_VARIABLE(1);
+  const bool validInputs = boxes->rankOf() == 2 && boxes->sizeAt(1) == 4 && scales->rankOf() == 1 &&
+                           scales->lengthOf() == boxes->sizeAt(0) && boxes->dataType() == scales->dataType() &&
+                           overlayThreshold >= 0. && overlayThreshold <= 1.;
+  if (maxOutputSize > 0 && validInputs) {
+    std::vector<LongType> boundShape = {maxOutputSize};
+    NDArray selected('c', boundShape, INT32, block.launchContext());
+    int unselected = -1;
+    selected.assign(unselected);
+    helpers::nonMaxSuppression(block.launchContext(), boxes, scales, maxOutputSize, overlayThreshold, scoreThreshold,
+                               &selected);
+    int numSelected = 0;
+    for (LongType e = 0; e < maxOutputSize; e++)
+      if (selected.e<int>(e) >= 0) numSelected++;
+    maxOutputSize = numSelected;
+  }
+
+  if (maxOutputSize == 0) {
+    std::vector<LongType> shape = {0};
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(DataType::INT32, shape));
   }
   outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(maxOutputSize, INT32);
 
