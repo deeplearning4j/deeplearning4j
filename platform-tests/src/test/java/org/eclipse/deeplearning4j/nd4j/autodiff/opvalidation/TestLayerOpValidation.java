@@ -1754,7 +1754,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
                         .testName("cLast=" + cLast + ", yLast=" + yLast)
                 );
 
-                System.out.println("cLast=" + cLast + ", yLast=" + yLast + " grad check: " + err);
+                assertNull(err);
             }
         }
 

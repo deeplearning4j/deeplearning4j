@@ -38,6 +38,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @Tag(TagNames.SAMEDIFF)
@@ -123,6 +125,37 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
             for(String s : new String[]{unused1.name(), unused2.name(), unused3.name()}){
                 assertNull(sd.getVariable(s).gradient());
             }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLossVariablesOutputBySameOp(Nd4jBackend backend) {
+        //Both outputs of the unstack are losses: the op is differentiated once, with both of their gradients
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.var("x", Nd4j.createFromArray(2.0, 5.0));
+        sd.setLossVariables(sd.unstack(x, 0, 2));
+
+        Map<String, INDArray> grads = sd.calculateGradients(null, "x");
+        assertEquals(Nd4j.createFromArray(1.0, 1.0), grads.get("x"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLossVariableFeedingAnotherLoss(Nd4jBackend backend) {
+        //l2 = 3 * l1, so d(l1 + l2)/dx = 4 * d(l1)/dx = 8x, in either order of the losses
+        for (boolean l1First : new boolean[]{true, false}) {
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.var("x", Nd4j.createFromArray(1.0, -2.0, 3.0));
+            SDVariable l1 = x.mul(x).sum("l1");
+            SDVariable l2 = l1.mul("l2", 3.0);
+            if (l1First)
+                sd.setLossVariables(l1, l2);
+            else
+                sd.setLossVariables(l2, l1);
+
+            Map<String, INDArray> grads = sd.calculateGradients(null, "x");
+            assertEquals(Nd4j.createFromArray(8.0, -16.0, 24.0), grads.get("x"), "l1 listed first: " + l1First);
         }
     }
 

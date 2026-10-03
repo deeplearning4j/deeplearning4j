@@ -7574,14 +7574,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             availableForDiff.addAll(controlflowOps.stream().map(input -> input.getName()).collect(Collectors.toList()));
             Set<String> differentiatedOps = new LinkedHashSet<>();
 
-            for (SDVariable lossVar : finalOutputs) {
-                Variable v = sameDiff.variables.get(lossVar.name());
-                if (v.getOutputOfOp() != null) {
-                    String opName = v.getOutputOfOp();
-                    availableForDiff.add(opName);
-                }
-            }
-
             // Collect all the ops that have to be traversed before we can conclude that the gradient for
             // a variable is fully available
             //For example, if we have  X -> op -> Y, and Y -> (A,B) we need gradient contribution from BOTH
@@ -7618,6 +7610,25 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                     }
                     prerequisites.put(variable.getName(), req);
                 }
+            }
+
+            //Seed the traversal with the ops that output the loss variables. An op that outputs several loss variables
+            //is differentiated once, with all of their gradients. An op whose output also feeds an op on the way to the
+            //loss waits for that op's gradient contribution: the traversal adds it once that op is differentiated
+            for (SDVariable lossVar : finalOutputs) {
+                String opName = sameDiff.variables.get(lossVar.name()).getOutputOfOp();
+                if (opName == null || availableForDiff.contains(opName))
+                    continue;
+                boolean contributionsPending = false;
+                for (String output : sameDiff.ops.get(opName).getOutputsOfOp()) {
+                    List<String> consumers = prerequisites.get(output);
+                    if (consumers != null && !consumers.isEmpty()) {
+                        contributionsPending = true;
+                        break;
+                    }
+                }
+                if (!contributionsPending)
+                    availableForDiff.add(opName);
             }
 
             Set<String> preReqCheckLater = new LinkedHashSet<>();
