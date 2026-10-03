@@ -127,8 +127,53 @@ static constexpr float SOFTMAX_CLAMP_MAX = 88.0f;
 static constexpr float SOFTMAX_CLAMP_MIN = -88.0f;
 static constexpr float SOFTMAX_SUM_EPS = 1e-6f;
 
-// Optimized float softmax - assumes no Inf/NaN (fast path for inference)
-// Falls back to safe version if needed
+// One softmax row (TAD) under the framework's non-finite policy. The generic softmax_loop runs every
+// row through it, and the float fast path hands it the rows its max-subtraction cannot take.
+// Inf and NaN logits are left out of the maximum search (a row without a finite logit uses 0), an
+// infinite or NaN logit is replaced by clamp +/- max, the exponent is clamped to [-88, 88] and the
+// sum is floored at SOFTMAX_SUM_EPS. A fully masked row (every logit -Inf, which an additive
+// attention mask over all of its keys produces) therefore gets weights of about
+// exp(-88) / SOFTMAX_SUM_EPS, i.e. ~0, instead of the NaN of exp(-Inf - -Inf).
+// The maximum, the exponentials and the sum run in AggregateType (float for T=HALF/BF16) — see
+// softMaxForVector_. Element j is read before it is written, so the row may be updated in place.
+template <typename T>
+static void softmax_row_safe(const T* inBuff, T* outBuff, sd::LongType tadLen) {
+  using AccT = typename simdOps::AggregateType<T>::type;
+  const AccT clampMax = static_cast<AccT>(SOFTMAX_CLAMP_MAX);
+  const AccT clampMin = static_cast<AccT>(SOFTMAX_CLAMP_MIN);
+  const AccT sumEps = static_cast<AccT>(SOFTMAX_SUM_EPS);
+
+  AccT max = -DataTypeUtils::max<AccT>();
+  AccT sum(0.f);
+
+  // Find max (skip Inf/NaN)
+  for (sd::LongType j = 0; j < tadLen; ++j) {
+    AccT val = static_cast<AccT>(inBuff[j]);
+    if (!std::isinf(static_cast<float>(val)) && !std::isnan(static_cast<float>(val))) {
+      max = sd::math::sd_max(max, val);
+    }
+  }
+  if (max == -DataTypeUtils::max<AccT>()) max = static_cast<AccT>(0.0f);
+
+  for (sd::LongType j = 0; j < tadLen; ++j) {
+    AccT val = static_cast<AccT>(inBuff[j]);
+    if (std::isinf(static_cast<float>(val)) || std::isnan(static_cast<float>(val))) {
+      val = (val > 0 || std::isnan(static_cast<float>(val))) ? clampMax + max : clampMin + max;
+    }
+    AccT diff = val - max;
+    diff = sd::math::sd_max(clampMin, sd::math::sd_min(clampMax, diff));
+    AccT temp = sd::math::sd_exp<AccT, AccT>(diff);
+    outBuff[j] = static_cast<T>(temp);
+    sum += temp;
+  }
+
+  sum = sd::math::sd_max(sum, sumEps);
+  for (sd::LongType j = 0; j < tadLen; ++j)
+    outBuff[j] = static_cast<T>(static_cast<AccT>(outBuff[j]) / sum);
+}
+
+// Optimized float softmax - assumes finite logits or -Inf masks (fast path for inference).
+// A row whose maximum is not finite takes softmax_row_safe instead.
 template <>
 SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongType* offsets, sd::LongType numOfSubArrs,
                            uint32_t tadLen) {
@@ -141,6 +186,14 @@ SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongTyp
       float max = inBuff[0];
       for (uint32_t j = 1; j < tadLen; ++j) {
         if (inBuff[j] > max) max = inBuff[j];
+      }
+
+      // Without a finite maximum the exponentials below are NaN: a fully masked row (every logit
+      // -Inf) gives -Inf - -Inf for every element, a +Inf logit gives Inf - Inf, and a leading NaN
+      // leaves the maximum NaN. Those rows get the same ~0 / clamped weights as every other type.
+      if (!std::isfinite(max)) {
+        softmax_row_safe<float>(inBuff, outBuff, static_cast<sd::LongType>(tadLen));
+        continue;
       }
 
       // Compute exp and sum in single pass
@@ -168,44 +221,9 @@ SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongTyp
 template <typename T>
 SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offsets, sd::LongType numOfSubArrs,
                            uint32_t tadLen) {
- // Accumulate in AggregateType (float for T=HALF/BF16) — see softMaxForVector_.
- using AccT = typename simdOps::AggregateType<T>::type;
- const AccT clampMax = static_cast<AccT>(SOFTMAX_CLAMP_MAX);
- const AccT clampMin = static_cast<AccT>(SOFTMAX_CLAMP_MIN);
- const AccT sumEps = static_cast<AccT>(SOFTMAX_SUM_EPS);
-
  auto func = PRAGMA_THREADS_FOR {
    for (auto i = start; i < stop; i++) {
-     auto inBuff = input + offsets[i];
-     auto outBuff = output + offsets[i];
-
-     AccT max = -DataTypeUtils::max<AccT>();
-     AccT sum(0.f);
-
-     // Find max (skip Inf/NaN)
-     for (sd::LongType j = 0; j < tadLen; ++j) {
-       AccT val = static_cast<AccT>(inBuff[j]);
-       if (!std::isinf(static_cast<float>(val)) && !std::isnan(static_cast<float>(val))) {
-         max = sd::math::sd_max(max, val);
-       }
-     }
-     if (max == -DataTypeUtils::max<AccT>()) max = static_cast<AccT>(0.0f);
-
-     for (sd::LongType j = 0; j < tadLen; ++j) {
-       AccT val = static_cast<AccT>(inBuff[j]);
-       if (std::isinf(static_cast<float>(val)) || std::isnan(static_cast<float>(val))) {
-         val = (val > 0 || std::isnan(static_cast<float>(val))) ? clampMax + max : clampMin + max;
-       }
-       AccT diff = val - max;
-       diff = sd::math::sd_max(clampMin, sd::math::sd_min(clampMax, diff));
-       AccT temp = sd::math::sd_exp<AccT, AccT>(diff);
-       outBuff[j] = static_cast<T>(temp);
-       sum += temp;
-     }
-
-     sum = sd::math::sd_max(sum, sumEps);
-     for (sd::LongType j = 0; j < tadLen; ++j)
-       outBuff[j] = static_cast<T>(static_cast<AccT>(outBuff[j]) / sum);
+     softmax_row_safe<T>(input + offsets[i], output + offsets[i], static_cast<sd::LongType>(tadLen));
    }
  };
 
@@ -259,10 +277,17 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
  const sd::LongType numOfSubArrs = inTadPack->numberOfTads();
  const sd::LongType tadLen = shape::length(inTadShapeInfo);
 
- // Fast linear path: only when BOTH sides are plain dense C-order (offset 0, default
- // strides) — then every TAD is unit-stride contiguous and the two offset tables
- // coincide, so softmax_loop's linear indexing is exact.
- if (isPlainDenseCOrder<T>(input) && isPlainDenseCOrder<T>(output) && input->isSameShapeStrict(*output)) {
+ // Fast linear path. softmax_loop reads and writes a TAD as tadLen consecutive elements from its
+ // offset, so it needs unit-stride TADs, and plain dense C-order (offset 0, default strides) on
+ // BOTH sides so the two offset tables coincide. Dense C-order alone does not make a TAD
+ // unit-stride: along `dim` its elements are separated by the product of the sizes after `dim`,
+ // which is 1 only when `dim` is the last non-unit axis. Softmax over axis 2 of [2, 5, 3, 2]
+ // strides by 2; linear indexing there read the wrong elements, never touched the rest (masked
+ // logits survived as raw -FLT_MAX) and, in place, let neighbouring TADs overwrite each other's
+ // windows. Every other TAD takes the coordinate-indexed path below.
+ const bool unitStrideTads = tadLen == 1 || (input->strideAt(dim) == 1 && output->strideAt(dim) == 1);
+ if (unitStrideTads && isPlainDenseCOrder<T>(input) && isPlainDenseCOrder<T>(output) &&
+     input->isSameShapeStrict(*output)) {
    softmax_loop<T>(input->bufferAsT<T>(), output->bufferAsT<T>(), inTadOffsets, numOfSubArrs,
                    static_cast<uint32_t>(tadLen));
    return;

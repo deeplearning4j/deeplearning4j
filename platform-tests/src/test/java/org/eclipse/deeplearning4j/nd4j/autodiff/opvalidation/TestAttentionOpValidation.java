@@ -642,8 +642,14 @@ public class TestAttentionOpValidation extends BaseOpValidation {
                             for (int d = 0; d < 8; d++) {
                                 double expected = firstKeys[q] == seq ? 0.0
                                         : (firstKeys[q] + seq - 1) * 0.0625 + d;
-                                assertEquals(expected, actual[(q * 8 + h) * 8 + d],
-                                        dtype == DataType.FLOAT16 ? 0.063 : 1e-5,
+                                // FLOAT: the context row is a weighted sum over up to 545 keys, which float can
+                                // round by a few ulps (CPU normalises the weights first; CUDA's online softmax
+                                // sums them unnormalised, exactly for these values). 8 ulps of an output near 68
+                                // is 6e-5.
+                                double tolerance = dtype == DataType.FLOAT16 ? 0.063
+                                        : dtype == DataType.FLOAT ? Math.max(1e-5, 8 * Math.ulp((float) expected))
+                                        : 1e-5;
+                                assertEquals(expected, actual[(q * 8 + h) * 8 + d], tolerance,
                                         "dtype=" + dtype + " q=" + q + " repeat=" + repeat);
                             }
                         }

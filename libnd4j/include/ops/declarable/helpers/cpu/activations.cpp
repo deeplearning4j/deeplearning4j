@@ -24,7 +24,9 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/activations.h>
+#include <ops/op_types.h>
 
+#include <limits>
 #include <numeric>
 
 namespace sd {
@@ -97,50 +99,53 @@ void softmaxDerivative(sd::LaunchContext* context, NDArray& input, NDArray& outp
 }
 
 ///////////////////////////////////////////////////////////////////
+// log softmax of a vector: (x - max) - log(sum(exp(x - max))), the maximum, the exponentials and the sum in
+// AggregateType (float for HALF/BFLOAT16). The output is written only once every input element has been read, so the op
+// may run in place. A vector whose elements are all -inf keeps the finite lowest value as its maximum, sums to 0, and the
+// sum's floor (the softmax helpers' 1e-6) keeps log(sum) finite: every log weight is -inf, the log of the zero weights
+// softmax gives it, where log(exp / sum) was log(0 / 0) = NaN.
 template <typename T>
 void logSoftMaxForVector_(void const* input, sd::LongType const* inShapeInfo, void* output,
                           sd::LongType const* outShapeInfo) {
+  using AccT = typename simdOps::AggregateType<T>::type;
   auto inBuff = reinterpret_cast<T const*>(input);
   auto outBuff = reinterpret_cast<T*>(output);
 
-  T max = -DataTypeUtils::max<T>();
-  T sum = static_cast<T>(0);
+  const sd::LongType length = shape::length(inShapeInfo);
+  const sd::LongType inRank = shape::rank(inShapeInfo);
+  const sd::LongType* inShape = shape::shapeOf(inShapeInfo);
+  const sd::LongType* inStrides = shape::stride(inShapeInfo);
+  const sd::LongType outRank = shape::rank(outShapeInfo);
+  const sd::LongType* outShape = shape::shapeOf(outShapeInfo);
+  const sd::LongType* outStrides = shape::stride(outShapeInfo);
 
-  auto length = shape::length(inShapeInfo);
-  sd::LongType  inRank = shape::rank(inShapeInfo);
-  sd::LongType *inShape = shape::shapeOf(inShapeInfo);
-  sd::LongType *inStrides = shape::stride(inShapeInfo);
-
-  sd::LongType *outShape = shape::shapeOf(outShapeInfo);
-  sd::LongType *outStrides = shape::stride(outShapeInfo);
-  sd::LongType outRank = shape::rank(outShapeInfo);
-  sd::LongType inIndices[length];
-  sd::LongType outIndices[length];
-  PRAGMA_OMP_SIMD
-  for (sd::LongType i2 = 0; i2 < length; i2++) {
-    LongType coords[SD_MAX_RANK];
-    sd::LongType  idx2;
-    INDEX2COORDS(i2,inRank, inShape, coords);
-    COORDS2INDEX(inRank, inStrides, coords, idx2);
-    max = sd::math::sd_max<T,T>(max, inBuff[idx2]);
-    inIndices[i2] = idx2;
-  }
-
-  PRAGMA_OMP_SIMD
-  for (sd::LongType i2 = 0; i2 < length; i2++) {
-    LongType coords[SD_MAX_RANK];
-    sd::LongType  idx2;
-    INDEX2COORDS(i2,outRank, outShape, coords);
-    COORDS2INDEX(outRank, outStrides, coords, idx2);
-    outBuff[idx2] = sd::math::sd_exp<T, T>(inBuff[inIndices[i2]] - max);
-    sum += outBuff[idx2];
-    outIndices[i2] = idx2;
-  }
-
-  PRAGMA_OMP_SIMD
+  AccT max = -DataTypeUtils::max<AccT>();
   for (sd::LongType i = 0; i < length; i++) {
-    outBuff[outIndices[i]] /= sum;
-    outBuff[outIndices[i]] = sd::math::sd_log<T, T>(outBuff[outIndices[i]]);
+    sd::LongType coords[SD_MAX_RANK];
+    sd::LongType offset;
+    INDEX2COORDS(i, inRank, inShape, coords);
+    COORDS2INDEX(inRank, inStrides, coords, offset);
+    max = sd::math::sd_max<AccT>(max, static_cast<AccT>(inBuff[offset]));
+  }
+
+  AccT sum = static_cast<AccT>(0);
+  for (sd::LongType i = 0; i < length; i++) {
+    sd::LongType coords[SD_MAX_RANK];
+    sd::LongType offset;
+    INDEX2COORDS(i, inRank, inShape, coords);
+    COORDS2INDEX(inRank, inStrides, coords, offset);
+    sum += sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(inBuff[offset]) - max);
+  }
+  const AccT logSum = sd::math::sd_log<AccT, AccT>(sd::math::sd_max<AccT>(sum, static_cast<AccT>(1e-6)));
+
+  for (sd::LongType i = 0; i < length; i++) {
+    sd::LongType coords[SD_MAX_RANK];
+    sd::LongType inOffset, outOffset;
+    INDEX2COORDS(i, inRank, inShape, coords);
+    COORDS2INDEX(inRank, inStrides, coords, inOffset);
+    INDEX2COORDS(i, outRank, outShape, coords);
+    COORDS2INDEX(outRank, outStrides, coords, outOffset);
+    outBuff[outOffset] = static_cast<T>((static_cast<AccT>(inBuff[inOffset]) - max) - logSum);
   }
 }
 
@@ -252,11 +257,20 @@ void logSoftmax(LaunchContext* context, NDArray* input, NDArray* output, const i
     // log(softmax(x)) = x - max(x) - log(sum(exp(x - max(x))))
     std::vector<sd::LongType> dimVector = {dimension};
     auto maxAlongDim = input->reduceAlongDimension(reduce::Max, &dimVector, true);
+    // A row whose logits are all -inf has no finite maximum: it is shifted by 0 (the softmax helpers' policy), so
+    // x - max stays -inf instead of -inf - -inf = NaN. Its exponentials are 0, the sum's floor below keeps log(sum)
+    // finite, and every log weight is -inf. The pairwise CompareAndSet keeps the maximum where it is above -inf (mode 3)
+    // and takes the zeros elsewhere.
+    NDArray zeros(maxAlongDim->shapeInfo(), maxAlongDim->dataType(), false, const_cast<LaunchContext*>(context), true);
+    ExtraArguments finiteMax({-std::numeric_limits<double>::infinity(), 0.0, 0.0, 3.0});
+    zeros.applyPairwiseTransform(pairwise::CompareAndSet, maxAlongDim, maxAlongDim, &finiteMax);
     auto inputMinusMax = *input - *maxAlongDim;
     // Compute exp(x - max) into a temp array
     NDArray expTemp(output->shapeInfo(), false, const_cast<LaunchContext*>(context), true);
     inputMinusMax->applyTransform(transform::Exp, &expTemp);
     auto sumExp = expTemp.reduceAlongDimension(reduce::Sum, &dimVector, true);
+    // A row with a finite maximum sums to at least 1, so the floor moves only rows whose exponentials are all 0
+    sumExp->applyScalar(scalar::MaxPairwise, 1e-6, sumExp);
     sumExp->applyTransform(transform::Log, sumExp);
     // output = (x - max) - log(sumExp)
     auto* result = (*inputMinusMax) - (*sumExp);

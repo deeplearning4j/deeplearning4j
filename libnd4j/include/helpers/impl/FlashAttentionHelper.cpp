@@ -125,6 +125,9 @@ static void cpuDecode4D_(NDArray* query, NDArray* key, NDArray* value,
       const LongType kvHead = h / headsPerKvHead;
       const T* q = qBuf + b * qS0 + h * qS2;
       double maxLogit = -std::numeric_limits<double>::infinity();
+      // True while every logit of the row is -Inf. A NaN logit is not -Inf, so it still reaches the
+      // output as NaN.
+      bool allMasked = true;
 
       for (LongType t = 0; t < seqLenKV; ++t) {
         const T* k = kBuf + b * kS0 + t * kS1 + kvHead * kS2;
@@ -145,11 +148,14 @@ static void cpuDecode4D_(NDArray* query, NDArray* key, NDArray* value,
           logitsBuf[b * logitsS0 + h * logitsS1 + t * logitsS3] = static_cast<T>(dot);
         }
         if (dot > maxLogit) maxLogit = dot;
+        if (dot != -std::numeric_limits<double>::infinity()) allMasked = false;
       }
 
+      // A row whose keys are all masked (every logit -Inf) has no softmax distribution: its
+      // weights and its output row are 0, where exp(-Inf - -Inf) would make them NaN.
       double sumExp = 0.0;
       for (LongType t = 0; t < seqLenKV; ++t) {
-        double w = std::exp(logits[static_cast<size_t>(t)] - maxLogit);
+        double w = allMasked ? 0.0 : std::exp(logits[static_cast<size_t>(t)] - maxLogit);
         logits[static_cast<size_t>(t)] = w;
         sumExp += w;
       }

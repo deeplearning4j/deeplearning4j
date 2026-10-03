@@ -20,6 +20,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 19.04.2018
 // @author raver119@gmail.com
 //
+#include <limits>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
@@ -250,6 +251,12 @@ SD_DEVICE void reduceSumHybrid(T* sPartials, LongType tid, LongType numItems) {
   }
 }
 
+// The floor of a softmax row's sum of exponentials, the CPU helper's SOFTMAX_SUM_EPS. A row with a finite
+// maximum sums to at least 1, so the floor never moves it. A row whose logits are all -Inf (an attention row
+// with every key masked) keeps the -DataTypeUtils::max starting maximum, so every exponential is 0: the floor
+// makes its weights 0 where the division was 0 / 0 = NaN, as the CPU helper's are ~0.
+static constexpr float kSoftmaxSumFloor = 1e-6f;
+
 ///////////////////////////////////////////////////////////////////
 // Parallel softmax using tree reduction (same pattern as reduce ops)
 template <typename T>
@@ -311,7 +318,7 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
     __syncthreads();
 
     reduceSumHybrid<AccT>(sPartials, threadIdx.x, numItems);
-    if (threadIdx.x == 0) globalSum = sPartials[0];
+    if (threadIdx.x == 0) globalSum = math::sd_max<AccT>(sPartials[0], static_cast<AccT>(kSoftmaxSumFloor));
     __syncthreads();
 
     // Phase 3: Normalize
@@ -371,7 +378,7 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
     __syncthreads();
 
     reduceSumHybrid<AccT>(sPartials, threadIdx.x, numItems);
-    if (threadIdx.x == 0) globalSum = sPartials[0];
+    if (threadIdx.x == 0) globalSum = math::sd_max<AccT>(sPartials[0], static_cast<AccT>(kSoftmaxSumFloor));
     __syncthreads();
 
     // Phase 3: Normalize
@@ -462,7 +469,7 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCudaWarpPerTadVec4(const 
     sumVal = __shfl_sync(0xffffffff, sumVal, 0);
 
     // Phase 3: Normalize using float4
-    float invSum = 1.0f / sumVal;
+    float invSum = 1.0f / math::sd_max<float>(sumVal, kSoftmaxSumFloor);
     for (LongType j = laneId; j < vec4Len; j += 32) {
       float4 val = reinterpret_cast<float4*>(outBuff)[j];
       val.x *= invSum;
@@ -520,7 +527,7 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCudaWarpPerTad(const void
     sumVal = __shfl_sync(0xffffffff, sumVal, 0);  // Broadcast sum to all lanes
 
     // Phase 3: Normalize - contiguous access
-    AccT invSum = static_cast<AccT>(1) / sumVal;
+    AccT invSum = static_cast<AccT>(1) / math::sd_max<AccT>(sumVal, static_cast<AccT>(kSoftmaxSumFloor));
     for (LongType j = laneId; j < tadLen; j += 32) {
       outBuff[j] = static_cast<T>(static_cast<AccT>(outBuff[j]) * invSum);
     }
@@ -608,7 +615,7 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCuda(const void *vx, cons
       if (warpId == 0) {
         AccT val = (laneId < numWarps) ? warpPartials[laneId] : static_cast<AccT>(0);
         val = sd::device::warpReduceSum<AccT>(val);
-        if (laneId == 0) globalSum = val;
+        if (laneId == 0) globalSum = math::sd_max<AccT>(val, static_cast<AccT>(kSoftmaxSumFloor));
       }
       __syncthreads();
 
@@ -695,9 +702,15 @@ void softmax(LaunchContext *context, NDArray *input, NDArray *output, const int 
 }
 
 ///////////////////////////////////////////////////////////////////
+// log softmax of a vector in one block: (x - max) - log(sum(exp(x - max))), the maximum, the exponentials and the sum in
+// AggregateType (float for HALF/BFLOAT16). The exponentials are not stored, so x is still there for the last pass and the
+// op may run in place. A vector whose elements are all -inf keeps the finite lowest value as its maximum, sums to 0, and
+// the sum's floor (kSoftmaxSumFloor) keeps log(sum) finite: every log weight is -inf, where log(exp / sum) was
+// log(0 / 0) = NaN. Every thread reads a block result from shared memory before any thread writes it again.
 template <typename T>
 void SD_KERNEL __launch_bounds__(256, 2) logSoftMaxForVectorCuda(const void *vx, const LongType *xzShapeInfo, void *vz) {
   // logic of this kernel is based on assumption gridDim = 1
+  using AccT = typename simdOps::AggregateType<T>::type;
 
   const auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
@@ -707,7 +720,7 @@ void SD_KERNEL __launch_bounds__(256, 2) logSoftMaxForVectorCuda(const void *vx,
   __shared__ int xzRank;
   __shared__ const LongType *xzShape;
   __shared__ const LongType *xzStride;
-  __shared__ T shmem[SD_CUDA_BLOCK_SIZE];
+  __shared__ AccT shmem[SD_CUDA_BLOCK_SIZE];
 
   if (threadIdx.x == 0) {
     len = shape::length(xzShapeInfo);
@@ -720,49 +733,49 @@ void SD_KERNEL __launch_bounds__(256, 2) logSoftMaxForVectorCuda(const void *vx,
   }
   __syncthreads();
 
-  T temp = -DataTypeUtils::max<T>();
+  AccT temp = -DataTypeUtils::max<AccT>();
 
   // ************ evaluate max element in input array x ************ //
   for (int i = 0; i < numOfIters; ++i) {
-    const LongType elemIdx = i * blockDim.x + threadIdx.x;
+    const LongType elemIdx = static_cast<LongType>(i) * blockDim.x + threadIdx.x;
     if (elemIdx < len) {
       LongType offset;
-      sd::LongType coords[SD_MAX_RANK];
+      LongType coords[SD_MAX_RANK];
       INDEX2COORDS(elemIdx, xzRank, xzShape, coords);
       COORDS2INDEX(xzRank, xzStride, coords, offset);
-      shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : math::sd_max<T>(x[offset], temp);  // take into account max element evaluated on previous iteration and stored in temp
+      const AccT value = static_cast<AccT>(x[offset]);
+      // thread 0 carries the maximum of the previous chunks
+      shmem[threadIdx.x] = threadIdx.x != 0 ? value : math::sd_max<AccT>(value, temp);
     } else {
-      shmem[threadIdx.x] = -DataTypeUtils::max<T>();
+      shmem[threadIdx.x] = threadIdx.x != 0 ? -DataTypeUtils::max<AccT>() : temp;
     }
-
     __syncthreads();
 
     for (int s = blockDim.x / 2; s > 0; s /= 2) {
-      if (threadIdx.x < s) shmem[threadIdx.x] = math::sd_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
+      if (threadIdx.x < s) shmem[threadIdx.x] = math::sd_max<AccT>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
       __syncthreads();
     }
 
-    temp = shmem[0];  // save max value calculated at current iteration
+    temp = shmem[0];  // the maximum so far
+    __syncthreads();
   }
 
-  const T max = temp;
+  const AccT max = temp;
   temp = 0;
 
-  // ************ evaluate value of exp(x[offset] - max) per each element, store it to shared memory shmem ************
-  // at the same time evaluate sum of exponents, sum will be stored in shmem[0]
+  // ************ the sum of exp(x - max), not stored ************ //
   for (int i = 0; i < numOfIters; ++i) {
-    const LongType elemIdx = i * blockDim.x + threadIdx.x;
+    const LongType elemIdx = static_cast<LongType>(i) * blockDim.x + threadIdx.x;
+    AccT value = 0;
     if (elemIdx < len) {
       LongType offset;
-      sd::LongType coords[SD_MAX_RANK];
+      LongType coords[SD_MAX_RANK];
       INDEX2COORDS(elemIdx, xzRank, xzShape, coords);
       COORDS2INDEX(xzRank, xzStride, coords, offset);
-      z[offset] = math::sd_exp<T, T>(x[offset] - max);
-      shmem[threadIdx.x] = (threadIdx.x != 0) ? z[offset] : (z[offset] + temp);  // take into account sum element evaluated on previous iteration and stored in temp
-    } else {
-      shmem[threadIdx.x] = 0;
+      value = math::sd_exp<AccT, AccT>(static_cast<AccT>(x[offset]) - max);
     }
-
+    // thread 0 carries the sum of the previous chunks
+    shmem[threadIdx.x] = threadIdx.x != 0 ? value : value + temp;
     __syncthreads();
 
     for (int s = blockDim.x / 2; s > 0; s /= 2) {
@@ -770,18 +783,21 @@ void SD_KERNEL __launch_bounds__(256, 2) logSoftMaxForVectorCuda(const void *vx,
       __syncthreads();
     }
 
-    temp = shmem[0];  // save sum calculated at current iteration
+    temp = shmem[0];  // the sum so far
+    __syncthreads();
   }
 
-  // ************ evaluate log(z[offset] / sum)  ************ //
+  const AccT logSum = math::sd_log<AccT, AccT>(math::sd_max<AccT>(temp, static_cast<AccT>(kSoftmaxSumFloor)));
+
+  // ************ (x - max) - log(sum) ************ //
   for (int i = 0; i < numOfIters; ++i) {
-    const LongType elemIdx = i * blockDim.x + threadIdx.x;
-    if (elemIdx < len) {  // Added bounds check that was missing in original
+    const LongType elemIdx = static_cast<LongType>(i) * blockDim.x + threadIdx.x;
+    if (elemIdx < len) {
       LongType offset;
-      sd::LongType coords[SD_MAX_RANK];
+      LongType coords[SD_MAX_RANK];
       INDEX2COORDS(elemIdx, xzRank, xzShape, coords);
       COORDS2INDEX(xzRank, xzStride, coords, offset);
-      z[offset] = math::sd_log<T, T>(z[offset] / shmem[0]);
+      z[offset] = static_cast<T>((static_cast<AccT>(x[offset]) - max) - logSum);
     }
   }
 }
@@ -814,11 +830,20 @@ void logSoftmax(LaunchContext *context, NDArray *input, NDArray *output, const i
     // All ops below are high-level NDArray operations that manage their own coherence.
     std::vector<LongType> dim = {static_cast<LongType>(dimension)};
     auto maxAlongDim = const_cast<NDArray *>(input)->reduceAlongDimension(reduce::Max, &dim, true);
+    // A row whose logits are all -inf has no finite maximum: it is shifted by 0 (the softmax kernels' policy), so
+    // x - max stays -inf instead of -inf - -inf = NaN. Its exponentials are 0, the sum's floor below keeps log(sum)
+    // finite, and every log weight is -inf. The pairwise CompareAndSet keeps the maximum where it is above -inf (mode 3)
+    // and takes the zeros elsewhere.
+    NDArray zeros(maxAlongDim->shapeInfo(), maxAlongDim->dataType(), false, const_cast<LaunchContext*>(context), true);
+    ExtraArguments finiteMax({-std::numeric_limits<double>::infinity(), 0.0, 0.0, 3.0});
+    zeros.applyPairwiseTransform(pairwise::CompareAndSet, maxAlongDim, maxAlongDim, &finiteMax);
     auto inputMinusMax = *input - *maxAlongDim;
     // Compute exp(x - max) into a temp array
     NDArray expTemp(output->shapeInfo(), false, const_cast<LaunchContext*>(context), true);
     inputMinusMax->applyTransform(transform::Exp, &expTemp);
     auto sumExp = expTemp.reduceAlongDimension(reduce::Sum, &dim, true);
+    // A row with a finite maximum sums to at least 1, so the floor moves only rows whose exponentials are all 0
+    sumExp->applyScalar(scalar::MaxPairwise, static_cast<double>(kSoftmaxSumFloor), sumExp);
     sumExp->applyTransform(transform::Log, sumExp);
     // output = (x - max) - log(sumExp)
     auto* result = (*inputMinusMax) - (*sumExp);
