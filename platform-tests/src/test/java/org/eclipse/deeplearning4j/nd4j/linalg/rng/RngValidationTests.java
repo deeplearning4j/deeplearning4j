@@ -72,6 +72,8 @@ import java.util.Map;
 @Execution(ExecutionMode.SAME_THREAD)
 public class RngValidationTests extends BaseNd4jTestWithBackends {
 
+    /** Standard deviation of a unit normal truncated to [-2, 2]: sqrt(1 - 4 phi(2) / (Phi(2) - Phi(-2))). */
+    private static final double TRUNCATED_NORMAL_STD = 0.8796256610342398;
 
     @Override
     public char ordering(){
@@ -157,13 +159,13 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
             testCases.add(TestCase.builder().opType("binomial").dataType(type).shape(100,10000).minValue(0).maxValue(20).minValueInclusive(true).maxValueInclusive(true).arg("n", 20).arg("p",0.2)
                     .expectedMean(20*0.2).expectedStd(Math.sqrt(20*0.2*(1-0.2)) /*var = np(1-p)*/).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.01).build());
 
-            //truncated normal should clip at (mean-2*std, mean+2*std), but current implementation doesn't truncate properly
-            //Using wider bounds (like gaussian) for now until truncation is fixed
-            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(new long[0]).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0).build());       //Don't check mean/std for 1 element
-            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
-                    .expectedMean(0.0).expectedStd(1.0).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.1).build());
-            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(100,10000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
-                    .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.001).build());
+            //Truncated normal: within two standard deviations of the mean, with standard deviation
+            //sqrt(1 - 4 phi(2) / (Phi(2) - Phi(-2))) = 0.8796 of the untruncated one
+            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(new long[0]).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(1000).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
+                    .expectedMean(0.0).expectedStd(TRUNCATED_NORMAL_STD).stdRelativeErrorTolerance(0.1).meanMinAbsErrorTolerance(0.1).build());
+            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(100,10000).minValue(1.0).maxValue(3.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
+                    .expectedMean(2.0).expectedStd(0.5 * TRUNCATED_NORMAL_STD).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
 
             //Dropout (non-inverted): same as bernoulli distribution, when dropout applied to "ones" array
             testCases.add(TestCase.builder().opType("dropout").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element

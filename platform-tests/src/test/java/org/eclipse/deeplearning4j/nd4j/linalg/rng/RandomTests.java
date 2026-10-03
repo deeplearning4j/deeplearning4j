@@ -22,7 +22,6 @@ package org.eclipse.deeplearning4j.nd4j.linalg.rng;
 
 
 import org.apache.commons.math3.random.JDKRandomGenerator;
-import org.apache.commons.math3.util.FastMath;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.writable.IntWritable;
@@ -68,6 +67,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.rng.NativeRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1380,32 +1380,23 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(expCUDA, res);
     }
 
-    @Disabled
+    /**
+     * Every value lies within two standard deviations of the mean, and none sits at the mean: the op
+     * used to write the mean in place of the 4.6% of samples it failed to redraw.
+     */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTruncatedNormal1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
-        INDArray z01 = Nd4j.create(10000000).assign(-119119d);
-        INDArray z02 = Nd4j.createUninitialized(z01.length());
+        INDArray z01 = Nd4j.create(DataType.FLOAT, 1000000).assign(-119119d);
+        Nd4j.getExecutioner().exec(new TruncatedNormalDistribution(z01, 0.0, 1.0), random1);
 
-        TruncatedNormalDistribution distribution01 = new TruncatedNormalDistribution(z01, 0.0, 1.0);
-
-        long time1 = System.currentTimeMillis();
-        Nd4j.getExecutioner().exec(distribution01, random1);
-        long time2 = System.currentTimeMillis();
-
-        Nd4j.getExecutioner().exec(new GaussianDistribution( z02, 0.0, 1.0));
-        long time3 = System.currentTimeMillis();
-
-        log.info("Truncated: {} ms; Gaussian: {} ms", time2 - time1, time3 - time2);
-
-        for (int e = 0; e < z01.length(); e++) {
-            assertTrue(FastMath.abs(z01.getDouble(e)) <= 2.0,"Value: " + z01.getDouble(e) + " at " + e);
-            assertNotEquals(-119119d, z01.getDouble(e), 1e-3);
-        }
-
-        assertEquals(0.0, z01.meanNumber().doubleValue(), 1e-3);
+        INDArray magnitudes = Transforms.abs(z01, true);
+        assertTrue(magnitudes.maxNumber().doubleValue() <= 2.0, "largest |value| " + magnitudes.maxNumber());
+        long atMean = magnitudes.lt(1e-6).castTo(DataType.INT64).sumNumber().longValue();
+        assertTrue(atMean < 100, atMean + " values within 1e-6 of the mean");
+        assertEquals(0.0, z01.meanNumber().doubleValue(), 5e-3);
     }
 
     @ParameterizedTest

@@ -21,6 +21,7 @@
 #include <execution/Threads.h>
 #include <graph/RandomGenerator.h>
 #include <helpers/shape.h>
+#include <ops/op_types.h>
 #include <ops/random_ops.h>
 #include <ops/specials_cuda.h>
 #include <system/env_functions.h>
@@ -461,31 +462,33 @@ class BinomialDistributionEx {
 template <typename T>
 class TruncatedNormalDistribution {
  private:
-  static SD_INLINE SD_HOST_DEVICE T step(sd::graph::RandomGenerator *rng, T mean, T stddev, sd::LongType e,
-                                         sd::LongType middle, T &z) {
-    auto epm = e + middle;
-    const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
-    const T epsilon = static_cast<T>(1.e-5f);
-    // we need to get random values
-    T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
-    T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
+  using AccT = typename simdOps::AggregateType<T>::type;
 
-    T realMean0 = mean;
+  // Attempts per element: all of them miss the bounds with probability 0.0455^64 < 1e-85.
+  static constexpr int kMaxAttempts = 64;
 
-    auto z0 = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
-               sd::math::sd_cos<T, T>(two_pi * r1)) *
-              stddev +
-              realMean0;
-    z = z0;
-    if (epm < middle) {
-      T realMean1 = mean;
-      auto z1 = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
-                 sd::math::sd_sin<T, T>(two_pi * r1)) *
-                stddev +
-                realMean1;
-      z = z1;
+  // A normal sample within two standard deviations of the mean (TensorFlow's truncated_normal), by
+  // rejection. Attempt k of element e takes the cosine Box-Muller sample of draws 2 * (k * zLength + e)
+  // and 2 * (k * zLength + e) + 1, and the first one within the bounds is the element's: every element
+  // owns its draws and depends on no other. The op used to redraw an out-of-bounds Gaussian sample from
+  // the indices that had produced it, so it got the same value back and wrote the mean instead (a point
+  // mass of 4.6% at the mean), and on CUDA it read samples that other blocks were still writing.
+  static SD_INLINE SD_HOST_DEVICE T sample(sd::graph::RandomGenerator *rng, sd::LongType e, sd::LongType zLength,
+                                           AccT mean, AccT stddev) {
+    const AccT twoPi = static_cast<AccT>(2.0f) * static_cast<AccT>(3.14159265358979323846);
+    const AccT epsilon = static_cast<AccT>(1e-5);
+    const AccT bound = static_cast<AccT>(2.0f);
+    AccT normal = static_cast<AccT>(0.0f);
+    for (int k = 0; k < kMaxAttempts; k++) {
+      const sd::LongType pair = 2 * (k * zLength + e);
+      const AccT r0 = rng->relativeT<AccT>(pair, epsilon, static_cast<AccT>(1.0f));
+      const AccT r1 = rng->relativeT<AccT>(pair + 1);
+      normal = sd::math::sd_sqrt<AccT, AccT>(static_cast<AccT>(-2.0f) * sd::math::sd_log<AccT, AccT>(r0)) *
+               sd::math::sd_cos<AccT, AccT>(twoPi * r1);
+      if (sd::math::sd_abs<AccT, AccT>(normal) <= bound) break;
     }
-    return z;
+    normal = sd::math::sd_max<AccT>(-bound, sd::math::sd_min<AccT>(bound, normal));
+    return static_cast<T>(mean + stddev * normal);
   }
 
  public:
@@ -493,40 +496,39 @@ class TruncatedNormalDistribution {
 
   static const bool requiresSpecial = true;
 
+  // y, when it is not z, holds each element's mean (Java's TruncatedNormalDistribution(z, means, stddev)),
+  // read through its own shape and strides; otherwise the extra argument is the mean of every element.
 #ifdef __CUDACC__
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
                                                 T const *y, sd::LongType const *yShapeBuffer, T *z,
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
-    // First fill with Gaussian
-    GaussianDistribution<T>::specialOpCuda(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
-    __syncthreads();
-
-    sd::LongType zLength = shape::length(zShapeBuffer);
-    sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
-    T mean = extraArguments[0];
-    T stddev = extraArguments[1];
-    T ds = sd::math::sd_abs<T, T>(stddev) * (T)2.0f;
-    sd::LongType middle = zLength / 2 + (zLength % 2);
-
-    sd::LongType zRank = shape::rank(zShapeBuffer);
+    const AccT mean = static_cast<AccT>(extraArguments[0]);
+    const AccT stddev = static_cast<AccT>(extraArguments[1]);
+    const sd::LongType zLength = shape::length(zShapeBuffer);
+    const sd::LongType zRank = shape::rank(zShapeBuffer);
     sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
     sd::LongType *zStride = shape::stride(zShapeBuffer);
+    const sd::LongType yRank = shape::rank(yShapeBuffer);
+    sd::LongType *yShape = shape::shapeOf(yShapeBuffer);
+    sd::LongType *yStride = shape::stride(yShapeBuffer);
+    auto rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
 
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int gridStep = blockDim.x * gridDim.x;
-
+    const sd::LongType tid = static_cast<sd::LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+    const sd::LongType gridStep = static_cast<sd::LongType>(blockDim.x) * gridDim.x;
     for (sd::LongType e = tid; e < zLength; e += gridStep) {
       sd::LongType coords[SD_MAX_RANK];
       INDEX2COORDS(e, zRank, zShape, coords);
       sd::LongType zOffset;
       COORDS2INDEX(zRank, zStride, coords, zOffset);
-
-      if (z[zOffset] > mean + ds || z[zOffset] < mean - ds) {
-        z[zOffset] = step(rng, mean, stddev, e, middle, z[zOffset]);
-        if (z[zOffset] > mean + ds || z[zOffset] < mean - ds) {
-          z[zOffset] = mean + sd::DataTypeUtils::min_positive<T>();
-        }
+      AccT elementMean = mean;
+      if (y != z) {
+        sd::LongType yCoords[SD_MAX_RANK];
+        INDEX2COORDS(e, yRank, yShape, yCoords);
+        sd::LongType yOffset;
+        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+        elementMean = static_cast<AccT>(y[yOffset]);
       }
+      z[zOffset] = sample(rng, e, zLength, elementMean, stddev);
     }
   }
 #endif
@@ -534,38 +536,36 @@ class TruncatedNormalDistribution {
   static inline void specialOp(sd::Pointer state, const T *x, const sd::LongType *xShapeBuffer, const T *y,
                                const sd::LongType *yShapeBuffer, T *z, const sd::LongType *zShapeBuffer,
                                T *extraArguments) {
-    GaussianDistribution<T>::specialOp(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
-    sd::LongType zLength = shape::length(zShapeBuffer);
-    auto rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
-    T mean = extraArguments[0];
-    T stddev = extraArguments[1];
-    T ds = sd::math::sd_abs<T,T>(stddev) * (T)2.0f;
-    sd::LongType middle = zLength / 2 + (zLength % 2);
-    int elementsPerThread = middle / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max(1, elementsPerThread);
-    _threads = sd::math::sd_min(_threads, sd::env_maxThreads());
-    sd::LongType zRank = shape::rank(zShapeBuffer);
+    const AccT mean = static_cast<AccT>(extraArguments[0]);
+    const AccT stddev = static_cast<AccT>(extraArguments[1]);
+    const sd::LongType zLength = shape::length(zShapeBuffer);
+    const sd::LongType zRank = shape::rank(zShapeBuffer);
     sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
     sd::LongType *zStride = shape::stride(zShapeBuffer);
-    sd::LongType yRank = shape::rank(yShapeBuffer);
+    const sd::LongType yRank = shape::rank(yShapeBuffer);
     sd::LongType *yShape = shape::shapeOf(yShapeBuffer);
     sd::LongType *yStride = shape::stride(yShapeBuffer);
-    sd::LongType  *xShape = shape::shapeOf(xShapeBuffer);
-    sd::LongType xRank = shape::rank(xShapeBuffer);
-    sd::LongType *xStride = shape::stride(xShapeBuffer);
+    auto rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
+
+    int elementsPerThread = zLength / TAD_THRESHOLD;
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::env_maxThreads());
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(e, zRank,zShape, coords);
+        INDEX2COORDS(e, zRank, zShape, coords);
         sd::LongType zOffset;
         COORDS2INDEX(zRank, zStride, coords, zOffset);
-
-        if (z[zOffset] > mean + ds || z[zOffset] < mean - ds) {
-          z[zOffset] = step(rng, mean, stddev, e, middle, z[zOffset]);
-
-          if (z[zOffset] > mean + ds || z[zOffset] < mean - ds) z[zOffset] = mean + sd::DataTypeUtils::min_positive<T>();
+        AccT elementMean = mean;
+        if (y != z) {
+          sd::LongType yCoords[SD_MAX_RANK];
+          INDEX2COORDS(e, yRank, yShape, yCoords);
+          sd::LongType yOffset;
+          COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+          elementMean = static_cast<AccT>(y[yOffset]);
         }
+        z[zOffset] = sample(rng, e, zLength, elementMean, stddev);
       }
     };
 
