@@ -53,7 +53,15 @@ state back:
 
 `NativeSlot::drawsRandomState()` is a stateful op that writes no input. Ops that
 write inputs (recurrent state, KV caches) are stateful through tensors a replay
-updates as well, and they stay capturable. `isCapturable()`, the single source of
+updates as well, and they stay capturable. Amended 2026-10-03: the decision is the
+op's, for the slot's arguments (`DeclarableOp::drawsRandomStateFor`, resolved once
+when a plan compiles the slot). The default is the rule above; an op that draws for
+some arguments only overrides it. `dot_product_attention_v2` writes its KV caches and
+draws its dropout mask from its context's generator with a dropout rate above 0 while
+training, so those slots run live with the execution generator and the others stay
+capturable. Its slots used to keep a generator seeded from the clock, so
+`Nd4j.getRandom().setSeed` did not reproduce attention dropout, a gradient check of
+it compared different masks, and a capture would have replayed one mask. `isCapturable()`, the single source of
 truth for capture, rejects a slot that draws random state: a replay would repeat the
 draws of its capture. Compiled segments keep such a slot as a live gap. The Vulkan
 recorder, which uploads a random op's state as a replay input

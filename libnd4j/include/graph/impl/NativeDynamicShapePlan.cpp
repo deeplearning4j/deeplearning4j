@@ -2388,6 +2388,8 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
       slot.opTraits_ = slot.ident.op->getOpDescriptor()->getTraits64();
     }
+    // Whether the op draws from its context's random generator, for the arguments read above.
+    slot.resolveRandomState();
     // A ternary-elementwise op invoked with exactly 3 inputs (e.g. select cond?x:y) has a
     // fixed broadcast output shape — it is NOT data-dependent or dynamic-output-size. The
     // same op may be table-marked DATA_DEPENDENT|DYNAMIC_OUTPUT_SIZE for a lower-arity

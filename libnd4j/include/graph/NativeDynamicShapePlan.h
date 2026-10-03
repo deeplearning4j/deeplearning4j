@@ -536,6 +536,8 @@ struct NativeSlot {
   //
   // Query methods below derive all classification decisions from this mask.
   uint64_t opTraits_ = 0;
+  // drawsRandomState() for this slot's arguments: -1 until resolveRandomState(), then 0 or 1.
+  int8_t randomStateResolved_ = -1;
 
   // ── Top-level fields (not grouped) ────────────────────────────────
   int targetDeviceId = -1;             // -1 = auto
@@ -751,14 +753,26 @@ struct NativeSlot {
   }
 
   // ── Random state ─────────────────────────────────────────────────
-  // A slot whose op draws from its context's random generator: a stateful op that writes no
-  // input. (Ops that write inputs are stateful through the state tensors they update, which a
-  // replay updates as well.) Each execution hands it the plan execution's generator
-  // (DspExecutionRandom.h), so it runs live.
+  // A slot whose op draws from its context's random generator, for this slot's arguments
+  // (DeclarableOp::drawsRandomStateFor: a stateful op that writes no input, or an op that draws
+  // for some arguments only, such as attention dropout while training). Each execution hands it
+  // the plan execution's generator (DspExecutionRandom.h), so it runs live. Plan compilers
+  // resolve it once the arguments are known (resolveRandomState); a slot built without that
+  // decides from its op's traits: a stateful op that writes no input. (Ops that write inputs are
+  // stateful through the state tensors they update, which a replay updates as well.)
   bool drawsRandomState() const {
+    if (randomStateResolved_ >= 0) return randomStateResolved_ == 1;
     if (!hasOpTrait(sd::ops::OP_TRAIT_STATEFUL)) return false;
     const auto* descriptor = ident.op != nullptr ? ident.op->getOpDescriptor() : nullptr;
     return descriptor == nullptr || descriptor->getInputWriteGroups().empty();
+  }
+
+  void resolveRandomState() {
+    if (ident.op == nullptr) return;
+    std::vector<double> tArgs(args.tArgs, args.tArgs + args.numTArgs);
+    std::vector<LongType> iArgs(args.iArgs, args.iArgs + args.numIArgs);
+    std::vector<bool> bArgs(args.bArgs, args.bArgs + args.numBArgs);
+    randomStateResolved_ = ident.op->drawsRandomStateFor(tArgs, iArgs, bArgs) ? 1 : 0;
   }
 
   // ── Generation counter accessors ─────────────────────────────────

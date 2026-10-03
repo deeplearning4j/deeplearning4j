@@ -1930,6 +1930,12 @@ sd::Status sd::ops::DeclarableOp::validateInputLengthMatch(Context &block) {
 
 samediff::EmptyHandling DeclarableOp::emptyHandling() { return samediff::EmptyHandling::EMPTY_SKIP; }
 
+bool DeclarableOp::drawsRandomStateFor(const std::vector<double>& tArgs, const std::vector<sd::LongType>& iArgs,
+                                       const std::vector<bool>& bArgs) {
+  auto descriptor = getOpDescriptor();
+  return descriptor->hasAnyTrait(OP_TRAIT_STATEFUL) && descriptor->getInputWriteGroups().empty();
+}
+
 void DeclarableOp::registerTypes() { this->getOpDescriptor()->setSameMode(true); }
 
 

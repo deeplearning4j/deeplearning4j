@@ -782,6 +782,16 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   return sd::Status::OK;
 }
 
+// The op draws from its context's generator only for the dropout mask: one draw names the dropout op's seed (see the
+// op body). T_ARG order: scale, dropout; B_ARG order: useCausalMask, training, useFlashAttention.
+bool SD_BACKEND_OPS_CLASS(dot_product_attention_v2)::drawsRandomStateFor(const std::vector<double>& tArgs,
+                                                                        const std::vector<sd::LongType>& iArgs,
+                                                                        const std::vector<bool>& bArgs) {
+  const double dropout = tArgs.size() > 1 ? tArgs[1] : 0.0;
+  const bool training = bArgs.size() > 1 && bArgs[1];
+  return dropout > 0.0 && training;
+}
+
 DECLARE_TYPES(dot_product_attention_v2) {
   getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
   // Cache-form attention mutates K/V inputs even when no cache is requested

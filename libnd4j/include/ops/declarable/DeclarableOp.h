@@ -171,6 +171,16 @@ class SD_LIB_EXPORT DeclarableOp {
   virtual sd::Status validateDataTypes(Context& block);
 
   /**
+   * Whether an execution with these arguments draws from the context's random generator. Whoever runs such an
+   * execution seeds that generator from the caller's random state and takes the advanced state back, and a plan
+   * never captures it (a replay would repeat the captured draws). By default a stateful op (OP_TRAIT_STATEFUL) that
+   * writes none of its inputs draws (ops that write inputs are stateful through the tensors they update); an op whose
+   * draws depend on its arguments overrides this (dot_product_attention_v2 draws its dropout mask while training).
+   */
+  virtual bool drawsRandomStateFor(const std::vector<double>& tArgs, const std::vector<sd::LongType>& iArgs,
+                                   const std::vector<bool>& bArgs);
+
+  /**
    *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input
    * shape(s)
    */

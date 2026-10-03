@@ -258,6 +258,8 @@ DECLARE_CUSTOM_OP(dot_product_attention_bp, 4, 3, false, 0, 1);
 // its zero-init allocation — i.e. an all-zero attention output / unwritten KV cache. Since
 // the op produces a NON-EMPTY result from non-empty Q/K/V regardless of the empty masks,
 // EMPTY_EXECUTE is the correct policy (mirrors onnx_multi_head_attention below).
+// drawsRandomStateFor: the op draws from its context's random generator only for its dropout mask, with a dropout
+// rate above 0 while training (see DeclarableOp::drawsRandomStateFor).
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT dot_product_attention_v2 : public sd::ops::DeclarableCustomOp {
  protected:
@@ -268,6 +270,8 @@ class SD_LIB_EXPORT dot_product_attention_v2 : public sd::ops::DeclarableCustomO
   dot_product_attention_v2();
   sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
   samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+  bool drawsRandomStateFor(const std::vector<double>& tArgs, const std::vector<sd::LongType>& iArgs,
+                           const std::vector<bool>& bArgs) override;
 };
 SD_BACKEND_OPS_INLINE_NAMESPACE_END
 REGISTER_H(dot_product_attention_v2)

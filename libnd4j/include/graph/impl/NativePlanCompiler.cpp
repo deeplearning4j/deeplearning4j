@@ -756,6 +756,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
 
     slot.targetDeviceId = node->device();
 
+    // Whether the op draws from its context's random generator, for these arguments.
+    slot.resolveRandomState();
+
     // Resolve the intrinsic value-dependent-shape trait for this concrete
     // invocation using descriptor traits, operand arity, and frozen arguments.
     // Operation names are diagnostic-only and never participate in semantics.
