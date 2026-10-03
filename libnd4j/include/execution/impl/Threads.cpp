@@ -45,6 +45,26 @@ int ThreadsHelper::numberOfThreads(int maxThreads, uint64_t numberOfElements) {
   return sd::math::sd_min(optimalThreads, maxThreads);
 }
 
+namespace {
+// The part of [start, stop), stepped by increment, that thread `thread` of `numThreads` iterates. Every part begins on
+// the grid start + k * increment, so the threads together visit exactly the indices one loop over [start, stop) visits
+// (a boundary off the grid made `for (i = from; i < to; i += increment)` visit others), and the last runs to stop.
+void threadRange(int64_t start, int64_t stop, int64_t increment, uint64_t thread, uint64_t numThreads, int64_t& from,
+                 int64_t& to) {
+  const int64_t step = increment > 0 ? increment : 1;
+  const int64_t iterations = stop > start ? (stop - start + step - 1) / step : 0;
+  const int64_t perThread = iterations / static_cast<int64_t>(numThreads);
+  from = start + static_cast<int64_t>(thread) * perThread * step;
+  to = thread + 1 == numThreads ? stop : from + perThread * step;
+}
+
+// The iterations of [start, stop) stepped by increment.
+int64_t iterationCount(int64_t start, int64_t stop, int64_t increment) {
+  const int64_t step = increment > 0 ? increment : 1;
+  return stop > start ? (stop - start + step - 1) / step : 0;
+}
+}  // namespace
+
 Span3::Span3(int64_t startX, int64_t stopX, int64_t incX, int64_t startY, int64_t stopY, int64_t incY, int64_t startZ, int64_t stopZ, int64_t incZ) {
   _startX = startX;
   _startY = startY;
@@ -60,31 +80,22 @@ Span3::Span3(int64_t startX, int64_t stopX, int64_t incX, int64_t startY, int64_
 Span3 Span3::build(int loop, uint64_t threadID, uint64_t numThreads, int64_t startX, int64_t stopX, int64_t incX, int64_t startY, int64_t stopY, int64_t incY, int64_t startZ, int64_t stopZ, int64_t incZ) {
   switch (loop) {
     case 1: {
-      auto span = (stopX - startX) / numThreads;
-      auto s = span * threadID;
-      auto e = s + span;
-      if (threadID == numThreads - 1)
-        e = stopX;
+      int64_t s, e;
+      threadRange(startX, stopX, incX, threadID, numThreads, s, e);
 
       return Span3(s, e, incX, startY, stopY, incY, startZ, stopZ, incZ);
     }
       break;
     case 2: {
-      auto span = (stopY - startY) / numThreads;
-      auto s = span * threadID;
-      auto e = s + span;
-      if (threadID == numThreads - 1)
-        e = stopY;
+      int64_t s, e;
+      threadRange(startY, stopY, incY, threadID, numThreads, s, e);
 
       return Span3(startX, stopX, incX, s, e, incY, startZ, stopZ, incZ);
     }
       break;
     case 3: {
-      auto span = (stopZ - startZ) / numThreads;
-      auto s = span * threadID;
-      auto e = s + span;
-      if (threadID == numThreads - 1)
-        e = stopZ;
+      int64_t s, e;
+      threadRange(startZ, stopZ, incZ, threadID, numThreads, s, e);
 
       return Span3(startX, stopX, incX, startY, stopY, incY, s, e, incZ);
     }
@@ -102,11 +113,8 @@ Span::Span(int64_t startX, int64_t stopX, int64_t incX) {
 }
 
 Span Span::build(uint64_t threadID, uint64_t numThreads, int64_t startX, int64_t stopX, int64_t incX) {
-  auto span = (stopX - startX) / numThreads;
-  auto s = span * threadID;
-  auto e = s + span;
-  if (threadID == numThreads - 1)
-    e = stopX;
+  int64_t s, e;
+  threadRange(startX, stopX, incX, threadID, numThreads, s, e);
 
   return Span(s, e, incX);
 }
@@ -125,21 +133,15 @@ Span2 Span2::build(int loop, uint64_t threadID, uint64_t numThreads, int64_t sta
 
   switch (loop) {
     case 1: {
-      auto span = (stopX - startX) / numThreads;
-      auto s = span * threadID;
-      auto e = s + span;
-      if (threadID == numThreads - 1)
-        e = stopX;
+      int64_t s, e;
+      threadRange(startX, stopX, incX, threadID, numThreads, s, e);
 
       return Span2(s, e, incX, startY, stopY, incY);
     }
       break;
     case 2: {
-      auto span = (stopY - startY) / numThreads;
-      auto s = span * threadID;
-      auto e = s + span;
-      if (threadID == numThreads - 1)
-        e = stopY;
+      int64_t s, e;
+      threadRange(startY, stopY, incY, threadID, numThreads, s, e);
 
       return Span2(startX, stopX, incX, s, e, incY);
     }
@@ -387,9 +389,10 @@ int Threads::parallel_tad(FUNC_1D function, sd::LongType start, sd::LongType sto
     numThreads = sd::Environment::getInstance().maxMasterThreads();
 
   auto delta = (stop - start);
+  const auto iterations = iterationCount(start, stop, increment);
 
-  if (numThreads > delta)
-    numThreads = delta;
+  if (numThreads > iterations)
+    numThreads = iterations;
 
   if (numThreads == 0)
     return 0;
@@ -403,13 +406,10 @@ int Threads::parallel_tad(FUNC_1D function, sd::LongType start, sd::LongType sto
 #ifdef _OPENMP
   if (tryAcquire(numThreads)) {
 
-			auto span = delta / numThreads;
 #pragma omp parallel for  schedule(guided) default(shared)
 			for (sd::LongType e = 0; e < numThreads; e++) {
-				auto start_ = span * e + start;
-				auto stop_ = start_ + span;
-				if (e == numThreads - 1)
-					stop_ = stop;
+				int64_t start_, stop_;
+				threadRange(start, stop, increment, e, numThreads, start_, stop_);
 				function(e, start_, stop_, increment);
 			}
 			freeThreads(numThreads);
@@ -429,15 +429,9 @@ int Threads::parallel_tad(FUNC_1D function, sd::LongType start, sd::LongType sto
   if (ticket != nullptr) {
 
     // if we got our threads - we'll run our jobs here
-    auto span = delta / numThreads;
-
     for (uint32_t e = 0; e < numThreads; e++) {
-      auto start_ = span * e + start;
-      auto stop_ = start_ + span;
-
-      // last thread will process tail
-      if (e == numThreads - 1)
-        stop_ = stop;
+      int64_t start_, stop_;
+      threadRange(start, stop, increment, e, numThreads, start_, stop_);
 
       // putting the task into the queue for a given thread
       ticket->enqueue(e, numThreads, function, start_, stop_, increment);
@@ -733,18 +727,18 @@ int64_t Threads::parallel_long(FUNC_RL function, FUNC_AL aggregator, sd::LongTyp
   if (numThreads == 1)
     return function(0, start, stop, increment);
 
-  // create temporary array
+  // one result per thread
+  if (numThreads > 256) numThreads = 256;
   int64_t intermediatery[256];
-  auto span = delta / numThreads;
 
 #ifdef _OPENMP
   if (tryAcquire(numThreads)) {
 #pragma omp parallel for
 			for (int e = 0; e < numThreads; e++) {
-				auto start_ = span * e + start;
-				auto stop_ = span * (e + 1) + start;
+				int64_t start_, stop_;
+				threadRange(start, stop, increment, e, numThreads, start_, stop_);
 
-				intermediatery[e] = function(e, start_, e == numThreads - 1 ? stop : stop_, increment);
+				intermediatery[e] = function(e, start_, stop_, increment);
 			}
 			freeThreads(numThreads);
 		}
@@ -759,11 +753,11 @@ int64_t Threads::parallel_long(FUNC_RL function, FUNC_AL aggregator, sd::LongTyp
 
   // execute threads in parallel
   for (uint32_t e = 0; e < numThreads; e++) {
-    auto start_ = span * e + start;
-    auto stop_ = span * (e + 1) + start;
+    int64_t start_, stop_;
+    threadRange(start, stop, increment, e, numThreads, start_, stop_);
 
     if (e == numThreads - 1)
-      intermediatery[e] = function(e, start_, stop, increment);
+      intermediatery[e] = function(e, start_, stop_, increment);
     else
       ticket->enqueue(e, numThreads, &intermediatery[e], function, start_, stop_, increment);
   }
@@ -799,19 +793,19 @@ double Threads::parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t st
   if (numThreads == 1)
     return function(0, start, stop, increment);
 
-  // create temporary array
+  // one result per thread
+  if (numThreads > 256) numThreads = 256;
   double intermediatery[256];
-  auto span = delta / numThreads;
 
 #ifdef _OPENMP
 
   if (tryAcquire(numThreads)) {
 #pragma omp parallel for
 			for (sd::LongType e = 0; e < numThreads; e++) {
-				auto start_ = span * e + start;
-				auto stop_ = span * (e + 1) + start;
+				int64_t start_, stop_;
+				threadRange(start, stop, increment, e, numThreads, start_, stop_);
 
-				intermediatery[e] = function(e, start_, e == numThreads - 1 ? stop : stop_, increment);
+				intermediatery[e] = function(e, start_, stop_, increment);
 			}
 			freeThreads(numThreads);
 		}
@@ -828,11 +822,11 @@ double Threads::parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t st
 
   // execute threads in parallel
   for (uint32_t e = 0; e < numThreads; e++) {
-    auto start_ = span * e + start;
-    auto stop_ = span * (e + 1) + start;
+    int64_t start_, stop_;
+    threadRange(start, stop, increment, e, numThreads, start_, stop_);
 
     if (e == numThreads - 1)
-      intermediatery[e] = function(e, start_, stop, increment);
+      intermediatery[e] = function(e, start_, stop_, increment);
     else
       ticket->enqueue(e, numThreads, &intermediatery[e], function, start_, stop_, increment);
   }
@@ -913,8 +907,8 @@ int  Threads::parallel_aligned_increment(FUNC_1D function, int64_t start, int64_
   //it could be negative or positive
   //we will spread that value across
   auto tail_add = delta - numThreads * span;
-  sd::LongType begin = 0;
-  sd::LongType end = 0;
+  sd::LongType begin = start;
+  sd::LongType end = start;
 
   //we will try enqueue bigger parts first
   decltype(span) span1 = 0, span2 = 0;
