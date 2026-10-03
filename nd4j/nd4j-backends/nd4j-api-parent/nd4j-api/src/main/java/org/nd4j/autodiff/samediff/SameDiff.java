@@ -194,6 +194,10 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
     private final List<String> lossVariables = new ArrayList<>();
 
+    //The loss variables the gradient function differentiates. Null when the gradient function came with the graph
+    //(deserialized or copied): the loss variables are restored before it, so it differentiates the current ones
+    private List<String> gradFunctionLossVariables;
+
     private final List<Listener> listeners = new ArrayList<>();
 
     private final List<NameScope> nameScopes = new ArrayList<>();  //Used as a stack
@@ -2235,9 +2239,14 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @param lossVariableNames Names of variables to be loss function variables
      */
     public void setLossVariables(@NonNull String... lossVariableNames) {
-        this.lossVariables.clear();
-        for (String s : lossVariableNames) {
-            addLossVariable(s);
+        List<String> before = new ArrayList<>(lossVariables);
+        try {
+            this.lossVariables.clear();
+            for (String s : lossVariableNames) {
+                checkAndAddLossVariable(s);
+            }
+        } finally {
+            lossVariablesChanged(before);
         }
     }
 
@@ -2261,8 +2270,27 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * Note that only floating point (Float16/32/64) variables may be marked as a loss.<br>
      * Note also that only ARRAY type SDVariables can be marked as losses to be minimized. That is, we cannot mark the value
      * of a constant, variable or placeholder to be minimized as doing so would not make sense.<br>
+     * A gradient function created before for other loss variables is rebuilt on its next use.
      */
     public void addLossVariable(@NonNull String variableName) {
+        List<String> before = new ArrayList<>(lossVariables);
+        checkAndAddLossVariable(variableName);
+        lossVariablesChanged(before);
+    }
+
+    /**
+     * The gradient function differentiates the loss variables it was built for: once the set of loss variables differs,
+     * drop it, so training and gradient calculation build it again for the current ones.
+     */
+    private void lossVariablesChanged(List<String> before) {
+        if (!hasGradientFunction())
+            return;
+        List<String> builtFor = gradFunctionLossVariables != null ? gradFunctionLossVariables : before;
+        if (!new HashSet<>(builtFor).equals(new HashSet<>(lossVariables)))
+            invalidateGradFunction();
+    }
+
+    private void checkAndAddLossVariable(String variableName) {
         Preconditions.checkState(hasVariable(variableName), "No variable with name \"%s\" exists", variableName);
         SDVariable v = getVariable(variableName);
         Preconditions.checkState(v.dataType().isFPType(), "Only floating point type variables can be marked as losses to be minimized." +
@@ -5931,7 +5959,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
         //If gradient function has been defined, remove it (so it will be recreated later)
         if(recreateGradFunction)
-            sameDiffFunctionInstances.remove(GRAD_FN_KEY);
+            invalidateGradFunction();
 
         for (SDVariable variable : variables) {
             String n = variable.name();
@@ -6040,7 +6068,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         closeAllSessions();
 
         //If gradient function has been defined, remove it (so it will be recreated later)
-        sameDiffFunctionInstances.remove(GRAD_FN_KEY);
+        invalidateGradFunction();
 
         for (SDVariable variable : constants) {
             String n = variable.name();
@@ -7246,6 +7274,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public void invalidateGradFunction() {
         sameDiffFunctionInstances.remove(GRAD_FN_KEY);
+        gradFunctionLossVariables = null;
     }
 
     /**
@@ -7272,8 +7301,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      *                                    be calculated and available after backprop has been done
      */
     public void createGradFunction(final String... variablesRequiringGradients) {
-        if(this.sameDiffFunctionInstances.containsKey(GRAD_FN_KEY))
-            sameDiffFunctionInstances.remove(GRAD_FN_KEY);
+        invalidateGradFunction();
         List<String> lossInferred = bestGuessLossVariables();
         //Check for external errors function
         for(SameDiffOp o : ops.values()) {
@@ -7837,6 +7865,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         });
 
         associateSameDiffWithOpsAndVariables();
+        gradFunctionLossVariables = new ArrayList<>(lossVariables);
     }
 
 

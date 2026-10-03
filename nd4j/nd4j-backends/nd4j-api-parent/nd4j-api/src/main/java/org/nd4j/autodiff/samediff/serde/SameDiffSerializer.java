@@ -1726,6 +1726,12 @@ public class SameDiffSerializer {
         }
         log.info("After variable loop, sd.variables().size() = {}", sd.variables().size());
 
+        // The loss variables come before the sub-instances: a saved gradient function differentiates them, and
+        // changing the loss variables once it exists drops it
+        if (fg.lossVariablesLength() > 0) {
+            for (int i = 0; i < fg.lossVariablesLength(); i++) sd.addLossVariable(fg.lossVariables(i));
+        }
+
         // 2. Load sub-instances BEFORE loading the ops that use them
         if (fg.subInstancesLength() > 0) {
             log.info("Deserializing {} sub-instances...", fg.subInstancesLength());
@@ -1834,10 +1840,6 @@ public class SameDiffSerializer {
         log.info("After op loop, sd.ops().size() = {}", sd.getOps().size());
 
         // 4. Load remaining metadata
-        if (fg.lossVariablesLength() > 0) {
-            for (int i = 0; i < fg.lossVariablesLength(); i++) sd.addLossVariable(fg.lossVariables(i));
-        }
-
         String tcJson = fg.trainingConfig();
         if (tcJson != null && !tcJson.isEmpty()) sd.setTrainingConfig(TrainingConfig.fromJson(tcJson));
 

@@ -20,7 +20,6 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -159,10 +158,33 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGradientsFollowLossChange(Nd4jBackend backend) {
+        //A gradient function differentiates the losses it was built for: after the losses change, gradients are those
+        //of the new losses, also for a copy, which carries the gradient function along with the losses
+        for (boolean copy : new boolean[]{false, true}) {
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.var("x", Nd4j.createFromArray(1.0, -2.0, 3.0));
+            SDVariable square = x.mul(x).sum("square");
+            SDVariable cube = x.mul(x).mul(x).sum("cube");
+            sd.setLossVariables(square);
+            assertEquals(Nd4j.createFromArray(2.0, -4.0, 6.0), sd.calculateGradients(null, "x").get("x"));
+
+            SameDiff target = copy ? sd.dup() : sd;
+            target.setLossVariables("cube");
+            assertEquals(Nd4j.createFromArray(3.0, 12.0, 27.0), target.calculateGradients(null, "x").get("x"),
+                    "copy: " + copy);
+
+            target.addLossVariable("square");
+            assertEquals(Nd4j.createFromArray(5.0, 8.0, 33.0), target.calculateGradients(null, "x").get("x"),
+                    "copy: " + copy);
+        }
+    }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Need to look in to comparisons to see how valid this test is")
     public void testTrainingDifferentLosses(Nd4jBackend backend) {
         //Net with 2 losses: train on the first one, then change losses
         //Also check that if modifying via add/setLossVariables the training config changes
@@ -229,9 +251,8 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
         MultiDataSet mds = new MultiDataSet(new INDArray[]{Nd4j.rand(DataType.FLOAT, 3,4), Nd4j.rand(DataType.FLOAT, 3,2)}, new INDArray[0]);
 
         sd.fit(new SingletonMultiDataSetIterator(mds), 3);
-        //note this test used to check loss variable propagation, we just want this to be equal now
-        assertEquals(w1Before, w1.getArr());
-        assertEquals(b1Before, b1.getArr());
+        assertNotEquals(w1Before, w1.getArr());
+        assertNotEquals(b1Before, b1.getArr());
         assertEquals(w2Before, w2.getArr());
         assertEquals(b2Before, b2.getArr());
 
