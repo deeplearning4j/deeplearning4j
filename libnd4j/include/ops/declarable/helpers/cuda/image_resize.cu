@@ -37,112 +37,124 @@ limitations under the License.
 //
 #include <array/NDArrayFactory.h>
 #include <helpers/DebugHelper.h>
-#include <memory/cuda/CudaMemoryPool.h>
+#include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/image_resize.h>
 
 #include "execution/cuda/LaunchDims.h"
 #include <system/selective_rendering.h>
+
+#include <type_traits>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// computeInterpolationWeights kernel
+// The images are [batch, height, width, channels] arrays. Every kernel below reads the input and writes the output
+// through the strides of its array, from the buffer pointer of the array (which already includes the offset of a
+// view), so views and arrays of any order work; the kernels that need a dense output (area) get a dense copy for
+// other layouts. The temporary device arrays come from the PointersManager, which is safe in a CUDA graph capture
+// (and frees them stream-ordered behind the kernels), and the kernels run on the context's stream with no
+// synchronization of their own (the one barrier is documented in resizeAreaFunctor_).
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// launch errors of an asynchronous launch; inside a CUDA graph capture nothing has run yet
+static SD_INLINE void checkLaunch(cudaStream_t* stream, const char* message) {
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode(message);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// blocks and threads of a launch with one thread per output pixel: the named launch dimensions (x = blocks,
+// y = threads) give the thread count and cap the grid, the kernels stride over the pixels the grid does not cover
+static void pixelLaunch(const dim3& named, LongType pixels, unsigned int& blocks, unsigned int& threads) {
+  threads = named.y > 0 ? named.y : 1;
+  if (threads > SD_MAX_NUM_THREADS) threads = SD_MAX_NUM_THREADS;
+  const LongType needed = math::sd_max<LongType>(1, (pixels + threads - 1) / threads);
+  const LongType cap = math::sd_max<LongType>(1, named.x);
+  blocks = static_cast<unsigned int>(math::sd_min<LongType>(needed, cap));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// true when the elements of the array lie as in a dense C-order array (axes of size one may have any stride): its
+// buffer pointer plus the linear logical index addresses them
+static bool isDenseCOrder(NDArray* array) {
+  LongType expected = 1;
+  for (int d = array->rankOf() - 1; d >= 0; d--) {
+    const LongType extent = array->sizeAt(d);
+    if (extent != 1 && array->strideAt(d) != expected) return false;
+    expected *= extent;
+  }
+  return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// computeInterpolationWeights kernel: one thread per entry
 //      outSize - output length
 //      inSize - input size
 //      scale - input scale
-//      interporationData - result
+//      indexStride - the entries' source indices are multiplied by it (the input's stride along the axis) so that
+//                    they are offsets into the input
+//      interporationData - result (outSize + 1 entries; the last one is a sentinel that holds zeros, as on the CPU)
 //
 template <class Scaler>
-static SD_KERNEL void computeInterpolationWeights(LongType outSize, LongType inSize, double scale, LongType channels, BilinearInterpolationData* interpolationData) {
-  interpolationData[outSize].bottomIndex = 0;
-  interpolationData[outSize].topIndex = 0;
-  auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  auto step = blockDim.x * gridDim.x;
+static SD_KERNEL void computeInterpolationWeights(LongType outSize, LongType inSize, double scale,
+                                                  LongType indexStride, BilinearInterpolationData* interpolationData) {
+  const LongType start = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  if (start == 0) {
+    interpolationData[outSize].bottomIndex = 0;
+    interpolationData[outSize].topIndex = 0;
+  }
   Scaler scaler;
-  for (LongType i = outSize - tid; i >= 0; i -= step) {
-    double in = scaler(i, scale);
-    double const in_f = sd::math::p_floor<double>(in);
-    double const in_c = sd::math::p_ceil<double>(in);
-    interpolationData[i].bottomIndex =
-        math::sd_max(static_cast<LongType>(in_f), (LongType)0LL);  // static_cast<sd::LongType>(in);
-    interpolationData[i].topIndex = math::sd_min(static_cast<LongType>(in_c), inSize - 1);
+  for (LongType i = start; i < outSize; i += step) {
+    double const in = scaler(static_cast<int>(i), static_cast<float>(scale));
+    double const in_f = math::p_floor<double>(in);
+    double const in_c = math::p_ceil<double>(in);
+    interpolationData[i].bottomIndex = math::sd_max(static_cast<LongType>(in_f), (LongType)0LL) * indexStride;
+    interpolationData[i].topIndex = math::sd_min(static_cast<LongType>(in_c), inSize - 1) * indexStride;
     interpolationData[i].interpolarValue = in - in_f;
-
-    if (channels) {
-      math::atomics::sd_atomicMul(&interpolationData[i].bottomIndex, channels);
-      math::atomics::sd_atomicMul(&interpolationData[i].topIndex, channels);
-    }
   }
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// resize image with bilinear interpolation algorithm
-//
-static void resizeImage(LaunchContext* context, NDArray * images, LongType batchSize, LongType inHeight,
-                        LongType inWidth, LongType outHeight, LongType outWidth, LongType channels, BilinearInterpolationData* xs_, BilinearInterpolationData* ys_,
-                        NDArray* output);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// resize image with bilinear interpolation algorithm kernel
+// resize image with bilinear interpolation algorithm kernel: one thread per output pixel (grid-stride over batch *
+// outHeight * outWidth), the channels of the pixel in a loop. The weights xs_ hold offsets along the input's width
+// axis, the weights ys_ plain row indices. The arithmetic is done in double, as on the CPU, and rounded once into Z.
 //
 template <typename T, typename Z>
-static SD_KERNEL void resizeImageKernel(T const* input, LongType const* inputShape, Z* outputYptr,
-                                        LongType const* outputShape, LongType batchSize, LongType outWidth,
-                                        LongType outHeight, LongType channels, LongType inRowSize, LongType outRowSize,
-                                        LongType inBatchNumValues,
-                                        BilinearInterpolationData* xs_, BilinearInterpolationData* ys_) {
-  for (auto batch = blockIdx.x; batch < batchSize; batch += gridDim.x) {  // blockIdx.x as batch index
-    auto pX = input + batch * inBatchNumValues;
-    for (LongType y = threadIdx.x; y < outHeight; y += blockDim.x) {
-      const T* ys_input_lower_ptr = pX + ys_[y].bottomIndex * inRowSize;
-      const T* ys_input_upper_ptr = pX + ys_[y].topIndex * inRowSize;
-      double yVal = ys_[y].interpolarValue;
-      auto pZ = outputYptr + (batch * outHeight + y) * outRowSize;
-      for (LongType x = 0; x < outWidth; x++) {
-        auto xsBottom = xs_[x].bottomIndex;
-        auto xsTop = xs_[x].topIndex;
-        auto xVal = xs_[x].interpolarValue;
-        // process interpolation for all channels
-        for (int c = 0; c < channels; c++) {
-          Z topLeft(ys_input_lower_ptr[xsBottom + c]);
-          Z topRight(ys_input_lower_ptr[xsTop + c]);
-          Z bottomLeft(ys_input_upper_ptr[xsBottom + c]);
-          Z bottomRight(ys_input_upper_ptr[xsTop + c]);
-          Z top = topLeft + (topRight - topLeft) * xVal;
-          Z bottom = bottomLeft + (bottomRight - bottomLeft) * xVal;
-          Z resVal = Z(top + (bottom - top) * yVal);
-          pZ[x * channels + c] = resVal;
-        }
-      }
-    }
-  }
-}
+static SD_KERNEL void resizeImageKernel(T const* input, Z* output, LongType batchSize, LongType outHeight,
+                                        LongType outWidth, LongType channels, LongType inBatchStride,
+                                        LongType inRowStride, LongType inChannelStride, LongType outBatchStride,
+                                        LongType outRowStride, LongType outColumnStride, LongType outChannelStride,
+                                        BilinearInterpolationData const* xs_, BilinearInterpolationData const* ys_) {
+  const LongType pixels = batchSize * outHeight * outWidth;
+  const LongType start = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType pixel = start; pixel < pixels; pixel += step) {
+    const LongType x = pixel % outWidth;
+    const LongType y = (pixel / outWidth) % outHeight;
+    const LongType batch = pixel / (outWidth * outHeight);
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// resize image with
-template <typename T, typename F>
-static void resizeImage_(LaunchContext* context, NDArray * images, LongType batchSize, LongType inHeight,
-                         LongType inWidth, LongType outHeight, LongType outWidth, LongType channels, BilinearInterpolationData* xs_, BilinearInterpolationData* ys_,
-                         NDArray* output) {
-  LongType inRowSize = inWidth * channels;
-  LongType inBatchNumValues = inHeight * inRowSize;
-  LongType outRowSize = outWidth * channels;
-  auto stream = context->getCudaStream();
-  T const* pInput = images->getDataBuffer()->template specialAsT<T>();
-  dim3 launchDims = getLaunchDims("image_resize");
-
-                                                               // // this works only with 'c' direction
-  F* pOutput = output->dataBuffer()->template specialAsT<F>();
-  resizeImageKernel<T, F><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(pInput, images->specialShapeInfo(), pOutput,
-                                                      output->specialShapeInfo(), batchSize, outWidth, outHeight,
-                                                      channels, inRowSize, outRowSize, inBatchNumValues, xs_, ys_);
-
-  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-    auto err = cudaStreamSynchronize(*stream);
-    if (err != 0) {
-      { std::string msg = "helpers::resizeImage_: Cannot synchronize kernel execution; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
+    const T* pX = input + batch * inBatchStride;
+    const T* ys_input_lower_ptr = pX + ys_[y].bottomIndex * inRowStride;
+    const T* ys_input_upper_ptr = pX + ys_[y].topIndex * inRowStride;
+    const double yVal = ys_[y].interpolarValue;
+    const LongType xsBottom = xs_[x].bottomIndex;
+    const LongType xsTop = xs_[x].topIndex;
+    const double xVal = xs_[x].interpolarValue;
+    Z* pZ = output + batch * outBatchStride + y * outRowStride + x * outColumnStride;
+    // process interpolation for all channels
+    for (LongType c = 0; c < channels; c++) {
+      const LongType channelOffset = c * inChannelStride;
+      const double topLeft = static_cast<double>(ys_input_lower_ptr[xsBottom + channelOffset]);
+      const double topRight = static_cast<double>(ys_input_lower_ptr[xsTop + channelOffset]);
+      const double bottomLeft = static_cast<double>(ys_input_upper_ptr[xsBottom + channelOffset]);
+      const double bottomRight = static_cast<double>(ys_input_upper_ptr[xsTop + channelOffset]);
+      const double top = imageResizeLerp<double>(topLeft, topRight, xVal);
+      const double bottom = imageResizeLerp<double>(bottomLeft, bottomRight, xVal);
+      pZ[c * outChannelStride] = static_cast<Z>(imageResizeLerp<double>(top, bottom, yVal));
     }
   }
 }
@@ -165,111 +177,119 @@ static Status resizeBilinearFunctor_(LaunchContext* context, NDArray * images, i
     output->assign(images);
     return Status::OK;
   }
+  if (output->lengthOf() == 0) return Status::OK;
 
   float heightScale = ImageResizerState::calculateResizeScale(inHeight, outHeight, alignCorners);
   float widthScale = ImageResizerState::calculateResizeScale(inWidth, outWidth, alignCorners);
 
-  BilinearInterpolationData* xs_;  // = xs.data();
-  BilinearInterpolationData* ys_;  // = xs.data();
-
-  int irDevId = 0; cudaGetDevice(&irDevId);
-  xs_ = reinterpret_cast<BilinearInterpolationData*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(BilinearInterpolationData) * (outWidth + 1), irDevId, nullptr));
-  if (xs_ == nullptr) THROW_EXCEPTION("helpers::resize_image: Cannot allocate memory for vertical parts rectangulars");
-
-  ys_ = reinterpret_cast<BilinearInterpolationData*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(BilinearInterpolationData) * (outHeight + 1), irDevId, nullptr));
-  if (ys_ == nullptr) THROW_EXCEPTION("helpers::resize_image: Cannot allocate memory for horizontal parts rectangulars");
-  cudaError_t err;
-  dim3 launchDims = getLaunchDims("image_resize_interp_weights");
-
   auto stream = context->getCudaStream();
-  // Compute the cached interpolation weights on the x and y dimensions.
-  if (halfPixelCenter) {
-    computeInterpolationWeights<HalfPixelScaler><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(outHeight, inHeight, heightScale, 0, ys_);
-    computeInterpolationWeights<HalfPixelScaler>
-        <<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(outWidth, inWidth, widthScale, channels, xs_);
-  } else {
-    computeInterpolationWeights<LegacyScaler><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(outHeight, inHeight, heightScale, 0, ys_);
-    computeInterpolationWeights<LegacyScaler><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(outWidth, inWidth, widthScale, channels, xs_);
-  }
+  PointersManager pm(context, "resizeBilinear");
+  auto xs_ = reinterpret_cast<BilinearInterpolationData*>(
+      pm.allocateDevMem(sizeof(BilinearInterpolationData) * (outWidth + 1)));
+  auto ys_ = reinterpret_cast<BilinearInterpolationData*>(
+      pm.allocateDevMem(sizeof(BilinearInterpolationData) * (outHeight + 1)));
 
   NDArray::prepareSpecialUse({output}, {images});
-  resizeImage_<T, F>(context, images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs_, ys_, output);
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-    err = cudaStreamSynchronize(*stream);
-  }
-  NDArray::registerSpecialUse({output}, {images});
 
-  sd::memory::CudaMemoryPool::getInstance().free(xs_, irDevId, nullptr);
-  sd::memory::CudaMemoryPool::getInstance().free(ys_, irDevId, nullptr);
+  // Compute the cached interpolation weights on the x and y dimensions: the x weights as offsets along the input's
+  // width axis, the y weights as row indices.
+  const dim3 weightDims = getLaunchDims("image_resize_interp_weights");
+  const LongType inColumnStride = images->strideAt(2);
+  if (halfPixelCenter) {
+    computeInterpolationWeights<HalfPixelScaler><<<weightDims.x, weightDims.y, 0, *stream>>>(outHeight, inHeight, heightScale, 1, ys_);
+    computeInterpolationWeights<HalfPixelScaler>
+        <<<weightDims.x, weightDims.y, 0, *stream>>>(outWidth, inWidth, widthScale, inColumnStride, xs_);
+  } else {
+    computeInterpolationWeights<LegacyScaler><<<weightDims.x, weightDims.y, 0, *stream>>>(outHeight, inHeight, heightScale, 1, ys_);
+    computeInterpolationWeights<LegacyScaler><<<weightDims.x, weightDims.y, 0, *stream>>>(outWidth, inWidth, widthScale, inColumnStride, xs_);
+  }
+  checkLaunch(stream, "computeInterpolationWeights failed: ");
+
+  unsigned int blocks, threads;
+  pixelLaunch(getLaunchDims("image_resize"), batchSize * outHeight * outWidth, blocks, threads);
+  resizeImageKernel<T, F><<<blocks, threads, 0, *stream>>>(
+      reinterpret_cast<T const*>(images->specialBuffer()), reinterpret_cast<F*>(output->specialBuffer()), batchSize,
+      outHeight, outWidth, channels, images->strideAt(0), images->strideAt(1), images->strideAt(3),
+      output->strideAt(0), output->strideAt(1), output->strideAt(2), output->strideAt(3), xs_, ys_);
+  checkLaunch(stream, "resizeImageKernel failed: ");
+
+  NDArray::registerSpecialUse({output}, {images});
 
   return Status::OK;
 }
 
-typedef float (*MODE_FUNC)(float);
-
-SD_DEVICE MODE_FUNC mode_functions[4] = {sd::math::p_floor<float>, sd::math::p_round_prefer_floor<float>,
-                                         sd::math::p_round_prefer_ceil<float>, sd::math::p_ceil<float>};
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Status resizeBilinearFunctor(LaunchContext* context, NDArray * images, int width, int height,
+                                 bool const alignCorners, bool const halfPixelCenter, NDArray* output) {
+  BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_,
+                        (context, images, width, height, alignCorners, halfPixelCenter, output), SD_NUMERIC_TYPES,
+                        SD_FLOAT_TYPES);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// resize by interpolation nearest neighbor algorithm kernel
+// the source index along one axis of an output index for the nearest neighbor resize
+template <typename Scaler>
+static SD_DEVICE SD_INLINE LongType nearestSourceIndex(Scaler& scaler, LongType outIndex, float scale,
+                                                       NearestMode nearestMode, LongType inSize) {
+  constexpr bool halfPixelCenter =
+      std::is_same<Scaler, HalfPixelScaler>::value || std::is_same<Scaler, HalfPixelScalerNN>::value;
+  const float source = scaler(static_cast<int>(outIndex), scale);
+  float rounded;
+  switch (nearestMode) {
+    case ROUND_PREFER_FLOOR:
+      rounded = math::p_round_prefer_floor<float>(source);
+      break;
+    case ROUND_PREFER_CEIL:
+      rounded = math::p_round_prefer_ceil<float>(source);
+      break;
+    case CEIL:
+      rounded = math::p_ceil<float>(source);
+      break;
+    case FLOOR:
+    default:
+      rounded = math::p_floor<float>(source);
+      break;
+  }
+  LongType index = math::sd_min(static_cast<LongType>(rounded), inSize - 1);
+  if (halfPixelCenter) {
+    index = math::sd_max(0LL, index);
+  }
+  return index;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// resize by interpolation nearest neighbor algorithm kernel: one thread per output pixel (grid-stride over
+// batch * outHeight * outWidth), so any batch size and output size is covered by a capped grid; the channels of the
+// pixel are copied in a loop. Input and output are read and written through their strides.
 //
 template <typename T, typename Scaler>
 static SD_KERNEL void resizeNeighborKernel(T const* input, LongType const* inputShape, T* output,
                                            LongType const* outputShape, LongType batchSize, LongType inWidth,
-                                           LongType inHeight, LongType outWidth, LongType outHeight, LongType channels, double widthScale,
-                                           double heightScale, NearestMode nearestMode) {
-  constexpr bool halfPixelCenter =
-      std::is_same<Scaler, HalfPixelScaler>::value || std::is_same<Scaler, HalfPixelScalerNN>::value;
-  MODE_FUNC modeFunc;
-  switch (nearestMode) {
-    case FLOOR:
-      modeFunc = mode_functions[0];
-      break;
-    case ROUND_PREFER_FLOOR:
-      modeFunc = mode_functions[1];
-      break;
-    case ROUND_PREFER_CEIL:
-      modeFunc = mode_functions[2];
-      break;
-    case CEIL:
-      modeFunc = mode_functions[3];
-      break;
-    default:
-      modeFunc = mode_functions[0];
-  }
+                                           LongType inHeight, LongType outWidth, LongType outHeight, LongType channels,
+                                           double widthScale, double heightScale, NearestMode nearestMode) {
+  const LongType* inStride = shape::stride(inputShape);
+  const LongType* outStride = shape::stride(outputShape);
+  const LongType pixels = batchSize * outHeight * outWidth;
+  const LongType start = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
   Scaler scaler;
 
-  if (blockIdx.x < batchSize) {
-    auto b = blockIdx.x;
-    for (int y = threadIdx.x; y < outHeight; y += blockDim.x) {
-      auto posY = static_cast<LongType>(modeFunc(scaler(y, heightScale)));
-      LongType inY = math::sd_min(posY, inHeight - 1);
-      if (halfPixelCenter) {
-        inY = math::sd_max(0LL, inY);
-      }
+  for (LongType pixel = start; pixel < pixels; pixel += step) {
+    const LongType x = pixel % outWidth;
+    const LongType y = (pixel / outWidth) % outHeight;
+    const LongType b = pixel / (outWidth * outHeight);
 
-      for (int x = threadIdx.y; x < outWidth; x += blockDim.y) {
-        auto posX = static_cast<LongType>(modeFunc(scaler(x, widthScale)));
-        LongType inX = math::sd_min(posX, inWidth - 1);
-        if (halfPixelCenter) {
-          inX = math::sd_max(0LL, inX);
-        }
+    const LongType inY = nearestSourceIndex<Scaler>(scaler, y, static_cast<float>(heightScale), nearestMode, inHeight);
+    const LongType inX = nearestSourceIndex<Scaler>(scaler, x, static_cast<float>(widthScale), nearestMode, inWidth);
 
-        auto start = blockIdx.z * blockDim.z + threadIdx.z;
-        auto step = blockDim.z * gridDim.z;
-
-        for (LongType e = start; e < channels; e += step) {
-          LongType posX[] = {b, inY, inX, e};
-          LongType posZ[] = {b, y, x, e};
-          LongType xIndex, zIndex;
-          COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), posX, xIndex);
-          COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), posZ, zIndex);
-          output[zIndex] = input[xIndex];
-        }
-      }
+    const T* source = input + b * inStride[0] + inY * inStride[1] + inX * inStride[2];
+    T* target = output + b * outStride[0] + y * outStride[1] + x * outStride[2];
+    for (LongType c = 0; c < channels; c++) {
+      target[c * outStride[3]] = source[c * inStride[3]];
     }
   }
 }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // resizeNeighborFunctor - main algorithm by nearest neighbor
 //
@@ -290,70 +310,48 @@ Status resizeNeighborFunctor_(LaunchContext* context, NDArray * images, int cons
     output->assign(images);
     return Status::OK;
   }
+  if (output->lengthOf() == 0) return Status::OK;
 
   float heightScale = ImageResizerState::calculateResizeScale(inHeight, outHeight, alignCorner);
   float widthScale = ImageResizerState::calculateResizeScale(inWidth, outWidth, alignCorner);
 
-  auto imagesBuffer = images->getDataBuffer()->template specialAsT<T>();
-  auto outputBuffer = output->dataBuffer()->template specialAsT<T>();
   auto stream = context->getCudaStream();
+  NDArray::prepareSpecialUse({output}, {images});
+
+  const T* imagesBuffer = reinterpret_cast<const T*>(images->specialBuffer());
+  T* outputBuffer = reinterpret_cast<T*>(output->specialBuffer());
+  const LongType* imagesShapeInfo = images->specialShapeInfo();
+  const LongType* outputShapeInfo = output->specialShapeInfo();
 
   dim3 neightborDims = resizeNeighborDims(batchSize, outHeight, outWidth);
-  NDArray::prepareSpecialUse({output}, {images});
   switch (coorMode) {
     case ASYMMETRIC:
-      resizeNeighborKernel<T, LegacyScaler><<<neightborDims.x, neightborDims.y,neightborDims.z, *stream>>>(
-          imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(), batchSize, inWidth,
-          inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
+      resizeNeighborKernel<T, LegacyScaler><<<neightborDims.x, neightborDims.y, neightborDims.z, *stream>>>(
+          imagesBuffer, imagesShapeInfo, outputBuffer, outputShapeInfo, batchSize, inWidth, inHeight, outWidth,
+          outHeight, channels, widthScale, heightScale, nearestMode);
       break;
     case HALF_PIXEL:
-      resizeNeighborKernel<T, HalfPixelScaler><<<neightborDims.x, neightborDims.y,neightborDims.z, *stream>>>(
-          imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(), batchSize, inWidth,
-          inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
+      resizeNeighborKernel<T, HalfPixelScaler><<<neightborDims.x, neightborDims.y, neightborDims.z, *stream>>>(
+          imagesBuffer, imagesShapeInfo, outputBuffer, outputShapeInfo, batchSize, inWidth, inHeight, outWidth,
+          outHeight, channels, widthScale, heightScale, nearestMode);
       break;
     case HALF_PIXEL_NN:
-      resizeNeighborKernel<T, HalfPixelScalerNN><<<neightborDims.x, neightborDims.y,neightborDims.z, *stream>>>(
-          imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(), batchSize, inWidth,
-          inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
+      resizeNeighborKernel<T, HalfPixelScalerNN><<<neightborDims.x, neightborDims.y, neightborDims.z, *stream>>>(
+          imagesBuffer, imagesShapeInfo, outputBuffer, outputShapeInfo, batchSize, inWidth, inHeight, outWidth,
+          outHeight, channels, widthScale, heightScale, nearestMode);
       break;
     default:
-      resizeNeighborKernel<T, HalfPixelScaler><<<neightborDims.x, neightborDims.y,neightborDims.z, *stream>>>(
-          imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(), batchSize, inWidth,
-          inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
+      resizeNeighborKernel<T, HalfPixelScaler><<<neightborDims.x, neightborDims.y, neightborDims.z, *stream>>>(
+          imagesBuffer, imagesShapeInfo, outputBuffer, outputShapeInfo, batchSize, inWidth, inHeight, outWidth,
+          outHeight, channels, widthScale, heightScale, nearestMode);
       break;
   };
+  checkLaunch(stream, "resizeNeighborKernel failed: ");
 
   NDArray::registerSpecialUse({output}, {images});
 
   return Status::OK;
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// resizeImage - resize bilinear algorithm caller
-//
-void resizeImage(LaunchContext* context, NDArray * images, LongType batchSize, LongType inHeight, LongType inWidth,
-                 LongType outHeight, LongType outWidth, LongType channels,
-                 BilinearInterpolationData* xs_, BilinearInterpolationData* ys_, NDArray* output) {
-  BUILD_DOUBLE_SELECTOR(
-      images->dataType(), output->dataType(), resizeImage_,
-      (context, images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs_, ys_, output),
-      SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
-}
-
-BUILD_DOUBLE_TEMPLATE( void resizeImage_,
-                      (sd::LaunchContext * context, NDArray * images, sd::LongType batchSize,
-                       sd::LongType inHeight, sd::LongType inWidth, sd::LongType outHeight, sd::LongType outWidth,
-                       sd::LongType channels, BilinearInterpolationData* xs_, BilinearInterpolationData* ys_,
-                       NDArray* output),
-                      SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Status resizeBilinearFunctor(LaunchContext* context, NDArray * images, int width, int height,
-                                 bool const alignCorners, bool const halfPixelCenter, NDArray* output) {
-  BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_,
-                        (context, images, width, height, alignCorners, halfPixelCenter, output), SD_NUMERIC_TYPES,
-                        SD_FLOAT_TYPES);
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Status resizeNeighborFunctor(LaunchContext* context, NDArray * images, int const width, int const height,
@@ -368,336 +366,129 @@ Status resizeNeighborFunctor(LaunchContext* context, NDArray * images, int const
 // Bicubic interpolation
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static SD_KERNEL void initCoefTableKernel(const float a, float* table, LongType tableSize) {
-  KeysCubicKernelFunc<float> kernel(a);
-  auto start = blockIdx.x * blockDim.x + threadIdx.x;
-  auto step = blockDim.x * gridDim.x;
-  for (int i = start; i <= tableSize; i += step) {
-    float x = i * 1.0 / tableSize;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// weights and source indices of the output columns (or rows) for the bicubic resize: one thread per entry. The
+// indices are multiplied by indexStride (the input's stride along the axis), so they are offsets into the input.
+template <typename Scaler>
+static SD_KERNEL void computeBicubicWeightsKernel(float const* coeffsTable, float scale, LongType count,
+                                                  LongType limit, bool excludeOutside, LongType indexStride,
+                                                  WeightsAndIndices* weights) {
+  const LongType start = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType i = start; i < count; i += step) {
+    WeightsAndIndices* wai = weights + i;
+    getWeightsAndIndices<Scaler>(coeffsTable, scale, i, limit, wai, excludeOutside);
+    wai->_index0 *= indexStride;
+    wai->_index1 *= indexStride;
+    wai->_index2 *= indexStride;
+    wai->_index3 *= indexStride;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// bicubic interpolation: one thread per output pixel (grid-stride over batch * outHeight * outWidth), the channels of
+// the pixel in a loop. Each of the four columns the pixel reads is interpolated along y first and the four results
+// along x, as the CPU does (which caches the columns it shares with the previous pixel: the values are the same). The
+// interpolation is computed in float and stored as the output type Z (FLOAT32 or DOUBLE).
+template <typename T, typename Z>
+static SD_KERNEL void bicubicInterpolateKernel(T const* inputPtr, Z* outputPtr, LongType batchSize,
+                                               LongType outHeight, LongType outWidth, LongType channels,
+                                               LongType inBatchStride, LongType inChannelStride,
+                                               LongType outBatchStride, LongType outRowStride,
+                                               LongType outColumnStride, LongType outChannelStride,
+                                               WeightsAndIndices const* yWais, WeightsAndIndices const* xWais) {
+  const LongType pixels = batchSize * outHeight * outWidth;
+  const LongType start = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType pixel = start; pixel < pixels; pixel += step) {
+    const LongType x = pixel % outWidth;
+    const LongType y = (pixel / outWidth) % outHeight;
+    const LongType batch = pixel / (outWidth * outHeight);
+
+    const WeightsAndIndices& yWai = yWais[y];
+    const WeightsAndIndices& xWai = xWais[x];
+    const T* pInput = inputPtr + batch * inBatchStride;
+    // the row indices of yWai are offsets into the input
+    const T* y_ptr_0 = pInput + yWai._index0;
+    const T* y_ptr_1 = pInput + yWai._index1;
+    const T* y_ptr_2 = pInput + yWai._index2;
+    const T* y_ptr_3 = pInput + yWai._index3;
+    Z* pOutput = outputPtr + batch * outBatchStride + y * outRowStride + x * outColumnStride;
+
+    for (LongType c = 0; c < channels; ++c) {
+      float cachedValue[4];
+      for (int i = 0; i < 4; ++i) {
+        cachedValue[i] = computeYInterpolation(i, c * inChannelStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+      }
+      pOutput[c * outChannelStride] =
+          static_cast<Z>(compute(cachedValue, xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3));
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template <typename T, typename Z, typename Scaler>
+static void bicubicInterpolateWithCaching(LaunchContext* context, NDArray * image,
+                                          const ImageResizerState& resizerState, const double coefficient,
+                                          bool exclude_outside, NDArray* output) {
+  const LongType batchSize = resizerState.batchSize;
+  const LongType outHeight = resizerState.outHeight;
+  const LongType outWidth = resizerState.outWidth;
+  const LongType channels = resizerState.channels;
+  if (output->lengthOf() == 0) return;
+
+  auto stream = context->getCudaStream();
+  PointersManager pm(context, "resizeBicubic");
+
+  // Coefficients table, computed with the Bicubic convolution algorithm on the host (a table of 2 * 1025 floats):
+  // https://en.wikipedia.org/wiki/Bicubic_interpolation
+  std::vector<float> table((kTableSize + 1) * 2);
+  KeysCubicKernelFunc<float> kernel(static_cast<float>(coefficient));
+  for (LongType i = 0; i <= kTableSize; ++i) {
+    float x = i * 1.0 / kTableSize;
     table[i * 2] = kernel.calc_less1pt0(x);
     x += 1.0;
     table[i * 2 + 1] = kernel.calc_less2pt0(x);
   }
+  auto coeffsTable = reinterpret_cast<float*>(pm.replicatePointer(table.data(), table.size() * sizeof(float)));
+  auto xWais = reinterpret_cast<WeightsAndIndices*>(pm.allocateDevMem(sizeof(WeightsAndIndices) * outWidth));
+  auto yWais = reinterpret_cast<WeightsAndIndices*>(pm.allocateDevMem(sizeof(WeightsAndIndices) * outHeight));
+
+  const dim3 weightDims = getLaunchDims("image_resize_interp_weights");
+  computeBicubicWeightsKernel<Scaler><<<weightDims.x, weightDims.y, 0, *stream>>>(
+      coeffsTable, resizerState.widthScale, outWidth, resizerState.inWidth, exclude_outside, resizerState.wStride,
+      xWais);
+  computeBicubicWeightsKernel<Scaler><<<weightDims.x, weightDims.y, 0, *stream>>>(
+      coeffsTable, resizerState.heightScale, outHeight, resizerState.inHeight, exclude_outside,
+      resizerState.hStride, yWais);
+  checkLaunch(stream, "computeBicubicWeightsKernel failed: ");
+
+  unsigned int blocks, threads;
+  pixelLaunch(getLaunchDims("image_resize"), batchSize * outHeight * outWidth, blocks, threads);
+  bicubicInterpolateKernel<T, Z><<<blocks, threads, 0, *stream>>>(
+      reinterpret_cast<T const*>(image->specialBuffer()), reinterpret_cast<Z*>(output->specialBuffer()),
+      batchSize, outHeight, outWidth, channels, resizerState.bStride, resizerState.cStride, output->strideAt(0),
+      output->strideAt(1), output->strideAt(2), output->strideAt(3), yWais, xWais);
+  checkLaunch(stream, "bicubicInterpolateKernel failed: ");
 }
 
-float* initCoeffsTable(const double a, cudaStream_t* stream) {
-  // Allocate and initialize coefficients table using Bicubic
-  // convolution algorithm.
-  // https://en.wikipedia.org/wiki/Bicubic_interpolation
-  float* coeffs_table;  // = new float[(kTableSize + 1) * 2];
-  int irDevId2 = 0; cudaGetDevice(&irDevId2);
-  coeffs_table = reinterpret_cast<float*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(float) * ((kTableSize + 1) * 2), irDevId2, nullptr));
-  if (coeffs_table == nullptr) THROW_EXCEPTION("helpers::initCoeffsTable: Cannot allocate memory for coeffs table");
-
-  dim3 launchDims = getLaunchDims("image_resize_init_coeffs");
-  initCoefTableKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(static_cast<float>(a), coeffs_table, kTableSize);
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-    cudaError_t err = cudaStreamSynchronize(*stream);
-    if (err != 0) {
-      { std::string msg = "helpers::initCoeffsTable: Cannot synchronize kernel; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
-    }
-  }
-
-  return coeffs_table;
-}
-
-static SD_KERNEL void accumulateChannelsKernel(WeightsAndIndices* pXWais, LongType outWidth, LongType channels) {
-  auto start = blockIdx.x * blockDim.x + threadIdx.x;
-  auto step = blockDim.x * gridDim.x;
-
-  for (auto x = start; x < outWidth; x += step) {
-    pXWais[x]._index0 *= channels;
-    pXWais[x]._index1 *= channels;
-    pXWais[x]._index2 *= channels;
-    pXWais[x]._index3 *= channels;
-  }
-}
-
-template <typename Scaler>
-static SD_KERNEL void advanceWeightsAndIndicesKernel(float const* cacheTable, CachedInterpolationCalculator* calc,
-                                                     WeightsAndIndices* pXWais, LongType inWidth, float widthScale,
-                                                     LongType outWidth, LongType channels,
-                                                     bool exclude_outside) {
-  auto start = blockIdx.x * blockDim.x + threadIdx.x;
-  auto step = blockDim.x * gridDim.x;
-
-  for (auto x = start; x < outWidth; x += step) {
-    getWeightsAndIndices<Scaler>(cacheTable, widthScale, x, inWidth, pXWais + x, exclude_outside);
-  }
-  __syncthreads();
-  if (start == 0) {
-    // update only in one thread
-    for (auto i = 0; i < outWidth; i++) {
-      pXWais[i]._advance = calc->Advance(pXWais[i]._index0, pXWais[i]._index1, pXWais[i]._index2, pXWais[i]._index3);
-    }
-  }
-}
-// resizerState and xWais are device allocated
-template <typename Scaler>
-static void computeXWeightsAndIndices(float const* coeffsTable, const ImageResizerState& resizerState,
-                                      WeightsAndIndices* pXWais, bool exclude_outside) {
-  auto stream = resizerState.stream;
-  auto outWidth = resizerState.outWidth;
-  CachedInterpolationCalculator calc;  // = new CachedInterpolationCalculator;
-  CachedInterpolationCalculator* pCalcD;
-  int irDevId3 = 0; cudaGetDevice(&irDevId3);
-  pCalcD = reinterpret_cast<CachedInterpolationCalculator*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(CachedInterpolationCalculator), irDevId3, nullptr));
-  if (pCalcD == nullptr) THROW_EXCEPTION("helpers::computeXWeightsAndIndices: Cannot allocate device memory for interpolate calculator");
-  cudaError_t err;
-  err = cudaMemcpyAsync(pCalcD, &calc, sizeof(CachedInterpolationCalculator), cudaMemcpyHostToDevice, *stream);
-  if (err != 0) {
-    std::string msg = "helpers::computeXWeightsAndIndices: Cannot set up device memory for interpolate calculator; Error code: [" + std::to_string(err) + "]";
-    THROW_EXCEPTION(msg.c_str());
-  }
-  dim3 launchDims = getLaunchDims("image_resize_init_coeffs");
-
-  advanceWeightsAndIndicesKernel<Scaler><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(coeffsTable, pCalcD, pXWais, resizerState.inWidth,
-                                                                     resizerState.widthScale, outWidth,
-                                                                     resizerState.channels, exclude_outside);
-  sd::memory::CudaMemoryPool::getInstance().free(pCalcD, irDevId3, nullptr);
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-    err = cudaStreamSynchronize(*stream);
-    if (err != 0) {
-      std::string msg = "helpers::computeXWeightsAndIndices: Cannot synchronize stream after advance weights and indicers; Error code: [" + std::to_string(err) + "]";
-      THROW_EXCEPTION(msg.c_str());
-    }
-  }
-  dim3 launchDims2 = getLaunchDims("image_resize_coeffs_accum");
-  // Scale the values so they can be used as offsets into buffers.
-  accumulateChannelsKernel<<<launchDims2.x,launchDims.y,launchDims.z, *stream>>>(pXWais, outWidth, resizerState.wStride);
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-    err = cudaStreamSynchronize(*stream);
-    if (err != 0) {
-      std::string msg = "helpers::computeXWeightsAndIndices: Cannot synchronize stream after accumulate channels; Error code: [" + std::to_string(err) + "]";
-      THROW_EXCEPTION(msg.c_str());
-    }
-  }
-}
-
-template <typename T, typename Scaler>
-static SD_KERNEL void bicubicInterpolateWithCachingKernel(float const* cachedTable, T const* inputPtr,
-                                                          ImageResizerState* pResizerState, WeightsAndIndices* xWais,
-                                                          bool exclude_outside, float* outputPtr) {
-  const auto batchStride = pResizerState->bStride;
-  const auto hStride = pResizerState->hStride;
-  const auto cStride = pResizerState->cStride;
-  for (LongType b = blockIdx.x; b < pResizerState->batchSize; b += gridDim.x) {
-    auto pInput = inputPtr + b * batchStride;
-
-    float* cachedValue;
-    for (LongType y = threadIdx.x; y < pResizerState->outHeight; y += blockDim.x) {
-      if (threadIdx.x == 0) {
-        extern __shared__ char sharedChar[];
-        cachedValue = reinterpret_cast<float*>(sharedChar);
-      }
-      auto pos = (b * pResizerState->outHeight + y) * pResizerState->outWidth * pResizerState->channels;
-      auto pOutput = &outputPtr[pos];
-      struct WeightsAndIndices yWai;
-
-      getWeightsAndIndices<Scaler>(cachedTable, pResizerState->heightScale, y, pResizerState->inHeight, &yWai,
-                                   exclude_outside);
-
-      // Make pointers represent offsets of data in inputBPtr.
-      const T* y_ptr_0 = pInput + yWai._index0 * hStride;
-      const T* y_ptr_1 = pInput + yWai._index1 * hStride;
-      const T* y_ptr_2 = pInput + yWai._index2 * hStride;
-      const T* y_ptr_3 = pInput + yWai._index3 * hStride;
-
-      if (pResizerState->channels == 100) {
-        // Manually unroll case of 3 channels.
-        float cached_value_0[4] = {0};
-        float cached_value_1[4] = {0};
-        float cached_value_2[4] = {0};
-        for (LongType x = 0; x < pResizerState->outWidth; ++x) {
-          const WeightsAndIndices& xWai = xWais[x];
-          // Shift values in cached_value_* to fill first '_advance' values.
-          switch (xWai._advance) {
-            case 3:
-              cached_value_0[0] = cached_value_0[1];
-              cached_value_0[1] = cached_value_0[2];
-              cached_value_0[2] = cached_value_0[3];
-              cached_value_1[0] = cached_value_1[1];
-              cached_value_1[1] = cached_value_1[2];
-              cached_value_1[2] = cached_value_1[3];
-              cached_value_2[0] = cached_value_2[1];
-              cached_value_2[1] = cached_value_2[2];
-              cached_value_2[2] = cached_value_2[3];
-              break;
-            case 2:
-              cached_value_0[0] = cached_value_0[2];
-              cached_value_0[1] = cached_value_0[3];
-              cached_value_1[0] = cached_value_1[2];
-              cached_value_1[1] = cached_value_1[3];
-              cached_value_2[0] = cached_value_2[2];
-              cached_value_2[1] = cached_value_2[3];
-              break;
-            case 1: {
-              cached_value_0[0] = cached_value_0[3];
-              cached_value_1[0] = cached_value_1[3];
-              cached_value_2[0] = cached_value_2[3];
-              break;
-            }
-          }
-
-          // Set the remaining '4-_advance' values by computing.
-          switch (xWai._advance) {
-            case 0:
-              cached_value_0[0] = computeYInterpolation(0, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              cached_value_1[0] = computeYInterpolation(0, cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              cached_value_2[0] = computeYInterpolation(0, 2 * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-            case 1:
-              cached_value_0[1] = computeYInterpolation(1, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              cached_value_1[1] = computeYInterpolation(1, cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              cached_value_2[1] = computeYInterpolation(1, 2 * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-            case 2:
-              cached_value_0[2] = computeYInterpolation(2, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              cached_value_1[2] = computeYInterpolation(2, cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              cached_value_2[2] = computeYInterpolation(2, 2 * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-            case 3:
-              cached_value_0[3] = computeYInterpolation(3, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              cached_value_1[3] = computeYInterpolation(3, cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              cached_value_2[3] = computeYInterpolation(3, 2 * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              //        break;
-          }
-          pOutput[x * pResizerState->channels + 0] =
-              compute(cached_value_0, xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3);
-          pOutput[x * pResizerState->channels + 1] =
-              compute(cached_value_1, xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3);
-          pOutput[x * pResizerState->channels + 2] =
-              compute(cached_value_2, xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3);
-        }
-      } else {
-        for (LongType x = 0; x < pResizerState->outWidth; ++x) {
-          const WeightsAndIndices& xWai = xWais[x];
-          // Shift values in cachedValue to fill first '_advance' values.
-          switch (xWai._advance) {
-            case 3:
-              for (LongType c = 0; c < pResizerState->channels; ++c) {
-                cachedValue[4 * c + 0] = cachedValue[4 * c + 1];
-                cachedValue[4 * c + 1] = cachedValue[4 * c + 2];
-                cachedValue[4 * c + 2] = cachedValue[4 * c + 3];
-              }
-              break;
-            case 2:
-              for (LongType c = 0; c < pResizerState->channels; ++c) {
-                cachedValue[4 * c + 0] = cachedValue[4 * c + 2];
-                cachedValue[4 * c + 1] = cachedValue[4 * c + 3];
-              }
-              break;
-            case 1: {
-              for (LongType c = 0; c < pResizerState->channels; ++c) {
-                cachedValue[4 * c + 0] = cachedValue[4 * c + 3];
-              }
-              break;
-            }
-          }
-
-          // Set the remaining '4-_advance' values by computing.
-          switch (xWai._advance) {
-            case 0:
-              for (LongType c = 0; c < pResizerState->channels; ++c) {
-                cachedValue[4 * c + 0] =
-                    computeYInterpolation(0, c * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              }
-            case 1:
-              for (LongType c = 0; c < pResizerState->channels; ++c) {
-                cachedValue[4 * c + 1] =
-                    computeYInterpolation(1, c * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              }
-            case 2:
-              for (LongType c = 0; c < pResizerState->channels; ++c) {
-                cachedValue[4 * c + 2] =
-                    computeYInterpolation(2, c * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              }
-            case 3:
-              for (LongType c = 0; c < pResizerState->channels; ++c) {
-                cachedValue[4 * c + 3] =
-                    computeYInterpolation(3, c * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-              }
-              // break;
-          }
-          for (LongType c = 0; c < pResizerState->channels; ++c) {
-            auto res = compute(&cachedValue[4 * c], xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3);
-            pOutput[x * pResizerState->channels + c] = res;
-          }
-        }
-      }
-    }
-  }
-}
-
-template <typename T, typename Scaler>
-static void bicubicInterpolateWithCaching(NDArray * image, const ImageResizerState& resizerState,
-                                          const double coefficient, bool exclude_outside, NDArray* output) {
-  const auto numChannels = resizerState.channels;
-  auto stream = resizerState.stream;  // output->getContext()->getCudaStream();
-  ImageResizerState* resizerStateD;
-  int irDevId4 = 0; cudaGetDevice(&irDevId4);
-  resizerStateD = reinterpret_cast<ImageResizerState*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(ImageResizerState), irDevId4, nullptr));
-  if (resizerStateD == nullptr) THROW_EXCEPTION("helpers::bicubicInterpolateWithCaching: Cannot allocate memory for resizerState");
-  cudaError_t err;
-  err = cudaMemcpyAsync(resizerStateD, &resizerState, sizeof(ImageResizerState), cudaMemcpyHostToDevice, *stream);
-  if (err != 0) {
-    { std::string msg = "helpers::bicubicInterpolateWithCaching: Cannot set up memory for resizerState; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
-  }
-
-
-  WeightsAndIndices* xWais;
-  xWais = reinterpret_cast<WeightsAndIndices*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(WeightsAndIndices) * resizerState.outWidth, irDevId4, nullptr));
-  if (xWais == nullptr) THROW_EXCEPTION("helpers::bicubicInterpolateWithCaching: Cannot allocate memory for weights and indices");
-
-  auto coeffsTable = initCoeffsTable(
-      coefficient, stream);
-  if (err != 0) {
-    { std::string msg = "helpers::bicubicInterpolateWithCaching: computeXWeigtsAndInidces finished with error; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
-  }
-  computeXWeightsAndIndices<Scaler>(coeffsTable, resizerState, xWais, exclude_outside);
-  err = cudaStreamQuery(*stream);
-  if (err != 0) {
-    { std::string msg = "helpers::bicubicInterpolateWithCaching: computeXWeigtsAndInidces finished with error; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
-  }
-
-  const T* pInput = image->getDataBuffer()->template specialAsT<T>();
-  float* pOutput = output->dataBuffer()->specialAsT<float>();
-  dim3 bicubDims = getLaunchDims("image_resize_bicubic");
-  //128,1,512
-  bicubicInterpolateWithCachingKernel<T, Scaler>
-      <<<bicubDims.x, bicubDims.y, bicubDims.z, *stream>>>(coeffsTable, pInput, resizerStateD, xWais, exclude_outside, pOutput);
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-    err = cudaStreamSynchronize(*stream);
-    if (err != 0) {
-      { std::string msg = "helpers::bicubicInterpolateWithCaching: Kernels finished with error; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
-    }
-  }
-
-  sd::memory::CudaMemoryPool::getInstance().free(resizerStateD, irDevId4, nullptr);
-  sd::memory::CudaMemoryPool::getInstance().free(xWais, irDevId4, nullptr);
-  sd::memory::CudaMemoryPool::getInstance().free(coeffsTable, irDevId4, nullptr);
-}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template <typename T>
-Status resizeBicubicFunctor_(LaunchContext* context, NDArray * image, int width, int height,
-                             bool preserveAspectRatio, bool antialias, NDArray* output) {
-  return Status::OK;
-}
-
+// The legacy bicubic resize of resize_images: the coordinates of the ASYMMETRIC mode, the border pixels repeated and
+// the ordinary (OpenCV) coefficient, as resize_bicubic does without half pixel centers. (The two flags are the
+// resize_images arguments: align corners, and antialias, which does not apply to this resize.)
 Status resizeBicubicFunctor(LaunchContext* context, NDArray * image, int width, int height,
-                                bool preserveAspectRatio, bool antialias, NDArray* output) {
-  BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctor_,
-                        (context, image, width, height, preserveAspectRatio, antialias, output), SD_NUMERIC_TYPES);
+                                bool alignCorners, bool antialias, NDArray* output) {
+  return resizeBicubicFunctorA(context, image, width, height, alignCorners, ASYMMETRIC, false,
+                               KeysCubicKernelFunc<double>::ORDINARY_COEF, output);
 }
-BUILD_SINGLE_TEMPLATE( sd::Status resizeBicubicFunctor_,
-                      (sd::LaunchContext * context, NDArray * image, int width, int height,
-                       bool preserveAspectRatio, bool antialias, NDArray* output),
-                      SD_NUMERIC_TYPES);
 // ------------------------------------------------------------------------------------------------------------------ //
 
 static SD_KERNEL void fillInterpolationCache(CachedInterpolation* xCached, LongType cacheLen, LongType inWidth,
                                              float widthScale) {
-  auto start = blockIdx.x * blockDim.x + threadIdx.x;
-  auto increment = blockDim.x * gridDim.x;
+  const LongType start = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType increment = static_cast<LongType>(gridDim.x) * blockDim.x;
 
-  for (auto x = start; x < cacheLen; x += increment) {
+  for (LongType x = start; x < cacheLen; x += increment) {
     auto& xCache = xCached[x];
     const float inX = x * widthScale;
     const float inX1 = (x + 1) * widthScale;
@@ -715,14 +506,14 @@ static SD_KERNEL void fillInterpolationCache(CachedInterpolation* xCached, LongT
 
 // ------------------------------------------------------------------------------------------------------------------ //
 
+// resizeAreaKernel: one thread per output row of every image. The input rows that contribute to an output row (at
+// most cacheStride of them) are cached in the thread's slice of cachePool, a [batch, outHeight, cacheStride] array.
 template <typename T>
 static SD_KERNEL void resizeAreaKernel(ImageResizerState const* pSt, CachedInterpolation const* caches, float scale,
-                                       T const* inputPtr, LongType const* inputShape, float* outputPtr,
-                                       LongType const* outputShape,
-                                       ScaleCache<T>* cachePool) {  // batch * outWidth * outHeight
-
-  for (auto batch = blockIdx.x; batch < pSt->batchSize; batch += gridDim.x) {
-    for (auto y = threadIdx.x; y < pSt->outHeight; y += blockDim.x) {
+                                       T const* inputPtr, float* outputPtr, ScaleCache<T>* cachePool,
+                                       LongType cacheStride) {
+  for (LongType batch = blockIdx.x; batch < pSt->batchSize; batch += gridDim.x) {
+    for (LongType y = threadIdx.x; y < pSt->outHeight; y += blockDim.x) {
       const float inY = y * pSt->heightScale;
       const float inY1 = (y + 1) * pSt->heightScale;
       // The start and end height indices of all the cells that could
@@ -730,7 +521,7 @@ static SD_KERNEL void resizeAreaKernel(ImageResizerState const* pSt, CachedInter
       const LongType yStart = math::sd_floor<float, LongType>(inY);
       const LongType yEnd = math::sd_ceil<float, LongType>(inY1);
       auto scalesDim = yEnd - yStart;
-      auto yScaleCache = cachePool + (batch * pSt->outHeight + y) * pSt->outWidth;
+      auto yScaleCache = cachePool + (batch * pSt->outHeight + y) * cacheStride;
 
       float* output = outputPtr + (batch * pSt->outHeight + y) * pSt->channels * pSt->outWidth;
       for (LongType i = yStart, k = 0; i < yEnd; ++i, ++k) {
@@ -761,38 +552,27 @@ static SD_KERNEL void resizeAreaKernel(ImageResizerState const* pSt, CachedInter
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// the area resize into a dense C-order float output (outputPtr)
 template <typename T>
-static void resizeArea(cudaStream_t* stream, ImageResizerState const& st, CachedInterpolation* cache,
-                       NDArray * input, NDArray* output) {
+static void resizeArea(LaunchContext* context, PointersManager& pm, ImageResizerState const& st,
+                       CachedInterpolation* cache, NDArray * input, float* outputPtr) {
+  auto stream = context->getCudaStream();
   T const* inputPtr = reinterpret_cast<T const*>(input->specialBuffer());
   float scale = 1.f / (st.heightScale * st.widthScale);
-  auto outputPtr =
-      reinterpret_cast<float*>(output->specialBuffer());  // output is always float. TO DO: provide another float types
-                                                          // also with  template <typename X, typename Z> declaration
-  ImageResizerState* pSt;
-  int irDevId5 = 0; cudaGetDevice(&irDevId5);
-  pSt = reinterpret_cast<ImageResizerState*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(ImageResizerState), irDevId5, nullptr));
-  if (pSt == nullptr) THROW_EXCEPTION("helpers::resizeArea: Cannot allocate memory for ImageResizerState");
-  cudaError_t err;
 
-  err = cudaMemcpyAsync(pSt, &st, sizeof(ImageResizerState), cudaMemcpyHostToDevice, *stream);
-  if (err != 0) {
-    { std::string msg = "helpers::resizeArea: Cannot copy to device memory; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
-  }
-  ScaleCache<T>* cachePool;
-  auto cachePoolSize = sizeof(ScaleCache<T>) * st.batchSize * st.outWidth * st.outHeight;
-  cachePool = reinterpret_cast<ScaleCache<T>*>(sd::memory::CudaMemoryPool::getInstance().allocate(cachePoolSize, irDevId5, nullptr));
-  if (cachePool == nullptr) THROW_EXCEPTION("helpers::resizeArea: Cannot allocate memory for cache");
-  resizeAreaKernel<T><<<128, 128, 2048, *stream>>>(pSt, cache, scale, inputPtr, input->specialShapeInfo(), outputPtr,
-                                                   output->specialShapeInfo(), cachePool);
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-    err = cudaStreamSynchronize(*stream);
-    if (err != 0) {
-      { std::string msg = "helpers::resizeArea: An error occured with kernel running; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
-    }
-  }
-  sd::memory::CudaMemoryPool::getInstance().free(cachePool, irDevId5, nullptr);
-  sd::memory::CudaMemoryPool::getInstance().free(pSt, irDevId5, nullptr);
+  // the resize state on the device (the manager stages the host copy so that it survives a CUDA graph capture)
+  auto pSt = reinterpret_cast<ImageResizerState*>(pm.replicatePointer(&st, sizeof(ImageResizerState)));
+
+  // An output row reads at most ceil(heightScale) + 1 input rows (+ 1 for the rounding of the float coordinates)
+  const LongType cacheStride = static_cast<LongType>(math::sd_ceil<float, LongType>(st.heightScale)) + 2;
+  auto cachePool = reinterpret_cast<ScaleCache<T>*>(
+      pm.allocateDevMem(sizeof(ScaleCache<T>) * st.batchSize * st.outHeight * cacheStride));
+
+  const dim3 launchDims = getLaunchDims("image_resize");
+  resizeAreaKernel<T><<<launchDims.x, launchDims.y, 0, *stream>>>(pSt, cache, scale, inputPtr, outputPtr, cachePool,
+                                                                   cacheStride);
+  checkLaunch(stream, "resizeAreaKernel failed: ");
 }
 // ------------------------------------------------------------------------------------------------------------------ //
 template <typename T>
@@ -800,27 +580,38 @@ Status resizeAreaFunctor_(LaunchContext* context, NDArray * image, int const wid
                           bool const alignCorners, NDArray* output) {
   ImageResizerState st(alignCorners, false);  // Create resize info
   auto res = st.validateAndCalculateOutputSize(image, width, height);
-  auto stream = context->getCudaStream();
-  if (Status::OK == res) {
-    CachedInterpolation* xCached;
-    //(st.outWidth);
-    int irDevId6 = 0; cudaGetDevice(&irDevId6);
-    xCached = reinterpret_cast<CachedInterpolation*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(CachedInterpolation) * st.outWidth, irDevId6, nullptr));
-    if (xCached == nullptr) THROW_EXCEPTION("helpers::resizeAreaFunctor_: Cannot allocate memory for cached interpolations");
-    NDArray::prepareSpecialUse({output}, {image});
-    dim3 launchDims = getLaunchDims("image_resize_fill_interp");
-    fillInterpolationCache<<<128, 128, 256, *stream>>>(xCached, st.outWidth, st.inWidth, st.widthScale);
-    resizeArea<T>(stream, st, xCached, image, output);
-    if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-      cudaError_t err = cudaStreamSynchronize(*stream);
-      if (err != 0) {
-        { std::string msg = "helpers::resizeAreaFunctor_: Error occured when kernel was running; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
-      }
-    }
-    sd::memory::CudaMemoryPool::getInstance().free(xCached, irDevId6, nullptr);
-    NDArray::registerSpecialUse({output}, {image});
+  if (Status::OK != res) return res;
+  if (output->lengthOf() == 0) return Status::OK;
+
+  // the kernel writes the output as a dense C-order array: other layouts go through a dense copy
+  NDArray* target = output;
+  NDArray* staged = nullptr;
+  if (!isDenseCOrder(output)) {
+    staged = NDArrayFactory::create('c', {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3)},
+                                    DataType::FLOAT32, context);
+    target = staged;
   }
 
+  auto stream = context->getCudaStream();
+  PointersManager pm(context, "resizeArea");
+  auto xCached = reinterpret_cast<CachedInterpolation*>(pm.allocateDevMem(sizeof(CachedInterpolation) * st.outWidth));
+  NDArray::prepareSpecialUse({target}, {image});
+
+  const dim3 cacheDims = getLaunchDims("image_resize_fill_interp");
+  fillInterpolationCache<<<cacheDims.x, cacheDims.y, 0, *stream>>>(xCached, st.outWidth, st.inWidth, st.widthScale);
+  checkLaunch(stream, "fillInterpolationCache failed: ");
+  resizeArea<T>(context, pm, st, xCached, image, reinterpret_cast<float*>(target->specialBuffer()));
+
+  NDArray::registerSpecialUse({target}, {image});
+
+  if (staged != nullptr) {
+    // The one barrier of this file: the copy into the output is an NDArray op on the output's own context, whose
+    // stream need not be this helper's, so the staged array must be complete before it starts (a capture-aware
+    // barrier: skipped while a graph capture is recorded; it is only reached for an output that is not a dense array).
+    pm.synchronize();
+    output->assign(staged);
+    delete staged;
+  }
   return res;
 }
 Status resizeAreaFunctor(LaunchContext* context, NDArray * image, int const width, int const height,
@@ -830,8 +621,26 @@ Status resizeAreaFunctor(LaunchContext* context, NDArray * image, int const widt
 }
 
 // ------------------------------------------------------------------------------------------------------------------ //
-// simplified bicubic resize without antialiasing
+// simplified bicubic resize without antialiasing, into an output of type Z
 //
+template <typename T, typename Z>
+static Status resizeBicubicByMode(LaunchContext* context, NDArray * image, const ImageResizerState& st,
+                                  CoordinateTransformationMode coorMode, bool exclude_outside, double coefficient,
+                                  NDArray* output) {
+  switch (coorMode) {
+    case ASYMMETRIC:
+      bicubicInterpolateWithCaching<T, Z, LegacyScaler>(context, image, st, coefficient, exclude_outside, output);
+      return Status::OK;
+    case HALF_PIXEL:
+      bicubicInterpolateWithCaching<T, Z, HalfPixelScaler>(context, image, st, coefficient, exclude_outside, output);
+      return Status::OK;
+    case HALF_PIXEL_NN:
+      bicubicInterpolateWithCaching<T, Z, HalfPixelScalerNN>(context, image, st, coefficient, exclude_outside, output);
+      return Status::OK;
+  }
+  return Logger::logStatusMsg(Status::BAD_INPUT, "resize_bicubic: Wrong coordinate transformation mode");
+}
+
 template <typename T>
 Status resizeBicubicFunctorA_(LaunchContext* context, NDArray * image, int const width, int const height,
                               bool const alignCorners, CoordinateTransformationMode coorMode, bool exclude_outside,
@@ -841,18 +650,13 @@ Status resizeBicubicFunctorA_(LaunchContext* context, NDArray * image, int const
   NDArray::prepareSpecialUse({output}, {image});
   Status res = st.validateAndCreateOutput(image, width, height);
   if (res == Status::OK) {
-    switch (coorMode) {
-      case ASYMMETRIC:
-        bicubicInterpolateWithCaching<T, LegacyScaler>(image, st, coefficient, exclude_outside, output);
-        break;
-      case HALF_PIXEL:
-        bicubicInterpolateWithCaching<T, HalfPixelScaler>(image, st, coefficient, exclude_outside, output);
-        break;
-      case HALF_PIXEL_NN:
-        bicubicInterpolateWithCaching<T, HalfPixelScalerNN>(image, st, coefficient, exclude_outside, output);
-        break;
-      default:
-        break;
+    // the op's output types: FLOAT32 and DOUBLE
+    if (output->dataType() == DataType::FLOAT32) {
+      res = resizeBicubicByMode<T, float>(context, image, st, coorMode, exclude_outside, coefficient, output);
+    } else if (output->dataType() == DataType::DOUBLE) {
+      res = resizeBicubicByMode<T, double>(context, image, st, coorMode, exclude_outside, coefficient, output);
+    } else {
+      res = Logger::logStatusMsg(Status::BAD_INPUT, "resize_bicubic: The output should be of type FLOAT32 or DOUBLE");
     }
   }
   NDArray::registerSpecialUse({output}, {image});
@@ -888,126 +692,94 @@ Status resizeImagesFunctor(LaunchContext* context, NDArray * image, int const wi
 // --------------------------------------------------------------------------------------------------------------- //
 // Crop and Resize helper implementation
 // -------------------------------------------------------------------------------------------------------------- //
-// cropAndResize kernel   type of input(images) and output should be the same
+// cropAndResize kernel: a block per box (grid-stride over the boxes), its threads stride over the pixels of the box's
+// crop, and a thread computes all the channels of its pixel. The images, the boxes, the indices and the crops are read
+// and written through their strides, from their buffer pointers (which include the offset of a view). Type of
+// input(images) and output should be the same.
 //
+// The sample positions and the interpolation are computed in double when the images or the boxes are DOUBLE, in float
+// otherwise, as on the CPU. The crop of a box that names no image of the batch, and every sample position outside the
+// image, is the extrapolation value.
 template <typename T, typename Z, typename I>
 static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* imagesShape, Z const* boxes,
-                                          LongType const* boxesShape, I const* indices, LongType const* indexShape, I const* cropSize, LongType const* cropShape, int method, double extrapolationVal, T* output, LongType const* outputShape, int numBoxes, int cropHeight, int cropWidth,
-                                          int batchSize, int imageHeight, int imageWidth, int depth) {
-  for (int b = blockIdx.x; b < numBoxes; b += gridDim.x) {
-    LongType x1Pos[] = {b, 1};
-    LongType y1Pos[] = {b, 0};
-    LongType y2Pos[] = {b, 2};
-    LongType x2Pos[] = {b, 3};
-    LongType y1Offset, x1Offset, y2Offset, x2Offset;
-    COORDS2INDEX(2, shape::stride(boxesShape), y1Pos, y1Offset);
-    COORDS2INDEX(2, shape::stride(boxesShape), x1Pos, x1Offset);
-    COORDS2INDEX(2, shape::stride(boxesShape), y2Pos, y2Offset);
-    COORDS2INDEX(2, shape::stride(boxesShape), x2Pos, x2Offset);
-    Z y1 = boxes[y1Offset];
-    Z x1 = boxes[x1Offset];
-    Z y2 = boxes[y2Offset];
-    Z x2 = boxes[x2Offset];
+                                          LongType const* boxesShape, I const* indices, LongType const* indexShape,
+                                          int method, double extrapolationVal, T* output, LongType const* outputShape,
+                                          LongType numBoxes, LongType cropHeight, LongType cropWidth,
+                                          LongType batchSize, LongType imageHeight, LongType imageWidth,
+                                          LongType depth) {
+  using PosT =
+      typename std::conditional<std::is_same<T, double>::value || std::is_same<Z, double>::value, double, float>::type;
+  const LongType* imageStride = shape::stride(imagesShape);
+  const LongType* boxStride = shape::stride(boxesShape);
+  const LongType* outStride = shape::stride(outputShape);
+  const LongType iRank = shape::rank(indexShape);
+  const LongType* iShape = shape::shapeOf(indexShape);
+  const LongType* iStride = shape::stride(indexShape);
+  const LongType cropPixels = cropHeight * cropWidth;
 
-    int bIn = indices[b];
-    if (bIn >= batchSize) {
-      continue;
-    }
+  for (LongType b = blockIdx.x; b < numBoxes; b += gridDim.x) {
+    const Z* box = boxes + b * boxStride[0];
+    const PosT y1 = static_cast<PosT>(box[0]);
+    const PosT x1 = static_cast<PosT>(box[boxStride[1]]);
+    const PosT y2 = static_cast<PosT>(box[2 * boxStride[1]]);
+    const PosT x2 = static_cast<PosT>(box[3 * boxStride[1]]);
 
-    Z heightScale = (cropHeight > 1) ? (y2 - y1) * (imageHeight - 1) / Z(cropHeight - 1) : Z(0);
-    Z widthScale = (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / Z(cropWidth - 1) : Z(0);
+    // the box's image, read through the strides of the indices
+    LongType iCoords[SD_MAX_RANK];
+    LongType iOffset;
+    INDEX2COORDS(b, iRank, iShape, iCoords);
+    COORDS2INDEX(iRank, iStride, iCoords, iOffset);
+    const LongType bIn = static_cast<LongType>(indices[iOffset]);
+    const bool inBatch = bIn >= 0 && bIn < batchSize;
+    const T* image = inBatch ? images + bIn * imageStride[0] : images;
 
-    for (int y = threadIdx.x; y < cropHeight; y += blockDim.x) {
-      const float inY =
-          (cropHeight > 1) ? y1 * (imageHeight - 1) + y * heightScale : 0.5 * (y1 + y2) * (imageHeight - 1);
-      if (inY < 0 || inY > imageHeight - 1) {
-        for (int x = threadIdx.y; x < cropWidth; x += blockDim.y) {
-          auto start = blockIdx.z * blockDim.x + threadIdx.z;
-          auto step = blockDim.z * gridDim.z;
-          for (int d = start; d < depth; d += step) {
-            LongType zPos[] = {b, y, x, d};
-            LongType zOffset;
-            COORDS2INDEX(4, shape::stride(outputShape), zPos, zOffset);
-            output[zOffset] = (Z)extrapolationVal;
-          }
+    const PosT heightScale = cropResizeScale<PosT>(y1, y2, imageHeight, cropHeight);
+    const PosT widthScale = cropResizeScale<PosT>(x1, x2, imageWidth, cropWidth);
+
+    for (LongType pixel = threadIdx.x; pixel < cropPixels; pixel += blockDim.x) {
+      const LongType y = pixel / cropWidth;
+      const LongType x = pixel % cropWidth;
+      T* crop = output + b * outStride[0] + y * outStride[1] + x * outStride[2];
+
+      const PosT inY = cropResizeCoordinate<PosT>(y1, y2, imageHeight, cropHeight, y, heightScale);
+      const PosT inX = cropResizeCoordinate<PosT>(x1, x2, imageWidth, cropWidth, x, widthScale);
+
+      // outside the image (a position that is not a number is outside too, so it never addresses the images)
+      if (!inBatch || !(inY >= 0 && inY <= imageHeight - 1 && inX >= 0 && inX <= imageWidth - 1)) {
+        for (LongType d = 0; d < depth; d++) {
+          crop[d * outStride[3]] = static_cast<T>(extrapolationVal);
         }
         continue;
       }
 
       if (method == 0 /* bilinear */) {
-        const int topYIndex = math::p_floor(inY);
-        const int bottomYIndex = math::p_ceil(inY);
-        const float y_lerp = inY - topYIndex;
+        const LongType topYIndex = static_cast<LongType>(math::p_floor<PosT>(inY));
+        const LongType bottomYIndex = static_cast<LongType>(math::p_ceil<PosT>(inY));
+        const PosT yLerp = inY - topYIndex;
+        const LongType leftXIndex = static_cast<LongType>(math::p_floor<PosT>(inX));
+        const LongType rightXIndex = static_cast<LongType>(math::p_ceil<PosT>(inX));
+        const PosT xLerp = inX - leftXIndex;
 
-        for (int x = 0; x < cropWidth; ++x) {
-          const float in_x =
-              (cropWidth > 1) ? x1 * (imageWidth - 1) + x * widthScale : 0.5 * (x1 + x2) * (imageWidth - 1);
-          if (in_x < 0 || in_x > imageWidth - 1) {
-            auto start = blockIdx.z * blockDim.x + threadIdx.z;
-            auto step = blockDim.z * gridDim.z;
-            for (int d = start; d < depth; d += step) {
-              LongType zPos[] = {b, y, x, d};
-              LongType zOffset;
-              COORDS2INDEX(4, shape::stride(outputShape), zPos, zOffset);
-              output[zOffset] = (Z)extrapolationVal;
-            }
-            continue;
-          }
-          int left_x_index = math::p_floor(in_x);
-          int right_x_index = math::p_ceil(in_x);
-          T x_lerp = static_cast<T>(in_x) - static_cast<T>(left_x_index);
-
-          auto start = blockIdx.z * blockDim.x + threadIdx.z;
-          auto step = blockDim.z * gridDim.z;
-          for (int d = start; d < depth; d += step) {
-            LongType topLeftPos[] = {bIn, topYIndex, left_x_index, d};
-            LongType topRightPos[] = {bIn, topYIndex, right_x_index, d};
-            LongType bottomLeftPos[] = {bIn, bottomYIndex, left_x_index, d};
-            LongType bottomRightPos[] = {bIn, bottomYIndex, right_x_index, d};
-            LongType topLeftOffset, topRightOffset, bottomLeftOffset, bottomRightOffset;
-            COORDS2INDEX(4, shape::stride(imagesShape), topLeftPos, topLeftOffset);
-            COORDS2INDEX(4, shape::stride(imagesShape), topRightPos, topRightOffset);
-            COORDS2INDEX(4, shape::stride(imagesShape), bottomLeftPos, bottomLeftOffset);
-            COORDS2INDEX(4, shape::stride(imagesShape), bottomRightPos, bottomRightOffset);
-            const T topLeft = images[topLeftOffset];
-            const T topRight = images[topRightOffset];
-            const T bottomLeft = images[bottomLeftOffset];
-            const T bottomRight = images[bottomRightOffset];
-            const T top = topLeft + (topRight - topLeft) * x_lerp;
-            const T bottom = bottomLeft + (bottomRight - bottomLeft) * x_lerp;
-            LongType zPos[] = {b, y, x, d};
-            LongType zOffset;
-            COORDS2INDEX(4, shape::stride(outputShape), zPos, zOffset);
-            output[zOffset] = Z(top + (bottom - top) * y_lerp);
-          }
+        const T* topRow = image + topYIndex * imageStride[1];
+        const T* bottomRow = image + bottomYIndex * imageStride[1];
+        const LongType leftOffset = leftXIndex * imageStride[2];
+        const LongType rightOffset = rightXIndex * imageStride[2];
+        for (LongType d = 0; d < depth; d++) {
+          const LongType channelOffset = d * imageStride[3];
+          const PosT topLeft = static_cast<PosT>(topRow[leftOffset + channelOffset]);
+          const PosT topRight = static_cast<PosT>(topRow[rightOffset + channelOffset]);
+          const PosT bottomLeft = static_cast<PosT>(bottomRow[leftOffset + channelOffset]);
+          const PosT bottomRight = static_cast<PosT>(bottomRow[rightOffset + channelOffset]);
+          const PosT top = imageResizeLerp<PosT>(topLeft, topRight, xLerp);
+          const PosT bottom = imageResizeLerp<PosT>(bottomLeft, bottomRight, xLerp);
+          crop[d * outStride[3]] = static_cast<T>(imageResizeLerp<PosT>(top, bottom, yLerp));
         }
       } else {  // method is "nearest neighbor"
-        for (int x = 0; x < cropWidth; ++x) {
-          const float inX =
-              (cropWidth > 1) ? x1 * (imageWidth - 1) + x * widthScale : 0.5 * (x1 + x2) * (imageWidth - 1);
-          if (inX < 0 || inX > imageWidth - 1) {
-            auto start = blockIdx.z * blockDim.x + threadIdx.z;
-            auto step = blockDim.z * gridDim.z;
-            for (int d = start; d < depth; d += step) {
-              LongType zPos[] = {b, y, x, d};
-              LongType zOffset;
-              COORDS2INDEX(4, shape::stride(outputShape), zPos, zOffset);
-              output[zOffset] = (Z)extrapolationVal;
-            }
-            continue;
-          }
-          const int closestXIndex = roundf(inX);
-          const int closestYIndex = roundf(inY);
-          auto start = blockIdx.z * blockDim.x + threadIdx.z;
-          auto step = blockDim.z * gridDim.z;
-          for (int d = start; d < depth; d += step) {
-            LongType zPos[] = {b, y, x, d};
-            LongType xPos[] = {bIn, closestYIndex, closestXIndex, d};
-            LongType zOffset, xOffset;
-            COORDS2INDEX(4, shape::stride(outputShape), zPos, zOffset);
-            COORDS2INDEX(4, shape::stride(imagesShape), xPos, xOffset);
-            output[zOffset] = images[xOffset];
-          }
+        const LongType closestXIndex = static_cast<LongType>(math::p_round<PosT>(inX));
+        const LongType closestYIndex = static_cast<LongType>(math::p_round<PosT>(inY));
+        const T* source = image + closestYIndex * imageStride[1] + closestXIndex * imageStride[2];
+        for (LongType d = 0; d < depth; d++) {
+          crop[d * outStride[3]] = source[d * imageStride[3]];
         }
       }
     }
@@ -1029,45 +801,41 @@ template <typename T, typename Z, typename I>
 void cropAndResizeFunctor_(LaunchContext* context, NDArray * images, NDArray * boxes,
                            NDArray * indices, NDArray * cropSize, int method, double extrapolationVal,
                            NDArray* crops) {
-  const int batchSize = images->sizeAt(0);
-  const int imageHeight = images->sizeAt(1);
-  const int imageWidth = images->sizeAt(2);
+  const LongType batchSize = images->sizeAt(0);
+  const LongType imageHeight = images->sizeAt(1);
+  const LongType imageWidth = images->sizeAt(2);
 
-  const int numBoxes = crops->sizeAt(0);
-  const int cropHeight = crops->sizeAt(1);
-  const int cropWidth = crops->sizeAt(2);
-  const int depth = crops->sizeAt(3);
+  const LongType numBoxes = crops->sizeAt(0);
+  const LongType cropHeight = crops->sizeAt(1);
+  const LongType cropWidth = crops->sizeAt(2);
+  const LongType depth = crops->sizeAt(3);
+  if (crops->lengthOf() == 0) return;
   auto stream = context->getCudaStream();
+
+  // a block per box, its threads stride over the pixels of the crop
+  dim3 cropAndResizeDims = cropAndResize(static_cast<int>(numBoxes), static_cast<int>(imageHeight),
+                                         static_cast<int>(imageWidth), static_cast<int>(cropHeight),
+                                         static_cast<int>(cropWidth));
+  NDArray::prepareSpecialUse({crops}, {images, boxes, indices});
   T const* imagesBuf = reinterpret_cast<T const*>(images->specialBuffer());
   Z const* boxesBuf = reinterpret_cast<Z const*>(boxes->specialBuffer());
   I const* indexBuf = reinterpret_cast<I const*>(indices->specialBuffer());
-  I const* cropSizes = reinterpret_cast<I const*>(cropSize->specialBuffer());
   T* outBuf = reinterpret_cast<T*>(crops->specialBuffer());
-
-  int threadsPerBlock = math::sd_max(imageHeight * imageWidth, cropHeight * cropWidth);
-  if (threadsPerBlock > SD_MAX_NUM_THREADS / 4) threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  // a block per box
-  dim3 cropAndResizeDims = cropAndResize(numBoxes, imageHeight, imageWidth, cropHeight, cropWidth);
-  NDArray::prepareSpecialUse({crops}, {images, boxes, indices, cropSize});
-  cropAndResizeKernel<T, Z, I><<<cropAndResizeDims.y, cropAndResizeDims.x, cropAndResizeDims.z, *stream>>>(
+  cropAndResizeKernel<T, Z, I><<<cropAndResizeDims.y, cropAndResizeDims.x, 0, *stream>>>(
       imagesBuf, images->specialShapeInfo(), boxesBuf, boxes->specialShapeInfo(), indexBuf, indices->specialShapeInfo(),
-      cropSizes, cropSize->specialShapeInfo(), method, extrapolationVal, outBuf, crops->specialShapeInfo(), numBoxes,
-      cropHeight, cropWidth, batchSize, imageHeight, imageWidth, depth);
-  NDArray::registerSpecialUse({crops}, {images, boxes, indices, cropSize});
+      method, extrapolationVal, outBuf, crops->specialShapeInfo(), numBoxes, cropHeight, cropWidth, batchSize,
+      imageHeight, imageWidth, depth);
+  checkLaunch(stream, "cropAndResizeKernel failed: ");
+  NDArray::registerSpecialUse({crops}, {images, boxes, indices});
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void cropAndResizeFunctor(LaunchContext* context, NDArray * images, NDArray * boxes,
                           NDArray * indices, NDArray * cropSize, int method, double extrapolationVal,
                           NDArray* crops) {
-
-auto imagesDType = images->dataType();
-auto boxesDType = boxes->dataType();
-auto indicesDType = indices->dataType();
   BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                         (context, images, boxes, indices, cropSize, method, extrapolationVal, crops), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
-
 }
 BUILD_TRIPLE_TEMPLATE( void cropAndResizeFunctor_,
                       (sd::LaunchContext * context, NDArray * images, NDArray * boxes, NDArray * indices,

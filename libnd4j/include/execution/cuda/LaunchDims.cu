@@ -640,20 +640,45 @@ dim3 getSortTadDims(int numberTads) {
   return dim3(256, numberTads, 2048);
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// The segment family (segment_*, unsorted_segment_*, their backprops) and sequence_mask. x = blocks, y = threads per
+// block, z = dynamic shared memory bytes (always 0: none of these kernels uses any; the tree reduction of the sorted
+// vector kernel keeps its partials in a static array of at most 256 elements). Every kernel strides over its work with
+// 64 bit indices, so these producers only cap the grid and the work sizes are clamped to int by the callers; the old
+// launches put one thread per index in a block (invalid from 1025 ids) and requested dynamic shared memory that grew
+// with the number of classes (invalid from ~1535 classes) for kernels that use none.
+// Overrides: GRID_SIZE_<KEY> caps the blocks, BLOCK_SIZE_<KEY> sets the threads; a value the kernels cannot run with
+// (non-positive, more than 1024 threads, or for the tree kernel not a power of two up to 256) is ignored.
+// ---------------------------------------------------------------------------------------------------------------
+static int segmentEnvInRange(const char* name, int fallback, int maxValue) {
+  const int value = getEnvVariable(name, fallback);
+  return (value >= 1 && value <= maxValue) ? value : fallback;
+}
+
+// a grid-stride launch with one thread per element of `work`
+static dim3 segmentFlatDims(sd::LongType work, const char* gridEnv, const char* blockEnv) {
+  const int threads = segmentEnvInRange(blockEnv, 256, 1024);
+  const int maxBlocks = segmentEnvInRange(gridEnv, 4096, 2147483647);
+  sd::LongType blocks = (work + threads - 1) / threads;
+  if (blocks < 1) blocks = 1;
+  if (blocks > maxBlocks) blocks = maxBlocks;
+  return dim3(static_cast<unsigned int>(blocks), static_cast<unsigned int>(threads), 0);
+}
+
+// segment boundaries and counts: one thread per id
 dim3 getFillUpSegmentsDims(int numClasses,int length) {
-  return dim3(numClasses, length, numClasses * 32 + 32);
+  return segmentFlatDims(length, "GRID_SIZE_SEGMENT_FILL_UP_SEGMENTS", "BLOCK_SIZE_SEGMENT_FILL_UP_SEGMENTS");
 }
 
+// (no caller since the sqrt_n kernels share the generic segment launches)
 dim3 getSegmentSumDims(int numClasses,int length) {
-  return dim3(numClasses, length, (numClasses + 1)  * 64);
+  return segmentFlatDims(length, "GRID_SIZE_SEGMENT_SQRTN", "BLOCK_SIZE_SEGMENT_SQRTN");
 }
 
-
+// one thread per output element of the mask
 dim3 getSequenceMaskLaunchDims(int maxIndex,sd::NDArray input) {
-  int maxThreads = maxIndex;
-  int maxBlocks = input.lengthOf();
-  int sharedMem = 128;
-  return dim3(maxBlocks, maxThreads, sharedMem);
+  return segmentFlatDims(static_cast<sd::LongType>(maxIndex) * input.lengthOf(), "GRID_SIZE_SEQUENCE_MASK",
+                         "BLOCK_SIZE_SEQUENCE_MASK");
 }
 
 dim3 getCol2imLaunchParams(sd::NDArray im,sd::NDArray col) {
@@ -1129,57 +1154,39 @@ dim3 scatterNdDims(int length,int rank) {
 }
 
 
+// reading, checking and counting the ids: one thread per id
 dim3 segmentValidateIndices(int length) {
-  int threadsPerBlock = 1;
-  int blocksPerGrid = length;
-  int sharedMem = 128;
-  threadsPerBlock = getEnvVariable("GRID_SIZE_SEGMENT_INDICES_VALIDATE", threadsPerBlock);
-  blocksPerGrid = getEnvVariable("BLOCK_SIZE_SEGMENT_INDICES_VALIDATE", blocksPerGrid);
-  sharedMem = getEnvVariable("SHARED_MEM_SIZE_SEGMENT_INDICES_VALIDATE", sharedMem);
-  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
+  return segmentFlatDims(length, "GRID_SIZE_SEGMENT_INDICES_VALIDATE", "BLOCK_SIZE_SEGMENT_INDICES_VALIDATE");
 }
 
-
+// sorted vector input: one block per segment (grid-stride over the segments) reducing its rows with a shared-memory
+// tree. threads: a power of two between 32 and 256 that covers the average segment length.
 dim3 segmentDims(int numClasses,int length) {
-  int blocks  = numClasses;
-  int threads = length;
-  int sharedMem = numClasses * 32 + 32;
-  threads = getEnvVariable("GRID_SIZE_SEGMENT", threads);
-  blocks = getEnvVariable("BLOCK_SIZE_SEGMENT", blocks);
-  sharedMem = getEnvVariable("SHARED_MEM_SIZE_SEGMENT", sharedMem);
-  return dim3(threads,blocks,sharedMem);
-
+  int threads = 32;
+  const sd::LongType perSegment =
+      numClasses > 0 ? (static_cast<sd::LongType>(length) + numClasses - 1) / numClasses : length;
+  while (threads < 256 && threads < perSegment) threads <<= 1;
+  const int requested = getEnvVariable("BLOCK_SIZE_SEGMENT", 0);
+  if (requested >= 1 && requested <= 256 && (requested & (requested - 1)) == 0) threads = requested;
+  const int maxBlocks = segmentEnvInRange("GRID_SIZE_SEGMENT", 65535, 2147483647);
+  int blocks = numClasses < 1 ? 1 : (numClasses > maxBlocks ? maxBlocks : numClasses);
+  return dim3(static_cast<unsigned int>(blocks), static_cast<unsigned int>(threads), 0);
 }
 
+// one thread per output element: the sorted rows x columns gather, the initialisation and the finish of the unsorted
+// accumulators
 dim3 segmentTad(int size) {
-  int blocks = size;
-  int threads = 512;
-  int sharedMem = 2048;
-  threads = getEnvVariable("GRID_SIZE_SEGMENT_TAD", threads);
-  blocks = getEnvVariable("BLOCK_SIZE_SEGMENT_TAD", blocks);
-  sharedMem = getEnvVariable("SHARED_MEM_SIZE_SEGMENT_TAD", sharedMem);
-  return dim3(threads,blocks,sharedMem);
+  return segmentFlatDims(size, "GRID_SIZE_SEGMENT_TAD", "BLOCK_SIZE_SEGMENT_TAD");
 }
 
+// the backprop kernel: one thread per element of the input
 dim3 segmentBpDims(int gradOutLen,int inputLen) {
-  int threads = gradOutLen;
-  int blocks = inputLen;
-  int sharedMem = 256;
-  threads = getEnvVariable("GRID_SIZE_SEGMENT_BP", threads);
-  blocks = getEnvVariable("BLOCK_SIZE_SEGMENT_BP", blocks);
-  sharedMem = getEnvVariable("SHARED_MEM_SIZE_SEGMENT_BP", sharedMem);
-  return dim3(threads,blocks,sharedMem);
+  return segmentFlatDims(inputLen, "GRID_SIZE_SEGMENT_BP", "BLOCK_SIZE_SEGMENT_BP");
 }
 
+// the unsorted scatter kernel: one thread per element of the input
 dim3 segmentBpTad(int indicesLen,int inputLen) {
-  int threads = indicesLen;
-  int blocks = inputLen;
-  int sharedMem = 256;
-  threads = getEnvVariable("GRID_SIZE_SEGMENT_BP_TAD", threads);
-  blocks = getEnvVariable("BLOCK_SIZE_SEGMENT_BP_TAD", blocks);
-  sharedMem = getEnvVariable("SHARED_MEM_SIZE_SEGMENT_BP_TAD", sharedMem);
-  return dim3(threads,blocks,sharedMem);
-
+  return segmentFlatDims(inputLen, "GRID_SIZE_SEGMENT_BP_TAD", "BLOCK_SIZE_SEGMENT_BP_TAD");
 }
 
 dim3 sruBiDims(int len,int rank) {
@@ -1304,13 +1311,20 @@ dim3 zetaDims(int length) {
 }
 
 dim3 resizeNeighborDims(int batchSize,int height,int width) {
-  int blocksPerGrid = batchSize;
-  int numThreads = height * width;
-  int sharedMem = 512;
-  numThreads = getEnvVariable("GRID_SIZE_IMAGE_RESIZE_NEIGHBOR", numThreads);
-  blocksPerGrid = getEnvVariable("BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR", blocksPerGrid);
+  // One thread per output pixel. The kernel strides over the pixels, so a grid capped at 65535 blocks covers any batch
+  // and output size; a block per image (threads over its pixels) left the images past the pixel count of one image
+  // unwritten and asked for more than 1024 threads from 33 x 33 pixels on.
+  const sd::LongType pixels = static_cast<sd::LongType>(batchSize) * height * width;
+  int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
+  int blocksPerGrid = static_cast<int>(sd::math::sd_min<sd::LongType>(
+      sd::math::sd_max<sd::LongType>(1, (pixels + threadsPerBlock - 1) / threadsPerBlock), 65535));
+  // the kernel uses no dynamic shared memory
+  int sharedMem = 0;
+  blocksPerGrid = getEnvVariable("GRID_SIZE_IMAGE_RESIZE_NEIGHBOR", blocksPerGrid);
+  threadsPerBlock = getEnvVariable("BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR", threadsPerBlock);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR", sharedMem);
-  return dim3(numThreads,blocksPerGrid,sharedMem);
+  // x = blocks, y = threads: the call sites launch <<<d.x, d.y, d.z>>>
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 clipDims(int length) {

@@ -42,6 +42,7 @@
 #include <array/DataBuffer.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
+#include <helpers/DenseOutputShape.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/helper_hash.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -886,6 +887,34 @@ bool segmentIsFullyReplayingForPlanPhase(const GraphSegment& seg) {
   return replaying;
 }
 }  // namespace
+
+int NativeDynamicShapePlan::getSegmentReplayMode(int segIdx) const {
+  if (segIdx < 0 || segIdx >= static_cast<int>(segments_.size())) return REPLAY_MODE_NONE;
+  const auto& seg = segments_[segIdx];
+  // Freezing intentionally releases replay handles and resets the execution
+  // phase. Reusing the frozen outputs is not slot-by-slot execution.
+  if (seg.def.allFrozenConstants) return REPLAY_MODE_FROZEN_CONSTANT;
+  if (seg.exec.compilationFailed || isTerminalOutcome(seg.exec.outcome) ||
+      seg.exec.segPhase.isFailed()) return REPLAY_MODE_SLOT_BY_SLOT;
+  if (segmentHasReadyDirectArtifact(seg)) return REPLAY_MODE_DIRECT_COMPILED;
+  // Functional replay re-executes slots; it must not masquerade as a captured
+  // platform graph merely because the lifecycle has reached SEALED.
+  if (seg.def.selectedBackend == SelectedBackend::EMULATED_REPLAY)
+    return REPLAY_MODE_SLOT_BY_SLOT;
+  if (seg.exec.segPhase.isSealed()) {
+    if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) return REPLAY_MODE_MONOLITHIC;
+    if (segmentHasReadyCompositeHandles(seg)) {
+      // The lifecycle helper also accepts sealed gap-only schedules. They
+      // execute live slots and have no captured artifact to report as replay.
+      for (const auto& unit : seg.exec.compositeReplaySchedule.units) {
+        if (unit.kind == REPLAY_UNIT_TRITON_ISLAND) return REPLAY_MODE_COMPOSITE;
+      }
+      return REPLAY_MODE_SLOT_BY_SLOT;
+    }
+  }
+  return seg.def.selectedBackend == SelectedBackend::SLOT_BY_SLOT
+      ? REPLAY_MODE_SLOT_BY_SLOT : REPLAY_MODE_NONE;
+}
 
 // NativeSlot move operations removed: sub-structs manage their own memory.
 // NativeSlot is now non-movable (deleted in header).
@@ -2413,24 +2442,34 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
             ? slot.ident.op->getOpDescriptor()->getNumberOfStructuralIArgs()
             : -1;
 
-    // Mirror the compiler's argument-shaped-tile resolution (NativePlanCompiler
-    // Step: value-dependent-shape refinement). Tile carries
-    // OP_TRAIT_VALUE_DEPENDENT_SHAPE for its tensor-reps form; a width==1
-    // invocation with frozen iArgs derives its output shape from input shapes
-    // and arguments only, so it must not pay the value-dependent shape path
+    // Resolve argument-driven tile and slice forms at native plan admission.
+    // Their intrinsic VALUE_DEPENDENT_SHAPE trait describes tensor controls;
+    // with one payload input the shape functions consume only frozen IArgs
+    // (slice begin/size or strided_slice masks/begin/end/strides). This form
+    // derives its output from shapes and arguments only, not payload values,
+    // so it must not pay the value-dependent shape path
     // (host D2H key mixing, shape re-inference, shapeAware gap execution)
-    // every replay step. Guarded identically: TILE trait, one tensor input,
+    // every replay step. Guarded by TILE/SLICE traits, one tensor input,
     // frozen iArgs, and no runtime-sized output.
     if (slot.flags.outputShapeDependsOnInputValues &&
-        slot.hasOpTrait(sd::ops::OP_TRAIT_TILE) &&
+        (slot.hasOpTrait(sd::ops::OP_TRAIT_TILE) ||
+         slot.hasOpTrait(sd::ops::OP_TRAIT_SLICE)) &&
         !slot.hasDynamicOutputSize() &&
         slot.wiring.numInputs == 1 &&
         slot.args.numIArgs > 0) {
       slot.flags.outputShapeDependsOnInputValues = false;
       DSP_DIAG(COMPILE,
-               "ARGUMENT_SHAPED_TILE: slot %d (%s) width=1 with %d frozen iArgs — "
+               "ARGUMENT_SHAPED_CONTROL: slot %d (%s) width=1 with %d frozen iArgs — "
                "outputShapeDependsOnInputValues=false (argument-driven form)",
                s, slot.ident.opName.c_str(), slot.args.numIArgs);
+    }
+
+    // Operation-owned control metadata resolves optional tensor controls and frozen
+    // argument precedence, including plans produced before this metadata existed.
+    if (slot.flags.outputShapeDependsOnInputValues && !slot.hasDynamicOutputSize() &&
+        slot.ident.op != nullptr &&
+        !slot.ident.op->getOpDescriptor()->hasShapeValueInputs(slot.wiring.numInputs, slot.args.numIArgs)) {
+      slot.flags.outputShapeDependsOnInputValues = false;
     }
 
     // Initialize fusion fields (will be set by FusionPass::applyFusions later)
@@ -3969,6 +4008,7 @@ Status NativeDynamicShapePlan::execute(
   if (execCtx->diagVerifyEnabled) {
     int nullSlots = 0, liveSlots = 0, viewSlots = 0;
     int replaySegs = 0, slotBySlotSegsCount = 0, compilationFailedSegs = 0;
+    int frozenSegs = 0, directSegs = 0, pendingSegs = 0;
     for (int i = 0; i < totalOutputSlots_; i++) {
       if (outputSlots_[i] == nullptr) { nullSlots++; }
       else {
@@ -3977,17 +4017,26 @@ Status NativeDynamicShapePlan::execute(
         if (db != nullptr && protectedWeightBuffers_.count(db) > 0) viewSlots++;
       }
     }
-    for (const auto& seg : segments_) {
-      if ((seg.exec.replayHandle && seg.exec.replayHandle->isReady()) ||
-          segmentHasReadyCompositeHandles(seg)) replaySegs++;
-      else if (seg.exec.compilationFailed) compilationFailedSegs++;
-      else slotBySlotSegsCount++;
+    for (int i = 0; i < static_cast<int>(segments_.size()); i++) {
+      switch (getSegmentReplayMode(i)) {
+        case REPLAY_MODE_MONOLITHIC:
+        case REPLAY_MODE_COMPOSITE: replaySegs++; break;
+        case REPLAY_MODE_FROZEN_CONSTANT: frozenSegs++; break;
+        case REPLAY_MODE_DIRECT_COMPILED: directSegs++; break;
+        case REPLAY_MODE_SLOT_BY_SLOT:
+          if (segments_[i].exec.compilationFailed) compilationFailedSegs++;
+          else slotBySlotSegsCount++;
+          break;
+        default: pendingSegs++; break;
+      }
     }
     DSP_DIAG(VERIFY, "POST_EXEC exec=%d frozen=%d: slots(live=%d null=%d weightView=%d/%d) "
-             "segs(replay=%d sbs=%d capFail=%d/%d) graphReplays=%d slotBySlot=%d",
+             "segs(replay=%d sbs=%d capFail=%d frozenConst=%d direct=%d pending=%d/%d) "
+             "graphReplays=%d slotBySlot=%d",
              executeCount_, planLifecycle_.isShapesFrozen() ? 1 : 0,
              liveSlots, nullSlots, viewSlots, totalOutputSlots_,
-             replaySegs, slotBySlotSegsCount, compilationFailedSegs, (int)segments_.size(),
+             replaySegs, slotBySlotSegsCount, compilationFailedSegs,
+             frozenSegs, directSegs, pendingSegs, (int)segments_.size(),
              phaseStats.graphReplaySegs, phaseStats.slotBySlotSegs);
   }
 
@@ -7555,10 +7604,13 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
       auto& shapeHelper = ConstantShapeHelper::getInstance();
       auto* shapeToCache = const_cast<LongType*>(rawShape);
       // The trait, not an op-name list, defines which primary output aliases
-      // storage and therefore requires ARRAY_IS_VIEW in the cached shape.
+      // storage and therefore requires ARRAY_IS_VIEW in the cached shape. Every
+      // other output is a new array: its cached shape is the dense array the plan
+      // allocates for it, not the strides and flags of the input its shape function
+      // copied.
       auto cached = i == 0 && slot.isViewCapableOp()
                         ? shapeHelper.bufferForShapeInfoWithView(shapeToCache)->primary()
-                        : shapeHelper.createFromExisting(shapeToCache);
+                        : shapeHelper.createFromExisting(denseOutputShapeInfo(shapeToCache));
       siOutputShapes[i] = cached;
       slot.shapeCache.cachedOutputShapes[i] = cached;
     }
@@ -7673,26 +7725,21 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
         outputSlots_[slotIdx] = nullptr;
       }
 
-      // Publish an owned placeholder for downstream shape inference. A
-      // view-capable op's cached output shape intentionally carries
-      // ARRAY_IS_VIEW, but this prepass placeholder owns a newly allocated
-      // DataBuffer. Passing the view-marked shape to NDArray makes its
-      // destructor treat that owned buffer as borrowed storage, leaking one
-      // full set of view-output placeholders every plan warmup. Keep the
-      // cached/runtime shape view-marked, and clear only the ownership bit on
-      // the allocation shape.
-      const LongType* allocationShape = siOutputShapes[i];
-      if (i == 0 && slot.isViewCapableOp() &&
-          shape::isViewConst(siOutputShapes[i])) {
-        LongType* ownedShape =
-            ShapeBuilders::copyShapeInfo(siOutputShapes[i], true, nullptr);
-        ArrayOptions::unsetPropertyBit(ownedShape, ARRAY_IS_VIEW);
-        allocationShape =
-            ConstantShapeHelper::getInstance().createFromExisting(ownedShape);
-        delete[] ownedShape;
-      }
-      const auto outputType = ArrayOptions::dataType(allocationShape);
-      const auto outputLength = shape::length(allocationShape);
+      // Publish an owned placeholder for downstream shape inference. It owns a
+      // newly allocated DataBuffer of exactly the output's length, so it is a new
+      // array without the view flag a view-capable op's cached shape carries:
+      // ARRAY_IS_VIEW makes the NDArray destructor treat the owned buffer as
+      // borrowed storage and leaks one full set of view-output placeholders every
+      // plan warmup. Its strides are dense, not those of the input a shape
+      // function copied, which address past the buffer when that input is a
+      // stepped view. The primary output of a view-capable op is the exception:
+      // at run time it is a view with the strides its shape function describes
+      // and the shape functions of the ops after it read them, so its placeholder
+      // keeps those strides while they fit its buffer (permute, transpose) and is
+      // dense when they do not (a slice of a wider array), see
+      // viewStandInShapeInfo. The cached/runtime shape stays as it is.
+      const auto outputType = ArrayOptions::dataType(siOutputShapes[i]);
+      const auto outputLength = shape::length(siOutputShapes[i]);
       const bool boundedIntegralControl =
           (outputType == INT32 || outputType == INT64 || outputType == BOOL) &&
           outputLength > 0 && outputLength <= 32;
@@ -7719,10 +7766,13 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
           NativeDynamicShapePlan* plan;
           ~RestoreShapeAllocationScope() { plan->platformRestoreSegmentDevice(); }
         } restoreShapeAllocationScope{this};
+        // The shape constant is interned inside the device+stream scope, like the array it describes.
+        LongType* allocationShape = i == 0 && slot.isViewCapableOp()
+                                        ? viewStandInShapeInfo(siOutputShapes[i])
+                                        : denseOutputShapeInfo(siOutputShapes[i]);
         outArr = allocatePayload
-                     ? new NDArray(const_cast<LongType*>(allocationShape), true)
-                     : new NDArray(nullptr,
-                                   const_cast<LongType*>(allocationShape),
+                     ? new NDArray(allocationShape, true)
+                     : new NDArray(nullptr, allocationShape,
                                    LaunchContext::defaultContext(), false, 0);
       }
       outputSlots_[slotIdx] = outArr;

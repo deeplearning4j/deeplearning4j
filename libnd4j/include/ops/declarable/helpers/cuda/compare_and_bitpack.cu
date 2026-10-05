@@ -159,7 +159,9 @@ static SD_HOST void cmpBitpackCudaLauncher(graph::Context& block, NDArray& input
   dim3 compareAndBitpackDims = getCompareAndBitpackDims(output.lengthOf());
   PointersManager manager(block.launchContext(), "compare_and_bitpack");
   NDArray::prepareSpecialUse({&output}, {&input});
-  if (input.ordering() == 'c' && output.ordering() == 'c') {
+  // the elements of a dense C-order array are its memory in order: any other layout (F order, a view) is packed through
+  // its strides
+  if (shape::isDenseRowMajor(input.shapeInfo()) && shape::isDenseRowMajor(output.shapeInfo())) {
     cmpBitpackEws<T><<<compareAndBitpackDims.y, compareAndBitpackDims.x,compareAndBitpackDims.z, *stream>>>(input.specialBuffer(), output.specialBuffer(),
                                                          output.lengthOf(), inStrides[rank - 1],
                                                          output.stridesOf()[rank - 1], threshold);

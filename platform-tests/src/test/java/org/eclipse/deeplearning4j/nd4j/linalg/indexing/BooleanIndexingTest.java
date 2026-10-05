@@ -514,6 +514,102 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(assertion,resultData);
     }
 
+    /** The saved testPutWhereWithMask failure: DOUBLE data and an explicitly INT32 replacement. */
+    @ParameterizedTest
+    @MethodSource("configs")
+    public void testWhereNpPutWhereWithMaskMixedDtypes(Nd4jBackend backend) {
+        INDArray data = Nd4j.createFromArray(new double[][]{{1, 2}, {1, 4}, {1, 6}});
+        INDArray original = data.dup();
+        INDArray mask = Nd4j.createFromArray(new boolean[][]{{true, false}, {true, false}, {true, false}});
+        INDArray replacement = Nd4j.createFromArray(new int[][]{{2, 2}, {2, 2}, {2, 2}});
+        INDArray result = data.putWhereWithMask(mask, replacement);
+        assertEquals(DataType.DOUBLE, result.dataType());
+        assertEquals(Nd4j.createFromArray(new double[][]{{2, 2}, {2, 4}, {2, 6}}), result);
+        assertEquals(original, data);
+        assertEquals(Nd4j.createFromArray(new int[][]{{2, 2}, {2, 2}, {2, 2}}), replacement);
+    }
+
+    /** Each operand has its own nonzero base offset and stride; y is consumed only on a true mask. */
+    @ParameterizedTest
+    @MethodSource("configs")
+    public void testWhereNpMixedViewsAndDenseOutput(Nd4jBackend backend) {
+        INDArray xParent = Nd4j.createFromArray(new double[][]{{-91, 1}, {-92, 2}, {-93, 3}});
+        INDArray maskParent = Nd4j.createFromArray(new boolean[][]{{false, true}, {true, false}, {false, true}});
+        INDArray yParent = Nd4j.createFromArray(new int[][]{{-81, 11}, {-82, 22}});
+        INDArray zParent = Nd4j.createFromArray(new double[][]{{-99, -99}, {-99, -99}, {-99, -99}});
+        INDArray x = xParent.getColumn(1);
+        INDArray mask = maskParent.getColumn(1);
+        INDArray y = yParent.getColumn(1);
+        INDArray z = zParent.getColumn(1);
+        Nd4j.exec(new WhereNumpy(new INDArray[]{mask, x, y}, new INDArray[]{z}));
+        assertEquals(Nd4j.createFromArray(new double[][]{{-99, 11}, {-99, 2}, {-99, 22}}), zParent);
+        assertEquals(Nd4j.createFromArray(new double[][]{{-91, 1}, {-92, 2}, {-93, 3}}), xParent);
+        assertEquals(Nd4j.createFromArray(new int[][]{{-81, 11}, {-82, 22}}), yParent);
+
+        INDArray allocated = Nd4j.exec(new WhereNumpy(new INDArray[]{mask, x, y}, null))[0];
+        assertEquals(DataType.DOUBLE, allocated.dataType());
+        assertArrayEquals(x.shape(), allocated.shape());
+        assertEquals(z.dup('c'), allocated);
+        assertFalse(allocated.isView());
+        assertEquals(allocated.length(), allocated.data().length());
+
+        // FLOAT x and DOUBLE scalar y: true means replacement, even in F order.
+        INDArray matrix = Nd4j.createFromArray(new float[][]{{1, 2}, {3, 4}, {5, 6}}).dup('f');
+        INDArray matrixMask = Nd4j.createFromArray(new boolean[][]{{true, false}, {false, true}, {true, false}}).dup('f');
+        INDArray scalar = Nd4j.scalar(DataType.DOUBLE, 10.5);
+        INDArray scalarResult = Nd4j.exec(new WhereNumpy(new INDArray[]{matrixMask, matrix, scalar}, null))[0];
+        assertEquals(DataType.FLOAT, scalarResult.dataType());
+        assertEquals(Nd4j.createFromArray(new float[][]{{10.5f, 2}, {3, 10.5f}, {10.5f, 6}}), scalarResult);
+    }
+
+    /** Row/TAD mode has the established opposite polarity: true selects the x row. */
+    @ParameterizedTest
+    @MethodSource("configs")
+    public void testWhereNpMixedRowsAndBool(Nd4jBackend backend) {
+        INDArray rows = Nd4j.createFromArray(new double[][]{{1, 2}, {3, 4}, {5, 6}}).dup('f');
+        INDArray otherRows = Nd4j.createFromArray(new int[][]{{10, 20}, {30, 40}, {50, 60}});
+        INDArray rowMask = Nd4j.createFromArray(new boolean[]{true, false, true});
+        INDArray result = Nd4j.exec(new WhereNumpy(new INDArray[]{rowMask, rows, otherRows}, null))[0];
+        assertEquals(DataType.DOUBLE, result.dataType());
+        assertEquals(Nd4j.createFromArray(new double[][]{{1, 2}, {30, 40}, {5, 6}}), result);
+
+        INDArray flags = Nd4j.createFromArray(new boolean[]{false, true, false});
+        INDArray mask = Nd4j.createFromArray(new boolean[]{true, false, false});
+        INDArray integerScalar = Nd4j.scalar(DataType.INT32, 1);
+        INDArray boolResult = Nd4j.exec(new WhereNumpy(new INDArray[]{mask, flags, integerScalar}, null))[0];
+        assertEquals(DataType.BOOL, boolResult.dataType());
+        assertEquals(Nd4j.createFromArray(new boolean[]{true, true, false}), boolResult);
+    }
+
+    /** Empty y is never read when the mask has no true entries; every x element must still be written. */
+    @ParameterizedTest
+    @MethodSource("configs")
+    public void testWhereNpEmptyReplacementWithNoMatches(Nd4jBackend backend) {
+        INDArray x = Nd4j.createFromArray(new double[]{1, 2});
+        INDArray mask = Nd4j.createFromArray(new boolean[]{false, false});
+        INDArray emptyReplacement = Nd4j.create(DataType.INT32, 0);
+        INDArray result = Nd4j.exec(new WhereNumpy(new INDArray[]{mask, x, emptyReplacement}, null))[0];
+        assertEquals(DataType.DOUBLE, result.dataType());
+        assertEquals(x, result);
+    }
+
+    @ParameterizedTest
+    @MethodSource("configs")
+    public void testWhereNpCoordinatesAndEmpty(Nd4jBackend backend) {
+        INDArray condition = Nd4j.createFromArray(new boolean[][]{{false, true}, {false, false}, {true, false}}).dup('f');
+        INDArray[] coordinates = Nd4j.exec(new WhereNumpy(new INDArray[]{condition}, null));
+        assertEquals(2, coordinates.length);
+        assertEquals(DataType.INT64, coordinates[0].dataType());
+        assertEquals(DataType.INT64, coordinates[1].dataType());
+        assertEquals(Nd4j.createFromArray(new long[]{0, 2}), coordinates[0]);
+        assertEquals(Nd4j.createFromArray(new long[]{1, 0}), coordinates[1]);
+        INDArray[] viewCoordinates = Nd4j.exec(new WhereNumpy(new INDArray[]{condition.getColumn(1)}, null));
+        assertEquals(Nd4j.createFromArray(new long[]{0}), viewCoordinates[0]);
+        INDArray[] none = Nd4j.exec(new WhereNumpy(new INDArray[]{Nd4j.createFromArray(new boolean[]{false, false})}, null));
+        assertEquals(1, none.length); // Existing single-empty-result contract.
+        assertTrue(none[0].isEmpty());
+    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEpsStuff_1(Nd4jBackend backend) {

@@ -186,6 +186,11 @@ public interface NativeOps {
      throw new UnsupportedOperationException("getOpTraitMask not implemented in this backend");
  }
 
+ /** Resolve optional tensor shape controls against frozen arguments on the native descriptor. */
+ default boolean opShapeDependsOnInputValues(String opName, int numInputs, int numIArgs) {
+     throw new UnsupportedOperationException("opShapeDependsOnInputValues not implemented in this backend");
+ }
+
  void inspectArray(PointerPointer  extraPointers, Pointer  buffer, LongPointer shapeInfo, Pointer specialBuffer,
                    LongPointer specialShapeInfo, Pointer  debugInfo);
 
@@ -1476,37 +1481,27 @@ public interface NativeOps {
   * @param deviceIndex device index
   * @return pointer to allocated memory, or null on failure
   */
- default Pointer nativeMbwAllocateBytesOnDevice(Pointer handle, long numBytes, int deviceType, int deviceIndex) {
-     throw new UnsupportedOperationException("nativeMbwAllocateBytesOnDevice not implemented in this backend");
- }
+ Pointer nativeMbwAllocateBytesOnDevice(Pointer handle, long numBytes, int deviceType, int deviceIndex);
 
  /**
   * Sync a specific device (e.g., cudaDeviceSynchronize for CUDA devices).
   */
- default void nativeMbwSyncDevice(Pointer handle, int deviceType, int deviceIndex) {
-     throw new UnsupportedOperationException("nativeMbwSyncDevice not implemented in this backend");
- }
+ void nativeMbwSyncDevice(Pointer handle, int deviceType, int deviceIndex);
 
  /**
   * Sync all devices in the workspace.
   */
- default void nativeMbwSyncAllDevices(Pointer handle) {
-     throw new UnsupportedOperationException("nativeMbwSyncAllDevices not implemented in this backend");
- }
+ void nativeMbwSyncAllDevices(Pointer handle);
 
  /**
   * Get the allocated size on a specific device.
   */
- default long nativeMbwGetAllocatedSizeOnDevice(Pointer handle, int deviceType, int deviceIndex) {
-     throw new UnsupportedOperationException("nativeMbwGetAllocatedSizeOnDevice not implemented in this backend");
- }
+ long nativeMbwGetAllocatedSizeOnDevice(Pointer handle, int deviceType, int deviceIndex);
 
  /**
   * Get the current workspace offset on the primary device.
   */
- default long nativeMbwGetCurrentOffset(Pointer handle) {
-     throw new UnsupportedOperationException("nativeMbwGetCurrentOffset not implemented in this backend");
- }
+ long nativeMbwGetCurrentOffset(Pointer handle);
 
  // ─── Native Graph Executor (DynamicShapePlan) ────────────────────────────
 
@@ -2231,7 +2226,9 @@ public interface NativeOps {
 
   /**
    * Get the replay mode for this segment.
-   * Returns: 0=NONE, 1=MONOLITHIC, 2=COMPOSITE, 3=SLOT_BY_SLOT
+   * Returns: 0=NONE, 1=MONOLITHIC, 2=COMPOSITE, 3=SLOT_BY_SLOT,
+   * 4=FROZEN_CONSTANT (no dispatch), 5=DIRECT_COMPILED (ready backend artifact).
+   * These codes are independent of segment execution-phase codes.
    */
   default int getPlanSegmentReplayMode(Pointer planHandle, int segIdx) { return 0; }
 

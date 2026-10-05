@@ -2351,9 +2351,13 @@ void NDArray::streamline(char o) {
   DataBuffer * newBuffer =
       new DataBuffer(len * sizeOfT(), dataType(), getContext()->getWorkspace());
   auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(dataType(), order, rankOf(), shapeOf());
-  NativeOpExecutioner::execTransformSame(getContext(), transform::Copy, buffer(), shapeInfo(), specialBuffer(),
-                                         specialShapeInfo(), newBuffer->primary(), shapeBuffer->primary(),
-                                         newBuffer->special(), shapeBuffer->special(), nullptr, nullptr, nullptr);
+  // Borrow the new allocation so legacy execution retains its DataBuffer identity.
+  NDArray output(newBuffer, shapeBuffer->primary(), getContext());
+  prepareUse({&output}, {this});
+  NativeOpExecutioner::execTransformSame(getContext(), transform::Copy,
+                                         LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(&output),
+                                         nullptr, nullptr, nullptr);
+  registerUse({&output}, {this});
   // BUGFIX: Must release old shape buffer before updating for proper lifecycle management
   if (_shapeInfoBuffer != nullptr) {
     _shapeInfoBuffer->release();
@@ -2491,9 +2495,9 @@ void NDArray::assign(T &value, bool allowParallelism) {
   auto temp = NDArrayFactory::create(dataType(), value, this->getContext());
 
   prepareUse(std::vector<NDArray *>{this}, std::vector<NDArray *>{temp});
-  NativeOpExecutioner::execScalar(getContext(), sd::scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
-                                  specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  temp->buffer(), temp->shapeInfo(), temp->specialBuffer(), temp->specialShapeInfo(),
+  NativeOpExecutioner::execScalar(getContext(), sd::scalar::CopyPws,
+                                  LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(this),
+                                  LegacyTensorArg::fromArray(temp),
                                   nullptr, allowParallelism);
   registerUse(std::vector<NDArray *>{this}, std::vector<NDArray *>{temp});
   delete temp;
@@ -2539,9 +2543,8 @@ NDArray NDArray::varianceNumber(sd::variance::Ops op, bool biasCorrected) {
   NDArray res(DataTypeUtils::pickFloatingType(dataType()), getContext());
 
   prepareUse({&res}, {this});
-  NativeOpExecutioner::execSummaryStatsScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                              specialShapeInfo(), nullptr, res.buffer(), res.shapeInfo(),
-                                              res.specialBuffer(), res.specialShapeInfo(), biasCorrected);
+  NativeOpExecutioner::execSummaryStatsScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                              nullptr, LegacyTensorArg::fromArray(&res), biasCorrected);
   registerUse({&res}, {this});
 
   return res;
@@ -2555,9 +2558,8 @@ NDArray NDArray::prodNumber()  {
   NDArray res(dataType(), getContext());
 
   prepareUse({&res}, {this});
-  NativeOpExecutioner::execReduceSameScalar(getContext(), sd::reduce::SameOps::Prod, buffer(), shapeInfo(),
-                                            specialBuffer(), specialShapeInfo(), nullptr, res.buffer(), res.shapeInfo(),
-                                            res.specialBuffer(), res.specialShapeInfo());
+  NativeOpExecutioner::execReduceSameScalar(getContext(), sd::reduce::SameOps::Prod,
+                                            LegacyTensorArg::fromArray(this), nullptr, LegacyTensorArg::fromArray(&res));
   registerUse({&res}, {this});
 
   return res;
@@ -2569,9 +2571,8 @@ NDArray NDArray::sumNumber()  {
   NDArray res(dataType(), getContext());
 
   prepareUse({&res}, {this});
-  NativeOpExecutioner::execReduceSameScalar(getContext(), sd::reduce::SameOps::Sum, buffer(), shapeInfo(),
-                                            specialBuffer(), specialShapeInfo(), nullptr, res.buffer(), res.shapeInfo(),
-                                            res.specialBuffer(), res.specialShapeInfo());
+  NativeOpExecutioner::execReduceSameScalar(getContext(), sd::reduce::SameOps::Sum,
+                                            LegacyTensorArg::fromArray(this), nullptr, LegacyTensorArg::fromArray(&res));
   registerUse({&res}, {this});
 
   return res;
@@ -2584,9 +2585,8 @@ NDArray NDArray::meanNumber()  {
   NDArray res(DataTypeUtils::pickFloatingType(dataType()), getContext());
 
   prepareUse({&res}, {this});
-  NativeOpExecutioner::execReduceFloatScalar(getContext(), sd::reduce::FloatOps::Mean, buffer(), shapeInfo(),
-                                             specialBuffer(), specialShapeInfo(), nullptr, res.buffer(),
-                                             res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
+  NativeOpExecutioner::execReduceFloatScalar(getContext(), sd::reduce::FloatOps::Mean,
+                                             LegacyTensorArg::fromArray(this), nullptr, LegacyTensorArg::fromArray(&res));
   registerUse({&res}, {this});
   return res;
 }
@@ -2886,9 +2886,8 @@ NDArray *NDArray::reduceNumber(sd::reduce::FloatOps op, void *extraParams)  {
   NDArray *result = new NDArray(shape, true, this->getContext());
 
   prepareUse({result}, {this});
-  NativeOpExecutioner::execReduceFloatScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                             specialShapeInfo(), extraParams, result->buffer(), result->shapeInfo(),
-                                             result->specialBuffer(), result->specialShapeInfo());
+  NativeOpExecutioner::execReduceFloatScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                             extraParams, LegacyTensorArg::fromArray(result));
   registerUse({result}, {this});
 
   return result;
@@ -2900,9 +2899,8 @@ NDArray *NDArray::reduceNumber(sd::reduce::SameOps op, void *extraParams)  {
   NDArray *result = new NDArray(dataType(), getContext());
 
   prepareUse({result}, {this});
-  NativeOpExecutioner::execReduceSameScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                            specialShapeInfo(), extraParams, result->buffer(), result->shapeInfo(),
-                                            result->specialBuffer(), result->specialShapeInfo());
+  NativeOpExecutioner::execReduceSameScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                            extraParams, LegacyTensorArg::fromArray(result));
   registerUse({result}, {this});
 
   return result;
@@ -2916,9 +2914,8 @@ NDArray *NDArray::reduceNumber(sd::reduce::BoolOps op, void *extraParams)  {
   NDArray *result = new NDArray(shape, true, this->getContext());
 
   prepareUse({result}, {this});
-  NativeOpExecutioner::execReduceBoolScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                            specialShapeInfo(), extraParams, result->buffer(), result->shapeInfo(),
-                                            result->specialBuffer(), result->specialShapeInfo());
+  NativeOpExecutioner::execReduceBoolScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                            extraParams, LegacyTensorArg::fromArray(result));
   registerUse({result}, {this});
 
   return result;
@@ -2932,9 +2929,8 @@ NDArray *NDArray::reduceNumber(sd::reduce::LongOps op, void *extraParams)  {
   NDArray *result = new NDArray(shape, true, this->getContext());
 
   prepareUse({result}, {this});
-  NativeOpExecutioner::execReduceLongScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                            specialShapeInfo(), extraParams, result->buffer(), result->shapeInfo(),
-                                            result->specialBuffer(), result->specialShapeInfo());
+  NativeOpExecutioner::execReduceLongScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                            extraParams, LegacyTensorArg::fromArray(result));
   registerUse({result}, {this});
 
   return result;
@@ -2947,9 +2943,8 @@ void NDArray::reduceNumber(sd::reduce::FloatOps op, NDArray *target, void *extra
     THROW_EXCEPTION("NDArray::reduceNumber FloatOps: target array should be scalar and have corresponding float type!");
 
   prepareUse({target}, {this});
-  NativeOpExecutioner::execReduceFloatScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                             specialShapeInfo(), extraParams, target->buffer(), target->shapeInfo(),
-                                             target->specialBuffer(), target->specialShapeInfo());
+  NativeOpExecutioner::execReduceFloatScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                             extraParams, LegacyTensorArg::fromArray(target));
   registerUse({target}, {this});
 }
 
@@ -2960,9 +2955,8 @@ void NDArray::reduceNumber(sd::reduce::SameOps op, NDArray *target, void *extraP
     THROW_EXCEPTION("NDArray::reduceNumber SameOps: target array should be scalar and have same type as this array!");
 
   prepareUse({target}, {this});
-  NativeOpExecutioner::execReduceSameScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                            specialShapeInfo(), extraParams, target->buffer(), target->shapeInfo(),
-                                            target->specialBuffer(), target->specialShapeInfo());
+  NativeOpExecutioner::execReduceSameScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                            extraParams, LegacyTensorArg::fromArray(target));
   registerUse({target}, {this});
 }
 
@@ -2973,9 +2967,8 @@ void NDArray::reduceNumber(sd::reduce::BoolOps op, NDArray *target, void *extraP
     THROW_EXCEPTION("NDArray::reduceNumber BoolOps: target array should be scalar and have bool type!");
 
   prepareUse({target}, {this});
-  NativeOpExecutioner::execReduceBoolScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                            specialShapeInfo(), extraParams, target->buffer(), target->shapeInfo(),
-                                            target->specialBuffer(), target->specialShapeInfo());
+  NativeOpExecutioner::execReduceBoolScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                            extraParams, LegacyTensorArg::fromArray(target));
   registerUse({target}, {this});
 }
 
@@ -2986,9 +2979,8 @@ void NDArray::reduceNumber(sd::reduce::LongOps op, NDArray *target, void *extraP
     THROW_EXCEPTION("NDArray::reduceNumber LongOps: target array should be scalar and have long type!");
 
   prepareUse({target}, {this});
-  NativeOpExecutioner::execReduceLongScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                            specialShapeInfo(), extraParams, target->buffer(), target->shapeInfo(),
-                                            target->specialBuffer(), target->specialShapeInfo());
+  NativeOpExecutioner::execReduceLongScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                            extraParams, LegacyTensorArg::fromArray(target));
   registerUse({target}, {this});
 }
 
@@ -3000,9 +2992,8 @@ NDArray *NDArray::indexReduceNumber(sd::indexreduce::Ops op, ExtraArguments *ext
 
   prepareUse({res}, {this});
   NativeOpExecutioner::execIndexReduceScalar(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-      extraParams == nullptr ? nullptr : extraParams->argumentsAsT(this->dataType()), res->buffer(), res->shapeInfo(),
-      res->specialBuffer(), res->specialShapeInfo());
+      getContext(), op, LegacyTensorArg::fromArray(this),
+      extraParams == nullptr ? nullptr : extraParams->argumentsAsT(this->dataType()), LegacyTensorArg::fromArray(res));
   registerUse({res}, {this});
 
   return res;
@@ -3367,6 +3358,7 @@ void NDArray::validateAssign(NDArray *thisArray,  NDArray *other) {
 }
 
 // Helper to check if array has contiguous (packed) memory layout
+#if !defined(SD_VULKAN)
 static bool isContiguousLayout(const sd::LongType* shapeInfo) {
   const int rank = shape::rank(shapeInfo);
   if (rank == 0) return true;  // Scalar is contiguous
@@ -3394,47 +3386,45 @@ static bool isContiguousLayout(const sd::LongType* shapeInfo) {
   }
   return true;
 }
+#endif
 
 // Performs the data copy for assignment
 void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism) {
   if (other->lengthOf() <= 1) {
-    // Simple fix for length <= 1 cases - just use p() which handles offsets correctly
+    // Device-only assignment must retain the scalar's allocation and view offset.
     if (thisArray->lengthOf() <= 1 && other->lengthOf() <= 1) {
-#if defined(SD_CUDA)
+#if defined(SD_CUDA) || defined(SD_VULKAN)
       // During CUDA graph capture, p() takes the host path: D2H is guarded (skipped),
       // so scalar->buffer() contains zeros, which are then baked into an H2D graph node.
       // On every replay that H2D node writes 0.0 to the output, overwriting the actual
       // computed value (e.g. the SUM loss result written by reduceNumber).
       // Fix: use the device scalar-copy path instead so the captured node reads the
       // device value at replay time rather than a baked-in pinned-workspace zero.
-      if (tl_graphExecutionActive) {
+#if defined(SD_CUDA)
+      if (tl_graphExecutionActive)
+#endif
+      {
         NDArray::prepareSpecialUse({other}, {thisArray});
         NativeOpExecutioner::execScalar(thisArray->getContext(), scalar::CopyPws,
-                                        other->buffer(), other->shapeInfo(),
-                                        other->specialBuffer(), other->specialShapeInfo(),
-                                        other->buffer(), other->shapeInfo(),
-                                        other->specialBuffer(), other->specialShapeInfo(),
-                                        thisArray->buffer(), thisArray->shapeInfo(),
-                                        thisArray->specialBuffer(), thisArray->specialShapeInfo(),
+                                        LegacyTensorArg::fromArray(other), LegacyTensorArg::fromArray(other),
+                                        LegacyTensorArg::fromArray(thisArray),
                                         nullptr, allowParallelism);
         NDArray::registerSpecialUse({other}, {thisArray});
         return;
       }
 #endif
+#if !defined(SD_VULKAN)
       other->p(0, thisArray);
       return;
+#endif
     }
 
     // FIX: prepareSpecialUse takes (writeList, readList)
     // We are reading from thisArray (source) and writing to other (destination)
     NDArray::prepareSpecialUse({other}, {thisArray});
     NativeOpExecutioner::execScalar(thisArray->getContext(), scalar::CopyPws,
-                                    other->buffer(), other->shapeInfo(),
-                                    other->specialBuffer(), other->specialShapeInfo(),
-                                    other->buffer(), other->shapeInfo(),
-                                    other->specialBuffer(), other->specialShapeInfo(),
-                                    thisArray->buffer(), thisArray->shapeInfo(),
-                                    thisArray->specialBuffer(), thisArray->specialShapeInfo(),
+                                    LegacyTensorArg::fromArray(other), LegacyTensorArg::fromArray(other),
+                                    LegacyTensorArg::fromArray(thisArray),
                                     nullptr, allowParallelism);
     // FIX: registerSpecialUse takes (writeList, readList)
     NDArray::registerSpecialUse({other}, {thisArray});
@@ -3443,17 +3433,14 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
     // Scalar source -> non-scalar destination: broadcast scalar to fill destination
     NDArray::prepareSpecialUse({other}, {thisArray});
     NativeOpExecutioner::execScalar(thisArray->getContext(), scalar::CopyPws,
-                                    other->buffer(), other->shapeInfo(),
-                                    other->specialBuffer(), other->specialShapeInfo(),
-                                    other->buffer(), other->shapeInfo(),
-                                    other->specialBuffer(), other->specialShapeInfo(),
-                                    thisArray->buffer(), thisArray->shapeInfo(),
-                                    thisArray->specialBuffer(), thisArray->specialShapeInfo(),
+                                    LegacyTensorArg::fromArray(other), LegacyTensorArg::fromArray(other),
+                                    LegacyTensorArg::fromArray(thisArray),
                                     nullptr, allowParallelism);
     NDArray::registerSpecialUse({other}, {thisArray});
 
   } else {
-    // Fast path: use memcpy when both arrays are contiguous with same type, length, and order
+#if !defined(SD_VULKAN)
+    // CPU/CUDA packed-copy shortcuts. Vulkan assignment uses the device Assign operation below.
     bool sameType = (thisArray->dataType() == other->dataType());
     bool sameLength = (thisArray->lengthOf() == other->lengthOf());
     bool sameOrder = (shape::order(thisArray->shapeInfo()) == shape::order(other->shapeInfo()));
@@ -3498,19 +3485,14 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
       other->syncToDevice();
       return;
     }
+#endif
 
     // General path: use Assign kernel (handles non-contiguous layouts, different strides)
     NDArray::prepareSpecialUse({other}, {thisArray});
     NativeOpExecutioner::execTransformAny(thisArray->getContext(),
                                           transform::Assign,
-                                          thisArray->buffer(),
-                                          thisArray->shapeInfo(),
-                                          thisArray->specialBuffer(),
-                                          thisArray->specialShapeInfo(),
-                                          other->buffer(),
-                                          other->shapeInfo(),
-                                          other->specialBuffer(),
-                                          other->specialShapeInfo(),
+                                          LegacyTensorArg::fromArray(thisArray),
+                                          LegacyTensorArg::fromArray(other),
                                           nullptr,
                                           allowParallelism);
     NDArray::registerSpecialUse({other}, {thisArray});
@@ -3953,9 +3935,8 @@ NDArray * NDArray::asT()  {
                            : new NDArray(ordering(), shapeCopy, DataTypeUtils::fromT<T>(), this->getContext());
 
   prepareSpecialUse({result}, {this});
-  NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, buffer(), shapeInfo(), specialBuffer(),
-                                        specialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(),
-                                        result->specialShapeInfo(), nullptr, false);
+  NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign,
+                                        LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(result), nullptr, false);
   registerSpecialUse({result}, {this});
 
   delete shape;
@@ -4235,9 +4216,8 @@ void NDArray::applyTrueBroadcast(sd::BroadcastOpsTuple op, NDArray *other, NDArr
   }
 
   prepareUse({target}, {this, other});
-  NativeOpExecutioner::execBroadcast(getContext(), op.b, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD,
-                                     other->buffer(), yShapeInfoH, other->specialBuffer(), yShapeInfoD, target->buffer(),
-                                     target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
+  NativeOpExecutioner::execBroadcast(getContext(), op.b, LegacyTensorArg::withShape(this, xShapeInfoH, xShapeInfoD),
+                                     LegacyTensorArg::withShape(other, yShapeInfoH, yShapeInfoD), LegacyTensorArg::fromArray(target));
   registerUse({target}, {this, other});
 
   // Buffers are owned by cache - no cleanup needed
@@ -4322,18 +4302,9 @@ void NDArray::applyTrueBroadcast(sd::BroadcastBoolOpsTuple op, NDArray *other, N
 
   prepareSpecialUse({target}, {this, actualOther});
   NativeOpExecutioner::execBroadcastBool(getContext(), op.b,
-                                         buffer(),
-                                         xShapeInfoH,
-                                         specialBuffer(),
-                                         xShapeInfoD,
-                                         actualOther->buffer(),
-                                         yShapeInfoH,
-                                         actualOther->specialBuffer(),
-                                         yShapeInfoD,
-                                         target->buffer(),
-                                         target->shapeInfo(),
-                                         target->specialBuffer(),
-                                         target->specialShapeInfo(), nullptr);
+                                         LegacyTensorArg::withShape(this, xShapeInfoH, xShapeInfoD),
+                                         LegacyTensorArg::withShape(actualOther, yShapeInfoH, yShapeInfoD),
+                                         LegacyTensorArg::fromArray(target), nullptr);
   registerSpecialUse({target}, {this, actualOther});
 
   // Buffers are owned by cache - no cleanup needed
@@ -4410,10 +4381,9 @@ void NDArray::applyTrueBroadcast(sd::BroadcastIntOpsTuple op, NDArray *other, ND
   }
 
   prepareUse({target}, {this, other});
-  NativeOpExecutioner::execBroadcastInt(getContext(), op.b, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD,
-                                        other->buffer(), yShapeInfoH, other->specialBuffer(), yShapeInfoD,
-                                        target->buffer(), target->shapeInfo(), target->specialBuffer(),
-                                        target->specialShapeInfo());
+  NativeOpExecutioner::execBroadcastInt(getContext(), op.b, LegacyTensorArg::withShape(this, xShapeInfoH, xShapeInfoD),
+                                        LegacyTensorArg::withShape(other, yShapeInfoH, yShapeInfoD),
+                                        LegacyTensorArg::fromArray(target));
   registerUse({target}, {this, other});
 
   // Buffers are owned by cache - no cleanup needed
@@ -4559,9 +4529,8 @@ void NDArray::applyBroadcast(sd::broadcast::Ops op, const std::vector<LongType> 
   }
 
   prepareUse({target}, {this, tad});
-  NativeOpExecutioner::execBroadcast(getContext(), op, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD,
-                                     tad->buffer(), yShapeInfoH, tad->specialBuffer(), yShapeInfoD, target->buffer(),
-                                     target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
+  NativeOpExecutioner::execBroadcast(getContext(), op, LegacyTensorArg::withShape(this, xShapeInfoH, xShapeInfoD),
+                                     LegacyTensorArg::withShape(tad, yShapeInfoH, yShapeInfoD), LegacyTensorArg::fromArray(target));
   registerUse({target}, {this, tad});
 
   // Commit 9d0efc4290b added reference counting but missed updating this method.
@@ -4668,9 +4637,8 @@ void NDArray::applyBroadcast(sd::broadcast::BoolOps op, const std::vector<LongTy
   }
 
   prepareUse({target}, {this, actualTad});
-  NativeOpExecutioner::execBroadcastBool(getContext(), op, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD,
-                                         actualTad->buffer(), yShapeInfoH, actualTad->specialBuffer(), yShapeInfoD, target->buffer(),
-                                         target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(),
+  NativeOpExecutioner::execBroadcastBool(getContext(), op, LegacyTensorArg::withShape(this, xShapeInfoH, xShapeInfoD),
+                                         LegacyTensorArg::withShape(actualTad, yShapeInfoH, yShapeInfoD), LegacyTensorArg::fromArray(target),
                                          nullptr);
   registerUse({target}, {this, actualTad});
 
@@ -4781,9 +4749,8 @@ void NDArray::applyBroadcast(sd::broadcast::IntOps op, const std::vector<LongTyp
   }
 
   prepareUse({target}, {this, tad});
-  NativeOpExecutioner::execBroadcastInt(getContext(), op, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD,
-                                        tad->buffer(), yShapeInfoH, tad->specialBuffer(), yShapeInfoD, target->buffer(),
-                                        target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
+  NativeOpExecutioner::execBroadcastInt(getContext(), op, LegacyTensorArg::withShape(this, xShapeInfoH, xShapeInfoD),
+                                        LegacyTensorArg::withShape(tad, yShapeInfoH, yShapeInfoD), LegacyTensorArg::fromArray(target));
 
   delete copy;
   registerUse({target}, {this, tad});
@@ -5084,14 +5051,7 @@ void NDArray::applyPairwiseTransform(pairwise::Ops op, NDArray *other, NDArray *
 
   NativeOpExecutioner::execPairwiseTransform(
       getContext(), op,
-      buffer(),
-      shapeInfo(), specialBuffer(),
-      specialShapeInfo(), other->buffer(),
-      other->shapeInfo(),
-      other->specialBuffer(), other->specialShapeInfo(),
-      target->buffer(), target->shapeInfo(),
-      target->specialBuffer(),
-      target->specialShapeInfo(),
+      LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(other), LegacyTensorArg::fromArray(target),
       extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
 
   NDArray::registerSpecialUse({target}, {this, other});
@@ -5117,9 +5077,8 @@ void NDArray::applyPairwiseTransform(pairwise::BoolOps op, NDArray *other, NDArr
 
   prepareUse({target}, {this, actualOther});
   NativeOpExecutioner::execPairwiseBoolTransform(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), actualOther->buffer(), actualOther->shapeInfo(),
-      actualOther->specialBuffer(), actualOther->specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(),
-      target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
+      getContext(), op, LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(actualOther),
+      LegacyTensorArg::fromArray(target), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
   registerUse({target}, {this, actualOther});
 
   delete castedOther;
@@ -5137,9 +5096,8 @@ void NDArray::applyPairwiseTransform(pairwise::IntOps op, NDArray *other, NDArra
 
   prepareUse({target}, {this, other});
   NativeOpExecutioner::execPairwiseIntTransform(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->buffer(), other->shapeInfo(),
-      other->specialBuffer(), other->specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(),
-      target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
+      getContext(), op, LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(other),
+      LegacyTensorArg::fromArray(target), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
   registerUse({target}, {this, other});
 }
 
@@ -5175,32 +5133,34 @@ void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, cons
   prepareUse({&target}, {this});
 
   if (static_cast<size_t>(rankOf()) == dimensions->size() || dimensions->empty())
-    NativeOpExecutioner::execSummaryStatsScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                                specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(),
-                                                target.specialBuffer(), target.specialShapeInfo(), biasCorrected);
+    NativeOpExecutioner::execSummaryStatsScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                                nullptr, LegacyTensorArg::fromArray(&target), biasCorrected);
   else {
     std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
+    // Vulkan consumes semantic host axes; CUDA continues to use its separate TAD metadata.
+#if defined(SD_VULKAN)
+    auto pDims = copy->data();
+#else
     auto pDims = sd::Environment::getInstance().isCPU() ? copy->data() : nullptr;
+#endif
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), copy);
 
     // Strip keepDims unity dims from target shapeInfo before passing to the kernel,
     // mirroring the logic in reduceAlongDimension (which uses createShapeInfoWithNoUnitiesForReduce).
     // Without this, a target created with keepDims=true (e.g. shape [2,1]) passes a rank-2 shapeInfo
     // to a kernel that expects a rank-1 output ([2]), causing wrong TAD-to-output indexing on CUDA.
-    // execSummaryStats takes NON-const LongType* for the z shapeInfo (unlike execReduceFloat),
-    // so declare these non-const and const_cast the cached shape buffers.
-    sd::LongType *zShapeInfoH = const_cast<sd::LongType *>(target.shapeInfo());
-    sd::LongType *zShapeInfoD = const_cast<sd::LongType *>(target.specialShapeInfo());
+    const sd::LongType *zShapeInfoH = target.shapeInfo();
+    const sd::LongType *zShapeInfoD = target.specialShapeInfo();
     if (static_cast<size_t>(rankOf()) - dimensions->size() != static_cast<size_t>(target.rankOf())) {
       auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
           target.shapeInfo(), copy, target.getContext()->getWorkspace());
-      zShapeInfoH = const_cast<sd::LongType *>(reinterpret_cast<const sd::LongType *>(zPack->primary()));
-      zShapeInfoD = const_cast<sd::LongType *>(reinterpret_cast<const sd::LongType *>(zPack->special()));
+      zShapeInfoH = zPack->primary();
+      zShapeInfoD = zPack->special();
     }
 
-    NativeOpExecutioner::execSummaryStats(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                          nullptr, target.buffer(), zShapeInfoH, target.specialBuffer(),
-                                          zShapeInfoD, pDims, dimensions->size(),
+    NativeOpExecutioner::execSummaryStats(getContext(), op, LegacyTensorArg::fromArray(this),
+                                          nullptr, LegacyTensorArg::withShape(&target, zShapeInfoH, zShapeInfoD),
+                                          pDims, dimensions->size(),
                                           packX->platformShapeInfo(), packX->platformOffsets(), biasCorrected);
     delete copy;
     synchronize("NDArray::varianceAlongDimension");
@@ -5370,16 +5330,15 @@ bool NDArray::equalsTo(NDArray *other, double eps)  {
     NDArray tmp(sd::DataType::DOUBLE, getContext());  // scalar = 0
 
     ExtraArguments extras({0.0, 0.0, eps});
-#if defined(SD_CUDA)
+#if defined(SD_CUDA) || defined(SD_VULKAN)
     prepareUse({&tmp}, {this, other});
 #else
     NDArray::preparePrimaryUse({&tmp}, {this, other});
 #endif
-    NativeOpExecutioner::execReduce3Scalar(getContext(), reduce3::EqualsWithEps, buffer(), shapeInfo(), specialBuffer(),
-                                           specialShapeInfo(), extras.argumentsAsT(DataType::DOUBLE), other->buffer(),
-                                           other->shapeInfo(), other->specialBuffer(), other->specialShapeInfo(),
-                                           tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo());
-#if defined(SD_CUDA)
+    NativeOpExecutioner::execReduce3Scalar(getContext(), reduce3::EqualsWithEps, LegacyTensorArg::fromArray(this),
+                                           extras.argumentsAsT(DataType::DOUBLE), LegacyTensorArg::fromArray(other),
+                                           LegacyTensorArg::fromArray(&tmp));
+#if defined(SD_CUDA) || defined(SD_VULKAN)
     NDArray::registerSpecialUse({&tmp}, {this, other});
 #else
     NDArray::registerPrimaryUse({&tmp}, {this, other});
@@ -5625,8 +5584,7 @@ void NDArray::applyTransform(sd::transform::FloatOps op, NDArray *target, ExtraA
 
   NDArray::prepareSpecialUse({target}, {this});
   NativeOpExecutioner::execTransformFloat(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(),
-      target->specialBuffer(), target->specialShapeInfo(),
+      getContext(), op, LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(target),
       extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
   NDArray::registerSpecialUse({target}, {this});
 }
@@ -5637,8 +5595,7 @@ void NDArray::applyTransform(sd::transform::AnyOps op, NDArray *target, ExtraArg
 
   NDArray::prepareSpecialUse({target}, {this});
   NativeOpExecutioner::execTransformAny(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(),
-      target->specialBuffer(), target->specialShapeInfo(),
+      getContext(), op, LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(target),
       extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, false);
   NDArray::registerSpecialUse({target}, {this});
 }
@@ -5652,8 +5609,7 @@ void NDArray::applyTransform(sd::transform::SameOps op, NDArray *target, ExtraAr
 
   NDArray::prepareSpecialUse({target}, {this});
   NativeOpExecutioner::execTransformSame(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(),
-      target->specialBuffer(), target->specialShapeInfo(),
+      getContext(), op, LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(target),
       extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
   NDArray::registerSpecialUse({target}, {this});
 }
@@ -5667,8 +5623,7 @@ void NDArray::applyTransform(transform::StrictOps op, NDArray *target, ExtraArgu
 
   NDArray::prepareSpecialUse({target}, {this});
   NativeOpExecutioner::execTransformStrict(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(),
-      target->specialBuffer(), target->specialShapeInfo(),
+      getContext(), op, LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(target),
       extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
   NDArray::registerSpecialUse({target}, {this});
 }
@@ -5683,9 +5638,8 @@ void NDArray::applyTransform(sd::transform::BoolOps op, NDArray *target, ExtraAr
 
   void* extra = extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr;
 
-  NativeOpExecutioner::execTransformBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         target->buffer(), target->shapeInfo(), target->specialBuffer(),
-                                         target->specialShapeInfo(), extra);
+  NativeOpExecutioner::execTransformBool(getContext(), op, LegacyTensorArg::fromArray(this),
+                                         LegacyTensorArg::fromArray(target), extra);
   NDArray::registerSpecialUse({target}, {this});
 }
 
@@ -5699,9 +5653,8 @@ NDArray* NDArray::transform(sd::transform::FloatOps op, void *extraParams)  & {
   NDArray *result = new NDArray(ordering(), shapeCopy, DataTypeUtils::pickFloatingType(dataType()), getContext());
 
   NDArray::prepareSpecialUse({result}, {this});
-  NativeOpExecutioner::execTransformFloat(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                          result->buffer(), result->shapeInfo(), result->specialBuffer(),
-                                          result->specialShapeInfo(), extraParams);
+  NativeOpExecutioner::execTransformFloat(getContext(), op, LegacyTensorArg::fromArray(this),
+                                          LegacyTensorArg::fromArray(result), extraParams);
   NDArray::registerSpecialUse({result}, {this});
   delete shape;
   return result;
@@ -5711,8 +5664,8 @@ NDArray* NDArray::transform(sd::transform::FloatOps op, void *extraParams) && {
   if (isS()) THROW_EXCEPTION("NDArray::transform SameOps: you can't use this method on String array!");
 
   NDArray::prepareSpecialUse({this}, {this});
-  NativeOpExecutioner::execTransformFloat(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                          buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams);
+  NativeOpExecutioner::execTransformFloat(getContext(), op, LegacyTensorArg::fromArray(this),
+                                          LegacyTensorArg::fromArray(this), extraParams);
   NDArray::registerSpecialUse({this}, {this});
 
   return this;
@@ -5725,9 +5678,8 @@ NDArray* NDArray::transform(sd::transform::SameOps op, void *extraParams)  & {
   NDArray *result = new NDArray(shapeInfo(), false, getContext());
 
   NDArray::prepareSpecialUse({result}, {this});
-  NativeOpExecutioner::execTransformSame(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         result->buffer(), result->shapeInfo(), result->specialBuffer(),
-                                         result->specialShapeInfo(), extraParams, nullptr, nullptr);
+  NativeOpExecutioner::execTransformSame(getContext(), op, LegacyTensorArg::fromArray(this),
+                                         LegacyTensorArg::fromArray(result), extraParams, nullptr, nullptr);
   NDArray::registerSpecialUse({result}, {this});
 
   return result;
@@ -5738,8 +5690,8 @@ NDArray* NDArray::transform(sd::transform::SameOps op, void *extraParams) && {
   if (isS()) THROW_EXCEPTION("NDArray::transform SameOps: you can't use this method on String array!");
 
   NDArray::prepareSpecialUse({this}, {this});
-  NativeOpExecutioner::execTransformSame(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams,
+  NativeOpExecutioner::execTransformSame(getContext(), op, LegacyTensorArg::fromArray(this),
+                                         LegacyTensorArg::fromArray(this), extraParams,
                                          nullptr, nullptr);
   NDArray::registerSpecialUse({this}, {this});
 
@@ -5753,9 +5705,8 @@ NDArray* NDArray::transform(sd::transform::StrictOps op, void *extraParams)  & {
   NDArray *result = new NDArray(shapeInfo(), false, getContext());
 
   NDArray::prepareSpecialUse({result}, {this});
-  NativeOpExecutioner::execTransformStrict(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                           result->buffer(), result->shapeInfo(), result->specialBuffer(),
-                                           result->specialShapeInfo(), extraParams);
+  NativeOpExecutioner::execTransformStrict(getContext(), op, LegacyTensorArg::fromArray(this),
+                                           LegacyTensorArg::fromArray(result), extraParams);
   NDArray::registerSpecialUse({result}, {this});
 
   return result;
@@ -5766,8 +5717,8 @@ NDArray* NDArray::transform(sd::transform::StrictOps op, void *extraParams) && {
   if (!this->isR()) THROW_EXCEPTION("Source array must have one of FLOAT types");
 
   NDArray::prepareSpecialUse({this}, {this});
-  NativeOpExecutioner::execTransformStrict(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                           buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams);
+  NativeOpExecutioner::execTransformStrict(getContext(), op, LegacyTensorArg::fromArray(this),
+                                           LegacyTensorArg::fromArray(this), extraParams);
   NDArray::registerSpecialUse({this}, {this});
 
   return this;
@@ -5782,9 +5733,8 @@ NDArray* NDArray::transform(sd::transform::BoolOps op, void *extraParams)  & {
   NDArray *result = new NDArray(ordering(), *shape, sd::DataType::BOOL, getContext());
 
   NDArray::prepareSpecialUse({result}, {this});
-  NativeOpExecutioner::execTransformBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         result->buffer(), result->shapeInfo(), result->specialBuffer(),
-                                         result->specialShapeInfo(), extraParams);
+  NativeOpExecutioner::execTransformBool(getContext(), op, LegacyTensorArg::fromArray(this),
+                                         LegacyTensorArg::fromArray(result), extraParams);
   NDArray::registerSpecialUse({result}, {this});
   delete shape;
   return result;
@@ -5795,8 +5745,8 @@ NDArray* NDArray::transform(sd::transform::BoolOps op, void *extraParams) && {
   if (isS()) THROW_EXCEPTION("NDArray::transform BoolOps: you can't use this method on String array!");
 
   NDArray::prepareSpecialUse({this}, {this});
-  NativeOpExecutioner::execTransformBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams);
+  NativeOpExecutioner::execTransformBool(getContext(), op, LegacyTensorArg::fromArray(this),
+                                         LegacyTensorArg::fromArray(this), extraParams);
   NDArray::registerSpecialUse({this}, {this});
 
   return this;
@@ -5838,9 +5788,8 @@ void NDArray::applyScalarArr(sd::scalar::Ops op, NDArray *scalar, NDArray *targe
 
   NDArray::prepareSpecialUse({target}, {this, actualScalar});
   NativeOpExecutioner::execScalar(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(),
-      target->specialBuffer(), target->specialShapeInfo(), actualScalar->buffer(), actualScalar->shapeInfo(),
-      actualScalar->specialBuffer(), actualScalar->specialShapeInfo(),
+      getContext(), op, LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(target),
+      LegacyTensorArg::fromArray(actualScalar),
       extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
   NDArray::registerSpecialUse({target}, {this, actualScalar});
   if (castedScalar != nullptr) delete castedScalar;
@@ -5862,9 +5811,8 @@ void NDArray::applyScalarArr(sd::scalar::BoolOps op, NDArray *scalar, NDArray *t
 
   NDArray::prepareSpecialUse({target}, {this, actualScalar});
   NativeOpExecutioner::execScalarBool(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(),
-      target->specialBuffer(), target->specialShapeInfo(), actualScalar->buffer(), actualScalar->shapeInfo(), actualScalar->specialBuffer(),
-      actualScalar->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
+      getContext(), op, LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(target),
+      LegacyTensorArg::fromArray(actualScalar), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
   NDArray::registerSpecialUse({target}, {this, actualScalar});
 
   delete castedScalar;
@@ -5883,9 +5831,8 @@ void NDArray::applyScalarArr(sd::scalar::IntOps op, NDArray *scalar, NDArray *ta
 
   NDArray::prepareSpecialUse({target}, {this, scalar});
   NativeOpExecutioner::execScalarInt(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(),
-      target->specialBuffer(), target->specialShapeInfo(), scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(),
-      scalar->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
+      getContext(), op, LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(target),
+      LegacyTensorArg::fromArray(scalar), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
   NDArray::registerSpecialUse({target}, {this, scalar});
 }
 
@@ -6052,17 +5999,20 @@ void NDArray::applyIndexReduce(sd::indexreduce::Ops op, NDArray *target, const s
   NDArray::prepareSpecialUse({target}, {this});
 
   if (target->isScalar()) {
-    NativeOpExecutioner::execIndexReduceScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                               specialShapeInfo(), params, target->buffer(), target->shapeInfo(),
-                                               target->specialBuffer(), target->specialShapeInfo());
+    NativeOpExecutioner::execIndexReduceScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                               params, LegacyTensorArg::fromArray(target));
   } else {
     std::vector<sd::LongType> *copy = const_cast<std::vector<sd::LongType> *>(dimensions);
     shape::checkDimensions(rankOf(), copy);
+    // Vulkan consumes semantic host axes; CUDA continues to use its separate TAD metadata.
+#if defined(SD_VULKAN)
+    auto pDims = copy->data();
+#else
     auto pDims = sd::Environment::getInstance().isCPU() ? copy->data() : nullptr;
+#endif
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), copy);
-    NativeOpExecutioner::execIndexReduce(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         params, target->buffer(), target->shapeInfo(), target->specialBuffer(),
-                                         target->specialShapeInfo(), pDims, copy->size(), packX->platformShapeInfo(),
+    NativeOpExecutioner::execIndexReduce(getContext(), op, LegacyTensorArg::fromArray(this),
+                                         params, LegacyTensorArg::fromArray(target), pDims, copy->size(), packX->platformShapeInfo(),
                                          packX->platformOffsets());
     synchronize("NDArray::applyIndexReduce");
   }
@@ -6103,10 +6053,8 @@ NDArray NDArray::applyReduce3(sd::reduce3::Ops op, NDArray *other, const ExtraAr
   void *params = extraParams != nullptr ? const_cast<ExtraArguments *>(extraParams)->argumentsAsT(dataType()) : nullptr;
 
   NDArray::prepareSpecialUse({&result}, {this, other});
-  NativeOpExecutioner::execReduce3Scalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         params, other->buffer(), other->shapeInfo(), other->specialBuffer(),
-                                         other->specialShapeInfo(), result.buffer(), result.shapeInfo(),
-                                         result.specialBuffer(), result.specialShapeInfo());
+  NativeOpExecutioner::execReduce3Scalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                         params, LegacyTensorArg::fromArray(other), LegacyTensorArg::fromArray(&result));
   NDArray::registerSpecialUse({&result}, {this, other});
 
   return result;
@@ -6120,7 +6068,8 @@ NDArray NDArray::applyReduce3(sd::reduce3::Ops op, NDArray *other, const std::ve
   if (dataType() != other->dataType())
     THROW_EXCEPTION("NDArray::applyReduce3 method: the types of this and other arrays must be the same !");
 
-  std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(dimensions);
+  std::vector<sd::LongType> dimensionCopy(dimensions);
+  auto* copy = &dimensionCopy;
   shape::checkDimensions(rankOf(), copy);
   shape::checkDimensions(other->rankOf(), copy);
 
@@ -6134,12 +6083,15 @@ NDArray NDArray::applyReduce3(sd::reduce3::Ops op, NDArray *other, const std::ve
 
   // perform calculations
   if (static_cast<size_t>(rankOf()) == copy->size() && static_cast<size_t>(other->rankOf()) == copy->size()) {
-    NativeOpExecutioner::execReduce3Scalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                           params, other->buffer(), other->shapeInfo(), other->specialBuffer(),
-                                           other->specialShapeInfo(), result.buffer(), result.shapeInfo(),
-                                           result.specialBuffer(), result.specialShapeInfo());
+    NativeOpExecutioner::execReduce3Scalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                           params, LegacyTensorArg::fromArray(other), LegacyTensorArg::fromArray(&result));
   } else {
+    // Vulkan consumes semantic host axes; CUDA continues to use its separate TAD metadata.
+#if defined(SD_VULKAN)
+    auto pDims = copy->data();
+#else
     auto pDims = sd::Environment::getInstance().isCPU() ? copy->data() : nullptr;
+#endif
 
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), copy);
     auto packY = sd::ConstantTadHelper::getInstance().tadForDimensions(other->shapeInfo(), copy);
@@ -6149,9 +6101,8 @@ NDArray NDArray::applyReduce3(sd::reduce3::Ops op, NDArray *other, const std::ve
       THROW_EXCEPTION("NDArray::applyReduce3 cuda method: arrays tads are inconsistent !");
 
     NativeOpExecutioner::execReduce3(
-        getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), params, other->buffer(),
-        other->shapeInfo(), other->specialBuffer(), other->specialShapeInfo(), result.buffer(), result.shapeInfo(),
-        result.specialBuffer(), result.specialShapeInfo(), pDims, copy->size(), packX->platformShapeInfo(),
+        getContext(), op, LegacyTensorArg::fromArray(this), params, LegacyTensorArg::fromArray(other),
+        LegacyTensorArg::fromArray(&result), pDims, copy->size(), packX->platformShapeInfo(),
         packX->platformOffsets(), packY->platformShapeInfo(), packY->platformOffsets());
   }
 
@@ -6170,7 +6121,8 @@ NDArray NDArray::applyAllReduce3(sd::reduce3::Ops op, NDArray *other, const std:
 
   // be careful, copy array may undergo changes (sort, transformation of negative dimensions to positive, duplicates
   // removing )
-  std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
+  std::vector<sd::LongType> dimensionCopy(*dimensions);
+  auto* copy = &dimensionCopy;
   shape::checkDimensions(rankOf(), copy);
   shape::checkDimensions(other->rankOf(), copy);
 
@@ -6191,13 +6143,17 @@ NDArray NDArray::applyAllReduce3(sd::reduce3::Ops op, NDArray *other, const std:
   // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
   void *params = extraParams != nullptr ? const_cast<ExtraArguments *>(extraParams)->argumentsAsT(dataType()) : nullptr;
 
+  // Vulkan consumes semantic host axes; CUDA continues to use its separate TAD metadata.
+#if defined(SD_VULKAN)
+  auto pDims = copy->data();
+#else
   auto pDims = sd::Environment::getInstance().isCPU() ? copy->data() : nullptr;
+#endif
 
   NDArray::prepareSpecialUse({&result}, {this, other});
   NativeOpExecutioner::execReduce3All(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), params, other->buffer(),
-      other->shapeInfo(), other->specialBuffer(), other->specialShapeInfo(), result.buffer(), result.shapeInfo(),
-      result.specialBuffer(), result.specialShapeInfo(), pDims, copy->size(), packX->platformShapeInfo(),
+      getContext(), op, LegacyTensorArg::fromArray(this), params, LegacyTensorArg::fromArray(other),
+      LegacyTensorArg::fromArray(&result), pDims, copy->size(), packX->platformShapeInfo(),
       packX->platformOffsets(), packY->platformShapeInfo(), packY->platformOffsets());
   NDArray::registerSpecialUse({&result}, {this, other});
 
@@ -6225,9 +6181,8 @@ void NDArray::reduceAlongDimension(sd::reduce::FloatOps op, NDArray *target, con
   NDArray::prepareSpecialUse({target}, {this});
 
   if (static_cast<size_t>(rankOf()) == copy->size() || copy->empty()) {
-    NativeOpExecutioner::execReduceFloatScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                               specialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(),
-                                               target->specialBuffer(), target->specialShapeInfo());
+    NativeOpExecutioner::execReduceFloatScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                               nullptr, LegacyTensorArg::fromArray(target));
   } else {
     const sd::LongType *zShapeInfoH = target->shapeInfo();
     const sd::LongType *zShapeInfoD = target->specialShapeInfo();
@@ -6239,14 +6194,23 @@ void NDArray::reduceAlongDimension(sd::reduce::FloatOps op, NDArray *target, con
       zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
+    // CPU/CUDA consume an indexing permutation; Vulkan needs only the semantic reduction axes.
+#if defined(SD_VULKAN)
+    auto* dims = copy;
+#else
     std::vector<sd::LongType> *dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
-    NativeOpExecutioner::execReduceFloat(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         nullptr, target->buffer(), zShapeInfoH, target->specialBuffer(), zShapeInfoD,
+#endif
+    NativeOpExecutioner::execReduceFloat(getContext(), op, LegacyTensorArg::fromArray(this),
+                                         nullptr, LegacyTensorArg::withShape(target, zShapeInfoH, zShapeInfoD),
                                          dims->data(), dims->size());
+#if !defined(SD_VULKAN)
+    delete dims;
+#endif
   }
   synchronize("NDArray::reduceAlongDimension FloatOps");
 
   NDArray::registerSpecialUse({target}, {this});
+  delete copy;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -6273,9 +6237,8 @@ void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray *target, cons
   NDArray::prepareSpecialUse({target}, {this});
 
   if (static_cast<size_t>(rankOf()) == copy->size() || copy->empty()) {
-    NativeOpExecutioner::execReduceSameScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                              specialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(),
-                                              target->specialBuffer(), target->specialShapeInfo());
+    NativeOpExecutioner::execReduceSameScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                              nullptr, LegacyTensorArg::fromArray(target));
   } else {
     const sd::LongType *zShapeInfoH = target->shapeInfo();
     const sd::LongType *zShapeInfoD = target->specialShapeInfo();
@@ -6287,10 +6250,18 @@ void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray *target, cons
       zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
+    // CPU/CUDA consume an indexing permutation; Vulkan needs only the semantic reduction axes.
+#if defined(SD_VULKAN)
+    auto* dims = copy;
+#else
     std::vector<sd::LongType> *dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
-    NativeOpExecutioner::execReduceSame(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                        nullptr, target->buffer(), zShapeInfoH, target->specialBuffer(), zShapeInfoD,
+#endif
+    NativeOpExecutioner::execReduceSame(getContext(), op, LegacyTensorArg::fromArray(this),
+                                        nullptr, LegacyTensorArg::withShape(target, zShapeInfoH, zShapeInfoD),
                                         dims->data(), dims->size());
+#if !defined(SD_VULKAN)
+    delete dims;
+#endif
   }
   synchronize("NDArray::reduceAlongDimension SameOps");
 
@@ -6321,9 +6292,8 @@ void NDArray::reduceAlongDimension(sd::reduce::LongOps op, NDArray *target, cons
   NDArray::prepareSpecialUse({target}, {this});
 
   if (static_cast<size_t>(rankOf()) == copy->size() || copy->empty()) {
-    NativeOpExecutioner::execReduceLongScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                              specialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(),
-                                              target->specialBuffer(), target->specialShapeInfo());
+    NativeOpExecutioner::execReduceLongScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                              nullptr, LegacyTensorArg::fromArray(target));
   } else {
     const sd::LongType *zShapeInfoH = target->shapeInfo();
     const sd::LongType *zShapeInfoD = target->specialShapeInfo();
@@ -6335,14 +6305,23 @@ void NDArray::reduceAlongDimension(sd::reduce::LongOps op, NDArray *target, cons
       zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
+    // CPU/CUDA consume an indexing permutation; Vulkan needs only the semantic reduction axes.
+#if defined(SD_VULKAN)
+    auto* dims = copy;
+#else
     std::vector<sd::LongType> *dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
-    NativeOpExecutioner::execReduceLong(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                        nullptr, target->buffer(), zShapeInfoH, target->specialBuffer(), zShapeInfoD,
+#endif
+    NativeOpExecutioner::execReduceLong(getContext(), op, LegacyTensorArg::fromArray(this),
+                                        nullptr, LegacyTensorArg::withShape(target, zShapeInfoH, zShapeInfoD),
                                         dims->data(), dims->size());
+#if !defined(SD_VULKAN)
+    delete dims;
+#endif
   }
   synchronize("NDArray::reduceAlongDimension LongOps");
 
   NDArray::registerSpecialUse({target}, {this});
+  delete copy;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -6366,9 +6345,8 @@ void NDArray::reduceAlongDimension(sd::reduce::BoolOps op, NDArray *target, cons
   NDArray::prepareSpecialUse({target}, {this});
 
   if (static_cast<size_t>(rankOf()) == copy->size() || copy->empty()) {
-    NativeOpExecutioner::execReduceBoolScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
-                                              specialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(),
-                                              target->specialBuffer(), target->specialShapeInfo());
+    NativeOpExecutioner::execReduceBoolScalar(getContext(), op, LegacyTensorArg::fromArray(this),
+                                              nullptr, LegacyTensorArg::fromArray(target));
   } else {
     const sd::LongType *zShapeInfoH = target->shapeInfo();
     const sd::LongType *zShapeInfoD = target->specialShapeInfo();
@@ -6380,15 +6358,23 @@ void NDArray::reduceAlongDimension(sd::reduce::BoolOps op, NDArray *target, cons
       zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
+    // CPU/CUDA consume an indexing permutation; Vulkan needs only the semantic reduction axes.
+#if defined(SD_VULKAN)
+    auto* dims = copy;
+#else
     std::vector<sd::LongType> *dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
-    NativeOpExecutioner::execReduceBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                        nullptr, target->buffer(), zShapeInfoH, target->specialBuffer(), zShapeInfoD,
+#endif
+    NativeOpExecutioner::execReduceBool(getContext(), op, LegacyTensorArg::fromArray(this),
+                                        nullptr, LegacyTensorArg::withShape(target, zShapeInfoH, zShapeInfoD),
                                         dims->data(), dims->size());
+#if !defined(SD_VULKAN)
     delete dims;
+#endif
   }
   synchronize("NDArray::reduceAlongDimension LongOps");
 
   NDArray::registerSpecialUse({target}, {this});
+  delete copy;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -6854,10 +6840,9 @@ void NDArray::addRowVector(NDArray *row, NDArray *target)  {
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(target->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({target}, {this, row});
-  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
-                                     specialShapeInfo(), row->buffer(), row->shapeInfo(), row->specialBuffer(),
-                                     row->specialShapeInfo(), target->buffer(), target->shapeInfo(),
-                                     target->specialBuffer(), target->specialShapeInfo(), &dimension, 1,
+  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add,
+                                     LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(row),
+                                     LegacyTensorArg::fromArray(target), &dimension, 1,
                                      packX->platformShapeInfo(), packX->platformOffsets(),
                                      packZ->platformShapeInfo(), packZ->platformOffsets());
   NDArray::registerSpecialUse({target}, {this, row});
@@ -6886,10 +6871,9 @@ void NDArray::mulRowVector(NDArray *row, NDArray *target)  {
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(target->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({target}, {this, row});
-  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Multiply, buffer(), shapeInfo(), specialBuffer(),
-                                     specialShapeInfo(), row->buffer(), row->shapeInfo(), row->specialBuffer(),
-                                     row->specialShapeInfo(), target->buffer(), target->shapeInfo(),
-                                     target->specialBuffer(), target->specialShapeInfo(), &dimension, 1,
+  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Multiply,
+                                     LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(row),
+                                     LegacyTensorArg::fromArray(target), &dimension, 1,
                                      packX->platformShapeInfo(), packX->platformOffsets(),
                                      packZ->platformShapeInfo(), packZ->platformOffsets());
   NDArray::registerSpecialUse({target}, {this, row});
@@ -6917,10 +6901,9 @@ void NDArray::divRowVector(NDArray *row, NDArray *target)  {
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(target->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({target}, {this, row});
-  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Divide, buffer(), shapeInfo(), specialBuffer(),
-                                     specialShapeInfo(), row->buffer(), row->shapeInfo(), row->specialBuffer(),
-                                     row->specialShapeInfo(), target->buffer(), target->shapeInfo(),
-                                     target->specialBuffer(), target->specialShapeInfo(), &dimension, 1,
+  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Divide,
+                                     LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(row),
+                                     LegacyTensorArg::fromArray(target), &dimension, 1,
                                      packX->platformShapeInfo(), packX->platformOffsets(),
                                      packZ->platformShapeInfo(), packZ->platformOffsets());
   NDArray::registerSpecialUse({target}, {this, row});
@@ -6943,10 +6926,9 @@ void NDArray::addiRowVector(NDArray *row) {
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({this}, {row});
-  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
-                                     specialShapeInfo(), row->buffer(), row->shapeInfo(), row->specialBuffer(),
-                                     row->specialShapeInfo(), this->buffer(), this->shapeInfo(), this->specialBuffer(),
-                                     this->specialShapeInfo(), &dimension, 1, packX->platformShapeInfo(),
+  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add,
+                                     LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(row),
+                                     LegacyTensorArg::fromArray(this), &dimension, 1, packX->platformShapeInfo(),
                                      packX->platformOffsets(), packX->platformShapeInfo(), packX->platformOffsets());
   NDArray::registerSpecialUse({this}, {row});
 }
@@ -6972,10 +6954,9 @@ void NDArray::addColumnVector(NDArray *column, NDArray *target)  {
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(target->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({target}, {this, column});
-  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
-                                     specialShapeInfo(), column->buffer(), column->shapeInfo(), column->specialBuffer(),
-                                     column->specialShapeInfo(), target->buffer(), target->shapeInfo(),
-                                     target->specialBuffer(), target->specialShapeInfo(), &dimension, 1,
+  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add,
+                                     LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(column),
+                                     LegacyTensorArg::fromArray(target), &dimension, 1,
                                      packX->platformShapeInfo(), packX->platformOffsets(),
                                      packZ->platformShapeInfo(), packZ->platformOffsets());
   NDArray::registerSpecialUse({target}, {this, column});
@@ -6999,10 +6980,9 @@ void NDArray::addiColumnVector(NDArray *column) {
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({this}, {column});
-  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
-                                     specialShapeInfo(), column->buffer(), column->shapeInfo(), column->specialBuffer(),
-                                     column->specialShapeInfo(), this->buffer(), this->shapeInfo(),
-                                     this->specialBuffer(), this->specialShapeInfo(), &dimension, 1,
+  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add,
+                                     LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(column),
+                                     LegacyTensorArg::fromArray(this), &dimension, 1,
                                      packX->platformShapeInfo(), packX->platformOffsets(),
                                      packX->platformShapeInfo(), packX->platformOffsets());
   NDArray::registerSpecialUse({this}, {column});
@@ -7025,10 +7005,9 @@ void NDArray::muliColumnVector(NDArray *column) {
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({this}, {column});
-  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Multiply, buffer(), shapeInfo(), specialBuffer(),
-                                     specialShapeInfo(), column->buffer(), column->shapeInfo(), column->specialBuffer(),
-                                     column->specialShapeInfo(), this->buffer(), this->shapeInfo(),
-                                     this->specialBuffer(), this->specialShapeInfo(), &dimension, 1,
+  NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Multiply,
+                                     LegacyTensorArg::fromArray(this), LegacyTensorArg::fromArray(column),
+                                     LegacyTensorArg::fromArray(this), &dimension, 1,
                                      packX->platformShapeInfo(), packX->platformOffsets(),
                                      packX->platformShapeInfo(), packX->platformOffsets());
   NDArray::registerSpecialUse({this}, {column});

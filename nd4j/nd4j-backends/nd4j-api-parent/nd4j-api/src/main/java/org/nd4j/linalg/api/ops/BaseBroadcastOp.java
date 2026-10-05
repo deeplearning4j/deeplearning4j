@@ -22,22 +22,21 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.util.SameDiffUtils;
-import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -132,10 +131,8 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, long... dimension) {
         super(x, y, z);
-
-        this.dimension = dimension;
-
-        defineDimensions(dimension);
+        Broadcast.validateBroadcastDims(x, y, z, dimension);
+        setDimension(dimension);
     }
 
     @Override
@@ -165,15 +162,48 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     @Override
     public long[] getDimension() {
         if (dimension == null) {
-            dimension = Shape.getBroadcastDimensions(larg().getShape(), rarg().getShape());
+            if (x != null && y != null) {
+                dimension = Shape.getBroadcastDimensions(x.shape(), y.shape());
+            } else if (sameDiff != null) {
+                dimension = Shape.getBroadcastDimensions(larg().getShape(), rarg().getShape());
+            }
         }
         return dimension;
     }
 
 
     @Override
+    public long[] getDimension(OpContext context) {
+        if (context == null || dimension != null) {
+            return getDimension();
+        }
+        INDArray input = context.getInputArray(0);
+        INDArray broadcast = context.getInputArray(1);
+        if (input == null || broadcast == null) {
+            throw new IllegalArgumentException("Broadcast execution requires X and Y arrays");
+        }
+        return Shape.getBroadcastDimensions(input.shape(), broadcast.shape());
+    }
+
+    @Override
     public void setDimension(long... dimension) {
-        this.dimension = dimension;
+        if (x != null) {
+            // Reject invalid updates before replacing the op's existing definition.
+            Broadcast.normalizeBroadcastDimensions(x.rank(), dimension);
+        }
+        this.dimension = dimension == null ? null : dimension.clone();
+        // A symbolic/context-only op has no input rank yet. Materialize at validation instead.
+        if (x != null) {
+            updateDimensions(x.rank(), getDimension());
+        }
+    }
+
+    private void updateDimensions(int rank, long[] axes) {
+        long[] normalized = Broadcast.normalizeBroadcastDimensions(rank, axes);
+        if (!Arrays.equals(dimensions, normalized)) {
+            dimensions = normalized;
+            dimensionz = Shape.ndArrayDimFromLong(normalized);
+        }
     }
 
 
@@ -190,45 +220,14 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     @Override
     public boolean validateDataTypes(boolean experimentalMode) {
+        return validateDataTypes(null, experimentalMode);
+    }
 
-        val op = opNum();
-
-        if (y() != null && z() != null)
-            Preconditions.checkArgument(y().dataType() == z().dataType() || x().dataType() == z().dataType(),
-                    "Op.Z type must be either Op.X or Op.Y: x.dataType=%s, y.dataType=%s, z.dataType=%s, op=%s",
-                    x.dataType(), y.dataType(), z.dataType(), getClass().getName());
-
-            if (!experimentalMode)
-                Preconditions.checkArgument(x.dataType() == y.dataType() || y.dataType() == DataType.BOOL, "Op.X must have same data type as Op.Y: X.datatype=%s, Y.datatype=%s", x.dataType(), y.dataType());
-
-        if (y() != null) {
-            if (op != 1 && (y().isR() || x().isR()))
-                Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point: x.dataType=%s, y.dataType=%s, z.dataType=%s, op=%s",
-                        x.dataType(), y.dataType(), z.dataType(), getClass().getName());
-
-            // Validate that y has the correct number of elements for the broadcast dimensions.
-            // For a broadcast over dims [d0, d1, ...], y.length() must equal x.shape()[d0] * x.shape()[d1] * ...
-            if (dimension != null && dimension.length > 0 && x() != null) {
-                long expectedYLength = 1;
-                for (long dim : dimension) {
-                    // Resolve negative dimensions (e.g., -1 means last dimension)
-                    long resolvedDim = dim < 0 ? dim + x().rank() : dim;
-                    Preconditions.checkState(resolvedDim >= 0 && resolvedDim < x().rank(),
-                            "Invalid broadcast dimension %s: must be in range [0, x.rank()=%s), x.shape=%s, op=%s",
-                            dim, x().rank(), java.util.Arrays.toString(x().shape()), getClass().getName());
-                    expectedYLength *= x().shape()[(int) resolvedDim];
-                }
-                Preconditions.checkState(y().length() == expectedYLength,
-                        "Invalid broadcast op: y.length() must equal product of x sizes along broadcast dimensions. " +
-                        "y.length=%s, expected=%s, x.shape=%s, y.shape=%s, broadcastDimensions=%s, op=%s",
-                        y().length(), expectedYLength, java.util.Arrays.toString(x().shape()),
-                        java.util.Arrays.toString(y().shape()), java.util.Arrays.toString(dimension),
-                        getClass().getName());
-            }
-        } else if (x().isR())
-            Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point: x.dataType=%s, z.dataType=%s, op=%s",
-                    x.dataType(), z.dataType(), getClass().getName());
-
+    @Override
+    public boolean validateDataTypes(OpContext context, boolean experimentalMode) {
+        BroadcastOp.super.validateDataTypes(context, experimentalMode);
+        INDArray input = context == null ? x() : context.getInputArray(0);
+        updateDimensions(input.rank(), getDimension(context));
         return true;
     }
 

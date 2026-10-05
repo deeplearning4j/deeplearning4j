@@ -77,9 +77,10 @@ public class FusedRmsNormSwiGLUBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
-        DataType dt = inputDataTypes.get(0);
-        // Outputs: gradInput, gradGamma, gradWGate, gradWUp
-        return Arrays.asList(dt, dt, dt, dt);
+        // Outputs: gradInput, gradGamma, gradWGate, gradWUp, each in its input's type (the gamma and the weights may
+        // be of another float type than the input), as the native shape function gives them
+        return Arrays.asList(inputDataTypes.get(0), inputDataTypes.get(1), inputDataTypes.get(2),
+                inputDataTypes.get(3));
     }
 
     @Override

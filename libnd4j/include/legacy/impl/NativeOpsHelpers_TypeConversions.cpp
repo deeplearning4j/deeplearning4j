@@ -85,489 +85,137 @@ extern std::mutex g_dataBufferMutex;
 #include <array/DataType.h>
 #include <array/DataTypeUtils.h>
 
+namespace {
 
-/*
- * TypeDef:
- *     void convertTypes(Pointer *extras, DataType srcType, Pointer hX, long N, DataType dstType, Pointer hZ);
- */
-void convertTypes(sd::Pointer *extras, int srcTypeInt, sd::Pointer hX, sd::LongType N, int destType, sd::Pointer hZ) {
-  sd::DataType srcType = sd::DataTypeUtils::fromInt(srcTypeInt);
-  sd::DataType dstType = sd::DataTypeUtils::fromInt(destType);
-  auto hx = reinterpret_cast<void *>(hX);
-  auto hz = reinterpret_cast<void *>(hZ);
+// The element codes convertTypes takes are NDArrayFactory.convertDataEx's on every backend: the ordinals of
+// org.nd4j.linalg.api.buffer.DataTypeEx. They are not sd::DataType values: DataTypeEx.DOUBLE is 7, which as a DataType
+// is INT8, so reading the codes as DataTypes copied one byte per element of a DOUBLE-to-DOUBLE conversion.
+enum ConversionCode : int {
+  CONVERSION_FLOAT8 = 0,
+  CONVERSION_INT8 = 1,
+  CONVERSION_UINT8 = 2,
+  CONVERSION_FLOAT16 = 3,
+  CONVERSION_INT16 = 4,
+  CONVERSION_UINT16 = 5,
+  CONVERSION_FLOAT32 = 6,
+  CONVERSION_DOUBLE = 7,
+  CONVERSION_THRESHOLD = 8,
+  CONVERSION_FLEXIBLE_THRESHOLD = 9
+};
 
-#ifdef HAS_FLOAT8
-  if (srcType == sd::DataType::FLOAT8) {
-    #ifdef HAS_FLOAT8
-    if (dstType == sd::DataType::FLOAT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT8, float8, FLOAT8, float8);
-    } else
-    #endif
-    #ifdef HAS_INT8
-    if (dstType == sd::DataType::INT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT8, float8, INT8, int8_t);
-    } else
-    #endif
-    #ifdef HAS_UINT8
-    if (dstType == sd::DataType::UINT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT8, float8, UINT8, uint8_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT16
-    if (dstType == sd::DataType::HALF) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT8, float8, HALF, float16);
-    } else
-    #endif
-    #ifdef HAS_INT16
-    if (dstType == sd::DataType::INT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT8, float8, INT16, int16_t);
-    } else
-    #endif
-    #ifdef HAS_UINT16
-    if (dstType == sd::DataType::UINT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT8, float8, UINT16, uint16_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT32
-    if (dstType == sd::DataType::FLOAT32) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT8, float8, FLOAT32, float);
-    } else
-    #endif
-    #ifdef HAS_DOUBLE
-    if (dstType == sd::DataType::DOUBLE) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT8, float8, DOUBLE, double);
-    } else
-    #endif
-    {
-      sd_debug("Unsupported types conversion: [%s] -> [%s]\n",
-               sd::DataTypeUtils::asString(srcType).c_str(),
-               sd::DataTypeUtils::asString(dstType).c_str());
-    }
-  } else
-#endif // HAS_FLOAT8
-
-#ifdef HAS_INT8
-  if (srcType == sd::DataType::INT8) {
-    #ifdef HAS_FLOAT8
-    if (dstType == sd::DataType::FLOAT8) {
-       _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT8, int8_t, FLOAT8, float8);
-    } else
-    #endif
-    #ifdef HAS_INT8
-    if (dstType == sd::DataType::INT8) {
-       _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT8, int8_t, INT8, int8_t);
-    } else
-    #endif
-    #ifdef HAS_UINT8
-    if (dstType == sd::DataType::UINT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT8, int8_t, UINT8, uint8_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT16
-    if (dstType == sd::DataType::HALF) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT8, int8_t, HALF, float16);
-    } else
-    #endif
-    #ifdef HAS_INT16
-    if (dstType == sd::DataType::INT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT8, int8_t, INT16, int16_t);
-    } else
-    #endif
-    #ifdef HAS_UINT16
-    if (dstType == sd::DataType::UINT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT8, int8_t, UINT16, uint16_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT32
-    if (dstType == sd::DataType::FLOAT32) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT8, int8_t, FLOAT32, float);
-    } else
-    #endif
-    #ifdef HAS_DOUBLE
-    if (dstType == sd::DataType::DOUBLE) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT8, int8_t, DOUBLE, double);
-    } else
-    #endif
-    {
-      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
-                sd::DataTypeUtils::asString(srcType).c_str(),
-                sd::DataTypeUtils::asString(dstType).c_str());
-    }
-  } else
-#endif // HAS_INT8
-
-#ifdef HAS_UINT8
-  if (srcType == sd::DataType::UINT8) {
-    #ifdef HAS_FLOAT8
-    if (dstType == sd::DataType::FLOAT8) {
-       _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, FLOAT8, float8);
-    } else
-    #endif
-    #ifdef HAS_INT8
-    if (dstType == sd::DataType::INT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, INT8, int8_t);
-    } else
-    #endif
-    #ifdef HAS_UINT8
-    if (dstType == sd::DataType::UINT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, UINT8, uint8_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT16
-    if (dstType == sd::DataType::HALF) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, HALF, float16);
-    } else
-    #endif
-    #ifdef HAS_INT16
-    if (dstType == sd::DataType::INT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, INT16, int16_t);
-    } else
-    #endif
-    #ifdef HAS_UINT16
-    if (dstType == sd::DataType::UINT16) {
-       _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, UINT16, uint16_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT32
-    if (dstType == sd::DataType::FLOAT32) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, FLOAT32, float);
-    } else
-    #endif
-    #ifdef HAS_DOUBLE
-    if (dstType == sd::DataType::DOUBLE) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT8, UnsignedChar, DOUBLE, double);
-    } else
-    #endif
-    {
-      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
-                sd::DataTypeUtils::asString(srcType).c_str(),
-                sd::DataTypeUtils::asString(dstType).c_str());
-    }
-  } else
-#endif // HAS_UINT8
-
-#ifdef HAS_FLOAT16
-  if (srcType == sd::DataType::HALF) {
-    #ifdef HAS_FLOAT8
-    if (dstType == sd::DataType::FLOAT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), HALF, float16, FLOAT8, float8);
-    } else
-    #endif
-    #ifdef HAS_INT8
-    if (dstType == sd::DataType::INT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), HALF, float16, INT8, int8_t);
-    } else
-    #endif
-    #ifdef HAS_UINT8
-    if (dstType == sd::DataType::UINT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), HALF, float16, UINT8, uint8_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT16
-    if (dstType == sd::DataType::HALF) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), HALF, float16, HALF, float16);
-    } else
-    #endif
-    #ifdef HAS_INT16
-    if (dstType == sd::DataType::INT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), HALF, float16, INT16, int16_t);
-    } else
-    #endif
-    #ifdef HAS_UINT16
-    if (dstType == sd::DataType::UINT16) {
-       _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), HALF, float16, UINT16, uint16_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT32
-    if (dstType == sd::DataType::FLOAT32) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), HALF, float16, FLOAT32, float);
-    } else
-    #endif
-    #ifdef HAS_DOUBLE
-    if (dstType == sd::DataType::DOUBLE) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), HALF, float16, DOUBLE, double);
-    } else
-    #endif
-    {
-      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
-                sd::DataTypeUtils::asString(srcType).c_str(),
-                sd::DataTypeUtils::asString(dstType).c_str());
-    }
-  } else
-#endif // HAS_FLOAT16
-
-#ifdef HAS_INT16
-  if (srcType == sd::DataType::INT16) {
-    #ifdef HAS_FLOAT8
-    if (dstType == sd::DataType::FLOAT8) {
-       _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT16, int16_t, FLOAT8, float8);
-    } else
-    #endif
-    #ifdef HAS_INT8
-    if (dstType == sd::DataType::INT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT16, int16_t, INT8, int8_t);
-    } else
-    #endif
-    #ifdef HAS_UINT8
-    if (dstType == sd::DataType::UINT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT16, int16_t, UINT8, uint8_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT16
-    if (dstType == sd::DataType::HALF) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT16, int16_t, HALF, float16);
-    } else
-    #endif
-    #ifdef HAS_INT16
-    if (dstType == sd::DataType::INT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT16, int16_t, INT16, int16_t);
-    } else
-    #endif
-    #ifdef HAS_UINT16
-    if (dstType == sd::DataType::UINT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT16, int16_t, UINT16, uint16_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT32
-    if (dstType == sd::DataType::FLOAT32) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT16, int16_t, FLOAT32, float);
-    } else
-    #endif
-    #ifdef HAS_DOUBLE
-    if (dstType == sd::DataType::DOUBLE) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), INT16, int16_t, DOUBLE, double);
-    } else
-    #endif
-    {
-      printf("Unsupported types conversion: [%s] -> [%s]\n",
-             sd::DataTypeUtils::asString(srcType).c_str(),
-             sd::DataTypeUtils::asString(dstType).c_str());
-    }
-  } else
-#endif // HAS_INT16
-
-#ifdef HAS_FLOAT32
-  if (srcType == sd::DataType::FLOAT32) {
-    #ifdef HAS_FLOAT8
-    if (dstType == sd::DataType::FLOAT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT32, float, FLOAT8, float8);
-    } else
-    #endif
-    #ifdef HAS_INT8
-    if (dstType == sd::DataType::INT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT32, float, INT8, int8_t);
-    } else
-    #endif
-    #ifdef HAS_UINT8
-    if (dstType == sd::DataType::UINT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT32, float, UINT8, uint8_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT16
-    if (dstType == sd::DataType::HALF) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT32, float, HALF, float16);
-    } else
-    #endif
-    #ifdef HAS_INT16
-    if (dstType == sd::DataType::INT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT32, float, INT16, int16_t);
-    } else
-    #endif
-    #ifdef HAS_UINT16
-    if (dstType == sd::DataType::UINT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT32, float, UINT16, uint16_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT32
-    if (dstType == sd::DataType::FLOAT32) {
-      // No conversion needed - same type
-      if (hx != hz) {
-        _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT32, float, FLOAT32, float);
-      }
-    } else
-    #endif
-    #ifdef HAS_DOUBLE
-    if (dstType == sd::DataType::DOUBLE) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), FLOAT32, float, DOUBLE, double);
-    } else
-    #endif
-    {
-      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
-                sd::DataTypeUtils::asString(srcType).c_str(),
-                sd::DataTypeUtils::asString(dstType).c_str());
-    }
-  } else
-#endif // HAS_FLOAT32
-
-#ifdef HAS_DOUBLE
-  if (srcType == sd::DataType::DOUBLE) {
-    #ifdef HAS_FLOAT8
-    if (dstType == sd::DataType::FLOAT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), DOUBLE, double, FLOAT8, float8);
-    } else
-    #endif
-    #ifdef HAS_INT8
-    if (dstType == sd::DataType::INT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), DOUBLE, double, INT8, int8_t);
-    } else
-    #endif
-    #ifdef HAS_UINT8
-    if (dstType == sd::DataType::UINT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), DOUBLE, double, UINT8, uint8_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT16
-    if (dstType == sd::DataType::HALF) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), DOUBLE, double, HALF, float16);
-    } else
-    #endif
-    #ifdef HAS_INT16
-    if (dstType == sd::DataType::INT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), DOUBLE, double, INT16, int16_t);
-    } else
-    #endif
-    #ifdef HAS_UINT16
-    if (dstType == sd::DataType::UINT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), DOUBLE, double, UINT16, uint16_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT32
-    if (dstType == sd::DataType::FLOAT32) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), DOUBLE, double, FLOAT32, float);
-    } else
-    #endif
-    #ifdef HAS_DOUBLE
-    if (dstType == sd::DataType::DOUBLE) {
-      // No conversion needed - same type
-      if (hx != hz) {
-        _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), DOUBLE, double, DOUBLE, double);
-      }
-    } else
-    #endif
-    {
-      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
-                sd::DataTypeUtils::asString(srcType).c_str(),
-                sd::DataTypeUtils::asString(dstType).c_str());
-    }
-  } else
-#endif // HAS_DOUBLE
-
-#ifdef HAS_BFLOAT16
-  if (srcType == sd::DataType::BFLOAT16) {
-    #ifdef HAS_FLOAT8
-    if (dstType == sd::DataType::FLOAT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), BFLOAT16, bfloat16, FLOAT8, float8);
-    } else
-    #endif
-    #ifdef HAS_INT8
-    if (dstType == sd::DataType::INT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), BFLOAT16, bfloat16, INT8, int8_t);
-    } else
-    #endif
-    #ifdef HAS_UINT8
-    if (dstType == sd::DataType::UINT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), BFLOAT16, bfloat16, UINT8, uint8_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT16
-    if (dstType == sd::DataType::HALF) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), BFLOAT16, bfloat16, HALF, float16);
-    } else
-    #endif
-    #ifdef HAS_INT16
-    if (dstType == sd::DataType::INT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), BFLOAT16, bfloat16, INT16, int16_t);
-    } else
-    #endif
-    #ifdef HAS_UINT16
-    if (dstType == sd::DataType::UINT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), BFLOAT16, bfloat16, UINT16, uint16_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT32
-    if (dstType == sd::DataType::FLOAT32) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), BFLOAT16, bfloat16, FLOAT32, float);
-    } else
-    #endif
-    #ifdef HAS_DOUBLE
-    if (dstType == sd::DataType::DOUBLE) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), BFLOAT16, bfloat16, DOUBLE, double);
-    } else
-    #endif
-    #ifdef HAS_BFLOAT16
-    if (dstType == sd::DataType::BFLOAT16) {
-      // No conversion needed - same type
-      if (hx != hz) {
-        _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), BFLOAT16, bfloat16, BFLOAT16, bfloat16);
-      }
-    } else
-    #endif
-    {
-      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
-                sd::DataTypeUtils::asString(srcType).c_str(),
-                sd::DataTypeUtils::asString(dstType).c_str());
-    }
-  } else
-#endif // HAS_BFLOAT16
-
-#ifdef HAS_UINT16
-  if (srcType == sd::DataType::UINT16) {
-    #ifdef HAS_FLOAT8
-    if (dstType == sd::DataType::FLOAT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT16, uint16_t, FLOAT8, float8);
-    } else
-    #endif
-    #ifdef HAS_INT8
-    if (dstType == sd::DataType::INT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT16, uint16_t, INT8, int8_t);
-    } else
-    #endif
-    #ifdef HAS_UINT8
-    if (dstType == sd::DataType::UINT8) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT16, uint16_t, UINT8, uint8_t);
-    } else
-    #endif
-    #ifdef HAS_FLOAT16
-    if (dstType == sd::DataType::HALF) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT16, uint16_t, HALF, float16);
-    } else
-    #endif
-    #ifdef HAS_INT16
-    if (dstType == sd::DataType::INT16) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT16, uint16_t, INT16, int16_t);
-    } else
-    #endif
-    #ifdef HAS_UINT16
-    if (dstType == sd::DataType::UINT16) {
-      // No conversion needed - same type
-      if (hx != hz) {
-        _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT16, uint16_t, UINT16, uint16_t);
-      }
-    } else
-    #endif
-    #ifdef HAS_FLOAT32
-    if (dstType == sd::DataType::FLOAT32) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT16, uint16_t, FLOAT32, float);
-    } else
-    #endif
-    #ifdef HAS_DOUBLE
-    if (dstType == sd::DataType::DOUBLE) {
-      _CALL_DOUBLE2(sd::TypeCast::convertGeneric, (nullptr, hx, N, hz), UINT16, uint16_t, DOUBLE, double);
-    } else
-    #endif
-    {
-      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
-                sd::DataTypeUtils::asString(srcType).c_str(),
-                sd::DataTypeUtils::asString(dstType).c_str());
-    }
-  } else
-#endif // HAS_UINT16
-
-  {
-    sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
-              sd::DataTypeUtils::asString(srcType).c_str(),
-              sd::DataTypeUtils::asString(dstType).c_str());
+// The element type a code stands for; UNKNOWN for the threshold encodings and for any other code.
+sd::DataType conversionElementType(int code) {
+  switch (code) {
+    case CONVERSION_FLOAT8:
+      return sd::DataType::FLOAT8;
+    case CONVERSION_INT8:
+      return sd::DataType::INT8;
+    case CONVERSION_UINT8:
+      return sd::DataType::UINT8;
+    case CONVERSION_FLOAT16:
+      return sd::DataType::HALF;
+    case CONVERSION_INT16:
+      return sd::DataType::INT16;
+    case CONVERSION_UINT16:
+      return sd::DataType::UINT16;
+    case CONVERSION_FLOAT32:
+      return sd::DataType::FLOAT32;
+    case CONVERSION_DOUBLE:
+      return sd::DataType::DOUBLE;
+    default:
+      return sd::DataType::UNKNOWN;
   }
 }
 
+std::string conversionName(int code) {
+  if (code == CONVERSION_THRESHOLD) return "THRESHOLD";
+  if (code == CONVERSION_FLEXIBLE_THRESHOLD) return "FTHRESHOLD";
+  const sd::DataType type = conversionElementType(code);
+  return type == sd::DataType::UNKNOWN ? "code " + std::to_string(code) : sd::DataTypeUtils::asString(type);
+}
 
+void rejectConversion(int srcCode, int dstCode, const char *reason) {
+  const std::string message =
+      "convertTypes: " + conversionName(srcCode) + " -> " + conversionName(dstCode) + ": " + reason;
+  THROW_EXCEPTION(message.c_str());
+}
+
+// THRESHOLD as the destination encodes a dense FLOAT16, FLOAT or DOUBLE array into the int encoding of the THRESHOLD
+// compression codec, taking the encoded updates out of the dense array; as the source it adds an encoding's updates
+// into a dense array. Both are host loops (loops/impl/type_conversions.cpp): a CUDA conversion works on device
+// buffers, and the Vulkan artifact carries no host loops.
+void convertThreshold(int srcCode, void *x, sd::LongType N, int dstCode, void *z) {
+#if defined(SD_CUDA) || defined(SD_VULKAN)
+  rejectConversion(srcCode, dstCode, "this backend has no threshold encoding");
+#else
+  const bool encode = dstCode == CONVERSION_THRESHOLD;
+  switch (conversionElementType(encode ? srcCode : dstCode)) {
+    case sd::DataType::HALF:
+      if (encode)
+        sd::TypeCast::convertToThreshold<float16>(nullptr, x, N, z);
+      else
+        sd::TypeCast::convertFromThreshold<float16>(nullptr, x, N, z);
+      return;
+    case sd::DataType::FLOAT32:
+      if (encode)
+        sd::TypeCast::convertToThreshold<float>(nullptr, x, N, z);
+      else
+        sd::TypeCast::convertFromThreshold<float>(nullptr, x, N, z);
+      return;
+    case sd::DataType::DOUBLE:
+      if (encode)
+        sd::TypeCast::convertToThreshold<double>(nullptr, x, N, z);
+      else
+        sd::TypeCast::convertFromThreshold<double>(nullptr, x, N, z);
+      return;
+    default:
+      rejectConversion(srcCode, dstCode, "the threshold encoding takes FLOAT16, FLOAT or DOUBLE arrays");
+      return;
+  }
+#endif
+}
+
+}  // namespace
+
+/*
+ * TypeDef:
+ *     void convertTypes(Pointer *extras, int srcType, Pointer x, long N, int dstType, Pointer z);
+ *
+ * srcType and dstType are DataTypeEx ordinals (ConversionCode above). On CUDA x and z are device buffers converted on
+ * the stream in extras[1]; on the other backends they are host buffers.
+ */
+void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer hX, sd::LongType N, int dstType, sd::Pointer hZ) {
+  try {
+    if (srcType == CONVERSION_THRESHOLD || dstType == CONVERSION_THRESHOLD) {
+      if (srcType == dstType) {
+        rejectConversion(srcType, dstType, "nothing to encode or decode");
+        return;
+      }
+      convertThreshold(srcType, hX, N, dstType, hZ);
+      return;
+    }
+
+    const sd::DataType srcElement = conversionElementType(srcType);
+    const sd::DataType dstElement = conversionElementType(dstType);
+    if (srcElement == sd::DataType::UNKNOWN || dstElement == sd::DataType::UNKNOWN) {
+      rejectConversion(srcType, dstType, "not an element type conversion");
+      return;
+    }
+    if (N <= 0 || (srcElement == dstElement && hX == hZ)) return;
+
+#if defined(SD_CUDA)
+    if (extras == nullptr || extras[1] == nullptr) {
+      rejectConversion(srcType, dstType, "a CUDA conversion takes its stream in extras[1]");
+      return;
+    }
+    BUILD_DOUBLE_SELECTOR(srcElement, dstElement, sd::TypeCast::convertGenericCuda, (extras, hX, N, hZ),
+                          SD_COMMON_TYPES, SD_COMMON_TYPES);
+#else
+    BUILD_DOUBLE_SELECTOR(srcElement, dstElement, sd::TypeCast::convertGeneric, (nullptr, hX, N, hZ), SD_COMMON_TYPES,
+                          SD_COMMON_TYPES);
+#endif
+  } catch (std::exception &e) {
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+  }
+}

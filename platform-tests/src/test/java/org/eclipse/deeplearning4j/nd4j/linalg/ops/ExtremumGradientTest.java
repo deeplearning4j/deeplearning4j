@@ -100,6 +100,60 @@ public class ExtremumGradientTest extends BaseNd4jTestWithBackends {
         INDArray[] min = backprop("minimum_bp", x, y, eps);
         assertEquals(Nd4j.createFromArray(1.0, 0.0, 1.5), min[0]);
         assertEquals(Nd4j.scalar(3.5), min[1]);
+
+        INDArray[] swappedMax = backprop("maximum_bp", y, x, eps);
+        assertEquals(max[1], swappedMax[0], "rank-zero first destination");
+        assertEquals(max[0], swappedMax[1], "vector second destination");
+        INDArray[] swappedMin = backprop("minimum_bp", y, x, eps);
+        assertEquals(min[1], swappedMin[0], "rank-zero first destination");
+        assertEquals(min[0], swappedMin[1], "vector second destination");
+    }
+
+    @ParameterizedTest
+    @MethodSource("configs")
+    public void exceptionalEpsilonStillMultipliesZeroShares(Nd4jBackend backend) {
+        INDArray x = Nd4j.createFromArray(1.0, 2.0, -0.0, 1.0);
+        INDArray y = Nd4j.createFromArray(2.0, 1.0, 0.0, 2.0);
+        INDArray eps = Nd4j.createFromArray(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, 2.0, -1.0);
+        for (String name : new String[]{"maximum_bp", "minimum_bp"}) {
+            INDArray[] gradients = backprop(name, x, y, eps);
+            int losing = name.equals("maximum_bp") ? 0 : 1;
+            assertEquals(Double.NaN, gradients[0].getDouble(losing), name);
+            assertEquals(Double.POSITIVE_INFINITY, gradients[0].getDouble(1 - losing), name);
+            assertEquals(Double.POSITIVE_INFINITY, gradients[1].getDouble(losing), name);
+            assertEquals(Double.NaN, gradients[1].getDouble(1 - losing), name);
+            assertEquals(1.0, gradients[0].getDouble(2), name + " signed-zero tie");
+            assertEquals(1.0, gradients[1].getDouble(2), name + " signed-zero tie");
+            assertEquals(Double.doubleToRawLongBits(-0.0),
+                    Double.doubleToRawLongBits(gradients[name.equals("maximum_bp") ? 0 : 1].getDouble(3)),
+                    name + " negative epsilon times zero");
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("configs")
+    public void bothOperandsBroadcastIntoOffsetOutputs(Nd4jBackend backend) {
+        INDArray x = Nd4j.createFromArray(new double[][]{{2}, {5}}).dup('f');
+        INDArray y = Nd4j.createFromArray(new double[][]{{2, 4, 5}});
+        INDArray eps = Nd4j.createFromArray(new double[][]{{1, 2, 3}, {4, 5, 6}}).dup('f');
+        for (String name : new String[]{"maximum_bp", "minimum_bp"}) {
+            INDArray xParent = Nd4j.valueArrayOf(new long[]{2, 2}, -99.0, x.dataType());
+            INDArray yParent = Nd4j.valueArrayOf(new long[]{2, 3}, -99.0, y.dataType());
+            INDArray gradX = xParent.getColumn(1).reshape(2, 1);
+            INDArray gradY = yParent.getRow(1).reshape(1, 3);
+            assertEquals(2, gradX.stride()[0], "gradient destination remains stepped");
+            Nd4j.exec(DynamicCustomOp.builder(name).addInputs(x, y, eps).addOutputs(gradX, gradY).build());
+            INDArray expectedX = Nd4j.createFromArray(new double[][]{
+                    {name.equals("maximum_bp") ? 0.5 : 5.5}, {name.equals("maximum_bp") ? 12 : 3}});
+            INDArray expectedY = Nd4j.createFromArray(new double[][]{name.equals("maximum_bp")
+                    ? new double[]{0.5, 2, 6} : new double[]{4.5, 5, 3}});
+            assertEquals(expectedX, gradX, name);
+            assertEquals(expectedY, gradY, name);
+            assertEquals(expectedX.getDouble(0), xParent.getDouble(0, 1), name);
+            assertEquals(expectedX.getDouble(1), xParent.getDouble(1, 1), name);
+            assertEquals(Nd4j.valueArrayOf(new long[]{2}, -99.0, x.dataType()), xParent.getColumn(0), name);
+            assertEquals(Nd4j.valueArrayOf(new long[]{3}, -99.0, y.dataType()), yParent.getRow(0), name);
+        }
     }
 
     /** max(x, x) and min(x, x) are x: the two halves of every tie add up to the whole gradient. */

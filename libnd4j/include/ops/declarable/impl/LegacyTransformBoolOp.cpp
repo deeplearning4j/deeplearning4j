@@ -57,10 +57,8 @@ Status LegacyTransformBoolOp::validateAndExecute(Context &block) {
   ExtraArguments extras(*block.getTArguments());
   PointersManager manager(block.launchContext(), "LegacyTransformBoolOp");
 
-  NativeOpExecutioner::execTransformBool(block.launchContext(), opNum, input->buffer(), input->shapeInfo(),
-                                         input->specialBuffer(), input->specialShapeInfo(), z->buffer(), z->shapeInfo(),
-                                         z->specialBuffer(), z->specialShapeInfo(),
-                                         extras.argumentsAsT(input->dataType()));
+  NativeOpExecutioner::execTransformBool(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(input),
+                                         sd::LegacyTensorArg::fromArray(z), extras.argumentsAsT(input->dataType()));
 
   manager.synchronize();
   STORE_RESULT(*z);

@@ -14,6 +14,17 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
+  REQUIRE_TRUE(block.width() <= 2 &&
+                   (block.width() == 1 ? block.numI() > 0 : block.numI() <= 1),
+               0, "reshape_no_copy: invalid shape/order argument count");
+  const auto marker = block.numI() == 0 ? RESHAPE_NO_COPY_C_ORDER_MARKER :
+      INT_ARG(block.width() == 2 ? 0 : block.numI() - 1);
+  REQUIRE_TRUE(marker == RESHAPE_NO_COPY_C_ORDER_MARKER ||
+                   marker == RESHAPE_NO_COPY_F_ORDER_MARKER,
+               0, "reshape_no_copy: invalid order marker");
+  REQUIRE_TRUE(input->lengthOf() == output->lengthOf(), 0,
+               "reshape_no_copy: input and output lengths must match");
+
   // Equal shapes do not make the reshape a no-op: only an output that is the input's own memory
   // (the view the shape function describes) is. A framework- or caller-allocated output of the
   // same shape must be written below, or it keeps whatever it held.
@@ -26,10 +37,32 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   //note that the calculate output shape that sets this flag does not have access to the data buffer
   if (ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(output->shapeInfo()))
       || output->dataBuffer() != input->dataBuffer()) {
-    // Buffers differ (fresh allocation) or copy flag is set.
-    // Use assign() which correctly iterates over logical elements,
-    // handling non-contiguous views, different strides, and different buffer sizes.
-    if (input->lengthOf() == output->lengthOf() && input->lengthOf() > 0) {
+    // assign() traverses logical C coordinates. Reversing both operands'
+    // axes makes that traversal logical F without allocating payload storage
+    // or duplicating the stride-aware CPU/CUDA/Vulkan copy infrastructure.
+    if (marker == RESHAPE_NO_COPY_F_ORDER_MARKER) {
+      NDArray* source = input;
+      NDArray* destination = output;
+      try {
+        if (input->rankOf() > 1) {
+          std::vector<sd::LongType> axes(input->rankOf());
+          for (int d = 0; d < input->rankOf(); ++d) axes[d] = input->rankOf() - 1 - d;
+          source = input->permute(axes, false, false);
+        }
+        if (output->rankOf() > 1) {
+          std::vector<sd::LongType> axes(output->rankOf());
+          for (int d = 0; d < output->rankOf(); ++d) axes[d] = output->rankOf() - 1 - d;
+          destination = output->permute(axes, false, false);
+        }
+        destination->assign(source);
+      } catch (...) {
+        if (source != input) delete source;
+        if (destination != output) delete destination;
+        throw;
+      }
+      if (source != input) delete source;
+      if (destination != output) delete destination;
+    } else {
       output->assign(input);
     }
   }
@@ -49,6 +82,8 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
   std::vector<sd::LongType> newShape;
 
   if (block.width() > 1) {
+    REQUIRE_TRUE(block.width() == 2 && block.numI() <= 1, 0,
+                 "reshape_no_copy: shape-tensor form accepts only an optional order marker");
     auto shapeArg = INPUT_VARIABLE(1);
 
     if (shapeArg == nullptr) {

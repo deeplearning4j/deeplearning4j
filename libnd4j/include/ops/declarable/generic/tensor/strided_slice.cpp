@@ -563,10 +563,10 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
 
       NDArray::prepareSpecialUse({z}, {x});
 
-      NativeOpExecutioner::execTransformAny(block.launchContext(), transform::Assign, x->bufferWithOffset(offset),
-                                            subArrShapeInfoPack->primary(), x->specialBufferWithOffset(offset),
-                                            subArrShapeInfoPack->special(), z->buffer(), z->shapeInfo(),
-                                            z->specialBuffer(), z->specialShapeInfo(), nullptr, true);
+      NativeOpExecutioner::execTransformAny(
+          block.launchContext(), transform::Assign,
+          sd::LegacyTensorArg::withShape(x, subArrShapeInfoPack->primary(), subArrShapeInfoPack->special(), offset),
+          sd::LegacyTensorArg::fromArray(z), nullptr, true);
 
       NDArray::registerSpecialUse({z}, {x});
     }

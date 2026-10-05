@@ -65,8 +65,8 @@ Status LegacyReduceFloatOp::validateAndExecute(Context& block) {
     if (block.getAxis()->empty() || allAxes) {
       // scalar
       NativeOpExecutioner::execReduceFloatScalar(
-          block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-          extras.argumentsAsT(z->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+          block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+          extras.argumentsAsT(z->dataType()), sd::LegacyTensorArg::fromArray(z));
     } else {
       // TAD
       std::vector<LongType> dims(*block.getAxis());
@@ -87,12 +87,16 @@ Status LegacyReduceFloatOp::validateAndExecute(Context& block) {
         zShapeInfoD = reinterpret_cast<LongType const*>(zPack->special());
       }
 
-      std::vector<LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
+      // Vulkan consumes semantic axes; CPU/CUDA consume the legacy full-rank permutation.
+#if defined(SD_VULKAN)
+      auto* dims2 = new std::vector<LongType>(dims);
+#else
+      auto* dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
+#endif
 
-      NativeOpExecutioner::execReduceFloat(block.launchContext(), opNum, x->buffer(), x->shapeInfo(),
-                                           x->specialBuffer(), x->specialShapeInfo(),
-                                           extras.argumentsAsT(z->dataType()), z->buffer(), zShapeInfoH,
-                                           z->specialBuffer(), zShapeInfoD, dims2->data(), dims2->size());
+      NativeOpExecutioner::execReduceFloat(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+                                           extras.argumentsAsT(z->dataType()),
+                                           sd::LegacyTensorArg::withShape(z, zShapeInfoH, zShapeInfoD), dims2->data(), dims2->size());
 
       delete dims2;
     }
@@ -113,8 +117,8 @@ Status LegacyReduceFloatOp::validateAndExecute(Context& block) {
     if ((block.getIArguments()->size() == 1 && INT_ARG(0) == DataTypeUtils::max<int>()) || allAxes) {
       // scalar
       NativeOpExecutioner::execReduceFloatScalar(
-          block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-          extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+          block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+          extras.argumentsAsT(x->dataType()), sd::LegacyTensorArg::fromArray(z));
     } else {
       // TAD
       REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
@@ -130,12 +134,16 @@ Status LegacyReduceFloatOp::validateAndExecute(Context& block) {
         zShapeInfoD = reinterpret_cast<LongType const*>(zPack->special());
       }
 
-      std::vector<LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
+      // Vulkan consumes semantic axes; CPU/CUDA consume the legacy full-rank permutation.
+#if defined(SD_VULKAN)
+      auto* dims2 = new std::vector<LongType>(dims);
+#else
+      auto* dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
+#endif
 
-      NativeOpExecutioner::execReduceFloat(block.launchContext(), opNum, x->buffer(), x->shapeInfo(),
-                                           x->specialBuffer(), x->specialShapeInfo(),
-                                           extras.argumentsAsT(z->dataType()), z->buffer(), zShapeInfoH,
-                                           z->specialBuffer(), zShapeInfoD, dims2->data(), dims2->size());
+      NativeOpExecutioner::execReduceFloat(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+                                           extras.argumentsAsT(z->dataType()),
+                                           sd::LegacyTensorArg::withShape(z, zShapeInfoH, zShapeInfoD), dims2->data(), dims2->size());
       delete dims2;
     }
   }

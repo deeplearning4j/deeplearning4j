@@ -22,6 +22,7 @@
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 //
 #include <array/NDArray.h>
+#include <ops/op_types.h>
 #include <system/op_boilerplate.h>
 
 namespace sd {
@@ -62,7 +63,10 @@ SD_INLINE SD_HOST_DEVICE void rgbToHsv(const T& r, const T& g, const T& b, T& h,
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_INLINE SD_HOST_DEVICE void hsvToRgb(const T& h, const T& s, const T& v, T& r, T& g, T& b) {
-  const float sector = h * 6.f;
+  // the hue's sector and the position inside it are computed in the aggregation type: float for HALF, BFLOAT16 and
+  // FLOAT, DOUBLE for DOUBLE (a float sector held a DOUBLE conversion to float precision)
+  using SectorT = typename simdOps::AggregateType<T>::type;
+  const SectorT sector = static_cast<SectorT>(h) * static_cast<SectorT>(6);
   const T c = v * s;
 
   if (0.f <= sector && sector < 1.f) {

@@ -75,14 +75,15 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
   PRAGMA_OMP_SIMD
   for (int e = 0; e < maxThreads; e++) intermediate[e] = startingVal;
 
-  sd::ops::safe_zero(extraParamsLocal, 3);
-  if (extraParams != nullptr) {
-    PRAGMA_OMP_SIMD
-    for (int e = 0; e < maxThreads; e++) {
-      extraParamsLocal[3 * e] = extraParams[0];
-      extraParamsLocal[3 * e + 1] = extraParams[1];
-      extraParamsLocal[3 * e + 2] = extraParams[2];
-    }
+  // Norm accumulators are local to each worker; epsilon is immutable, not scratch.
+  if constexpr (std::is_same_v<OpType, simdOps::EqualsWithEps<X, Z>>) {
+    if (extraParams != nullptr) extraParamsVals[2] = extraParams[2];
+  }
+  PRAGMA_OMP_SIMD
+  for (int e = 0; e < maxThreads; e++) {
+    extraParamsLocal[3 * e] = (Z)0;
+    extraParamsLocal[3 * e + 1] = (Z)0;
+    extraParamsLocal[3 * e + 2] = extraParamsVals[2];
   }
 
   // Check if both arrays are contiguous with same shape

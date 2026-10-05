@@ -34,9 +34,8 @@ void RandomLauncher::applyDropOut(LaunchContext* context, graph::RandomGenerator
 
   NDArray::prepareSpecialUse({z}, {array});
 
-  NativeOpExecutioner::execRandom(context, random::DropOut, &rng, array->buffer(), array->shapeInfo(),
-                                  array->specialBuffer(), array->specialShapeInfo(), z->buffer(), z->shapeInfo(),
-                                  z->specialBuffer(), z->specialShapeInfo(), arguments.argumentsAsT(z->dataType()));
+  NativeOpExecutioner::execRandom(context, random::DropOut, &rng, sd::LegacyTensorArg::fromArray(array),
+                                  sd::LegacyTensorArg::fromArray(z), arguments.argumentsAsT(z->dataType()));
   pm.synchronize();
 
   NDArray::registerSpecialUse({z}, {array});
@@ -51,9 +50,8 @@ void RandomLauncher::applyInvertedDropOut(LaunchContext* context, graph::RandomG
 
   NDArray::prepareSpecialUse({z}, {array});
 
-  NativeOpExecutioner::execRandom(context, random::DropOutInverted, &rng, array->buffer(), array->shapeInfo(),
-                                  array->specialBuffer(), array->specialShapeInfo(), z->buffer(), z->shapeInfo(),
-                                  z->specialBuffer(), z->specialShapeInfo(), arguments.argumentsAsT(z->dataType()));
+  NativeOpExecutioner::execRandom(context, random::DropOutInverted, &rng, sd::LegacyTensorArg::fromArray(array),
+                                  sd::LegacyTensorArg::fromArray(z), arguments.argumentsAsT(z->dataType()));
   pm.synchronize();
 
   NDArray::registerSpecialUse({z}, {array});
@@ -68,9 +66,8 @@ void RandomLauncher::applyAlphaDropOut(LaunchContext* context, graph::RandomGene
 
   NDArray::prepareSpecialUse({z}, {array});
 
-  NativeOpExecutioner::execRandom(context, random::AlphaDropOut, &rng, array->buffer(), array->shapeInfo(),
-                                  array->specialBuffer(), array->specialShapeInfo(), z->buffer(), z->shapeInfo(),
-                                  z->specialBuffer(), z->specialShapeInfo(), arguments.argumentsAsT(z->dataType()));
+  NativeOpExecutioner::execRandom(context, random::AlphaDropOut, &rng, sd::LegacyTensorArg::fromArray(array),
+                                  sd::LegacyTensorArg::fromArray(z), arguments.argumentsAsT(z->dataType()));
   pm.synchronize();
 
   NDArray::registerSpecialUse({z}, {array});
@@ -83,8 +80,7 @@ void RandomLauncher::fillBernoulli(LaunchContext* context, graph::RandomGenerato
 
   NDArray::prepareSpecialUse({array}, {});
 
-  NativeOpExecutioner::execRandom(context, random::BernoulliDistribution, &rng, array->buffer(), array->shapeInfo(),
-                                  array->specialBuffer(), array->specialShapeInfo(),
+  NativeOpExecutioner::execRandom(context, random::BernoulliDistribution, &rng, sd::LegacyTensorArg::fromArray(array),
                                   arguments.argumentsAsT(array->dataType()));
   pm.synchronize();
 
@@ -98,8 +94,7 @@ void RandomLauncher::fillUniform(LaunchContext* context, graph::RandomGenerator&
 
   NDArray::prepareSpecialUse({array}, {});
 
-  NativeOpExecutioner::execRandom(context, random::UniformDistribution, &rng, array->buffer(), array->shapeInfo(),
-                                  array->specialBuffer(), array->specialShapeInfo(),
+  NativeOpExecutioner::execRandom(context, random::UniformDistribution, &rng, sd::LegacyTensorArg::fromArray(array),
                                   arguments.argumentsAsT(array->dataType()));
   pm.synchronize();
 
@@ -113,11 +108,9 @@ void RandomLauncher::fillGaussian(LaunchContext* context, graph::RandomGenerator
 
   NDArray::prepareSpecialUse({array}, {});
 
-  NativeOpExecutioner::execRandom(context, random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(),
-                                  array->specialBuffer(), array->specialShapeInfo(), array->buffer(),
-                                  array->shapeInfo(), array->specialBuffer(), array->specialShapeInfo(),
-                                  array->buffer(), array->shapeInfo(), array->specialBuffer(),
-                                  array->specialShapeInfo(), arguments.argumentsAsT(array->dataType()));
+  NativeOpExecutioner::execRandom(context, random::GaussianDistribution, &rng, sd::LegacyTensorArg::fromArray(array),
+                                  sd::LegacyTensorArg::fromArray(array), sd::LegacyTensorArg::fromArray(array),
+                                  arguments.argumentsAsT(array->dataType()));
   pm.synchronize();
 
   NDArray::registerSpecialUse({array}, {});
@@ -130,8 +123,7 @@ void RandomLauncher::fillExponential(LaunchContext* context, graph::RandomGenera
 
   NDArray::prepareSpecialUse({array}, {});
 
-  NativeOpExecutioner::execRandom(context, random::ExponentialDistribution, &rng, array->buffer(), array->shapeInfo(),
-                                  array->specialBuffer(), array->specialShapeInfo(),
+  NativeOpExecutioner::execRandom(context, random::ExponentialDistribution, &rng, sd::LegacyTensorArg::fromArray(array),
                                   arguments.argumentsAsT(array->dataType()));
   pm.synchronize();
 
@@ -145,8 +137,7 @@ void RandomLauncher::fillPoisson(LaunchContext* context, graph::RandomGenerator&
 
   NDArray::prepareSpecialUse({array}, {});
 
-  NativeOpExecutioner::execRandom(context, random::PoissonDistribution, &rng, array->buffer(), array->shapeInfo(),
-                                  array->specialBuffer(), array->specialShapeInfo(),
+  NativeOpExecutioner::execRandom(context, random::PoissonDistribution, &rng, sd::LegacyTensorArg::fromArray(array),
                                   arguments.argumentsAsT(array->dataType()));
   pm.synchronize();
 
@@ -160,8 +151,7 @@ void RandomLauncher::fillGamma(LaunchContext* context, graph::RandomGenerator& r
 
   NDArray::prepareSpecialUse({array}, {});
 
-  NativeOpExecutioner::execRandom(context, random::GammaDistribution, &rng, array->buffer(), array->shapeInfo(),
-                                  array->specialBuffer(), array->specialShapeInfo(),
+  NativeOpExecutioner::execRandom(context, random::GammaDistribution, &rng, sd::LegacyTensorArg::fromArray(array),
                                   arguments.argumentsAsT(array->dataType()));
   pm.synchronize();
 
@@ -175,11 +165,9 @@ void RandomLauncher::fillLogNormal(LaunchContext* context, graph::RandomGenerato
 
   NDArray::prepareSpecialUse({array}, {});
 
-  NativeOpExecutioner::execRandom(context, random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(),
-                                  array->specialBuffer(), array->specialShapeInfo(), array->buffer(),
-                                  array->shapeInfo(), array->specialBuffer(), array->specialShapeInfo(),
-                                  array->buffer(), array->shapeInfo(), array->specialBuffer(),
-                                  array->specialShapeInfo(), arguments.argumentsAsT(array->dataType()));
+  NativeOpExecutioner::execRandom(context, random::GaussianDistribution, &rng, sd::LegacyTensorArg::fromArray(array),
+                                  sd::LegacyTensorArg::fromArray(array), sd::LegacyTensorArg::fromArray(array),
+                                  arguments.argumentsAsT(array->dataType()));
   pm.synchronize();
 
   NDArray::registerSpecialUse({array}, {});
@@ -193,9 +181,8 @@ void RandomLauncher::fillTruncatedNormal(LaunchContext* context, graph::RandomGe
   NDArray::prepareSpecialUse({array}, {});
 
   NativeOpExecutioner::execRandom(
-      context, random::TruncatedNormalDistribution, &rng, array->buffer(), array->shapeInfo(), array->specialBuffer(),
-      array->specialShapeInfo(), array->buffer(), array->shapeInfo(), array->specialBuffer(), array->specialShapeInfo(),
-      array->buffer(), array->shapeInfo(), array->specialBuffer(), array->specialShapeInfo(),
+      context, random::TruncatedNormalDistribution, &rng, sd::LegacyTensorArg::fromArray(array),
+      sd::LegacyTensorArg::fromArray(array), sd::LegacyTensorArg::fromArray(array),
       arguments.argumentsAsT(array->dataType()));
   pm.synchronize();
 
@@ -209,11 +196,9 @@ void RandomLauncher::fillBinomial(LaunchContext* context, graph::RandomGenerator
 
   NDArray::prepareSpecialUse({array}, {});
 
-  NativeOpExecutioner::execRandom(context, random::BinomialDistributionEx, &rng, array->buffer(), array->shapeInfo(),
-                                  array->specialBuffer(), array->specialShapeInfo(), array->buffer(),
-                                  array->shapeInfo(), array->specialBuffer(), array->specialShapeInfo(),
-                                  array->buffer(), array->shapeInfo(), array->specialBuffer(),
-                                  array->specialShapeInfo(), arguments.argumentsAsT(array->dataType()));
+  NativeOpExecutioner::execRandom(context, random::BinomialDistributionEx, &rng, sd::LegacyTensorArg::fromArray(array),
+                                  sd::LegacyTensorArg::fromArray(array), sd::LegacyTensorArg::fromArray(array),
+                                  arguments.argumentsAsT(array->dataType()));
   pm.synchronize();
 
   NDArray::registerSpecialUse({array}, {});

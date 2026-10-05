@@ -1613,6 +1613,28 @@ void* nativeMbwAllocateBytes(OpaqueMultiBackendWorkspace handle, sd::LongType nu
     return mbwAllocateBytes(handle, numBytes);
 }
 
+void* nativeMbwAllocateBytesOnDevice(OpaqueMultiBackendWorkspace handle,
+    sd::LongType numBytes, int deviceType, int deviceIndex) {
+    return mbwAllocateBytesOnDevice(handle, numBytes, deviceType, deviceIndex);
+}
+
+void nativeMbwSyncDevice(OpaqueMultiBackendWorkspace handle, int deviceType, int deviceIndex) {
+    mbwSyncDevice(handle, deviceType, deviceIndex);
+}
+
+void nativeMbwSyncAllDevices(OpaqueMultiBackendWorkspace handle) {
+    mbwSyncAllDevices(handle);
+}
+
+sd::LongType nativeMbwGetAllocatedSizeOnDevice(OpaqueMultiBackendWorkspace handle,
+    int deviceType, int deviceIndex) {
+    return mbwGetAllocatedSizeOnDevice(handle, deviceType, deviceIndex);
+}
+
+sd::LongType nativeMbwGetCurrentOffset(OpaqueMultiBackendWorkspace handle) {
+    return mbwGetCurrentOffset(handle);
+}
+
 void nativeMbwScopeIn(OpaqueMultiBackendWorkspace handle) {
     mbwScopeIn(handle);
 }

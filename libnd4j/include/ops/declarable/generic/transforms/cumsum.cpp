@@ -92,6 +92,11 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
 
     for (int e = 0; e < newSize; e++) dims[e] = INT_ARG(e + 2);
   }
+  for (auto& dim : dims) {
+    if (dim < 0) dim += input->rankOf();
+    REQUIRE_TRUE(dim >= 0 && dim < input->rankOf(), 0,
+                 "CumSumBp: axis must be within the input rank");
+  }
   if (!exclusive && !reverse) {
     if (dims.size())
       sd::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, true);
@@ -122,6 +127,7 @@ DECLARE_TYPES(cumsum_bp) {
   getOpDescriptor()->setAllowedInputTypes(1, {ALL_FLOATS, ALL_INTS});  // axes can be set as the second param
   getOpDescriptor()->setAllowedInputTypes(2, {ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(cumsum_bp) {

@@ -1256,7 +1256,8 @@ SD_LIB_EXPORT int getPlanSlotGeneration(sd::Pointer planHandle, int slotIdx);
 // =============================================================================
 
 /**
- * Replay mode: 0=NONE, 1=MONOLITHIC, 2=COMPOSITE.
+ * Dispatch mode (not execution phase): 0=NONE, 1=MONOLITHIC, 2=COMPOSITE,
+ * 3=SLOT_BY_SLOT, 4=FROZEN_CONSTANT, 5=DIRECT_COMPILED.
  */
 SD_LIB_EXPORT int getPlanSegmentReplayMode(sd::Pointer planHandle, int segIdx);
 

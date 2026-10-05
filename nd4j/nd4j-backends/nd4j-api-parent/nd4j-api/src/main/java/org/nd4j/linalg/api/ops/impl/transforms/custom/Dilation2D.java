@@ -55,13 +55,22 @@ public class Dilation2D extends DynamicCustomOp {
         this(sameDiff, new SDVariable[]{df, weights}, strides, rates, isSameMode, false);
     }
 
+    /**
+     * The (height, width) of the strides or rates, as the SameDiff and INDArray APIs take them, become the four values
+     * of the NHWC layout, [1, height, width, 1], the native op and TensorFlow's attributes use; four values are kept.
+     */
+    private static int[] nhwc(String name, int[] values) {
+        Preconditions.checkArgument(values != null && (values.length == 2 || values.length == 4),
+                "Dilation %s must have 2 values (height, width) or 4 (batch, height, width, channels), got %s", name,
+                values == null ? "null" : Arrays.toString(values));
+        return values.length == 2 ? new int[]{1, values[0], values[1], 1} : values;
+    }
+
     public Dilation2D(SameDiff sameDiff, SDVariable[] inputAndWeights, int[] strides,
                       int[] rates, boolean isSameMode, boolean inPlace ) {
         super(null, sameDiff, inputAndWeights, inPlace);
-        Preconditions.checkArgument(rates.length == 4,
-                "Dilation rate length must be 4, got an array with length %s with values %s", rates.length, rates);
-        Preconditions.checkArgument(strides.length == 4,
-                "Dilation strides length must be 4, got an array with length %s with values %s", strides.length, strides);
+        rates = nhwc("rates", rates);
+        strides = nhwc("strides", strides);
 
         r0 = rates[0];
         r1 = rates[1];
@@ -85,10 +94,8 @@ public class Dilation2D extends DynamicCustomOp {
     public Dilation2D(INDArray df, INDArray weights, int[] strides, int[] rates,  boolean isSameMode) {
         addInputArgument(df, weights);
 
-        if (rates.length < 4)
-            throw new IllegalArgumentException("Dilation rate length must be 4.");
-        if (strides.length < 4)
-            throw new IllegalArgumentException("Strides length must be 4.");
+        rates = nhwc("rates", rates);
+        strides = nhwc("strides", strides);
 
         r0 = rates[0];
         r1 = rates[1];

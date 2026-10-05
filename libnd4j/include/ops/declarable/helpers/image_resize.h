@@ -26,6 +26,7 @@
 #include <array/NDArray.h>
 #include <system/op_boilerplate.h>
 #include <math/templatemath.h>
+#include <ops/declarable/helpers/reproducible_math.h>
 
 namespace sd {
 namespace ops {
@@ -115,13 +116,23 @@ struct KeysCubicKernelFunc
   SD_INLINE SD_HOST_DEVICE T calc_less2pt0(T x) const {
     // original: coef*|s|^3-5*coef*|s|^2+8*coef*|s| - 4coef
     // => ( (coef*|s|-5*coef)*|s|)+8*coef)*|s| - 4coef
-    return ((_coef * x - T(5) * _coef) * x + T(8) * _coef) * x - T(4) * _coef;
+    // Table construction must preserve the same rounding boundaries as interpolation.
+    T value = reproducible::subtract<T>(reproducible::multiply<T>(_coef, x),
+                                        reproducible::multiply<T>(T(5), _coef));
+    value = reproducible::add<T>(reproducible::multiply<T>(value, x),
+                                 reproducible::multiply<T>(T(8), _coef));
+    return reproducible::subtract<T>(reproducible::multiply<T>(value, x),
+                                     reproducible::multiply<T>(T(4), _coef));
   }
 
   SD_INLINE SD_HOST_DEVICE T calc_less1pt0(T x) const {
     // original: (coef+2)*|s|^3-(coef+3)*|s|^2 + 1
     // =>((coef + 2) * |s| - (coef + 3)) * |s| * |s| + 1
-    return ((_coef + T(2)) * x - (_coef + T(3))) * x * x + T(1);
+    T value = reproducible::subtract<T>(
+        reproducible::multiply<T>(reproducible::add<T>(_coef, T(2)), x),
+        reproducible::add<T>(_coef, T(3)));
+    value = reproducible::multiply<T>(value, x);
+    return reproducible::add<T>(reproducible::multiply<T>(value, x), T(1));
   }
 
   SD_HOST_DEVICE T operator()(T s) const {
@@ -354,7 +365,34 @@ struct BilinearInterpolationData {
 
 };
 
-SD_INLINE SD_HOST_DEVICE float legacy_scaler(const int x, const float scale) { return static_cast<float>(x) * scale; }
+// Ordered scalar arithmetic: round every operation in the computation type, never contract a product into an add.
+// Bicubic uses float; bilinear resize uses double; crop uses float unless the image or boxes are double.
+template <typename PosT>
+SD_INLINE SD_HOST_DEVICE PosT imageResizeLerp(PosT left, PosT right, PosT weight) {
+  return reproducible::add<PosT>(left, reproducible::multiply<PosT>(
+      reproducible::subtract<PosT>(right, left), weight));
+}
+
+template <typename PosT>
+SD_INLINE SD_HOST_DEVICE PosT cropResizeScale(PosT start, PosT end, LongType imageSize, LongType cropSize) {
+  return cropSize > 1 ? reproducible::divide<PosT>(
+      reproducible::multiply<PosT>(reproducible::subtract<PosT>(end, start), static_cast<PosT>(imageSize - 1)),
+      static_cast<PosT>(cropSize - 1)) : static_cast<PosT>(0);
+}
+
+template <typename PosT>
+SD_INLINE SD_HOST_DEVICE PosT cropResizeCoordinate(PosT start, PosT end, LongType imageSize, LongType cropSize,
+                                                  LongType position, PosT scale) {
+  const PosT extent = static_cast<PosT>(imageSize - 1);
+  return cropSize > 1 ? reproducible::add<PosT>(reproducible::multiply<PosT>(start, extent),
+                                              reproducible::multiply<PosT>(static_cast<PosT>(position), scale))
+                      : reproducible::multiply<PosT>(reproducible::multiply<PosT>(static_cast<PosT>(0.5),
+                                              reproducible::add<PosT>(start, end)), extent);
+}
+
+SD_INLINE SD_HOST_DEVICE float legacy_scaler(const int x, const float scale) {
+  return reproducible::multiply<float>(static_cast<float>(x), scale);
+}
 
 // Older incorrect scaling method that causes all resizes to have a slight
 // translation leading to inconsistent results. For example, a flip then a
@@ -362,7 +400,7 @@ SD_INLINE SD_HOST_DEVICE float legacy_scaler(const int x, const float scale) { r
 struct LegacyScaler {
   SD_HOST_DEVICE LegacyScaler(){};
   SD_INLINE SD_HOST_DEVICE float operator()(const int x, const float scale) const {
-    return static_cast<float>(x) * scale;
+    return legacy_scaler(x, scale);
   }
 
   // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
@@ -376,7 +414,8 @@ struct HalfPixelScaler {
   SD_INLINE SD_HOST_DEVICE float operator()(const int x, const float scale) const {
     // Note that we subtract 0.5 from the return value, as the existing bilinear
     // sampling code etc assumes pixels are in the old coordinate system.
-    return (static_cast<float>(x) + 0.5f) * scale - 0.5f;
+    return reproducible::subtract<float>(reproducible::multiply<float>(
+        reproducible::add<float>(static_cast<float>(x), 0.5f), scale), 0.5f);
   }
 
   // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
@@ -390,7 +429,7 @@ struct HalfPixelScalerNN {
   SD_INLINE SD_HOST_DEVICE float operator()(const int x, const float scale) const {
     // Note that we subtract 0.5 from the return value, as the existing bilinear
     // sampling code etc assumes pixels are in the old coordinate system.
-    return (static_cast<float>(x) + 0.5f) * scale;
+    return reproducible::multiply<float>(reproducible::add<float>(static_cast<float>(x), 0.5f), scale);
   }
 
   // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
@@ -422,10 +461,12 @@ template <typename T>
 SD_INLINE SD_HOST_DEVICE float interpolate1D(const float weight0, const float weight1, const float weight2,
                                              const float weight3, const T value0, const T value1, const T value2,
                                              const T value3) {
-  auto ret = static_cast<float>(value0) * weight0 + static_cast<float>(value1) * weight1 +
-             static_cast<float>(value2) * weight2 + static_cast<float>(value3) * weight3;
-
-  return ret;
+  const float product0 = reproducible::multiply<float>(static_cast<float>(value0), weight0);
+  const float product1 = reproducible::multiply<float>(static_cast<float>(value1), weight1);
+  const float product2 = reproducible::multiply<float>(static_cast<float>(value2), weight2);
+  const float product3 = reproducible::multiply<float>(static_cast<float>(value3), weight3);
+  return reproducible::add<float>(reproducible::add<float>(
+      reproducible::add<float>(product0, product1), product2), product3);
 }
 
 // Compute the 1D interpolation for a given X index using the y_weights
@@ -435,10 +476,10 @@ static SD_HOST_DEVICE float compute(float values[4], const float xW0, const floa
 }
 
 template <typename T>
-static SD_INLINE SD_HOST_DEVICE float computeYInterpolation(int which, int channelNum, const WeightsAndIndices& yWai,
+static SD_INLINE SD_HOST_DEVICE float computeYInterpolation(int which, LongType channelNum, const WeightsAndIndices& yWai,
                                                             const T* pY0, const T* pY1, const T* pY2, const T* pY3,
                                                             const WeightsAndIndices& xWai) {
-  int xIndex;
+  LongType xIndex;
   switch (which) {
     case 0:
       xIndex = xWai._index0;
@@ -453,7 +494,7 @@ static SD_INLINE SD_HOST_DEVICE float computeYInterpolation(int which, int chann
       xIndex = xWai._index3;
       break;
   }
-  const int pt_index = xIndex + channelNum;
+  const LongType pt_index = xIndex + channelNum;
 
   return interpolate1D<T>(yWai._weight0, yWai._weight1, yWai._weight2, yWai._weight3, pY0[pt_index], pY1[pt_index],
                           pY2[pt_index], pY3[pt_index]);
@@ -485,13 +526,14 @@ SD_INLINE SD_HOST_DEVICE void getWeightsAndIndices(const float* coeffs_table, co
     out->_index3 = bound(in_loc + 2, limit);
     out->_weight3 = (out->_index3 == in_loc + 2 ? coeffs_table[(kTableSize - offset) * 2 + 1] : 0.0f);
 
-    const float weight_sum = out->_weight0 + out->_weight1 + out->_weight2 + out->_weight3;
+    const float weight_sum = reproducible::add<float>(reproducible::add<float>(
+        reproducible::add<float>(out->_weight0, out->_weight1), out->_weight2), out->_weight3);
     if (math::sd_abs<float,float>(weight_sum) >= 1000.0f * DataTypeUtils::min<float>()) {
-      const float one_over_weight_sum = 1.0f / weight_sum;
-      out->_weight0 *= one_over_weight_sum;
-      out->_weight1 *= one_over_weight_sum;
-      out->_weight2 *= one_over_weight_sum;
-      out->_weight3 *= one_over_weight_sum;
+      const float one_over_weight_sum = reproducible::divide<float>(1.0f, weight_sum);
+      out->_weight0 = reproducible::multiply<float>(out->_weight0, one_over_weight_sum);
+      out->_weight1 = reproducible::multiply<float>(out->_weight1, one_over_weight_sum);
+      out->_weight2 = reproducible::multiply<float>(out->_weight2, one_over_weight_sum);
+      out->_weight3 = reproducible::multiply<float>(out->_weight3, one_over_weight_sum);
     }
   } else {
     out->_weight0 = coeffs_table[offset * 2 + 1];

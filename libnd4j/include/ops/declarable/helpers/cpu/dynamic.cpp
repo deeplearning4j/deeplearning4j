@@ -20,238 +20,280 @@
 // Created by george on 05.04.18.
 //
 #include <execution/Threads.h>
+#include <helpers/shape.h>
 #include <ops/declarable/helpers/dynamic.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-template <typename T>
-static void _dynamicPartitionFunctor(NDArray * input, NDArray * indices, std::vector<NDArray*>& outputList) {
-  std::vector<std::pair<NDArray*, sd::LongType>> outputs(outputList.size());
-  // Pre-fetch indices (may be INT32 or INT64)
-  std::vector<sd::LongType> indicesPreDP(indices->lengthOf());
-  for (sd::LongType _i = 0; _i < indices->lengthOf(); _i++) indicesPreDP[_i] = indices->e<sd::LongType>(_i);
-  int sourceDimsLen = input->rankOf() - indices->rankOf();
-  if (sourceDimsLen) {
-    std::vector<sd::LongType> sourceDims(sourceDimsLen);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// An index array selects, for every one of its elements, a slice of the data: the data has the shape of the indices
+// followed by the dimensions of a slice (dynamic_partition, dynamic_stitch). The loops below address the data in the
+// logical (C) order of its elements: element t of the data belongs to index t / sliceLength and is element
+// t % sliceLength of that slice. Every operand is read and written through its own shape and strides, so views of
+// any layout work, and the elements of all slices are spread over the threads.
 
-    for (sd::LongType i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
-
-    ResultSet listOfTensors = input->allTensorsAlongDimension(sourceDims);
-
-    sd::LongType outSize = outputList.size();
-
-    for (sd::LongType i = 0; i < outSize; i++) {
-      outputs[i].first = outputList[i];
-      std::vector<sd::LongType > outDims(outputs[i].first->rankOf() - 1);
-
-      sd::LongType r = outputs[i].first->rankOf();
-
-      for (sd::LongType k = 1; k < r; k++) outDims[k - 1] = k;
-
-      ResultSet listOutForCurrent = outputs[i].first->allTensorsAlongDimension(outDims);
-
-      outputs[i].second = 0;
-
-      for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-        if (indicesPreDP[e] == i) {
-          listOutForCurrent.at(outputs[i].second++)->assign(listOfTensors.at(e));
-        }
-    }
-
-  } else {
-    sd::LongType outSize = outputList.size();
-
-    // indicesPreDP already pre-fetched above
-    auto inputBufDP1D = input->bufferAsT<T>();
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        outputs[i].first = outputList[i];
-        outputs[i].second = 0;
-        auto outBuf = outputs[i].first->bufferAsT<T>();
-        for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-          if (indicesPreDP[e] == i) outBuf[outputs[i].second++] = inputBufDP1D[e];
-        outputs[i].first->tickWriteHost();
-        outputs[i].first->syncToDevice();
-      }
-    };
-
-    samediff::Threads::parallel_tad(func, 0, outSize);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// The partition of every element of the indices, and its position in the partition: the number of earlier elements
+// (in the logical order of the indices) of the same partition. Elements of an index outside [0, numPartitions)
+// belong to no partition (-1).
+static void partitionPositions(NDArray* indices, LongType numPartitions, std::vector<LongType>& partitions,
+                               std::vector<LongType>& positions) {
+  const LongType length = indices->lengthOf();
+  partitions.assign(length, -1);
+  positions.assign(length, -1);
+  std::vector<LongType> counters(numPartitions, 0);
+  for (LongType e = 0; e < length; e++) {
+    const LongType partition = indices->e<LongType>(e);
+    if (partition < 0 || partition >= numPartitions) continue;
+    partitions[e] = partition;
+    positions[e] = counters[partition]++;
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices,
-                                        NDArray* output) {
-  sd::LongType numOfData = inputs.size();
+static void _dynamicPartitionFunctor(NDArray* input, NDArray* indices, std::vector<NDArray*>& outputList) {
+  const LongType numPartitions = outputList.size();
+  const LongType length = indices->lengthOf();
+  const LongType total = input->lengthOf();
+  if (numPartitions == 0 || length == 0 || total == 0) return;
 
-  if (output->isVector()) {
-    auto outputBuf = output->bufferAsT<T>();
-    for (sd::LongType e = 0; e < numOfData; e++) {
-      auto data = inputs[e];
-      auto index = indices[e];
-      // Pre-fetch index values (may be INT32 or INT64)
-      std::vector<sd::LongType> indexVec(index->lengthOf());
-      for (sd::LongType _j = 0; _j < index->lengthOf(); _j++) indexVec[_j] = index->e<sd::LongType>(_j);
-      auto dataBuf = data->bufferAsT<T>();
-      for (sd::LongType i = 0; i < index->lengthOf(); i++) {
-        sd::LongType pos = indexVec[i];
-        if (pos < 0) {
-          sd_printf("dynamic_stitch: Index value should be non-negative. But %i was given", pos);
-          return sd::Status::VALIDATION;
-        }
-        if (pos >= output->lengthOf()) {
-          sd_printf("dynamic_stitch: Index should be less than %i. But %i was given", output->lengthOf(), pos);
-          return sd::Status::VALIDATION;
-        }
-        outputBuf[pos] = dataBuf[i];
-      }
-    }
-    output->tickWriteHost();
-    output->syncToDevice();
-  } else {
-    std::vector<sd::LongType > restDims(output->rankOf() - 1);
-    for (auto i = restDims.size(); i > 0; i--) restDims[restDims.size() - i] = output->rankOf() - i;
+  // the dimensions of the input beyond the indices' own are moved with their slice
+  const LongType sliceLength = total / length;
 
-    ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
-    for (int e = 0; e < numOfData; e++) {
-      auto data = inputs[e];
-      auto index = indices[e];
-      std::vector<sd::LongType > sourceDims(data->rankOf() - index->rankOf());
-      for (auto i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = data->rankOf() - i;
+  std::vector<LongType> partitions, positions;
+  partitionPositions(indices, numPartitions, partitions, positions);
 
-      ResultSet listOfTensors = data->allTensorsAlongDimension(sourceDims);
+  NDArray::preparePrimaryUse(outputList, {indices, input});
 
-      // Pre-fetch index values (may be INT32 or INT64)
-      std::vector<sd::LongType> indexVec2(index->lengthOf());
-      for (sd::LongType _j = 0; _j < index->lengthOf(); _j++) indexVec2[_j] = index->e<sd::LongType>(_j);
-      for (sd::LongType i = 0; i < index->lengthOf(); i++) {
-        auto pos = indexVec2[i];
-        if (pos < 0) {
-          sd_printf("dynamic_stitch: Index value should be non-negative. But %i was given", pos);
-          return sd::Status::VALIDATION;
-        }
-        if (pos >= output->lengthOf()) {
-          sd_printf("dynamic_stitch: Index should be less than %i. But %i was given", output->lengthOf(), pos);
-          return sd::Status::VALIDATION;
-        }
+  const T* x = input->bufferAsT<T>();
+  const LongType xRank = input->rankOf();
+  const LongType* xShape = input->shapeOf();
+  const LongType* xStrides = input->stridesOf();
 
-        listOfOutTensors.at(pos)->assign(listOfTensors.at(i));
-      }
-    }
+  std::vector<T*> z(numPartitions);
+  std::vector<LongType> zRanks(numPartitions);
+  std::vector<const LongType*> zShapes(numPartitions);
+  std::vector<const LongType*> zStrides(numPartitions);
+  for (LongType p = 0; p < numPartitions; p++) {
+    NDArray* output = outputList[p];
+    z[p] = output->lengthOf() > 0 ? output->bufferAsT<T>() : nullptr;
+    zRanks[p] = output->rankOf();
+    zShapes[p] = output->shapeOf();
+    zStrides[p] = output->stridesOf();
   }
-  return sd::Status::OK;
+
+  auto func = PRAGMA_THREADS_FOR {
+    LongType coords[SD_MAX_RANK] = {};
+    for (auto t = start; t < stop; t++) {
+      const LongType e = t / sliceLength;
+      const LongType partition = partitions[e];
+      if (partition < 0) continue;
+
+      LongType xOffset = 0;
+      INDEX2COORDS(t, xRank, xShape, coords);
+      COORDS2INDEX(xRank, xStrides, coords, xOffset);
+
+      const LongType zRank = zRanks[partition];
+      const LongType* zShape = zShapes[partition];
+      const LongType* zStride = zStrides[partition];
+      LongType zOffset = 0;
+      INDEX2COORDS(positions[e] * sliceLength + (t - e * sliceLength), zRank, zShape, coords);
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
+
+      z[partition][zOffset] = x[xOffset];
+    }
+  };
+  samediff::Threads::parallel_for(func, 0, total);
+
+  NDArray::registerPrimaryUse(outputList, {indices, input});
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// dynamic_stitch: a slice of an input goes to the row of the output that its index names. When an index appears more
+// than once the slice of the last input wins, and within an input the later slice. A row that no index names is zero.
 template <typename T>
-static void _dynamicPartitionFunctorBP(NDArray * input, NDArray * indices,
+static Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices,
+                                    NDArray* output) {
+  const LongType numOfData = inputs.size();
+  const LongType numRows = output->rankOf() == 0 ? 1 : output->sizeAt(0);
+  if (output->lengthOf() == 0 || numRows == 0) return Status::OK;
+
+  // the dimensions of an input beyond its indices' own are the dimensions of a row of the output
+  const LongType sliceLength = output->lengthOf() / numRows;
+
+  // the winning slice of every row: the input and the slice in it (-1 when no index names the row)
+  std::vector<LongType> winnerInput(numRows, -1);
+  std::vector<LongType> winnerSlice(numRows, -1);
+  for (LongType e = 0; e < numOfData; e++) {
+    NDArray* data = inputs[e];
+    NDArray* index = indices[e];
+    if (data->lengthOf() != index->lengthOf() * sliceLength) {
+      sd_printf("dynamic_stitch: input %lld has %lld elements, but %lld indices of slices of %lld elements need %lld\n",
+                (long long)e, (long long)data->lengthOf(), (long long)index->lengthOf(), (long long)sliceLength,
+                (long long)(index->lengthOf() * sliceLength));
+      return Status::VALIDATION;
+    }
+    for (LongType j = 0; j < index->lengthOf(); j++) {
+      const LongType row = index->e<LongType>(j);
+      if (row < 0) {
+        sd_printf("dynamic_stitch: Index value should be non-negative. But %lld was given\n", (long long)row);
+        return Status::VALIDATION;
+      }
+      if (row >= numRows) {
+        sd_printf("dynamic_stitch: Index should be less than %lld. But %lld was given\n", (long long)numRows,
+                  (long long)row);
+        return Status::VALIDATION;
+      }
+      winnerInput[row] = e;
+      winnerSlice[row] = j;
+    }
+  }
+
+  std::vector<NDArray*> readArrays(inputs.begin(), inputs.end());
+  NDArray::preparePrimaryUse({output}, readArrays);
+
+  std::vector<const T*> x(numOfData);
+  std::vector<LongType> xRanks(numOfData);
+  std::vector<const LongType*> xShapes(numOfData);
+  std::vector<const LongType*> xStrides(numOfData);
+  for (LongType e = 0; e < numOfData; e++) {
+    x[e] = inputs[e]->lengthOf() > 0 ? inputs[e]->bufferAsT<T>() : nullptr;
+    xRanks[e] = inputs[e]->rankOf();
+    xShapes[e] = inputs[e]->shapeOf();
+    xStrides[e] = inputs[e]->stridesOf();
+  }
+  T* z = output->bufferAsT<T>();
+  const LongType zRank = output->rankOf();
+  const LongType* zShape = output->shapeOf();
+  const LongType* zStrides = output->stridesOf();
+
+  auto func = PRAGMA_THREADS_FOR {
+    LongType coords[SD_MAX_RANK] = {};
+    for (auto t = start; t < stop; t++) {
+      const LongType row = t / sliceLength;
+      const LongType e = winnerInput[row];
+
+      LongType zOffset = 0;
+      INDEX2COORDS(t, zRank, zShape, coords);
+      COORDS2INDEX(zRank, zStrides, coords, zOffset);
+
+      // a row that no index names is zero (the output is not initialized)
+      if (e < 0) {
+        z[zOffset] = static_cast<T>(0);
+        continue;
+      }
+
+      LongType xOffset = 0;
+      INDEX2COORDS(winnerSlice[row] * sliceLength + (t - row * sliceLength), xRanks[e], xShapes[e], coords);
+      COORDS2INDEX(xRanks[e], xStrides[e], coords, xOffset);
+
+      z[zOffset] = x[e][xOffset];
+    }
+  };
+  samediff::Threads::parallel_for(func, 0, output->lengthOf());
+
+  NDArray::registerPrimaryUse({output}, readArrays);
+  return Status::OK;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// gradient of dynamic_partition: a slice of the input's gradient is the slice of its partition's gradient at the
+// position of the slice in the partition. The partitions drop the slices of an index outside [0, numPartitions), so
+// those slices get a zero gradient.
+template <typename T>
+static void _dynamicPartitionFunctorBP(NDArray* input, NDArray* indices,
                                        std::vector<NDArray*> const& inputGradientList,
                                        std::vector<NDArray*>& outputList) {
-  std::vector<std::pair<NDArray*, sd::LongType>> outputs(inputGradientList.size());
+  // outputList[0] is the gradient of the input: it has the input's shape
+  NDArray* gradInput = outputList.at(0);
+  const LongType numPartitions = inputGradientList.size();
+  const LongType length = indices->lengthOf();
+  const LongType total = gradInput->lengthOf();
+  if (length == 0 || total == 0) return;
 
-  int sourceDimsLen = input->rankOf() - indices->rankOf();
-  if (sourceDimsLen) {  // multidimensional case
-    std::vector<sd::LongType > sourceDims(sourceDimsLen);
+  const LongType sliceLength = total / length;
 
-    for (sd::LongType i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
+  std::vector<LongType> partitions, positions;
+  partitionPositions(indices, numPartitions, partitions, positions);
 
-    ResultSet listOfTensors = outputList[0]->allTensorsAlongDimension(sourceDims);
+  std::vector<NDArray*> readArrays(inputGradientList.begin(), inputGradientList.end());
+  readArrays.push_back(indices);
+  NDArray::preparePrimaryUse(outputList, readArrays);
 
-    for (size_t i = 0; i < inputGradientList.size(); i++) {
-      outputs[i].first = inputGradientList[i];
-      if (outputs[i].first->rankOf() < 1) continue;  // skip empty gradient outs
-      std::vector<sd::LongType > outDims(outputs[i].first->rankOf() - 1);
+  T* gi = gradInput->bufferAsT<T>();
+  const LongType giRank = gradInput->rankOf();
+  const LongType* giShape = gradInput->shapeOf();
+  const LongType* giStrides = gradInput->stridesOf();
 
-      for (int k = 1; k < outputs[i].first->rankOf(); k++) outDims[k - 1] = k;
-
-      ResultSet listOutForCurrent = outputs[i].first->allTensorsAlongDimension(outDims);
-
-      outputs[i].second = 0;
-
-      // Pre-fetch indices (may be INT32 or INT64)
-      std::vector<sd::LongType> indicesPreBP(indices->lengthOf());
-      for (sd::LongType _j = 0; _j < indices->lengthOf(); _j++) indicesPreBP[_j] = indices->e<sd::LongType>(_j);
-      for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-        if (indicesPreBP[e] == static_cast<sd::LongType>(i)) listOfTensors.at(e)->assign(listOutForCurrent.at(outputs[i].second++));
-    }
-  } else {  // one-dimensional case
-    auto output = outputList[0];
-    unsigned int gradsSize = inputGradientList.size();
-
-    // Pre-fetch indices for 1D BP (may be INT32 or INT64)
-    std::vector<sd::LongType> indicesPreBP1D(indices->lengthOf());
-    for (sd::LongType _j = 0; _j < indices->lengthOf(); _j++) indicesPreBP1D[_j] = indices->e<sd::LongType>(_j);
-    auto outputBufBP = output->bufferAsT<T>();
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        outputs[i].first = inputGradientList[i];
-        outputs[i].second = 0;
-        auto gradBuf = outputs[i].first->bufferAsT<T>();
-        for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-          if (indicesPreBP1D[e] == i) outputBufBP[e] = gradBuf[outputs[i].second++];
-      }
-    };
-
-    samediff::Threads::parallel_tad(func, 0, gradsSize);
-    output->tickWriteHost();
-    output->syncToDevice();
+  std::vector<const T*> go(numPartitions);
+  std::vector<LongType> goRanks(numPartitions);
+  std::vector<const LongType*> goShapes(numPartitions);
+  std::vector<const LongType*> goStrides(numPartitions);
+  for (LongType p = 0; p < numPartitions; p++) {
+    NDArray* gradient = inputGradientList[p];
+    go[p] = gradient->lengthOf() > 0 ? gradient->bufferAsT<T>() : nullptr;
+    goRanks[p] = gradient->rankOf();
+    goShapes[p] = gradient->shapeOf();
+    goStrides[p] = gradient->stridesOf();
   }
 
-  outputList[1]->assign(indices);
+  auto func = PRAGMA_THREADS_FOR {
+    LongType coords[SD_MAX_RANK] = {};
+    for (auto t = start; t < stop; t++) {
+      const LongType e = t / sliceLength;
+      const LongType partition = partitions[e];
+
+      LongType giOffset = 0;
+      INDEX2COORDS(t, giRank, giShape, coords);
+      COORDS2INDEX(giRank, giStrides, coords, giOffset);
+
+      if (partition < 0) {
+        gi[giOffset] = static_cast<T>(0);
+        continue;
+      }
+
+      const LongType goRank = goRanks[partition];
+      const LongType* goShape = goShapes[partition];
+      const LongType* goStride = goStrides[partition];
+      LongType goOffset = 0;
+      INDEX2COORDS(positions[e] * sliceLength + (t - e * sliceLength), goRank, goShape, coords);
+      COORDS2INDEX(goRank, goStride, coords, goOffset);
+
+      gi[giOffset] = go[partition][goOffset];
+    }
+  };
+  samediff::Threads::parallel_for(func, 0, total);
+
+  NDArray::registerPrimaryUse(outputList, readArrays);
 }
 
-void dynamicPartitionFunctor(sd::LaunchContext* context, NDArray * input, NDArray * indices,
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void dynamicPartitionFunctor(LaunchContext* context, NDArray* input, NDArray* indices,
                              std::vector<NDArray*>& outputList) {
   auto xType = input->dataType();
 
   BUILD_SINGLE_SELECTOR(xType, _dynamicPartitionFunctor, (input, indices, outputList), SD_COMMON_TYPES);
 }
 
-template <typename T>
-static sd::Status _dynamicStitchFunctorBP(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices,
-                                          NDArray * gradInput, std::vector<NDArray*>& outputList) {
-  THROW_EXCEPTION("Not implemented yet");
-}
-
-sd::Status dynamicStitchFunctor(sd::LaunchContext* context, std::vector<NDArray*> const& inputs,
-                                std::vector<NDArray*> const& indices, NDArray* output) {
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Status dynamicStitchFunctor(LaunchContext* context, std::vector<NDArray*> const& inputs,
+                            std::vector<NDArray*> const& indices, NDArray* output) {
   auto xType = inputs.at(0)->dataType();
 
   BUILD_SINGLE_SELECTOR(xType, return _dynamicStitchFunctor, (inputs, indices, output), SD_COMMON_TYPES);
 }
 
-sd::Status dynamicStitchFunctorBP(sd::LaunchContext* context, std::vector<NDArray*> const& inputs,
-                                  std::vector<NDArray*> const& indices, NDArray * gradInput,
-                                  std::vector<NDArray*>& outputList) {
-  auto xType = inputs.at(0)->dataType();
-
-  BUILD_SINGLE_SELECTOR(xType, return _dynamicStitchFunctorBP, (inputs, indices, gradInput, outputList),
-                        SD_COMMON_TYPES);
-}
-
-void dynamicPartitionFunctorBP(sd::LaunchContext* context, NDArray * input, NDArray * indices,
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void dynamicPartitionFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices,
                                std::vector<NDArray*> const& inputGradientList, std::vector<NDArray*>& outputList) {
-  auto xType = input->dataType();
+  auto xType = outputList.at(0)->dataType();
 
   BUILD_SINGLE_SELECTOR(xType, _dynamicPartitionFunctorBP, (input, indices, inputGradientList, outputList),
                         SD_COMMON_TYPES);
 }
-
-BUILD_SINGLE_TEMPLATE( void _dynamicPartitionFunctorBP,
-                      (NDArray * input, NDArray * indices, std::vector<NDArray*> const& inputGradientList,
-                          std::vector<NDArray*>& outputList);
-, SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE( sd::Status _dynamicStitchFunctorBP,
-                      (std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices,
-                          NDArray * gradInput, std::vector<NDArray*>& outputList);
-, SD_COMMON_TYPES);
-
-BUILD_SINGLE_TEMPLATE( void _dynamicPartitionFunctor,
-                      (NDArray * input, NDArray * indices, std::vector<NDArray*>& outputList);
-, SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE( sd::Status _dynamicStitchFunctor,
-                      (std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output);
-, SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

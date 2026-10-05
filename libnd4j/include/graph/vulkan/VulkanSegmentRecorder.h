@@ -163,6 +163,9 @@ class SD_LIB_EXPORT VulkanSegmentRecorder {
     RandomGenerator* hostState = nullptr;
     OperandBinding operand;
     LongType steps = 0;
+    // The frozen seed argument of the op (0 = unseeded): a non-zero seed fixes the generator's states before the
+    // op draws, on every execution and replay, exactly as the native op does with helpers::applySeedArgument.
+    LongType seed = 0;
     bool replayPending = false;
   };
 

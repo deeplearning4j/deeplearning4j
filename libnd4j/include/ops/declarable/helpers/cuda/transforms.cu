@@ -30,6 +30,7 @@
 #include <helpers/ShapeUtils.h>
 
 #include <ops/declarable/helpers/transforms.h>
+#include <ops/op_types.h>
 
 #include <numeric>
 
@@ -293,6 +294,7 @@ template <typename T>
 SD_KERNEL static void tileBPCuda(const void* vx, const LongType* xShapeInfo, void* vz,
                                  const LongType* zShapeInfo,
                                  LongType* globMem) {
+ using AccT = typename simdOps::AggregateType<T>::type;
  const auto x = reinterpret_cast<const T*>(vx);  // gradO
  auto z = reinterpret_cast<T*>(vz);              // gradI
 
@@ -330,9 +332,11 @@ SD_KERNEL static void tileBPCuda(const void* vx, const LongType* xShapeInfo, voi
 
    shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff, nullptr);
 
-   z[zOffset] = x[xOffsets[0]];                      // first offset
+   // the sum of the entries of gradO this entry was tiled into, in the aggregation type
+   AccT sum = static_cast<AccT>(x[xOffsets[0]]);     // first offset
    for (LongType j = 1; j < numOfXOffsets; ++j)      // rest offsets
-     z[zOffset] += x[xOffsets[j]];
+     sum += static_cast<AccT>(x[xOffsets[j]]);
+   z[zOffset] = static_cast<T>(sum);
  }
 }
 

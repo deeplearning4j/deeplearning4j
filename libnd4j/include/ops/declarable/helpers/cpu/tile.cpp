@@ -20,9 +20,11 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 20.04.2018
 //
 
+#include <execution/Threads.h>
 #include <helpers/Loops.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/transforms.h>
+#include <ops/op_types.h>
 #if NOT_EXCLUDED(OP_tile)
 namespace sd {
 namespace ops {
@@ -30,37 +32,69 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
+// The gradient of an entry of the tiled array's input is the sum of the entries of gradO it was tiled into: the entries
+// at its own coordinates plus a whole number of shapes of gradI in each dimension. Each entry of gradI is summed alone,
+// in AggregateType<T>, through the strides of both arrays, so any layout of either is read and written as it is.
 template <typename T>
 static void tileBP_(NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<sd::LongType> reps) {
   (void)reps;
-  T* gradIBuff = reinterpret_cast<T*>(gradI.buffer());
-  auto gradOBuff = reinterpret_cast<T const*>(gradO.buffer());
+  using AccT = typename simdOps::AggregateType<T>::type;
+
   const sd::LongType gradILen = gradI.lengthOf();
-  const sd::LongType gradOLen = gradO.lengthOf();  // gradOLen >= gradILen
+  if (gradILen == 0) return;
 
-  // initial zeroing of gradI content
-  sd::ops::safe_zero(gradIBuff, static_cast<size_t>(gradILen));
+  const T* gradOBuff = gradO.bufferAsT<T>();
+  T* gradIBuff = gradI.bufferAsT<T>();
 
-  LongType gradOCoords[SD_MAX_RANK];
-  LongType gradICoords[SD_MAX_RANK];
-  LongType gradOOffset;
-  LongType gradIOffset;
+  const sd::LongType rank = gradI.rankOf();  // gradO has the same rank
+  const sd::LongType* gradIShape = shape::shapeOf(gradI.shapeInfo());
+  const sd::LongType* gradIStride = shape::stride(gradI.shapeInfo());
+  const sd::LongType* gradOShape = shape::shapeOf(gradO.shapeInfo());
+  const sd::LongType* gradOStride = shape::stride(gradO.shapeInfo());
 
-  sd::LongType gradORank = gradO.rankOf();
-  sd::LongType *gradOShape = shape::shapeOf(gradO.shapeInfo());
-  sd::LongType *gradOStride = shape::stride(gradO.shapeInfo());
-  sd::LongType gradIRank = gradI.rankOf();
-  sd::LongType *gradIShape = shape::shapeOf(gradI.shapeInfo());
-  sd::LongType *gradIStride = shape::stride(gradI.shapeInfo());
-  for (sd::LongType i = 0; i < gradOLen; ++i) {
-    INDEX2COORDS(i,gradORank, gradOShape, gradOCoords);
-    COORDS2INDEX(gradORank, gradOStride, gradOCoords, gradOOffset);
-    for (sd::LongType d = 0; d < gradIRank; ++d) {
-      gradICoords[d] = gradOCoords[d] % gradIShape[d];
-    }
-    COORDS2INDEX(gradIRank, gradIStride, gradICoords, gradIOffset);
-    gradI.p(gradIOffset, gradI.e<T>(gradIOffset) + gradOBuff[gradOOffset]);
+  // how many times gradI's shape is repeated along each dimension of gradO
+  sd::LongType repeats[SD_MAX_RANK];
+  sd::LongType numRepeats = 1;
+  for (sd::LongType d = 0; d < rank; ++d) {
+    repeats[d] = gradOShape[d] / gradIShape[d];
+    numRepeats *= repeats[d];
   }
+
+  auto func = PRAGMA_THREADS_FOR {
+    sd::LongType coords[SD_MAX_RANK];
+    sd::LongType repeat[SD_MAX_RANK];
+
+    for (auto i = start; i < stop; i++) {
+      INDEX2COORDS(i, rank, gradIShape, coords);
+
+      sd::LongType gradIOffset;
+      sd::LongType gradOOffset;
+      COORDS2INDEX(rank, gradIStride, coords, gradIOffset);
+      // the first of the entries of gradO: the same coordinates
+      COORDS2INDEX(rank, gradOStride, coords, gradOOffset);
+
+      for (sd::LongType d = 0; d < rank; ++d) repeat[d] = 0;
+
+      AccT sum = static_cast<AccT>(0);
+      for (sd::LongType n = 0; n < numRepeats; ++n) {
+        sum += static_cast<AccT>(gradOBuff[gradOOffset]);
+
+        // on to the next repeat: the last dimension first
+        for (sd::LongType d = rank - 1; d >= 0; --d) {
+          if (++repeat[d] < repeats[d]) {
+            gradOOffset += gradIShape[d] * gradOStride[d];
+            break;
+          }
+          gradOOffset -= (repeats[d] - 1) * gradIShape[d] * gradOStride[d];
+          repeat[d] = 0;
+        }
+      }
+
+      gradIBuff[gradIOffset] = static_cast<T>(sum);
+    }
+  };
+
+  samediff::Threads::parallel_for(func, 0, gradILen);
 }
 
 void tileBP(LaunchContext* context, NDArray gradO /*input*/, NDArray& gradI /*output*/,

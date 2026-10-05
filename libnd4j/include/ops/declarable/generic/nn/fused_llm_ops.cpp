@@ -29,13 +29,28 @@
 #if NOT_EXCLUDED(OP_fused_gelu) || NOT_EXCLUDED(OP_fused_layer_norm) || \
     NOT_EXCLUDED(OP_fused_rope) || NOT_EXCLUDED(OP_fused_bias_dropout_residual) || \
     NOT_EXCLUDED(OP_fused_rms_norm_swiglu) || NOT_EXCLUDED(OP_fused_attention_projection) || \
-    NOT_EXCLUDED(OP_fused_mrope)
+    NOT_EXCLUDED(OP_fused_mrope) || NOT_EXCLUDED(OP_vision_embedding_merge)
 
 #include <ops/declarable/headers/llm.h>
 #include <ops/declarable/helpers/fused_llm_ops.h>
 
 namespace sd {
 namespace ops {
+
+#if NOT_EXCLUDED(OP_fused_layer_norm) || NOT_EXCLUDED(OP_fused_rope) || \
+    NOT_EXCLUDED(OP_fused_bias_dropout_residual) || NOT_EXCLUDED(OP_fused_rms_norm_swiglu) || \
+    NOT_EXCLUDED(OP_fused_mrope) || NOT_EXCLUDED(OP_vision_embedding_merge)
+// The shape of an output that is a fresh array shaped like `source`: its type, shape and order on dense strides.
+// The source's own strides, flags and view offset say where its elements sit in some other buffer, while the output
+// gets a buffer of its own holding exactly length() elements: the cached shape of the source itself gave the output of
+// a stepped view (every second column of a wider array) strides that address several times that, and the helpers'
+// copy back into it ran past the end of the buffer.
+static LongType* denseShapeLike(const LongType* source) {
+    return ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(source), shape::order(source), shape::rank(source), shape::shapeOf(source),
+        shape::isEmptyConst(source) ? ARRAY_EMPTY : 0);
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // fused_gelu - Fast GELU approximation
@@ -77,18 +92,6 @@ DECLARE_TYPES(fused_gelu_bp) {
 // fused_layer_norm - Fused layer normalization with Welford's algorithm
 //////////////////////////////////////////////////////////////////////////
 #if NOT_EXCLUDED(OP_fused_layer_norm)
-
-// The shape of an output that is a fresh array shaped like `source`: its type, shape and order on dense strides.
-// The source's own strides, flags and view offset say where its elements sit in some other buffer, while the output
-// gets a buffer of its own holding exactly length() elements: the cached shape of the source itself gave the output of
-// a stepped view (every second column of a wider array) strides that address several times that, and the helpers'
-// copy back into it ran past the end of the buffer.
-static LongType* denseShapeLike(const LongType* source) {
-    return ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(source), shape::order(source), shape::rank(source), shape::shapeOf(source),
-        shape::isEmptyConst(source) ? ARRAY_EMPTY : 0);
-}
-
 CUSTOM_OP_IMPL(fused_layer_norm, 2, 1, false, 0, 0) {
     auto input = INPUT_VARIABLE(0);
     auto gain = INPUT_VARIABLE(1);
@@ -184,10 +187,37 @@ CUSTOM_OP_IMPL(fused_rope, 1, 1, false, 0, 0) {
 
     int rotaryDims = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;
 
+    // The helpers rotate [batch, seq, heads, head_dim] (or [batch, seq, head_dim]) and write one output element per
+    // input element: any other rank or output size reads or writes out of bounds.
+    REQUIRE_TRUE(input->rankOf() == 3 || input->rankOf() == 4, 0,
+                 "fused_rope: input must be rank 4 [batch, seq, heads, head_dim] or rank 3 [batch, seq, head_dim], "
+                 "got rank %i", input->rankOf());
+    REQUIRE_TRUE(output->isSameShape(input), 0, "fused_rope: output must have the input's shape");
+
     if (block.width() >= 3) {
         // Cached path: cos and sin provided as inputs 1 and 2
         auto cosValues = INPUT_VARIABLE(1);
         auto sinValues = INPUT_VARIABLE(2);
+
+        // The helpers read cos and sin at (batch, seq, pair) of the rotation, each table through its own strides: a
+        // rank 2 table [seq, half_dim] serves every batch, a rank 3 [batch, seq, half_dim] or rank 4
+        // [batch, seq, 1, half_dim] table holds one per batch. A table with less than the rotation reads or a sin
+        // table of another shape than the cos table reads out of bounds.
+        const int tableRank = cosValues->rankOf();
+        REQUIRE_TRUE(tableRank >= 2 && tableRank <= 4, 0,
+                     "fused_rope: cos must be rank 2 [seq, half_dim], rank 3 [batch, seq, half_dim] or rank 4 "
+                     "[batch, seq, 1, half_dim], got rank %i", tableRank);
+        REQUIRE_TRUE(sinValues->isSameShape(cosValues), 0, "fused_rope: sin must have the shape of cos");
+        REQUIRE_TRUE(cosValues->sizeAt(tableRank == 2 ? 0 : 1) >= input->sizeAt(1), 0,
+                     "fused_rope: cos and sin must hold a row for each of the %lld sequence positions of the input",
+                     input->sizeAt(1));
+        REQUIRE_TRUE(cosValues->sizeAt(tableRank - 1) >= input->sizeAt(input->rankOf() - 1) / 2, 0,
+                     "fused_rope: cos and sin must hold half the head dimension (%lld) per row",
+                     input->sizeAt(input->rankOf() - 1) / 2);
+        REQUIRE_TRUE(tableRank == 2 || cosValues->sizeAt(0) >= input->sizeAt(0), 0,
+                     "fused_rope: cos and sin must hold a table for each of the %lld batch entries of the input",
+                     input->sizeAt(0));
+
         helpers::fusedRoPECached(input, cosValues, sinValues, output, ropeType,
                                   block.launchContext());
     } else {
@@ -223,8 +253,7 @@ CUSTOM_OP_IMPL(fused_rope, 1, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(fused_rope) {
-    auto inShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+    return SHAPELIST(denseShapeLike(inputShape->at(0)));
 }
 
 DECLARE_TYPES(fused_rope) {
@@ -244,6 +273,13 @@ CUSTOM_OP_IMPL(fused_rope_bp, 2, 1, false, 0, 0) {
     float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
     float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
 
+    // The helper rotates the gradient's [batch, seq, heads, head_dim] (or [batch, seq, head_dim]) and writes one
+    // element of the input gradient per element of it.
+    REQUIRE_TRUE(gradOut->rankOf() == 3 || gradOut->rankOf() == 4, 0,
+                 "fused_rope_bp: gradient must be rank 4 [batch, seq, heads, head_dim] or rank 3 "
+                 "[batch, seq, head_dim], got rank %i", gradOut->rankOf());
+    REQUIRE_TRUE(gradIn->isSameShape(gradOut), 0, "fused_rope_bp: input gradient must have the gradient's shape");
+
     helpers::fusedRoPEBackward(gradOut, gradIn, positionOffset, freqBase, freqScale, ropeType,
                                 block.launchContext(), rotaryDimsBp);
 
@@ -251,8 +287,7 @@ CUSTOM_OP_IMPL(fused_rope_bp, 2, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(fused_rope_bp) {
-    auto inShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+    return SHAPELIST(denseShapeLike(inputShape->at(0)));
 }
 
 DECLARE_TYPES(fused_rope_bp) {
@@ -276,6 +311,16 @@ CUSTOM_OP_IMPL(fused_bias_dropout_residual, 3, 1, false, 0, 0) {
     float dropoutProb = block.getTArguments()->size() > 0 ? T_ARG(0) : 0.0f;
     bool training = block.numB() > 0 ? B_ARG(0) : false;
 
+    // One residual and one output element per input element: the arrays pair up in the flattened, C-order sequence of
+    // their elements (so any shapes of the same length do), and the bias repeats along it.
+    REQUIRE_TRUE(residual->lengthOf() == input->lengthOf(), 0,
+                 "fused_bias_dropout_residual: residual must have as many elements as the input (%lld), got %lld",
+                 input->lengthOf(), residual->lengthOf());
+    REQUIRE_TRUE(output->lengthOf() == input->lengthOf(), 0,
+                 "fused_bias_dropout_residual: output must have as many elements as the input (%lld), got %lld",
+                 input->lengthOf(), output->lengthOf());
+    REQUIRE_TRUE(bias->lengthOf() > 0, 0, "fused_bias_dropout_residual: bias must not be empty");
+
     helpers::fusedBiasDropoutResidual(input, bias, residual, output, dropoutProb, seed,
                                        training, block.launchContext());
 
@@ -283,8 +328,7 @@ CUSTOM_OP_IMPL(fused_bias_dropout_residual, 3, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(fused_bias_dropout_residual) {
-    auto inShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+    return SHAPELIST(denseShapeLike(inputShape->at(0)));
 }
 
 DECLARE_TYPES(fused_bias_dropout_residual) {
@@ -306,6 +350,23 @@ CUSTOM_OP_IMPL(fused_rms_norm_swiglu, 4, 1, false, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);
 
     float epsilon = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
+
+    // [batch, seq_len, hidden_dim] normalized by a gamma of hidden_dim elements, then projected by two
+    // [hidden_dim, intermediate_dim] weights into [batch, seq_len, intermediate_dim]: any other size reads or writes
+    // out of bounds.
+    REQUIRE_TRUE(input->rankOf() == 3, 0,
+                 "fused_rms_norm_swiglu: input must be rank 3 [batch, seq_len, hidden_dim], got rank %i",
+                 input->rankOf());
+    const LongType hiddenDim = input->sizeAt(2);
+    REQUIRE_TRUE(gamma->lengthOf() == hiddenDim, 0,
+                 "fused_rms_norm_swiglu: gamma length %lld must equal the hidden dimension %lld", gamma->lengthOf(),
+                 hiddenDim);
+    REQUIRE_TRUE(wGate->rankOf() == 2 && wGate->sizeAt(0) == hiddenDim, 0,
+                 "fused_rms_norm_swiglu: wGate must be [hidden_dim = %lld, intermediate_dim]", hiddenDim);
+    REQUIRE_TRUE(wUp->isSameShape(wGate), 0, "fused_rms_norm_swiglu: wUp must have wGate's shape");
+    REQUIRE_TRUE(output->rankOf() == 3 && output->sizeAt(0) == input->sizeAt(0) &&
+                     output->sizeAt(1) == input->sizeAt(1) && output->sizeAt(2) == wGate->sizeAt(1),
+                 0, "fused_rms_norm_swiglu: output must be [batch, seq_len, intermediate_dim]");
 
     helpers::fusedRmsNormSwiGLU(input, gamma, wGate, wUp, output, epsilon, block.launchContext());
 
@@ -346,6 +407,27 @@ CUSTOM_OP_IMPL(fused_rms_norm_swiglu_bp, 5, 4, false, 0, 0) {
 
     float epsilon = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
 
+    // As in the forward pass, and each gradient has the size of the input it is the gradient of: any other size reads
+    // or writes out of bounds.
+    REQUIRE_TRUE(input->rankOf() == 3, 0,
+                 "fused_rms_norm_swiglu_bp: input must be rank 3 [batch, seq_len, hidden_dim], got rank %i",
+                 input->rankOf());
+    const LongType hiddenDim = input->sizeAt(2);
+    REQUIRE_TRUE(gamma->lengthOf() == hiddenDim, 0,
+                 "fused_rms_norm_swiglu_bp: gamma length %lld must equal the hidden dimension %lld", gamma->lengthOf(),
+                 hiddenDim);
+    REQUIRE_TRUE(wGate->rankOf() == 2 && wGate->sizeAt(0) == hiddenDim, 0,
+                 "fused_rms_norm_swiglu_bp: wGate must be [hidden_dim = %lld, intermediate_dim]", hiddenDim);
+    REQUIRE_TRUE(wUp->isSameShape(wGate), 0, "fused_rms_norm_swiglu_bp: wUp must have wGate's shape");
+    REQUIRE_TRUE(gradOut->rankOf() == 3 && gradOut->sizeAt(0) == input->sizeAt(0) &&
+                     gradOut->sizeAt(1) == input->sizeAt(1) && gradOut->sizeAt(2) == wGate->sizeAt(1),
+                 0, "fused_rms_norm_swiglu_bp: gradient must be [batch, seq_len, intermediate_dim]");
+    REQUIRE_TRUE(gradInput->isSameShape(input), 0, "fused_rms_norm_swiglu_bp: input gradient must have the input's shape");
+    REQUIRE_TRUE(gradGamma->lengthOf() == hiddenDim, 0,
+                 "fused_rms_norm_swiglu_bp: gamma gradient length must equal the hidden dimension %lld", hiddenDim);
+    REQUIRE_TRUE(gradWGate->isSameShape(wGate), 0, "fused_rms_norm_swiglu_bp: wGate gradient must have wGate's shape");
+    REQUIRE_TRUE(gradWUp->isSameShape(wUp), 0, "fused_rms_norm_swiglu_bp: wUp gradient must have wUp's shape");
+
     helpers::fusedRmsNormSwiGLUBackward(input, gamma, wGate, wUp, gradOut,
                                          gradInput, gradGamma, gradWGate, gradWUp,
                                          epsilon, block.launchContext());
@@ -354,16 +436,10 @@ CUSTOM_OP_IMPL(fused_rms_norm_swiglu_bp, 5, 4, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(fused_rms_norm_swiglu_bp) {
-    auto inShape = inputShape->at(0);
-    auto gammaShape = inputShape->at(1);
-    auto wGateShape = inputShape->at(2);
-    auto wUpShape = inputShape->at(3);
-
-    return SHAPELIST(
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary(),
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(gammaShape)->primary(),
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(wGateShape)->primary(),
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(wUpShape)->primary());
+    // dx, dgamma, dwGate and dwUp: each a dense array shaped like the input it is the gradient of, in that input's
+    // type (the gamma and the weights may be of another float type than the input)
+    return SHAPELIST(denseShapeLike(inputShape->at(0)), denseShapeLike(inputShape->at(1)),
+                     denseShapeLike(inputShape->at(2)), denseShapeLike(inputShape->at(3)));
 }
 
 DECLARE_TYPES(fused_rms_norm_swiglu_bp) {
@@ -436,6 +512,17 @@ CUSTOM_OP_IMPL(fused_mrope, 4, 1, false, 0, 0) {
         "fused_mrope: sections (%d + %d + %d = %d) must sum to head_dim (%d)",
         sectionT, sectionH, sectionW, sectionT + sectionH + sectionW, headDim);
 
+    // Each rotation pairs an element with the one half a head dimension on, so an odd head dimension would leave its
+    // last element of the output unwritten; each (batch, seq) position of the three position tensors rotates the
+    // heads of its row of the input (the height and width positions are read in the flattened, C-order sequence of
+    // their elements, so any shapes of position_t's length do); the output has an element per input element.
+    REQUIRE_TRUE(headDim % 2 == 0, 0, "fused_mrope: head_dim must be even, got %d", headDim);
+    REQUIRE_TRUE(posT->sizeAt(0) == input->sizeAt(0) && posT->sizeAt(1) == input->sizeAt(1), 0,
+        "fused_mrope: position_t must be [batch, seq] of the input");
+    REQUIRE_TRUE(posH->lengthOf() == posT->lengthOf() && posW->lengthOf() == posT->lengthOf(), 0,
+        "fused_mrope: position_h and position_w must have as many elements as position_t (%lld)", posT->lengthOf());
+    REQUIRE_TRUE(output->isSameShape(input), 0, "fused_mrope: output must have the input's shape");
+
     helpers::fusedMRoPE(input, posT, posH, posW, output,
                          sectionT, sectionH, sectionW, interleaved, freqBase,
                          block.launchContext());
@@ -444,8 +531,7 @@ CUSTOM_OP_IMPL(fused_mrope, 4, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(fused_mrope) {
-    auto inShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+    return SHAPELIST(denseShapeLike(inputShape->at(0)));
 }
 
 DECLARE_TYPES(fused_mrope) {
@@ -484,9 +570,9 @@ CUSTOM_OP_IMPL(vision_embedding_merge, 3, 1, false, 0, 1) {
 }
 
 DECLARE_SHAPE_FN(vision_embedding_merge) {
-    // Output shape is the same as textEmbeddings: [batch, seqLen, hidden]
-    auto inShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+    // Output shape is the same as textEmbeddings: [batch, seqLen, hidden], a fresh array on dense strides (the kernels
+    // write it through its own strides, so strides inherited from a view of textEmbeddings would run past its buffer)
+    return SHAPELIST(denseShapeLike(inputShape->at(0)));
 }
 
 DECLARE_TYPES(vision_embedding_merge) {

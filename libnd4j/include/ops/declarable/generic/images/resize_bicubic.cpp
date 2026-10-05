@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(resize_bicubic, 2, 1, false, 0, 0) {
   REQUIRE_TRUE(output->rankOf() == inRank, 0,
                "resize_bicubic: Source tensor and output should have the same rank, but  %i and %i given.", inRank,
                output->rankOf());
-  REQUIRE_TRUE(size->rankOf() == 1, size->lengthOf() == 2, 0,
+  REQUIRE_TRUE(size->rankOf() == 1 && size->lengthOf() == 2, 0,
                "resize_bicubic: Resize params is a pair of values, not %i.", size->lengthOf());
   REQUIRE_TRUE(block.numI() <= 1, 0,
                "resize_bicubic: Resize params already given by the second param. Int params are expensive.");
@@ -53,10 +53,7 @@ CUSTOM_OP_IMPL(resize_bicubic, 2, 1, false, 0, 0) {
   height = size->e<int>(0);
   REQUIRE_TRUE(width > 0, 0, "resize_bicubic: picture width should be positive 32 bit integer, but %i given", width);
   REQUIRE_TRUE(height > 0, 0, "resize_bicubic: picture height should be positive 32 bit integer, but %i given", height);
-  // REQUIRE_TRUE(image->sizeAt(1) > 3 && image->sizeAt(2) > 3, 0, "resize_cubic: To use bicubic algorithm need at least
-  // 16 pixels as source.");
-  REQUIRE_TRUE(width > 3 && height > 3, 0,
-               "resize_bicubic: To use bicubic algorithm need at least 16 pixels as target.");
+  // The four interpolation taps are clamped to the source, including singleton dimensions.
   REQUIRE_TRUE(image->lengthOf() > 0, 0, "resize_bicubic: Only non-zero images allowed to processing.");
   //            auto method = 1; //kResizeBilinear;
   //            if (block.numI() == 1) {
@@ -70,23 +67,15 @@ CUSTOM_OP_IMPL(resize_bicubic, 2, 1, false, 0, 0) {
   }
   REQUIRE_TRUE(!halfPixelAlign || (halfPixelAlign && !alignCorners), 0,
                "resize_bicubic: `half_pixel_centers' should be false or true only when `align_corners' is false");
-  std::vector<sd::LongType> imageShape1 = {image->sizeAt(0), image->sizeAt(1), image->sizeAt(2),image->sizeAt(3)};
-  std::vector<sd::LongType> imageShape2 = {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)};
+  std::vector<sd::LongType> imageShape = inRank == 4
+      ? std::vector<sd::LongType>{image->sizeAt(0), image->sizeAt(1), image->sizeAt(2), image->sizeAt(3)}
+      : std::vector<sd::LongType>{1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)};
+  auto source = image->reshape(image->ordering(), imageShape);
 
-  auto source =
-      inRank == 4
-          ? image->reshape(image->ordering(), imageShape1)
-          : image->reshape(image->ordering(), imageShape2);
-
-
-  std::vector<sd::LongType> outputShape1 = {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2),output->sizeAt(3)};
-  std::vector<sd::LongType> outputShape2 = {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)};
-
-  auto target =
-      inRank == 4
-          ? output->reshape(output->ordering(),
-                            outputShape1, false)
-          : output->reshape(output->ordering(), outputShape2, false);
+  std::vector<sd::LongType> outputShape = inRank == 4
+      ? std::vector<sd::LongType>{output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3)}
+      : std::vector<sd::LongType>{1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)};
+  auto target = output->reshape(output->ordering(), outputShape, false);
 
   // retain old behaviour
   helpers::CoordinateTransformationMode coorMode = halfPixelAlign ? helpers::CoordinateTransformationMode::HALF_PIXEL
@@ -110,12 +99,13 @@ DECLARE_SHAPE_FN(resize_bicubic) {
   int width;
   int height;
   auto newImageSize = INPUT_VARIABLE(1);
-  REQUIRE_TRUE(shape::length(inputShape->at(1)) == 2, 0, "resize_bicubic: Resize params is a pair of values, not %i.",
-               shape::length(inputShape->at(1)));
+  REQUIRE_TRUE(shape::rank(inputShape->at(1)) == 1 && shape::length(inputShape->at(1)) == 2, 0,
+               "resize_bicubic: Resize params is a pair of values, not %i.", shape::length(inputShape->at(1)));
   REQUIRE_TRUE(block.numI() <= 1, 0,
                "resize_bicubic: Resize params already given by the second param. Int params are expensive.");
   height = newImageSize->e<int>(0);
   width = newImageSize->e<int>(1);
+  REQUIRE_TRUE(width > 0 && height > 0, 0, "resize_bicubic: target width and height must be positive");
 
   REQUIRE_TRUE(inRank == 4 || inRank == 3, 0, "resize_bicubic: Source tensor should have rank 4, but %i given.",
                inRank);

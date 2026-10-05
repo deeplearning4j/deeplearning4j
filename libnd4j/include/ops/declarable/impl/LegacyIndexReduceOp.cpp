@@ -105,8 +105,8 @@ Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
     if (block.getAxis()->size() == 0) {
       // scalar
       NativeOpExecutioner::execIndexReduceScalar(
-          block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-          extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+          block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+          extras.argumentsAsT(x->dataType()), sd::LegacyTensorArg::fromArray(z));
     } else {
       // TAD
       std::vector<LongType> dims(block.getAxis()->size());
@@ -119,9 +119,8 @@ Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
       auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
 
       NativeOpExecutioner::execIndexReduce(
-          block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-          extras.argumentsAsT(x->dataType()), reinterpret_cast<LongType *>(z->buffer()), z->shapeInfo(),
-          z->specialBuffer(), z->specialShapeInfo(), nullptr, (int)dims.size(),
+          block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+          extras.argumentsAsT(x->dataType()), sd::LegacyTensorArg::fromArray(z), dims.data(), (int)dims.size(),
           sd::env_isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
           sd::env_isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
     }
@@ -138,8 +137,8 @@ Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
 
     if (allAxes) {
       NativeOpExecutioner::execIndexReduceScalar(
-          block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-          extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+          block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+          extras.argumentsAsT(x->dataType()), sd::LegacyTensorArg::fromArray(z));
 
     } else {
       if (indices->lengthOf() > 1) std::sort(axis.begin(), axis.end());
@@ -149,9 +148,8 @@ Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
       auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &axis);
 
       NativeOpExecutioner::execIndexReduce(
-          block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-          extras.argumentsAsT(x->dataType()), reinterpret_cast<LongType *>(z->buffer()), z->shapeInfo(),
-          z->specialBuffer(), z->specialShapeInfo(), nullptr, (int)axis.size(),
+          block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+          extras.argumentsAsT(x->dataType()), sd::LegacyTensorArg::fromArray(z), axis.data(), (int)axis.size(),
           sd::env_isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
           sd::env_isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
     }

@@ -101,10 +101,19 @@ disk entries even though their in-memory maps stay separate.
 FNV-1a 64-bit (`graph/DspHashUtils.h` primitives, same as Triton), mixed in
 this order:
 
-1. ABI literal `"vulkan-spirv-disk-cache-v1"` (bump to invalidate all entries)
-2. `buildInfo()` string — includes `BuildStamp` from
-   `cmake/GenerateBuildStamp.cmake`, so every `libnd4jvulkan.so` rebuild
-   invalidates by cache miss, identical to Triton
+1. ABI literal (`"vulkan-spirv-disk-cache-v5"` as of 2026-10-04; bump to
+   invalidate incompatible entries). v5 accompanies logical i1 zero-extension:
+   true comparison results must store/cast as numeric 1, not signed -1. The
+   input MLIR is unchanged, so v4 shaders cannot be reused with this lowering.
+   Both key computation and metadata validation reject the old ABI without
+   deleting entries or disabling either cache tier.
+2. *(Superseded.)* The key once mixed in the `buildInfo()` build stamp, so every
+   rebuild invalidated by cache miss. The key is now a deployment-artifact
+   identity and excludes the per-build stamp (a CI-produced cache must stay
+   usable from an Android build). Consequence: the key does not cover the
+   MLIR-to-SPIR-V lowering, so any change to `VulkanOpLowerings` or the pass
+   pipeline that can alter the SPIR-V of an unchanged MLIR module must bump the
+   ABI literal.
 3. Device-caps tuple that alters codegen: `apiVersion`, `fp16`, `storage16`,
    `fp64`, `int64`, `int8` — the exact fields `VulkanPipelineCache` captures
    at construction (`VulkanPipelineCache.cpp:202-211`); they select the SPIR-V
@@ -306,9 +315,9 @@ intercepted from Java, so tests observe cache behavior through counters.
 
 | Trigger | Tier 1 | Tier 2 |
 |---------|--------|--------|
-| `libnd4jvulkan.so` rebuild | `buildInfo()` in key → miss, new entries; orphans accumulate (accepted, matches Triton/DSP) | Unaffected (driver-keyed); superseded driver-internal entries sit unused |
+| Lowering/pass-pipeline semantics change | Bump Tier-1 ABI literal → miss, new compatible entries; ordinary rebuilds alone do not invalidate deployment artifacts | Unaffected (driver-keyed); superseded shader entries sit unused |
 | GPU driver update | Unaffected (SPIR-V is driver-independent) | `driverVersion`/UUID → new filename; old blob orphaned |
-| ABI literal bump | Full invalidation | Full invalidation |
+| Tier-1 ABI literal bump | New keys reject artifacts from older lowering semantics; old files remain unused | Unaffected (driver-keyed); new SPIR-V is compiled as needed |
 | Corrupt/truncated file | Validation fail → recompile + overwrite | Header check fail → start with empty cache |
 | Caps profile change (e.g. fp16 toggled) | Different key → separate entries | Same blob (driver keys internally) |
 | Delete cache directory | Recreated on next write | Recreated on next save |

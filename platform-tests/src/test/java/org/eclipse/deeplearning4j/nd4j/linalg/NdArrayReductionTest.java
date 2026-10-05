@@ -75,6 +75,132 @@ public class NdArrayReductionTest extends BaseNd4jTestWithBackends {
     }
 
     @ParameterizedTest
+    @MethodSource("configs")
+    public void allPairsPreservesTadGeometryAndOutputStrides(Nd4jBackend backend) {
+        for (DataType type : new DataType[]{DataType.FLOAT, DataType.DOUBLE}) {
+            for (char order : new char[]{'c', 'f'}) {
+                for (int[] counts : new int[][]{{1, 1}, {1, 3}, {2, 3}}) {
+                    int nx = counts[0];
+                    int ny = counts[1];
+                    INDArray xOwner = Nd4j.create(type, new long[]{nx + 1, 5}, order).assign(-77);
+                    INDArray yOwner = Nd4j.create(type, new long[]{ny + 1, 5}, order).assign(-77);
+                    for (int i = 0; i < nx; i++) {
+                        xOwner.putScalar(i + 1, 1, i + 1);
+                        xOwner.putScalar(i + 1, 3, 2 * i + 2);
+                    }
+                    for (int j = 0; j < ny; j++) {
+                        yOwner.putScalar(j + 1, 1, j + 4);
+                        yOwner.putScalar(j + 1, 3, 3 * j + 5);
+                    }
+                    INDArray x = xOwner.get(NDArrayIndex.interval(1, nx + 1),
+                            NDArrayIndex.interval(1, 2, 5));
+                    INDArray y = yOwner.get(NDArrayIndex.interval(1, ny + 1),
+                            NDArrayIndex.interval(1, 2, 5));
+                    INDArray allocated = Nd4j.getExecutioner().exec(new EuclideanDistance(x, y, true, 1));
+                    assertArrayEquals(new long[]{nx, ny}, allocated.shape());
+                    INDArray zOwner = Nd4j.create(type, new long[]{nx + 1, 2 * ny + 1}, order).assign(-77);
+                    INDArray z = zOwner.get(NDArrayIndex.interval(1, nx + 1),
+                            NDArrayIndex.interval(1, 2, 2 * ny + 1));
+                    INDArray supplied = Nd4j.getExecutioner().exec(new EuclideanDistance(x, y, z, true, 1));
+                    assertSame(z, supplied);
+                    double tolerance = type == DataType.FLOAT ? 1e-4 : 1e-8;
+                    for (int i = 0; i < nx; i++) {
+                        for (int j = 0; j < ny; j++) {
+                            double a = (i + 1) - (j + 4);
+                            double b = (2 * i + 2) - (3 * j + 5);
+                            double expected = Math.sqrt(a * a + b * b);
+                            assertEquals(expected, allocated.getDouble(i, j), tolerance);
+                            assertEquals(expected, zOwner.getDouble(i + 1, 2 * j + 1), tolerance);
+                            assertEquals(-77, zOwner.getDouble(i + 1, 2 * j), 0);
+                        }
+                    }
+                    assertEquals(-77, zOwner.getDouble(0, 0), 0);
+                    assertEquals(-77, xOwner.getDouble(0, 0), 0);
+                    assertEquals(-77, yOwner.getDouble(0, 0), 0);
+                }
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("configs")
+    public void allPairsReloadsNonconstantTiles(Nd4jBackend backend) {
+        for (DataType type : new DataType[]{DataType.FLOAT, DataType.DOUBLE}) {
+            for (char order : new char[]{'c', 'f'}) {
+                for (int length : new int[]{257, 513}) {
+                    double[][] xValues = new double[2][length];
+                    double[][] yValues = new double[3][length];
+                    for (int p = 0; p < length; p++) {
+                        for (int i = 0; i < 2; i++) xValues[i][p] = (p % 17) * (i + 1) + i;
+                        for (int j = 0; j < 3; j++) yValues[j][p] = (p % 13) * (j + 1) + j;
+                    }
+                    INDArray x = Nd4j.createFromArray(xValues).castTo(type).dup(order);
+                    INDArray y = Nd4j.createFromArray(yValues).castTo(type).dup(order == 'c' ? 'f' : 'c');
+                    INDArray allocated = Nd4j.getExecutioner().exec(new EuclideanDistance(x, y, true, 1));
+                    INDArray owner = Nd4j.create(type, new long[]{3, 7}, order).assign(-77);
+                    INDArray z = owner.get(NDArrayIndex.interval(1, 3), NDArrayIndex.interval(1, 2, 7));
+                    assertSame(z, Nd4j.getExecutioner().exec(new EuclideanDistance(x, y, z, true, 1)));
+                    assertArrayEquals(new long[]{2, 3}, allocated.shape());
+                    double tolerance = type == DataType.FLOAT ? 1e-3 : 1e-8;
+                    for (int i = 0; i < 2; i++) {
+                        for (int j = 0; j < 3; j++) {
+                            double squared = 0;
+                            for (int p = 0; p < length; p++) {
+                                double delta = xValues[i][p] - yValues[j][p];
+                                squared += delta * delta;
+                            }
+                            double expected = Math.sqrt(squared);
+                            assertEquals(expected, allocated.getDouble(i, j), tolerance);
+                            assertEquals(expected, owner.getDouble(i + 1, 2 * j + 1), tolerance);
+                        }
+                    }
+                    for (int i = 0; i < 3; i++) {
+                        for (int j = 0; j < 7; j++) {
+                            if (i == 0 || j % 2 == 0) assertEquals(-77, owner.getDouble(i, j), 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("configs")
+    public void pairedAndBroadcastTadsAcceptScratchArguments(Nd4jBackend backend) throws Exception {
+        for (DataType type : new DataType[]{DataType.FLOAT, DataType.DOUBLE}) {
+            for (char order : new char[]{'c', 'f'}) {
+                INDArray x = Nd4j.createFromArray(1.0, 2.0, 4.0, 5.0).castTo(type).reshape(2, 2).dup(order);
+                INDArray vector = Nd4j.createFromArray(1.0, 2.0).castTo(type);
+                INDArray paired = Nd4j.createFromArray(1.0, 2.0, 1.0, 2.0).castTo(type).reshape(2, 2)
+                        .dup(order == 'c' ? 'f' : 'c');
+                for (INDArray y : new INDArray[]{vector, paired}) {
+                    INDArray owner = Nd4j.create(type, 5).assign(-77);
+                    INDArray z = owner.get(NDArrayIndex.interval(1, 2, 5));
+                    INDArray actual = Nd4j.getExecutioner().exec(new EuclideanDistance(x, y, z, 1));
+                    assertSame(z, actual);
+                    assertEquals(0, owner.getDouble(1), 0);
+                    assertEquals(Math.sqrt(18), owner.getDouble(3), 1e-5);
+                    assertEquals(-77, owner.getDouble(0), 0);
+                    assertEquals(-77, owner.getDouble(2), 0);
+                    assertEquals(-77, owner.getDouble(4), 0);
+                    owner.assign(-77);
+                    try (val context = Nd4j.getExecutioner().buildContext()) {
+                        context.setInputArray(0, x);
+                        context.setInputArray(1, y);
+                        context.setOutputArray(0, z);
+                        Nd4j.getExecutioner().exec(new EuclideanDistance(x, y, z, 1), context);
+                        assertEquals(0, owner.getDouble(1), 0);
+                        assertEquals(Math.sqrt(18), owner.getDouble(3), 1e-5);
+                        assertEquals(-77, owner.getDouble(0), 0);
+                        assertEquals(-77, owner.getDouble(2), 0);
+                        assertEquals(-77, owner.getDouble(4), 0);
+                    }
+                }
+            }
+        }
+    }
+
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLength(Nd4jBackend backend) {
         INDArray values = Nd4j.create(2, 2);

@@ -21,6 +21,10 @@
 //  @brief helpers common fuctions for segment_* ops (segment_max, segment_min, etc.)
 //  @brief helpers common fuctions for unsorted_segment_* ops (unsorted_segment_max, etc.)
 //
+//  CUDA only: device-side preparation of the segment ids shared by every segment kernel (implemented in
+//  helpers/cuda/segment.cu). All of them enqueue on the context's stream and expect the arrays to be prepared for
+//  special (device) use by the caller.
+//
 #ifndef __SEGMENT_COMMON_HELPERS__
 #define __SEGMENT_COMMON_HELPERS__
 #include <array/NDArray.h>
@@ -30,10 +34,21 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void fillUpSegments(NDArray* indices, LongType numClasses, NDArray& classesRangesBegs,
-                                  NDArray& classesRangesLens);
+// The segment ids of `indices` (any integer dtype, rank and strides) as one dense sequence of signed 64 bit values in
+// `dense`, device memory of indices->lengthOf() elements.
+SD_LIB_HIDDEN void segmentReadIds(LaunchContext* context, NDArray* indices, LongType* dense);
 
-}
+// For SORTED dense ids: the first row and the end (one past the last row) of every class; both are zero for a class no
+// id names. begin / end are device memory of numClasses elements. Ids outside [0, numClasses) are ignored.
+SD_LIB_HIDDEN void segmentBuildRanges(LaunchContext* context, const LongType* ids, LongType n, LongType numClasses,
+                                      LongType* begin, LongType* end);
+
+// The number of ids naming each class (counts: device memory of numClasses elements, written here). Ids outside
+// [0, numClasses) are ignored.
+SD_LIB_HIDDEN void segmentCountIds(LaunchContext* context, const LongType* ids, LongType n, LongType numClasses,
+                                   unsigned long long* counts);
+
+}  // namespace helpers
 }  // namespace ops
 }  // namespace sd
 #endif

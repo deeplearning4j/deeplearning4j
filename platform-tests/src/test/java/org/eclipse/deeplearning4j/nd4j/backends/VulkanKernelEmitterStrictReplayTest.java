@@ -803,6 +803,138 @@ public class VulkanKernelEmitterStrictReplayTest {
     }
 
     @Test
+    @DisplayName("maximum_bp/minimum_bp/biasadd_bp: independently shaped gradients replay one pipeline")
+    void tensorGradientsCreateSinglePipelineAndReplayBothOutputs() {
+        List<InputSpec> extrema = List.of(
+                new InputSpec("x", new long[]{2, 1}, step -> new float[]{2 + step, 5 + step}),
+                new InputSpec("y", new long[]{1, 3}, step -> new float[]{2 + step, 4 + step, 5 + step}),
+                new InputSpec("gradient", new long[]{2, 3}, step -> scaledGradientValues(step)));
+        for (String name : new String[]{"maximum_bp", "minimum_bp"}) {
+            for (int outputIndex = 0; outputIndex < 2; outputIndex++) {
+                final int observed = outputIndex;
+                runStrictSingleDispatch(name + " destination=" + observed, name, extrema,
+                        (sd, variables) -> new NamedFixedOutputOp(name, 2, sd,
+                                variables.get("x"), variables.get("y"), variables.get("gradient"))
+                                .outputVariables()[observed],
+                        step -> {
+                            float[] expected = name.equals("maximum_bp")
+                                    ? (observed == 0 ? new float[]{0.5f, 12} : new float[]{0.5f, 2, 6})
+                                    : (observed == 0 ? new float[]{5.5f, 3} : new float[]{4.5f, 5, 3});
+                            for (int i = 0; i < expected.length; i++) expected[i] *= step + 1;
+                            return expected;
+                        }, DataType.FLOAT, observed == 0 ? new long[]{2, 1} : new long[]{1, 3}, 0.0f, 0.0f);
+            }
+        }
+        for (boolean nchw : new boolean[]{false, true}) {
+            long[] shape = nchw ? new long[]{1, 3, 2} : new long[]{1, 2, 3};
+            List<InputSpec> bias = List.of(
+                    new InputSpec("x", shape, step -> scaledGradientValues(step)),
+                    new InputSpec("bias", new long[]{3}, step -> new float[]{1, 2, 3}),
+                    new InputSpec("gradient", shape, step -> biasGradientValues(step, nchw)));
+            for (int outputIndex = 0; outputIndex < 2; outputIndex++) {
+                final int observed = outputIndex;
+                runStrictSingleDispatch("biasadd_bp nchw=" + nchw + " destination=" + observed,
+                        "biasadd_bp", bias,
+                        (sd, variables) -> {
+                            NamedFixedOutputOp op = new NamedFixedOutputOp("biasadd_bp", 2, sd,
+                                    variables.get("x"), variables.get("bias"), variables.get("gradient"));
+                            op.addBArgument(nchw);
+                            return op.outputVariables()[observed];
+                        }, step -> observed == 0 ? biasGradientValues(step, nchw)
+                                : new float[]{5 * (step + 1), 7 * (step + 1), 9 * (step + 1)},
+                        DataType.FLOAT, observed == 0 ? shape : new long[]{3}, 0.0f, 0.0f);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("tensor gradients reject incompatible broadcast/axis/alias metadata before dispatch")
+    void tensorGradientAdmissionRejectsInvalidContracts() {
+        INDArray x = Nd4j.ones(DataType.FLOAT, 2, 3);
+        INDArray y = Nd4j.ones(DataType.FLOAT, 3);
+        INDArray eps = Nd4j.ones(DataType.FLOAT, 2, 3);
+        for (String name : new String[]{"maximum_bp", "minimum_bp"}) {
+            assertThrows(RuntimeException.class, () -> Nd4j.exec(DynamicCustomOp.builder(name)
+                    .addInputs(x, y, eps.reshape(3, 2)).build()), name + " epsilon shape");
+            assertThrows(RuntimeException.class, () -> Nd4j.exec(DynamicCustomOp.builder(name)
+                    .addInputs(x, y, eps).addOutputs(x, y).build()), name + " overlapping destinations");
+        }
+        assertThrows(RuntimeException.class, () -> Nd4j.exec(DynamicCustomOp.builder("biasadd_bp")
+                .addInputs(x, Nd4j.ones(DataType.FLOAT, 4), eps).build()), "bias extent");
+        assertThrows(RuntimeException.class, () -> Nd4j.exec(DynamicCustomOp.builder("cumsum_bp")
+                .addInputs(x, eps).addIntegerArguments(0, 0, 2).build()), "axis outside rank");
+        assertThrows(RuntimeException.class, () -> Nd4j.exec(DynamicCustomOp.builder("cumsum_bp")
+                .addInputs(x, eps).addIntegerArguments(0, 0, 0, 0).build()), "duplicate axes");
+    }
+
+    private static float[] scaledGradientValues(int step) {
+        float[] values = {1, 2, 3, 4, 5, 6};
+        for (int i = 0; i < values.length; i++) values[i] *= step + 1;
+        return values;
+    }
+
+    private static float[] biasGradientValues(int step, boolean nchw) {
+        float[] values = nchw ? new float[]{1, 4, 2, 5, 3, 6} : new float[]{1, 2, 3, 4, 5, 6};
+        for (int i = 0; i < values.length; i++) values[i] *= step + 1;
+        return values;
+    }
+
+    @Test
+    @DisplayName("cumsum_bp: exclusive/reverse adjoints and live tensor axes replay both outputs")
+    void cumsumAdjointCreatesSinglePipelineWithLiveAxisReplay() {
+        for (boolean exclusive : new boolean[]{false, true}) {
+            for (boolean reverse : new boolean[]{false, true}) {
+                List<InputSpec> inputs = List.of(
+                        new InputSpec("x", new long[]{2, 3}, step -> scaledGradientValues(step)),
+                        new InputSpec("axes", DataType.INT32, new long[]{1}, step -> new float[]{step % 2 == 0 ? -1 : 0}),
+                        new InputSpec("gradient", new long[]{2, 3}, step -> scaledGradientValues(step)));
+                for (int outputIndex = 0; outputIndex < 2; outputIndex++) {
+                    final int observed = outputIndex;
+                    runStrictSingleDispatch("cumsum_bp exclusive=" + exclusive + " reverse=" + reverse
+                                    + " destination=" + observed, "cumsum_bp", inputs,
+                            (sd, variables) -> {
+                                NamedFixedOutputOp op = new NamedFixedOutputOp("cumsum_bp",
+                                        List.of(DataType.FLOAT, DataType.INT32), sd,
+                                        variables.get("x"), variables.get("axes"), variables.get("gradient"));
+                                op.addIArgument(exclusive ? 1 : 0, reverse ? 1 : 0);
+                                return op.outputVariables()[observed];
+                            }, step -> observed == 1 ? new float[]{1}
+                                    : scanAdjointOracle(step, step % 2 == 0 ? 1 : 0, exclusive, reverse),
+                            observed == 0 ? DataType.FLOAT : DataType.INT32,
+                            observed == 0 ? new long[]{2, 3} : new long[]{1}, 0.0f, 0.0f);
+                }
+                List<InputSpec> flatInputs = List.of(
+                        new InputSpec("x", new long[]{2, 3}, step -> scaledGradientValues(step)),
+                        new InputSpec("gradient", new long[]{2, 3}, step -> scaledGradientValues(step)));
+                runStrictSingleDispatch("cumsum_bp flattened exclusive=" + exclusive + " reverse=" + reverse,
+                        "cumsum_bp", flatInputs,
+                        (sd, variables) -> {
+                            NamedFixedOutputOp op = new NamedFixedOutputOp("cumsum_bp", 1, sd,
+                                    variables.get("x"), variables.get("gradient"));
+                            op.addIArgument(exclusive ? 1 : 0, reverse ? 1 : 0);
+                            return op.outputVariables()[0];
+                        }, step -> scanAdjointOracle(step, -1, exclusive, reverse),
+                        DataType.FLOAT, new long[]{2, 3}, 0.0f, 0.0f);
+            }
+        }
+    }
+
+    private static float[] scanAdjointOracle(int step, int axis, boolean exclusive, boolean reverse) {
+        float[] input = scaledGradientValues(step);
+        float[] result = new float[6];
+        for (int i = 0; i < result.length; i++) {
+            int position = axis == 0 ? i / 3 : axis == 1 ? i % 3 : i;
+            for (int j = 0; j < input.length; j++) {
+                boolean sameTad = axis == 0 ? i % 3 == j % 3 : axis == 1 ? i / 3 == j / 3 : true;
+                int other = axis == 0 ? j / 3 : axis == 1 ? j % 3 : j;
+                if (sameTad && (reverse ? (exclusive ? other < position : other <= position)
+                        : (exclusive ? other > position : other >= position))) result[i] += input[j];
+            }
+        }
+        return result;
+    }
+
+    @Test
     @DisplayName("rms_norm_bp: rank-3 strided views replay one fused row kernel")
     void rmsNormBackwardStridedViewsCreateSinglePipelineAndReplay() {
         final int batch = 2;
@@ -3250,6 +3382,58 @@ public class VulkanKernelEmitterStrictReplayTest {
     }
 
     @Test
+    @DisplayName("copying reshape_no_copy preserves requested traversal during strict replay")
+    void copyingReshapeNoCopyCreatesSinglePipelineAndReplays() {
+        final List<InputSpec> inputs = Collections.singletonList(
+                new InputSpec("x", DataType.FLOAT, new long[]{2, 3}, step -> {
+                    INDArray storage = Nd4j.zeros(DataType.FLOAT, 2, 7);
+                    INDArray view = storage.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(1, 2, 7));
+                    view.assign(Nd4j.create(new float[]{
+                            step + 1, step + 2, step + 3,
+                            step + 4, step + 5, step + 6}, new long[]{2, 3}));
+                    assertTrue(view.isView());
+                    assertEquals(7L, view.stride(0));
+                    assertEquals(2L, view.stride(1));
+                    return view;
+                }, true));
+        for (char order : new char[]{'c', 'f'}) {
+            for (boolean shapeTensor : new boolean[]{false, true}) {
+                List<InputSpec> caseInputs = new ArrayList<>(inputs);
+                if (shapeTensor) {
+                    caseInputs.add(new InputSpec("shape", DataType.LONG,
+                            new long[]{2}, step -> new float[]{3, 2}));
+                }
+                runStrictSingleDispatch(
+                        "copying reshape_no_copy order=" + order + " tensor=" + shapeTensor,
+                        "reshape_no_copy",
+                        caseInputs,
+                        (sd, variables) -> {
+                            NamedDynamicOp op = shapeTensor
+                                    ? new NamedDynamicOp("reshape_no_copy", sd,
+                                            variables.get("x"), variables.get("shape"))
+                                    : new NamedDynamicOp("reshape_no_copy", sd, variables.get("x"));
+                            if (shapeTensor) {
+                                op.addIArgument(-order);
+                            } else {
+                                op.addIArgument(3, 2, -order);
+                            }
+                            return op.outputVariable();
+                        },
+                        step -> order == 'c'
+                                ? new float[]{step + 1, step + 2, step + 3,
+                                        step + 4, step + 5, step + 6}
+                                : new float[]{step + 1, step + 5, step + 4,
+                                        step + 3, step + 2, step + 6},
+                        DataType.FLOAT,
+                        new long[]{3, 2},
+                        0.0f,
+                        0.0f);
+            }
+        }
+    }
+
+    @Test
     @DisplayName("contract movement and normalize_moments create one real replayable pipeline")
     void contractMovementAndNormalizeMomentsCreateSinglePipelinesAndReplay() {
         final List<InputSpec> squeezeInputs = Collections.singletonList(
@@ -4001,8 +4185,12 @@ public class VulkanKernelEmitterStrictReplayTest {
                         sameDiff, PlanPhase.SHAPES_FROZEN, label);
                 DspPlanAssertions.assertSlotIsFrozenConstant(sameDiff, 0, label);
                 DspPlanAssertions.assertFrozenExecCountAtLeast(sameDiff, 1, label);
+                DspPlanAssertions.assertSegmentReplayMode(sameDiff, 0,
+                        DspPlanAssertions.REPLAY_MODE_FROZEN_CONSTANT, label);
             } else {
                 DspPlanAssertions.assertFullyReplaying(sameDiff, label);
+                DspPlanAssertions.assertSegmentReplayMode(sameDiff, 0,
+                        DspPlanAssertions.REPLAY_MODE_MONOLITHIC, label);
                 assertTrue(DspPlanAssertions.getTotalGraphReplays(sameDiff) > 0,
                         label + ": no graph replay was recorded");
                 DspPlanAssertions.assertAllSegmentsCompiledWith(
@@ -6583,6 +6771,13 @@ public class VulkanKernelEmitterStrictReplayTest {
     /** Test facade for canonical registered ops with a frozen output count. */
     private static final class NamedFixedOutputOp extends DynamicCustomOp {
         private final int outputCount;
+        private List<DataType> outputTypes;
+
+        private NamedFixedOutputOp(String opName, List<DataType> outputTypes,
+                SameDiff sameDiff, SDVariable... inputs) {
+            this(opName, outputTypes.size(), sameDiff, inputs);
+            this.outputTypes = List.copyOf(outputTypes);
+        }
 
         private NamedFixedOutputOp(
                 String opName,
@@ -6599,7 +6794,7 @@ public class VulkanKernelEmitterStrictReplayTest {
         @Override
         public List<DataType> calculateOutputDataTypes(
                 List<DataType> inputDataTypes) {
-            return Collections.nCopies(outputCount, inputDataTypes.get(0));
+            return outputTypes == null ? Collections.nCopies(outputCount, inputDataTypes.get(0)) : outputTypes;
         }
 
         @Override

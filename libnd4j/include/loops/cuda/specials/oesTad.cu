@@ -21,6 +21,10 @@
 //
 #include <ops/specials_cuda.h>
 
+// Odd-even transposition sort of every TAD: a block per TAD (grid-stride over the TADs), its threads stride over the
+// pairs of a round, and a TAD of n elements takes n rounds. Lengths, counts and positions are 64-bit: an array of 2^31
+// elements or more has TADs to count in 64 bits.
+
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 SD_KERNEL SD_INLINE void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
@@ -29,10 +33,10 @@ SD_KERNEL SD_INLINE void execOesTadKernelKey(void *vx, sd::LongType const *xShap
   auto x = static_cast<X *>(vx);
   auto y = static_cast<Y *>(vy);
 
-  __shared__ int xLength;
-  __shared__ int xTadLength;
-  __shared__ int numTads;
-  __shared__ int tadRank;
+  __shared__ sd::LongType xLength;
+  __shared__ sd::LongType xTadLength;
+  __shared__ sd::LongType numTads;
+  __shared__ sd::LongType tadRank;
   __shared__ sd::LongType *tadShape;
   __shared__ sd::LongType *tadStride;
 
@@ -48,16 +52,16 @@ SD_KERNEL SD_INLINE void execOesTadKernelKey(void *vx, sd::LongType const *xShap
   }
   __syncthreads();
 
-  for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+  for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
     auto dx = x + tadOffsets[r];
     auto dy = y + tadOffsets[r];
 
     // this is general loop, we go uncached
-    int iterations = xTadLength;
+    sd::LongType iterations = xTadLength;
 
-    for (int i = 0; i < iterations; i++) {
+    for (sd::LongType i = 0; i < iterations; i++) {
       if (i % 2 == 0) {
-        for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+        for (sd::LongType tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
           auto top = 2 * tid + 1;
           if (top < xTadLength) {
             sd::LongType t0Coords[SD_MAX_RANK], t1Coords[SD_MAX_RANK];
@@ -80,7 +84,7 @@ SD_KERNEL SD_INLINE void execOesTadKernelKey(void *vx, sd::LongType const *xShap
           }
         }
       } else {
-        for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+        for (sd::LongType tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
           auto top = 2 * tid + 2;
           if (top < xTadLength) {
             sd::LongType t0Coords[SD_MAX_RANK], t1Coords[SD_MAX_RANK];
@@ -109,19 +113,20 @@ SD_KERNEL SD_INLINE void execOesTadKernelKey(void *vx, sd::LongType const *xShap
 }
 
 //////////////////////////////////////////////////////////////////////////
+// sharedBytes is the dynamic shared memory the launch gave the block: a TAD that fits in it is sorted there
 template <typename T>
 SD_KERNEL SD_INLINE void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo, sd::LongType *dimension,
                                 sd::LongType dimensionLength,
-                                sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending) {
+                                sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending,
+                                sd::LongType sharedBytes) {
   auto x = static_cast<T *>(vx);
-  const int sharedSize = 32768;
 
-  __shared__ int xLength;
-  __shared__ int xTadLength;
-  __shared__ int numTads;
+  __shared__ sd::LongType xLength;
+  __shared__ sd::LongType xTadLength;
+  __shared__ sd::LongType numTads;
   __shared__ T *shmem;
   __shared__ bool cached;
-  __shared__ int tadRank;
+  __shared__ sd::LongType tadRank;
   __shared__ sd::LongType *tadShape;
   __shared__ sd::LongType *tadStride;
 
@@ -133,7 +138,7 @@ SD_KERNEL SD_INLINE void execOesTadKernel(void *vx, sd::LongType const *xShapeIn
     extern __shared__ unsigned char shrd[];
     shmem = (T *)shrd;
 
-    cached = xTadLength <= (sharedSize / sizeof(T));
+    cached = xTadLength <= (sharedBytes / static_cast<sd::LongType>(sizeof(T)));
 
     // Cache shape information
     tadRank = shape::rank(tadShapeInfo);
@@ -142,13 +147,13 @@ SD_KERNEL SD_INLINE void execOesTadKernel(void *vx, sd::LongType const *xShapeIn
   }
   __syncthreads();
 
-  for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+  for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
     auto dx = x + tadOffsets[r];
 
     // this is general loop, we go uncached
-    int iterations = xTadLength;
+    sd::LongType iterations = xTadLength;
     if (cached) {
-      for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+      for (sd::LongType tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
         sd::LongType xCoords[SD_MAX_RANK];
         sd::LongType xOffset;
         INDEX2COORDS(tid, tadRank, tadShape, xCoords);
@@ -160,9 +165,9 @@ SD_KERNEL SD_INLINE void execOesTadKernel(void *vx, sd::LongType const *xShapeIn
       dx = shmem;
     }
 
-    for (int i = 0; i < iterations; i++) {
+    for (sd::LongType i = 0; i < iterations; i++) {
       if (i % 2 == 0) {
-        for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+        for (sd::LongType tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
           auto top = 2 * tid + 1;
           if (top < xTadLength) {
             sd::LongType t0Offset, t1Offset;
@@ -186,7 +191,7 @@ SD_KERNEL SD_INLINE void execOesTadKernel(void *vx, sd::LongType const *xShapeIn
           }
         }
       } else {
-        for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+        for (sd::LongType tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
           auto top = 2 * tid + 2;
           if (top < xTadLength) {
             sd::LongType t0Offset, t1Offset;
@@ -215,7 +220,7 @@ SD_KERNEL SD_INLINE void execOesTadKernel(void *vx, sd::LongType const *xShapeIn
 
     if (cached) {
       dx = x + tadOffsets[r];
-      for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+      for (sd::LongType tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
         sd::LongType xCoords[SD_MAX_RANK];
         sd::LongType xOffset;
         INDEX2COORDS(tid, tadRank, tadShape, xCoords);
@@ -231,8 +236,11 @@ template <typename T>
 SD_HOST void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
                            sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType const *tadShapeInfo,
                            sd::LongType const *tadOffsets, bool descending) {
-  execOesTadKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(vx, xShapeInfo, dimension, dimensionLength,
-                                                                             tadShapeInfo, tadOffsets, descending);
+  // threads-first dims (getSortTadLarge): x = threads per block, y = blocks, z = dynamic shared bytes, which the
+  // kernel uses to hold a TAD
+  execOesTadKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+      vx, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending,
+      static_cast<sd::LongType>(launchDims.z));
 
   sd::DebugHelper::checkErrorCode(stream, "execOesTadKernel failed");
 }

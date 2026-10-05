@@ -40,6 +40,92 @@ import static org.junit.jupiter.api.Assertions.*;
 public class OpaqueNDArrayTests extends BaseNd4jTestWithBackends {
 
     @Test
+    public void equalsWithEpsReadsThirdExtraArgument() {
+        NativeOps nativeOps = Nd4j.getNativeOps();
+        for (DataType type : new DataType[]{DataType.FLOAT, DataType.DOUBLE}) {
+            INDArray x = Nd4j.createFromArray(1.0, 2.0, 4.0).castTo(type);
+            INDArray y = Nd4j.createFromArray(1.05, 2.05, 4.05).castTo(type);
+            for (double epsilon : new double[]{0.1, 0.01}) {
+                INDArray z = Nd4j.scalar(type, -77);
+                INDArray extraArray = Nd4j.createFromArray(0.0, 0.0, epsilon).castTo(type);
+                Pointer extra = reduce3ExtraPointer(extraArray);
+                nativeOps.clearLastError();
+                try (OpaqueNDArray xOpaque = OpaqueNDArray.fromINDArrayUncached(x);
+                     OpaqueNDArray yOpaque = OpaqueNDArray.fromINDArrayUncached(y);
+                     OpaqueNDArray zOpaque = OpaqueNDArray.fromINDArrayUncached(z)) {
+                    // Native Reduce3 EqualsWithEps is op 4; slots 0/1 are scratch, slot 2 is epsilon.
+                    nativeOps.execReduce3Scalar(null, 4, xOpaque, extra, yOpaque, zOpaque);
+                    assertEquals(0, nativeOps.lastErrorCode());
+                    assertEquals(epsilon == 0.1 ? 1 : 0, z.getDouble(0), 0);
+                }
+            }
+        }
+    }
+
+    private Pointer reduce3ExtraPointer(INDArray extraArray) {
+        // The raw CUDA Reduce3 ABI consumes device parameters; CPU/Vulkan consume host parameters.
+        if ("CUDA".equals(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend"))) {
+            extraArray.data().opaqueBuffer().syncToSpecial();
+            return Nd4j.getNativeOps().dbSpecialBuffer(extraArray.data().opaqueBuffer());
+        }
+        return extraArray.data().addressPointer();
+    }
+
+    @Test
+    public void equalsWithEpsDimensionalAndAllPairsPreserveEpsilon() {
+        NativeOps nativeOps = Nd4j.getNativeOps();
+        for (DataType type : new DataType[]{DataType.FLOAT, DataType.DOUBLE}) {
+            for (char order : new char[]{'c', 'f'}) {
+                INDArray x = Nd4j.createFromArray(new double[][]{{1, 2, 4}, {10, 20, 40}})
+                        .castTo(type).dup(order);
+                INDArray y = Nd4j.createFromArray(new double[][]{{1.05, 2.05, 4.05}, {10.05, 20.05, 40.05}})
+                        .castTo(type).dup(order == 'c' ? 'f' : 'c');
+                INDArray dimensions = Nd4j.createFromArray(1L);
+                for (double epsilon : new double[]{0.1, 0.01}) {
+                    INDArray extraArray = Nd4j.createFromArray(0.0, 0.0, epsilon).castTo(type);
+                    Pointer extra = reduce3ExtraPointer(extraArray);
+                    for (boolean allPairs : new boolean[]{false, true}) {
+                        INDArray owner = allPairs
+                                ? Nd4j.create(type, new long[]{3, 5}, order).assign(-77)
+                                : Nd4j.create(type, 5).assign(-77);
+                        INDArray z = allPairs
+                                ? owner.get(NDArrayIndex.interval(1, 3), NDArrayIndex.interval(1, 2, 5))
+                                : owner.get(NDArrayIndex.interval(1, 2, 5));
+                        nativeOps.clearLastError();
+                        try (OpaqueNDArray xOpaque = OpaqueNDArray.fromINDArrayUncached(x);
+                             OpaqueNDArray yOpaque = OpaqueNDArray.fromINDArrayUncached(y);
+                             OpaqueNDArray zOpaque = OpaqueNDArray.fromINDArrayUncached(z);
+                             OpaqueNDArray dimsOpaque = OpaqueNDArray.fromINDArrayUncached(dimensions)) {
+                            if (allPairs) nativeOps.execReduce3All(null, 4, xOpaque, yOpaque, zOpaque, dimsOpaque, extra);
+                            else nativeOps.execReduce3Tad(null, 4, xOpaque, extra, yOpaque, zOpaque, dimsOpaque);
+                            assertEquals(0, nativeOps.lastErrorCode());
+                            double diagonal = epsilon == 0.1 ? 1 : 0;
+                            if (allPairs) {
+                                for (int i = 0; i < 2; i++) {
+                                    for (int j = 0; j < 2; j++) {
+                                        assertEquals(i == j ? diagonal : 0, owner.getDouble(i + 1, 2 * j + 1), 0);
+                                    }
+                                }
+                                for (int i = 0; i < 3; i++) {
+                                    for (int j = 0; j < 5; j++) {
+                                        if (i == 0 || j % 2 == 0) assertEquals(-77, owner.getDouble(i, j), 0);
+                                    }
+                                }
+                            } else {
+                                assertEquals(diagonal, owner.getDouble(1), 0);
+                                assertEquals(diagonal, owner.getDouble(3), 0);
+                                assertEquals(-77, owner.getDouble(0), 0);
+                                assertEquals(-77, owner.getDouble(2), 0);
+                                assertEquals(-77, owner.getDouble(4), 0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     public void testBasicConversion() {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2).castTo(DataType.FLOAT);
         try (OpaqueNDArray opaque = OpaqueNDArray.fromINDArrayUncached(arr)) {

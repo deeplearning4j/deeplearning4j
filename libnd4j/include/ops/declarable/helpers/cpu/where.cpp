@@ -24,13 +24,15 @@
 #include <array/NDArrayFactory.h>
 #include <array/ArrayOptions.h>
 #include <helpers/shape.h>
+#include <execution/Threads.h>
 
-#if NOT_EXCLUDED(OP_Where)
+#if NOT_EXCLUDED(OP_Where) || NOT_EXCLUDED(OP_where_np)
 #include <ops/declarable/helpers/where.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
+#if NOT_EXCLUDED(OP_Where)
 inline bool evaluateConditionValue(NDArray& condition, LongType index) {
   switch (condition.dataType()) {
     case DataType::BOOL:
@@ -271,91 +273,138 @@ void _whereTad(LaunchContext* context, NDArray& condition, NDArray& x, NDArray& 
   }
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Count true elements - CPU implementation
+#endif  // OP_Where
+
+// Count and coordinate traversal use C-logical indices, not an array's storage order.
+template <typename T>
+static LongType countTrueTyped(NDArray& condition) {
+  const auto buffer = condition.bufferAsT<T>();
+  const auto rank = condition.rankOf();
+  const auto dims = condition.shapeOf();
+  const auto strides = condition.stridesOf();
+  auto count = PRAGMA_REDUCE_LONG {
+    LongType matches = 0;
+    for (LongType e = start; e < stop; e += increment) {
+      LongType coords[SD_MAX_RANK], offset;
+      INDEX2COORDS(e, rank, dims, coords);
+      COORDS2INDEX(rank, strides, coords, offset);
+      matches += buffer[offset] != static_cast<T>(0);
+    }
+    return matches;
+  };
+  return samediff::Threads::parallel_long(count, LAMBDA_SUML, 0, condition.lengthOf());
+}
+BUILD_SINGLE_TEMPLATE(LongType countTrueTyped, (NDArray& condition), SD_COMMON_TYPES);
+
 LongType countTrue(LaunchContext* context, NDArray& condition) {
-  if (condition.isEmpty() || condition.lengthOf() == 0) {
-    return 0;
-  }
+  if (condition.isEmpty()) return 0;
+  NDArray::preparePrimaryUse({}, {&condition});
+  LongType result = 0;
+  BUILD_SINGLE_SELECTOR(condition.dataType(), result = countTrueTyped, (condition), SD_COMMON_TYPES);
+  NDArray::registerPrimaryUse({}, {&condition});
+  return result;
+}
 
-  condition.syncToHost();
-
-  LongType count = 0;
-  for (LongType i = 0; i < condition.lengthOf(); i++) {
-    if (evaluateConditionValue(condition, i)) {
-      count++;
+#if NOT_EXCLUDED(OP_where_np)
+// Output storage is X by the op contract; replacement storage Y is independently dispatched.
+template <typename X, typename Y>
+static void whereNpSelectTyped(NDArray& condition, NDArray& x, NDArray& y, NDArray& output,
+                               bool rowMask, bool scalarY) {
+  const auto cond = condition.bufferAsT<bool>();
+  const auto xb = x.bufferAsT<X>();
+  const auto yb = y.isEmpty() ? nullptr : y.bufferAsT<Y>();
+  auto zb = output.bufferAsT<X>();
+  const auto rank = x.rankOf();
+  const auto dims = x.shapeOf();
+  const auto cs = condition.stridesOf();
+  const auto xs = x.stridesOf();
+  const auto ys = y.stridesOf();
+  const auto zs = output.stridesOf();
+  const auto cr = condition.rankOf();
+  const auto cd = condition.shapeOf();
+  const auto yr = y.rankOf();
+  const auto yd = y.shapeOf();
+  const LongType length = x.lengthOf();
+  LongType matches = 0;
+  for (LongType e = 0; e < length; ++e) {
+    LongType coords[SD_MAX_RANK], co, xo, zo;
+    INDEX2COORDS(e, rank, dims, coords);
+    COORDS2INDEX(rank, xs, coords, xo);
+    COORDS2INDEX(rank, zs, coords, zo);
+    if (rowMask) {
+      LongType cc[SD_MAX_RANK];
+      const LongType row = coords[0];
+      INDEX2COORDS(row, cr, cd, cc);
+      COORDS2INDEX(cr, cs, cc, co);
+    } else {
+      COORDS2INDEX(rank, cs, coords, co);
+    }
+    const bool useY = rowMask ? !cond[co] : cond[co];
+    if (useY) {
+      LongType yo = 0;
+      if (rowMask) {
+        COORDS2INDEX(rank, ys, coords, yo);
+      } else if (!scalarY) {
+        LongType yc[SD_MAX_RANK];
+        const LongType replacement = matches++;
+        INDEX2COORDS(replacement, yr, yd, yc);
+        COORDS2INDEX(yr, ys, yc, yo);
+      }
+      zb[zo] = static_cast<X>(yb[yo]);
+    } else {
+      zb[zo] = xb[xo];
     }
   }
-  return count;
 }
+BUILD_DOUBLE_TEMPLATE(void whereNpSelectTyped,
+                      (NDArray& condition, NDArray& x, NDArray& y, NDArray& output,
+                       bool rowMask, bool scalarY), SD_COMMON_TYPES, SD_COMMON_TYPES);
 
-//////////////////////////////////////////////////////////////////////////
-// where_np scalar-broadcast path: z[e] = condition[e] ? scalarY : x[e]
-// condition and x have the same shape. scalarY is a scalar NDArray.
-template <typename T>
-static void whereNpScalarBroadcastTyped(NDArray& condition, NDArray& x, NDArray& scalarY,
-                                        NDArray& output) {
-  const auto len = output.lengthOf();
-  const T yValue = scalarY.e<T>(0);
-
-  for (LongType e = 0; e < len; e++) {
-    output.p<T>(e, condition.e<bool>(e) ? yValue : x.e<T>(e));
-  }
+static void whereNpSelect(NDArray& condition, NDArray& x, NDArray& y, NDArray& output, bool rowMask) {
+  if (output.isEmpty()) return;
+  NDArray::preparePrimaryUse({&output}, {&condition, &x, &y});
+  BUILD_DOUBLE_SELECTOR(x.dataType(), y.dataType(), whereNpSelectTyped,
+                        (condition, x, y, output, rowMask, y.isScalar()), SD_COMMON_TYPES, SD_COMMON_TYPES);
+  NDArray::registerPrimaryUse({&output}, {&condition, &x, &y});
 }
-BUILD_SINGLE_TEMPLATE(void whereNpScalarBroadcastTyped,
-                      (NDArray& condition, NDArray& x, NDArray& scalarY, NDArray& output),
-                      SD_COMMON_TYPES);
 
 void _whereNpScalarBroadcast(LaunchContext* context, NDArray& condition, NDArray& x,
                               NDArray& scalarY, NDArray& output) {
-  if (output.isEmpty() || output.lengthOf() == 0) return;
-
-  condition.syncToHost();
-  x.syncToHost();
-  scalarY.syncToHost();
-
-  BUILD_SINGLE_SELECTOR(output.dataType(), whereNpScalarBroadcastTyped,
-                        (condition, x, scalarY, output), SD_COMMON_TYPES);
-
-  output.tickWriteHost();
-  output.syncToDevice();
+  whereNpSelect(condition, x, scalarY, output, false);
 }
 
-//////////////////////////////////////////////////////////////////////////
-// where_np gather path: z[e] = condition[e] ? y[numMatches++] : x[e]
-// condition and x have the same shape; y has lengthOf() == number of true
-// elements in condition. The match counter only advances on true.
-template <typename T>
-static void whereNpGatherTyped(NDArray& condition, NDArray& x, NDArray& y, NDArray& output) {
-  const auto len = output.lengthOf();
-  LongType numMatches = 0;
+void _whereNpGather(LaunchContext* context, NDArray& condition, NDArray& x, NDArray& y, NDArray& output) {
+  whereNpSelect(condition, x, y, output, false);
+}
 
-  for (LongType e = 0; e < len; e++) {
-    if (condition.e<bool>(e)) {
-      output.p<T>(e, y.e<T>(numMatches++));
-    } else {
-      output.p<T>(e, x.e<T>(e));
-    }
+void _whereNpRows(LaunchContext* context, NDArray& condition, NDArray& x, NDArray& y, NDArray& output) {
+  whereNpSelect(condition, x, y, output, true);
+}
+
+void _whereNpCoordinates(LaunchContext* context, NDArray& condition, const std::vector<NDArray*>& outputs) {
+  if (outputs.empty() || outputs[0]->isEmpty()) return;
+  NDArray::preparePrimaryUse(outputs, {&condition});
+  const auto cond = condition.bufferAsT<bool>();
+  std::vector<LongType*> buffers;
+  for (auto output : outputs) buffers.push_back(output->bufferAsT<LongType>());
+  const auto rank = condition.rankOf();
+  const auto dims = condition.shapeOf();
+  const auto strides = condition.stridesOf();
+  std::vector<LongType> outputStrides;
+  for (auto output : outputs) outputStrides.push_back(output->stridesOf()[0]);
+  LongType match = 0;
+  for (LongType e = 0; e < condition.lengthOf(); ++e) {
+    LongType coords[SD_MAX_RANK], offset;
+    INDEX2COORDS(e, rank, dims, coords);
+    COORDS2INDEX(rank, strides, coords, offset);
+    if (!cond[offset]) continue;
+    for (LongType axis = 0; axis < rank; ++axis)
+      buffers[axis][match * outputStrides[axis]] = coords[axis];
+    ++match;
   }
+  NDArray::registerPrimaryUse(outputs, {&condition});
 }
-BUILD_SINGLE_TEMPLATE(void whereNpGatherTyped,
-                      (NDArray& condition, NDArray& x, NDArray& y, NDArray& output),
-                      SD_COMMON_TYPES);
-
-void _whereNpGather(LaunchContext* context, NDArray& condition, NDArray& x, NDArray& y,
-                    NDArray& output) {
-  if (output.isEmpty() || output.lengthOf() == 0) return;
-
-  condition.syncToHost();
-  x.syncToHost();
-  y.syncToHost();
-
-  BUILD_SINGLE_SELECTOR(output.dataType(), whereNpGatherTyped,
-                        (condition, x, y, output), SD_COMMON_TYPES);
-
-  output.tickWriteHost();
-  output.syncToDevice();
-}
+#endif  // OP_where_np
 
 }  // namespace helpers
 }  // namespace ops

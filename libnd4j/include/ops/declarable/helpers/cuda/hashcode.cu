@@ -20,110 +20,134 @@
 // @author raver119@gmail.com
 //
 #include <array/NDArrayFactory.h>
+#include <helpers/DebugHelper.h>
+#include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/hashcode.h>
 
 #include "execution/cuda/LaunchDims.h"
 
-
 namespace sd {
 namespace ops {
 namespace helpers {
-template <typename T>
-static SD_KERNEL void splitBufferToChuncks(T* buffer, LongType* tempBuffer, LongType numBlocks, LongType blockSize,
-                                           LongType length) {
-  for (int b = blockIdx.x * blockDim.x + threadIdx.x; b < numBlocks; b += gridDim.x * blockDim.x) {
-    auto blockBuffer = buffer + b * numBlocks;
 
-    LongType r = 1LL;
-    for (int e = 0; e < blockSize && e + (b * numBlocks) < length; e++) {
-      auto v = longBytes<T>(blockBuffer[e]);
-      r = 31LL * r + v;
+// The hash of the elements of the array in C order (the order its logical coordinates give, not the order of its
+// memory), a tree of polynomial hashes as the CPU helper builds it: blocks of 32 consecutive elements hash to one
+// value each, blocks of 32 of those values to one value each, and so on until one value is left.
+
+// level 0: a thread hashes each block of 32 consecutive elements, the elements of a dense C-order array being its
+// memory in order and any other layout going through its strides
+template <typename T>
+static SD_KERNEL void hashBlocksKernel(const void* vx, const LongType* xShapeInfo, LongType* hashes,
+                                       const LongType numBlocks, const LongType blockSize, const LongType length,
+                                       const bool dense) {
+  const T* x = reinterpret_cast<const T*>(vx);
+
+  const LongType rank = shape::rank(xShapeInfo);
+  const LongType* xShape = shape::shapeOf(xShapeInfo);
+  const LongType* xStride = shape::stride(xShapeInfo);
+
+  LongType coords[SD_MAX_RANK];
+
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType b = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; b < numBlocks; b += step) {
+    const LongType first = b * blockSize;
+    const LongType last = first + blockSize < length ? first + blockSize : length;
+
+    LongType r = 1;
+    for (LongType e = first; e < last; e++) {
+      LongType offset = e;
+      if (!dense) {
+        INDEX2COORDS(e, rank, xShape, coords);
+        COORDS2INDEX(rank, xStride, coords, offset);
+      }
+      r = hashCodeStep(r, longBytes<T>(x[offset]));
     }
 
-    tempBuffer[b] = r;
+    hashes[b] = r;
   }
 }
 
-template <typename T>
-static SD_KERNEL void internalHash(LongType* tempBuffer, LongType* tempResult, LongType numBlocks, LongType blockSize,
-                                   LongType lastLength) {
-  for (int b = blockIdx.x * blockDim.x + threadIdx.x; b < numBlocks; b += gridDim.x * blockDim.x) {
-    auto blockBuffer = tempBuffer + b * numBlocks;
-    LongType r = 1LL;
+// the upper levels: a thread hashes each block of 32 consecutive hashes of the level below
+static SD_KERNEL void hashLevelKernel(const LongType* hashes, LongType* merged, const LongType numMerged,
+                                      const LongType blockSize, const LongType count) {
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType b = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; b < numMerged; b += step) {
+    const LongType first = b * blockSize;
+    const LongType last = first + blockSize < count ? first + blockSize : count;
 
-    for (LongType e = 0; e < blockSize && e + (b * numBlocks) < lastLength; e++) {
-      auto v = longBytes<T>(blockBuffer[e]);
-      r = 31LL * r + v;
-    }
+    LongType r = 1;
+    for (LongType e = first; e < last; e++) r = hashCodeStep(r, hashes[e]);
 
-    tempResult[b] = r;
+    merged[b] = r;
   }
 }
 
-static SD_KERNEL void lastStep(LongType* resultBuf, LongType* tempBufferA, LongType* tempResult, LongType length,
-                               LongType blockSize) {
-  if (threadIdx.x == 0) {
-    if (length <= blockSize)
-      *resultBuf = *tempBufferA;
-    else
-      *resultBuf = *tempResult;
-  }
+// the hash left on the top level is the result
+static SD_KERNEL void hashResultKernel(LongType* result, const LongType* hash) {
+  if (blockIdx.x == 0 && threadIdx.x == 0) *result = *hash;
+}
+
+// a thread for each of the work items, at most as many blocks as the named launch's grid
+static void hashLaunch(const char* name, const LongType work, unsigned int& blocks, unsigned int& threads) {
+  const dim3 dims = getLaunchDims(name);
+  threads = dims.y > 0 ? dims.y : 1;
+  const LongType needed = (work + threads - 1) / threads;
+  blocks = static_cast<unsigned int>(needed < static_cast<LongType>(dims.x) ? needed : static_cast<LongType>(dims.x));
+  if (blocks < 1) blocks = 1;
 }
 
 template <typename T>
 void hashCode_(LaunchContext* context, NDArray& array, NDArray& result) {
-  auto blockSize = 32;
-  auto stream = context->getCudaStream();
-  array.syncToDevice();
+  const LongType blockSize = 32;
+  const LongType length = array.lengthOf();
 
-  NDArray::prepareSpecialUse({&result}, {&array});
-  auto length = array.lengthOf();
-  int numBlocks = length / blockSize + ((length % blockSize == 0) ? 0 : 1);
-  NDArray* tempA = NDArrayFactory::create<LongType>('c', {numBlocks}, context);
-  NDArray* tempB = NDArrayFactory::create<LongType>('c', {numBlocks / blockSize + 1}, context);
-
-  auto buffer = reinterpret_cast<T*>(array.specialBuffer());                  // bufferAsT<T>();
-  auto tempBufferA = reinterpret_cast<LongType*>(tempA->specialBuffer());  // bufferAsT<sd::LongType>();
-  auto tempBufferB = reinterpret_cast<LongType*>(tempB->specialBuffer());  // bufferAsT<sd::LongType>();
-
-  dim3 launchDims = getHashCodeSplit(length,numBlocks);
-  // default buffer is the first one, because it might be the last one in case of small arrays (< blockSize)
-  auto tempBuffer = tempBufferA;
-  auto tempResult = tempBufferB;
-
-  // we divide array into 32 element chunks, and store intermediate results once
-  splitBufferToChuncks<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(buffer, tempBuffer, numBlocks, blockSize, length);
-  DebugHelper::checkErrorCode(context->getCudaStream(),"splitBufferToChuncks failed");
-
-  // we replace pointer with intermediate one, and repeat only one chunk left
-  int iterationCount = 0;
-  while (numBlocks > 1) {
-    int lastLength = numBlocks;
-    numBlocks = lastLength / blockSize + ((lastLength % blockSize == 0) ? 0 : 1);
-
-    dim3 internalLaunchDims = getHashCodeInternal(numBlocks);
-    internalHash<LongType>
-        <<<internalLaunchDims.y,internalLaunchDims.x, internalLaunchDims.z, *stream>>>(tempBuffer, tempResult, numBlocks, blockSize, lastLength);
-    DebugHelper::checkErrorCode(context->getCudaStream(),"internalHash failed");
-
-    iterationCount++;
-    // swapping buffers
-    if (iterationCount % 2 == 0) {
-      tempBuffer = tempBufferA;
-      tempResult = tempBufferB;
-    } else {
-      tempBuffer = tempBufferB;
-      tempResult = tempBufferA;
-    }
+  // the hash of no element is the seed of the polynomial
+  if (length == 0) {
+    result.p(0, static_cast<LongType>(1));
+    return;
   }
 
-  dim3 lastDims = getLaunchDims("hashcode_last");
-  lastStep<<<lastDims.x, lastDims.y, lastDims.z, *stream>>>(reinterpret_cast<LongType*>(result.specialBuffer()), tempBufferA, tempResult,
-                                   length, blockSize);
-  DebugHelper::checkErrorCode(context->getCudaStream(),"lastStep failed");
+  auto stream = context->getCudaStream();
+  const LongType numBlocks = length / blockSize + ((length % blockSize == 0) ? 0 : 1);
 
-  delete tempA;
-  delete tempB;
+  PointersManager manager(context, "hashCode");
+  LongType* levelA = reinterpret_cast<LongType*>(manager.allocateDevMem(numBlocks * sizeof(LongType)));
+  LongType* levelB = reinterpret_cast<LongType*>(manager.allocateDevMem(
+      (numBlocks / blockSize + ((numBlocks % blockSize == 0) ? 0 : 1)) * sizeof(LongType)));
+
+  NDArray::prepareSpecialUse({&result}, {&array});
+
+  LongType* current = levelA;
+  LongType* next = levelB;
+  const bool dense = shape::isDenseRowMajor(array.shapeInfo());
+
+  // we divide the array into 32 element blocks, and store each block's hash
+  unsigned int blocks, threads;
+  hashLaunch("hashcode_split", numBlocks, blocks, threads);
+  hashBlocksKernel<T><<<blocks, threads, 0, *stream>>>(array.specialBuffer(), array.specialShapeInfo(), current,
+                                                       numBlocks, blockSize, length, dense);
+  if (!DebugHelper::inGraphCapture(stream)) DebugHelper::checkGlobalErrorCode("hashBlocksKernel failed");
+
+  // then we hash the hashes of a level in blocks of 32, until one block is left
+  LongType count = numBlocks;
+  while (count > 1) {
+    const LongType numMerged = count / blockSize + ((count % blockSize == 0) ? 0 : 1);
+
+    hashLaunch("hashcode_internal", numMerged, blocks, threads);
+    hashLevelKernel<<<blocks, threads, 0, *stream>>>(current, next, numMerged, blockSize, count);
+    if (!DebugHelper::inGraphCapture(stream)) DebugHelper::checkGlobalErrorCode("hashLevelKernel failed");
+
+    // the level just written is the one hashed next
+    LongType* written = next;
+    next = current;
+    current = written;
+    count = numMerged;
+  }
+
+  hashLaunch("hashcode_last", 1, blocks, threads);
+  hashResultKernel<<<blocks, threads, 0, *stream>>>(reinterpret_cast<LongType*>(result.specialBuffer()), current);
+  if (!DebugHelper::inGraphCapture(stream)) DebugHelper::checkGlobalErrorCode("hashResultKernel failed");
+
   NDArray::registerSpecialUse({&result}, {&array});
 }
 

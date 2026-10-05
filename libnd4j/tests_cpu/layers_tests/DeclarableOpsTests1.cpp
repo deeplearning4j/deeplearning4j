@@ -2099,11 +2099,11 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
   const int bS = 2;
   const int K = 3;
   const int N = 3;
-  std::vector<double> expGradXBuff = {
-      0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129,
-      0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129,
-      0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129,
-      0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129};
+  // the highway part of the gradient (the gradient of h) plus the part that reaches x through U = x * w, per time step
+  std::vector<double> expGradXBuff;
+  const double expGradXPerStep[3] = {-0.05633532, -0.05567209, -0.05604813};
+  for (int t = 0; t < N; ++t)
+    for (int e = 0; e < bS * 2 * K; ++e) expGradXBuff.push_back(expGradXPerStep[t]);
   std::vector<double> expGradInitBuff = {1.05121, 1.05121, 1.05121, 1.02676, 1.02676, 1.02676,
                                          1.05121, 1.05121, 1.05121, 1.02676, 1.02676, 1.02676};
   std::vector<double> expGradWBuff = {
@@ -2143,10 +2143,9 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
       0.02534988, -0.0880002, -0.0086892,  0.02534988, -0.0880002, -0.00868926, 0.02534988, -0.0880002, -0.00868926,
       0.01671156, -0.0570699, -0.00856086, 0.01671156, -0.0570699, -0.0085608,  0.01671156, -0.0570699, -0.00856086,
       0.02534988, -0.0880002, -0.0086892,  0.02534988, -0.0880002, -0.00868926, 0.02534988, -0.0880002, -0.00868926};
-  std::vector<double> expGradBBuff = {-0.0734389,  -0.0734389,  -0.0734389,  -0.0717151,  -0.0717151,  -0.0717151,
-                                      -0.0734389,  -0.0734389,  -0.0734389,  -0.0717151,  -0.0717151,  -0.0717151,
-                                      -0.00869156, -0.00869156, -0.00869156, -0.00856306, -0.00856306, -0.00856306,
-                                      -0.00869156, -0.00869156, -0.00869156, -0.00856306, -0.00856306, -0.00856306};
+  // the biases' gradients: summed over the batch, the forget gates' (2 * K) then the reset gates' (2 * K)
+  std::vector<double> expGradBBuff = {-0.14687776, -0.14687776, -0.14687776, -0.1434301,  -0.1434301,  -0.1434301,
+                                      -0.01738313, -0.01738313, -0.01738313, -0.01712612, -0.01712612, -0.01712612};
   std::vector<double> stateBuff = {1.028569, 1.028569, 1.028569, 1.112884, 1.112884, 1.112884, 1.028569, 1.028569,
                                    1.028569, 1.112884, 1.112884, 1.112884, 1.056905, 1.056905, 1.056905, 1.085009,
                                    1.085009, 1.085009, 1.056905, 1.056905, 1.056905, 1.085009, 1.085009, 1.085009,
@@ -2162,13 +2161,9 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
   auto inGradCt = NDArrayFactory::create<double>('c', {bS, 2 * K});
   auto inGradH = NDArrayFactory::create<double>('c', {N, bS, 2 * K});
 
-  NDArray gradBias('c', {bS, 4 * K}, expGradBBuff);
-
   NDArray expGradX('c', {N, bS, 2 * K}, expGradXBuff);
   NDArray expGradW('c', {N, 2 * K, 6 * K}, expGradWBuff);
-  auto expGradB = NDArrayFactory::create<double>('c', {4 * K});
-  std::vector<LongType> *dim = new std::vector<LongType>({0});
-  gradBias.reduceAlongDimension(reduce::Sum, expGradB, dim);  // [bS, 4K] -> [4K]
+  NDArray expGradB('c', {4 * K}, expGradBBuff);
 
   NDArray expGradInit('c', {bS, 2 * K}, expGradInitBuff);
   input.assign(1.5);

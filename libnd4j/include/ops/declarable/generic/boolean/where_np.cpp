@@ -24,194 +24,107 @@
 
 #if NOT_EXCLUDED(OP_where_np)
 
-#include <helpers/ShapeUtils.h>
+#include <helpers/DenseOutputShape.h>
 #include <ops/declarable/headers/boolean.h>
+#include <ops/declarable/helpers/where.h>
 
 namespace sd {
 namespace ops {
-CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
-  auto condition = INPUT_VARIABLE(0);
 
+static LongType whereNpTrueCount(NDArray& condition, LaunchContext* context) {
+  if (condition.isEmpty()) return 0;
+  NDArray count(DataType::INT64, context);
+  condition.reduceNumber(reduce::CountNonZero, &count);
+  return count.e<LongType>(0);
+}
+
+// Validate in shape inference as well: execution may short-circuit empty inputs after allocation.
+static void validateWhereNpInputs(graph::Context& block) {
+  REQUIRE_TRUE(block.width() == 1 || block.width() == 3, 0,
+               "where_np: expected 1 or 3 inputs, got %i", block.width());
+  auto condition = INPUT_VARIABLE(0);
+  REQUIRE_TRUE(condition->dataType() == BOOL, 0, "where_np: condition must be BOOL");
   if (block.width() == 3) {
     auto x = INPUT_VARIABLE(1);
     auto y = INPUT_VARIABLE(2);
-
-    auto z = OUTPUT_VARIABLE(0);
-    int numMatches = 0;
-    // if cond matches x/y shape - we have per-element mask
     if (condition->isSameShape(x)) {
-      // Sync all inputs to host for direct buffer access, avoiding O(n^2) sync from per-element p()/e()
-      condition->syncToHost();
-      x->syncToHost();
-      y->syncToHost();
-
-      auto condBuf = condition->bufferAsT<bool>();
-      auto len = condition->lengthOf();
-
-      if (y->isScalar()) {
-        if (y->isR()) {
-#ifdef HAS_DOUBLE
-          auto xBuf = x->bufferAsT<double>();
-          auto zBuf = z->bufferAsT<double>();
-          auto yVal = y->bufferAsT<double>()[0];
-          for (int e = 0; e < len; e++) {
-            zBuf[e] = condBuf[e] ? yVal : xBuf[e];
-          }
-#elif defined(HAS_FLOAT32)
-          auto xBuf = x->bufferAsT<float>();
-          auto zBuf = z->bufferAsT<float>();
-          auto yVal = y->bufferAsT<float>()[0];
-          for (int e = 0; e < len; e++) {
-            zBuf[e] = condBuf[e] ? yVal : xBuf[e];
-          }
-#else
-#error "No floating-point type available for where_np operation"
-#endif
-        } else {
-          auto xBuf = x->bufferAsT<LongType>();
-          auto zBuf = z->bufferAsT<LongType>();
-          auto yVal = y->bufferAsT<LongType>()[0];
-          for (int e = 0; e < len; e++) {
-            zBuf[e] = condBuf[e] ? yVal : xBuf[e];
-          }
-        }
-      } else {
-        if (y->isR()) {
-#ifdef HAS_DOUBLE
-          auto xBuf = x->bufferAsT<double>();
-          auto yBuf = y->bufferAsT<double>();
-          auto zBuf = z->bufferAsT<double>();
-          for (int e = 0; e < len; e++) {
-            if (condBuf[e]) {
-              zBuf[e] = yBuf[numMatches];
-              numMatches++;
-            } else {
-              zBuf[e] = xBuf[e];
-            }
-          }
-#elif defined(HAS_FLOAT32)
-          auto xBuf = x->bufferAsT<float>();
-          auto yBuf = y->bufferAsT<float>();
-          auto zBuf = z->bufferAsT<float>();
-          for (int e = 0; e < len; e++) {
-            if (condBuf[e]) {
-              zBuf[e] = yBuf[numMatches];
-              numMatches++;
-            } else {
-              zBuf[e] = xBuf[e];
-            }
-          }
-#else
-#error "No floating-point type available for where_np operation"
-#endif
-        } else {
-          auto xBuf = x->bufferAsT<LongType>();
-          auto yBuf = y->bufferAsT<LongType>();
-          auto zBuf = z->bufferAsT<LongType>();
-          for (int e = 0; e < len; e++) {
-            if (condBuf[e]) {
-              zBuf[e] = yBuf[numMatches];
-              numMatches++;
-            } else {
-              zBuf[e] = xBuf[e];
-            }
-          }
-        }
+      // This is replacement/gather, not an elementwise selection from y at the mask index.
+      if (!y->isScalar() && y->lengthOf() < condition->lengthOf()) {
+        const LongType matches = whereNpTrueCount(*condition, block.launchContext());
+        REQUIRE_TRUE(y->lengthOf() >= matches, 0,
+                     "where_np: replacement length %lld is smaller than true count %lld",
+                     static_cast<long long>(y->lengthOf()), static_cast<long long>(matches));
       }
-
-      z->tickWriteHost();
-      z->syncToDevice();
     } else {
-      REQUIRE_TRUE(condition->lengthOf() == x->sizeAt(0), 0,
-                   "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead",
-                   condition->lengthOf());
-
-      std::vector<LongType> idxs;
-      idxs.push_back(0);
-      auto dims = ShapeUtils::evalDimsToExclude(x->rankOf(), 1,idxs.data());
-      auto tadsX = x->allTensorsAlongDimension(*dims);
-      auto tadsY = y->allTensorsAlongDimension(*dims);
-      auto tadsZ = z->allTensorsAlongDimension(*dims);
-
-      for (int e = 0; e < tadsX.size(); e++) {
-        if (!condition->e<bool>(e))
-          tadsZ.at(e)->assign(tadsY.at(e));
-        else
-          tadsZ.at(e)->assign(tadsX.at(e));
-      }
-
-      delete dims;
-    }
-  } else {
-    // in this case we return 2D matrix, which basically contains coordinates fo true
-
-    REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead",
-                 block.width());
-    LongType width = condition->rankOf();
-
-    Where op;
-    auto res(op.evaluate({condition}));
-    REQUIRE_OK(res.status());
-    NDArray* whereTrue = res.at(0);
-
-    if (whereTrue->isEmpty()) return Status::OK;
-
-    // Sync whereTrue to host for direct buffer access, avoiding O(n^2) sync from per-element p()/e()
-    whereTrue->syncToHost();
-
-    for (LongType outNext = 0; outNext < width; ++outNext) {
-      auto output = OUTPUT_VARIABLE(outNext);
-      auto outBuf = output->bufferAsT<LongType>();
-      auto outLen = output->lengthOf();
-      for (LongType e = 0; e < outLen; ++e) {
-        // whereTrue is 2D [numTrue, rank], read element at (e, outNext)
-        outBuf[e] = whereTrue->e<LongType>(e, outNext);
-      }
-      output->tickWriteHost();
-      output->syncToDevice();
+      REQUIRE_TRUE(x->rankOf() > 0 && condition->lengthOf() == x->sizeAt(0), 0,
+                   "where_np: row mask length must equal x dim0");
+      REQUIRE_TRUE(x->isSameShape(y), 0, "where_np: row-mask x and y must have equal shapes");
     }
   }
+}
 
+CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
+  validateWhereNpInputs(block);
+  auto condition = INPUT_VARIABLE(0);
+  if (block.width() == 3) {
+    auto x = INPUT_VARIABLE(1);
+    auto y = INPUT_VARIABLE(2);
+    auto z = OUTPUT_VARIABLE(0);
+    REQUIRE_TRUE(z->dataType() == x->dataType() && z->isSameShape(x), 0,
+                 "where_np: output must have x's shape and dtype");
+    if (z->isEmpty()) return Status::OK;
+    if (condition->isSameShape(x)) {
+      if (y->isScalar())
+        helpers::_whereNpScalarBroadcast(block.launchContext(), *condition, *x, *y, *z);
+      else
+        helpers::_whereNpGather(block.launchContext(), *condition, *x, *y, *z);
+    } else {
+      // Preserve the row/TAD contract: true selects x, false selects y.
+      helpers::_whereNpRows(block.launchContext(), *condition, *x, *y, *z);
+    }
+  } else {
+    std::vector<NDArray*> outputs;
+    for (LongType axis = 0; axis < condition->rankOf(); ++axis) {
+      auto output = OUTPUT_VARIABLE(axis);
+      REQUIRE_TRUE(output->dataType() == INT64, 0, "where_np: coordinate outputs must be INT64");
+      if (output->isEmpty()) return Status::OK;
+      outputs.push_back(output);
+    }
+    helpers::_whereNpCoordinates(block.launchContext(), *condition, outputs);
+  }
   return Status::OK;
 }
 
 DECLARE_SHAPE_FN(where_np) {
+  validateWhereNpInputs(block);
+  if (block.width() == 3) return SHAPELIST(denseOutputShapeInfo(inputShape->at(1)));
+
   auto shapes = SHAPELIST();
-  if (block.width() == 3) {
-    auto inShape = inputShape->at(1);
-    shapes->push_back(CONSTANT(inShape));
+  auto condition = INPUT_VARIABLE(0);
+  const LongType numOfTrue = whereNpTrueCount(*condition, block.launchContext());
+  if (numOfTrue) {
+    for (LongType axis = 0; axis < condition->rankOf(); ++axis)
+      shapes->push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(numOfTrue, INT64));
   } else {
-    auto condition = INPUT_VARIABLE(0);
-
-    // Sync condition to host before accessing data via e<T>()
-    condition->syncToHost();
-
-    LongType numOfTrue = 0LL;  // condition->reduceNumber(reduce::CountNonZero).e<sd::LongType>(0);
-    for (LongType i = 0; i < condition->lengthOf(); ++i)
-      if (condition->e<bool>(i)) numOfTrue++;
-
-    // Sync back to device so subsequent GPU kernels see current device buffer
-    condition->syncToDevice();
-
-    // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
-    if (numOfTrue) {
-      for (LongType e = 0; e < condition->rankOf(); ++e) {
-        shapes->push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(numOfTrue, INT64));
-      }
-    } else {
-      shapes->push_back(ConstantShapeHelper::getInstance().emptyShapeInfo(INT64));
-    }
+    // Preserve the existing single-empty-result contract when no coordinates exist.
+    shapes->push_back(ConstantShapeHelper::getInstance().emptyShapeInfo(INT64));
   }
   return shapes;
+}
+
+samediff::EmptyHandling SD_BACKEND_OPS_CLASS(where_np)::emptyHandling() {
+  // An empty replacement with an all-false mask still has to copy x to the output.
+  return samediff::EmptyHandling::EMPTY_EXECUTE;
 }
 
 DECLARE_TYPES(where_np) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, BOOL)
-      ->setAllowedInputTypes(1, ANY)
-      ->setAllowedInputTypes(2, ANY)
-      ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
-  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
+      ->setAllowedInputTypes(1, {ALL_FLOATS, ALL_INTS, BOOL})
+      ->setAllowedInputTypes(2, {ALL_FLOATS, ALL_INTS, BOOL})
+      ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS, BOOL})
+      ->setSameMode(false);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

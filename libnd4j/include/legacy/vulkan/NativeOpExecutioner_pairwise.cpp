@@ -35,13 +35,8 @@ void execPairwiseVulkan(
     const void* dY, const sd::LongType* dYShapeInfo, void* hZ,
     const sd::LongType* hZShapeInfo, void* dZ, const sd::LongType* dZShapeInfo,
     void* extraParams) {
-  if (extraParams != nullptr) {
-    THROW_EXCEPTION(
-        "Vulkan legacy descriptor execution cannot infer floating argument count from "
-        "non-null extraParams");
-  }
-
   graph::VulkanLegacyInvocation invocation(family, opNum);
+  graph::appendVulkanLegacyExtraParameters(invocation, extraParams, hXShapeInfo);
   invocation.inputs.emplace_back(inputTensor(hX, dX, hXShapeInfo, dXShapeInfo));
   invocation.inputs.emplace_back(inputTensor(hY, dY, hYShapeInfo, dYShapeInfo));
   invocation.outputs.emplace_back(outputTensor(hZ, dZ, hZShapeInfo, dZShapeInfo));
@@ -82,6 +77,23 @@ void NativeOpExecutioner::execPairwiseIntTransform(
                      hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ,
                      hZShapeInfo, dZ, dZShapeInfo, extraParams);
 }
+
+// Metadata entry points never decompose the original array into raw pointers.
+#define SD_VULKAN_PAIRWISE(NAME, FAMILY) \
+void NativeOpExecutioner::NAME(sd::LaunchContext* lc, int opNum, \
+    const sd::LegacyTensorArg& x, const sd::LegacyTensorArg& y, \
+    const sd::LegacyTensorArg& z, void* extraParams) { \
+  graph::VulkanLegacyInvocation invocation(graph::VulkanLegacyOpFamily::FAMILY, opNum); \
+  graph::appendVulkanLegacyExtraParameters(invocation, extraParams, x.hostShapeInfo); \
+  invocation.inputs.emplace_back(graph::VulkanLegacyTensor::fromArg(x)); \
+  invocation.inputs.emplace_back(graph::VulkanLegacyTensor::fromArg(y)); \
+  invocation.outputs.emplace_back(graph::VulkanLegacyTensor::fromArg(z)); \
+  graph::requireVulkanLegacyExecution(lc, invocation); \
+}
+SD_VULKAN_PAIRWISE(execPairwiseTransform, PAIRWISE)
+SD_VULKAN_PAIRWISE(execPairwiseBoolTransform, PAIRWISE_BOOL)
+SD_VULKAN_PAIRWISE(execPairwiseIntTransform, PAIRWISE_INT)
+#undef SD_VULKAN_PAIRWISE
 
 }  // namespace sd
 

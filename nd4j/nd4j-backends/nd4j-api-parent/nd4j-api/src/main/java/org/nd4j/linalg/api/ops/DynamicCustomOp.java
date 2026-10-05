@@ -1328,14 +1328,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
          * @return
          */
         public DynamicCustomOpsBuilder addInputs(INDArray... inputs) {
-            // if we have positive value as numInputs - we should ensure equal amount of arguments
-            if (numInputs >= 0) {
-                if (inputs == null)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numInputs + " arguments. Null was passed instead.");
-
-                if (numInputs > inputs.length)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numInputs + " arguments, but " + inputs.length + " was passed to constructor");
-            }
+            if (inputs == null)
+                throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects input arguments. Null was passed instead.");
 
             for (val in : inputs)
                 inputArguments.add(in);
@@ -1637,7 +1631,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
 
         public DynamicCustomOp build() {
-            // Eventually we probably will lift this restriction
+            if (numInputs >= 0 && inputArguments.size() < numInputs)
+                throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numInputs
+                        + " arguments, but " + inputArguments.size() + " were provided");
             val result = new DynamicCustomOp(opName);
             result.inputArguments = inputArguments;
             result.outputArguments = outputArguments;

@@ -30,9 +30,13 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN bool segmentIndicesValidate(LaunchContext* context, NDArray* indices, NDArray& expected,
-                                          NDArray& output);
+// Sorted ids: every id non-negative and none smaller than the one before it. On failure previous holds the id before
+// the first offending one (the offending one itself for a negative first id) and offending that id.
+SD_LIB_HIDDEN bool segmentIndicesValidate(LaunchContext* context, NDArray* indices, LongType& previous,
+                                          LongType& offending);
 
+// Unsorted ids: every id in [0, numOfClasses). On failure output holds the first offending id, on success
+// numOfClasses.
 SD_LIB_HIDDEN bool unsortedSegmentIndicesValidate(LaunchContext* context, NDArray* indices, LongType numOfClasses,
                                                   LongType& output);
 

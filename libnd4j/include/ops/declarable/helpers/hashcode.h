@@ -62,6 +62,13 @@ SD_INLINE SD_HOST_DEVICE LongType longBytes(T value) {
   return longBytes<LongType>((LongType)value);
 }
 
+// One step of the hash of a block, r = 31 * r + v from r = 1. The hash of an array is a tree of these: the elements in
+// C order are hashed in blocks of 32, then the hashes of a level in blocks of 32, until one hash is left. The
+// arithmetic wraps around in 64 bits (a signed overflow would be undefined).
+SD_INLINE SD_HOST_DEVICE LongType hashCodeStep(const LongType r, const LongType v) {
+  return static_cast<LongType>(31ULL * static_cast<unsigned long long>(r) + static_cast<unsigned long long>(v));
+}
+
 SD_LIB_HIDDEN void hashCode(LaunchContext *context, NDArray &array, NDArray &result);
 }  // namespace helpers
 }  // namespace ops

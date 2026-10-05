@@ -140,10 +140,8 @@ void executeRepeat(NDArray& input, NDArray& target, int axis,
 void deviceAssign(NDArray& source, NDArray& target) {
   NDArray::prepareSpecialUse({&target}, {&source});
   NativeOpExecutioner::execTransformAny(
-      source.getContext(), transform::Assign, source.buffer(),
-      source.shapeInfo(), source.specialBuffer(), source.specialShapeInfo(),
-      target.buffer(), target.shapeInfo(), target.specialBuffer(),
-      target.specialShapeInfo(), nullptr, false);
+      source.getContext(), transform::Assign, sd::LegacyTensorArg::fromArray(&source),
+      sd::LegacyTensorArg::fromArray(&target), nullptr, false);
   NDArray::registerSpecialUse({&target}, {&source});
 }
 

@@ -19,10 +19,11 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-// Thin TU: segment_max is the shared segment_ops implementation instantiated
-// with the max reduction policy (tree-reduce forward + atomicMax TAD) and the
-// compare-match backprop policy (gradient flows to the argmax element).
+// Thin TU: segment_max / unsorted_segment_max are the shared segment_ops implementation instantiated with the max
+// policy (NaN propagating, sorted empty segments 0, unsorted empty segments the lowest value of the type) and the
+// compare-match backprop policy (the whole gradient flows to every element equal to the maximum).
 //
 #include <ops/declarable/helpers/cuda/segment_ops.cuh>
 
-SEGMENT_OP_INSTANTIATE(Max, MaxReduce, CompareGrad)
+SEGMENT_OP_SAME_TYPE(Max, SegMax)
+SEGMENT_OP_BACKPROP_NUMERIC(Max, SegMax, GradCompare)

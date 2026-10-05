@@ -62,14 +62,14 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray createFromDescriptor(DataBuffer shapeInformation) {
         NDArray ret = new NDArray();
-        ret.setShapeInfoDataBuffer(shapeInformation);
+        // Allocate outputs from the descriptor's shape, not its input-view strides or flags.
+        ret.setShapeInfoDataBuffer(Shape.allocationShapeInfo(shapeInformation));
         long[] shapeInfo = ret.shapeInfoJava();
         DataType dt = Shape.dataType(shapeInfo);
-        // Compute length directly from shape info, not from array.length()
-        // because isEmpty() returns true when data buffer is null
-        long length = Shape.isEmpty(shapeInfo) ? 0 : Shape.length(shapeInfo);
-        DataBuffer buff = Nd4j.createBuffer(dt, length, false);
-        ret.setData(buff);
+        // Empty descriptors carry their shape and dtype in shape info and have no data buffer.
+        if (!Shape.isEmpty(shapeInfo)) {
+            ret.setData(Nd4j.createBuffer(dt, Shape.length(shapeInfo), false));
+        }
         return ret;
     }
 

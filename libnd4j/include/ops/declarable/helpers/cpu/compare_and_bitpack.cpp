@@ -100,19 +100,8 @@ void compareAndBitpack_(NDArray& input, NDArray& thresholdScalar, NDArray& outpu
   X threshold = thresholdScalar.e<X>(0);
   auto buff = input.bufferAsT<X>();
   uint8_t* outBuff = output.bufferAsT<uint8_t>();
-  auto isContiguous = [](NDArray* arr) -> bool {
-    int rank = arr->rankOf();
-    sd::LongType* shape = arr->shapeOf();
-    sd::LongType* strides = arr->stridesOf();
-    sd::LongType expected = 1;
-    for (int i = rank - 1; i >= 0; --i) {
-      if (shape[i] == 1) continue;
-      if (strides[i] != expected) return false;
-      expected *= shape[i];
-    }
-    return true;
-  };
-  if (input.ordering() == 'c' && output.ordering() == 'c' && isContiguous(&input) && isContiguous(&output)) {
+  // the elements of a dense C-order array are its memory in order
+  if (shape::isDenseRowMajor(input.shapeInfo()) && shape::isDenseRowMajor(output.shapeInfo())) {
     FUNC_1D func = [buff, outBuff, threshold](uint64_t thread_id, int64_t start, int64_t stop,
                                               int64_t increment) -> void {
       auto outBuffPart = outBuff + start;
@@ -158,26 +147,20 @@ void compareAndBitpack_(NDArray& input, NDArray& thresholdScalar, NDArray& outpu
       // lets correct new stride
       extendedStrides[rank - 1] = 8 * inStrides[rank - 1];
       extendedStrides[rank] = inStrides[rank - 1];
-      // general case. its slow. we can improve it for special case later
-      // generic case that could be further improved. for now its slow
+      // general case: every output byte is found from its own coordinates through the strides of both arrays, so any
+      // layout (F order, a view) is packed as it is
       FUNC_1D func = [rank, buff, outBuff, outShapes, extendedStrides, outStrides, threshold](
                          uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
         sd::LongType coords[SD_MAX_RANK] = {};
-        sd::LongType* ptr_coords = (sd::LongType*)&coords;
-        sd::LongType len = (stop - start);
         // its extended as {rank+1} so extendedStrides[rank] is valid
         auto innermostStride = extendedStrides[rank];
-        INDEX2COORDS(start, rank, outShapes, ptr_coords);
-        // here last dimension will not be in coords. this way output shape and input shapes are equal
-        sd::LongType inOffset, outOffset;
-        COORDS2INDEX(rank + 1, extendedStrides, ptr_coords, inOffset);
-        COORDS2INDEX(rank, outStrides, ptr_coords, outOffset);
-        for (sd::LongType k = 0; k < len; k++) {
-          auto buffPart = &(buff[inOffset]);
-          auto outBuffPart = &(outBuff[outOffset]);
-          *outBuffPart = pack<X>(buffPart, innermostStride, threshold);
-          inOffset += extendedStrides[rank];
-          outOffset += outStrides[rank - 1];
+        for (sd::LongType k = start; k < stop; k++) {
+          // here last dimension will not be in coords. this way output shape and input shapes are equal
+          INDEX2COORDS(k, rank, outShapes, coords);
+          sd::LongType inOffset, outOffset;
+          COORDS2INDEX(rank, extendedStrides, coords, inOffset);
+          COORDS2INDEX(rank, outStrides, coords, outOffset);
+          outBuff[outOffset] = pack<X>(&(buff[inOffset]), innermostStride, threshold);
         }
       };
       samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);

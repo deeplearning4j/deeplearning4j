@@ -36,6 +36,11 @@ CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
 
   REQUIRE_TRUE(input->rankOf() == 4, 0, "Dilation2D: input should be 4D");
   REQUIRE_TRUE(weights->rankOf() == 3, 0, "Dilation2D: weights should be 3D");
+  // the helpers read the weights and write the output as the type of the input
+  REQUIRE_TRUE(weights->dataType() == input->dataType() && output->dataType() == input->dataType(), 0,
+               "Dilation2D: the weights and the output must have the data type of the input, %s, but got %s and %s",
+               DataTypeUtils::asString(input->dataType()).c_str(), DataTypeUtils::asString(weights->dataType()).c_str(),
+               DataTypeUtils::asString(output->dataType()).c_str());
 
   const LongType bS = input->sizeAt(0);
   const LongType iC = input->sizeAt(3);
@@ -90,6 +95,12 @@ DECLARE_SHAPE_FN(dilation2d) {
   auto input = inputShape->at(0);
   auto weights = inputShape->at(1);
 
+  // the output has the data type of the input, which the weights share
+  REQUIRE_TRUE(ArrayOptions::dataType(weights) == ArrayOptions::dataType(input), 0,
+               "Dilation2D: the weights must have the data type of the input, %s, but got %s",
+               DataTypeUtils::asString(ArrayOptions::dataType(input)).c_str(),
+               DataTypeUtils::asString(ArrayOptions::dataType(weights)).c_str());
+
   const int bS = shape::sizeAt(input, static_cast<sd::LongType>(0));
   const int iC = shape::sizeAt(input, static_cast<sd::LongType>(3));
   const bool isSameShape = INT_ARG(0) == 1;
@@ -125,7 +136,7 @@ DECLARE_SHAPE_FN(dilation2d) {
 
   std::array<sd::LongType, 4> shape = {{bS, oH, oW, iC}};
   auto newShape =
-      ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data(),0);
+      ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(input), 'c', 4, shape.data(),0);
   return SHAPELIST(newShape);
 }
 }  // namespace ops

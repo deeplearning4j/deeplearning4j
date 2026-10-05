@@ -50,15 +50,17 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const LongType* xShap
     LongType zOffset;
     COORDS2INDEX(zRank, zStride, coords, zOffset);
 
-    auto row = coords[zRank - 2];
-    auto col = coords[zRank - 1];
+    // the triangle is the one of each matrix made of the last two dimensions of the target; a vector is one row
+    const LongType row = zRank >= 2 ? coords[zRank - 2] : 0;
+    const LongType col = zRank >= 1 ? coords[zRank - 1] : 0;
     auto lCompare = includeEdges ? row + lower <= col : row + lower < col;
     auto uCompare = includeEdges ? row + upper >= col : row + upper > col;
 
-    if (dirU && lCompare || dirL && uCompare) {
+    if ((dirU && lCompare) || (dirL && uCompare)) {
       z[zOffset] = val;
     } else if (vx != vz) {
-      if (xRank != zRank) coords[0] = coords[1];
+      // a vector repeated in every row of a square matrix: the element of the column
+      if (xRank != zRank) coords[0] = col;
       LongType xOffset;
       COORDS2INDEX(xRank, xStride, coords, xOffset);
       z[zOffset] = x[xOffset];

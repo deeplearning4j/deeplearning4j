@@ -740,7 +740,8 @@ public final class DspHandle {
         return nativeOps().getPlanSegmentReplayState(requireHandle(), segIdx);
     }
 
-    /** Replay mode: 0=NONE, 1=MONOLITHIC, 2=COMPOSITE. */
+    /** Dispatch mode: 0=NONE, 1=MONOLITHIC, 2=COMPOSITE, 3=SLOT_BY_SLOT,
+     * 4=FROZEN_CONSTANT, 5=DIRECT_COMPILED; independent of lifecycle phase. */
     public int segmentReplayMode(int segIdx) {
         return nativeOps().getPlanSegmentReplayMode(requireHandle(), segIdx);
     }

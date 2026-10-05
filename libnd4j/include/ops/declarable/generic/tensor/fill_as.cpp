@@ -48,7 +48,9 @@ DECLARE_SYN(fill_like, fill_as);
 
 DECLARE_TYPES(fill_as) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
-  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+  // CONFIGURABLE_OP_IMPL derives the output shape from the donor's metadata,
+  // not its values. Scalar fill arguments change contents, never dimensions.
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

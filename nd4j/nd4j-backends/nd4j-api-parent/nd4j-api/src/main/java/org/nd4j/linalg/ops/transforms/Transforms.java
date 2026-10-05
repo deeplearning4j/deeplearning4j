@@ -149,7 +149,8 @@ public class Transforms {
         INDArray out = null;
         boolean firstBufferUsed = false;
         try {
-            out = Nd4j.create(shape.get(0));
+            // shape.get(0) is a shape information buffer: the output is allocated from it, not made of its words
+            out = Nd4j.createFromDescriptor(shape.get(0));
             firstBufferUsed = true;
             c.addOutputArgument(out);
             Nd4j.getExecutioner().exec(c);

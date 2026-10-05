@@ -98,10 +98,10 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
 
   NDArray::prepareSpecialUse({output}, {input});
 
-  NativeOpExecutioner::execTransformAny(block.launchContext(), transform::Assign, input->bufferWithOffset(offset),
-                                        subArrShapeInfoPack->primary(), input->specialBufferWithOffset(offset),
-                                        subArrShapeInfoPack->special(), output->buffer(), output->shapeInfo(),
-                                        output->specialBuffer(), output->specialShapeInfo(), nullptr, true);
+  NativeOpExecutioner::execTransformAny(
+      block.launchContext(), transform::Assign,
+      sd::LegacyTensorArg::withShape(input, subArrShapeInfoPack->primary(), subArrShapeInfoPack->special(), offset),
+      sd::LegacyTensorArg::fromArray(output), nullptr, true);
 
   NDArray::registerSpecialUse({output}, {input});
 

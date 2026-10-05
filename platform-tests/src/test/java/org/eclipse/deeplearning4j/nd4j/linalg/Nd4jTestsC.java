@@ -201,14 +201,13 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConditions(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
         double[][] arr = new double[][]{{1., 2.}, {1., 4.}, {1., 6}};
         INDArray dataMatrix = Nd4j.createFromArray(arr);
         INDArray compareTo = Nd4j.valueArrayOf(dataMatrix.shape(), 1.);
         INDArray mask1 = dataMatrix.dup().match(compareTo, Conditions.epsNotEquals(1));
         INDArray mask2 = dataMatrix.dup().match(compareTo, Conditions.epsEquals(1));
-        assertNotEquals(mask1,mask2);
+        assertEquals(Nd4j.create(new boolean[]{false, true, false, true, false, true}).reshape(3, 2), mask1);
+        assertEquals(Nd4j.create(new boolean[]{true, false, true, false, true, false}).reshape(3, 2), mask2);
     }
 
 
@@ -897,6 +896,30 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
         //[0 0 0 2 2 0] -> [0 0 0 1 0 0]
         assertEquals(Nd4j.create(new boolean[] {false, false, false, true, false, false}), Transforms.isMax(Nd4j.create(new double[] {0, 0, 0, 2, 2, 0}), DataType.BOOL));
+
+        // Ties straddling reduction partitions must still select the first index.
+        boolean[] expectedMask = new boolean[8193];
+        expectedMask[37] = true;
+        for (DataType type : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF,
+                DataType.BFLOAT16, DataType.INT, DataType.UBYTE, DataType.BOOL}) {
+            INDArray tied = Nd4j.create(type, 8193);
+            tied.putScalar(37, 1);
+            tied.putScalar(4097, 1);
+            assertEquals(37, tied.argMax().getLong(0), type.toString());
+            if (type != DataType.UBYTE && type != DataType.BOOL) {
+                INDArray negative = Nd4j.ones(type, 8193).muli(-2);
+                negative.putScalar(37, -1);
+                negative.putScalar(4097, -1);
+                assertEquals(37, negative.argMax().getLong(0), type + " negative identity");
+            }
+            INDArray mask = Transforms.isMax(tied, DataType.BOOL);
+            assertEquals(Nd4j.create(expectedMask), mask, type.toString());
+            INDArray minima = Nd4j.ones(type, 8193);
+            minima.putScalar(37, 0);
+            minima.putScalar(4097, 0);
+            assertEquals(37, Nd4j.getExecutioner().exec(new ArgMin(new INDArray[]{minima}))[0].getLong(0),
+                    type.toString());
+        }
     }
 
     @ParameterizedTest
@@ -1290,7 +1313,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, 4);
         INDArray other = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(4, 4);
         INDArray result = linspace.mmul(other);
-        INDArray assertion = Nd4j.create(new double[] {90, 100, 110, 120}).reshape(4, 1);
+        INDArray assertion = Nd4j.create(new double[] {90, 100, 110, 120}).reshape(1, 4);
         assertEquals(assertion, result);
     }
 
@@ -2287,6 +2310,38 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
         assertTrue(expAllZeros1.all());
         assertTrue(expAllZeros2.all());
+
+        // Each operand has its own rank and strides, even when lengths agree.
+        long[][] shapes = {{10}, {1, 10}, {2, 5}};
+        INDArray values = Nd4j.linspace(0, 9, 10, DataType.DOUBLE);
+        INDArray compared = values.dup();
+        compared.putScalar(3, -1);
+        compared.putScalar(8, -1);
+        INDArray expected = Nd4j.create(new boolean[]{true, true, true, false, true,
+                true, true, true, false, true});
+        for (long[] xShape : shapes) {
+            for (long[] yShape : shapes) {
+                for (long[] zShape : shapes) {
+                    for (char order : new char[]{'c', 'f'}) {
+                        INDArray x = values.reshape('c', xShape).dup(order);
+                        INDArray y = compared.reshape('c', yShape).dup(order);
+                        long[] backingShape = zShape.clone();
+                        backingShape[backingShape.length - 1] *= 2;
+                        INDArray backing = Nd4j.create(DataType.BOOL, backingShape, order);
+                        INDArrayIndex[] indices = new INDArrayIndex[zShape.length];
+                        Arrays.fill(indices, NDArrayIndex.all());
+                        indices[indices.length - 1] = NDArrayIndex.interval(0, 2,
+                                backingShape[backingShape.length - 1]);
+                        INDArray z = backing.get(indices);
+                        Nd4j.getExecutioner().exec(new Eps(x, y, z));
+                        assertEquals(expected.reshape('c', zShape), z);
+                        indices[indices.length - 1] = NDArrayIndex.interval(1, 2,
+                                backingShape[backingShape.length - 1]);
+                        assertFalse(backing.get(indices).any());
+                    }
+                }
+            }
+        }
     }
 
     @ParameterizedTest
@@ -7496,7 +7551,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             //Invalid op: y must match x/z dimensions 0 and 2
             INDArray arrInvalid = Nd4j.create(3,12);
             Nd4j.getExecutioner().exec(new BroadcastMulOp(arr1, arrInvalid, arr1, 0, 2));
-            fail("Excepted exception on invalid input");
+
         });
 
     }
@@ -7860,11 +7915,11 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyCasting(){
         for(val from : DataType.values()) {
-            if (from == DataType.UTF8 || from == DataType.UNKNOWN || from == DataType.COMPRESSED)
+            if (!from.isNumerical() && from != DataType.BOOL)
                 continue;
 
             for(val to : DataType.values()){
-                if (to == DataType.UTF8 || to == DataType.UNKNOWN || to == DataType.COMPRESSED)
+                if (!to.isNumerical() && to != DataType.BOOL)
                     continue;
 
                 INDArray emptyFrom = Nd4j.empty(from);
@@ -8875,7 +8930,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     public void testCreateBufferFromByteBuffer(Nd4jBackend backend){
 
         for(DataType dt : DataType.values()){
-            if(dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
+            if(!dt.isNumerical() && dt != DataType.BOOL)
                 continue;
 
             int lengthBytes = 256;
@@ -8889,7 +8944,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             arr.toString();
 
             for(DataType dt2 : DataType.values()) {
-                if (dt2 == DataType.COMPRESSED || dt2 == DataType.UTF8 || dt2 == DataType.UNKNOWN)
+                if (!dt2.isNumerical() && dt2 != DataType.BOOL)
                     continue;
                 INDArray a2 = arr.castTo(dt2);
                 a2.toStringFull();
@@ -8902,7 +8957,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     public void testCreateBufferFromByteBufferViews(){
 
         for(DataType dt : DataType.values()){
-            if(dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
+            if(!dt.isNumerical() && dt != DataType.BOOL)
                 continue;
 //            System.out.println(dt);
 
@@ -8928,11 +8983,11 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     public void testTypeCastingToString(){
 
         for(DataType dt : DataType.values()) {
-            if (dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
+            if (!dt.isNumerical() && dt != DataType.BOOL)
                 continue;
             INDArray a1 = Nd4j.create(dt, 10);
             for(DataType dt2 : DataType.values()) {
-                if (dt2 == DataType.COMPRESSED || dt2 == DataType.UTF8 || dt2 == DataType.UNKNOWN)
+                if (!dt2.isNumerical() && dt2 != DataType.BOOL)
                     continue;
 
                 INDArray a2 = a1.castTo(dt2);
@@ -8943,22 +8998,75 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testShape0Casts(){
+    @MethodSource("configs")
+    public void testShape0Casts(Nd4jBackend backend){
         for(DataType dt : DataType.values()){
-            if(!dt.isNumerical())
+            if(!dt.isNumerical() && dt != DataType.BOOL)
                 continue;
 
             INDArray a1 = Nd4j.create(dt, 1,0,2);
 
             for(DataType dt2 : DataType.values()){
-                if(!dt2.isNumerical())
+                if(!dt2.isNumerical() && dt2 != DataType.BOOL)
                     continue;
                 INDArray a2 = a1.castTo(dt2);
 
                 assertArrayEquals(a1.shape(), a2.shape());
                 assertEquals(dt2, a2.dataType());
             }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("configs")
+    public void testCastTargetArgumentContract(Nd4jBackend backend) {
+        for (long[] dimensions : new long[][]{{2, 3}, {1, 0, 2}}) {
+            INDArray input = Nd4j.ones(DataType.FLOAT, dimensions);
+            INDArray integerOutput = Nd4j.create(DataType.DOUBLE, dimensions);
+            INDArray dtypeOutput = Nd4j.create(DataType.DOUBLE, dimensions);
+            DynamicCustomOp integerCast = DynamicCustomOp.builder("cast")
+                    .addInputs(input).addOutputs(integerOutput)
+                    .addIntegerArguments(DataType.DOUBLE.toInt()).build();
+            DynamicCustomOp dtypeCast = DynamicCustomOp.builder("cast")
+                    .addInputs(input).addOutputs(dtypeOutput).build();
+            dtypeCast.addDArgument(DataType.DOUBLE);
+            assertArrayEquals(dimensions, Shape.shape(Nd4j.getExecutioner()
+                    .calculateOutputShape(integerCast).get(0).asLong()));
+            assertArrayEquals(dimensions, Shape.shape(Nd4j.getExecutioner()
+                    .calculateOutputShape(dtypeCast).get(0).asLong()));
+            Nd4j.exec(integerCast);
+            Nd4j.exec(dtypeCast);
+            assertEquals(integerOutput, dtypeOutput);
+            assertEquals(DataType.DOUBLE, dtypeOutput.dataType());
+            assertArrayEquals(dimensions, dtypeOutput.shape());
+
+            for (long code : new long[]{-1, 0, 15, 16, 50, 51, 52, 100, 200, 255,
+                    Long.MAX_VALUE, (1L << 32) + DataType.DOUBLE.toInt()}) {
+                DynamicCustomOp invalid = DynamicCustomOp.builder("cast")
+                        .addInputs(input).addOutputs(dtypeOutput).addIntegerArguments(code).build();
+                assertThrows(RuntimeException.class,
+                        () -> Nd4j.getExecutioner().calculateOutputShape(invalid));
+                assertThrows(RuntimeException.class, () -> Nd4j.exec(invalid));
+                assertEquals(integerOutput, dtypeOutput);
+            }
+            DynamicCustomOp conflicting = DynamicCustomOp.builder("cast")
+                    .addInputs(input).addOutputs(dtypeOutput)
+                    .addIntegerArguments(DataType.DOUBLE.toInt()).build();
+            conflicting.addDArgument(DataType.FLOAT);
+            assertThrows(RuntimeException.class,
+                    () -> Nd4j.getExecutioner().calculateOutputShape(conflicting));
+            assertThrows(RuntimeException.class, () -> Nd4j.exec(conflicting));
+            assertEquals(integerOutput, dtypeOutput);
+        }
+        INDArray input = Nd4j.ones(DataType.FLOAT, 2, 3);
+        for (INDArray output : new INDArray[]{Nd4j.ones(DataType.FLOAT, 2, 3),
+                Nd4j.ones(DataType.DOUBLE, 3, 2)}) {
+            INDArray before = output.dup();
+            DynamicCustomOp wrongOutput = DynamicCustomOp.builder("cast")
+                    .addInputs(input).addOutputs(output)
+                    .addIntegerArguments(DataType.DOUBLE.toInt()).build();
+            assertThrows(RuntimeException.class, () -> Nd4j.exec(wrongOutput));
+            assertEquals(before, output);
         }
     }
 

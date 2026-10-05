@@ -400,11 +400,14 @@ static mlir::Value convertScalar(mlir::OpBuilder& builder, mlir::Location loc,
   auto destinationFloat = llvm::dyn_cast<mlir::FloatType>(destination);
   auto sourceInteger = llvm::dyn_cast<mlir::IntegerType>(value.getType());
   auto destinationInteger = llvm::dyn_cast<mlir::IntegerType>(destination);
+  // Comparison results are logical i1 values, not signed one-bit integers.
+  // Preserve true as 1 when converting to BOOL storage or numeric values.
+  const bool sourceIsUnsigned = sourceUnsigned || (sourceInteger && sourceInteger.getWidth() == 1);
   if (sourceFloat && destinationFloat) {
     return convertFloat(builder, loc, value, destinationFloat);
   }
   if (sourceInteger && destinationFloat) {
-    return sourceUnsigned
+    return sourceIsUnsigned
                ? mlir::Value(builder.create<mlir::arith::UIToFPOp>(
                      loc, destinationFloat, value))
                : mlir::Value(builder.create<mlir::arith::SIToFPOp>(
@@ -422,7 +425,9 @@ static mlir::Value convertScalar(mlir::OpBuilder& builder, mlir::Location loc,
     const unsigned destinationWidth = destinationInteger.getWidth();
     if (sourceWidth == destinationWidth) return value;
     if (sourceWidth < destinationWidth) {
-      return destinationUnsigned
+      // static_cast semantics: a wider integer holds the source's value, so the extension follows the SOURCE's
+      // signedness (an int32 into a uint64 sign-extends, a uint32 into an int64 zero-extends).
+      return sourceIsUnsigned
                  ? mlir::Value(builder.create<mlir::arith::ExtUIOp>(
                        loc, destinationInteger, value))
                  : mlir::Value(builder.create<mlir::arith::ExtSIOp>(
@@ -521,17 +526,25 @@ static mlir::gpu::LaunchOp createGpuLaunch(
 /// contiguous flat buffer.
 static mlir::SmallVector<mlir::Value> logicalIndices(
     mlir::OpBuilder& builder, mlir::Location loc, mlir::Value linear,
-    mlir::Value memref) {
-  auto type = llvm::cast<mlir::MemRefType>(memref.getType());
-  mlir::SmallVector<mlir::Value> indices(static_cast<size_t>(type.getRank()));
+    mlir::Value memref, llvm::ArrayRef<int64_t> axes) {
+  mlir::SmallVector<mlir::Value> indices(axes.size());
   mlir::Value remaining = linear;
-  for (int64_t d = type.getRank() - 1; d >= 0; --d) {
-    mlir::Value dim = builder.create<mlir::memref::DimOp>(loc, memref, d);
+  for (int64_t d = static_cast<int64_t>(axes.size()) - 1; d >= 0; --d) {
+    mlir::Value dim = builder.create<mlir::memref::DimOp>(loc, memref, axes[d]);
     indices[static_cast<size_t>(d)] =
         builder.create<mlir::arith::RemUIOp>(loc, remaining, dim);
     remaining = builder.create<mlir::arith::DivUIOp>(loc, remaining, dim);
   }
   return indices;
+}
+
+static mlir::SmallVector<mlir::Value> logicalIndices(
+    mlir::OpBuilder& builder, mlir::Location loc, mlir::Value linear,
+    mlir::Value memref) {
+  auto type = llvm::cast<mlir::MemRefType>(memref.getType());
+  llvm::SmallVector<int64_t> axes;
+  for (int64_t d = 0; d < type.getRank(); ++d) axes.push_back(d);
+  return logicalIndices(builder, loc, linear, memref, axes);
 }
 
 /// Convert a logical element number using the contract's explicit traversal
@@ -1538,8 +1551,180 @@ static mlir::Value emitParameterizedBinary(
   return {};
 }
 
+//===----------------------------------------------------------------------===//
+// log |Gamma(x)| (lgamma): sd::math::sd_lgamma, operation for operation, in the kernel's compute type.
+//===----------------------------------------------------------------------===//
+
+/// sin(pi x) as sd::math::sinPiReduced: from the half-integer n / 2 nearest x (n = roundeven(2 x)) and the exact
+/// remainder r = x - n / 2, |r| <= 1/4, by n mod 4 sin(pi r), cos(pi r), -sin(pi r) or -cos(pi r). From 2^52 on every x
+/// is an integer: x - x (0, or NaN for an infinite or NaN x).
+static mlir::Value emitSinPiReduced(mlir::OpBuilder& b, mlir::Location loc,
+                                    mlir::Value x) {
+  auto type = llvm::cast<mlir::FloatType>(x.getType());
+  auto constant = [&](double value) { return floatConst(b, loc, type, value); };
+  mlir::Value n = b.create<mlir::math::RoundEvenOp>(
+      loc, b.create<mlir::arith::MulFOp>(loc, constant(2.0), x));
+  mlir::Value r = b.create<mlir::arith::SubFOp>(
+      loc, x, b.create<mlir::arith::MulFOp>(loc, constant(0.5), n));
+  mlir::Value quadrant = b.create<mlir::arith::SubFOp>(
+      loc, n,
+      b.create<mlir::arith::MulFOp>(
+          loc, constant(4.0),
+          b.create<mlir::math::FloorOp>(
+              loc, b.create<mlir::arith::MulFOp>(loc, constant(0.25), n))));
+  mlir::Value angle = b.create<mlir::arith::MulFOp>(
+      loc, constant(3.14159265358979323846), r);
+  mlir::Value sine = b.create<mlir::math::SinOp>(loc, angle);
+  mlir::Value cosine = b.create<mlir::math::CosOp>(loc, angle);
+  auto inQuadrant = [&](double q) -> mlir::Value {
+    return b.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OEQ,
+                                         quadrant, constant(q));
+  };
+  mlir::Value value = b.create<mlir::arith::SelectOp>(
+      loc, inQuadrant(0.0), sine,
+      b.create<mlir::arith::SelectOp>(
+          loc, inQuadrant(1.0), cosine,
+          b.create<mlir::arith::SelectOp>(
+              loc, inQuadrant(2.0), b.create<mlir::arith::NegFOp>(loc, sine),
+              b.create<mlir::arith::NegFOp>(loc, cosine))));
+  mlir::Value reducible = b.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OLT, b.create<mlir::math::AbsFOp>(loc, x),
+      constant(4503599627370496.0));
+  return b.create<mlir::arith::SelectOp>(
+      loc, reducible, value, b.create<mlir::arith::SubFOp>(loc, x, x));
+}
+
+/// Gamma(a) for 0 <= a < 12 as sd::math::sd_gamma computes it: Cody's rational approximation of Gamma(1 + z) with z
+/// in [0, 1), then Gamma(1 + a) / a below 1 (with z = a itself, so a's low bits survive) or the recurrence
+/// Gamma(y) (y) (y + 1) ... (y + n - 1) above it, y = a - n in [1, 2). The recurrence has at most 10 factors: it is
+/// unrolled, each one applied while it is within n, the increments in the host's order. Values outside [0, 12) give
+/// a result the caller discards.
+static mlir::Value emitGammaBelowTwelve(mlir::OpBuilder& b, mlir::Location loc,
+                                        mlir::Value a) {
+  auto type = llvm::cast<mlir::FloatType>(a.getType());
+  static const double kNumerator[8] = {
+      -1.71618513886549492533811E+0, 2.47656508055759199108314E+1,
+      -3.79804256470945635097577E+2, 6.29331155312818442661052E+2,
+      8.66966202790413211295064E+2,  -3.14512729688483675254357E+4,
+      -3.61444134186911729807069E+4, 6.64561438202405440627855E+4};
+  static const double kDenominator[8] = {
+      -3.08402300119738975254353E+1, 3.15350626979604161529144E+2,
+      -1.01515636749021914166146E+3, -3.10777167157231109440444E+3,
+      2.25381184209801510330112E+4,  4.75584627752788110767815E+3,
+      -1.34659959864969306392456E+5, -1.15132259675553483497211E+5};
+  mlir::Value zero = floatConst(b, loc, type, 0.0);
+  mlir::Value one = floatConst(b, loc, type, 1.0);
+  mlir::Value belowOne = b.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OLT, a, one);
+  // n = floor(a) - 1 and y = a - n from 1 up; below 1, n = 0 and y = a.
+  mlir::Value n = b.create<mlir::arith::SelectOp>(
+      loc, belowOne, zero,
+      b.create<mlir::arith::SubFOp>(
+          loc, b.create<mlir::math::FloorOp>(loc, a), one));
+  mlir::Value y = b.create<mlir::arith::SubFOp>(loc, a, n);
+  mlir::Value z = b.create<mlir::arith::SelectOp>(
+      loc, belowOne, y, b.create<mlir::arith::SubFOp>(loc, y, one));
+  mlir::Value numerator = zero;
+  mlir::Value denominator = one;
+  for (int i = 0; i < 8; ++i) {
+    numerator = b.create<mlir::arith::MulFOp>(
+        loc,
+        b.create<mlir::arith::AddFOp>(
+            loc, numerator, floatConst(b, loc, type, kNumerator[i])),
+        z);
+    denominator = b.create<mlir::arith::AddFOp>(
+        loc, b.create<mlir::arith::MulFOp>(loc, denominator, z),
+        floatConst(b, loc, type, kDenominator[i]));
+  }
+  mlir::Value base = b.create<mlir::arith::AddFOp>(
+      loc, b.create<mlir::arith::DivFOp>(loc, numerator, denominator), one);
+  mlir::Value belowOneResult = b.create<mlir::arith::DivFOp>(loc, base, a);
+  mlir::Value product = base;
+  mlir::Value factor = y;
+  for (int i = 0; i < 10; ++i) {
+    mlir::Value applies = b.create<mlir::arith::CmpFOp>(
+        loc, mlir::arith::CmpFPredicate::OGT, n,
+        floatConst(b, loc, type, static_cast<double>(i)));
+    product = b.create<mlir::arith::SelectOp>(
+        loc, applies, b.create<mlir::arith::MulFOp>(loc, product, factor),
+        product);
+    factor = b.create<mlir::arith::AddFOp>(loc, factor, one);
+  }
+  return b.create<mlir::arith::SelectOp>(loc, belowOne, belowOneResult,
+                                         product);
+}
+
+/// log Gamma(x) for x >= 12 by Stirling's series, as sd::math::sd_lgamma sums it.
+static mlir::Value emitLgammaStirling(mlir::OpBuilder& b, mlir::Location loc,
+                                      mlir::Value x) {
+  auto type = llvm::cast<mlir::FloatType>(x.getType());
+  static const double kSeries[8] = {
+      1.0 / 12.0,   -1.0 / 360.0,       1.0 / 1260.0, -1.0 / 1680.0,
+      1.0 / 1188.0, -691.0 / 360360.0,  1.0 / 156.0,  -3617.0 / 122400.0};
+  mlir::Value z = b.create<mlir::arith::DivFOp>(
+      loc, floatConst(b, loc, type, 1.0),
+      b.create<mlir::arith::MulFOp>(loc, x, x));
+  mlir::Value sum = floatConst(b, loc, type, kSeries[7]);
+  for (int i = 6; i >= 0; --i) {
+    sum = b.create<mlir::arith::AddFOp>(
+        loc, b.create<mlir::arith::MulFOp>(loc, sum, z),
+        floatConst(b, loc, type, kSeries[i]));
+  }
+  mlir::Value series = b.create<mlir::arith::DivFOp>(loc, sum, x);
+  mlir::Value leading = b.create<mlir::arith::SubFOp>(
+      loc,
+      b.create<mlir::arith::MulFOp>(
+          loc,
+          b.create<mlir::arith::SubFOp>(loc, x,
+                                        floatConst(b, loc, type, 0.5)),
+          emitLog(b, loc, type, x)),
+      x);
+  return b.create<mlir::arith::AddFOp>(
+      loc,
+      b.create<mlir::arith::AddFOp>(
+          loc, leading,
+          floatConst(b, loc, type, 0.91893853320467274178032973640562)),
+      series);
+}
+
+/// log |Gamma(x)| as sd::math::sd_lgamma: below 0 through the reflection log(pi / |sin(pi x)|) - lgamma(1 - x),
+/// which stays finite where Gamma itself overflows; log(Gamma(x)) below 12; Stirling's series from 12 on. The
+/// branches are the host's ordered comparisons, so a NaN takes the series (and stays NaN) as it does there.
+static mlir::Value emitLgamma(mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Value x) {
+  auto type = llvm::cast<mlir::FloatType>(x.getType());
+  mlir::Value zero = floatConst(b, loc, type, 0.0);
+  mlir::Value negative = b.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OLT, x, zero);
+  // The argument of the positive-domain function: x, or 1 - x for the reflection.
+  mlir::Value positiveArgument = b.create<mlir::arith::SelectOp>(
+      loc, negative,
+      b.create<mlir::arith::SubFOp>(loc, floatConst(b, loc, type, 1.0), x), x);
+  mlir::Value belowTwelve = b.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OLT, positiveArgument,
+      floatConst(b, loc, type, 12.0));
+  mlir::Value positive = b.create<mlir::arith::SelectOp>(
+      loc, belowTwelve,
+      emitLog(b, loc, type, emitGammaBelowTwelve(b, loc, positiveArgument)),
+      emitLgammaStirling(b, loc, positiveArgument));
+  mlir::Value reflected = b.create<mlir::arith::SubFOp>(
+      loc,
+      emitLog(b, loc, type,
+              b.create<mlir::arith::DivFOp>(
+                  loc, floatConst(b, loc, type, 3.14159265358979323846),
+                  b.create<mlir::math::AbsFOp>(
+                      loc, emitSinPiReduced(b, loc, x)))),
+      positive);
+  return b.create<mlir::arith::SelectOp>(loc, negative, reflected, positive);
+}
+
 static UnaryCallback unaryCallbackFor(VulkanKernelRecipe semantic) {
   switch (semantic) {
+    case VulkanKernelRecipe::LGAMMA:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type, mlir::Value x) {
+        return emitLgamma(b, loc, x);
+      }};
     case VulkanKernelRecipe::BOOLEAN_NOT:
       return UnaryCallback{
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Type,
@@ -1551,13 +1736,7 @@ static UnaryCallback unaryCallbackFor(VulkanKernelRecipe semantic) {
             return b.create<mlir::arith::XOrIOp>(loc, x, one);
           }};
     case VulkanKernelRecipe::MATCH_CONDITION_UNARY:
-      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
-                              mlir::Type ty, mlir::Value x) {
-        auto ft = llvm::cast<mlir::FloatType>(ty);
-        return b.create<mlir::arith::CmpFOp>(
-            loc, mlir::arith::CmpFPredicate::UNE, x,
-            floatConst(b, loc, ft, 0.0));
-      }};
+      return {};  // Requires comparison, epsilon and mode metadata.
     case VulkanKernelRecipe::IS_INF:
       return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
                               mlir::Type ty, mlir::Value x) {
@@ -2328,6 +2507,390 @@ static UnaryCallback unaryCallbackFor(VulkanKernelRecipe semantic) {
   }
 }
 
+//===----------------------------------------------------------------------===//
+// Incomplete gamma and normal-sample emitters shared by the IGAMMA/IGAMMAC and
+// RANDOM_GENERIC recipes. They follow the native code: sd::math::sd_igamma and
+// sd_igammac (Eigen's Igamma/Igammac after Cephes) and the Box-Muller samples of
+// ops/special_random_ops.h.
+//===----------------------------------------------------------------------===//
+
+static double floatEpsilon(mlir::FloatType type) {
+  return type.getWidth() == 64 ? 2.220446049250313e-16 : 1.1920928955078125e-7;
+}
+
+/// log of the largest finite value: exp underflows to 0 below its negative.
+static double floatMaxLog(mlir::FloatType type) {
+  return type.getWidth() == 64 ? 709.782712893384 : 88.72283905206835;
+}
+
+static mlir::Value emitIsNaN(mlir::OpBuilder& b, mlir::Location loc,
+                             mlir::Value value) {
+  return b.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::UNO,
+                                       value, value);
+}
+
+/// log Gamma(a) for a > 0: Lanczos (g = 7, nine coefficients) for Gamma(z + 1),
+/// with log Gamma(a) = log Gamma(a + 1) - log a below 1.
+static mlir::Value emitLgammaPositive(mlir::OpBuilder& b, mlir::Location loc,
+                                      mlir::Value a) {
+  auto type = llvm::cast<mlir::FloatType>(a.getType());
+  static const double kLanczos[9] = {
+      0.99999999999980993,     676.5203681218851,     -1259.1392167224028,
+      771.32342877765313,      -176.61502916214059,   12.507343278686905,
+      -0.13857109526572012,    9.9843695780195716e-6, 1.5056327351493116e-7};
+  mlir::Value one = floatConst(b, loc, type, 1.0);
+  mlir::Value belowOne = b.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OLT, a, one);
+  mlir::Value shifted = b.create<mlir::arith::SelectOp>(
+      loc, belowOne, b.create<mlir::arith::AddFOp>(loc, a, one), a);
+  mlir::Value z = b.create<mlir::arith::SubFOp>(loc, shifted, one);
+  mlir::Value series = floatConst(b, loc, type, kLanczos[0]);
+  for (int i = 1; i < 9; ++i) {
+    series = b.create<mlir::arith::AddFOp>(
+        loc, series,
+        b.create<mlir::arith::DivFOp>(
+            loc, floatConst(b, loc, type, kLanczos[i]),
+            b.create<mlir::arith::AddFOp>(loc, z,
+                                          floatConst(b, loc, type, i))));
+  }
+  mlir::Value t =
+      b.create<mlir::arith::AddFOp>(loc, z, floatConst(b, loc, type, 7.5));
+  mlir::Value logGamma = b.create<mlir::arith::AddFOp>(
+      loc,
+      b.create<mlir::arith::SubFOp>(
+          loc,
+          b.create<mlir::arith::MulFOp>(
+              loc,
+              b.create<mlir::arith::AddFOp>(loc, z,
+                                            floatConst(b, loc, type, 0.5)),
+              b.create<mlir::math::LogOp>(loc, t)),
+          t),
+      b.create<mlir::arith::AddFOp>(
+          loc, floatConst(b, loc, type, 0.91893853320467274178),
+          b.create<mlir::math::LogOp>(loc, series)));
+  return b.create<mlir::arith::SelectOp>(
+      loc, belowOne,
+      b.create<mlir::arith::SubFOp>(loc, logGamma,
+                                    b.create<mlir::math::LogOp>(loc, a)),
+      logGamma);
+}
+
+/// x^a e^-x / Gamma(g) for a > 0 and x >= 0, given logGamma = log Gamma(g),
+/// through its logarithm, or 0 where it underflows (Eigen's main_igamma_term).
+static mlir::Value emitIgammaPrefactor(mlir::OpBuilder& b, mlir::Location loc,
+                                       mlir::Value a, mlir::Value x,
+                                       mlir::Value logGamma) {
+  auto type = llvm::cast<mlir::FloatType>(a.getType());
+  mlir::Value logTerm = b.create<mlir::arith::SubFOp>(
+      loc,
+      b.create<mlir::arith::SubFOp>(
+          loc,
+          b.create<mlir::arith::MulFOp>(loc, a,
+                                        b.create<mlir::math::LogOp>(loc, x)),
+          x),
+      logGamma);
+  mlir::Value underflow = b.create<mlir::arith::OrIOp>(
+      loc,
+      b.create<mlir::arith::CmpFOp>(
+          loc, mlir::arith::CmpFPredicate::OLT, logTerm,
+          floatConst(b, loc, type, -floatMaxLog(type))),
+      emitIsNaN(b, loc, logTerm));
+  return b.create<mlir::arith::SelectOp>(
+      loc, underflow, floatConst(b, loc, type, 0.0),
+      b.create<mlir::math::ExpOp>(loc, logTerm));
+}
+
+/// P(a, x) by its power series (Eigen's igamma_series_impl); a > 0, x >= 0. The
+/// series is scaled by x^a e^-x / Gamma(a + 1), which stays accurate for small a
+/// where log Gamma(a), about -log a, would round away P's low digits.
+static mlir::Value emitIgammaSeries(mlir::OpBuilder& b, mlir::Location loc,
+                                    mlir::Value a, mlir::Value x) {
+  auto type = llvm::cast<mlir::FloatType>(a.getType());
+  auto i32 = b.getI32Type();
+  auto i1 = b.getI1Type();
+  mlir::Value one = floatConst(b, loc, type, 1.0);
+  mlir::Value scale = emitIgammaPrefactor(
+      b, loc, a, x,
+      emitLgammaPositive(b, loc, b.create<mlir::arith::AddFOp>(loc, a, one)));
+  mlir::Value epsilon = floatConst(b, loc, type, floatEpsilon(type));
+  mlir::Value step = b.create<mlir::arith::ConstantOp>(
+      loc, i32, b.getIntegerAttr(i32, 1));
+  mlir::Value limit = b.create<mlir::arith::ConstantOp>(
+      loc, i32, b.getIntegerAttr(i32, 2000));
+  mlir::Value start = b.create<mlir::arith::ConstantOp>(
+      loc, i32, b.getIntegerAttr(i32, 0));
+  mlir::Value going = b.create<mlir::arith::ConstantOp>(
+      loc, i1, b.getBoolAttr(true));
+  auto loop = b.create<mlir::scf::WhileOp>(
+      loc, mlir::TypeRange{i32, type, type, type, i1},
+      mlir::ValueRange{start, a, one, one, going},
+      [&](mlir::OpBuilder& before, mlir::Location l, mlir::ValueRange args) {
+        mlir::Value more = before.create<mlir::arith::AndIOp>(
+            l, args[4],
+            before.create<mlir::arith::CmpIOp>(
+                l, mlir::arith::CmpIPredicate::slt, args[0], limit));
+        before.create<mlir::scf::ConditionOp>(l, more, args);
+      },
+      [&](mlir::OpBuilder& after, mlir::Location l, mlir::ValueRange args) {
+        mlir::Value r = after.create<mlir::arith::AddFOp>(l, args[1], one);
+        mlir::Value term = after.create<mlir::arith::MulFOp>(
+            l, args[2], after.create<mlir::arith::DivFOp>(l, x, r));
+        mlir::Value sum = after.create<mlir::arith::AddFOp>(l, args[3], term);
+        mlir::Value more = after.create<mlir::arith::CmpFOp>(
+            l, mlir::arith::CmpFPredicate::OGT, term,
+            after.create<mlir::arith::MulFOp>(l, epsilon, sum));
+        after.create<mlir::scf::YieldOp>(
+            l, mlir::ValueRange{
+                   after.create<mlir::arith::AddIOp>(l, args[0], step), r, term,
+                   sum, more});
+      });
+  // The host returns 0 as soon as the scale underflows, without summing: a sum that overflowed must not turn that 0
+  // into inf * 0 = NaN.
+  mlir::Value scaleUnderflowed = b.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OEQ, scale,
+      floatConst(b, loc, type, 0.0));
+  return b.create<mlir::arith::SelectOp>(
+      loc, scaleUnderflowed, floatConst(b, loc, type, 0.0),
+      b.create<mlir::arith::MulFOp>(loc, loop.getResult(3), scale));
+}
+
+/// Q(a, x) by Legendre's continued fraction (Eigen's igammac_cf_impl); a > 0
+/// and finite x > 1.
+static mlir::Value emitIgammacFraction(mlir::OpBuilder& b, mlir::Location loc,
+                                       mlir::Value a, mlir::Value x) {
+  auto type = llvm::cast<mlir::FloatType>(a.getType());
+  auto i32 = b.getI32Type();
+  auto i1 = b.getI1Type();
+  const bool wide = type.getWidth() == 64;
+  mlir::Value scale =
+      emitIgammaPrefactor(b, loc, a, x, emitLgammaPositive(b, loc, a));
+  mlir::Value zero = floatConst(b, loc, type, 0.0);
+  mlir::Value one = floatConst(b, loc, type, 1.0);
+  mlir::Value two = floatConst(b, loc, type, 2.0);
+  mlir::Value epsilon = floatConst(b, loc, type, floatEpsilon(type));
+  mlir::Value big =
+      floatConst(b, loc, type, wide ? 4.503599627370496e15 : 16777216.0);
+  mlir::Value bigInverse = floatConst(
+      b, loc, type, wide ? 2.22044604925031308085e-16 : 5.9604644775390625e-8);
+  mlir::Value step = b.create<mlir::arith::ConstantOp>(
+      loc, i32, b.getIntegerAttr(i32, 1));
+  mlir::Value limit = b.create<mlir::arith::ConstantOp>(
+      loc, i32, b.getIntegerAttr(i32, 2000));
+  mlir::Value start = b.create<mlir::arith::ConstantOp>(
+      loc, i32, b.getIntegerAttr(i32, 0));
+  mlir::Value going = b.create<mlir::arith::ConstantOp>(
+      loc, i1, b.getBoolAttr(true));
+  mlir::Value y = b.create<mlir::arith::SubFOp>(loc, one, a);
+  mlir::Value z = b.create<mlir::arith::AddFOp>(
+      loc, b.create<mlir::arith::AddFOp>(loc, x, y), one);
+  mlir::Value pkm1 = b.create<mlir::arith::AddFOp>(loc, x, one);
+  mlir::Value qkm1 = b.create<mlir::arith::MulFOp>(loc, z, x);
+  mlir::Value fraction = b.create<mlir::arith::DivFOp>(loc, pkm1, qkm1);
+  // Carried: i, y, z, c, pkm2, qkm2, pkm1, qkm1, fraction, more.
+  auto loop = b.create<mlir::scf::WhileOp>(
+      loc,
+      mlir::TypeRange{i32, type, type, type, type, type, type, type, type, i1},
+      mlir::ValueRange{start, y, z, zero, one, x, pkm1, qkm1, fraction, going},
+      [&](mlir::OpBuilder& before, mlir::Location l, mlir::ValueRange args) {
+        mlir::Value more = before.create<mlir::arith::AndIOp>(
+            l, args[9],
+            before.create<mlir::arith::CmpIOp>(
+                l, mlir::arith::CmpIPredicate::slt, args[0], limit));
+        before.create<mlir::scf::ConditionOp>(l, more, args);
+      },
+      [&](mlir::OpBuilder& after, mlir::Location l, mlir::ValueRange args) {
+        mlir::Value c = after.create<mlir::arith::AddFOp>(l, args[3], one);
+        mlir::Value yNext = after.create<mlir::arith::AddFOp>(l, args[1], one);
+        mlir::Value zNext = after.create<mlir::arith::AddFOp>(l, args[2], two);
+        mlir::Value yc = after.create<mlir::arith::MulFOp>(l, yNext, c);
+        mlir::Value pk = after.create<mlir::arith::SubFOp>(
+            l, after.create<mlir::arith::MulFOp>(l, args[6], zNext),
+            after.create<mlir::arith::MulFOp>(l, args[4], yc));
+        mlir::Value qk = after.create<mlir::arith::SubFOp>(
+            l, after.create<mlir::arith::MulFOp>(l, args[7], zNext),
+            after.create<mlir::arith::MulFOp>(l, args[5], yc));
+        mlir::Value qkNonZero = after.create<mlir::arith::CmpFOp>(
+            l, mlir::arith::CmpFPredicate::ONE, qk, zero);
+        mlir::Value candidate = after.create<mlir::arith::DivFOp>(l, pk, qk);
+        mlir::Value next = after.create<mlir::arith::SelectOp>(
+            l, qkNonZero, candidate, args[8]);
+        mlir::Value converged = after.create<mlir::arith::AndIOp>(
+            l, qkNonZero,
+            after.create<mlir::arith::CmpFOp>(
+                l, mlir::arith::CmpFPredicate::OLE,
+                after.create<mlir::math::AbsFOp>(
+                    l, after.create<mlir::arith::SubFOp>(l, candidate, args[8])),
+                after.create<mlir::arith::MulFOp>(
+                    l, epsilon, after.create<mlir::math::AbsFOp>(l, candidate))));
+        mlir::Value more = after.create<mlir::arith::XOrIOp>(
+            l, converged,
+            after.create<mlir::arith::ConstantOp>(l, i1,
+                                                  after.getBoolAttr(true)));
+        mlir::Value rescale = after.create<mlir::arith::CmpFOp>(
+            l, mlir::arith::CmpFPredicate::OGT,
+            after.create<mlir::math::AbsFOp>(l, pk), big);
+        auto scaled = [&](mlir::Value v) -> mlir::Value {
+          return after.create<mlir::arith::SelectOp>(
+              l, rescale, after.create<mlir::arith::MulFOp>(l, v, bigInverse),
+              v);
+        };
+        after.create<mlir::scf::YieldOp>(
+            l, mlir::ValueRange{
+                   after.create<mlir::arith::AddIOp>(l, args[0], step), yNext,
+                   zNext, c, scaled(args[6]), scaled(args[7]), scaled(pk),
+                   scaled(qk), next, more});
+      });
+  // The host returns 0 as soon as the scale underflows, without iterating: a fraction that went wrong must not turn
+  // that 0 into NaN * 0.
+  mlir::Value scaleUnderflowed = b.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OEQ, scale, zero);
+  return b.create<mlir::arith::SelectOp>(
+      loc, scaleUnderflowed, zero,
+      b.create<mlir::arith::MulFOp>(loc, loop.getResult(8), scale));
+}
+
+/// The regularized incomplete gamma P(a, x), or with upper Q(a, x) = 1 - P(a, x),
+/// as sd::math::sd_igamma and sd_igammac define them: NaN for a <= 0, x < 0 or
+/// NaN, P(a, 0) = 0, Q(a, 0) = 1 and Q(a, inf) = 0; the series where x <= 1 or
+/// x <= a and the continued fraction elsewhere, each one minus the other on the
+/// opposite side.
+static mlir::Value emitIncompleteGamma(mlir::OpBuilder& b, mlir::Location loc,
+                                       mlir::Value a, mlir::Value x,
+                                       bool upper) {
+  auto type = llvm::cast<mlir::FloatType>(a.getType());
+  mlir::Value zero = floatConst(b, loc, type, 0.0);
+  mlir::Value one = floatConst(b, loc, type, 1.0);
+  mlir::Value invalid = b.create<mlir::arith::OrIOp>(
+      loc,
+      b.create<mlir::arith::OrIOp>(
+          loc,
+          b.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OLT,
+                                        x, zero),
+          b.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OLE,
+                                        a, zero)),
+      b.create<mlir::arith::OrIOp>(loc, emitIsNaN(b, loc, a),
+                                   emitIsNaN(b, loc, x)));
+  mlir::Value infinite = b.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OEQ, x,
+      floatConst(b, loc, type, std::numeric_limits<double>::infinity()));
+  // The loops run on finite, valid operands; the selects below replace their
+  // result where the operands were not.
+  mlir::Value aSafe = b.create<mlir::arith::SelectOp>(loc, invalid, one, a);
+  mlir::Value xSafe = b.create<mlir::arith::SelectOp>(
+      loc, b.create<mlir::arith::OrIOp>(loc, invalid, infinite), one, x);
+  mlir::Value useFraction =
+      upper ? mlir::Value(b.create<mlir::arith::XOrIOp>(
+                  loc,
+                  b.create<mlir::arith::OrIOp>(
+                      loc,
+                      b.create<mlir::arith::CmpFOp>(
+                          loc, mlir::arith::CmpFPredicate::OLT, xSafe, one),
+                      b.create<mlir::arith::CmpFOp>(
+                          loc, mlir::arith::CmpFPredicate::OLT, xSafe, aSafe)),
+                  b.create<mlir::arith::ConstantOp>(loc, b.getI1Type(),
+                                                    b.getBoolAttr(true))))
+            : mlir::Value(b.create<mlir::arith::AndIOp>(
+                  loc,
+                  b.create<mlir::arith::CmpFOp>(
+                      loc, mlir::arith::CmpFPredicate::OGT, xSafe, one),
+                  b.create<mlir::arith::CmpFOp>(
+                      loc, mlir::arith::CmpFPredicate::OGT, xSafe, aSafe)));
+  auto branch = b.create<mlir::scf::IfOp>(loc, mlir::TypeRange{type},
+                                          useFraction, /*withElseRegion=*/true);
+  {
+    mlir::OpBuilder::InsertionGuard guard(b);
+    b.setInsertionPointToStart(branch.thenBlock());
+    mlir::Value fraction = emitIgammacFraction(b, loc, aSafe, xSafe);
+    b.create<mlir::scf::YieldOp>(
+        loc, upper ? fraction
+                   : mlir::Value(
+                         b.create<mlir::arith::SubFOp>(loc, one, fraction)));
+    b.setInsertionPointToStart(branch.elseBlock());
+    mlir::Value series = emitIgammaSeries(b, loc, aSafe, xSafe);
+    b.create<mlir::scf::YieldOp>(
+        loc, upper ? mlir::Value(b.create<mlir::arith::SubFOp>(loc, one, series))
+                   : series);
+  }
+  // At x = +inf Q is 0, and P is 1 for a finite shape; the host's P(+inf, +inf) takes its series path (x > a is false
+  // there), whose scale is NaN and so 0.
+  mlir::Value infiniteValue =
+      upper ? zero
+            : mlir::Value(b.create<mlir::arith::SelectOp>(
+                  loc,
+                  b.create<mlir::arith::CmpFOp>(
+                      loc, mlir::arith::CmpFPredicate::OLT, a,
+                      floatConst(b, loc, type,
+                                 std::numeric_limits<double>::infinity())),
+                  one, zero));
+  mlir::Value value = b.create<mlir::arith::SelectOp>(
+      loc, infinite, infiniteValue, branch.getResult(0));
+  value = b.create<mlir::arith::SelectOp>(
+      loc, invalid,
+      floatConst(b, loc, type, std::numeric_limits<double>::quiet_NaN()),
+      value);
+  mlir::Value atZero = b.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OEQ, x, zero);
+  if (upper) {
+    // Q(a, 0) = 1 for valid a; an invalid a stays NaN.
+    value = b.create<mlir::arith::SelectOp>(
+        loc, b.create<mlir::arith::AndIOp>(
+                 loc, atZero,
+                 b.create<mlir::arith::XOrIOp>(
+                     loc, invalid,
+                     b.create<mlir::arith::ConstantOp>(loc, b.getI1Type(),
+                                                       b.getBoolAttr(true)))),
+        one, value);
+  } else {
+    value = b.create<mlir::arith::SelectOp>(loc, atZero, zero, value);
+  }
+  return value;
+}
+
+/// One Box-Muller sample of ops/special_random_ops.h: sqrt(-2 log r0) times the
+/// cosine, or with sine the sine, of two pi r1, with pi in the type's precision.
+static mlir::Value emitBoxMuller(mlir::OpBuilder& b, mlir::Location loc,
+                                 mlir::Value r0, mlir::Value r1, bool sine) {
+  auto type = llvm::cast<mlir::FloatType>(r0.getType());
+  const double pi = type.getWidth() == 64
+                        ? 3.14159265358979323846
+                        : static_cast<double>(static_cast<float>(
+                              3.14159265358979323846));
+  mlir::Value radius = b.create<mlir::math::SqrtOp>(
+      loc, b.create<mlir::arith::MulFOp>(loc, floatConst(b, loc, type, -2.0),
+                                         emitLog(b, loc, type, r0)));
+  mlir::Value angle = b.create<mlir::arith::MulFOp>(
+      loc, floatConst(b, loc, type, 2.0 * pi), r1);
+  mlir::Value trig =
+      sine ? mlir::Value(b.create<mlir::math::SinOp>(loc, angle))
+           : mlir::Value(b.create<mlir::math::CosOp>(loc, angle));
+  return b.create<mlir::arith::MulFOp>(loc, radius, trig);
+}
+
+/// a / c rounded to nearest, as the host divides. A shader division may miss the correctly rounded quotient by an
+/// ulp or two (Vulkan allows 2.5 ulp for f32, and a device may divide f64 through a reciprocal), which an exact
+/// reference sees. One residual step gives the correctly rounded quotient: the residual of the first quotient is
+/// taken exactly with a fused multiply-add, and its own quotient, a small correction, rounds into the first. Where
+/// the first quotient is zero or not finite (division by zero, an infinity, NaN, underflow) it stands: the step
+/// would turn it into NaN.
+static mlir::Value emitRoundedDivide(mlir::OpBuilder& b, mlir::Location loc,
+                                     mlir::Value a, mlir::Value c) {
+  auto type = llvm::cast<mlir::FloatType>(a.getType());
+  mlir::Value quotient = b.create<mlir::arith::DivFOp>(loc, a, c);
+  mlir::Value negated = b.create<mlir::arith::NegFOp>(loc, quotient);
+  mlir::Value residual = b.create<mlir::math::FmaOp>(loc, negated, c, a);
+  mlir::Value correction = b.create<mlir::arith::DivFOp>(loc, residual, c);
+  mlir::Value corrected = b.create<mlir::arith::AddFOp>(loc, quotient, correction);
+  mlir::Value magnitude = b.create<mlir::math::AbsFOp>(loc, quotient);
+  mlir::Value finite = b.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OLT, magnitude,
+      floatConst(b, loc, type, std::numeric_limits<double>::infinity()));
+  mlir::Value nonZero = b.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::ONE, quotient,
+      floatConst(b, loc, type, 0.0));
+  mlir::Value applies = b.create<mlir::arith::AndIOp>(loc, finite, nonZero);
+  return b.create<mlir::arith::SelectOp>(loc, applies, corrected, quotient);
+}
+
 static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
   switch (semantic) {
     case VulkanKernelRecipe::EPSILON_COMPARE:
@@ -2341,45 +2904,15 @@ static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
             floatConst(b, loc, type, 1e-5));
       }};
     case VulkanKernelRecipe::MATCH_CONDITION:
-      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
-                               mlir::Value a, mlir::Value c) {
-        return b.create<mlir::arith::CmpFOp>(
-            loc, mlir::arith::CmpFPredicate::OEQ, a, c);
-      }};
+      return {};  // Requires epsilon and mode metadata.
     case VulkanKernelRecipe::IGAMMA:
     case VulkanKernelRecipe::IGAMMAC:
+      // The regularized incomplete gamma itself. This returned x^a e^-x divided
+      // by a Stirling Gamma(a): the series' scale factor alone, without the sum.
       return BinaryCallback{[semantic](mlir::OpBuilder& b, mlir::Location loc,
                                        mlir::Value a, mlir::Value x) {
-        auto type = llvm::cast<mlir::FloatType>(a.getType());
-        auto one = floatConst(b, loc, type, 1.0);
-        auto twoPi = floatConst(b, loc, type, 6.283185307179586);
-        auto aSafe = b.create<mlir::arith::MaximumFOp>(
-            loc, a, floatConst(b, loc, type, 1e-6));
-        auto logGamma = b.create<mlir::arith::AddFOp>(
-            loc,
-            b.create<mlir::arith::SubFOp>(
-                loc,
-                b.create<mlir::arith::MulFOp>(
-                    loc,
-                    b.create<mlir::arith::AddFOp>(
-                        loc, aSafe, floatConst(b, loc, type, 0.5)),
-                    emitLog(b, loc, a.getType(), aSafe)),
-                aSafe),
-            b.create<mlir::arith::MulFOp>(
-                loc, floatConst(b, loc, type, 0.5),
-                emitLog(b, loc, a.getType(), twoPi)));
-        auto xSafe = b.create<mlir::arith::MaximumFOp>(
-            loc, x, floatConst(b, loc, type, 1e-6));
-        auto numerator = b.create<mlir::arith::SubFOp>(
-            loc, b.create<mlir::arith::MulFOp>(
-                    loc, aSafe, emitLog(b, loc, x.getType(), xSafe)),
-            x);
-        auto estimate = emitExp(
-            b, loc, a.getType(),
-            b.create<mlir::arith::SubFOp>(loc, numerator, logGamma));
-        return semantic == VulkanKernelRecipe::IGAMMA
-                   ? estimate
-                   : b.create<mlir::arith::SubFOp>(loc, one, estimate);
+        return emitIncompleteGamma(b, loc, a, x,
+                                   semantic == VulkanKernelRecipe::IGAMMAC);
       }};
     case VulkanKernelRecipe::EQUAL:
       return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
@@ -2456,11 +2989,13 @@ static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
              mlir::Value c) {
             return b.create<mlir::arith::MulFOp>(loc, a, c);
           }};
+    // Every float quotient is the IEEE one (emitRoundedDivide), as on the CPU and CUDA: SPIR-V's OpFDiv is only
+    // required to be within 2.5 ulp (one ulp off for scatter_div on NVIDIA).
     case VulkanKernelRecipe::DIVIDE:
       return BinaryCallback{
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
              mlir::Value c) {
-            return b.create<mlir::arith::DivFOp>(loc, a, c);
+            return emitRoundedDivide(b, loc, a, c);
           }};
     case VulkanKernelRecipe::MINIMUM:
       return BinaryCallback{
@@ -2630,7 +3165,7 @@ static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
              mlir::Value c) {
             return b.create<mlir::math::TruncOp>(
-                loc, b.create<mlir::arith::DivFOp>(loc, a, c));
+                loc, emitRoundedDivide(b, loc, a, c));
           }};
     case VulkanKernelRecipe::SAFE_DIVIDE:
     case VulkanKernelRecipe::DIVIDE_NO_NAN:
@@ -2641,7 +3176,7 @@ static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
             auto zero = floatConst(b, loc, type, 0.0);
             auto denominatorZero = b.create<mlir::arith::CmpFOp>(
                 loc, mlir::arith::CmpFPredicate::OEQ, c, zero);
-            auto quotient = b.create<mlir::arith::DivFOp>(loc, a, c);
+            auto quotient = emitRoundedDivide(b, loc, a, c);
             return b.create<mlir::arith::SelectOp>(loc, denominatorZero, zero,
                                                    quotient);
           }};
@@ -2654,25 +3189,37 @@ static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
             auto numeratorZero = b.create<mlir::arith::CmpFOp>(
                 loc, mlir::arith::CmpFPredicate::OEQ, a, zero);
             return b.create<mlir::arith::SelectOp>(
-                loc, numeratorZero, zero,
-                b.create<mlir::arith::DivFOp>(loc, a, c));
+                loc, numeratorZero, zero, emitRoundedDivide(b, loc, a, c));
           }};
+    // xlogy and xlog1py are 0 where x is 0 whatever the logarithm gives (log of a negative, of infinity), as ops.h's
+    // Xlogy and Xlog1py
     case VulkanKernelRecipe::XLOGY:
       return BinaryCallback{
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
              mlir::Value c) {
-            return b.create<mlir::arith::MulFOp>(
-                loc, a, emitLog(b, loc, a.getType(), c));
+            auto type = llvm::cast<mlir::FloatType>(a.getType());
+            auto zero = floatConst(b, loc, type, 0.0);
+            auto numeratorZero = b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OEQ, a, zero);
+            return b.create<mlir::arith::SelectOp>(
+                loc, numeratorZero, zero,
+                b.create<mlir::arith::MulFOp>(
+                    loc, a, emitLog(b, loc, a.getType(), c)));
           }};
     case VulkanKernelRecipe::XLOG1PY:
       return BinaryCallback{
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
              mlir::Value c) {
             auto type = llvm::cast<mlir::FloatType>(a.getType());
+            auto zero = floatConst(b, loc, type, 0.0);
+            auto numeratorZero = b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OEQ, a, zero);
             auto onePlus = b.create<mlir::arith::AddFOp>(
                 loc, c, floatConst(b, loc, type, 1.0));
-            return b.create<mlir::arith::MulFOp>(
-                loc, a, emitLog(b, loc, a.getType(), onePlus));
+            return b.create<mlir::arith::SelectOp>(
+                loc, numeratorZero, zero,
+                b.create<mlir::arith::MulFOp>(
+                    loc, a, emitLog(b, loc, a.getType(), onePlus)));
           }};
     case VulkanKernelRecipe::LOGICAL_NOT_BINARY:
       return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
@@ -2751,16 +3298,14 @@ static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
       return BinaryCallback{
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
              mlir::Value c) {
-            mlir::Value quotient =
-                b.create<mlir::arith::DivFOp>(loc, a, c);
+            mlir::Value quotient = emitRoundedDivide(b, loc, a, c);
             return b.create<mlir::math::FloorOp>(loc, quotient);
           }};
     case VulkanKernelRecipe::FLOOR_MOD:
       return BinaryCallback{
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
              mlir::Value c) {
-            mlir::Value quotient =
-                b.create<mlir::arith::DivFOp>(loc, a, c);
+            mlir::Value quotient = emitRoundedDivide(b, loc, a, c);
             mlir::Value floored =
                 b.create<mlir::math::FloorOp>(loc, quotient);
             return b.create<mlir::arith::SubFOp>(
@@ -2770,7 +3315,7 @@ static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
       return BinaryCallback{
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
              mlir::Value c) {
-            return b.create<mlir::arith::DivFOp>(loc, c, a);
+            return emitRoundedDivide(b, loc, c, a);
           }};
     case VulkanKernelRecipe::REVERSE_SUBTRACT:
       return BinaryCallback{
@@ -2945,42 +3490,12 @@ static mlir::Value emitFusedChainStep(
       return builder.create<mlir::arith::SelectOp>(
           loc, positive, one, signedNegative);
     }
+    // The fdlibm erf/erfc of VulkanF64Math.cpp (MathToSPIRV has no Shader lowering for them): the Abramowitz-Stegun
+    // 7.1.26 polynomial that stood here was 1.5e-7 off and had no accuracy in erfc's tail.
     case sd::ops::helpers::FUSED_ERF:
-    case sd::ops::helpers::FUSED_ERFC: {
-      // Abramowitz-Stegun 7.1.26 avoids relying on a non-portable SPIR-V Erf
-      // extended instruction while retaining a deterministic device kernel.
-      mlir::Value abs = builder.create<mlir::math::AbsFOp>(loc, value);
-      mlir::Value t = builder.create<mlir::arith::DivFOp>(
-          loc, one,
-          builder.create<mlir::arith::AddFOp>(
-              loc, one,
-              builder.create<mlir::arith::MulFOp>(
-                  loc, floatConst(builder, loc, type, 0.3275911), abs)));
-      mlir::Value polynomial = floatConst(builder, loc, type, 1.061405429);
-      for (double coefficient :
-           {-1.453152027, 1.421413741, -0.284496736, 0.254829592}) {
-        polynomial = builder.create<mlir::arith::AddFOp>(
-            loc, floatConst(builder, loc, type, coefficient),
-            builder.create<mlir::arith::MulFOp>(loc, polynomial, t));
-      }
-      polynomial = builder.create<mlir::arith::MulFOp>(loc, polynomial, t);
-      mlir::Value decay = emitExp(
-          builder, loc, type,
-          builder.create<mlir::arith::NegFOp>(
-              loc, builder.create<mlir::arith::MulFOp>(loc, abs, abs)));
-      mlir::Value magnitude = builder.create<mlir::arith::SubFOp>(
-          loc, one,
-          builder.create<mlir::arith::MulFOp>(loc, polynomial, decay));
-      mlir::Value negative = builder.create<mlir::arith::CmpFOp>(
-          loc, mlir::arith::CmpFPredicate::OLT, value, zero);
-      mlir::Value erf = builder.create<mlir::arith::SelectOp>(
-          loc, negative,
-          builder.create<mlir::arith::NegFOp>(loc, magnitude), magnitude);
-      return code == sd::ops::helpers::FUSED_ERF
-                 ? erf
-                 : mlir::Value(builder.create<mlir::arith::SubFOp>(
-                       loc, one, erf));
-    }
+      return mappedUnary(VulkanKernelRecipe::ERF);
+    case sd::ops::helpers::FUSED_ERFC:
+      return mappedUnary(VulkanKernelRecipe::ERFC);
     case sd::ops::helpers::FUSED_LOG1P:
       return emitLog(
           builder, loc, type,
@@ -3088,6 +3603,60 @@ static mlir::Value integerFloorDivide(mlir::OpBuilder& builder,
       loc, quotient, one);
   return builder.create<mlir::arith::SelectOp>(
       loc, adjust, adjusted, quotient);
+}
+
+// MatchConditionBool and MatchCondition share the native sixteen-mode equation.
+static mlir::Value emitMatchCondition(
+    mlir::OpBuilder& builder, mlir::Location loc, mlir::Value x,
+    mlir::Value comparison, mlir::Value epsilon, int mode, bool isUnsigned) {
+  auto floating = llvm::dyn_cast<mlir::FloatType>(x.getType());
+  auto absolute = [&](mlir::Value value) -> mlir::Value {
+    if (floating) return builder.create<mlir::math::AbsFOp>(loc, value);
+    if (isUnsigned) return value;
+    mlir::Value zero = scalarConstant(builder, loc, value.getType(), 0.0);
+    mlir::Value negative = builder.create<mlir::arith::CmpIOp>(
+        loc, mlir::arith::CmpIPredicate::slt, value, zero);
+    return builder.create<mlir::arith::SelectOp>(
+        loc, negative, builder.create<mlir::arith::SubIOp>(loc, zero, value), value);
+  };
+  auto compare = [&](mlir::Value lhs, mlir::Value rhs,
+                     mlir::arith::CmpFPredicate fp,
+                     mlir::arith::CmpIPredicate sp,
+                     mlir::arith::CmpIPredicate up) -> mlir::Value {
+    if (floating) return builder.create<mlir::arith::CmpFOp>(loc, fp, lhs, rhs);
+    return builder.create<mlir::arith::CmpIOp>(loc, isUnsigned ? up : sp, lhs, rhs);
+  };
+  using FP = mlir::arith::CmpFPredicate;
+  using IP = mlir::arith::CmpIPredicate;
+  if (mode == 0 || mode == 1) {
+    mlir::Value difference;
+    if (floating) difference = builder.create<mlir::arith::SubFOp>(loc, x, comparison);
+    else difference = builder.create<mlir::arith::SubIOp>(loc, x, comparison);
+    return mode == 0 ? compare(absolute(difference), epsilon, FP::OLE, IP::sle, IP::ule)
+                     : compare(absolute(difference), epsilon, FP::OGT, IP::sgt, IP::ugt);
+  }
+  switch (mode) {
+    case 2: return compare(x, comparison, FP::OLT, IP::slt, IP::ult);
+    case 3: return compare(x, comparison, FP::OGT, IP::sgt, IP::ugt);
+    case 4: return compare(x, comparison, FP::OLE, IP::sle, IP::ule);
+    case 5: return compare(x, comparison, FP::OGE, IP::sge, IP::uge);
+    case 6: return compare(absolute(x), comparison, FP::OLT, IP::slt, IP::ult);
+    case 7: return compare(absolute(x), comparison, FP::OGT, IP::sgt, IP::ugt);
+    case 10: return compare(x, comparison, FP::OEQ, IP::eq, IP::eq);
+    case 11: return compare(x, comparison, FP::UNE, IP::ne, IP::ne);
+    case 12: return compare(absolute(x), comparison, FP::OGE, IP::sge, IP::uge);
+    case 13: return compare(absolute(x), comparison, FP::OLE, IP::sle, IP::ule);
+    case 8:
+    case 9:
+    case 14:
+    case 15:
+      if (!floating) return builder.create<mlir::arith::ConstantIntOp>(loc, mode == 14, 1);
+      if (mode == 9) return builder.create<mlir::arith::CmpFOp>(loc, FP::UNO, x, x);
+      return builder.create<mlir::arith::CmpFOp>(
+          loc, mode == 8 ? FP::OEQ : mode == 14 ? FP::OLT : FP::UGE,
+          absolute(x), floatConst(builder, loc, floating, std::numeric_limits<double>::infinity()));
+    default: return {};
+  }
 }
 
 static mlir::Value emitIntegerBinary(mlir::OpBuilder& builder,
@@ -3354,10 +3923,14 @@ static mlir::Value integerReductionInitial(
       value = 1;
       break;
     case VulkanKernelRecipe::REDUCE_MAX:
-      value = isUnsigned ? 0 : std::numeric_limits<int32_t>::min();
+      value = isUnsigned ? 0
+                         : (type.getWidth() == 64 ? std::numeric_limits<int64_t>::min()
+                                                  : std::numeric_limits<int32_t>::min());
       break;
     case VulkanKernelRecipe::REDUCE_MIN:
-      value = isUnsigned ? -1 : std::numeric_limits<int32_t>::max();
+      value = isUnsigned ? -1
+                         : (type.getWidth() == 64 ? std::numeric_limits<int64_t>::max()
+                                                  : std::numeric_limits<int32_t>::max());
       break;
     default:
       return {};
@@ -3796,6 +4369,252 @@ mlir::LogicalResult RopeToSpirv::matchAndRewrite(
       mlir::SmallVector<mlir::Value>{bi, si, hi, oddIdx});
   rewriter.create<mlir::gpu::TerminatorOp>(loc);
 
+  rewriter.eraseOp(op);
+  return mlir::success();
+}
+
+// Shared forward/adjoint prefix schedule. Static axes are compiler metadata;
+// tensor axes are read in the shader on every replay. A whole TAD belongs to
+// one invocation, so reverse/exclusive exact-mapping in-place scans are safe.
+static mlir::LogicalResult emitPrefixScan(
+    mlir::linalg::GenericOp op, mlir::PatternRewriter& rewriter,
+    mlir::Value input, mlir::Value output, mlir::FloatType accTy,
+    mlir::Value axisTensor = {}, mlir::Value axisGradient = {},
+    bool gradientLaunch = false) {
+  auto loc = op.getLoc();
+  auto axesAttr = op->getAttrOfType<mlir::DenseI64ArrayAttr>("nd4j.scan_axes");
+  auto exclusive = op->getAttrOfType<mlir::BoolAttr>("nd4j.scan_exclusive");
+  auto reverse = op->getAttrOfType<mlir::BoolAttr>("nd4j.scan_reverse");
+  auto type = llvm::dyn_cast<mlir::MemRefType>(input.getType());
+  auto outType = llvm::dyn_cast<mlir::MemRefType>(output.getType());
+  if (!axesAttr || !exclusive || !reverse || !type || !outType ||
+      type.getShape() != outType.getShape()) return op.emitOpError("invalid prefix-scan contract");
+  std::set<int64_t> axes;
+  for (int64_t axis : axesAttr.asArrayRef()) {
+    if (axis < 0 || axis >= type.getRank() || !axes.insert(axis).second)
+      return op.emitOpError("invalid prefix-scan axes");
+  }
+  if (!axisTensor && axes.empty())
+    for (int64_t d = 0; d < type.getRank(); ++d) axes.insert(d);
+  mlir::Value one = idxConst(rewriter, loc, 1), zero = idxConst(rewriter, loc, 0);
+  mlir::SmallVector<mlir::Value> dimensions;
+  mlir::Value total = one, staticRows = one;
+  for (int64_t d = 0; d < type.getRank(); ++d) {
+    mlir::Value dim = rewriter.create<mlir::memref::DimOp>(loc, input, d);
+    dimensions.push_back(dim);
+    total = rewriter.create<mlir::arith::MulIOp>(loc, total, dim);
+    if (!axes.count(d)) staticRows = rewriter.create<mlir::arith::MulIOp>(loc, staticRows, dim);
+  }
+  mlir::Value axisCount = one;
+  if (axisTensor) {
+    auto axisType = llvm::dyn_cast<mlir::MemRefType>(axisTensor.getType());
+    if (!axisType || (!llvm::isa<mlir::IntegerType>(axisType.getElementType()) &&
+                      !llvm::isa<mlir::FloatType>(axisType.getElementType())))
+      return op.emitOpError("prefix-scan axis tensor requires numeric storage");
+    for (int64_t d = 0; d < axisType.getRank(); ++d)
+      axisCount = rewriter.create<mlir::arith::MulIOp>(loc, axisCount,
+          rewriter.create<mlir::memref::DimOp>(loc, axisTensor, d));
+  }
+  mlir::Value grid = gradientLaunch ? total : staticRows;
+  if (axisGradient) grid = rewriter.create<mlir::arith::MaxUIOp>(loc, grid, axisCount);
+  auto launch = createGpuLaunch(rewriter, loc, grid, one, one);
+  mlir::Value flat = launch.getBlockIds().x;
+  rewriter.setInsertionPointToEnd(&launch.getBody().front());
+  if (axisGradient) {
+    auto fill = rewriter.create<mlir::scf::IfOp>(loc, mlir::TypeRange{},
+        rewriter.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::ult, flat, axisCount), false);
+    rewriter.setInsertionPointToStart(fill.thenBlock());
+    auto storage = getElementType(axisGradient.getType());
+    rewriter.create<mlir::memref::StoreOp>(loc, scalarConstant(rewriter, loc, storage, 1.0),
+        axisGradient, logicalIndices(rewriter, loc, flat, axisGradient));
+    rewriter.setInsertionPointAfter(fill);
+  }
+  mlir::SmallVector<mlir::Value> scanDimensions;
+  for (int64_t d = 0; d < type.getRank(); ++d) {
+    mlir::Value selected;
+    if (axisTensor) {
+      auto match = emitReductionLoop(rewriter, loc, zero, axisCount, one,
+          scalarConstant(rewriter, loc, rewriter.getI1Type(), 0.0),
+          [&](mlir::OpBuilder& b, mlir::Location l, mlir::Value item, mlir::Value found) -> mlir::Value {
+            mlir::Value axis = b.create<mlir::memref::LoadOp>(l, axisTensor,
+                logicalIndices(b, l, item, axisTensor));
+            // asVectorT<LongType> truncates floating axis controls toward
+            // zero. Valid axes fit i32; signed i64 controls retain their width.
+            if (llvm::isa<mlir::FloatType>(axis.getType()))
+              axis = convertScalar(b, l, axis, b.getI32Type(), false, false);
+            mlir::Type integer = axis.getType();
+            mlir::Value negative = b.create<mlir::arith::CmpIOp>(l, mlir::arith::CmpIPredicate::slt,
+                axis, scalarConstant(b, l, integer, 0.0));
+            axis = b.create<mlir::arith::SelectOp>(l, negative,
+                b.create<mlir::arith::AddIOp>(l, axis, scalarConstant(b, l, integer, type.getRank())), axis);
+            return b.create<mlir::arith::OrIOp>(l, found,
+                b.create<mlir::arith::CmpIOp>(l, mlir::arith::CmpIPredicate::eq,
+                    axis, scalarConstant(b, l, integer, d)));
+          });
+      selected = match.getResult(0);
+    } else {
+      selected = scalarConstant(rewriter, loc, rewriter.getI1Type(), axes.count(d) ? 1.0 : 0.0);
+    }
+    scanDimensions.push_back(selected);
+  }
+  mlir::Value rows = one, scanCount = one;
+  for (int64_t d = 0; d < type.getRank(); ++d) {
+    rows = rewriter.create<mlir::arith::MulIOp>(loc, rows,
+        rewriter.create<mlir::arith::SelectOp>(loc, scanDimensions[d], one, dimensions[d]));
+    scanCount = rewriter.create<mlir::arith::MulIOp>(loc, scanCount,
+        rewriter.create<mlir::arith::SelectOp>(loc, scanDimensions[d], dimensions[d], one));
+  }
+  auto ownsRow = rewriter.create<mlir::scf::IfOp>(loc, mlir::TypeRange{},
+      rewriter.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::ult, flat, rows), false);
+  rewriter.setInsertionPointToStart(ownsRow.thenBlock());
+  mlir::SmallVector<mlir::Value> coordinates(type.getRank(), zero);
+  mlir::Value row = flat;
+  for (int64_t d = type.getRank() - 1; d >= 0; --d) {
+    coordinates[d] = rewriter.create<mlir::arith::SelectOp>(loc, scanDimensions[d], zero,
+        rewriter.create<mlir::arith::RemUIOp>(loc, row, dimensions[d]));
+    row = rewriter.create<mlir::arith::SelectOp>(loc, scanDimensions[d], row,
+        rewriter.create<mlir::arith::DivUIOp>(loc, row, dimensions[d]));
+  }
+  rewriter.create<mlir::scf::ForOp>(loc, zero, scanCount, one,
+      mlir::ValueRange{floatConst(rewriter, loc, accTy, 0.0)},
+      [&](mlir::OpBuilder& b, mlir::Location l, mlir::Value position, mlir::ValueRange carried) {
+        mlir::Value scanPosition = reverse.getValue()
+            ? mlir::Value(b.create<mlir::arith::SubIOp>(l,
+                b.create<mlir::arith::SubIOp>(l, scanCount, one), position)) : position;
+        mlir::SmallVector<mlir::Value> current(coordinates.begin(), coordinates.end());
+        for (int64_t d = type.getRank() - 1; d >= 0; --d) {
+          current[d] = b.create<mlir::arith::SelectOp>(l, scanDimensions[d],
+              b.create<mlir::arith::RemUIOp>(l, scanPosition, dimensions[d]), coordinates[d]);
+          scanPosition = b.create<mlir::arith::SelectOp>(l, scanDimensions[d],
+              b.create<mlir::arith::DivUIOp>(l, scanPosition, dimensions[d]), scanPosition);
+        }
+        mlir::Value value = loadAsAccumulator(b, l, input, current, accTy);
+        mlir::Value sum = b.create<mlir::arith::AddFOp>(l, carried[0], value);
+        // prefix<T> retains its running sum in T, unlike reduce::Sum. Keep
+        // HALF storage rounding at every scan step, not just the final store.
+        sum = convertFloat(b, l, convertFloat(b, l, sum,
+            llvm::cast<mlir::FloatType>(outType.getElementType())), accTy);
+        storeFromAccumulator(b, l, exclusive.getValue() ? carried[0] : sum, output, current);
+        b.create<mlir::scf::YieldOp>(l, sum);
+      });
+  rewriter.setInsertionPointAfter(ownsRow);
+  rewriter.create<mlir::gpu::TerminatorOp>(loc);
+  rewriter.eraseOp(op);
+  return mlir::success();
+}
+
+mlir::LogicalResult TensorGradientToSpirv::matchAndRewrite(
+    mlir::linalg::GenericOp op, mlir::PatternRewriter& rewriter) const {
+  const auto* emitter = emitterForOperation(op);
+  if (!emitter || emitter->loweringContract != VulkanLoweringContract::TENSOR_GRADIENT)
+    return mlir::failure();
+  auto countAttr = op->getAttrOfType<mlir::IntegerAttr>("nd4j.gradient_inputs");
+  if (!countAttr || op.getOutputs().size() != 1) return op.emitOpError("invalid gradient carrier");
+  const int64_t count = countAttr.getInt();
+  const bool scan = emitter->recipe == VulkanKernelRecipe::CUMSUM_BP;
+  const int64_t destinations = scan && count == 2 ? 1 : 2;
+  if ((count != 2 && count != 3) || static_cast<int64_t>(op.getInputs().size()) != count + destinations - 1)
+    return op.emitOpError("invalid gradient operand count");
+  mlir::ValueRange inputs = op.getInputs().take_front(count);
+  mlir::SmallVector<mlir::Value> outputs{op.getOutputs()[0]};
+  if (destinations == 2) outputs.push_back(op.getInputs().back());
+  auto contract = scan ? getComputeTypeContract(op, inputs.take_back(1), mlir::ValueRange{outputs[0]})
+                       : getComputeTypeContract(op, inputs, outputs);
+  if (mlir::failed(contract)) return mlir::failure();
+  auto accTy = contract->accumulatorType;
+  if (scan) return emitPrefixScan(op, rewriter, inputs.back(), outputs[0], accTy,
+      count == 3 ? inputs[1] : mlir::Value{}, count == 3 ? outputs[1] : mlir::Value{}, true);
+  const bool bias = emitter->recipe == VulkanKernelRecipe::BIAS_ADD_BP;
+  auto channelAttr = op->getAttrOfType<mlir::IntegerAttr>("nd4j.channel_axis");
+  if (count != 3 || (bias && !channelAttr) ||
+      (!bias && emitter->recipe != VulkanKernelRecipe::MAXIMUM_BP &&
+                emitter->recipe != VulkanKernelRecipe::MINIMUM_BP)) return op.emitOpError("invalid gradient recipe");
+  auto loc = op.getLoc();
+  mlir::Value one = idxConst(rewriter, loc, 1), zero = idxConst(rewriter, loc, 0);
+  auto length = [&](mlir::Value array) {
+    mlir::Value product = one;
+    auto type = llvm::cast<mlir::MemRefType>(array.getType());
+    for (int64_t d = 0; d < type.getRank(); ++d)
+      product = rewriter.create<mlir::arith::MulIOp>(loc, product,
+          rewriter.create<mlir::memref::DimOp>(loc, array, d));
+    return product;
+  };
+  mlir::SmallVector<mlir::Value> lengths{length(outputs[0]), length(outputs[1])};
+  auto launch = createGpuLaunch(rewriter, loc,
+      rewriter.create<mlir::arith::MaxUIOp>(loc, lengths[0], lengths[1]), one, one);
+  mlir::Value flat = launch.getBlockIds().x;
+  rewriter.setInsertionPointToEnd(&launch.getBody().front());
+  auto epsType = llvm::cast<mlir::MemRefType>(inputs[2].getType());
+  const int64_t rank = epsType.getRank();
+  for (int target = 0; target < 2; ++target) {
+    auto owns = rewriter.create<mlir::scf::IfOp>(loc, mlir::TypeRange{},
+        rewriter.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::ult, flat, lengths[target]), false);
+    rewriter.setInsertionPointToStart(owns.thenBlock());
+    auto destination = outputs[target];
+    auto destType = llvm::cast<mlir::MemRefType>(destination.getType());
+    auto destCoordinates = logicalIndices(rewriter, loc, flat, destination);
+    if (bias && target == 0) {
+      storeFromAccumulator(rewriter, loc,
+          loadAsAccumulator(rewriter, loc, inputs[2], destCoordinates, accTy), destination, destCoordinates);
+    } else {
+      mlir::SmallVector<mlir::Value> base(rank, zero);
+      mlir::SmallVector<int64_t> reducedDimensions;
+      mlir::Value reducedCount = one;
+      for (int64_t d = 0; d < rank; ++d) {
+        int64_t sourceDimension = bias ? (d == channelAttr.getInt() ? 0 : -1)
+                                      : d - (rank - destType.getRank());
+        if (sourceDimension < 0 || (!bias &&
+            destType.getDimSize(sourceDimension) != epsType.getDimSize(d))) {
+          reducedDimensions.push_back(d);
+          reducedCount = rewriter.create<mlir::arith::MulIOp>(loc, reducedCount,
+              rewriter.create<mlir::memref::DimOp>(loc, inputs[2], d));
+        } else base[d] = destCoordinates[sourceDimension];
+      }
+      // Native minimax reduces its destination-typed contribution; biasadd_bp
+      // reduces gradO before converting into gradB. HALF sums widen to FLOAT.
+      auto reductionStorage = llvm::cast<mlir::FloatType>(
+          bias ? epsType.getElementType() : destType.getElementType());
+      mlir::FloatType reductionType = reductionStorage;
+      if (reductionStorage.getWidth() < 32) reductionType = rewriter.getF32Type();
+      auto sum = emitReductionLoop(rewriter, loc, zero, reducedCount, one,
+          floatConst(rewriter, loc, reductionType, 0.0),
+          [&](mlir::OpBuilder& b, mlir::Location l, mlir::Value reduced, mlir::Value accumulator) -> mlir::Value {
+            mlir::SmallVector<mlir::Value> coordinates(base.begin(), base.end());
+            for (auto dim = reducedDimensions.rbegin(); dim != reducedDimensions.rend(); ++dim) {
+              auto extent = b.create<mlir::memref::DimOp>(l, inputs[2], *dim);
+              coordinates[*dim] = b.create<mlir::arith::RemUIOp>(l, reduced, extent);
+              reduced = b.create<mlir::arith::DivUIOp>(l, reduced, extent);
+            }
+            mlir::Value contribution = loadAsAccumulator(b, l, inputs[2], coordinates, reductionType);
+            if (!bias) {
+              mlir::Value x = loadAsAccumulator(b, l, inputs[0], broadcastIndices(b, l, coordinates, inputs[0]), accTy);
+              mlir::Value y = loadAsAccumulator(b, l, inputs[1], broadcastIndices(b, l, coordinates, inputs[1]), accTy);
+              const bool greater = (emitter->recipe == VulkanKernelRecipe::MAXIMUM_BP) == (target == 0);
+              mlir::Value won = b.create<mlir::arith::CmpFOp>(l,
+                  greater ? mlir::arith::CmpFPredicate::OGT : mlir::arith::CmpFPredicate::OLT, x, y);
+              mlir::Value tied = b.create<mlir::arith::CmpFOp>(l, mlir::arith::CmpFPredicate::OEQ, x, y);
+              mlir::Value share = b.create<mlir::arith::AddFOp>(l,
+                  b.create<mlir::arith::SelectOp>(l, won, floatConst(b, l, accTy, 1.0), floatConst(b, l, accTy, 0.0)),
+                  b.create<mlir::arith::SelectOp>(l, tied, floatConst(b, l, accTy, 0.5), floatConst(b, l, accTy, 0.0)));
+              // Native minimax casts eps and materializes the product in the
+              // destination storage type before the broadcast reduction.
+              contribution = convertFloat(b, l, convertFloat(b, l, contribution,
+                  llvm::cast<mlir::FloatType>(destType.getElementType())), reductionType);
+              share = convertFloat(b, l, share, reductionType);
+              contribution = b.create<mlir::arith::MulFOp>(l, contribution, share);
+              contribution = convertFloat(b, l, convertFloat(b, l, contribution,
+                  llvm::cast<mlir::FloatType>(destType.getElementType())), reductionType);
+            }
+            // Without broadcast reduction the native op assigns its product
+            // directly. Do not turn a negative zero into +0 by adding identity.
+            if (reducedDimensions.empty()) return contribution;
+            return b.create<mlir::arith::AddFOp>(l, accumulator, contribution);
+          });
+      storeFromAccumulator(rewriter, loc, sum.getResult(0), destination, destCoordinates);
+    }
+    rewriter.setInsertionPointAfter(owns);
+  }
+  rewriter.create<mlir::gpu::TerminatorOp>(loc);
   rewriter.eraseOp(op);
   return mlir::success();
 }
@@ -6355,12 +7174,34 @@ mlir::LogicalResult ElementwiseBinaryToSpirv::matchAndRewrite(
   auto aType = llvm::dyn_cast<mlir::MemRefType>(A.getType());
   auto bType = llvm::dyn_cast<mlir::MemRefType>(B.getType());
   auto cType = llvm::dyn_cast<mlir::MemRefType>(C.getType());
-  if (!aType || !bType || !cType || aType.getRank() > cType.getRank() ||
-      bType.getRank() > cType.getRank()) {
+  auto broadcastDimensions = op->getAttrOfType<mlir::DenseI64ArrayAttr>(
+      "nd4j.broadcast_dimensions");
+  auto broadcastOperandAttr = op->getAttrOfType<mlir::IntegerAttr>(
+      "nd4j.broadcast_operand");
+  const int64_t broadcastOperand = broadcastOperandAttr ? broadcastOperandAttr.getInt() : 1;
+  if (!aType || !bType || !cType ||
+      ((!broadcastDimensions || broadcastOperand != 0) && aType.getRank() > cType.getRank()) ||
+      ((!broadcastDimensions || broadcastOperand != 1) && bType.getRank() > cType.getRank())) {
     return op.emitOpError(
         "ElementwiseBinaryToSpirv: invalid broadcast MemRef ranks");
   }
 
+  if (broadcastDimensions) {
+    if (broadcastOperand != 0 && broadcastOperand != 1)
+      return op.emitOpError("invalid legacy broadcast operand role");
+    auto mappedType = broadcastOperand == 0 ? aType : bType;
+    if (broadcastDimensions.size() != static_cast<size_t>(mappedType.getRank())) {
+      return op.emitOpError("legacy broadcast dimension count does not match mapped operand rank");
+    }
+    for (int64_t d = 0; d < mappedType.getRank(); ++d) {
+      const int64_t axis = broadcastDimensions.asArrayRef()[d];
+      if (axis < -1 || axis >= cType.getRank() ||
+          (axis == -1 ? mappedType.getDimSize(d) != 1
+                      : mappedType.getDimSize(d) != cType.getDimSize(axis))) {
+        return op.emitOpError("legacy broadcast dimensions do not match operand shapes");
+      }
+    }
+  }
   auto computeAttr = op->getAttrOfType<mlir::TypeAttr>(kAccumulatorTypeAttr);
   mlir::Type computeType = computeAttr ? computeAttr.getValue() : mlir::Type{};
   auto computeFloat = llvm::dyn_cast<mlir::FloatType>(computeType);
@@ -6401,7 +7242,8 @@ mlir::LogicalResult ElementwiseBinaryToSpirv::matchAndRewrite(
       semantic == VulkanKernelRecipe::EPSILON_COMPARE &&
       scalar0Attr != nullptr && !scalarPresent;
   if (computeFloat && !activationBackward && !callback &&
-      !parameterizedBinary && !parameterizedComparison) {
+      !parameterizedBinary && !parameterizedComparison &&
+      semantic != VulkanKernelRecipe::MATCH_CONDITION) {
     return mlir::failure();
   }
 
@@ -6417,8 +7259,18 @@ mlir::LogicalResult ElementwiseBinaryToSpirv::matchAndRewrite(
   rewriter.setInsertionPointToEnd(&launch.getBody().front());
 
   auto outputIndices = logicalIndices(rewriter, loc, linearIndex, C);
-  auto aIndices = broadcastIndices(rewriter, loc, outputIndices, A);
-  auto bIndices = broadcastIndices(rewriter, loc, outputIndices, B);
+  auto operandIndices = [&](mlir::Value operand, int role) {
+    if (!broadcastDimensions || broadcastOperand != role)
+      return broadcastIndices(rewriter, loc, outputIndices, operand);
+    mlir::SmallVector<mlir::Value> indices;
+    for (int64_t axis : broadcastDimensions.asArrayRef()) {
+      indices.push_back(axis < 0 ? idxConst(rewriter, loc, 0)
+                                : outputIndices[static_cast<size_t>(axis)]);
+    }
+    return indices;
+  };
+  auto aIndices = operandIndices(A, 0);
+  auto bIndices = operandIndices(B, 1);
   mlir::Value aVal = loadAsScalar(
       rewriter, loc, A, aIndices, computeType, aUnsigned, cUnsigned);
   mlir::Value bVal = unaryAssign
@@ -6430,7 +7282,13 @@ mlir::LogicalResult ElementwiseBinaryToSpirv::matchAndRewrite(
                                               computeType, bUnsigned,
                                               cUnsigned);
   mlir::Value result;
-  if (activationBackward) {
+  if (semantic == VulkanKernelRecipe::MATCH_CONDITION) {
+    if (!std::isfinite(scalar1) || scalar1 != std::floor(scalar1) || scalar1 < 0 || scalar1 > 15)
+      return op.emitOpError("MatchCondition: invalid condition mode");
+    result = emitMatchCondition(
+        rewriter, loc, aVal, bVal, scalarConstant(rewriter, loc, computeType, scalar0),
+        static_cast<int>(scalar1), aUnsigned);
+  } else if (activationBackward) {
     if (!computeFloat) {
       return op.emitOpError(
           "activation backward requires a floating-point AccT");
@@ -6585,9 +7443,25 @@ mlir::LogicalResult ElementwiseUnaryToSpirv::matchAndRewrite(
   if (isCast) {
     mlir::Value raw =
         rewriter.create<mlir::memref::LoadOp>(loc, X, indices);
-    mlir::Value converted = convertScalar(
-        rewriter, loc, raw, yType.getElementType(),
-        inputUnsigned, outputUnsigned);
+    mlir::Value converted;
+    if (readBoolAttr("nd4j.output_bool")) {
+      // static_cast<bool>: true for any nonzero value (a truncation would make 256 or 0.5 false)
+      mlir::Value nonZero;
+      if (auto floatType = llvm::dyn_cast<mlir::FloatType>(raw.getType())) {
+        nonZero = rewriter.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::UNE, raw, floatConst(rewriter, loc, floatType, 0.0));
+      } else {
+        auto integerType = llvm::cast<mlir::IntegerType>(raw.getType());
+        nonZero = rewriter.create<mlir::arith::CmpIOp>(
+            loc, mlir::arith::CmpIPredicate::ne, raw,
+            rewriter.create<mlir::arith::ConstantIntOp>(loc, 0, integerType.getWidth()));
+      }
+      converted = rewriter.create<mlir::arith::ExtUIOp>(loc, yType.getElementType(), nonZero);
+    } else {
+      converted = convertScalar(
+          rewriter, loc, raw, yType.getElementType(),
+          inputUnsigned, outputUnsigned);
+    }
     if (converted) {
       rewriter.create<mlir::memref::StoreOp>(loc, converted, Y, indices);
     }
@@ -6596,7 +7470,19 @@ mlir::LogicalResult ElementwiseUnaryToSpirv::matchAndRewrite(
         rewriter, loc, X, indices, computeType,
         inputUnsigned, inputUnsigned);
     mlir::Value result;
-    if (boundsFromInputs) {
+    if (semantic == VulkanKernelRecipe::MATCH_CONDITION_UNARY) {
+      auto modeAttr = op->getAttrOfType<mlir::IntegerAttr>("nd4j.condition_mode");
+      if (readBoolAttr("nd4j.condition_present")) {
+        if (!modeAttr || modeAttr.getInt() < 0 || modeAttr.getInt() > 15)
+          return op.emitOpError("MatchConditionBool: invalid condition mode");
+        result = emitMatchCondition(
+            rewriter, loc, xVal, scalarConstant(rewriter, loc, computeType, scalar0),
+            scalarConstant(rewriter, loc, computeType, scalar1),
+            static_cast<int>(modeAttr.getInt()), inputUnsigned);
+      } else {
+        result = rewriter.create<mlir::arith::ConstantIntOp>(loc, 0, 1);
+      }
+    } else if (boundsFromInputs) {
       mlir::Value lowerMemref = inputs[1];
       mlir::Value upperMemref = inputs[2];
       auto lowerType = llvm::cast<mlir::MemRefType>(lowerMemref.getType());
@@ -6934,6 +7820,59 @@ mlir::LogicalResult IndexedAccumulationToSpirv::matchAndRewrite(
     return mlir::failure();
   }
 
+  // No index rows (nd4j.empty_rows): scatter_nd's output is zeros and the shell binds none of its three inputs.
+  // Every invocation zero-fills one output element.
+  auto emptyRowsAttr = op->getAttrOfType<mlir::BoolAttr>("nd4j.empty_rows");
+  if (emptyRowsAttr && emptyRowsAttr.getValue()) {
+    mlir::ValueRange emptyOutputs = op.getOutputs();
+    auto emptyOutputType =
+        emptyOutputs.size() == 1
+            ? llvm::dyn_cast<mlir::MemRefType>(emptyOutputs[0].getType())
+            : mlir::MemRefType{};
+    if (!op.getInputs().empty() || !emptyOutputType ||
+        emptyOutputType.getRank() < 1) {
+      return op.emitOpError(
+          "scatter_nd without index rows binds only its output");
+    }
+    auto elementFloat =
+        llvm::dyn_cast<mlir::FloatType>(emptyOutputType.getElementType());
+    auto elementInteger =
+        llvm::dyn_cast<mlir::IntegerType>(emptyOutputType.getElementType());
+    if (!elementFloat &&
+        !(elementInteger &&
+          (elementInteger.getWidth() == 32 ||
+           elementInteger.getWidth() == 64))) {
+      return op.emitOpError(
+          "indexed accumulation supports floating or 32/64-bit integer payloads");
+    }
+    mlir::Location emptyLoc = op.getLoc();
+    mlir::Value emptyOutput = emptyOutputs[0];
+    mlir::Value total = idxConst(rewriter, emptyLoc, 1);
+    for (int64_t d = 0; d < emptyOutputType.getRank(); ++d) {
+      total = rewriter.create<mlir::arith::MulIOp>(
+          emptyLoc, total,
+          rewriter.create<mlir::memref::DimOp>(emptyLoc, emptyOutput, d));
+    }
+    mlir::Value gridOne = idxConst(rewriter, emptyLoc, 1);
+    auto emptyLaunch = createGpuLaunch(rewriter, emptyLoc, total, gridOne, gridOne);
+    mlir::Value flat = emptyLaunch.getBlockIds().x;
+    rewriter.setInsertionPointToEnd(&emptyLaunch.getBody().front());
+    mlir::Value zeroValue;
+    if (elementFloat) {
+      zeroValue = floatConst(rewriter, emptyLoc, elementFloat, 0.0);
+    } else {
+      zeroValue = rewriter.create<mlir::arith::ConstantOp>(
+          emptyLoc, elementInteger,
+          rewriter.getIntegerAttr(elementInteger, 0));
+    }
+    rewriter.create<mlir::memref::StoreOp>(
+        emptyLoc, zeroValue, emptyOutput,
+        logicalIndices(rewriter, emptyLoc, flat, emptyOutput));
+    rewriter.create<mlir::gpu::TerminatorOp>(emptyLoc);
+    rewriter.eraseOp(op);
+    return mlir::success();
+  }
+
   mlir::ValueRange inputs = op.getInputs();
   mlir::ValueRange outputs = op.getOutputs();
   if (inputs.size() != 3 || outputs.size() != 1) {
@@ -6950,12 +7889,25 @@ mlir::LogicalResult IndexedAccumulationToSpirv::matchAndRewrite(
                           ? llvm::dyn_cast<mlir::IntegerType>(
                                 indicesType.getElementType())
                           : mlir::IntegerType{};
+  // The updates may have another type than the output: they are cast to it before they are added (ADR 0128).
+  auto updateInteger =
+      updatesType ? llvm::dyn_cast<mlir::IntegerType>(
+                        updatesType.getElementType())
+                  : mlir::IntegerType{};
   if (!indicesType || !updatesType || !outputType || !indexElement ||
       (indexElement.getWidth() != 32 && indexElement.getWidth() != 64) ||
-      updatesType.getElementType() != outputType.getElementType()) {
+      !(llvm::isa<mlir::FloatType>(updatesType.getElementType()) ||
+        (updateInteger &&
+         (updateInteger.getWidth() == 32 || updateInteger.getWidth() == 64)))) {
     return op.emitOpError(
-        "indexed accumulation requires integer indices and exact update/output types");
+        "indexed accumulation requires integer indices and floating or 32/64-bit integer updates");
   }
+  auto unsignedFlag = [&](const char* name) {
+    auto attr = op->getAttrOfType<mlir::BoolAttr>(name);
+    return attr && attr.getValue();
+  };
+  const bool updateUnsigned = unsignedFlag("nd4j.update_unsigned");
+  const bool outputUnsigned = unsignedFlag("nd4j.output_unsigned");
 
   auto indexDepthAttr =
       op->getAttrOfType<mlir::IntegerAttr>("nd4j.index_depth");
@@ -7039,6 +7991,13 @@ mlir::LogicalResult IndexedAccumulationToSpirv::matchAndRewrite(
         mlir::SmallVector<mlir::Value> outputCoordinates;
         outputCoordinates.reserve(
             static_cast<size_t>(outputType.getRank()));
+        // An index row with a coordinate outside the output is skipped, as the CPU and CUDA helpers skip it (it was
+        // stored out of bounds). Each coordinate is compared in the indices' own width: narrowing a 64-bit value to
+        // the shader's 32-bit index first could fold an out-of-range coordinate back into the output.
+        mlir::Value inRange = builder.create<mlir::arith::ConstantOp>(
+            nestedLoc, builder.getI1Type(), builder.getBoolAttr(true));
+        mlir::Value zeroRaw = builder.create<mlir::arith::ConstantOp>(
+            nestedLoc, indexElement, builder.getIntegerAttr(indexElement, 0));
         for (int64_t d = 0; d < indexDepth; ++d) {
           mlir::SmallVector<mlir::Value> indexCoordinates;
           indexCoordinates.reserve(static_cast<size_t>(prefixRank + 1));
@@ -7050,6 +8009,18 @@ mlir::LogicalResult IndexedAccumulationToSpirv::matchAndRewrite(
           mlir::Value rawIndex =
               builder.create<mlir::memref::LoadOp>(
                   nestedLoc, indices, indexCoordinates);
+          mlir::Value extentRaw = builder.create<mlir::arith::IndexCastOp>(
+              nestedLoc, indexElement,
+              builder.create<mlir::memref::DimOp>(nestedLoc, output, d));
+          mlir::Value nonNegative = builder.create<mlir::arith::CmpIOp>(
+              nestedLoc, mlir::arith::CmpIPredicate::sge, rawIndex, zeroRaw);
+          mlir::Value belowExtent = builder.create<mlir::arith::CmpIOp>(
+              nestedLoc, mlir::arith::CmpIPredicate::slt, rawIndex,
+              extentRaw);
+          inRange = builder.create<mlir::arith::AndIOp>(
+              nestedLoc, inRange,
+              builder.create<mlir::arith::AndIOp>(nestedLoc, nonNegative,
+                                                  belowExtent));
           outputCoordinates.push_back(
               builder.create<mlir::arith::IndexCastOp>(
                   nestedLoc, builder.getIndexType(), rawIndex));
@@ -7058,20 +8029,24 @@ mlir::LogicalResult IndexedAccumulationToSpirv::matchAndRewrite(
           outputCoordinates.push_back(
               updateCoordinates[static_cast<size_t>(prefixRank + d)]);
         }
+        auto guarded = builder.create<mlir::scf::IfOp>(
+            nestedLoc, mlir::TypeRange{}, inRange, false);
+        builder.setInsertionPointToStart(guarded.thenBlock());
 
+        // The update is cast to the output's type before it is added, then widened to the accumulator for
+        // floating storage (ADR 0128).
+        mlir::Value update = loadAsScalar(
+            builder, nestedLoc, updates, updateCoordinates, storageType,
+            updateUnsigned, outputUnsigned);
         if (floatStorage) {
-          mlir::Value update = loadAsAccumulator(
-              builder, nestedLoc, updates, updateCoordinates, accType);
           mlir::Value current = loadAsAccumulator(
               builder, nestedLoc, output, outputCoordinates, accType);
           mlir::Value sum = builder.create<mlir::arith::AddFOp>(
-              nestedLoc, current, update);
+              nestedLoc, current, convertFloat(builder, nestedLoc, update,
+                                               accType));
           storeFromAccumulator(
               builder, nestedLoc, sum, output, outputCoordinates);
         } else {
-          mlir::Value update =
-              builder.create<mlir::memref::LoadOp>(
-                  nestedLoc, updates, updateCoordinates);
           mlir::Value current =
               builder.create<mlir::memref::LoadOp>(
                   nestedLoc, output, outputCoordinates);
@@ -7080,8 +8055,355 @@ mlir::LogicalResult IndexedAccumulationToSpirv::matchAndRewrite(
           builder.create<mlir::memref::StoreOp>(
               nestedLoc, sum, output, outputCoordinates);
         }
+        // scf.if creates its zero-result terminator automatically.
+        builder.setInsertionPointAfter(guarded);
         builder.create<mlir::scf::YieldOp>(nestedLoc);
       });
+
+  rewriter.create<mlir::gpu::TerminatorOp>(loc);
+  rewriter.eraseOp(op);
+  return mlir::success();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Ordered slice updates: scatter_*, scatter_nd_{add,sub,update}, get_rows_bp
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// The output is numSlices slices of `positions` elements: slice s is the s-th run of `positions` elements in
+// logical order (numSlices is the product of the leading `index_depth` dimensions). Index row k names a slice by
+// index_depth coordinates (the k-th run of index_depth elements of the indices in logical order), and update slice
+// k is the k-th run of `positions` elements of the updates in logical order (ADR 0128). Invocation p owns element
+// p of every slice: it writes those elements (a copy of the reference, or zeros) and then walks the rows in
+// order. Rows that name one slice therefore apply one after another in index order, whatever the op's `lock`,
+// no two invocations touch the same output element, and no atomics are needed. A row with a coordinate outside
+// the output is skipped, as on CPU and CUDA.
+
+/// z = op(z, y) for one update; the recipe is the combine. Integers use the integer equations; floats the native
+/// pairwise ops' (maximum and minimum are `z > y ? z : y` and `z < y ? z : y` as sd_max and sd_min define them,
+/// so a NaN update propagates exactly as it does on CPU and CUDA).
+static mlir::Value emitSliceUpdateCombine(mlir::OpBuilder& builder,
+                                          mlir::Location loc,
+                                          VulkanKernelRecipe recipe,
+                                          mlir::Value z, mlir::Value y,
+                                          bool isUnsigned) {
+  if (llvm::isa<mlir::IntegerType>(z.getType())) {
+    return emitIntegerBinary(builder, loc, recipe, z, y, isUnsigned);
+  }
+  switch (recipe) {
+    case VulkanKernelRecipe::MAXIMUM:
+      return builder.create<mlir::arith::SelectOp>(
+          loc,
+          builder.create<mlir::arith::CmpFOp>(
+              loc, mlir::arith::CmpFPredicate::OGT, z, y),
+          z, y);
+    case VulkanKernelRecipe::MINIMUM:
+      return builder.create<mlir::arith::SelectOp>(
+          loc,
+          builder.create<mlir::arith::CmpFOp>(
+              loc, mlir::arith::CmpFPredicate::OLT, z, y),
+          z, y);
+    default: {
+      BinaryCallback callback = binaryCallbackFor(recipe);
+      return callback ? callback(builder, loc, z, y) : mlir::Value{};
+    }
+  }
+}
+
+mlir::LogicalResult IndexedSliceUpdateToSpirv::matchAndRewrite(
+    mlir::linalg::GenericOp op, mlir::PatternRewriter& rewriter) const {
+  auto marker =
+      op->getAttrOfType<mlir::BoolAttr>("nd4j.indexed_slice_update");
+  if (!marker || !marker.getValue()) return mlir::failure();
+
+  sd::LongType opHash = 0;
+  if (!readOpHash(op, opHash)) return mlir::failure();
+  const auto* emitter = findVulkanKernelEmitter(opHash);
+  if (emitter == nullptr || !usesIndexedSliceUpdateSchedule(*emitter)) {
+    return mlir::failure();
+  }
+
+  auto flag = [&](const char* name) {
+    auto attr = op->getAttrOfType<mlir::BoolAttr>(name);
+    return attr && attr.getValue();
+  };
+  const bool emptyRows = flag("nd4j.empty_rows");
+  const bool inPlace = flag("nd4j.in_place");
+  const bool zeroInitial = flag("nd4j.zero_initial");
+  const bool outputUnsigned = flag("nd4j.output_unsigned");
+  const bool updateUnsigned = flag("nd4j.update_unsigned");
+  const bool indexUnsigned = flag("nd4j.index_unsigned");
+  auto depthAttr = op->getAttrOfType<mlir::IntegerAttr>("nd4j.index_depth");
+  const int64_t depth = depthAttr ? depthAttr.getInt() : -1;
+
+  // The shell carries the reference (unless the output starts from zeros), then the indices and the updates
+  // (unless there are no index rows), then the output.
+  mlir::ValueRange inputs = op.getInputs();
+  mlir::ValueRange outputs = op.getOutputs();
+  const size_t expectedInputs = (zeroInitial ? 0 : 1) + (emptyRows ? 0 : 2);
+  if (outputs.size() != 1 || inputs.size() != expectedInputs) {
+    return op.emitOpError(
+        "ordered slice update has an inconsistent operand list");
+  }
+  // The operands are in the descriptor's input order: (reference, indices, updates), or (updates, indices) when
+  // the output starts from zeros (get_rows_bp).
+  size_t next = 0;
+  mlir::Value reference;
+  mlir::Value indices;
+  mlir::Value updates;
+  if (!zeroInitial) reference = inputs[next++];
+  if (!emptyRows) {
+    if (zeroInitial) {
+      updates = inputs[next++];
+      indices = inputs[next++];
+    } else {
+      indices = inputs[next++];
+      updates = inputs[next++];
+    }
+  }
+  mlir::Value output = outputs[0];
+
+  auto outputType = llvm::dyn_cast<mlir::MemRefType>(output.getType());
+  if (!outputType || outputType.getRank() < 1 || depth < 1 ||
+      depth > outputType.getRank()) {
+    return op.emitOpError("ordered slice update rank metadata is inconsistent");
+  }
+  const int64_t rank = outputType.getRank();
+
+  mlir::Type storage = outputType.getElementType();
+  auto floatStorage = llvm::dyn_cast<mlir::FloatType>(storage);
+  auto integerStorage = llvm::dyn_cast<mlir::IntegerType>(storage);
+  mlir::FloatType accType;
+  if (floatStorage) {
+    auto accumulatorAttr =
+        op->getAttrOfType<mlir::TypeAttr>(kAccumulatorTypeAttr);
+    accType = accumulatorAttr
+                  ? llvm::dyn_cast<mlir::FloatType>(accumulatorAttr.getValue())
+                  : mlir::FloatType{};
+    if (!accType || floatStorage.getWidth() > accType.getWidth()) {
+      return op.emitOpError(
+          "floating slice updates require a compatible nd4j.accumulator_type");
+    }
+  } else if (!integerStorage ||
+             (integerStorage.getWidth() != 32 &&
+              integerStorage.getWidth() != 64)) {
+    return op.emitOpError(
+        "slice updates support floating or 32/64-bit integer outputs");
+  }
+  if (reference) {
+    auto referenceType = llvm::dyn_cast<mlir::MemRefType>(reference.getType());
+    if (!referenceType || referenceType.getRank() != rank ||
+        referenceType.getElementType() != storage) {
+      return op.emitOpError(
+          "the reference must have the output's shape and element type");
+    }
+  }
+  mlir::IntegerType indexElement;
+  if (indices) {
+    auto indicesType = llvm::dyn_cast<mlir::MemRefType>(indices.getType());
+    auto updatesType = llvm::dyn_cast<mlir::MemRefType>(updates.getType());
+    indexElement = indicesType ? llvm::dyn_cast<mlir::IntegerType>(
+                                     indicesType.getElementType())
+                               : mlir::IntegerType{};
+    mlir::Type updateElement =
+        updatesType ? updatesType.getElementType() : mlir::Type{};
+    auto updateInteger = llvm::dyn_cast_or_null<mlir::IntegerType>(updateElement);
+    if (!indicesType || !updatesType || !indexElement ||
+        (indexElement.getWidth() != 32 && indexElement.getWidth() != 64) ||
+        !(llvm::isa_and_nonnull<mlir::FloatType>(updateElement) ||
+          (updateInteger &&
+           (updateInteger.getWidth() == 32 ||
+            updateInteger.getWidth() == 64)))) {
+      return op.emitOpError(
+          "slice updates need integer indices and floating or 32/64-bit "
+          "integer updates");
+    }
+  }
+
+  mlir::Location loc = op.getLoc();
+  // One invocation per element position of a slice: the product of the output's trailing dimensions.
+  mlir::Value gridPositions = idxConst(rewriter, loc, 1);
+  for (int64_t d = depth; d < rank; ++d) {
+    gridPositions = rewriter.create<mlir::arith::MulIOp>(
+        loc, gridPositions,
+        rewriter.create<mlir::memref::DimOp>(loc, output, d));
+  }
+  mlir::Value gridOne = idxConst(rewriter, loc, 1);
+  auto launch = createGpuLaunch(rewriter, loc, gridPositions, gridOne, gridOne);
+  mlir::Value position = launch.getBlockIds().x;
+  rewriter.setInsertionPointToEnd(&launch.getBody().front());
+
+  // Everything the kernel uses is built inside it from the MemRef operands, so no scalar becomes a kernel
+  // argument (the Vulkan entry-point ABI carries descriptors only).
+  mlir::Value zeroIndex = idxConst(rewriter, loc, 0);
+  mlir::Value one = idxConst(rewriter, loc, 1);
+  mlir::SmallVector<mlir::Value> extents;
+  for (int64_t d = 0; d < rank; ++d) {
+    extents.push_back(rewriter.create<mlir::memref::DimOp>(loc, output, d));
+  }
+  mlir::Value numSlices = idxConst(rewriter, loc, 1);
+  for (int64_t d = 0; d < depth; ++d) {
+    numSlices = rewriter.create<mlir::arith::MulIOp>(
+        loc, numSlices, extents[static_cast<size_t>(d)]);
+  }
+  mlir::Value positions = idxConst(rewriter, loc, 1);
+  for (int64_t d = depth; d < rank; ++d) {
+    positions = rewriter.create<mlir::arith::MulIOp>(
+        loc, positions, extents[static_cast<size_t>(d)]);
+  }
+
+  // Phase 1: this invocation's element of every slice, from the reference or from zeros. In place the output
+  // already holds the reference, but with no index rows the kernel would then touch no buffer at all, and a SPIR-V
+  // module without a storage-buffer binding is not a pipeline: copying the reference onto itself keeps both
+  // operands bound and changes nothing (the output of an op without index rows is its input).
+  if (!inPlace || emptyRows) {
+    rewriter.create<mlir::scf::ForOp>(
+        loc, zeroIndex, numSlices, one, mlir::ValueRange{},
+        [&](mlir::OpBuilder& builder, mlir::Location nestedLoc,
+            mlir::Value slice, mlir::ValueRange) {
+          mlir::Value flat = builder.create<mlir::arith::AddIOp>(
+              nestedLoc,
+              builder.create<mlir::arith::MulIOp>(nestedLoc, slice, positions),
+              position);
+          mlir::Value value;
+          if (!zeroInitial) {
+            value = builder.create<mlir::memref::LoadOp>(
+                nestedLoc, reference,
+                logicalIndices(builder, nestedLoc, flat, reference));
+          } else if (floatStorage) {
+            value = floatConst(builder, nestedLoc, floatStorage, 0.0);
+          } else {
+            value = builder.create<mlir::arith::ConstantOp>(
+                nestedLoc, integerStorage,
+                builder.getIntegerAttr(integerStorage, 0));
+          }
+          builder.create<mlir::memref::StoreOp>(
+              nestedLoc, value, output,
+              logicalIndices(builder, nestedLoc, flat, output));
+          builder.create<mlir::scf::YieldOp>(nestedLoc);
+        });
+  }
+
+  // Phase 2: the index rows, in order.
+  bool conversionFailed = false;
+  if (!emptyRows) {
+    auto indicesType = llvm::cast<mlir::MemRefType>(indices.getType());
+    mlir::Value indicesLength = idxConst(rewriter, loc, 1);
+    for (int64_t d = 0; d < indicesType.getRank(); ++d) {
+      indicesLength = rewriter.create<mlir::arith::MulIOp>(
+          loc, indicesLength,
+          rewriter.create<mlir::memref::DimOp>(loc, indices, d));
+    }
+    mlir::Value numRows = rewriter.create<mlir::arith::DivUIOp>(
+        loc, indicesLength, idxConst(rewriter, loc, depth));
+    rewriter.create<mlir::scf::ForOp>(
+        loc, zeroIndex, numRows, one, mlir::ValueRange{},
+        [&](mlir::OpBuilder& builder, mlir::Location nestedLoc,
+            mlir::Value row, mlir::ValueRange) {
+          // The slice the row names, or "none" when a coordinate lies outside the output. Each coordinate is
+          // compared in the indices' own width: narrowing it first could fold an out-of-range value back in.
+          mlir::Value destination = idxConst(builder, nestedLoc, 0);
+          mlir::Value inRange = builder.create<mlir::arith::ConstantOp>(
+              nestedLoc, builder.getI1Type(), builder.getBoolAttr(true));
+          for (int64_t j = 0; j < depth; ++j) {
+            mlir::Value linear = builder.create<mlir::arith::AddIOp>(
+                nestedLoc,
+                builder.create<mlir::arith::MulIOp>(
+                    nestedLoc, row, idxConst(builder, nestedLoc, depth)),
+                idxConst(builder, nestedLoc, j));
+            mlir::Value raw = builder.create<mlir::memref::LoadOp>(
+                nestedLoc, indices,
+                logicalIndices(builder, nestedLoc, linear, indices));
+            mlir::Value extent = extents[static_cast<size_t>(j)];
+            mlir::Value coordinateInRange;
+            mlir::Value coordinate;
+            if (indexUnsigned) {
+              mlir::Value extentRaw = builder.create<mlir::arith::IndexCastUIOp>(
+                  nestedLoc, indexElement, extent);
+              coordinateInRange = builder.create<mlir::arith::CmpIOp>(
+                  nestedLoc, mlir::arith::CmpIPredicate::ult, raw, extentRaw);
+              coordinate = builder.create<mlir::arith::IndexCastUIOp>(
+                  nestedLoc, builder.getIndexType(), raw);
+            } else {
+              mlir::Value extentRaw = builder.create<mlir::arith::IndexCastOp>(
+                  nestedLoc, indexElement, extent);
+              mlir::Value zeroRaw = builder.create<mlir::arith::ConstantOp>(
+                  nestedLoc, indexElement,
+                  builder.getIntegerAttr(indexElement, 0));
+              coordinateInRange = builder.create<mlir::arith::AndIOp>(
+                  nestedLoc,
+                  builder.create<mlir::arith::CmpIOp>(
+                      nestedLoc, mlir::arith::CmpIPredicate::sge, raw, zeroRaw),
+                  builder.create<mlir::arith::CmpIOp>(
+                      nestedLoc, mlir::arith::CmpIPredicate::slt, raw,
+                      extentRaw));
+              coordinate = builder.create<mlir::arith::IndexCastOp>(
+                  nestedLoc, builder.getIndexType(), raw);
+            }
+            inRange = builder.create<mlir::arith::AndIOp>(
+                nestedLoc, inRange, coordinateInRange);
+            destination = builder.create<mlir::arith::AddIOp>(
+                nestedLoc,
+                builder.create<mlir::arith::MulIOp>(nestedLoc, destination,
+                                                    extent),
+                coordinate);
+          }
+
+          auto guarded = builder.create<mlir::scf::IfOp>(
+              nestedLoc, mlir::TypeRange{}, inRange, false);
+          builder.setInsertionPointToStart(guarded.thenBlock());
+          {
+            mlir::Value updateFlat = builder.create<mlir::arith::AddIOp>(
+                nestedLoc,
+                builder.create<mlir::arith::MulIOp>(nestedLoc, row, positions),
+                position);
+            mlir::Value outputFlat = builder.create<mlir::arith::AddIOp>(
+                nestedLoc,
+                builder.create<mlir::arith::MulIOp>(nestedLoc, destination,
+                                                    positions),
+                position);
+            auto outputCoordinates =
+                logicalIndices(builder, nestedLoc, outputFlat, output);
+            // The update is cast to the output's type before it is applied (ADR 0128), then widened to the
+            // accumulator for floating storage.
+            mlir::Value update = loadAsScalar(
+                builder, nestedLoc, updates,
+                logicalIndices(builder, nestedLoc, updateFlat, updates),
+                storage, updateUnsigned, outputUnsigned);
+            mlir::Value current = builder.create<mlir::memref::LoadOp>(
+                nestedLoc, output, outputCoordinates);
+            if (!update) {
+              conversionFailed = true;
+            } else if (floatStorage) {
+              mlir::Value combined = emitSliceUpdateCombine(
+                  builder, nestedLoc, emitter->recipe,
+                  convertFloat(builder, nestedLoc, current, accType),
+                  convertFloat(builder, nestedLoc, update, accType), false);
+              if (!combined) {
+                conversionFailed = true;
+              } else {
+                storeFromAccumulator(builder, nestedLoc, combined, output,
+                                     outputCoordinates);
+              }
+            } else {
+              mlir::Value combined = emitSliceUpdateCombine(
+                  builder, nestedLoc, emitter->recipe, current, update,
+                  outputUnsigned);
+              if (!combined) {
+                conversionFailed = true;
+              } else {
+                builder.create<mlir::memref::StoreOp>(
+                    nestedLoc, combined, output, outputCoordinates);
+              }
+            }
+          }
+          builder.setInsertionPointAfter(guarded);
+          builder.create<mlir::scf::YieldOp>(nestedLoc);
+        });
+  }
+  if (conversionFailed) {
+    return op.emitOpError(
+        "the slice update's combine or update conversion has no lowering");
+  }
 
   rewriter.create<mlir::gpu::TerminatorOp>(loc);
   rewriter.eraseOp(op);
@@ -7132,19 +8454,7 @@ mlir::LogicalResult IndexedTadMovementToSpirv::matchAndRewrite(
   auto decompose = [&](mlir::OpBuilder& builder, mlir::Location nestedLoc,
                        mlir::Value linear, mlir::Value memref,
                        llvm::ArrayRef<int64_t> axes) {
-    mlir::SmallVector<mlir::Value> coordinates(axes.size());
-    mlir::Value remaining = linear;
-    for (int64_t index = static_cast<int64_t>(axes.size()) - 1;
-         index >= 0; --index) {
-      mlir::Value dimension = builder.create<mlir::memref::DimOp>(
-          nestedLoc, memref, axes[static_cast<size_t>(index)]);
-      coordinates[static_cast<size_t>(index)] =
-          builder.create<mlir::arith::RemUIOp>(
-              nestedLoc, remaining, dimension);
-      remaining = builder.create<mlir::arith::DivUIOp>(
-          nestedLoc, remaining, dimension);
-    }
-    return coordinates;
+    return logicalIndices(builder, nestedLoc, linear, memref, axes);
   };
 
   auto partitionAxes = [](int64_t rank, llvm::ArrayRef<int64_t> rawAxes,
@@ -7422,12 +8732,15 @@ mlir::LogicalResult IndexedTadMovementToSpirv::matchAndRewrite(
 //  Wave 1: SoftmaxToSpirv
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Row-wise softmax (last-dim reduce) using a three-pass serial algorithm:
-//   Pass 1: max reduction per row (numerically stable shift)
-//   Pass 2: exp-sum reduction per row
-//   Pass 3: normalize each element
-//
-// Input shape: [rows, dim] (2-D; higher ranks flattened by the emitter).
+// softmax and log_softmax along any axis (nd4j.axis; the last axis by default) of an array of any rank. One
+// invocation per row of the reduced shape: it walks the axis through the MemRef's own strides, so views, C and F
+// order and in-place operation (the output is the input) all work. Three passes per row, in the order and with the
+// non-finite policy of the native helper (helpers/cpu/softmax.cpp, softmax_row_safe):
+//   Pass 1: the maximum over the finite logits (0 for a row without one)
+//   Pass 2: the sum of exp(clamp(x - max, -88, 88)); a logit that is infinite or NaN stands in as clamp + max
+//   Pass 3: e / max(sum, 1e-6)
+// A fully masked row (every logit -inf) gets exp(-88) / 1e-6 ~ 6e-33, not the NaN of exp(-inf - -inf), as on CPU
+// and CUDA. log_softmax is (x - max) - log(sum): a -inf logit stays -inf, a fully masked row included.
 // Pattern guard: match the operation descriptor hash.
 
 mlir::LogicalResult SoftmaxToSpirv::matchAndRewrite(
@@ -7454,83 +8767,179 @@ mlir::LogicalResult SoftmaxToSpirv::matchAndRewrite(
   if (mlir::failed(typeContract)) return mlir::failure();
   mlir::FloatType elemTy = typeContract->accumulatorType;
 
-  if (inputs.empty() || outputs.empty()) {
+  if (inputs.size() != 1 || outputs.size() != 1) {
     return op.emitOpError("SoftmaxToSpirv: expected 1 input and 1 output");
   }
 
   mlir::Value X = inputs[0];
   mlir::Value Y = outputs[0];
 
-
-  // ── 4. Validate shape: exactly 2-D ───────────────────────────────────────
+  // ── 4. Validate shape and axis ───────────────────────────────────────────
   auto xType = llvm::dyn_cast<mlir::MemRefType>(X.getType());
-  if (!xType || xType.getRank() != 2) {
-    return op.emitOpError("SoftmaxToSpirv: expected 2-D input [rows, dim]");
+  auto yType = llvm::dyn_cast<mlir::MemRefType>(Y.getType());
+  if (!xType || !yType || xType.getRank() < 1 ||
+      yType.getRank() != xType.getRank()) {
+    return op.emitOpError(
+        "SoftmaxToSpirv: expected an input and an output of one rank >= 1");
   }
+  const int64_t rank = xType.getRank();
+  int64_t axis = rank - 1;
+  if (auto axisAttr = op->getAttrOfType<mlir::IntegerAttr>("nd4j.axis")) {
+    axis = axisAttr.getInt();
+  }
+  if (axis < 0 || axis >= rank) {
+    return op.emitOpError("SoftmaxToSpirv: the axis is outside the input");
+  }
+  auto storageType =
+      llvm::cast<mlir::FloatType>(typeContract->outputStorageTypes.front());
 
-  mlir::Value zeroIdx = idxConst(rewriter, loc, 0);
-  mlir::Value oneIdx  = idxConst(rewriter, loc, 1);
-  mlir::Value numRows = rewriter.create<mlir::memref::DimOp>(loc, X, 0);
-  mlir::Value numCols = rewriter.create<mlir::memref::DimOp>(loc, X, 1);
-
-  // Large negative float for max init.
-  mlir::Value negInf = floatConst(rewriter, loc, elemTy,
-                 -std::numeric_limits<double>::infinity());
-
-  // ── 5. One real Vulkan invocation per row ────────────────────────────────
-  auto launch = createGpuLaunch(rewriter, loc, numRows, oneIdx, oneIdx);
+  // ── 5. One real Vulkan invocation per row of the reduced shape ───────────
+  mlir::Value gridOne = idxConst(rewriter, loc, 1);
+  mlir::Value rows = idxConst(rewriter, loc, 1);
+  for (int64_t d = 0; d < rank; ++d) {
+    if (d == axis) continue;
+    rows = rewriter.create<mlir::arith::MulIOp>(
+        loc, rows, rewriter.create<mlir::memref::DimOp>(loc, X, d));
+  }
+  auto launch = createGpuLaunch(rewriter, loc, rows, gridOne, gridOne);
   mlir::Value row = launch.getBlockIds().x;
   rewriter.setInsertionPointToEnd(&launch.getBody().front());
 
-  auto maxLoop = emitReductionLoop(
-      rewriter, loc, zeroIdx, numCols, oneIdx, negInf,
-      [&](mlir::OpBuilder& kb, mlir::Location kloc,
-          mlir::Value column, mlir::Value acc) -> mlir::Value {
-        mlir::Value value = loadAsAccumulator(
-            kb, kloc, X, mlir::SmallVector<mlir::Value>{row, column}, elemTy);
-        return kb.create<mlir::arith::MaximumFOp>(kloc, acc, value);
-      });
-  mlir::Value rowMax = maxLoop.getResult(0);
+  // The kernel builds everything it uses from the MemRefs: no scalar becomes a kernel argument.
+  mlir::Value zeroIdx = idxConst(rewriter, loc, 0);
+  mlir::Value oneIdx  = idxConst(rewriter, loc, 1);
+  mlir::Value numCols = rewriter.create<mlir::memref::DimOp>(loc, X, axis);
 
-  mlir::Value initZero = floatConst(rewriter, loc, elemTy, 0.0);
-  auto sumLoop = emitReductionLoop(
-      rewriter, loc, zeroIdx, numCols, oneIdx, initZero,
+  // The row's coordinates along every other dimension, in row-major order of those dimensions.
+  mlir::SmallVector<mlir::Value> rowCoordinates(static_cast<size_t>(rank));
+  mlir::Value remaining = row;
+  for (int64_t d = rank - 1; d >= 0; --d) {
+    if (d == axis) continue;
+    mlir::Value extent = rewriter.create<mlir::memref::DimOp>(loc, X, d);
+    rowCoordinates[static_cast<size_t>(d)] =
+        rewriter.create<mlir::arith::RemUIOp>(loc, remaining, extent);
+    remaining = rewriter.create<mlir::arith::DivUIOp>(loc, remaining, extent);
+  }
+  auto coordinatesAt = [&](mlir::Value column) {
+    mlir::SmallVector<mlir::Value> coordinates = rowCoordinates;
+    coordinates[static_cast<size_t>(axis)] = column;
+    return coordinates;
+  };
+
+  // DataTypeUtils::max<AccT>(): the maximum's starting value, which stays when no logit is finite.
+  const double largest = elemTy.getWidth() == 64
+                             ? std::numeric_limits<double>::max()
+                             : static_cast<double>(std::numeric_limits<float>::max());
+  mlir::Value initialMax = floatConst(rewriter, loc, elemTy, -largest);
+  mlir::Value zero = floatConst(rewriter, loc, elemTy, 0.0);
+  mlir::Value infinity = floatConst(
+      rewriter, loc, elemTy, std::numeric_limits<double>::infinity());
+  mlir::Value clampMax = floatConst(rewriter, loc, elemTy, 88.0);
+  mlir::Value clampMin = floatConst(rewriter, loc, elemTy, -88.0);
+  // SOFTMAX_SUM_EPS = 1e-6f, taken in the accumulator's type.
+  mlir::Value sumFloor =
+      floatConst(rewriter, loc, elemTy, static_cast<double>(1.0e-6f));
+
+  // |v| < +inf: false for an infinity and for NaN.
+  auto isFinite = [&](mlir::OpBuilder& b, mlir::Location l, mlir::Value v) {
+    return b.create<mlir::arith::CmpFOp>(
+        l, mlir::arith::CmpFPredicate::OLT,
+        b.create<mlir::math::AbsFOp>(l, v), infinity);
+  };
+
+  auto maxLoop = emitReductionLoop(
+      rewriter, loc, zeroIdx, numCols, oneIdx, initialMax,
       [&](mlir::OpBuilder& kb, mlir::Location kloc,
           mlir::Value column, mlir::Value acc) -> mlir::Value {
         mlir::Value value = loadAsAccumulator(
-            kb, kloc, X, mlir::SmallVector<mlir::Value>{row, column}, elemTy);
-        mlir::Value shifted =
-            kb.create<mlir::arith::SubFOp>(kloc, value, rowMax);
-        mlir::Value exponential = emitExp(kb, kloc, elemTy, shifted);
-        return kb.create<mlir::arith::AddFOp>(kloc, acc, exponential);
+            kb, kloc, X, coordinatesAt(column), elemTy);
+        return kb.create<mlir::arith::SelectOp>(
+            kloc, isFinite(kb, kloc, value),
+            kb.create<mlir::arith::MaximumFOp>(kloc, acc, value), acc);
       });
-  mlir::Value inverseSum;
+  // A row without a finite logit shifts by 0.
+  mlir::Value rowMax = rewriter.create<mlir::arith::SelectOp>(
+      loc,
+      rewriter.create<mlir::arith::CmpFOp>(
+          loc, mlir::arith::CmpFPredicate::OEQ, maxLoop.getResult(0),
+          initialMax),
+      zero, maxLoop.getResult(0));
+
+  // exp(x - max) as the native helper computes it for one logit, rounded to the storage type as its output is
+  // before the normalizing division.
+  auto shiftedExponential = [&](mlir::OpBuilder& kb, mlir::Location kloc,
+                                mlir::Value value) -> mlir::Value {
+    mlir::Value difference;
+    if (logSoftmax) {
+      difference = kb.create<mlir::arith::SubFOp>(kloc, value, rowMax);
+    } else {
+      mlir::Value positive = kb.create<mlir::arith::OrIOp>(
+          kloc,
+          kb.create<mlir::arith::CmpFOp>(
+              kloc, mlir::arith::CmpFPredicate::OGT, value, zero),
+          kb.create<mlir::arith::CmpFOp>(
+              kloc, mlir::arith::CmpFPredicate::UNO, value, value));
+      mlir::Value substitute = kb.create<mlir::arith::SelectOp>(
+          kloc, positive,
+          kb.create<mlir::arith::AddFOp>(kloc, clampMax, rowMax),
+          kb.create<mlir::arith::AddFOp>(kloc, clampMin, rowMax));
+      mlir::Value effective = kb.create<mlir::arith::SelectOp>(
+          kloc, isFinite(kb, kloc, value), value, substitute);
+      difference = kb.create<mlir::arith::MaximumFOp>(
+          kloc, clampMin,
+          kb.create<mlir::arith::MinimumFOp>(
+              kloc, clampMax,
+              kb.create<mlir::arith::SubFOp>(kloc, effective, rowMax)));
+    }
+    return emitExp(kb, kloc, elemTy, difference);
+  };
+
+  auto sumLoop = emitReductionLoop(
+      rewriter, loc, zeroIdx, numCols, oneIdx, zero,
+      [&](mlir::OpBuilder& kb, mlir::Location kloc,
+          mlir::Value column, mlir::Value acc) -> mlir::Value {
+        mlir::Value value = loadAsAccumulator(
+            kb, kloc, X, coordinatesAt(column), elemTy);
+        return kb.create<mlir::arith::AddFOp>(
+            kloc, acc, shiftedExponential(kb, kloc, value));
+      });
+  mlir::Value sum = sumLoop.getResult(0);
+  mlir::Value flooredSum;
   mlir::Value logSum;
   if (logSoftmax) {
-    logSum = emitLog(rewriter, loc, elemTy, sumLoop.getResult(0));
+    logSum = emitLog(rewriter, loc, elemTy, sum);
   } else {
-    inverseSum = rewriter.create<mlir::arith::DivFOp>(
-        loc, floatConst(rewriter, loc, elemTy, 1.0), sumLoop.getResult(0));
+    // sd_max(sum, eps) = sum > eps ? sum : eps
+    flooredSum = rewriter.create<mlir::arith::SelectOp>(
+        loc,
+        rewriter.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OGT, sum, sumFloor),
+        sum, sumFloor);
   }
 
+  // Pass 3 reads x again (never y): with the output as the input, each element is read before it is written
+  // and no other row's elements are involved.
   rewriter.create<mlir::scf::ForOp>(
       loc, zeroIdx, numCols, oneIdx, mlir::ValueRange{},
       [&](mlir::OpBuilder& ab, mlir::Location aloc, mlir::Value column,
           mlir::ValueRange) {
         mlir::Value value = loadAsAccumulator(
-            ab, aloc, X,
-            mlir::SmallVector<mlir::Value>{row, column}, elemTy);
-        mlir::Value shifted =
-            ab.create<mlir::arith::SubFOp>(aloc, value, rowMax);
-        mlir::Value output =
-            logSoftmax
-                ? mlir::Value(ab.create<mlir::arith::SubFOp>(
-                      aloc, shifted, logSum))
-                : mlir::Value(ab.create<mlir::arith::MulFOp>(
-                      aloc, emitExp(ab, aloc, elemTy, shifted), inverseSum));
-        storeFromAccumulator(
-            ab, aloc, output, Y,
-            mlir::SmallVector<mlir::Value>{row, column});
+            ab, aloc, X, coordinatesAt(column), elemTy);
+        mlir::Value output;
+        if (logSoftmax) {
+          output = ab.create<mlir::arith::SubFOp>(
+              aloc, ab.create<mlir::arith::SubFOp>(aloc, value, rowMax),
+              logSum);
+        } else {
+          mlir::Value exponential = shiftedExponential(ab, aloc, value);
+          if (storageType != elemTy) {
+            exponential = convertFloat(
+                ab, aloc, convertFloat(ab, aloc, exponential, storageType),
+                elemTy);
+          }
+          output = ab.create<mlir::arith::DivFOp>(aloc, exponential, flooredSum);
+        }
+        storeFromAccumulator(ab, aloc, output, Y, coordinatesAt(column));
         ab.create<mlir::scf::YieldOp>(aloc);
       });
   rewriter.create<mlir::gpu::TerminatorOp>(loc);
@@ -7678,14 +9087,18 @@ mlir::LogicalResult LayerNormToSpirv::matchAndRewrite(
 //  Wave 2: GatherToSpirv
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Gather: output[i, d] = table[indices[i], d]
+// Gather along any axis A of a table of rank R, for indices of any rank:
+//   output[pre..., i..., post...] = table[pre..., indices[i...], post...]
+// with `pre` the table's dimensions before A and `post` those after it, or zero where the index lies outside
+// [0, table.shape[A]) (ADR 0128; the CPU and CUDA helpers write zeros for it too: the lowering used to clamp it to
+// the nearest slice, which returned another slice's data).
 //
-// Constraints enforced by opIsRecordable:
-//   - axis == 0 (only axis-0 gather is lowered here)
-//   - table rank == 2, indices rank == 1
+// The indices come from a MemRef (the second input: 32-bit integers, or 64-bit where the device has Int64) or,
+// with the integer-argument form, are frozen in the carrier as nd4j.gather_indices (the single index of a
+// squeezed gather, nd4j.gather_squeezed, removes the axis from the output).
 //
-// We emit a flat double loop: for i in [0, I) for d in [0, D).
-// The integer index is loaded from the indices buffer and cast to index type.
+// Array form: one invocation per output element. Integer-argument form: one invocation per output position
+// outside the gathered dimension, each copying every gathered slice with its index a constant.
 
 mlir::LogicalResult GatherToSpirv::matchAndRewrite(
     mlir::linalg::GenericOp op,
@@ -7700,88 +9113,199 @@ mlir::LogicalResult GatherToSpirv::matchAndRewrite(
     return mlir::failure();
   }
 
-  // Guard: axis must be 0
   auto axisAttr = op->getAttrOfType<mlir::IntegerAttr>(kAxisAttr);
-  if (!axisAttr || axisAttr.getInt() != 0) {
-    return mlir::failure();
-  }
+  if (!axisAttr) return mlir::failure();
+  const int64_t axis = axisAttr.getInt();
 
   mlir::ValueRange inputs  = op.getInputs();
   mlir::ValueRange outputs = op.getOutputs();
   if (mlir::failed(validateCopyTypes(op, inputs, outputs, true)))
     return mlir::failure();
 
-  if (inputs.size() != 2 || outputs.size() != 1) {
+  if ((inputs.size() != 1 && inputs.size() != 2) || outputs.size() != 1) {
     return op.emitOpError(
-        "GatherToSpirv: expected 2 inputs (table, indices) and 1 output");
+        "GatherToSpirv: expected a table, optional indices and one output");
   }
 
   mlir::Value table = inputs[0];
-  mlir::Value indices = inputs[1];
   mlir::Value out = outputs[0];
   auto tableType = llvm::dyn_cast<mlir::MemRefType>(table.getType());
-  auto indicesType = llvm::dyn_cast<mlir::MemRefType>(indices.getType());
   auto outputType = llvm::dyn_cast<mlir::MemRefType>(out.getType());
+  if (!tableType || !outputType || tableType.getRank() < 1 || axis < 0 ||
+      axis >= tableType.getRank()) {
+    return op.emitOpError("gather rank/axis metadata contract mismatch");
+  }
+  const int64_t tableRank = tableType.getRank();
+  const int64_t outputRank = outputType.getRank();
+  auto elementFloat =
+      llvm::dyn_cast<mlir::FloatType>(outputType.getElementType());
+  auto elementInteger =
+      llvm::dyn_cast<mlir::IntegerType>(outputType.getElementType());
+  if (!elementFloat &&
+      !(elementInteger &&
+        (elementInteger.getWidth() == 32 || elementInteger.getWidth() == 64))) {
+    return op.emitOpError("gather supports floating or 32/64-bit integer values");
+  }
+  // The value an index outside the axis gathers.
+  auto zeroValue = [&](mlir::OpBuilder& builder, mlir::Location where)
+      -> mlir::Value {
+    if (elementFloat) return floatConst(builder, where, elementFloat, 0.0);
+    return builder.create<mlir::arith::ConstantOp>(
+        where, elementInteger, builder.getIntegerAttr(elementInteger, 0));
+  };
+
+  // ── Integer-argument form ────────────────────────────────────────────────
+  if (inputs.size() == 1) {
+    auto gatherIndices =
+        op->getAttrOfType<mlir::DenseI64ArrayAttr>("nd4j.gather_indices");
+    auto squeezedAttr =
+        op->getAttrOfType<mlir::BoolAttr>("nd4j.gather_squeezed");
+    if (!gatherIndices || !squeezedAttr ||
+        gatherIndices.asArrayRef().empty() ||
+        mlir::ShapedType::isDynamic(tableType.getDimSize(axis))) {
+      return op.emitOpError("gather index-argument metadata contract mismatch");
+    }
+    const bool squeezed = squeezedAttr.getValue();
+    const llvm::ArrayRef<int64_t> gathered = gatherIndices.asArrayRef();
+    const int64_t gatheredCount = static_cast<int64_t>(gathered.size());
+    if (outputRank != (squeezed ? tableRank - 1 : tableRank) ||
+        (squeezed && gatheredCount != 1)) {
+      return op.emitOpError("gather index-argument rank contract mismatch");
+    }
+    const int64_t tableExtent = tableType.getDimSize(axis);
+
+    // One invocation per output position outside the gathered dimension.
+    mlir::Value gridOne = idxConst(rewriter, loc, 1);
+    mlir::Value positions = gridOne;
+    for (int64_t d = 0; d < outputRank; ++d) {
+      if (!squeezed && d == axis) continue;
+      positions = rewriter.create<mlir::arith::MulIOp>(
+          loc, positions, rewriter.create<mlir::memref::DimOp>(loc, out, d));
+    }
+    auto launch = createGpuLaunch(rewriter, loc, positions, gridOne, gridOne);
+    mlir::Value position = launch.getBlockIds().x;
+    rewriter.setInsertionPointToEnd(&launch.getBody().front());
+
+    // The position's coordinates along every table dimension but the gathered one (row-major over the output's
+    // dimensions that are not the gathered one). outer[t] belongs to table dimension t before the axis and t + 1
+    // after it: output dimension d is that dimension unless the axis was squeezed out, in which case the output
+    // dimensions are exactly the non-gathered ones in order.
+    mlir::SmallVector<mlir::Value> outer(
+        static_cast<size_t>(tableRank - 1));
+    mlir::Value remaining = position;
+    for (int64_t d = outputRank - 1; d >= 0; --d) {
+      if (!squeezed && d == axis) continue;
+      mlir::Value extent = rewriter.create<mlir::memref::DimOp>(loc, out, d);
+      const int64_t outerIndex = squeezed ? d : (d < axis ? d : d - 1);
+      outer[static_cast<size_t>(outerIndex)] =
+          rewriter.create<mlir::arith::RemUIOp>(loc, remaining, extent);
+      remaining = rewriter.create<mlir::arith::DivUIOp>(loc, remaining, extent);
+    }
+    auto coordinatesWith = [&](mlir::Value gatheredCoordinate) {
+      mlir::SmallVector<mlir::Value> coordinates;
+      coordinates.reserve(static_cast<size_t>(tableRank));
+      coordinates.append(outer.begin(), outer.begin() + axis);
+      if (gatheredCoordinate) coordinates.push_back(gatheredCoordinate);
+      coordinates.append(outer.begin() + axis, outer.end());
+      return coordinates;
+    };
+    for (int64_t j = 0; j < gatheredCount; ++j) {
+      const int64_t gatheredIndex = gathered[static_cast<size_t>(j)];
+      mlir::SmallVector<mlir::Value> outputCoordinates =
+          coordinatesWith(squeezed ? mlir::Value{}
+                                   : idxConst(rewriter, loc, j));
+      mlir::Value value;
+      if (gatheredIndex < 0 || gatheredIndex >= tableExtent) {
+        value = zeroValue(rewriter, loc);
+      } else {
+        mlir::SmallVector<mlir::Value> tableCoordinates =
+            coordinatesWith(idxConst(rewriter, loc, gatheredIndex));
+        value = rewriter.create<mlir::memref::LoadOp>(loc, table,
+                                                      tableCoordinates);
+      }
+      rewriter.create<mlir::memref::StoreOp>(loc, value, out,
+                                             outputCoordinates);
+    }
+    rewriter.create<mlir::gpu::TerminatorOp>(loc);
+    rewriter.eraseOp(op);
+    return mlir::success();
+  }
+
+  // ── Indices array form ───────────────────────────────────────────────────
+  mlir::Value indices = inputs[1];
+  auto indicesType = llvm::dyn_cast<mlir::MemRefType>(indices.getType());
   auto indexType = indicesType
                        ? llvm::dyn_cast<mlir::IntegerType>(
                              indicesType.getElementType())
                        : mlir::IntegerType{};
   auto unsignedAttr =
       op->getAttrOfType<mlir::BoolAttr>("nd4j.index_unsigned");
-  if (!tableType || !indicesType || !outputType || !indexType ||
-      indexType.getWidth() != 32 || indicesType.getRank() != 1 ||
-      tableType.getRank() < 1 ||
-      outputType.getRank() != tableType.getRank() || !unsignedAttr) {
+  if (!indicesType || !indexType ||
+      (indexType.getWidth() != 32 && indexType.getWidth() != 64) ||
+      !unsignedAttr || outputRank != tableRank + indicesType.getRank() - 1) {
     return op.emitOpError("gather rank/index metadata contract mismatch");
   }
-  mlir::Value oneIdx = idxConst(rewriter, loc, 1);
-  mlir::Value totalN = oneIdx;
-  for (int64_t d = 0; d < outputType.getRank(); ++d) {
+  const bool indexUnsigned = unsignedAttr.getValue();
+  const int64_t indicesRank = indicesType.getRank();
+
+  mlir::Value gridOne = idxConst(rewriter, loc, 1);
+  mlir::Value totalN = gridOne;
+  for (int64_t d = 0; d < outputRank; ++d) {
     totalN = rewriter.create<mlir::arith::MulIOp>(
         loc, totalN, rewriter.create<mlir::memref::DimOp>(loc, out, d));
   }
-  auto launch = createGpuLaunch(rewriter, loc, totalN, oneIdx, oneIdx);
+  auto launch = createGpuLaunch(rewriter, loc, totalN, gridOne, gridOne);
   mlir::Value linearIndex = launch.getBlockIds().x;
   rewriter.setInsertionPointToEnd(&launch.getBody().front());
   auto outputIndices = logicalIndices(rewriter, loc, linearIndex, out);
-  mlir::Value outputRow = outputIndices.front();
+
+  // The index of this output element: indices[outputIndices[axis : axis + indicesRank]].
+  mlir::SmallVector<mlir::Value> indexCoordinates(
+      outputIndices.begin() + axis,
+      outputIndices.begin() + axis + indicesRank);
   mlir::Value rawIndex = rewriter.create<mlir::memref::LoadOp>(
-      loc, indices, mlir::SmallVector<mlir::Value>{outputRow});
-  mlir::Value zeroIndexValue = rewriter.create<mlir::arith::ConstantIntOp>(
-      loc, 0, indexType.getWidth());
-  mlir::Value nonnegative = rawIndex;
-  if (!unsignedAttr.getValue()) {
-    nonnegative = rewriter.create<mlir::arith::SelectOp>(
+      loc, indices, indexCoordinates);
+  // The comparison runs in the indices' own width: narrowing a 64-bit index first could fold an out-of-range
+  // value back into the axis.
+  mlir::Value extent = rewriter.create<mlir::memref::DimOp>(loc, table, axis);
+  mlir::Value zeroRaw = rewriter.create<mlir::arith::ConstantOp>(
+      loc, indexType, rewriter.getIntegerAttr(indexType, 0));
+  mlir::Value inRange;
+  mlir::Value tableIndex;
+  if (indexUnsigned) {
+    mlir::Value extentRaw = rewriter.create<mlir::arith::IndexCastUIOp>(
+        loc, indexType, extent);
+    inRange = rewriter.create<mlir::arith::CmpIOp>(
+        loc, mlir::arith::CmpIPredicate::ult, rawIndex, extentRaw);
+    tableIndex = rewriter.create<mlir::arith::IndexCastUIOp>(
+        loc, rewriter.getIndexType(),
+        rewriter.create<mlir::arith::SelectOp>(loc, inRange, rawIndex,
+                                               zeroRaw));
+  } else {
+    mlir::Value extentRaw = rewriter.create<mlir::arith::IndexCastOp>(
+        loc, indexType, extent);
+    inRange = rewriter.create<mlir::arith::AndIOp>(
         loc,
         rewriter.create<mlir::arith::CmpIOp>(
-            loc, mlir::arith::CmpIPredicate::slt, rawIndex, zeroIndexValue),
-        zeroIndexValue, rawIndex);
+            loc, mlir::arith::CmpIPredicate::sge, rawIndex, zeroRaw),
+        rewriter.create<mlir::arith::CmpIOp>(
+            loc, mlir::arith::CmpIPredicate::slt, rawIndex, extentRaw));
+    tableIndex = rewriter.create<mlir::arith::IndexCastOp>(
+        loc, rewriter.getIndexType(),
+        rewriter.create<mlir::arith::SelectOp>(loc, inRange, rawIndex,
+                                               zeroRaw));
   }
-  mlir::Value tableRows =
-      rewriter.create<mlir::memref::DimOp>(loc, table, 0);
-  mlir::Value lastTableRow = rewriter.create<mlir::arith::SubIOp>(
-      loc, tableRows, oneIdx);
-  mlir::Value lastTableRowValue = rewriter.create<mlir::arith::IndexCastOp>(
-      loc, rawIndex.getType(), lastTableRow);
-  mlir::Value bounded = rewriter.create<mlir::arith::SelectOp>(
-      loc,
-      rewriter.create<mlir::arith::CmpIOp>(
-          loc,
-          unsignedAttr.getValue() ? mlir::arith::CmpIPredicate::ugt
-                                  : mlir::arith::CmpIPredicate::sgt,
-          nonnegative,
-          lastTableRowValue),
-      lastTableRowValue, nonnegative);
-  mlir::Value tableRow = rewriter.create<mlir::arith::IndexCastOp>(
-      loc, rewriter.getIndexType(), bounded);
   mlir::SmallVector<mlir::Value> sourceIndices;
-  sourceIndices.reserve(static_cast<size_t>(tableType.getRank()));
-  sourceIndices.push_back(tableRow);
-  sourceIndices.append(outputIndices.begin() + 1, outputIndices.end());
-  mlir::Value value = rewriter.create<mlir::memref::LoadOp>(
+  sourceIndices.reserve(static_cast<size_t>(tableRank));
+  sourceIndices.append(outputIndices.begin(), outputIndices.begin() + axis);
+  sourceIndices.push_back(tableIndex);
+  sourceIndices.append(outputIndices.begin() + axis + indicesRank,
+                       outputIndices.end());
+  mlir::Value gatheredValue = rewriter.create<mlir::memref::LoadOp>(
       loc, table, sourceIndices);
-  rewriter.create<mlir::memref::StoreOp>(
-      loc, value, out, outputIndices);
+  mlir::Value value = rewriter.create<mlir::arith::SelectOp>(
+      loc, inRange, gatheredValue, zeroValue(rewriter, loc));
+  rewriter.create<mlir::memref::StoreOp>(loc, value, out, outputIndices);
   rewriter.create<mlir::gpu::TerminatorOp>(loc);
 
   rewriter.eraseOp(op);
@@ -8186,7 +9710,8 @@ static mlir::LogicalResult lowerContractMovement(
 
       const bool structuralShapeCopy =
           usesStructuralShapeCopySchedule(emitter);
-      const bool reshapeCopy = usesReshapeCopySchedule(emitter);
+      const bool reshapeCopy = usesReshapeCopySchedule(emitter) ||
+                               usesTrailingOrderReshapeCopySchedule(emitter);
       const bool validInputCount =
           structuralShapeCopy ? inputs.size() == 2
                               : (reshapeCopy ? (inputs.size() == 1 ||
@@ -8399,6 +9924,7 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
   if (!constantFill &&
       (usesStructuredComputeSchedule(*emitter) ||
        usesIndexedAccumulationSchedule(*emitter) ||
+       usesIndexedSliceUpdateSchedule(*emitter) ||
        usesIndexedTadMovementSchedule(*emitter) ||
        usesIndexedLookupSchedule(*emitter) ||
        usesVariadicAxisConcatSchedule(*emitter) ||
@@ -8559,416 +10085,799 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
       mlir::Value flat = launchResult.first;
       auto outputIndices = std::move(launchResult.second);
       auto i32 = rewriter.getI32Type();
-      auto i32Constant = [&](uint32_t bits) -> mlir::Value {
+      auto i32Constant = [&](mlir::OpBuilder& b, uint32_t bits) -> mlir::Value {
         auto value = static_cast<int64_t>(static_cast<int32_t>(bits));
-        return rewriter.create<mlir::arith::ConstantOp>(
-            loc, i32, rewriter.getIntegerAttr(i32, value));
+        return b.create<mlir::arith::ConstantOp>(
+            loc, i32, b.getIntegerAttr(i32, value));
       };
-
-      mlir::Value index = rewriter.create<mlir::arith::IndexCastUIOp>(
-          loc, i32, flat);
       auto stateWord = [&](size_t word) -> mlir::Value {
         mlir::SmallVector<mlir::Value> wordIndex{
             idxConst(rewriter, loc, static_cast<int64_t>(word))};
         return rewriter.create<mlir::memref::LoadOp>(loc, inputs.front(),
                                                       wordIndex);
       };
-      // RandomGenerator::xoroshiro32: word 0 of the Philox4x32-10 block whose
-      // key is the root state and whose counter is (index, node state). A
-      // flat index fits 32 bits here, so the counter's index high word is 0.
-      mlir::Value counter[4] = {index, i32Constant(0u),
-                                stateWord(kVulkanRandomNodeLowWord),
-                                stateWord(kVulkanRandomNodeHighWord)};
-      mlir::Value key0 = stateWord(kVulkanRandomRootLowWord);
-      mlir::Value key1 = stateWord(kVulkanRandomRootHighWord);
-      auto xorOf = [&](mlir::Value a, mlir::Value b) -> mlir::Value {
-        return rewriter.create<mlir::arith::XOrIOp>(loc, a, b);
-      };
-      for (int pass = 0; pass < 10; ++pass) {
-        if (pass > 0) {
-          key0 = rewriter.create<mlir::arith::AddIOp>(loc, key0,
-                                                      i32Constant(0x9E3779B9u));
-          key1 = rewriter.create<mlir::arith::AddIOp>(loc, key1,
-                                                      i32Constant(0xBB67AE85u));
+      const mlir::Value rootLow = stateWord(kVulkanRandomRootLowWord);
+      const mlir::Value rootHigh = stateWord(kVulkanRandomRootHighWord);
+      const mlir::Value nodeLow = stateWord(kVulkanRandomNodeLowWord);
+      const mlir::Value nodeHigh = stateWord(kVulkanRandomNodeHighWord);
+
+      // RandomGenerator::relativeT<T>(index): the Philox4x32-10 block whose key
+      // is the root state and whose counter is (index, node state). The index
+      // is a pair of 32-bit words, so no draw needs the Int64 capability.
+      auto uniformAt = [&](mlir::OpBuilder& b, mlir::Value indexLow,
+                           mlir::Value indexHigh) -> mlir::Value {
+        mlir::Value counter[4] = {indexLow, indexHigh, nodeLow, nodeHigh};
+        mlir::Value key0 = rootLow;
+        mlir::Value key1 = rootHigh;
+        auto xorOf = [&](mlir::Value a, mlir::Value c) -> mlir::Value {
+          return b.create<mlir::arith::XOrIOp>(loc, a, c);
+        };
+        for (int pass = 0; pass < 10; ++pass) {
+          if (pass > 0) {
+            key0 = b.create<mlir::arith::AddIOp>(loc, key0,
+                                                 i32Constant(b, 0x9E3779B9u));
+            key1 = b.create<mlir::arith::AddIOp>(loc, key1,
+                                                 i32Constant(b, 0xBB67AE85u));
+          }
+          auto product0 = b.create<mlir::arith::MulUIExtendedOp>(
+              loc, i32Constant(b, 0xD2511F53u), counter[0]);
+          auto product1 = b.create<mlir::arith::MulUIExtendedOp>(
+              loc, i32Constant(b, 0xCD9E8D57u), counter[2]);
+          mlir::Value next0 =
+              xorOf(xorOf(product1.getHigh(), counter[1]), key0);
+          mlir::Value next2 =
+              xorOf(xorOf(product0.getHigh(), counter[3]), key1);
+          counter[1] = product1.getLow();
+          counter[3] = product0.getLow();
+          counter[0] = next0;
+          counter[2] = next2;
         }
-        auto product0 = rewriter.create<mlir::arith::MulUIExtendedOp>(
-            loc, i32Constant(0xD2511F53u), counter[0]);
-        auto product1 = rewriter.create<mlir::arith::MulUIExtendedOp>(
-            loc, i32Constant(0xCD9E8D57u), counter[2]);
-        mlir::Value next0 =
-            xorOf(xorOf(product1.getHigh(), counter[1]), key0);
-        mlir::Value next2 =
-            xorOf(xorOf(product0.getHigh(), counter[3]), key1);
-        counter[1] = product1.getLow();
-        counter[3] = product0.getLow();
-        counter[0] = next0;
-        counter[2] = next2;
-      }
-      mlir::Value unitAccumulator;
-      if (accumulator.getWidth() == 64) {
-        // RandomGenerator::relativeT<double>: the top 52 bits of words 1
-        // and 0, as (w1 >> 12) * 2^-20 + ((w1 << 20) | (w0 >> 12)) * 2^-52.
-        // Both terms and their sum are exact in f64, so this equals the
-        // host's bit assembly without the Int64 capability.
-        mlir::Value high = rewriter.create<mlir::arith::ShRUIOp>(
-            loc, counter[1], i32Constant(12u));
-        mlir::Value low = rewriter.create<mlir::arith::OrIOp>(
-            loc,
-            rewriter.create<mlir::arith::ShLIOp>(loc, counter[1],
-                                                 i32Constant(20u)),
-            rewriter.create<mlir::arith::ShRUIOp>(loc, counter[0],
-                                                  i32Constant(12u)));
-        unitAccumulator = rewriter.create<mlir::arith::AddFOp>(
-            loc,
-            rewriter.create<mlir::arith::MulFOp>(
-                loc,
-                rewriter.create<mlir::arith::UIToFPOp>(loc, accumulator, high),
-                floatConst(rewriter, loc, accumulator, std::ldexp(1.0, -20))),
-            rewriter.create<mlir::arith::MulFOp>(
-                loc,
-                rewriter.create<mlir::arith::UIToFPOp>(loc, accumulator, low),
-                floatConst(rewriter, loc, accumulator, std::ldexp(1.0, -52))));
-      } else {
-        // relativeT<float>: the top 23 bits of word 0.
-        mlir::Value unitBits = rewriter.create<mlir::arith::OrIOp>(
-            loc, i32Constant(0x3f800000u),
-            rewriter.create<mlir::arith::ShRUIOp>(
-                loc, counter[0], i32Constant(9u)));
-        auto f32 = rewriter.getF32Type();
-        mlir::Value unit = rewriter.create<mlir::arith::SubFOp>(
-            loc,
-            rewriter.create<mlir::arith::BitcastOp>(loc, f32, unitBits),
-            scalarConstant(rewriter, loc, f32, 1.0));
-        unitAccumulator = convertFloat(rewriter, loc, unit, accumulator);
-      }
-      if (genericRandom) {
-        auto randomArgument = [&](int ordinal, double fallback) {
-          auto attr = op->getAttrOfType<mlir::FloatAttr>(
-              "nd4j.random_arg" + std::to_string(ordinal));
-          return attr && attr.getType() == accumulator
-                     ? mlir::Value(rewriter.create<mlir::arith::ConstantOp>(
-                           loc, accumulator, attr))
-                     : floatConst(rewriter, loc, accumulator, fallback);
-        };
-        auto loadRandomInput = [&](int ordinal) {
-          if (inputs.size() <= static_cast<size_t>(ordinal + 1)) {
-            return unitAccumulator;
-          }
-          mlir::Value source = inputs[static_cast<size_t>(ordinal + 1)];
-          auto sourceType =
-              llvm::cast<mlir::MemRefType>(source.getType());
-          mlir::SmallVector<mlir::Value> sourceIndices;
-          bool sameShape = sourceType.getRank() == outputType.getRank();
-          for (int64_t d = 0; sameShape && d < outputType.getRank(); ++d) {
-            if (sourceType.isDynamicDim(d) || outputType.isDynamicDim(d)) {
-              continue;
-            }
-            sameShape = sourceType.getDimSize(d) == outputType.getDimSize(d);
-          }
-          if (sameShape) {
-            sourceIndices = logicalIndices(rewriter, loc, flat, source);
-          } else {
-            sourceIndices.assign(static_cast<size_t>(sourceType.getRank()),
-                                 idxConst(rewriter, loc, 0));
-          }
-          return loadAsAccumulator(rewriter, loc, source, sourceIndices,
-                                   accumulator);
-        };
-        auto normalValue = [&]() {
-          auto safeUnit = rewriter.create<mlir::arith::MaximumFOp>(
-              loc, unitAccumulator,
-              floatConst(rewriter, loc, accumulator, 1.0e-5));
-          auto radius = rewriter.create<mlir::math::SqrtOp>(
+        if (accumulator.getWidth() == 64) {
+          // relativeT<double>: the top 52 bits of words 1 and 0, as
+          // (w1 >> 12) * 2^-20 + ((w1 << 20) | (w0 >> 12)) * 2^-52. Both terms
+          // and their sum are exact in f64, so this equals the host's bit
+          // assembly without the Int64 capability.
+          mlir::Value high = b.create<mlir::arith::ShRUIOp>(
+              loc, counter[1], i32Constant(b, 12u));
+          mlir::Value low = b.create<mlir::arith::OrIOp>(
               loc,
-              rewriter.create<mlir::arith::MulFOp>(
-                  loc, floatConst(rewriter, loc, accumulator, -2.0),
-                  emitLog(rewriter, loc, accumulator, safeUnit)));
-          auto angle = rewriter.create<mlir::arith::MulFOp>(
-              loc, floatConst(rewriter, loc, accumulator, 6.283185307179586),
-              unitAccumulator);
-          return rewriter.create<mlir::arith::MulFOp>(
-              loc, radius,
-              rewriter.create<mlir::math::CosOp>(loc, angle));
-        };
+              b.create<mlir::arith::ShLIOp>(loc, counter[1],
+                                            i32Constant(b, 20u)),
+              b.create<mlir::arith::ShRUIOp>(loc, counter[0],
+                                             i32Constant(b, 12u)));
+          return b.create<mlir::arith::AddFOp>(
+              loc,
+              b.create<mlir::arith::MulFOp>(
+                  loc, b.create<mlir::arith::UIToFPOp>(loc, accumulator, high),
+                  floatConst(b, loc, accumulator, std::ldexp(1.0, -20))),
+              b.create<mlir::arith::MulFOp>(
+                  loc, b.create<mlir::arith::UIToFPOp>(loc, accumulator, low),
+                  floatConst(b, loc, accumulator, std::ldexp(1.0, -52))));
+        }
+        // relativeT<float>: the top 23 bits of word 0.
+        mlir::Value unitBits = b.create<mlir::arith::OrIOp>(
+            loc, i32Constant(b, 0x3f800000u),
+            b.create<mlir::arith::ShRUIOp>(loc, counter[0],
+                                           i32Constant(b, 9u)));
+        auto f32 = b.getF32Type();
+        mlir::Value unit = b.create<mlir::arith::SubFOp>(
+            loc, b.create<mlir::arith::BitcastOp>(loc, f32, unitBits),
+            scalarConstant(b, loc, f32, 1.0));
+        return convertFloat(b, loc, unit, accumulator);
+      };
+
+      mlir::Value index =
+          rewriter.create<mlir::arith::IndexCastUIOp>(loc, i32, flat);
+      const mlir::Value zero32 = i32Constant(rewriter, 0u);
+      mlir::Value unitAccumulator = uniformAt(rewriter, index, zero32);
+      if (genericRandom) {
         auto opNumberAttr = op->getAttrOfType<mlir::IntegerAttr>(
             "nd4j.legacy_op_num");
         const int opNumber =
             opNumberAttr ? static_cast<int>(opNumberAttr.getInt()) : -1;
-        mlir::Value value = unitAccumulator;
+        const auto operands = vulkanLegacyRandomOperands(opNumber);
+        if (!operands.has_value() || opNumber == 0) {
+          return op.emitOpError("unsupported legacy random op ") << opNumber;
+        }
+        // The native op's extra arguments (random_ops.h,
+        // special_random_ops.h), each as the op's type holds it.
+        std::vector<double> arguments;
+        for (int i = 0; i < operands->extraArguments; ++i) {
+          auto attr = op->getAttrOfType<mlir::FloatAttr>(
+              "nd4j.random_arg" + std::to_string(i));
+          if (!attr) {
+            return op.emitOpError("legacy random op ")
+                   << opNumber << " needs extra argument " << i;
+          }
+          arguments.push_back(attr.getValueAsDouble());
+        }
+        auto argument = [&](mlir::OpBuilder& b, int ordinal) -> mlir::Value {
+          return floatConst(b, loc, accumulator,
+                            arguments[static_cast<size_t>(ordinal)]);
+        };
+        // The inputs the executors pass (vulkanLegacyRandomOperands): x when
+        // the op reads it, then y when it reads that, each only if given: y
+        // alone for the special samplers, x then y for ProbablisticMerge and
+        // Choice (both required) and for GammaDistribution (both optional).
+        // An op with optional inputs runs without them when none is given.
+        const size_t givenInputs = inputs.size() - 1;
+        const size_t readableInputs = (operands->readsX ? 1u : 0u) +
+                                      (operands->readsY ? 1u : 0u);
+        if (givenInputs > readableInputs ||
+            givenInputs < static_cast<size_t>(operands->requiredInputs)) {
+          return op.emitOpError("legacy random op ")
+                 << opNumber << " takes " << operands->requiredInputs << " to "
+                 << readableInputs << " inputs, got " << givenInputs;
+        }
+        mlir::Value x;
+        mlir::Value y;
+        size_t nextInput = 1;
+        if (operands->readsX && nextInput <= givenInputs) x = inputs[nextInput++];
+        if (operands->readsY && nextInput <= givenInputs) y = inputs[nextInput++];
+        auto loadAt = [&](mlir::OpBuilder& b, mlir::Value source,
+                          mlir::Value linear) -> mlir::Value {
+          return loadAsAccumulator(b, loc, source,
+                                   logicalIndices(b, loc, linear, source),
+                                   accumulator);
+        };
+        auto select = [&](mlir::OpBuilder& b, mlir::Value condition,
+                          mlir::Value onTrue, mlir::Value onFalse) {
+          return mlir::Value(b.create<mlir::arith::SelectOp>(
+              loc, condition, onTrue, onFalse));
+        };
+        auto compare = [&](mlir::OpBuilder& b, mlir::arith::CmpFPredicate p,
+                           mlir::Value lhs, mlir::Value rhs) {
+          return mlir::Value(b.create<mlir::arith::CmpFOp>(loc, p, lhs, rhs));
+        };
+        auto add = [&](mlir::OpBuilder& b, mlir::Value lhs, mlir::Value rhs) {
+          return mlir::Value(b.create<mlir::arith::AddFOp>(loc, lhs, rhs));
+        };
+        auto subtract = [&](mlir::OpBuilder& b, mlir::Value lhs,
+                            mlir::Value rhs) {
+          return mlir::Value(b.create<mlir::arith::SubFOp>(loc, lhs, rhs));
+        };
+        auto multiply = [&](mlir::OpBuilder& b, mlir::Value lhs,
+                            mlir::Value rhs) {
+          return mlir::Value(b.create<mlir::arith::MulFOp>(loc, lhs, rhs));
+        };
+        // relativeT<T>(index, from, to): from + u (to - from), in T.
+        auto range = [&](mlir::OpBuilder& b, mlir::Value unit, double from,
+                         double to) {
+          mlir::Value low = floatConst(b, loc, accumulator, from);
+          return add(b, low,
+                     multiply(b, unit,
+                              subtract(b, floatConst(b, loc, accumulator, to),
+                                       low)));
+        };
+        // a * m + c for 32-bit unsigned words, as a 64-bit (low, high) index.
+        auto mulAdd = [&](mlir::OpBuilder& b, mlir::Value a, mlir::Value m,
+                          mlir::Value c) -> std::pair<mlir::Value, mlir::Value> {
+          auto product = b.create<mlir::arith::MulUIExtendedOp>(loc, a, m);
+          auto sum =
+              b.create<mlir::arith::AddUIExtendedOp>(loc, product.getLow(), c);
+          mlir::Value carry =
+              b.create<mlir::arith::ExtUIOp>(loc, i32, sum.getOverflow());
+          return {sum.getSum(),
+                  b.create<mlir::arith::AddIOp>(loc, product.getHigh(), carry)};
+        };
+        mlir::Value total = idxConst(rewriter, loc, 1);
+        for (int64_t d = 0; d < outputType.getRank(); ++d) {
+          total = rewriter.create<mlir::arith::MulIOp>(
+              loc, total, rewriter.create<mlir::memref::DimOp>(loc, output, d));
+        }
+        mlir::Value total32 =
+            rewriter.create<mlir::arith::IndexCastUIOp>(loc, i32, total);
+        mlir::Value zero = floatConst(rewriter, loc, accumulator, 0.0);
+        mlir::Value one = floatConst(rewriter, loc, accumulator, 1.0);
+        // The samplers' lower bound for the first Box-Muller draw:
+        // relativeT(index, static_cast<T>(1e-5), 1).
+        const double boxMullerEpsilon = 1e-5;
+        // DataTypeUtils::min_positive<T>().
+        const bool wide = accumulator.getWidth() == 64;
+        const double minPositive = wide
+                                       ? std::numeric_limits<double>::min()
+                                       : std::numeric_limits<float>::min();
+        auto requireX = [&]() -> mlir::LogicalResult {
+          if (x) return mlir::success();
+          return op.emitOpError("legacy random op ")
+                 << opNumber << " needs its input x";
+        };
+        // For a 16-bit output the host's draw relativeT<T>(index) is T(relativeT<float>(index)), and the ops that
+        // compare the draw (dropout, merge, choice, Bernoulli, binomial) compare that rounded value: round a draw
+        // to the output's storage type and back. For f32 and f64 outputs this is the identity (no operation).
+        auto storedDraw = [&](mlir::OpBuilder& b, mlir::Value draw) -> mlir::Value {
+          return convertFloat(b, loc, convertFloat(b, loc, draw, outputFloat),
+                              accumulator);
+        };
+        const mlir::Value unitStored = storedDraw(rewriter, unitAccumulator);
+
+        mlir::Value value;
         switch (opNumber) {
-          case 1: {  // DropOut: retain with probability p.
-            auto inputValue = loadRandomInput(0);
-            auto probability = randomArgument(0, 1.0);
-            auto keep = rewriter.create<mlir::arith::CmpFOp>(
-                loc, mlir::arith::CmpFPredicate::OLT, unitAccumulator,
-                probability);
-            value = rewriter.create<mlir::arith::MulFOp>(
-                loc, inputValue,
-                rewriter.create<mlir::arith::SelectOp>(
-                    loc, keep, floatConst(rewriter, loc, accumulator, 1.0),
-                    floatConst(rewriter, loc, accumulator, 0.0)));
+          case 1: {  // DropOut: 0 where the draw reaches p, else x.
+            if (mlir::failed(requireX())) return mlir::failure();
+            value = select(rewriter,
+                           compare(rewriter, mlir::arith::CmpFPredicate::OGE,
+                                   unitStored, argument(rewriter, 0)),
+                           zero, loadAt(rewriter, x, flat));
             break;
           }
-          case 2: {  // Inverted dropout.
-            auto inputValue = loadRandomInput(0);
-            auto probability = randomArgument(0, 1.0);
-            auto keep = rewriter.create<mlir::arith::CmpFOp>(
-                loc, mlir::arith::CmpFPredicate::OLT, unitAccumulator,
-                probability);
-            auto scale = rewriter.create<mlir::arith::DivFOp>(
-                loc, rewriter.create<mlir::arith::SelectOp>(
-                         loc, keep,
-                         floatConst(rewriter, loc, accumulator, 1.0),
-                         floatConst(rewriter, loc, accumulator, 0.0)),
-                rewriter.create<mlir::arith::MaximumFOp>(
-                    loc, probability,
-                    floatConst(rewriter, loc, accumulator, 1.0e-5)));
-            value = rewriter.create<mlir::arith::MulFOp>(loc, inputValue, scale);
+          case 2: {  // DropOutInverted: 0 where the draw reaches p, else x / p.
+            if (mlir::failed(requireX())) return mlir::failure();
+            mlir::Value p = argument(rewriter, 0);
+            value = select(rewriter,
+                           compare(rewriter, mlir::arith::CmpFPredicate::OGE,
+                                   unitStored, p),
+                           zero,
+                           emitRoundedDivide(rewriter, loc,
+                                             loadAt(rewriter, x, flat), p));
             break;
           }
-          case 3: {  // Probabilistic merge of two input tensors.
-            auto first = loadRandomInput(0);
-            auto second = loadRandomInput(1);
-            auto chooseFirst = rewriter.create<mlir::arith::CmpFOp>(
-                loc, mlir::arith::CmpFPredicate::OLT, unitAccumulator,
-                randomArgument(0, 0.5));
-            value = rewriter.create<mlir::arith::SelectOp>(
-                loc, chooseFirst, first, second);
+          case 3: {  // ProbablisticMerge: y where the draw is at most the threshold, else x.
+            value = select(rewriter,
+                           compare(rewriter, mlir::arith::CmpFPredicate::OLE,
+                                   unitStored, argument(rewriter, 0)),
+                           loadAt(rewriter, y, flat), loadAt(rewriter, x, flat));
             break;
           }
-          case 4: {  // Linspace.
-            auto start = loadRandomInput(0);
-            auto finish = loadRandomInput(1);
-            auto count = loadRandomInput(2);
-            auto total = one;
-            for (int64_t d = 0; d < outputType.getRank(); ++d) {
-              total = rewriter.create<mlir::arith::MulIOp>(
-                  loc, total, rewriter.create<mlir::memref::DimOp>(
-                                  loc, output, d));
+          case 4: {  // Linspace: from + i step, or from (1 - s) + s to with s = i / (n - 1) when step is 0.
+            mlir::Value from = argument(rewriter, 0);
+            mlir::Value position =
+                convertIndexToFloat(rewriter, loc, flat, accumulator);
+            if (arguments[2] == 0.0) {
+              mlir::Value denominator = subtract(
+                  rewriter,
+                  convertIndexToFloat(rewriter, loc, total, accumulator),
+                  one);
+              // The host divides exactly and the shader's division may miss the correctly rounded quotient by an ulp
+              // or two, which s = i / (n - 1) carries into from (1 - s) + s to: emitRoundedDivide's one residual
+              // step, the residual taken exactly with a fused multiply-add, gives the host's quotient.
+              mlir::Value fraction =
+                  emitRoundedDivide(rewriter, loc, position, denominator);
+              value = add(rewriter,
+                          multiply(rewriter, from,
+                                   subtract(rewriter, one, fraction)),
+                          multiply(rewriter, fraction, argument(rewriter, 1)));
+            } else {
+              value = add(rewriter, from,
+                          multiply(rewriter, position, argument(rewriter, 2)));
             }
-            auto position = convertIndexToFloat(
-                rewriter, loc, flat, accumulator);
-            auto denominator = convertIndexToFloat(
-                rewriter, loc,
-                rewriter.create<mlir::arith::SubIOp>(
-                    loc, total, idxConst(rewriter, loc, 1)), accumulator);
-            auto fraction = rewriter.create<mlir::arith::SelectOp>(
-                loc,
-                rewriter.create<mlir::arith::CmpFOp>(
-                    loc, mlir::arith::CmpFPredicate::OEQ, count,
-                    floatConst(rewriter, loc, accumulator, 0.0)),
-                rewriter.create<mlir::arith::DivFOp>(
-                    loc, position,
-                    rewriter.create<mlir::arith::MaximumFOp>(
-                        loc, denominator,
-                        floatConst(rewriter, loc, accumulator, 1.0))),
-                count);
-            value = rewriter.create<mlir::arith::AddFOp>(
-                loc, start,
-                rewriter.create<mlir::arith::MulFOp>(
-                    loc, fraction,
-                    rewriter.create<mlir::arith::SubFOp>(loc, finish, start)));
             break;
           }
-          case 5: {  // Choice: categorical sample from source/probability vectors.
-            if (inputs.size() < 3) {
-              return op.emitOpError("choice requires source and probability inputs");
-            }
-            auto source = inputs[1];
-            auto probabilities = inputs[2];
-            auto sourceType = llvm::dyn_cast<mlir::MemRefType>(source.getType());
+          case 5: {  // Choice: the first source whose cumulative probability reaches the draw, else the last.
+            // The native op addresses x and y by their logical element f through their own shapes, whatever
+            // their rank: the count of y is its element count (yLength), and x must hold at least that many.
+            auto sourceType = llvm::dyn_cast<mlir::MemRefType>(x.getType());
             auto probabilityType =
-                llvm::dyn_cast<mlir::MemRefType>(probabilities.getType());
-            if (!sourceType || !probabilityType || sourceType.getRank() != 1 ||
-                probabilityType.getRank() != 1) {
-              return op.emitOpError("choice requires rank-1 source/probability inputs");
+                llvm::dyn_cast<mlir::MemRefType>(y.getType());
+            if (!sourceType || !probabilityType) {
+              return op.emitOpError(
+                  "choice requires MemRef source and probability inputs");
             }
-            auto sourceLength = rewriter.create<mlir::memref::DimOp>(loc, source, 0);
-            auto probabilityLength =
-                rewriter.create<mlir::memref::DimOp>(loc, probabilities, 0);
-            auto sameLength = rewriter.create<mlir::arith::CmpIOp>(
-                loc, mlir::arith::CmpIPredicate::eq, sourceLength,
-                probabilityLength);
-            auto guarded = rewriter.create<mlir::scf::IfOp>(
-                loc, mlir::TypeRange{accumulator}, sameLength, true);
-            rewriter.setInsertionPointToStart(guarded.thenBlock());
-            auto zero = floatConst(rewriter, loc, accumulator, 0.0);
-            auto sourceZero = mlir::SmallVector<mlir::Value>{idxConst(rewriter, loc, 0)};
-            auto initialValue = loadAsAccumulator(
-                rewriter, loc, source, sourceZero, accumulator);
-            if (!initialValue) {
-              return op.emitOpError("choice source type cannot be converted");
+            // The element count of a MemRef whose dimensions are all static, else -1.
+            auto staticLength = [](mlir::MemRefType type) -> int64_t {
+              int64_t length = 1;
+              for (int64_t d = 0; d < type.getRank(); ++d) {
+                if (type.isDynamicDim(d)) return -1;
+                length *= type.getDimSize(d);
+              }
+              return length;
+            };
+            const int64_t sourceLength = staticLength(sourceType);
+            const int64_t probabilityLength = staticLength(probabilityType);
+            if (sourceLength >= 0 && probabilityLength >= 0 &&
+                sourceLength < probabilityLength) {
+              return op.emitOpError(
+                  "choice has fewer sources than probabilities");
             }
-            auto found = rewriter.create<mlir::arith::ConstantOp>(
-                loc, rewriter.getI1Type(), rewriter.getBoolAttr(false));
+            mlir::Value count = idxConst(rewriter, loc, 1);
+            for (int64_t d = 0; d < probabilityType.getRank(); ++d) {
+              count = rewriter.create<mlir::arith::MulIOp>(
+                  loc, count, rewriter.create<mlir::memref::DimOp>(loc, y, d));
+            }
+            mlir::Value notFound = rewriter.create<mlir::arith::ConstantOp>(
+                loc, rewriter.getI1Type(), rewriter.getBoolAttr(true));
+            mlir::Value last = rewriter.create<mlir::arith::SubIOp>(
+                loc, count, idxConst(rewriter, loc, 1));
             auto loop = rewriter.create<mlir::scf::ForOp>(
-                loc, idxConst(rewriter, loc, 0), sourceLength,
+                loc, idxConst(rewriter, loc, 0), count,
                 idxConst(rewriter, loc, 1),
-                mlir::ValueRange{initialValue, zero, found},
-                [&](mlir::OpBuilder& nested, mlir::Location nestedLoc,
-                    mlir::Value item, mlir::ValueRange iterArgs) {
-                  auto itemIndices = mlir::SmallVector<mlir::Value>{item};
-                  auto probability = loadAsAccumulator(
-                      nested, nestedLoc, probabilities, itemIndices, accumulator);
-                  auto sourceValue = loadAsAccumulator(
-                      nested, nestedLoc, source, itemIndices, accumulator);
-                  auto cumulative = nested.create<mlir::arith::AddFOp>(
-                      nestedLoc, iterArgs[1], probability);
-                  auto below = nested.create<mlir::arith::CmpFOp>(
-                      nestedLoc, mlir::arith::CmpFPredicate::OLT,
-                      unitAccumulator, cumulative);
-                  auto notFound = nested.create<mlir::arith::XOrIOp>(
-                      nestedLoc, iterArgs[2],
-                      nested.create<mlir::arith::ConstantOp>(
-                          nestedLoc, nested.getI1Type(),
-                          nested.getBoolAttr(true)));
-                  auto take = nested.create<mlir::arith::AndIOp>(
-                      nestedLoc, below, notFound);
-                  auto selected = nested.create<mlir::arith::SelectOp>(
-                      nestedLoc, take, sourceValue, iterArgs[0]);
-                  auto selectedFound = nested.create<mlir::arith::OrIOp>(
-                      nestedLoc, iterArgs[2], take);
-                  nested.create<mlir::scf::YieldOp>(
-                      nestedLoc, mlir::ValueRange{selected, cumulative, selectedFound});
+                mlir::ValueRange{zero, zero, notFound},
+                [&](mlir::OpBuilder& b, mlir::Location l, mlir::Value f,
+                    mlir::ValueRange carried) {
+                  mlir::Value cumulative =
+                      add(b, carried[1], loadAt(b, y, f));
+                  mlir::Value reached = b.create<mlir::arith::OrIOp>(
+                      l,
+                      compare(b, mlir::arith::CmpFPredicate::OLE,
+                              unitStored, cumulative),
+                      b.create<mlir::arith::CmpIOp>(
+                          l, mlir::arith::CmpIPredicate::eq, f, last));
+                  mlir::Value take =
+                      b.create<mlir::arith::AndIOp>(l, reached, carried[2]);
+                  mlir::Value chosen =
+                      select(b, take, loadAt(b, x, f), carried[0]);
+                  mlir::Value stillNotFound = b.create<mlir::arith::AndIOp>(
+                      l, carried[2],
+                      b.create<mlir::arith::XOrIOp>(
+                          l, take,
+                          b.create<mlir::arith::ConstantOp>(
+                              l, b.getI1Type(), b.getBoolAttr(true))));
+                  b.create<mlir::scf::YieldOp>(
+                      l, mlir::ValueRange{chosen, cumulative, stillNotFound});
                 });
-            rewriter.setInsertionPointToEnd(guarded.thenBlock());
-            auto lastIndex = rewriter.create<mlir::arith::SubIOp>(
-                loc, sourceLength, idxConst(rewriter, loc, 1));
-            auto lastValue = loadAsAccumulator(
-                rewriter, loc, source,
-                mlir::SmallVector<mlir::Value>{lastIndex}, accumulator);
-            auto chosen = rewriter.create<mlir::arith::SelectOp>(
-                loc, loop.getResult(2), loop.getResult(0), lastValue);
-            rewriter.create<mlir::scf::YieldOp>(loc, chosen.getResult());
-            rewriter.setInsertionPointToStart(guarded.elseBlock());
-            rewriter.create<mlir::scf::YieldOp>(loc, unitAccumulator);
-            rewriter.setInsertionPointAfter(guarded);
-            value = guarded.getResult(0);
+            value = loop.getResult(0);
             break;
           }
-          case 6: {  // Gaussian.
-            value = rewriter.create<mlir::arith::AddFOp>(
-                loc, randomArgument(0, 0.0),
-                rewriter.create<mlir::arith::MulFOp>(
-                    loc, randomArgument(1, 1.0), normalValue()));
-            break;
-          }
-          case 7: {  // Bernoulli.
-            auto probability = randomArgument(0, 0.5);
-            auto keep = rewriter.create<mlir::arith::CmpFOp>(
-                loc, mlir::arith::CmpFPredicate::OLT, unitAccumulator,
-                probability);
-            value = rewriter.create<mlir::arith::SelectOp>(
-                loc, keep, floatConst(rewriter, loc, accumulator, 1.0),
-                floatConst(rewriter, loc, accumulator, 0.0));
-            break;
-          }
-          case 8:
-          case 9: {  // Binomial and BinomialEx.
-            auto trials = randomArgument(0, 1.0);
-            auto probability = randomArgument(1, 0.5);
-            value = rewriter.create<mlir::math::FloorOp>(
-                loc, rewriter.create<mlir::arith::MulFOp>(
-                         loc, trials,
-                         rewriter.create<mlir::arith::AddFOp>(
-                             loc, probability,
-                             rewriter.create<mlir::arith::MulFOp>(
-                                 loc, unitAccumulator,
-                                 rewriter.create<mlir::arith::SubFOp>(
-                                     loc, floatConst(rewriter, loc, accumulator, 1.0),
-                                     probability)))));
-            break;
-          }
-          case 10: {  // Log-normal.
-            value = emitExp(
-                rewriter, loc, accumulator,
-                rewriter.create<mlir::arith::AddFOp>(
-                    loc, randomArgument(0, 0.0),
-                    rewriter.create<mlir::arith::MulFOp>(
-                        loc, randomArgument(1, 1.0), normalValue())));
-            break;
-          }
-          case 11: {  // Truncated normal.
-            auto normal = normalValue();
-            value = rewriter.create<mlir::arith::AddFOp>(
-                loc, randomArgument(0, 0.0),
-                rewriter.create<mlir::arith::MulFOp>(
-                    loc, randomArgument(1, 1.0),
-                    rewriter.create<mlir::arith::MinimumFOp>(
-                        loc,
-                        rewriter.create<mlir::arith::MaximumFOp>(
-                            loc, normal,
-                            floatConst(rewriter, loc, accumulator, -2.0)),
-                        floatConst(rewriter, loc, accumulator, 2.0))));
-            break;
-          }
-          case 12: {  // Alpha dropout.
-            auto inputValue = loadRandomInput(0);
-            auto probability = randomArgument(0, 1.0);
-            auto keep = rewriter.create<mlir::arith::CmpFOp>(
-                loc, mlir::arith::CmpFPredicate::OLT, unitAccumulator,
-                probability);
-            auto retained = rewriter.create<mlir::arith::MulFOp>(
-                loc, randomArgument(1, 1.0), inputValue);
-            auto dropped = rewriter.create<mlir::arith::AddFOp>(
+          case 6:     // GaussianDistribution
+          case 10: {  // LogNormalDistribution: the exponential of the Gaussian sample.
+            // Element e < middle is the cosine of the pair (e, e + middle) and
+            // element e + middle its sine, middle being half the length rounded up.
+            mlir::Value middle = rewriter.create<mlir::arith::AddIOp>(
                 loc,
-                rewriter.create<mlir::arith::MulFOp>(
-                    loc, randomArgument(1, 1.0), randomArgument(3, 0.0)),
-                randomArgument(2, 0.0));
-            value = rewriter.create<mlir::arith::SelectOp>(
-                loc, keep, retained, dropped);
+                rewriter.create<mlir::arith::DivUIOp>(loc, total32,
+                                                      i32Constant(rewriter, 2u)),
+                rewriter.create<mlir::arith::RemUIOp>(loc, total32,
+                                                      i32Constant(rewriter, 2u)));
+            mlir::Value sine = rewriter.create<mlir::arith::CmpIOp>(
+                loc, mlir::arith::CmpIPredicate::uge, index, middle);
+            mlir::Value first = rewriter.create<mlir::arith::SelectOp>(
+                loc, sine, rewriter.create<mlir::arith::SubIOp>(loc, index, middle),
+                index);
+            mlir::Value second =
+                rewriter.create<mlir::arith::AddIOp>(loc, first, middle);
+            mlir::Value r0 = range(rewriter, uniformAt(rewriter, first, zero32),
+                                   boxMullerEpsilon, 1.0);
+            mlir::Value r1 = range(rewriter, uniformAt(rewriter, second, zero32),
+                                   boxMullerEpsilon, 1.0);
+            mlir::Value normal =
+                select(rewriter, sine, emitBoxMuller(rewriter, loc, r0, r1, true),
+                       emitBoxMuller(rewriter, loc, r0, r1, false));
+            mlir::Value mean = y ? loadAt(rewriter, y, flat) : argument(rewriter, 0);
+            value = add(rewriter, multiply(rewriter, normal, argument(rewriter, 1)),
+                        mean);
+            if (opNumber == 10) {
+              value = emitExp(rewriter, loc, accumulator, value);
+              // sd_exp<float16, float16> saturates at the largest half where a plain conversion would give inf.
+              if (outputFloat.getWidth() == 16) {
+                value = rewriter.create<mlir::arith::MinimumFOp>(
+                    loc, value, floatConst(rewriter, loc, accumulator, 65504.0));
+              }
+            }
             break;
           }
-          case 13:
-          case 14: {  // Exponential and inverse exponential.
-            auto lambda = rewriter.create<mlir::arith::MaximumFOp>(
-                loc, randomArgument(0, 1.0),
-                floatConst(rewriter, loc, accumulator, 1.0e-5));
-            value = rewriter.create<mlir::arith::DivFOp>(
+          case 7: {  // BernoulliDistribution: 1 where the probability (x, or p) reaches the draw.
+            mlir::Value probability =
+                x ? loadAt(rewriter, x, flat) : argument(rewriter, 0);
+            value = select(rewriter,
+                           compare(rewriter, mlir::arith::CmpFPredicate::OGE,
+                                   probability, unitStored),
+                           one, zero);
+            break;
+          }
+          case 8:    // BinomialDistribution: trial t's probability is y's element t.
+          case 9: {  // BinomialDistributionEx: element e's probability is y's element e.
+            // The count of trials t whose draw e * trials + t is below the probability.
+            const int64_t trials =
+                std::max<int64_t>(0, static_cast<int64_t>(static_cast<int>(arguments[0])));
+            mlir::Value trials32 =
+                i32Constant(rewriter, static_cast<uint32_t>(trials));
+            mlir::Value elementProbability =
+                (opNumber == 9 && y) ? loadAt(rewriter, y, flat)
+                                     : argument(rewriter, 1);
+            auto loop = rewriter.create<mlir::scf::ForOp>(
+                loc, idxConst(rewriter, loc, 0), idxConst(rewriter, loc, trials),
+                idxConst(rewriter, loc, 1), mlir::ValueRange{zero},
+                [&](mlir::OpBuilder& b, mlir::Location l, mlir::Value t,
+                    mlir::ValueRange carried) {
+                  mlir::Value t32 =
+                      b.create<mlir::arith::IndexCastUIOp>(l, i32, t);
+                  auto draw = mulAdd(b, index, trials32, t32);
+                  mlir::Value u =
+                      storedDraw(b, uniformAt(b, draw.first, draw.second));
+                  mlir::Value probability =
+                      (opNumber == 8 && y) ? loadAt(b, y, t) : elementProbability;
+                  mlir::Value success =
+                      select(b,
+                             compare(b, mlir::arith::CmpFPredicate::OLT, u,
+                                     probability),
+                             floatConst(b, l, accumulator, 1.0),
+                             floatConst(b, l, accumulator, 0.0));
+                  b.create<mlir::scf::YieldOp>(
+                      l, mlir::ValueRange{add(b, carried[0], success)});
+                });
+            value = loop.getResult(0);
+            break;
+          }
+          case 11: {  // TruncatedNormalDistribution: redraw until within two standard deviations.
+            // Attempt k takes the cosine sample of draws 2 (k n + e) and
+            // 2 (k n + e) + 1; after 64 rejections the last sample is clamped.
+            mlir::Value bound = floatConst(rewriter, loc, accumulator, 2.0);
+            mlir::Value attempts = i32Constant(rewriter, 64u);
+            mlir::Value going = rewriter.create<mlir::arith::ConstantOp>(
+                loc, rewriter.getI1Type(), rewriter.getBoolAttr(true));
+            auto loop = rewriter.create<mlir::scf::WhileOp>(
+                loc, mlir::TypeRange{i32, accumulator, rewriter.getI1Type()},
+                mlir::ValueRange{zero32, zero, going},
+                [&](mlir::OpBuilder& b, mlir::Location l,
+                    mlir::ValueRange args) {
+                  mlir::Value more = b.create<mlir::arith::AndIOp>(
+                      l, args[2],
+                      b.create<mlir::arith::CmpIOp>(
+                          l, mlir::arith::CmpIPredicate::ult, args[0],
+                          attempts));
+                  b.create<mlir::scf::ConditionOp>(l, more, args);
+                },
+                [&](mlir::OpBuilder& b, mlir::Location l,
+                    mlir::ValueRange args) {
+                  auto attempt = mulAdd(b, args[0], total32, index);
+                  mlir::Value pairLow = b.create<mlir::arith::ShLIOp>(
+                      l, attempt.first, i32Constant(b, 1u));
+                  mlir::Value pairHigh = b.create<mlir::arith::OrIOp>(
+                      l,
+                      b.create<mlir::arith::ShLIOp>(l, attempt.second,
+                                                    i32Constant(b, 1u)),
+                      b.create<mlir::arith::ShRUIOp>(l, attempt.first,
+                                                     i32Constant(b, 31u)));
+                  mlir::Value r0 = range(b, uniformAt(b, pairLow, pairHigh),
+                                         boxMullerEpsilon, 1.0);
+                  mlir::Value r1 = uniformAt(
+                      b,
+                      b.create<mlir::arith::OrIOp>(l, pairLow,
+                                                   i32Constant(b, 1u)),
+                      pairHigh);
+                  mlir::Value normal = emitBoxMuller(b, l, r0, r1, false);
+                  mlir::Value rejected = compare(
+                      b, mlir::arith::CmpFPredicate::UGT,
+                      b.create<mlir::math::AbsFOp>(l, normal), bound);
+                  b.create<mlir::scf::YieldOp>(
+                      l, mlir::ValueRange{
+                             b.create<mlir::arith::AddIOp>(l, args[0],
+                                                           i32Constant(b, 1u)),
+                             normal, rejected});
+                });
+            mlir::Value normal = rewriter.create<mlir::arith::MaximumFOp>(
                 loc,
+                rewriter.create<mlir::arith::MinimumFOp>(loc, loop.getResult(1),
+                                                         bound),
+                rewriter.create<mlir::arith::NegFOp>(loc, bound));
+            mlir::Value mean = y ? loadAt(rewriter, y, flat) : argument(rewriter, 0);
+            value = add(rewriter, mean,
+                        multiply(rewriter, argument(rewriter, 1), normal));
+            break;
+          }
+          case 12: {  // AlphaDropOut: a alphaPrime + b where the draw reaches p, else a x + b.
+            if (mlir::failed(requireX())) return mlir::failure();
+            mlir::Value a = argument(rewriter, 1);
+            mlir::Value b0 = argument(rewriter, 2);
+            mlir::Value kept = select(
+                rewriter,
+                compare(rewriter, mlir::arith::CmpFPredicate::OGE,
+                        unitStored, argument(rewriter, 0)),
+                argument(rewriter, 3), loadAt(rewriter, x, flat));
+            value = add(rewriter, multiply(rewriter, a, kept), b0);
+            break;
+          }
+          case 13: {  // ExponentialDistribution: -log(draw) / lambda, or x / lambda; 0 where not positive.
+            mlir::Value lambda = argument(rewriter, 0);
+            mlir::Value sample =
+                x ? loadAt(rewriter, x, flat)
+                  : mlir::Value(rewriter.create<mlir::arith::NegFOp>(
+                        loc, emitLog(rewriter, loc, accumulator,
+                                     range(rewriter, unitAccumulator,
+                                           minPositive, 1.0 - minPositive))));
+            value = select(rewriter,
+                           compare(rewriter, mlir::arith::CmpFPredicate::OLE,
+                                   sample, zero),
+                           zero, emitRoundedDivide(rewriter, loc, sample, lambda));
+            break;
+          }
+          case 14: {  // ExponentialDistributionInv: -log(1 - draw, or 1 - x) / lambda, lambda 0 read as 1.
+            mlir::Value lambda = floatConst(rewriter, loc, accumulator,
+                                            arguments[0] == 0.0 ? 1.0 : arguments[0]);
+            mlir::Value sample =
+                x ? loadAt(rewriter, x, flat)
+                  : range(rewriter, unitAccumulator, minPositive,
+                          1.0 - minPositive);
+            value = emitRoundedDivide(
+                rewriter, loc,
                 rewriter.create<mlir::arith::NegFOp>(
                     loc, emitLog(rewriter, loc, accumulator,
-                                 rewriter.create<mlir::arith::SubFOp>(
-                                     loc, floatConst(rewriter, loc, accumulator, 1.0),
-                                     unitAccumulator))),
+                                 subtract(rewriter, one, sample))),
                 lambda);
             break;
           }
-          case 15: {  // Poisson approximation.
-            auto lambda = randomArgument(0, 1.0);
-            value = rewriter.create<mlir::math::FloorOp>(
-                loc, rewriter.create<mlir::arith::MaximumFOp>(
-                         loc, floatConst(rewriter, loc, accumulator, 0.0),
-                         rewriter.create<mlir::arith::AddFOp>(
-                             loc, lambda,
-                             rewriter.create<mlir::arith::MulFOp>(
-                                 loc, rewriter.create<mlir::math::SqrtOp>(
-                                          loc, lambda),
-                                 normalValue()))));
-            break;
-          }
-          case 16: {  // Gamma approximation.
-            auto shape = rewriter.create<mlir::arith::MaximumFOp>(
-                loc, randomArgument(0, 1.0),
-                floatConst(rewriter, loc, accumulator, 1.0e-5));
-            auto scale = randomArgument(1, 1.0);
-            value = emitExp(
+          case 15:    // PoissonDistribution: Knuth below lambda 10, PTRS from 10 on
+          case 16: {  // GammaDistribution: Marsaglia and Tsang, a shape below 1 boosted
+            // The samplers of ops/declarable/helpers/random_samplers.h (samplePoisson, sampleGamma), in the compute
+            // type of helpers::RandomComputeT, which is the accumulator: f32 for f32 and f16 outputs, f64 for f64.
+            // Element e's draw j is 1 - relativeT<C>(e * 2^16 + j), whose index words are ((e << 16) | (j & 0xFFFF),
+            // e >> 16): the stream index and the wrap of the draw counter at 2^16 need no 64-bit arithmetic. The
+            // host loops until a sample is accepted; a sampler that has consumed all 2^16 draws of its stream
+            // without one would only repeat them, so the loops here stop there and keep their last candidate
+            // (a candidate is accepted with probability 0.75 or better, so a stream does not run out).
+            const mlir::Value elementLow = rewriter.create<mlir::arith::ShLIOp>(
+                loc, index, i32Constant(rewriter, 16u));
+            const mlir::Value elementHigh = rewriter.create<mlir::arith::ShRUIOp>(
+                loc, index, i32Constant(rewriter, 16u));
+            const mlir::Value streamDraws = i32Constant(rewriter, 65536u);
+            const mlir::Value one32 = i32Constant(rewriter, 1u);
+            const mlir::Value two32 = i32Constant(rewriter, 2u);
+            const mlir::Value yes = rewriter.create<mlir::arith::ConstantOp>(
+                loc, rewriter.getI1Type(), rewriter.getBoolAttr(true));
+            const mlir::Value notANumber = floatConst(
                 rewriter, loc, accumulator,
-                rewriter.create<mlir::arith::AddFOp>(
-                    loc, rewriter.create<mlir::math::LogOp>(
-                             loc, rewriter.create<mlir::arith::MulFOp>(
-                                      loc, shape, scale)),
-                    rewriter.create<mlir::arith::MulFOp>(
-                        loc,
-                        rewriter.create<mlir::arith::DivFOp>(
-                            loc, normalValue(),
-                            rewriter.create<mlir::math::SqrtOp>(
-                                loc, shape)),
-                        floatConst(rewriter, loc, accumulator, 0.5))));
+                std::numeric_limits<double>::quiet_NaN());
+            auto constantOf = [&](mlir::OpBuilder& b, double v) -> mlir::Value {
+              return floatConst(b, loc, accumulator, v);
+            };
+            auto quotient = [&](mlir::OpBuilder& b, mlir::Value lhs,
+                                mlir::Value rhs) -> mlir::Value {
+              return b.create<mlir::arith::DivFOp>(loc, lhs, rhs);
+            };
+            // helpers::streamUniform: the draw of the element's stream, in (0, 1].
+            auto streamUniform = [&](mlir::OpBuilder& b,
+                                     mlir::Value draw) -> mlir::Value {
+              mlir::Value low = b.create<mlir::arith::OrIOp>(
+                  loc, elementLow,
+                  b.create<mlir::arith::AndIOp>(loc, draw,
+                                                i32Constant(b, 0xFFFFu)));
+              return subtract(b, one, uniformAt(b, low, elementHigh));
+            };
+            // The loops carry (draws consumed, still going, value): they go on while going and a draw is left.
+            auto goOnWhileGoing = [&](mlir::OpBuilder& b, mlir::Location l,
+                                      mlir::ValueRange args) {
+              mlir::Value more = b.create<mlir::arith::AndIOp>(
+                  l, args[1],
+                  b.create<mlir::arith::CmpIOp>(
+                      l, mlir::arith::CmpIPredicate::ult, args[0], streamDraws));
+              b.create<mlir::scf::ConditionOp>(l, more, args);
+            };
+
+            if (opNumber == 15) {
+              // lambda is x, or the first extra argument; 0 gives 0, and a negative or NaN lambda gives NaN. The
+              // loops run on a positive lambda (a NaN one would never be accepted), and the selects at the end
+              // replace their result where it was not.
+              mlir::Value requested =
+                  x ? loadAt(rewriter, x, flat) : argument(rewriter, 0);
+              mlir::Value lambda = select(
+                  rewriter,
+                  compare(rewriter, mlir::arith::CmpFPredicate::OGT, requested,
+                          zero),
+                  requested, one);
+              // Knuth's bound exp(-lambda). Without x it is the constant the host computes: a shader's exp is a few
+              // ulps off the correctly rounded value, and a product that lands between the two would flip a
+              // comparison (the reference reproduces the host's count exactly).
+              mlir::Value bound =
+                  x ? emitExp(rewriter, loc, accumulator,
+                              rewriter.create<mlir::arith::NegFOp>(loc, lambda))
+                    : constantOf(rewriter,
+                                 std::exp(-(arguments[0] > 0.0 ? arguments[0]
+                                                               : 1.0)));
+              mlir::Value belowTen =
+                  compare(rewriter, mlir::arith::CmpFPredicate::OLT, lambda,
+                          constantOf(rewriter, 10.0));
+              auto sampler = rewriter.create<mlir::scf::IfOp>(
+                  loc, mlir::TypeRange{accumulator}, belowTen,
+                  /*withElseRegion=*/true);
+
+              // Knuth: product = U; count = 0; while (product > bound) { count++; product *= U }.
+              rewriter.setInsertionPointToStart(sampler.thenBlock());
+              mlir::Value firstDraw = streamUniform(rewriter, zero32);
+              auto knuth = rewriter.create<mlir::scf::WhileOp>(
+                  loc, mlir::TypeRange{i32, accumulator, accumulator},
+                  mlir::ValueRange{one32, firstDraw, zero},
+                  [&](mlir::OpBuilder& b, mlir::Location l,
+                      mlir::ValueRange args) {
+                    mlir::Value more = b.create<mlir::arith::AndIOp>(
+                        l,
+                        compare(b, mlir::arith::CmpFPredicate::OGT, args[1],
+                                bound),
+                        b.create<mlir::arith::CmpIOp>(
+                            l, mlir::arith::CmpIPredicate::ult, args[0],
+                            streamDraws));
+                    b.create<mlir::scf::ConditionOp>(l, more, args);
+                  },
+                  [&](mlir::OpBuilder& b, mlir::Location l,
+                      mlir::ValueRange args) {
+                    mlir::Value draw = streamUniform(b, args[0]);
+                    b.create<mlir::scf::YieldOp>(
+                        l, mlir::ValueRange{
+                               b.create<mlir::arith::AddIOp>(l, args[0], one32),
+                               multiply(b, args[1], draw),
+                               add(b, args[2], one)});
+                  });
+              rewriter.create<mlir::scf::YieldOp>(
+                  loc, mlir::ValueRange{knuth.getResult(2)});
+
+              // PTRS (Hormann): the constants of lambda, then candidates k until one passes the squeeze or the
+              // log-density test.
+              rewriter.setInsertionPointToStart(sampler.elseBlock());
+              mlir::Value oneHalf = constantOf(rewriter, 0.5);
+              mlir::Value two = constantOf(rewriter, 2.0);
+              mlir::Value slam = rewriter.create<mlir::math::SqrtOp>(loc, lambda);
+              mlir::Value logLambda = emitLog(rewriter, loc, accumulator, lambda);
+              mlir::Value ptrsB =
+                  add(rewriter, constantOf(rewriter, 0.931),
+                      multiply(rewriter, constantOf(rewriter, 2.53), slam));
+              mlir::Value ptrsA =
+                  add(rewriter, constantOf(rewriter, -0.059),
+                      multiply(rewriter, constantOf(rewriter, 0.02483), ptrsB));
+              mlir::Value logInvAlpha = emitLog(
+                  rewriter, loc, accumulator,
+                  add(rewriter, constantOf(rewriter, 1.1239),
+                      quotient(rewriter, constantOf(rewriter, 1.1328),
+                               subtract(rewriter, ptrsB,
+                                        constantOf(rewriter, 3.4)))));
+              mlir::Value vr = subtract(
+                  rewriter, constantOf(rewriter, 0.9277),
+                  quotient(rewriter, constantOf(rewriter, 3.6224),
+                           subtract(rewriter, ptrsB, two)));
+              auto ptrs = rewriter.create<mlir::scf::WhileOp>(
+                  loc, mlir::TypeRange{i32, rewriter.getI1Type(), accumulator},
+                  mlir::ValueRange{zero32, yes, zero}, goOnWhileGoing,
+                  [&](mlir::OpBuilder& b, mlir::Location l,
+                      mlir::ValueRange args) {
+                    mlir::Value u =
+                        subtract(b, streamUniform(b, args[0]), oneHalf);
+                    mlir::Value v = streamUniform(
+                        b, b.create<mlir::arith::AddIOp>(l, args[0], one32));
+                    mlir::Value us =
+                        subtract(b, oneHalf, b.create<mlir::math::AbsFOp>(l, u));
+                    mlir::Value k = b.create<mlir::math::FloorOp>(
+                        l, add(b,
+                               add(b,
+                                   multiply(b,
+                                            add(b,
+                                                quotient(b, multiply(b, two, ptrsA),
+                                                         us),
+                                                ptrsB),
+                                            u),
+                                   lambda),
+                               constantOf(b, 0.43)));
+                    mlir::Value squeeze = b.create<mlir::arith::AndIOp>(
+                        l,
+                        compare(b, mlir::arith::CmpFPredicate::OGE, us,
+                                constantOf(b, 0.07)),
+                        compare(b, mlir::arith::CmpFPredicate::OLE, v, vr));
+                    mlir::Value reject = b.create<mlir::arith::OrIOp>(
+                        l, compare(b, mlir::arith::CmpFPredicate::OLT, k, zero),
+                        b.create<mlir::arith::AndIOp>(
+                            l,
+                            compare(b, mlir::arith::CmpFPredicate::OLT, us,
+                                    constantOf(b, 0.013)),
+                            compare(b, mlir::arith::CmpFPredicate::OGT, v, us)));
+                    // log v + log(1 / alpha) - log(a / us^2 + b) <= -lambda + k log lambda - log(k!)
+                    mlir::Value lhs = subtract(
+                        b,
+                        add(b, emitLog(b, l, accumulator, v), logInvAlpha),
+                        emitLog(b, l, accumulator,
+                                add(b,
+                                    quotient(b, ptrsA, multiply(b, us, us)),
+                                    ptrsB)));
+                    mlir::Value rhs = subtract(
+                        b,
+                        add(b, b.create<mlir::arith::NegFOp>(l, lambda),
+                            multiply(b, k, logLambda)),
+                        emitLgammaPositive(b, l, add(b, k, one)));
+                    mlir::Value passes = b.create<mlir::arith::AndIOp>(
+                        l, b.create<mlir::arith::XOrIOp>(l, reject, yes),
+                        compare(b, mlir::arith::CmpFPredicate::OLE, lhs, rhs));
+                    mlir::Value accepted =
+                        b.create<mlir::arith::OrIOp>(l, squeeze, passes);
+                    b.create<mlir::scf::YieldOp>(
+                        l, mlir::ValueRange{
+                               b.create<mlir::arith::AddIOp>(l, args[0], two32),
+                               b.create<mlir::arith::XOrIOp>(l, accepted, yes),
+                               k});
+                  });
+              rewriter.create<mlir::scf::YieldOp>(
+                  loc, mlir::ValueRange{ptrs.getResult(2)});
+
+              rewriter.setInsertionPointAfter(sampler);
+              value = select(
+                  rewriter,
+                  compare(rewriter, mlir::arith::CmpFPredicate::OEQ, requested,
+                          zero),
+                  zero,
+                  select(rewriter,
+                         compare(rewriter, mlir::arith::CmpFPredicate::OGT,
+                                 requested, zero),
+                         sampler.getResult(0), notANumber));
+            } else {
+              // alpha is x, or the first extra argument, and the rate is y, or the second: a shape or rate that is
+              // not positive gives NaN. The loop runs on valid parameters; NaN replaces its result where they were
+              // not.
+              mlir::Value alpha =
+                  x ? loadAt(rewriter, x, flat) : argument(rewriter, 0);
+              mlir::Value rate =
+                  y ? loadAt(rewriter, y, flat) : argument(rewriter, 1);
+              mlir::Value valid = rewriter.create<mlir::arith::AndIOp>(
+                  loc,
+                  compare(rewriter, mlir::arith::CmpFPredicate::OGT, alpha,
+                          zero),
+                  compare(rewriter, mlir::arith::CmpFPredicate::OGT, rate, zero));
+              mlir::Value shape = select(rewriter, valid, alpha, one);
+              mlir::Value rateIn = select(rewriter, valid, rate, one);
+              mlir::Value boost =
+                  compare(rewriter, mlir::arith::CmpFPredicate::OLT, shape, one);
+              // d = (boost ? alpha + 1 : alpha) - 1 / 3 and c = 1 / sqrt(9 d), with T(1) / T(3) in the op's type.
+              mlir::Value d = subtract(
+                  rewriter,
+                  select(rewriter, boost, add(rewriter, shape, one), shape),
+                  constantOf(rewriter,
+                             wide ? 1.0 / 3.0
+                                  : static_cast<double>(1.0f / 3.0f)));
+              mlir::Value c = emitRoundedDivide(
+                  rewriter, loc, one,
+                  rewriter.create<mlir::math::SqrtOp>(
+                      loc, multiply(rewriter, constantOf(rewriter, 9.0), d)));
+              // One candidate per step: a normal sample from two draws; v = (1 + c x)^3 where 1 + c x is positive
+              // (otherwise the host draws another normal sample and no uniform); then the acceptance draw u. The
+              // third carried value is the v of the last candidate whose 1 + c x was positive.
+              auto candidates = rewriter.create<mlir::scf::WhileOp>(
+                  loc, mlir::TypeRange{i32, rewriter.getI1Type(), accumulator},
+                  mlir::ValueRange{zero32, yes, one}, goOnWhileGoing,
+                  [&](mlir::OpBuilder& b, mlir::Location l,
+                      mlir::ValueRange args) {
+                    mlir::Value normal = emitBoxMuller(
+                        b, l, streamUniform(b, args[0]),
+                        streamUniform(
+                            b, b.create<mlir::arith::AddIOp>(l, args[0], one32)),
+                        /*sine=*/false);
+                    mlir::Value linear = add(b, one, multiply(b, c, normal));
+                    // !(v <= 0), as the host's do-while condition: true for NaN
+                    mlir::Value positive = compare(
+                        b, mlir::arith::CmpFPredicate::UGT, linear, zero);
+                    mlir::Value cube =
+                        multiply(b, multiply(b, linear, linear), linear);
+                    mlir::Value u = streamUniform(
+                        b, b.create<mlir::arith::AddIOp>(l, args[0], two32));
+                    mlir::Value x2 = multiply(b, normal, normal);
+                    mlir::Value squeeze = compare(
+                        b, mlir::arith::CmpFPredicate::OLT, u,
+                        subtract(b, one,
+                                 multiply(b,
+                                          multiply(b, constantOf(b, 0.0331), x2),
+                                          x2)));
+                    // log u < x^2 / 2 + d (1 - v + log v)
+                    mlir::Value exact = compare(
+                        b, mlir::arith::CmpFPredicate::OLT,
+                        emitLog(b, l, accumulator, u),
+                        add(b, multiply(b, constantOf(b, 0.5), x2),
+                            multiply(b, d,
+                                     add(b, subtract(b, one, cube),
+                                         emitLog(b, l, accumulator, cube)))));
+                    mlir::Value accepted = b.create<mlir::arith::AndIOp>(
+                        l, positive,
+                        b.create<mlir::arith::OrIOp>(l, squeeze, exact));
+                    // two draws for the normal sample, and the third when 1 + c x was positive
+                    mlir::Value consumed = b.create<mlir::arith::AddIOp>(
+                        l, b.create<mlir::arith::AddIOp>(l, args[0], two32),
+                        b.create<mlir::arith::ExtUIOp>(l, i32, positive));
+                    b.create<mlir::scf::YieldOp>(
+                        l, mlir::ValueRange{
+                               consumed,
+                               b.create<mlir::arith::XOrIOp>(l, accepted, yes),
+                               select(b, positive, cube, args[2])});
+                  });
+              // sample = d v, times U^(1 / alpha) when the shape was boosted, over the rate
+              mlir::Value base =
+                  multiply(rewriter, d, candidates.getResult(2));
+              mlir::Value boosted = multiply(
+                  rewriter, base,
+                  rewriter.create<mlir::math::PowFOp>(
+                      loc, streamUniform(rewriter, candidates.getResult(0)),
+                      quotient(rewriter, one, shape)));
+              value = select(
+                  rewriter, valid,
+                  quotient(rewriter, select(rewriter, boost, boosted, base),
+                           rateIn),
+                  notANumber);
+            }
             break;
           }
           default:
-            break;
+            return op.emitOpError("unsupported legacy random op ") << opNumber;
         }
         storeFromAccumulator(rewriter, loc, value, output, outputIndices);
         rewriter.create<mlir::gpu::TerminatorOp>(loc);
@@ -9405,6 +11314,21 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
     return mlir::failure();
   }
 
+  if (emitter->recipe == VulkanKernelRecipe::CUMSUM) {
+    auto axesAttr = op->getAttrOfType<mlir::DenseI64ArrayAttr>("nd4j.scan_axes");
+    auto exclusiveAttr = op->getAttrOfType<mlir::BoolAttr>("nd4j.scan_exclusive");
+    auto reverseAttr = op->getAttrOfType<mlir::BoolAttr>("nd4j.scan_reverse");
+    auto contract = getComputeTypeContract(op, inputs, outputs);
+    if (!axesAttr || !exclusiveAttr || !reverseAttr || inputs.size() != 1 ||
+        outputs.size() != 1 || mlir::failed(contract))
+      return op.emitOpError("cumsum requires frozen axes and a floating AccT");
+    auto type = llvm::dyn_cast<mlir::MemRefType>(inputs[0].getType());
+    auto outType = llvm::dyn_cast<mlir::MemRefType>(outputs[0].getType());
+    if (!type || !outType || type.getShape() != outType.getShape())
+      return op.emitOpError("cumsum shape contract mismatch");
+    return emitPrefixScan(op, rewriter, inputs[0], outputs[0], contract->accumulatorType);
+  }
+
   mlir::Value output = outputs.front();
   auto outputType = llvm::dyn_cast<mlir::MemRefType>(output.getType());
   if (!outputType) return op.emitOpError("movement output must be a MemRef");
@@ -9438,6 +11362,70 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
   };
 
   switch (emitter->recipe) {
+    case VulkanKernelRecipe::CROSS: {
+      auto type = llvm::dyn_cast<mlir::MemRefType>(inputs[0].getType());
+      if (inputs.size() != 2 || !type || type.getRank() < 1 ||
+          type.getShape() != outputType.getShape() ||
+          type.getDimSize(type.getRank() - 1) != 3)
+        return op.emitOpError("cross requires matching [...,3] tensors");
+      const int64_t last = type.getRank() - 1;
+      auto three = idxConst(rewriter, loc, 3);
+      auto j = rewriter.create<mlir::arith::RemUIOp>(loc,
+          rewriter.create<mlir::arith::AddIOp>(loc, outputIndices[last], one), three);
+      auto k = rewriter.create<mlir::arith::RemUIOp>(loc,
+          rewriter.create<mlir::arith::AddIOp>(loc, outputIndices[last], idxConst(rewriter, loc, 2)), three);
+      auto load = [&](mlir::Value input, mlir::Value component) -> mlir::Value {
+        mlir::SmallVector<mlir::Value> coordinate(outputIndices.begin(), outputIndices.end());
+        coordinate[last] = component;
+        return rewriter.create<mlir::memref::LoadOp>(loc, input, coordinate);
+      };
+      mlir::Value aj = load(inputs[0], j), ak = load(inputs[0], k);
+      mlir::Value bj = load(inputs[1], j), bk = load(inputs[1], k);
+      mlir::Value result;
+      if (llvm::isa<mlir::FloatType>(type.getElementType())) {
+        auto attr = op->getAttrOfType<mlir::TypeAttr>(kAccumulatorTypeAttr);
+        auto acc = attr ? llvm::dyn_cast<mlir::FloatType>(attr.getValue()) : mlir::FloatType{};
+        if (!acc) return op.emitOpError("cross lacks floating compute type");
+        result = rewriter.create<mlir::arith::SubFOp>(loc,
+            rewriter.create<mlir::arith::MulFOp>(loc, convertFloat(rewriter, loc, aj, acc), convertFloat(rewriter, loc, bk, acc)),
+            rewriter.create<mlir::arith::MulFOp>(loc, convertFloat(rewriter, loc, ak, acc), convertFloat(rewriter, loc, bj, acc)));
+        storeFromAccumulator(rewriter, loc, result, output, outputIndices);
+      } else {
+        result = rewriter.create<mlir::arith::SubIOp>(loc,
+            rewriter.create<mlir::arith::MulIOp>(loc, aj, bk),
+            rewriter.create<mlir::arith::MulIOp>(loc, ak, bj));
+        rewriter.create<mlir::memref::StoreOp>(loc, result, output, outputIndices);
+      }
+      break;
+    }
+    case VulkanKernelRecipe::BROADCAST_DYNAMIC_SHAPE: {
+      auto element = llvm::dyn_cast<mlir::IntegerType>(outputType.getElementType());
+      if (!element || inputs.size() != 2 || outputType.getRank() != 1)
+        return op.emitOpError("broadcast_dynamic_shape requires two integer vectors");
+      auto loadDimension = [&](mlir::Value input) -> mlir::Value {
+        auto type = llvm::dyn_cast<mlir::MemRefType>(input.getType());
+        const int64_t padding = outputType.getDimSize(0) - type.getDimSize(0);
+        auto identity = rewriter.create<mlir::arith::ConstantIntOp>(loc, 1, element.getWidth());
+        auto present = rewriter.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::uge,
+            flat, idxConst(rewriter, loc, padding));
+        auto branch = rewriter.create<mlir::scf::IfOp>(loc, mlir::TypeRange{element}, present, true);
+        rewriter.setInsertionPointToStart(branch.thenBlock());
+        auto index = rewriter.create<mlir::arith::SubIOp>(loc, flat, idxConst(rewriter, loc, padding));
+        auto value = rewriter.create<mlir::memref::LoadOp>(loc, input, mlir::ValueRange{index});
+        rewriter.create<mlir::scf::YieldOp>(loc, value.getResult());
+        rewriter.setInsertionPointToStart(branch.elseBlock());
+        rewriter.create<mlir::scf::YieldOp>(loc, identity.getResult());
+        rewriter.setInsertionPointAfter(branch);
+        return branch.getResult(0);
+      };
+      auto x = loadDimension(inputs[0]);
+      auto y = loadDimension(inputs[1]);
+      auto identity = rewriter.create<mlir::arith::ConstantIntOp>(loc, 1, element.getWidth());
+      auto value = rewriter.create<mlir::arith::SelectOp>(loc,
+          rewriter.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::eq, x, identity), y, x);
+      rewriter.create<mlir::memref::StoreOp>(loc, value, output, outputIndices);
+      break;
+    }
     case VulkanKernelRecipe::GATHER_ND: {
       mlir::Value data = inputs[0];
       mlir::Value indices = inputs[1];
@@ -9571,9 +11559,11 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
       break;
     }
 
-    case VulkanKernelRecipe::REVERSE: {
+    case VulkanKernelRecipe::REVERSE:
+    case VulkanKernelRecipe::REVERSE_BP: {
       auto axes = requireIntegerArray("nd4j.reverse_axes");
-      auto inputType = llvm::dyn_cast<mlir::MemRefType>(inputs[0].getType());
+      mlir::Value payload = inputs[emitter->recipe == VulkanKernelRecipe::REVERSE_BP ? 1 : 0];
+      auto inputType = llvm::dyn_cast<mlir::MemRefType>(payload.getType());
       if (mlir::failed(axes) || !inputType ||
           outputType.getRank() != inputType.getRank()) {
         return op.emitOpError("reverse metadata contract mismatch");
@@ -9584,7 +11574,7 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
       for (int64_t d = 0; d < inputType.getRank(); ++d) {
         if (reversed.count(d) != 0) {
           mlir::Value last = rewriter.create<mlir::arith::SubIOp>(
-              loc, rewriter.create<mlir::memref::DimOp>(loc, inputs[0], d),
+              loc, rewriter.create<mlir::memref::DimOp>(loc, payload, d),
               one);
           source.push_back(rewriter.create<mlir::arith::SubIOp>(
               loc, last, outputIndices[static_cast<size_t>(d)]));
@@ -9592,7 +11582,29 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
           source.push_back(outputIndices[static_cast<size_t>(d)]);
         }
       }
-      rawCopy(inputs[0], source);
+      auto inplace = op->getAttrOfType<mlir::BoolAttr>("nd4j.reverse_inplace");
+      if (!inplace) return op.emitOpError("reverse lacks alias metadata");
+      if (inplace.getValue()) {
+        // Reversal is an involution: one owner swaps each pair after loading
+        // both members, so no invocation overwrites another's unread value.
+        mlir::Value partnerFlat = idxConst(rewriter, loc, 0);
+        for (int64_t d = 0; d < inputType.getRank(); ++d) {
+          partnerFlat = rewriter.create<mlir::arith::AddIOp>(loc,
+              rewriter.create<mlir::arith::MulIOp>(loc, partnerFlat,
+                  rewriter.create<mlir::memref::DimOp>(loc, payload, d)), source[d]);
+        }
+        auto owns = rewriter.create<mlir::arith::CmpIOp>(loc,
+            mlir::arith::CmpIPredicate::ule, flat, partnerFlat);
+        auto branch = rewriter.create<mlir::scf::IfOp>(loc, mlir::TypeRange{}, owns, false);
+        rewriter.setInsertionPointToStart(branch.thenBlock());
+        auto here = rewriter.create<mlir::memref::LoadOp>(loc, payload, outputIndices);
+        auto there = rewriter.create<mlir::memref::LoadOp>(loc, payload, source);
+        rewriter.create<mlir::memref::StoreOp>(loc, there, output, outputIndices);
+        rewriter.create<mlir::memref::StoreOp>(loc, here, output, source);
+        rewriter.setInsertionPointAfter(branch);
+      } else {
+        rawCopy(payload, source);
+      }
       break;
     }
 
@@ -10373,19 +12385,18 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
   if (!xType || !yType || (reduce3 && !x1Type)) {
     return op.emitOpError("reduction ND: operands must be MemRefs");
   }
-  if (reduce3 &&
-      (xType.getRank() != x1Type.getRank() ||
-       xType.getShape() != x1Type.getShape())) {
-    return op.emitOpError("reduce3 inputs must have identical shapes");
-  }
 
   auto computeAttr = op->getAttrOfType<mlir::TypeAttr>(kAccumulatorTypeAttr);
   mlir::Type computeType = computeAttr ? computeAttr.getValue() : mlir::Type{};
   auto computeFloat = llvm::dyn_cast<mlir::FloatType>(computeType);
   auto computeInteger = llvm::dyn_cast<mlir::IntegerType>(computeType);
-  if (!computeFloat && (!computeInteger || computeInteger.getWidth() != 32)) {
+  // Integer reductions accumulate in their storage width: i32, or i64 where the
+  // device has shaderInt64 (the recorder selects i64 storage only then).
+  if (!computeFloat &&
+      (!computeInteger || (computeInteger.getWidth() != 32 &&
+                           computeInteger.getWidth() != 64))) {
     return op.emitOpError(
-        "reduction ND: requires floating-point AccT or i32 computation");
+        "reduction ND: requires floating-point AccT or i32/i64 computation");
   }
   if (computeInteger &&
       (hasVulkanEmitterTrait(*emitter, VULKAN_EMITTER_TRAIT_MEAN_FINALIZE) ||
@@ -10403,8 +12414,9 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
   const bool input1Unsigned = readBoolAttr("nd4j.input1_unsigned");
   const bool outputUnsigned = readBoolAttr("nd4j.output_unsigned");
   const bool biasCorrected = readBoolAttr("nd4j.bias_corrected");
-  // Signed absolute values are represented by their i32 magnitude bits.  In
-  // particular, abs(INT_MIN) remains 0x80000000 and must be ordered unsigned.
+  // Signed absolute values are represented by their magnitude bits.  In
+  // particular, abs of the minimum stays the sign bit alone and must be ordered
+  // unsigned.
   const bool magnitudeComparison = inputUnsigned || absoluteInput;
 
   if (computeFloat) {
@@ -10438,22 +12450,26 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
   } else {
     auto xStorage = llvm::dyn_cast<mlir::IntegerType>(xType.getElementType());
     auto yStorage = llvm::dyn_cast<mlir::IntegerType>(yType.getElementType());
+    const unsigned computeWidth = computeInteger.getWidth();
     const bool inputStorageValid =
-        xStorage && (xStorage.getWidth() == 32 ||
+        xStorage && (xStorage.getWidth() == computeWidth ||
                      (booleanResultReduction && xStorage.getWidth() == 8));
     const bool outputStorageValid =
-        yStorage && (countReduction ? yStorage.getWidth() == 64
-                                    : (booleanResultReduction
-                                           ? yStorage.getWidth() == 8
-                                           : yStorage.getWidth() == 32));
+        yStorage &&
+        (countReduction
+             ? yStorage.getWidth() == 64
+             : (booleanResultReduction
+                    ? yStorage.getWidth() == 8
+                    : (indexReduction ? yStorage.getWidth() == 32
+                                      : yStorage.getWidth() == computeWidth)));
     if (!inputStorageValid || !outputStorageValid) {
       return op.emitOpError(
-          "reduction ND: integer storage must be i32");
+          "reduction ND: integer storage must match the i32/i64 AccT");
     }
   }
 
   int64_t rank = xType.getRank();
-  if (rank < 1) {
+  if (!reduce3 && rank < 1) {
     return op.emitOpError("reduction ND: rank must be >=1");
   }
 
@@ -10478,7 +12494,7 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
       axes.push_back(d);
     }
   }
-  if (axes.empty()) {
+  if (!reduce3 && axes.empty()) {
     return op.emitOpError("reduction ND: at least one axis is required");
   }
 
@@ -10497,7 +12513,7 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
     inDims[d] = rewriter.create<mlir::memref::DimOp>(loc, X, d);
   }
   llvm::SmallVector<mlir::Value> inStrides(rank);
-  inStrides[rank - 1] = oneIdx;
+  if (rank > 0) inStrides[rank - 1] = oneIdx;
   for (int64_t d = rank - 2; d >= 0; --d) {
     inStrides[d] = rewriter.create<mlir::arith::MulIOp>(loc, inStrides[d + 1], inDims[d + 1]);
   }
@@ -10712,44 +12728,54 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
     if (!computeFloat) {
       return op.emitOpError("reduce3 requires floating-point AccT");
     }
-    auto pairForOutput =
-        [&](mlir::OpBuilder& builder, mlir::Location nestedLoc,
-            mlir::Value inputIndex)
-        -> std::pair<std::pair<mlir::Value, mlir::Value>, mlir::Value> {
-      llvm::SmallVector<mlir::Value> inIdx(rank);
-      mlir::Value remainder = inputIndex;
-      for (int64_t d = 0; d < rank; ++d) {
-        inIdx[d] = builder.create<mlir::arith::DivUIOp>(
-            nestedLoc, remainder, inStrides[d]);
-        remainder = builder.create<mlir::arith::RemUIOp>(
-            nestedLoc, remainder, inStrides[d]);
-      }
-      llvm::SmallVector<mlir::Value> outIdx;
-      for (int64_t d = 0; d < rank; ++d) {
-        if (reduced[static_cast<size_t>(d)] == 0) {
-          outIdx.push_back(inIdx[d]);
-        } else if (keepDims) {
-          outIdx.push_back(zeroIdx);
+    auto yAxesAttr = op->getAttrOfType<mlir::DenseI64ArrayAttr>("nd4j.reduce3_y_axes");
+    auto xTadsAttr = op->getAttrOfType<mlir::IntegerAttr>("nd4j.reduce3_x_tads");
+    auto yTadsAttr = op->getAttrOfType<mlir::IntegerAttr>("nd4j.reduce3_y_tads");
+    auto allPairsAttr = op->getAttrOfType<mlir::BoolAttr>("nd4j.reduce3_all_pairs");
+    if (!axesAttr || !yAxesAttr || !xTadsAttr || !yTadsAttr || !allPairsAttr ||
+        xTadsAttr.getInt() < 1 || yTadsAttr.getInt() < 1)
+      return op.emitOpError("reduce3 requires explicit TAD geometry");
+    llvm::SmallVector<int64_t> yAxes;
+    llvm::SmallVector<int64_t> xOuterAxes;
+    llvm::SmallVector<int64_t> yOuterAxes;
+    llvm::SmallVector<int8_t> yReduced(static_cast<size_t>(x1Type.getRank()), 0);
+    for (int64_t axis : yAxesAttr.asArrayRef()) {
+      if (axis < 0 || axis >= x1Type.getRank() || yReduced[axis])
+        return op.emitOpError("reduce3 Y axes must be unique and in range");
+      yReduced[axis] = 1;
+      yAxes.push_back(axis);
+    }
+    for (int64_t d = 0; d < rank; ++d) if (!reduced[d]) xOuterAxes.push_back(d);
+    for (int64_t d = 0; d < x1Type.getRank(); ++d) if (!yReduced[d]) yOuterAxes.push_back(d);
+    const bool allPairs = allPairsAttr.getValue();
+    const int64_t xTads = xTadsAttr.getInt();
+    const int64_t yTads = yTadsAttr.getInt();
+    if (!allPairs && xTads != yTads && xTads != 1 && yTads != 1)
+      return op.emitOpError("reduce3 paired TAD counts must match or broadcast one TAD");
+    auto pairForOutput = [&](mlir::OpBuilder& builder, mlir::Location nestedLoc,
+                             mlir::Value reducedIndex) {
+      auto operandIndices = [&](mlir::Value operand, llvm::ArrayRef<int64_t> tadAxes,
+                                llvm::ArrayRef<int64_t> outerAxes, int64_t tadCount, bool first) {
+        mlir::Value tadIndex = tadCount == 1 ? zeroIdx : outputIndex;
+        if (allPairs && tadCount != 1) {
+          auto count = idxConst(builder, nestedLoc, yTads);
+          tadIndex = first
+              ? builder.create<mlir::arith::DivUIOp>(nestedLoc, outputIndex, count).getResult()
+              : builder.create<mlir::arith::RemUIOp>(nestedLoc, outputIndex, count).getResult();
         }
-      }
-      mlir::Value flatOutIdx = zeroIdx;
-      for (size_t od = 0; od < outStrides.size(); ++od) {
-        flatOutIdx = builder.create<mlir::arith::AddIOp>(
-            nestedLoc, flatOutIdx,
-            builder.create<mlir::arith::MulIOp>(
-                nestedLoc, outIdx[od], outStrides[od]));
-      }
-      auto indices = mlir::SmallVector<mlir::Value>(inIdx.begin(), inIdx.end());
-      mlir::Value first = loadAsScalar(
-          builder, nestedLoc, X, indices, computeType, inputUnsigned,
-          inputUnsigned);
-      mlir::Value second = loadAsScalar(
-          builder, nestedLoc, X1, indices, computeType, input1Unsigned,
-          input1Unsigned);
-      mlir::Value belongs = builder.create<mlir::arith::CmpIOp>(
-          nestedLoc, mlir::arith::CmpIPredicate::eq, flatOutIdx,
-          outputIndex);
-      return {{first, second}, belongs};
+        auto tadCoordinates = logicalIndices(builder, nestedLoc, reducedIndex, operand, tadAxes);
+        auto outerCoordinates = logicalIndices(builder, nestedLoc, tadIndex, operand, outerAxes);
+        auto type = llvm::cast<mlir::MemRefType>(operand.getType());
+        mlir::SmallVector<mlir::Value> indices(static_cast<size_t>(type.getRank()), zeroIdx);
+        for (size_t i = 0; i < tadAxes.size(); ++i) indices[tadAxes[i]] = tadCoordinates[i];
+        for (size_t i = 0; i < outerAxes.size(); ++i) indices[outerAxes[i]] = outerCoordinates[i];
+        return indices;
+      };
+      auto first = loadAsScalar(builder, nestedLoc, X,
+          operandIndices(X, axes, xOuterAxes, xTads, true), computeType, inputUnsigned, inputUnsigned);
+      auto second = loadAsScalar(builder, nestedLoc, X1,
+          operandIndices(X1, yAxes, yOuterAxes, yTads, false), computeType, input1Unsigned, input1Unsigned);
+      return std::make_pair(first, second);
     };
     int reduce3OpNum = -1;
     if (auto opNumAttr = op->getAttrOfType<mlir::IntegerAttr>(
@@ -10772,13 +12798,12 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
           reduce3OpNum == 4 ? 1.0 : 0.0)};
     }
     auto reduce3Loop = rewriter.create<mlir::scf::ForOp>(
-        loc, zeroIdx, totalN, oneIdx, mlir::ValueRange(reduce3Initial),
+        loc, zeroIdx, reduceCount, oneIdx, mlir::ValueRange(reduce3Initial),
         [&](mlir::OpBuilder& builder, mlir::Location nestedLoc,
             mlir::Value inputIndex, mlir::ValueRange iterArgs) {
           auto pair = pairForOutput(builder, nestedLoc, inputIndex);
-          mlir::Value a = pair.first.first;
-          mlir::Value b = pair.first.second;
-          mlir::Value belongs = pair.second;
+          mlir::Value a = pair.first;
+          mlir::Value b = pair.second;
           llvm::SmallVector<mlir::Value> candidates;
           if (reduce3OpNum == 0) {
             candidates.push_back(builder.create<mlir::math::AbsFOp>(
@@ -10837,27 +12862,25 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
               combined = builder.create<mlir::arith::AddFOp>(
                   nestedLoc, iterArgs[i], candidates[i]);
             }
-            next.push_back(builder.create<mlir::arith::SelectOp>(
-                nestedLoc, belongs, combined, iterArgs[i]));
+            next.push_back(combined);
           }
           builder.create<mlir::scf::YieldOp>(nestedLoc, next);
         });
     mlir::Value result = reduce3Loop.getResult(0);
     if (reduce3OpNum == 1) {
       result = rewriter.create<mlir::math::SqrtOp>(loc, result);
+    } else if (reduce3OpNum == 7) {
+      // Hamming distance is a fraction of differing TAD elements, not a count.
+      result = rewriter.create<mlir::arith::DivFOp>(loc, result, reduceCountValue);
     } else if (cosine) {
       mlir::Value denominator = rewriter.create<mlir::arith::MulFOp>(
           loc, rewriter.create<mlir::math::SqrtOp>(
                    loc, reduce3Loop.getResult(1)),
           rewriter.create<mlir::math::SqrtOp>(
                    loc, reduce3Loop.getResult(2)));
-      auto zero = floatConst(rewriter, loc, computeFloat, 0.0);
-      auto zeroDenominator = rewriter.create<mlir::arith::CmpFOp>(
-          loc, mlir::arith::CmpFPredicate::OEQ, denominator, zero);
-      auto similarity = rewriter.create<mlir::arith::SelectOp>(
-          loc, zeroDenominator, zero,
-          rewriter.create<mlir::arith::DivFOp>(
-              loc, reduce3Loop.getResult(0), denominator));
+      // Preserve the native formula's NaN/Inf result for a zero denominator.
+      auto similarity = rewriter.create<mlir::arith::DivFOp>(
+          loc, reduce3Loop.getResult(0), denominator);
       if (reduce3OpNum == 5) {
         result = rewriter
                      .create<mlir::arith::SubFOp>(
@@ -10868,17 +12891,10 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
         result = similarity;
       }
     } else if (jaccard) {
-      auto zero = floatConst(rewriter, loc, computeFloat, 0.0);
-      auto zeroUnion = rewriter.create<mlir::arith::CmpFOp>(
-          loc, mlir::arith::CmpFPredicate::OEQ, reduce3Loop.getResult(1),
-          zero);
-      result = rewriter.create<mlir::arith::SelectOp>(
-          loc, zeroUnion, zero,
-          rewriter.create<mlir::arith::SubFOp>(
-              loc, floatConst(rewriter, loc, computeFloat, 1.0),
-              rewriter.create<mlir::arith::DivFOp>(
-                  loc, reduce3Loop.getResult(0),
-                  reduce3Loop.getResult(1))));
+      result = rewriter.create<mlir::arith::SubFOp>(
+          loc, floatConst(rewriter, loc, computeFloat, 1.0),
+          rewriter.create<mlir::arith::DivFOp>(
+              loc, reduce3Loop.getResult(0), reduce3Loop.getResult(1)));
     }
     auto outputIndices = logicalIndices(rewriter, loc, outputIndex, Y);
     if (!storeScalar(rewriter, loc, result, Y, outputIndices, false,
@@ -11286,6 +13302,7 @@ void populateVulkanLoweringPatterns(mlir::RewritePatternSet& patterns) {
   patterns.add<RmsNormToSpirv>(ctx, /*benefit=*/2);
   patterns.add<RopeToSpirv>(ctx, /*benefit=*/2);
   patterns.add<StructuredComputeToSpirv>(ctx, /*benefit=*/3);
+  patterns.add<TensorGradientToSpirv>(ctx, /*benefit=*/3);
 
   // ── Wave 1 patterns ───────────────────────────────────────────────────────
   patterns.add<ElementwiseBinaryToSpirv>(ctx, /*benefit=*/2);
@@ -11294,6 +13311,7 @@ void populateVulkanLoweringPatterns(mlir::RewritePatternSet& patterns) {
   patterns.add<MultiOutputElementwiseToSpirv>(ctx, /*benefit=*/3);
   patterns.add<BatchedMatrixListToSpirv>(ctx, /*benefit=*/3);
   patterns.add<IndexedAccumulationToSpirv>(ctx, /*benefit=*/3);
+  patterns.add<IndexedSliceUpdateToSpirv>(ctx, /*benefit=*/3);
   patterns.add<IndexedTadMovementToSpirv>(ctx, /*benefit=*/3);
   patterns.add<SoftmaxToSpirv>(ctx, /*benefit=*/2);
   patterns.add<LayerNormToSpirv>(ctx, /*benefit=*/2);

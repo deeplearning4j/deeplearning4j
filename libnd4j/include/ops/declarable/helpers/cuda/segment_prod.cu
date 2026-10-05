@@ -19,9 +19,12 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-// Thin TU: segment_prod is the shared segment_ops implementation instantiated
-// with the product reduction policy and the product-rule backprop policy.
+// Thin TU: segment_prod / unsorted_segment_prod are the shared segment_ops implementation instantiated with the
+// product policy (modular integer products, empty segments 1) and the product-rule backprop policy. The backprop
+// reads the product of the nonzero elements of every segment and the number of its zeros (SegProdNonZero /
+// SegZeroCount), so an element equal to zero gets the product of the others instead of 0 / 0.
 //
 #include <ops/declarable/helpers/cuda/segment_ops.cuh>
 
-SEGMENT_OP_INSTANTIATE(Prod, ProdReduce, ProdGrad)
+SEGMENT_OP_SAME_TYPE(Prod, SegProd)
+SEGMENT_OP_BACKPROP_FLOAT(Prod, SegProdNonZero, GradProd)

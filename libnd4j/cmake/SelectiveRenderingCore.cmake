@@ -187,10 +187,12 @@ function(_internal_srcore_is_valid_pair type1 type2 output_var)
         return()
     endif()
 
-    # Rule 3: Filter rare×rare cross-type conversions
+    # Rule 3: Filter rare×rare cross-type conversions in functrace builds only
     # Examples: uint16↔uint32, int16↔uint64
-    # These are rarely used in ML workloads
-    if(t1_is_rare AND t2_is_rare)
+    # These are rarely used in ML workloads, and only the functrace binary needs the space. Elsewhere they stay: a
+    # selector reaching a pair that is not compiled has nothing to call, so casts and buffer conversions between
+    # these types (DataTypeEx carries INT16 and UINT16) would have no implementation.
+    if(SD_GCC_FUNCTRACE AND t1_is_rare AND t2_is_rare)
         # Both are rare types and already filtered out same-type by Rule 1
         set(${output_var} FALSE PARENT_SCOPE)
         return()
@@ -268,6 +270,14 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
     endif()
     if(type3 STREQUAL "BOOL")
         set(t3_is_bool TRUE)
+    endif()
+
+    # Triple slots are independently templated types, not necessarily two inputs and an output.
+    # crop_and_resize uses numeric image storage, floating box storage and integer indices.
+    if((t1_is_float OR (t1_is_int AND NOT t1_is_bool))
+       AND t2_is_float AND t3_is_int AND NOT t3_is_bool)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
     endif()
 
     # Check if types are rare types (rarely used in ML workloads)

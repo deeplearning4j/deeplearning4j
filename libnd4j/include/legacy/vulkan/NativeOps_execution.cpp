@@ -27,18 +27,9 @@ void execPairwiseTransform(sd::Pointer *extraPointers, int opNum,
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execPairwiseTransform(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->buffer(),
-        y->shapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->specialBuffer(),
-        y->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo(), extraParams);
+        sd::LegacyTensorArg::fromArray(x),
+        sd::LegacyTensorArg::fromArray(y),
+        sd::LegacyTensorArg::fromArray(z), extraParams);
 
     x->registerSpecialUse({z}, {x, y});
   } catch (std::exception &e) {
@@ -56,18 +47,9 @@ void execPairwiseTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueNDAr
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execPairwiseBoolTransform(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->buffer(),
-        y->shapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->specialBuffer(),
-        y->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo(),
+        sd::LegacyTensorArg::fromArray(x),
+        sd::LegacyTensorArg::fromArray(y),
+        sd::LegacyTensorArg::fromArray(z),
         extraParams);
 
     x->registerSpecialUse({z}, {x, y});
@@ -85,16 +67,10 @@ void execSummaryStatsScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execSummaryStatsScalar(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(),
+        sd::LegacyTensorArg::fromArray(x),
 
         extraParams,
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo(),
+        sd::LegacyTensorArg::fromArray(z),
         biasCorrected);
 
     x->registerSpecialUse({z}, {x});
@@ -122,15 +98,11 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execSummaryStats(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(x->shapeInfo())->special(),
+        sd::LegacyTensorArg::withShape(
+            x, x->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(x->shapeInfo())->special()),
         extraParams,
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(z->shapeInfo())->special(),
+        sd::LegacyTensorArg::withShape(
+            z, z->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(z->shapeInfo())->special()),
         dimensionData, dimensionLength, tadShapeInfo, tadOffsets, biasCorrected);
 
     x->registerSpecialUse({z}, {x});
@@ -146,30 +118,22 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, O
   try {
     x->prepareSpecialUse({z}, {x, y, dimension});
 
+    // Axes are host-side semantic metadata; tensor operands remain device-owned.
+    if (dimension != nullptr) dimension->preparePrimaryUse({}, {dimension});
     auto dimensionBuffer = dimension != nullptr ? reinterpret_cast<sd::LongType *>(dimension->buffer()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(dimension->shapeInfo()));
+    sd::LongType dimensionLength = dimension != nullptr ? shape::length(dimension->shapeInfo()) : 0;
 
-    auto hTADShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[9]);
-    auto tadOnlyShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[10]);
-    auto tadOffsets = reinterpret_cast<sd::LongType *>(extraPointers[11]);
-    auto tadOnlyShapeInfoZ = reinterpret_cast<sd::LongType *>(extraPointers[12]);
-    auto tadOffsetsZ = reinterpret_cast<sd::LongType *>(extraPointers[13]);
+    auto tadOnlyShapeInfo = extraPointers != nullptr ? reinterpret_cast<sd::LongType *>(extraPointers[10]) : nullptr;
+    auto tadOffsets = extraPointers != nullptr ? reinterpret_cast<sd::LongType *>(extraPointers[11]) : nullptr;
+    auto tadOnlyShapeInfoZ = extraPointers != nullptr ? reinterpret_cast<sd::LongType *>(extraPointers[12]) : nullptr;
+    auto tadOffsetsZ = extraPointers != nullptr ? reinterpret_cast<sd::LongType *>(extraPointers[13]) : nullptr;
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execBroadcastBool(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->buffer(),
-        y->shapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->specialBuffer(),
-        y->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo(),
+        sd::LegacyTensorArg::fromArray(x),
+        sd::LegacyTensorArg::fromArray(y),
+        sd::LegacyTensorArg::fromArray(z),
         extraParams,
         dimensionBuffer,
         dimensionLength,
@@ -188,33 +152,27 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, O
 ////////////////////////////////////////////////////////////////////////
 void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, void *extraParams, OpaqueNDArray dimension) {
   try {
+    if (extraParams != nullptr) {
+      THROW_EXCEPTION("Vulkan legacy broadcast cannot infer the count of extra parameters");
+    }
     x->prepareSpecialUse({z}, {x, y, dimension});
 
+    // Axes are host-side semantic metadata; tensor operands remain device-owned.
+    if (dimension != nullptr) dimension->preparePrimaryUse({}, {dimension});
     auto dimensionBuffer = dimension != nullptr ? reinterpret_cast<sd::LongType *>(dimension->buffer()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(dimension->shapeInfo()));
+    sd::LongType dimensionLength = dimension != nullptr ? shape::length(dimension->shapeInfo()) : 0;
 
-    auto hTADShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[9]);
-    auto tadOnlyShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[10]);
-    auto tadOffsets = reinterpret_cast<sd::LongType *>(extraPointers[11]);
-    auto tadOnlyShapeInfoZ = reinterpret_cast<sd::LongType *>(extraPointers[12]);
-    auto tadOffsetsZ = reinterpret_cast<sd::LongType *>(extraPointers[13]);
+    auto tadOnlyShapeInfo = extraPointers != nullptr ? reinterpret_cast<sd::LongType *>(extraPointers[10]) : nullptr;
+    auto tadOffsets = extraPointers != nullptr ? reinterpret_cast<sd::LongType *>(extraPointers[11]) : nullptr;
+    auto tadOnlyShapeInfoZ = extraPointers != nullptr ? reinterpret_cast<sd::LongType *>(extraPointers[12]) : nullptr;
+    auto tadOffsetsZ = extraPointers != nullptr ? reinterpret_cast<sd::LongType *>(extraPointers[13]) : nullptr;
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execBroadcast(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->buffer(),
-        y->shapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->specialBuffer(),
-        y->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo(),
+        sd::LegacyTensorArg::fromArray(x),
+        sd::LegacyTensorArg::fromArray(y),
+        sd::LegacyTensorArg::fromArray(z),
         dimensionBuffer,
         dimensionLength,
         tadOnlyShapeInfo,
@@ -237,18 +195,12 @@ void execScalarBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaq
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execScalarBool(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(x->shapeInfo())->special(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(z->shapeInfo())->special(),
-        shape::isEmptyConst(scalar->shapeInfo()) ? nullptr : scalar->buffer(),
-        scalar->shapeInfo(),
-        shape::isEmptyConst(scalar->shapeInfo()) ? nullptr : scalar->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(scalar->shapeInfo())->special(), extraParams);
+        sd::LegacyTensorArg::withShape(
+            x, x->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(x->shapeInfo())->special()),
+        sd::LegacyTensorArg::withShape(
+            z, z->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(z->shapeInfo())->special()),
+        sd::LegacyTensorArg::withShape(
+            scalar, scalar->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(scalar->shapeInfo())->special()), extraParams);
 
     x->registerSpecialUse({z}, {x, scalar});
   } catch (std::exception &e) {
@@ -277,19 +229,13 @@ void execScalarBoolTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, O
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execScalarBool(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(x->shapeInfo())->special(),
+        sd::LegacyTensorArg::withShape(
+            x, x->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(x->shapeInfo())->special()),
         extraParams,
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(z->shapeInfo())->special(),
-        shape::isEmptyConst(scalar->shapeInfo()) ? nullptr : scalar->buffer(),
-        scalar->shapeInfo(),
-        shape::isEmptyConst(scalar->shapeInfo()) ? nullptr : scalar->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(scalar->shapeInfo())->special(),
+        sd::LegacyTensorArg::withShape(
+            z, z->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(z->shapeInfo())->special()),
+        sd::LegacyTensorArg::withShape(
+            scalar, scalar->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(scalar->shapeInfo())->special()),
 
         dim, dimensionLength,
         xTadShapeInfo, xOffsets, zTadShapeInfo, zOffsets);
@@ -310,18 +256,12 @@ void execScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueND
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execScalar(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(x->shapeInfo())->special(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(z->shapeInfo())->special(),
-        shape::isEmptyConst(scalar->shapeInfo()) ? nullptr : scalar->buffer(),
-        scalar->shapeInfo(),
-        shape::isEmptyConst(scalar->shapeInfo()) ? nullptr : scalar->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(scalar->shapeInfo())->special(), extraParams);
+        sd::LegacyTensorArg::withShape(
+            x, x->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(x->shapeInfo())->special()),
+        sd::LegacyTensorArg::withShape(
+            z, z->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(z->shapeInfo())->special()),
+        sd::LegacyTensorArg::withShape(
+            scalar, scalar->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(scalar->shapeInfo())->special()), extraParams);
 
     x->registerSpecialUse({z}, {x, scalar});
   } catch (std::exception &e) {
@@ -347,19 +287,10 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaqu
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execScalar(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(),
+        sd::LegacyTensorArg::fromArray(x),
         extraParams,
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo(),
-        shape::isEmptyConst(scalar->shapeInfo()) ? nullptr : scalar->buffer(),
-        scalar->shapeInfo(),
-        shape::isEmptyConst(scalar->shapeInfo()) ? nullptr : scalar->specialBuffer(),
-        scalar->specialShapeInfo(),
+        sd::LegacyTensorArg::fromArray(z),
+        sd::LegacyTensorArg::fromArray(scalar),
         dimensionPtr, dimensionLength,
         xTadPack->specialShapeInfo(), xTadPack->specialOffsets(),
         zTadPack->specialShapeInfo(), zTadPack->specialOffsets());
@@ -380,15 +311,9 @@ void execReduceFloat(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execReduceFloatScalar(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(),
+        sd::LegacyTensorArg::fromArray(x),
         extraParams,
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo());
+        sd::LegacyTensorArg::fromArray(z));
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {
@@ -422,19 +347,13 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, vo
     }
 
     std::vector<sd::LongType> *dims =
-        (zLen != 1 && !isFullArrayReduce) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
+        isFullArrayReduce ? new std::vector<sd::LongType>() : new std::vector<sd::LongType>(dimensions);
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execReduceFloat(lc,
                                          opNum,
-                                         shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-                                         x->shapeInfo(),
-                                         shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-                                         x->specialShapeInfo(), extraParams,
-                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-                                         zShapeInfoH,
-                                         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                         zShapeInfoD,
+                                         sd::LegacyTensorArg::fromArray(x), extraParams,
+                                         sd::LegacyTensorArg::withShape(z, zShapeInfoH, zShapeInfoD),
                                          dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});
@@ -480,15 +399,8 @@ void execReduceSame(sd::Pointer *extraPointers,
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execReduceSameScalar(
         lc, opNum,
-        xIsEmpty ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        xIsEmpty ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(), extraParams,
-        z->buffer(),
-        z->shapeInfo(),
-        zIsEmpty ? nullptr : z->specialBuffer(),
-
-        z->specialShapeInfo());
+        sd::LegacyTensorArg::fromArray(x), extraParams,
+        sd::LegacyTensorArg::fromArray(z));
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {
@@ -522,19 +434,13 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
     }
 
     std::vector<sd::LongType> *dims =
-        (zLen != 1 && !isFullArrayReduce) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
+        isFullArrayReduce ? new std::vector<sd::LongType>() : new std::vector<sd::LongType>(dimensions);
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execReduceSame(lc,
                                         opNum,
-                                        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-                                        x->shapeInfo(),
-                                        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-                                        x->specialShapeInfo(), extraParams,
-                                        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-                                        zShapeInfoH,
-                                        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                        zShapeInfoD,
+                                        sd::LegacyTensorArg::fromArray(x), extraParams,
+                                        sd::LegacyTensorArg::withShape(z, zShapeInfoH, zShapeInfoD),
                                         dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});
@@ -569,18 +475,13 @@ void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
     }
 
     std::vector<sd::LongType> *dims =
-        (zLen != 1) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
+        (dimensionLength == 1 && (dimensions[0] == -1 || dimensions[0] == SD_MAX_INT))
+            ? new std::vector<sd::LongType>() : new std::vector<sd::LongType>(dimensions);
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execReduceLong(lc, opNum,
-                                        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-                                        x->shapeInfo(),
-                                        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-                                        x->specialShapeInfo(), extraParams,
-                                        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-                                        zShapeInfoH,
-                                        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                        zShapeInfoD,
+                                        sd::LegacyTensorArg::fromArray(x), extraParams,
+                                        sd::LegacyTensorArg::withShape(z, zShapeInfoH, zShapeInfoD),
                                         dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});
@@ -615,19 +516,14 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
     }
 
     std::vector<sd::LongType> *dims =
-        (zLen != 1) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
+        (dimensionLength == 1 && (dimensions[0] == -1 || dimensions[0] == SD_MAX_INT))
+            ? new std::vector<sd::LongType>() : new std::vector<sd::LongType>(dimensions);
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execReduceBool(lc,
                                         opNum,
-                                        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-                                        x->shapeInfo(),
-                                        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-                                        x->specialShapeInfo(), extraParams,
-                                        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-                                        zShapeInfoH,
-                                        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                        zShapeInfoD,
+                                        sd::LegacyTensorArg::fromArray(x), extraParams,
+                                        sd::LegacyTensorArg::withShape(z, zShapeInfoH, zShapeInfoD),
                                         dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});
@@ -680,22 +576,13 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
     }
 
     std::vector<sd::LongType> *dims =
-        (zLen != 1 && !isFullArrayReduce)
-            ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()),
-                                                  &dimensions)
-            : new std::vector<sd::LongType>();
+        isFullArrayReduce ? new std::vector<sd::LongType>() : new std::vector<sd::LongType>(dimensions);
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execReduceLong(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(), extraParams,
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        zShapeInfoH,
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        zShapeInfoD, dims->data(), dims->size());
+        sd::LegacyTensorArg::fromArray(x), extraParams,
+        sd::LegacyTensorArg::withShape(z, zShapeInfoH, zShapeInfoD), dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});
 
@@ -732,19 +619,13 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
     }
 
     std::vector<sd::LongType> *dims =
-        (zLen != 1 && !isFullArrayReduce) ? sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) : new std::vector<sd::LongType>();
+        isFullArrayReduce ? new std::vector<sd::LongType>() : new std::vector<sd::LongType>(dimensions);
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execReduceBool(lc,
                                         opNum,
-                                        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-                                        x->shapeInfo(),
-                                        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-                                        x->specialShapeInfo(), extraParams,
-                                        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-                                        zShapeInfoH,
-                                        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                        zShapeInfoD,
+                                        sd::LegacyTensorArg::fromArray(x), extraParams,
+                                        sd::LegacyTensorArg::withShape(z, zShapeInfoH, zShapeInfoD),
                                         dims->data(), dims->size());
 
     x->registerSpecialUse({z}, {x});
@@ -772,14 +653,8 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execIndexReduce(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(), extraParams,
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo(),
+        sd::LegacyTensorArg::fromArray(x), extraParams,
+        sd::LegacyTensorArg::fromArray(z),
         dimensionData, dimensionLength, tadPack->specialShapeInfo(), tadPack->specialOffsets());
 
     x->registerSpecialUse({z}, {x});
@@ -797,14 +672,8 @@ void execIndexReduceScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execIndexReduceScalar(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(), extraParams,
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo());
+        sd::LegacyTensorArg::fromArray(x), extraParams,
+        sd::LegacyTensorArg::fromArray(z));
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {
@@ -822,19 +691,10 @@ void execReduce3(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *e
     NativeOpExecutioner::execReduce3(
         lc,
         opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(),
+        sd::LegacyTensorArg::fromArray(x),
         extraParams,
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->buffer(),
-        y->shapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->specialBuffer(),
-        y->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo());
+        sd::LegacyTensorArg::fromArray(y),
+        sd::LegacyTensorArg::fromArray(z));
 
     x->registerSpecialUse({z}, {x, y});
   } catch (std::exception &e) {
@@ -851,18 +711,12 @@ void execReduce3Scalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, v
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execReduce3Scalar(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(x->shapeInfo())->special(), extraParams,
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->buffer(),
-        y->shapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(y->shapeInfo())->special(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(z->shapeInfo())->special());
+        sd::LegacyTensorArg::withShape(
+            x, x->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(x->shapeInfo())->special()), extraParams,
+        sd::LegacyTensorArg::withShape(
+            y, y->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(y->shapeInfo())->special()),
+        sd::LegacyTensorArg::withShape(
+            z, z->shapeInfo(), sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(z->shapeInfo())->special()));
 
     x->registerSpecialUse({z}, {x, y});
   } catch (std::exception &e) {
@@ -916,18 +770,9 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
 
     NativeOpExecutioner::execReduce3TAD(
         lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(), extraParams,
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->buffer(),
-        y->shapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->specialBuffer(),
-        y->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo(),
+        sd::LegacyTensorArg::fromArray(x), extraParams,
+        sd::LegacyTensorArg::fromArray(y),
+        sd::LegacyTensorArg::fromArray(z),
         dim, dimensionLength,
         xTadShapeInfo, xOffsets, yTadShapeInfo, yTadOffsets);
 
@@ -959,19 +804,10 @@ void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaq
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execReduce3All(lc, opNum,
-                                        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-                                        x->shapeInfo(),
-                                        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-                                        x->specialShapeInfo(),
+                                        sd::LegacyTensorArg::fromArray(x),
                                         extraParams,
-                                        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->buffer(),
-                                        y->shapeInfo(),
-                                        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->specialBuffer(),
-                                        y->specialShapeInfo(),
-                                        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-                                        z->shapeInfo(),
-                                        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                        z->specialShapeInfo(),
+                                        sd::LegacyTensorArg::fromArray(y),
+                                        sd::LegacyTensorArg::fromArray(z),
                                         dimensionPtr,
                                         dimensionLength, xTadShapeInfo,
                                         xOffsets, yTadShapeInfo, yOffsets);
@@ -994,14 +830,8 @@ void execTransformSame(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, v
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execTransformSame(lc, opNum,
-                                           shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-                                           x->shapeInfo(),
-                                           shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-                                           x->specialShapeInfo(),
-                                           shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-                                           z->shapeInfo(),
-                                           shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                           z->specialShapeInfo(),
+                                           sd::LegacyTensorArg::fromArray(x),
+                                           sd::LegacyTensorArg::fromArray(z),
                                            extraParams, tadShapeInfo, tadOffsets);
 
     x->registerSpecialUse({z}, {x});
@@ -1019,15 +849,9 @@ void execTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, v
     auto tadShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
     auto tadOffsets = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
-    bool xEmpty = shape::isEmptyConst(x->shapeInfo());
-    bool zEmpty = shape::isEmptyConst(z->shapeInfo());
-
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execTransformBool(
-        lc, opNum, xEmpty ? nullptr : x->buffer(), x->shapeInfo(),
-        xEmpty ? nullptr : x->specialBuffer(), x->specialShapeInfo(),
-        zEmpty ? nullptr : z->buffer(), z->shapeInfo(),
-        zEmpty ? nullptr : z->specialBuffer(), z->specialShapeInfo(), extraParams);
+        lc, opNum, sd::LegacyTensorArg::fromArray(x), sd::LegacyTensorArg::fromArray(z), extraParams);
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {
@@ -1043,10 +867,7 @@ void execTransformAny(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, vo
     auto lc = sd::LaunchContext::defaultContext();
 
     NativeOpExecutioner::execTransformAny(
-        lc, opNum, shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(), x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(), x->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(), z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(), z->specialShapeInfo(), extraParams, false);
+        lc, opNum, sd::LegacyTensorArg::fromArray(x), sd::LegacyTensorArg::fromArray(z), extraParams, false);
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {
@@ -1065,10 +886,7 @@ void execTransformStrict(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execTransformStrict(
-        lc, opNum, shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(), x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(), x->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(), z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(), z->specialShapeInfo(), extraParams);
+        lc, opNum, sd::LegacyTensorArg::fromArray(x), sd::LegacyTensorArg::fromArray(z), extraParams);
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {
@@ -1087,10 +905,7 @@ void execTransformFloat(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, 
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execTransformFloat(
-        lc, opNum, shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(), x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(), x->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(), z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(), z->specialShapeInfo(), extraParams);
+        lc, opNum, sd::LegacyTensorArg::fromArray(x), sd::LegacyTensorArg::fromArray(z), extraParams);
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {

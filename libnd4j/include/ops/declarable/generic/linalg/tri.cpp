@@ -32,6 +32,8 @@ CUSTOM_OP_IMPL(tri, -2, 1, false, 0, 1) {
 
   const int diag = block.numI() > 2 ? INT_ARG(2) : 0;
   char direction = diag <= 0  || diag == 0 || diag > 0 ? 'l': 'u';
+  // fillAsTriangular leaves the entries outside the triangle as they are, and an output is not initialized
+  output->nullify();
   BUILD_SINGLE_SELECTOR(output->dataType(), output->fillAsTriangular,
                         (1., diag, diag, *output, direction),
                         SD_COMMON_TYPES);  // fill with unities lower triangular block of matrix

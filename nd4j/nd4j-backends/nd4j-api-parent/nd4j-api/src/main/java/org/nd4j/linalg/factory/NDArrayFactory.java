@@ -1476,6 +1476,17 @@ public interface NDArrayFactory {
      */
     INDArray createFromNpyPointer(Pointer pointer);
 
+    /**
+     * Allocate the array an op output is described by: the shape, data type, order and empty flag of
+     * {@code shapeInformation} as a new array that owns exactly its length elements. The strides and the view, copy
+     * and copy-offset flags of the descriptor are not kept (an op's shape function may return the strides of the input
+     * an output was derived from): the new array is dense in the descriptor's order. An output that is a view of an
+     * input is created over the input's buffer instead, see {@link Nd4j#createFromDescriptor(DataBuffer, DataBuffer)}.
+     *
+     * @param shapeInformation the shape information one op output was described with
+     * @return a new dense array
+     * @see org.nd4j.linalg.api.shape.Shape#allocationShapeInfo(DataBuffer)
+     */
     INDArray createFromDescriptor(DataBuffer shapeInformation);
 
 

@@ -58,13 +58,15 @@ public class CropAndResize extends DynamicCustomOp {
                          INDArray output){
         super(new INDArray[]{image, cropBoxes, boxIndices, cropOutSize}, null);
         Preconditions.checkArgument(image.rank() == 4, "Input image must be rank 4 with shape [batch, height, width, channels], got %ndShape", image);
-        Preconditions.checkArgument(cropBoxes.rank() == 2 && cropBoxes.size(1) == 4, "Crop boxes must be rank 4 with shape [num_boxes, 5], got %ndShape", cropBoxes);
+        Preconditions.checkArgument(cropBoxes.rank() == 2 && cropBoxes.size(1) == 4, "Crop boxes must be rank 2 with shape [num_boxes, 4], got %ndShape", cropBoxes);
         Preconditions.checkArgument(boxIndices.rank() == 1 && cropBoxes.size(0) == boxIndices.size(0),
                 "Box indices must be rank 1 array with shape [num_boxes] (same as cropBoxes.size(0), got array with shape %ndShape", boxIndices);
         this.method = method;
         this.extrapolationValue = extrapolationValue;
         addArgs();
-        outputArguments.add(output);
+        // without an output the op allocates its own: a null entry would be taken for the first output
+        if (output != null)
+            outputArguments.add(output);
     }
 
     public CropAndResize(INDArray image, INDArray cropBoxes, INDArray boxIndices, INDArray cropOutSize, double extrapolationValue ) {
@@ -86,8 +88,10 @@ public class CropAndResize extends DynamicCustomOp {
         String method = attributesForNode.get("method").getS().toStringUtf8();
         if(method.equalsIgnoreCase("nearest")){
             this.method = Method.NEAREST;
-        } else {
+        } else if (method.equalsIgnoreCase("bilinear")) {
             this.method = Method.BILINEAR;
+        } else {
+            throw new IllegalArgumentException("Unknown crop_and_resize method: " + method);
         }
 
         if(attributesForNode.containsKey("extrapolation_value")){
@@ -116,6 +120,14 @@ public class CropAndResize extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 4,
                 "Expected 4 input datatypes for %s, got %s", getClass(), inputDataTypes);
-        return Collections.singletonList(DataType.FLOAT);   //TF import: always returns float32...
+        Preconditions.checkState(inputDataTypes.get(0).isFPType() || inputDataTypes.get(0).isIntType(),
+                "Images must have a numeric datatype, got %s", inputDataTypes.get(0));
+        Preconditions.checkState(inputDataTypes.get(1).isFPType(),
+                "Crop boxes must have a floating-point datatype, got %s", inputDataTypes.get(1));
+        Preconditions.checkState(inputDataTypes.get(2).isIntType() && inputDataTypes.get(3).isIntType(),
+                "Box indices and crop size must have integer datatypes, got %s and %s",
+                inputDataTypes.get(2), inputDataTypes.get(3));
+        // Native output storage follows the image; interpolation precision also depends on the boxes.
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

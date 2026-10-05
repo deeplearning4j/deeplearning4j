@@ -349,12 +349,29 @@ const std::vector<OpDescriptor::InputWriteGroup>& OpDescriptor::getInputWriteGro
 }
 
 OpDescriptor* OpDescriptor::setShapeValueInputs(const std::initializer_list<int>& indices) {
+  return setShapeValueInputs(indices, -1);
+}
+
+OpDescriptor* OpDescriptor::setShapeValueInputs(const std::initializer_list<int>& indices, int replacingIArgCount) {
   _shapeValueInputs.assign(indices.begin(), indices.end());
   _shapeValueInputsSpecified = true;
+  _shapeValueIArgCount = replacingIArgCount;
   return this;
 }
 
+bool OpDescriptor::hasShapeValueInputs(int numInputs, int numIArgs) const {
+  for (int i = 0; i < numInputs; ++i) {
+    if (usesInputValuesForShape(i, numIArgs)) return true;
+  }
+  return false;
+}
+
 bool OpDescriptor::usesInputValuesForShape(int index) const {
+  return usesInputValuesForShape(index, -1);
+}
+
+bool OpDescriptor::usesInputValuesForShape(int index, int numIArgs) const {
+  if (_shapeValueIArgCount >= 0 && numIArgs >= _shapeValueIArgCount) return false;
   if (!_shapeValueInputsSpecified) return true;
   for (int valueInput : _shapeValueInputs) {
     if (valueInput == index) return true;

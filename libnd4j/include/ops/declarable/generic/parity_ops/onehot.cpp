@@ -102,7 +102,9 @@ DECLARE_TYPES(onehot) {
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
-      ->setNumberOfStructuralIArgs(2);
+      ->setNumberOfStructuralIArgs(2)
+      // Only tensor depth affects shape, and IArg[1] takes precedence when present.
+      ->setShapeValueInputs({1}, 2);
   getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT);
 }
 }  // namespace ops

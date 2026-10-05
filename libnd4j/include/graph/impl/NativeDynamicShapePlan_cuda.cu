@@ -967,33 +967,25 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     // POST_EXEC slot/segment summary
     int nullSlots = 0, liveSlots = 0;
     int replaySegs = 0, slotBySlotSegsCount = 0;
+    int frozenSegs = 0, directSegs = 0, pendingSegs = 0;
     for (int i = 0; i < totalOutputSlots_; i++) {
       if (outputSlots_[i] == nullptr) { nullSlots++; } else { liveSlots++; }
     }
-    for (const auto& seg : segments_) {
-      bool hasComposite = false;
-      for (auto& h : seg.exec.compositeReplaySchedule.mergedReplayHandles) {
-        if (h != nullptr && h->isReady()) { hasComposite = true; break; }
+    for (int i = 0; i < static_cast<int>(segments_.size()); i++) {
+      switch (getSegmentReplayMode(i)) {
+        case REPLAY_MODE_MONOLITHIC:
+        case REPLAY_MODE_COMPOSITE: replaySegs++; break;
+        case REPLAY_MODE_SLOT_BY_SLOT: slotBySlotSegsCount++; break;
+        case REPLAY_MODE_FROZEN_CONSTANT: frozenSegs++; break;
+        case REPLAY_MODE_DIRECT_COMPILED: directSegs++; break;
+        default: pendingSegs++; break;
       }
-      if (!hasComposite) {
-        for (auto& u : seg.exec.compositeReplaySchedule.units) {
-          if (u.kind == REPLAY_UNIT_TRITON_ISLAND && u.mergedGroupId < 0) {
-            int idx = u.islandIndex;
-            if (idx >= 0 && idx < static_cast<int>(seg.exec.compositeReplaySchedule.compositeReplayHandles.size()) &&
-                seg.exec.compositeReplaySchedule.compositeReplayHandles[idx] != nullptr &&
-                seg.exec.compositeReplaySchedule.compositeReplayHandles[idx]->isReady()) {
-              hasComposite = true; break;
-            }
-          }
-        }
-      }
-      if ((seg.exec.replayHandle && seg.exec.replayHandle->isReady()) || hasComposite) replaySegs++;
-      else slotBySlotSegsCount++;
     }
     DSP_DIAG(VERIFY, "POST_EXEC_FROZEN exec=%d: slots(live=%d null=%d/%d) "
-             "segs(replay=%d sbs=%d/%d) graphReplays=%d",
+             "segs(replay=%d sbs=%d frozenConst=%d direct=%d pending=%d/%d) graphReplays=%d",
              executeCount_, liveSlots, nullSlots, totalOutputSlots_,
-             replaySegs, slotBySlotSegsCount, (int)segments_.size(),
+             replaySegs, slotBySlotSegsCount, frozenSegs, directSegs, pendingSegs,
+             (int)segments_.size(),
              (int)totalGraphReplays_);
 
     // Per-requested-output metadata. Host value dumps are intentionally omitted

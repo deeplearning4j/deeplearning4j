@@ -254,6 +254,8 @@ class SD_LIB_EXPORT OpDescriptor {
   // Unspecified preserves conservative shape-value synchronization for existing ops.
   bool _shapeValueInputsSpecified = false;
   std::vector<int> _shapeValueInputs;
+  // When supplied, this many leading iArgs completely replace shape-value inputs.
+  int _shapeValueIArgCount = -1;
 
   std::vector<InputWriteGroup> _inputWriteGroups;
 
@@ -385,7 +387,10 @@ class SD_LIB_EXPORT OpDescriptor {
   // Values (not just dimensions) read by calculateOutputShape. An explicit empty
   // set denotes metadata-only inference; absent optional inputs need no sync.
   OpDescriptor* setShapeValueInputs(const std::initializer_list<int>& indices);
+  OpDescriptor* setShapeValueInputs(const std::initializer_list<int>& indices, int replacingIArgCount);
   bool usesInputValuesForShape(int index) const;
+  bool usesInputValuesForShape(int index, int numIArgs) const;
+  bool hasShapeValueInputs(int numInputs, int numIArgs) const;
 
 
 };

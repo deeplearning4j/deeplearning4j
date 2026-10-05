@@ -234,6 +234,26 @@ public class NdArraySortTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testParallelReverseBeforeSort(Nd4jBackend backend) {
+        int length = 131089;
+        INDArray array = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape(1, -1);
+        INDArray ascending = array.dup();
+        double[] descending = new double[length];
+        for (int i = 0; i < length; i++) {
+            descending[i] = length - i;
+        }
+
+        INDArray copy = Transforms.reverse(array, true);
+        assertEquals(ascending, array, "Out-of-place reverse must not change the input");
+        assertArrayEquals(descending, copy.toDoubleVector(), 0.0);
+
+        Transforms.reverse(array, false);
+        assertArrayEquals(descending, array.toDoubleVector(), 0.0);
+        assertEquals(ascending, Nd4j.sort(array, true));
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSortAlongDimension1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(1000, 1000);

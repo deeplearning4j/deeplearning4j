@@ -41,14 +41,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Comprehensive JUnit 5 coverage for the libnd4j op trait classification system.
  *
  * <p>This test exists to catch the class of regression where ops are misclassified
- * against the table maintained in {@code libnd4j/include/ops/impl/OpTraitTable.cpp}
- * and {@code libnd4j/include/ops/declarable/OpDescriptor.h}. Specifically, it
+ * against op-local descriptor declarations using the enum in
+ * {@code libnd4j/include/ops/declarable/OpDescriptor.h}. Specifically, it
  * guards against the recent drift where {@code gather}, {@code gather_nd}, and
  * {@code repeat} were incorrectly tagged as {@code OP_TRAIT_VALUE_DEPENDENT_SHAPE}
  * and caused SHAPES_FROZEN {@code LIFECYCLE_ERROR} false positives.
  *
  * <p>The mask-bit Java-side constants mirror the C++ enum {@code OpTraits} in
- * {@code OpDescriptor.h}. All 29 named bits (0..28) are modelled below.
+ * {@code OpDescriptor.h}. The tested bits (0..29) are modelled below.
  */
 @DisplayName("libnd4j OpTraitTable — comprehensive trait coverage")
 public class OpTraitTableComprehensiveTest {
@@ -83,6 +83,7 @@ public class OpTraitTableComprehensiveTest {
     private static final int OP_TRAIT_SCATTER_ND            = 1 << 26;
     private static final int OP_TRAIT_SCATTER_ND_UPDATE     = 1 << 27;
     private static final int OP_TRAIT_CAST                  = 1 << 28;
+    private static final int OP_TRAIT_BACKWARD              = 1 << 29;
 
     // ── Native-op trait query ────────────────────────────────────────────────────
 
@@ -96,6 +97,25 @@ public class OpTraitTableComprehensiveTest {
 
     private static int traits(String opName) {
         return NativeOpsHolder.getInstance().getDeviceNativeOps().getOpTraits(opName);
+    }
+
+    @ParameterizedTest
+    @MethodSource("oneHotInvocationShapes")
+    void oneHotDepthArgumentsResolveShapeControls(int numInputs, int numIArgs, boolean valueDependent) {
+        assertTrue(has(traits("onehot"), OP_TRAIT_VALUE_DEPENDENT_SHAPE),
+                "Tensor-depth OneHot must retain its intrinsic value-dependent trait");
+        assertEquals(valueDependent, NativeOpsHolder.getInstance().getDeviceNativeOps()
+                .opShapeDependsOnInputValues("onehot", numInputs, numIArgs));
+    }
+
+    static Stream<Arguments> oneHotInvocationShapes() {
+        return Stream.of(
+                Arguments.of(1, 2, false), // indices values never affect shape
+                Arguments.of(2, 0, true),
+                Arguments.of(2, 1, true),
+                Arguments.of(2, 2, false), // IArg depth wins even with a tensor depth
+                Arguments.of(4, 1, true),  // on/off tensors do not replace depth
+                Arguments.of(4, 2, false));
     }
 
     private static boolean has(int bits, int bit) {
@@ -135,36 +155,37 @@ public class OpTraitTableComprehensiveTest {
                 Arguments.of("TILE",                  "tile",             OP_TRAIT_TILE),
                 Arguments.of("SCATTER_ND",            "scatter_nd",       OP_TRAIT_SCATTER_ND),
                 Arguments.of("SCATTER_ND_UPDATE",     "scatter_nd_update", OP_TRAIT_SCATTER_ND_UPDATE),
-                Arguments.of("CAST",                  "cast",             OP_TRAIT_CAST)
+                Arguments.of("CAST",                  "cast",             OP_TRAIT_CAST),
+                Arguments.of("BACKWARD",              "silu_bp",          OP_TRAIT_BACKWARD)
         );
     }
 
     @ParameterizedTest(name = "{0} represented by {1}")
     @MethodSource("traitBitReps")
-    @DisplayName("every OpTraits bit has at least one representative op carrying it")
+    @DisplayName("every tested OpTraits bit has a representative op carrying it")
     public void testEveryTraitBitHasRepresentative(String bitName, String opName, int bit) {
         int t = traits(opName);
         assertNotEquals(0, t, "representative op '" + opName + "' returned 0 traits — "
-                + "either the op is unregistered or OpTraitTable is missing an entry");
+                + "either the op is unregistered or its descriptor is missing traits");
         assertTrue(has(t, bit),
                 "op '" + opName + "' should carry " + bitName + " (0x"
                         + Integer.toHexString(bit) + ") but returned 0x" + Integer.toHexString(t));
     }
 
     // ────────────────────────────────────────────────────────────────────────────
-    // 2. Full OpTraitTable entries — every op listed in the C++ table
+    // 2. Op-local descriptor contracts — declared trait subsets
     //    Each entry asserts the declared shorthand-expanded trait subset.
     //    Auto-derived bits from the class hierarchy may add more — we only check
     //    that ALL declared bits are set.
     // ────────────────────────────────────────────────────────────────────────────
 
-    /** Bundle: op name + the traits the C++ TABLE declares for it. */
+    /** Bundle: op name + the traits its native descriptor declares. */
     static Stream<Arguments> fullTraitTableEntries() {
-        // Mirrors libnd4j/include/ops/impl/OpTraitTable.cpp TABLE map.
-        // These constants mirror the static shorthands in that file.
+        // Group the op-local declarations into readable trait subsets.
         final int UNARY_EW          = OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING;
         final int UNARY_ACT         = UNARY_EW | OP_TRAIT_ACTIVATION;
         final int BINARY_EW         = OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING;
+        final int BINARY_ACT_BP     = BINARY_EW | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD;
         final int BINARY_CMP        = BINARY_EW | OP_TRAIT_COMPARISON;
         final int BINARY_LOG        = BINARY_EW | OP_TRAIT_LOGICAL;
         final int TERNARY_EW        = OP_TRAIT_TERNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING;
@@ -248,7 +269,7 @@ public class OpTraitTableComprehensiveTest {
 
                 // ── Identity/cast/clip ─────────────────────────────────
                 Arguments.of("identity", IDENT),
-                Arguments.of("assign", IDENT),
+                Arguments.of("assign", BINARY_EW),
                 Arguments.of("cast", UNARY_EW | OP_TRAIT_CAST),
                 Arguments.of("clipbyvalue", UNARY_EW),
 
@@ -362,7 +383,7 @@ public class OpTraitTableComprehensiveTest {
                 Arguments.of("strided_slice", VIEW | OP_TRAIT_SLICE),
                 Arguments.of("expand_dims", VIEW_SHAPE_DEP),
                 Arguments.of("squeeze", VIEW_SHAPE_DEP),
-                Arguments.of("flatten", VIEW_SHAPE_DEP),
+                Arguments.of("flatten", CONCAT),
                 Arguments.of("flatten_2d", VIEW_SHAPE_DEP),
                 Arguments.of("permute", VIEW_SHAPE_DEP),
 
@@ -405,6 +426,9 @@ public class OpTraitTableComprehensiveTest {
                 Arguments.of("ones_like", CONST_GEN),
                 Arguments.of("ones_as", CONST_GEN),
                 Arguments.of("oneslike", CONST_GEN),
+                Arguments.of("fill_as", CONST_GEN),
+                Arguments.of("fill_like", CONST_GEN),
+                Arguments.of("filllike", CONST_GEN),
 
                 // ── LLM attention (fwd + bp) ──────────────────────────
                 Arguments.of("dot_product_attention", ATTN),
@@ -454,11 +478,11 @@ public class OpTraitTableComprehensiveTest {
                 Arguments.of("fused_gemm_swiglu_bp", MATMUL),
 
                 // ── Activation backprop + novel activations ───────────
-                Arguments.of("silu_bp", UNARY_ACT),
-                Arguments.of("fused_gelu_bp", UNARY_ACT),
+                Arguments.of("silu_bp", BINARY_ACT_BP),
+                Arguments.of("fused_gelu_bp", BINARY_ACT_BP),
                 Arguments.of("squared_relu", UNARY_ACT),
-                Arguments.of("squared_relu_bp", UNARY_ACT),
-                Arguments.of("gated_delta_rule", UNARY_ACT),
+                Arguments.of("squared_relu_bp", BINARY_ACT_BP),
+                Arguments.of("gated_delta_rule", OP_TRAIT_FULLY_WRITING),
 
                 // ── Mamba / selective scan / SSM / causal conv ────────
                 Arguments.of("gated_delta_net_block", REDUCE),
@@ -516,6 +540,7 @@ public class OpTraitTableComprehensiveTest {
                 "gather", "gather_nd", "repeat",
                 "concat", "stack", "split", "split_v",
                 "expand_dims", "squeeze",
+                "fill_as", "fill_like", "filllike",
                 "flatten", "flatten_2d", "permute",
                 // in-place KV writes whose output is a view of an input — shape
                 // from input shape + iArgs only (SHAPES_FROZEN false-positive
@@ -629,13 +654,12 @@ public class OpTraitTableComprehensiveTest {
     }
 
     @Test
-    @DisplayName("every activation op carries OP_TRAIT_UNARY_ELEMENTWISE + FULLY_WRITING")
+    @DisplayName("forward unary activations carry UNARY_ELEMENTWISE + FULLY_WRITING")
     public void testActivationImpliesUnary() {
         String[] ops = {
                 "relu", "relu6", "leakyrelu", "elu", "selu", "gelu", "sigmoid", "tanh",
                 "softsign", "softplus", "swish", "silu", "mish", "hard_sigmoid",
-                "hardtanh", "fused_gelu", "silu_bp", "fused_gelu_bp", "squared_relu",
-                "squared_relu_bp", "gated_delta_rule"
+                "hardtanh", "fused_gelu", "squared_relu"
         };
         for (String op : ops) {
             int t = traits(op);
@@ -643,6 +667,42 @@ public class OpTraitTableComprehensiveTest {
             assertTrue(has(t, OP_TRAIT_UNARY_ELEMENTWISE), op + " should have UNARY_ELEMENTWISE");
             assertTrue(has(t, OP_TRAIT_FULLY_WRITING), op + " should have FULLY_WRITING");
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"silu_bp", "fused_gelu_bp", "squared_relu_bp"})
+    @DisplayName("activation backprop consumes values and upstream gradients")
+    public void testActivationBackwardIsBinary(String op) {
+        int t = traits(op);
+        assertTrue(has(t, OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_ACTIVATION
+                | OP_TRAIT_BACKWARD | OP_TRAIT_FULLY_WRITING),
+                op + " must carry binary activation backward traits");
+        assertFalse(has(t, OP_TRAIT_UNARY_ELEMENTWISE), op + " must not be unary");
+    }
+
+    @Test
+    @DisplayName("assignment is broadcastable binary, not unary identity")
+    public void testAssignmentIsBinary() {
+        int t = traits("assign");
+        assertTrue(has(t, OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING));
+        assertEquals(0, t & (OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_IDENTITY));
+    }
+
+    @Test
+    @DisplayName("variadic flatten copies and concatenates rather than producing a view")
+    public void testFlattenIsDataMovement() {
+        int t = traits("flatten");
+        assertTrue(has(t, OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_CONCAT | OP_TRAIT_FULLY_WRITING));
+        assertEquals(0, t & (OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE));
+    }
+
+    @Test
+    @DisplayName("gated delta rule is a recurrent state update, not elementwise activation")
+    public void testGatedDeltaRuleIsNotElementwise() {
+        int t = traits("gated_delta_rule");
+        assertTrue(has(t, OP_TRAIT_FULLY_WRITING));
+        assertEquals(0, t & (OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_BINARY_ELEMENTWISE
+                | OP_TRAIT_TERNARY_ELEMENTWISE | OP_TRAIT_ACTIVATION));
     }
 
     @Test
@@ -698,7 +758,7 @@ public class OpTraitTableComprehensiveTest {
     @Test
     @DisplayName("identity ops carry IDENTITY + UNARY_ELEMENTWISE + FULLY_WRITING")
     public void testIdentityImpliesUnary() {
-        for (String op : new String[]{"identity", "assign"}) {
+        for (String op : new String[]{"identity"}) {
             int t = traits(op);
             assertTrue(has(t, OP_TRAIT_IDENTITY),           op + " should have IDENTITY");
             assertTrue(has(t, OP_TRAIT_UNARY_ELEMENTWISE),  op + " should have UNARY_ELEMENTWISE");
@@ -737,7 +797,7 @@ public class OpTraitTableComprehensiveTest {
     @Test
     @DisplayName("VIEW_SHAPE_DEP ops carry VIEW_PRODUCING but NOT VALUE_DEPENDENT_SHAPE")
     public void testShapeDepViewsDoNotCarryValdep() {
-        for (String op : new String[]{"expand_dims", "squeeze", "flatten", "flatten_2d", "permute"}) {
+        for (String op : new String[]{"expand_dims", "squeeze", "flatten_2d", "permute"}) {
             int t = traits(op);
             assertTrue(has(t, OP_TRAIT_VIEW_PRODUCING),
                     op + " should have VIEW_PRODUCING");

@@ -81,6 +81,9 @@ SD_LIB_EXPORT unsigned int getOpTraits(const char* opName);
  */
 SD_LIB_EXPORT sd::LongType getOpTraitMask(const char* opName);
 
+/** Resolve tensor-value shape dependence using the operation's invocation metadata. */
+SD_LIB_EXPORT bool opShapeDependsOnInputValues(const char* opName, int numInputs, int numIArgs);
+
 SD_LIB_EXPORT OpaqueRandomGenerator* createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed);
 
 SD_LIB_EXPORT OpaqueContext *createGraphContext(int nodeId);
@@ -1569,6 +1572,14 @@ SD_LIB_EXPORT void destroyNativeMultiBackendWorkspace(OpaqueMultiBackendWorkspac
  * Allocate bytes from multi-backend workspace on primary device.
  */
 SD_LIB_EXPORT void* nativeMbwAllocateBytes(OpaqueMultiBackendWorkspace handle, sd::LongType numBytes);
+SD_LIB_EXPORT void* nativeMbwAllocateBytesOnDevice(OpaqueMultiBackendWorkspace handle,
+    sd::LongType numBytes, int deviceType, int deviceIndex);
+SD_LIB_EXPORT void nativeMbwSyncDevice(OpaqueMultiBackendWorkspace handle,
+    int deviceType, int deviceIndex);
+SD_LIB_EXPORT void nativeMbwSyncAllDevices(OpaqueMultiBackendWorkspace handle);
+SD_LIB_EXPORT sd::LongType nativeMbwGetAllocatedSizeOnDevice(OpaqueMultiBackendWorkspace handle,
+    int deviceType, int deviceIndex);
+SD_LIB_EXPORT sd::LongType nativeMbwGetCurrentOffset(OpaqueMultiBackendWorkspace handle);
 
 /**
  * Multi-backend workspace scope management.

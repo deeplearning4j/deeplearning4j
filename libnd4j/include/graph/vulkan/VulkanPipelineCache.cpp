@@ -542,6 +542,9 @@ VulkanPipelineCache::SpirvModule VulkanPipelineCache::mlirToSpirv(
   // createVulkanOpLoweringPass() wraps populateVulkanLoweringPatterns() in an
   // OperationPass<ModuleOp> that uses applyPartialConversion.
   pm.addPass(sd::graph::createVulkanOpLoweringPass());
+  // GLSL.std.450 defines exp/log/pow/sin/cos/tanh/cosh/atan for 16/32-bit floats only, and MathToSPIRV has no Shader
+  // lowering for erf, erfc or trunc: expand those into arithmetic before MathToSPIRV sees them.
+  pm.addPass(sd::graph::createVulkanF64MathExpansionPass());
 
   // ── Intermediate cleanup after Stage 1 ───────────────────────────────────
   pm.addPass(mlir::createCanonicalizerPass());

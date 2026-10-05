@@ -41,7 +41,7 @@ import java.util.List;
  */
 public class SegmentSoftmax extends DynamicCustomOp {
 
-    private final long K;
+    private long K;
 
     public SegmentSoftmax() { this.K = 0; }
 
@@ -66,6 +66,14 @@ public class SegmentSoftmax extends DynamicCustomOp {
         super(new INDArray[]{logits, segmentIds}, null);
         this.K = K;
         addIArgument(K);
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if (iArguments != null && !iArguments.isEmpty()) {
+            this.K = iArguments.get(0);
+        }
     }
 
     @Override

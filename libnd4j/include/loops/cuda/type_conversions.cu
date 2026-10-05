@@ -19,6 +19,7 @@
 //
 //
 //
+#include <execution/cuda/LaunchDims.h>
 #include <helpers/DebugHelper.h>
 #include <loops/type_conversions.h>
 #include <types/types.h>
@@ -26,19 +27,25 @@
 namespace sd {
 template <typename S, typename T>
 void TypeCast::convertGenericCuda(Pointer *extras, void *dx, LongType N, void *dz) {
-  auto stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+  if (N <= 0) return;
+  // extras[1] holds a cudaStream_t* (lcExecutionStream's LaunchContext stream), as for sort and shuffle; reading the
+  // slot itself as the handle launched on the address of the stream variable (a libcuda SIGSEGV, or a launch that
+  // never ran and left the target as it was)
+  auto stream = reinterpret_cast<cudaStream_t *>(extras[1]);
 
-  sd::convertKernel<S, T><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-  DebugHelper::checkErrorCode(stream, "convertGeneric(...) failed");
+  // an elementwise grid-stride transform: the legacy transforms' launch dimensions
+  dim3 launchDims = getLaunchDims("transformScan");
+  sd::convertKernel<S, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, dz);
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode("convertGenericCuda failed");
+  }
 };
 
 template <typename S, typename T>
 SD_DEVICE void convertKernelGeneric(S *x, LongType N, T *z) {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-  for (LongType i = tid; i < N; i += blockDim.x * gridDim.x) {
-    // through-float conversion simplifies handling of narrow dtypes (fp16, bf16, etc.)
-    z[i] = static_cast<T>(static_cast<float>(x[i]));
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < N;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    z[i] = TypeCast::convertElement<S, T>(x[i]);
   }
 };
 

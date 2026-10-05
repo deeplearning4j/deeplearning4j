@@ -1117,6 +1117,8 @@ void sort(sd::Pointer *extraPointers, OpaqueNDArray x, bool descending) {
 void sortTad(sd::Pointer *extraPointers, OpaqueNDArray  x,
              sd::LongType *dimension, sd::LongType dimensionLength,
              sd::LongType *tadShapeInfo,  sd::LongType *tadOffsets, bool descending) {
+    // an empty array has no TADs to sort (and its TAD length divides its length by zero)
+    if (x->lengthOf() == 0) return;
     NativeOpExecutioner::execSort(x, dimension, dimensionLength, descending);
 
 }
@@ -1237,9 +1239,23 @@ void saveNpy(std::string fname, const OpaqueDataBuffer *data, const unsigned int
 }
 
 
+namespace {
+// The paired sorts read the second array at the positions of the first: they need equal lengths, and a pair without
+// elements has nothing to order (its buffers are null).
+bool pairedSortHasWork(OpaqueNDArray x, OpaqueNDArray y, const char *operation) {
+  if (x->isEmpty() || y->isEmpty()) return false;
+  if (x->lengthOf() != y->lengthOf()) {
+    std::string message = std::string(operation) + ": keys and values must have the same size";
+    THROW_EXCEPTION(message.c_str());
+  }
+  return true;
+}
+}  // namespace
+
 void sortByKey(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,bool descending) {
   #ifdef __cpp_exceptions
   try {
+    if (!pairedSortHasWork(x, y, "sortByKey")) return;
     auto xType = x->dataType();
     auto yType = y->dataType();
     BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortByKey(x, y, descending),
@@ -1249,6 +1265,7 @@ void sortByKey(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,bool
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
   #else
+    if (!pairedSortHasWork(x, y, "sortByKey")) return;
     auto xType = x->dataType();
     auto yType = y->dataType();
     BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortByKey(x, y, descending),
@@ -1259,6 +1276,7 @@ void sortByKey(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,bool
 void sortByValue(sd::Pointer *extraPointers, OpaqueNDArray x,OpaqueNDArray y, bool descending) {
   #ifdef __cpp_exceptions
   try {
+    if (!pairedSortHasWork(x, y, "sortByValue")) return;
     auto xType = x->dataType();
     auto yType = y->dataType();
     BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortByValue(x, y, descending),
@@ -1268,6 +1286,7 @@ void sortByValue(sd::Pointer *extraPointers, OpaqueNDArray x,OpaqueNDArray y, bo
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
   #else
+    if (!pairedSortHasWork(x, y, "sortByValue")) return;
     auto xType = x->dataType();
     auto yType = y->dataType();
     BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortByValue(x, y, descending),
@@ -1279,20 +1298,22 @@ void sortTadByKey(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,
                   OpaqueNDArray dimension, bool descending) {
   #ifdef __cpp_exceptions
   try {
+    if (!pairedSortHasWork(x, y, "sortTadByKey")) return;
     auto xType = x->dataType();
     auto yType = y->dataType();
     auto dimensionLength = dimension->lengthOf();
-    BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortTadByValue(x, y, dimension, descending), SD_NUMERIC_TYPES,
+    BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortTadByKey(x, y, dimension, descending), SD_NUMERIC_TYPES,
                           SD_NUMERIC_TYPES);
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
   #else
+    if (!pairedSortHasWork(x, y, "sortTadByKey")) return;
     auto xType = x->dataType();
     auto yType = y->dataType();
     auto dimensionLength = dimension->lengthOf();
-    BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortTadByValue(x, y, dimension, descending), SD_NUMERIC_TYPES,
+    BUILD_DOUBLE_SELECTOR(xType, yType, sd::DoubleMethods, ::sortTadByKey(x, y, dimension, descending), SD_NUMERIC_TYPES,
                           SD_NUMERIC_TYPES);
   #endif
 }
@@ -1300,6 +1321,7 @@ void sortTadByValue(sd::Pointer *extraPointers, OpaqueNDArray x,
                     OpaqueNDArray y,OpaqueNDArray dimension, bool descending) {
   #ifdef __cpp_exceptions
   try {
+    if (!pairedSortHasWork(x, y, "sortTadByValue")) return;
     auto xType = x->dataType();
     auto yType = y->dataType();
     auto dimensionLength = dimension->lengthOf();
@@ -1310,6 +1332,7 @@ void sortTadByValue(sd::Pointer *extraPointers, OpaqueNDArray x,
    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
   #else
+    if (!pairedSortHasWork(x, y, "sortTadByValue")) return;
     auto xType = x->dataType();
     auto yType = y->dataType();
     auto dimensionLength = dimension->lengthOf();
@@ -2771,6 +2794,28 @@ void destroyNativeMultiBackendWorkspace(OpaqueMultiBackendWorkspace handle) {
 
 void* nativeMbwAllocateBytes(OpaqueMultiBackendWorkspace handle, sd::LongType numBytes) {
     return sd::memory::mbwAllocateBytes(handle, numBytes);
+}
+
+void* nativeMbwAllocateBytesOnDevice(OpaqueMultiBackendWorkspace handle,
+    sd::LongType numBytes, int deviceType, int deviceIndex) {
+    return sd::memory::mbwAllocateBytesOnDevice(handle, numBytes, deviceType, deviceIndex);
+}
+
+void nativeMbwSyncDevice(OpaqueMultiBackendWorkspace handle, int deviceType, int deviceIndex) {
+    sd::memory::mbwSyncDevice(handle, deviceType, deviceIndex);
+}
+
+void nativeMbwSyncAllDevices(OpaqueMultiBackendWorkspace handle) {
+    sd::memory::mbwSyncAllDevices(handle);
+}
+
+sd::LongType nativeMbwGetAllocatedSizeOnDevice(OpaqueMultiBackendWorkspace handle,
+    int deviceType, int deviceIndex) {
+    return sd::memory::mbwGetAllocatedSizeOnDevice(handle, deviceType, deviceIndex);
+}
+
+sd::LongType nativeMbwGetCurrentOffset(OpaqueMultiBackendWorkspace handle) {
+    return sd::memory::mbwGetCurrentOffset(handle);
 }
 
 void nativeMbwScopeIn(OpaqueMultiBackendWorkspace handle) {

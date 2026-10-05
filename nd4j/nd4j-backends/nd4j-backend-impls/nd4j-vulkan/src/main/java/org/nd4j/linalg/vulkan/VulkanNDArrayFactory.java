@@ -15,6 +15,7 @@ import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
+import org.nd4j.linalg.api.buffer.HybridDataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.custom.Flatten;
@@ -170,11 +171,14 @@ public class VulkanNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray createFromDescriptor(DataBuffer shapeInformation) {
         VulkanNDArray array = new VulkanNDArray();
-        array.setShapeInfoDataBuffer(shapeInformation);
+        // Allocate outputs from the descriptor's shape, not its input-view strides or flags.
+        array.setShapeInfoDataBuffer(Shape.allocationShapeInfo(shapeInformation));
         long[] shapeInfo = array.shapeInfoJava();
         DataType dataType = Shape.dataType(shapeInfo);
-        long length = Shape.isEmpty(shapeInfo) ? 0 : Shape.length(shapeInfo);
-        array.setData(dataBufferFactory.create(dataType, length, false));
+        // Empty descriptors carry their shape and dtype in shape info and have no data buffer.
+        if (!Shape.isEmpty(shapeInfo)) {
+            array.setData(dataBufferFactory.create(dataType, Shape.length(shapeInfo), false));
+        }
         return array;
     }
 
@@ -624,8 +628,8 @@ public class VulkanNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public void convertDataEx(DataTypeEx typeSrc, DataBuffer source,
                               DataTypeEx typeDst, DataBuffer target) {
-        convertDataEx(typeSrc, source.addressPointer(), typeDst,
-                target.addressPointer(), target.length());
+        // addressPointer() brings the source's host copy up to date
+        convertDataEx(typeSrc, source.addressPointer(), typeDst, target);
     }
 
     @Override
@@ -640,6 +644,11 @@ public class VulkanNDArrayFactory extends BaseNativeNDArrayFactory {
     public void convertDataEx(DataTypeEx typeSrc, Pointer source,
                               DataTypeEx typeDst, DataBuffer buffer) {
         convertDataEx(typeSrc, source, typeDst, buffer.addressPointer(), buffer.length());
+        // The conversion wrote the buffer's host copy: that copy is the one to read. Untracked, a read synchronized
+        // the device copy over it.
+        if (buffer instanceof HybridDataBuffer) {
+            ((HybridDataBuffer) buffer).markHostDirty();
+        }
     }
 
     @Override

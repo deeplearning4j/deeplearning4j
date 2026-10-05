@@ -42,6 +42,7 @@
 #include <system/Environment.h>
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <helpers/ConstantShapeHelper.h>
+#include <helpers/DenseOutputShape.h>
 #include <helpers/ShapeBuilders.h>
 #include <ops/declarable/OpRegistrator.h>
 
@@ -930,7 +931,9 @@ static bool isExactExistingViewForSlot(
       !existing->dataBuffer()->isValid()) {
     return false;
   }
-  if (input0->ordering() != 'c' ||
+  // Shape inference is authoritative: matching dimensions/strides do not make
+  // a copying reshape an alias of its input.
+  if (ArrayOptions::needsCopy(outShapeInfo) || input0->ordering() != 'c' ||
       !shape::strideDescendingCAscendingF(const_cast<LongType*>(input0->shapeInfo()))) {
     return false;
   }
@@ -981,7 +984,7 @@ static bool isExactExistingViewForSlot(
  * and *outViewOffset to the byte-element offset used.
  *
  * On failure, *outView is nullptr and the result code indicates why:
- *   VIEW_NOT_POSSIBLE       — input not C-contiguous, or output length > input length
+ *   VIEW_NOT_POSSIBLE       — shape requires a copy, input not C-contiguous, or output length > input length
  *   VIEW_STRIDED_SLICE_FAIL — strided_slice offset computation failed
  *   VIEW_STALE_EMPTY_SHAPE  — cached output shape is empty but input is non-empty
  *
@@ -1010,6 +1013,10 @@ static ViewCreateResult tryCreateViewForSlot(
 
   *outView = nullptr;
   *outViewOffset = 0;
+
+  // A view-capable op can still require materialization for this invocation
+  // (for example, changing reshape traversal from C to F).
+  if (ArrayOptions::needsCopy(outShapeInfo)) return VIEW_NOT_POSSIBLE;
 
   const LongType outLen = shape::length(outShapeInfo);
   const LongType inLen = input0 != nullptr ? input0->lengthOf() : 0;
@@ -3569,7 +3576,11 @@ Status NativeDynamicShapePlan::executeSlot(
       (syncOverrideDepth_ <= 0 || captureExactViewEligible)) {
 
     // ── View-capable fast path (reshape/expand_dims/squeeze/strided_slice) ──
-    if (slot.isViewCapableOp() && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
+    // Capture-time wrapper reuse applies only to actual view producers.
+    // Owned outputs must execute their copy kernel using the frozen context.
+    if (slot.isViewCapableOp() &&
+        (!tl_graphExecutionActive || slot.slotPhase.isViewProducer) &&
+        slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
       int si = slot.wiring.outputSlotIndices[0];
       if (si >= 0 && si < totalOutputSlots_) {
         // Resolve input0 from slot source indices.
@@ -5098,10 +5109,13 @@ Status NativeDynamicShapePlan::executeSlot(
         auto& shapeHelper = ConstantShapeHelper::getInstance();
         auto* rawShape = const_cast<LongType*>(shapeList->at(i));
         // Preserve ARRAY_IS_VIEW for trait-declared view outputs so later
-        // logical materialization honors this shape's strides.
+        // logical materialization honors this shape's strides. Every other
+        // output is a new array: it is interned as the dense array the plan
+        // allocates for it, not with the strides and flags of the input its
+        // shape function copied.
         auto cached = i == 0 && slot.isViewCapableOp()
                           ? shapeHelper.bufferForShapeInfoWithView(rawShape)->primary()
-                          : shapeHelper.createFromExisting(rawShape);
+                          : shapeHelper.createFromExisting(denseOutputShapeInfo(rawShape));
         outputShapes[i] = cached;
       } catch (const std::exception& e) {
         DSP_DIAG_SLOT(SHAPE, stepIdx, "shape cache interning EXCEPTION at slot %d (%s) output[%d]: %s",
@@ -5430,7 +5444,7 @@ Status NativeDynamicShapePlan::executeSlot(
                     "AFTER_untrackedCache1_delete", executeCount_);
               }
             }
-            outputs[i] = new NDArray(const_cast<LongType*>(outputShapes[i]), true);
+            outputs[i] = new NDArray(denseOutputShapeInfo(outputShapes[i]), true);
             if (cacheIdx < untrackedOutputCacheSize_) {
               untrackedOutputCache_[cacheIdx] = outputs[i];
             }
@@ -5438,7 +5452,7 @@ Status NativeDynamicShapePlan::executeSlot(
           }
           const LongType* shapeInfo = outputShapes[i];
           auto dt = ArrayOptions::dataType(shapeInfo);
-          outputs[i] = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
+          outputs[i] = new NDArray(denseOutputShapeInfo(shapeInfo), dt, true);
           writeOutputSlot(si, outputs[i], "alloc-output");
           DSP_DIAG_SLOT_WRITE(si, slot.ident.opName.c_str(),
                               outputs[i]->dataBuffer() != nullptr
@@ -5703,6 +5717,9 @@ Status NativeDynamicShapePlan::executeSlot(
           int si = (i < numWiredOutputs) ? slot.wiring.outputSlotIndices[i] : -1;
           const LongType* shapeInfo = outputShapes[i];
           auto dt = ArrayOptions::dataType(shapeInfo);
+          // A secondary output is a new array: the dense array a shape function's
+          // descriptor allocates, whose layout the cached wrapper is compared with.
+          LongType* const secondaryShapeInfo = denseOutputShapeInfo(shapeInfo);
           // Frozen-phase reuse: if the slot already has a compatible cached
           // wrapper (same shape + dtype) reuse it instead of allocating a fresh
           // NDArray, which would trip the frozen-phase pointer-replacement
@@ -5711,8 +5728,8 @@ Status NativeDynamicShapePlan::executeSlot(
             NDArray* existingSecondary = outputSlots_[si];
             if (existingSecondary != nullptr &&
                 existingSecondary->hasValidShapeInfo() &&
-                shape::shapeEquals(existingSecondary->shapeInfo(), shapeInfo) &&
-                shape::strideEquals(existingSecondary->shapeInfo(), shapeInfo) &&
+                shape::shapeEquals(existingSecondary->shapeInfo(), secondaryShapeInfo) &&
+                shape::strideEquals(existingSecondary->shapeInfo(), secondaryShapeInfo) &&
                 existingSecondary->dataType() == dt) {
               outputs[i] = existingSecondary;
               writeOutputSlot(si, existingSecondary, "view-secondary-reuse");
@@ -5724,8 +5741,9 @@ Status NativeDynamicShapePlan::executeSlot(
               continue;
             }
           }
-          // Use shapeInfo-preserving constructor to match standard path strides/ordering
-          outputs[i] = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
+          // The dense descriptor keeps the standard path's order and gives the array strides that
+          // address exactly its own buffer
+          outputs[i] = new NDArray(secondaryShapeInfo, dt, true);
           if (si >= 0 && si < totalOutputSlots_) {
             writeOutputSlot(si, outputs[i], "view-secondary-alloc");
             DSP_DIAG_SLOT_WRITE(si, slot.ident.opName.c_str(),
@@ -5805,7 +5823,7 @@ Status NativeDynamicShapePlan::executeSlot(
           }
         }
       }
-      outputs[i] = new NDArray(const_cast<LongType*>(outputShapes[i]), true);
+      outputs[i] = new NDArray(denseOutputShapeInfo(outputShapes[i]), true);
       if (cacheIdx < untrackedOutputCacheSize_) {
         untrackedOutputCache_[cacheIdx] = outputs[i];
       }
@@ -5986,13 +6004,13 @@ Status NativeDynamicShapePlan::executeSlot(
         NDArray* maxOut = nullptr;
         try {
           if (rank == 0) {
-            maxOut = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
+            maxOut = new NDArray(denseOutputShapeInfo(shapeInfo), dt, true);
           } else if (!slot.isViewCapableOp()) {
             std::vector<LongType> contigShape(rank);
             for (int d = 0; d < rank; d++) contigShape[d] = shape[d];
             maxOut = new NDArray(order, contigShape, dt);
           } else {
-            maxOut = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
+            maxOut = new NDArray(denseOutputShapeInfo(shapeInfo), dt, true);
           }
           auto* maxDb = maxOut != nullptr ? maxOut->dataBuffer() : nullptr;
           if (maxDb != nullptr && maxBytes > maxDb->getLenInBytes()) {
@@ -6002,7 +6020,7 @@ Status NativeDynamicShapePlan::executeSlot(
           DSP_DIAG_SLOT(MEMORY, stepIdx, "max-allocation FAILED at slot %d (%s): %s",
                     stepIdx, slot.ident.opName.c_str(), e.what());
           // Fallback to original shape — use shapeInfo-preserving constructor
-          maxOut = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
+          maxOut = new NDArray(denseOutputShapeInfo(shapeInfo), dt, true);
         }
 
         outputs[i] = maxOut;
@@ -6053,7 +6071,7 @@ Status NativeDynamicShapePlan::executeSlot(
         // cached shape info (dtype, ews, order from calculateOutputShape) is kept.
         // The empty-vector NDArray constructor creates a fresh scalar shape via
         // scalarDescriptor which may not match the cached shapeInfo exactly.
-        out = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
+        out = new NDArray(denseOutputShapeInfo(shapeInfo), dt, true);
       } else if (!slot.isViewCapableOp()) {
         std::vector<LongType> contigShape(rank);
         for (int d = 0; d < rank; d++) contigShape[d] = shapeInfo[d + 1];
@@ -6062,7 +6080,7 @@ Status NativeDynamicShapePlan::executeSlot(
         // Use the shapeInfo-preserving constructor to match the standard path
         // (prepareOutputs: new NDArray(out, true, ...)). This preserves the
         // exact strides, ordering, and EWS from calculateOutputShape.
-        out = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
+        out = new NDArray(denseOutputShapeInfo(shapeInfo), dt, true);
       }
     } catch (const std::exception& e) {
       // The owning device's MemoryCounter rejected the allocation (device full —
@@ -6101,7 +6119,7 @@ Status NativeDynamicShapePlan::executeSlot(
           try {
             dspSetCurrentDevice(altDevice);
             if (out != nullptr) { delete out; out = nullptr; }
-            out = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
+            out = new NDArray(denseOutputShapeInfo(shapeInfo), dt, true);
           } catch (const std::exception& e2) {
             DSP_DIAG_SLOT(MEMORY, stepIdx,
                       "CAPACITY_SHIFT FAILED: slot %d output[%d] alt device %d: %s",

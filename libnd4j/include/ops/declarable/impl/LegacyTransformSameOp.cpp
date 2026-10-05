@@ -51,9 +51,8 @@ Status LegacyTransformSameOp::validateAndExecute(Context &block) {
   ExtraArguments extras(*block.getTArguments());
   PointersManager manager(block.launchContext(), "LegacyTransformSameOp");
 
-  NativeOpExecutioner::execTransformSame(block.launchContext(), opNum, input->buffer(), input->shapeInfo(),
-                                         input->specialBuffer(), input->specialShapeInfo(), z->buffer(), z->shapeInfo(),
-                                         z->specialBuffer(), z->specialShapeInfo(), extras.argumentsAsT(z->dataType()),
+  NativeOpExecutioner::execTransformSame(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(input),
+                                         sd::LegacyTensorArg::fromArray(z), extras.argumentsAsT(z->dataType()),
                                          nullptr, nullptr);
 
   manager.synchronize();

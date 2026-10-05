@@ -263,10 +263,13 @@ public class Broadcast {
      * For example, mul([a,b,c], [a,c], 0,2)
      */
     public static void validateBroadcastDims(INDArray x, INDArray y, INDArray z, long... dimensions) {
+        Preconditions.checkArgument(x != null && y != null && z != null,
+                "Broadcast execution requires X, Y and Z arrays");
         Preconditions.checkArgument(x == z || x.equalShapes(z), "X and Z arrays must be equal shape. X shape: %s, Z shape: %s",
                 x.shape(), z.shape());
         long[] sx = x.shape();
         long[] sy = y.shape();
+        dimensions = normalizeBroadcastDimensions(x.rank(), dimensions);
         //Possibility 1: equal ranks - dimensions must match
         if(dimensions.length == 1 && sy.length == 2 && (sy[0] == 1 || sy[1] == 1)) {
             //Edge case: x=[a,b,c], y=[1,b], dim=1 etc
@@ -280,8 +283,12 @@ public class Broadcast {
             }
         } else if(sx.length == sy.length){
             for(long d : dimensions){
-                long d2 = d < 0 ? d + sx.length : d; //Handle negative dimensions
-                Preconditions.checkState(sx[(int) d2] == sy[(int) d2], "Dimensions mismatch on dimension %s: x shape %s, y shape %s", d, sx, sy);
+                Preconditions.checkState(sx[(int) d] == sy[(int) d], "Dimensions mismatch on dimension %s: x shape %s, y shape %s", d, sx, sy);
+            }
+            for (int d = 0; d < sy.length; d++) {
+                Preconditions.checkState(Arrays.binarySearch(dimensions, d) >= 0 || sy[d] == 1,
+                        "Non-broadcast dimension %s of Y must be singleton: x shape %s, y shape %s, dimensions %s",
+                        d, sx, sy, dimensions);
             }
         } else if(dimensions.length == sy.length) {
             //Possibility 2: different ranks - for example, mul([a,b,c],[a,c], [0,2]) - dimensions refer to x
@@ -294,6 +301,31 @@ public class Broadcast {
             throw new IllegalStateException("Invalid broadcast dimensions: x shape " + Arrays.toString(sx) + ", y shape " + Arrays.toString(sy)
                     + ", dimensions " + Arrays.toString(dimensions));
         }
+    }
+
+    /** Normalize the axis set without mutating caller-owned dimensions or accepting reduction sentinels. */
+    public static long[] normalizeBroadcastDimensions(int rank, long... dimensions) {
+        if (dimensions == null || dimensions.length == 0) {
+            long[] all = new long[rank];
+            for (int i = 0; i < rank; i++) {
+                all[i] = i;
+            }
+            return all;
+        }
+        long[] normalized = dimensions.clone();
+        boolean[] selected = new boolean[rank];
+        for (int i = 0; i < normalized.length; i++) {
+            long axis = normalized[i] < 0 ? normalized[i] + rank : normalized[i];
+            Preconditions.checkState(axis >= 0 && axis < rank,
+                    "Invalid broadcast dimension %s for rank %s", normalized[i], rank);
+            Preconditions.checkState(!selected[(int) axis],
+                    "Duplicate broadcast dimension %s for rank %s", normalized[i], rank);
+            selected[(int) axis] = true;
+            normalized[i] = axis;
+        }
+        // TAD construction uses sorted axes. Shape mapping must use the same canonical axis order.
+        Arrays.sort(normalized);
+        return normalized;
     }
 
 }

@@ -25,6 +25,7 @@ import lombok.val;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
+import org.nd4j.linalg.api.buffer.HybridDataBuffer;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
@@ -258,14 +259,14 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray createFromDescriptor(DataBuffer shapeInformation) {
         JCublasNDArray jCublasNDArray = new JCublasNDArray();
-        jCublasNDArray.setShapeInfoDataBuffer(shapeInformation);
+        // Allocate outputs from the descriptor's shape, not its input-view strides or flags.
+        jCublasNDArray.setShapeInfoDataBuffer(Shape.allocationShapeInfo(shapeInformation));
         long[] shapeInfo = jCublasNDArray.shapeInfoJava();
         DataType dt = Shape.dataType(shapeInfo);
-        // Compute length directly from shape info, not from array.length()
-        // because isEmpty() returns true when data buffer is null
-        long length = Shape.isEmpty(shapeInfo) ? 0 : Shape.length(shapeInfo);
-        DataBuffer buff = Nd4j.createBuffer(dt, length, false);
-        jCublasNDArray.setData(buff);
+        // Empty descriptors carry their shape and dtype in shape info and have no data buffer.
+        if (!Shape.isEmpty(shapeInfo)) {
+            jCublasNDArray.setData(Nd4j.createBuffer(dt, Shape.length(shapeInfo), false));
+        }
         return jCublasNDArray;
     }
 
@@ -914,8 +915,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
                 if (nativeOps.lastErrorCode() != 0)
                     throw new RuntimeException(nativeOps.lastErrorMessage());
-            } else
-                srcPtr = AtomicAllocator.getInstance().getPointer(source);
+            }
 
             // if true - we're compressing into host memory
             if (target instanceof CompressedDataBuffer) {
@@ -925,10 +925,19 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
                 if (nativeOps.lastErrorCode() != 0)
                     throw new RuntimeException(nativeOps.lastErrorMessage());
-            } else
-                dstPtr = AtomicAllocator.getInstance().getPointer(target);
+            }
         }
 
+        // An uncompressed buffer converts on the device, with or without a workspace: the source's device copy is
+        // brought up to date first (a buffer written on the host had none) and the target gets a device copy to write.
+        if (!(source instanceof CompressedDataBuffer)) {
+            ((HybridDataBuffer) source).syncHostToDevice();
+            srcPtr = AtomicAllocator.getInstance().getPointer(source);
+        }
+        if (!(target instanceof CompressedDataBuffer)) {
+            ((HybridDataBuffer) target).syncHostToDevice();
+            dstPtr = AtomicAllocator.getInstance().getPointer(target);
+        }
 
         convertDataEx(typeSrc, srcPtr, typeDst, dstPtr, target.length());
 
@@ -936,6 +945,11 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             throw new RuntimeException(nativeOps.lastErrorMessage());
 
         Nd4j.getExecutioner().commit();
+
+        // the conversion wrote the target's device copy: a host read synchronizes from it
+        if (!(target instanceof CompressedDataBuffer)) {
+            AtomicAllocator.getInstance().getAllocationPoint(target).tickDeviceWrite();
+        }
 
 
         // we were compressing something into temporary buffer

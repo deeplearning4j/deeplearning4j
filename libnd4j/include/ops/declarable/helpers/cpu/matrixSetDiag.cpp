@@ -60,7 +60,9 @@ void matrixSetDiag_(NDArray& input, NDArray& diagonal, NDArray& output, const bo
     // Pre-allocate coords array outside the loop
     sd::LongType coords[SD_MAX_RANK];
 
-    for (sd::LongType i = 0; i < xLen; ++i) {
+    // the elements of this thread's chunk: every thread went over all of them, T times the work, writing each element
+    // from every thread at once
+    for (sd::LongType i = start; i < stop; ++i) {
       // Use cached shape data for coordinate transforms
       INDEX2COORDS(i, xRank, xShape, coords);
 

@@ -41,11 +41,14 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
 
   void* extraArgs = nullptr;
   auto* nNegative = n->reduceNumber(reduce::IsNegative, extraArgs);
-  auto* xPositive = x->reduceNumber(reduce::IsPositive, extraArgs);
+  // IsPositive is true when ANY element is positive: all of x are when its smallest is (and none is NaN)
+  auto* xMin = x->reduceNumber(reduce::Min, extraArgs);
+  auto* xNaN = x->reduceNumber(reduce::IsNan, extraArgs);
   bool nPositiveFlag = !nNegative->e<bool>(0);  // require all n >= 0
-  bool xPositiveFlag = xPositive->e<bool>(0);   // require all x > 0
+  bool xPositiveFlag = xMin->e<double>(0) > 0.0 && !xNaN->e<bool>(0);  // require all x > 0
   delete nNegative;
-  delete xPositive;
+  delete xMin;
+  delete xNaN;
   REQUIRE_TRUE(nPositiveFlag, 0, "POLYGAMMA op: all elements of n array must be >= 0 !");
   REQUIRE_TRUE(xPositiveFlag, 0, "POLYGAMMA op: all elements of x array must be > 0 !");
 

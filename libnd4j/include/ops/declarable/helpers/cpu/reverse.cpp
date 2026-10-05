@@ -57,15 +57,14 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
   if (numOfElemsToReverse == 0) numOfElemsToReverse = inLength;
   sd::LongType sLength = numOfElemsToReverse - 1;
 
-  LongType inCoords[SD_MAX_RANK];
-  LongType outCoords[SD_MAX_RANK];
-  LongType inOffset;
-  LongType outOffset;
-
   // two step phase here
   if (inArr == outArr) {
     auto func = PRAGMA_THREADS_FOR {
       for (sd::LongType e = start; e < stop; e++) {
+        LongType inCoords[SD_MAX_RANK];
+        LongType outCoords[SD_MAX_RANK];
+        LongType inOffset;
+        LongType outOffset;
         INDEX2COORDS(e, inRank, inShape, inCoords);
         COORDS2INDEX(inRank, inStride, inCoords, inOffset);
         INDEX2COORDS(sLength - e, inRank, inShape, outCoords);
@@ -78,6 +77,10 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
     // single step phase here
     auto func = PRAGMA_THREADS_FOR {
       for (sd::LongType e = start; e < stop; e++) {
+        LongType inCoords[SD_MAX_RANK];
+        LongType outCoords[SD_MAX_RANK];
+        LongType inOffset;
+        LongType outOffset;
         INDEX2COORDS(e, inRank, inShape, inCoords);
         COORDS2INDEX(inRank, inStride, inCoords, inOffset);
         INDEX2COORDS(sLength - e, outRank, outShape, outCoords);
@@ -90,6 +93,10 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
     if (inLength != numOfElemsToReverse) {
       auto f2 = PRAGMA_THREADS_FOR {
         for (sd::LongType e = start; e < stop; e++) {
+          LongType inCoords[SD_MAX_RANK];
+          LongType outCoords[SD_MAX_RANK];
+          LongType inOffset;
+          LongType outOffset;
           INDEX2COORDS(e, inRank, inShape, inCoords);
           COORDS2INDEX(inRank, inStride, inCoords, inOffset);
           INDEX2COORDS(e, outRank, outShape, outCoords);
@@ -106,44 +113,35 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
 template <typename T>
 static void reverseSequence_(sd::LaunchContext* context, NDArray* input, NDArray* seqLengths,
                              NDArray* output, int seqDim, const int batchDim) {
-  // Simple element-wise copy with reversal along seqDim for each batch element
-  auto inBuf = input->bufferAsT<T>();
-  auto outBuf = output->bufferAsT<T>();
-  sd::LongType totalElements = input->lengthOf();
-  
-  // Calculate strides for seqDim and batchDim
-  sd::LongType seqStride = input->strideAt(seqDim);
-  sd::LongType batchStride = input->strideAt(batchDim);
-  sd::LongType seqSize = input->sizeAt(seqDim);
-  sd::LongType batchSize = input->sizeAt(batchDim);
-  
-  // Iterate over all elements
-  for (sd::LongType i = 0; i < totalElements; ++i) {
-    // Calculate coordinates
-    sd::LongType remaining = i;
-    sd::LongType batchIdx = 0;
-    sd::LongType seqIdx = 0;
-    
-    // Extract batch and seq indices from linear index
-    for (int d = 0; d < input->rankOf(); ++d) {
-      sd::LongType coord = remaining / input->strideAt(d);
-      remaining -= coord * input->strideAt(d);
-      if (d == batchDim) batchIdx = coord;
-      if (d == seqDim) seqIdx = coord;
+  const auto* inBuf = input->bufferAsT<T>();
+  auto* outBuf = output->bufferAsT<T>();
+  const auto rank = input->rankOf();
+  const auto* dimensions = input->shapeOf();
+  const auto* inStrides = input->stridesOf();
+  const auto* outStrides = output->stridesOf();
+
+  // Linear positions are logical C-order positions, not buffer offsets. The input
+  // and output may have different strides (including views and Fortran order).
+  for (sd::LongType i = 0; i < input->lengthOf(); ++i) {
+    sd::LongType coords[SD_MAX_RANK];
+    INDEX2COORDS(i, rank, dimensions, coords);
+    const auto seqLen = seqLengths->e<sd::LongType>(coords[batchDim]);
+    const auto seqIdx = coords[seqDim];
+    if (inBuf == outBuf) {
+      // Each reversed pair must be exchanged exactly once when executed in place.
+      if (seqIdx >= seqLen / 2) continue;
+      sd::LongType inOffset, mirrorOffset;
+      COORDS2INDEX(rank, inStrides, coords, inOffset);
+      coords[seqDim] = seqLen - 1 - seqIdx;
+      COORDS2INDEX(rank, inStrides, coords, mirrorOffset);
+      swap(outBuf, inOffset, mirrorOffset);
+    } else {
+      sd::LongType inOffset, outOffset;
+      COORDS2INDEX(rank, inStrides, coords, inOffset);
+      if (seqIdx < seqLen) coords[seqDim] = seqLen - 1 - seqIdx;
+      COORDS2INDEX(rank, outStrides, coords, outOffset);
+      outBuf[outOffset] = inBuf[inOffset];
     }
-    
-    // Get sequence length for this batch element
-    sd::LongType seqLen = seqLengths->e<sd::LongType>(batchIdx);
-    
-    // Determine output position
-    sd::LongType outSeqIdx = seqIdx;
-    if (seqIdx < seqLen) {
-      outSeqIdx = seqLen - 1 - seqIdx;  // Reverse within sequence
-    }
-    
-    // Calculate output linear index
-    sd::LongType outIdx = i + (outSeqIdx - seqIdx) * seqStride;
-    outBuf[outIdx] = inBuf[i];
   }
 }
 

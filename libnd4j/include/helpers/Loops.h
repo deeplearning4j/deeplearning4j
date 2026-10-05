@@ -1160,7 +1160,10 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
   // both tads have same shape, however strides and ews may differ
 
   Z param0(OpType::startingValue(x)), param1(OpType::startingValue(x)),
-      param2(extraParameters ? extraParameters[0] : OpType::startingValue(x));
+      param2(OpType::startingValue(x));
+  if constexpr (std::is_same_v<OpType, simdOps::EqualsWithEps<X, Z>>) {
+    param2 = extraParameters == nullptr ? Z(0) : extraParameters[2];
+  }
 
   const LongType xLen = shape::length(xShapeInfo);
   const LongType yLen = shape::length(yShapeInfo);
@@ -1193,7 +1196,7 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
 
   const auto tadShape = shape::shapeOf(xTadShapeInfo);
   const auto xTadStride = shape::stride(xTadShapeInfo);
-  const auto yTadStride = shape::stride(xTadShapeInfo);
+  const auto yTadStride = shape::stride(yTadShapeInfo);
 
   int numThreads = OmpLaunchHelper::tadThreads(tadLen, zLen);
 
@@ -1257,7 +1260,10 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
   // both tads have same shape, however strides and ews may differ
 
   Z param0(OpType::startingValue(x)), param1(OpType::startingValue(x)),
-      param2(extraParameters ? extraParameters[0] : OpType::startingValue(x));
+      param2(OpType::startingValue(x));
+  if constexpr (std::is_same_v<OpType, simdOps::EqualsWithEps<X, Z>>) {
+    param2 = extraParameters == nullptr ? Z(0) : extraParameters[2];
+  }
 
 
 
@@ -1289,7 +1295,7 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
   sd::LongType *zStride = shape::stride(zShapeInfo);
   sd::LongType yTadRank = shape::rank(yTadShapeInfo);
 
-  for (LongType ix = 0; ix < numXTads; ix++) {
+  for (LongType ix = start; ix < stop; ix++) {
     for (LongType iy = 0; iy < numYTads; iy++) {
       extraParams[0] = param0;
       extraParams[1] = param1;
@@ -1300,11 +1306,12 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
       auto s = startVal;
 
       for (LongType j = 0; j < tadLen; ++j) {
-        LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(j, xTadRank, xTadShape, coords);
+        LongType xCoords[SD_MAX_RANK], yCoords[SD_MAX_RANK];
+        INDEX2COORDS(j, xTadRank, xTadShape, xCoords);
+        INDEX2COORDS(j, yTadRank, yTadShape, yCoords);
         LongType xTadOffset, yTadOffset;
-        COORDS2INDEX(xTadRank, xTadStride, coords, xTadOffset);
-        COORDS2INDEX(yTadRank, yTadStride, coords, yTadOffset);
+        COORDS2INDEX(xTadRank, xTadStride, xCoords, xTadOffset);
+        COORDS2INDEX(yTadRank, yTadStride, yCoords, yTadOffset);
 #if defined(PRINT_INDICES)
         shape::printShapeInfo(xTadShapeInfo);
         shape::printShapeInfo(yTadShapeInfo);
@@ -1312,7 +1319,11 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
 #endif
         s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
       }
-      z[ix * numYTads + iy] = OpType::postProcess(s, tadLen, extraParams);
+      // Pair coordinates are logical C-order, independent of the destination layout.
+      LongType zCoords[SD_MAX_RANK], zOffset;
+      INDEX2COORDS(ix * numYTads + iy, zRank, zShape, zCoords);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+      z[zOffset] = OpType::postProcess(s, tadLen, extraParams);
     }
   }
 

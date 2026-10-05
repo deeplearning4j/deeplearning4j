@@ -421,12 +421,14 @@ void VulkanReplayHandle::recordComputeBarrier() {
     return;
   }
 
-  // Full memory barrier for compute shader writes -> compute shader reads.
-  // This is the compute equivalent of a global memory fence between dispatches.
+  // Full memory barrier between dispatches: compute shader writes -> later compute shader reads and writes.
+  // This is the compute equivalent of a global memory fence between dispatches. A later dispatch that writes what an
+  // earlier one wrote (an output filled and then accumulated into, a buffer reused) needs the earlier writes visible
+  // to its writes as well, or they may land after its own.
   VkMemoryBarrier barrier = {};
   barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
   barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-  barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
 
   vkCmdPipelineBarrier(cmdBuffer_,
                        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,  // src stage

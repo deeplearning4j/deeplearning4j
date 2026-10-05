@@ -19,8 +19,8 @@
 //
 // @author raver119@gmail.com
 //
-#include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
+#include <math/templatemath.h>
 #include <ops/declarable/helpers/dynamic.h>
 
 #include "execution/cuda/LaunchDims.h"
@@ -30,547 +30,459 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-template <typename X, typename Y>
-static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const LongType *xShapeInfo, const void *vi,
-                                                   const LongType *iShapeInfo, void **vz, LongType **zShapeInfos, const LongType numOutputs) {
-  auto x = reinterpret_cast<const X *>(vx);
-  auto i = reinterpret_cast<const Y *>(vi);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// An index array selects, for every one of its elements, a slice of the data: the data has the shape of the indices
+// followed by the dimensions of a slice (dynamic_partition, dynamic_stitch). The kernels below address the data in the
+// logical (C) order of its elements: element t of the data belongs to index t / sliceLength and is element
+// t % sliceLength of that slice. Every operand is read and written through its own shape and strides, so views of any
+// layout work, and every slice is moved by a grid-stride loop over all of its elements.
 
-  __shared__ LongType xRank, iRank;
-  __shared__ const LongType *xShape, *xStride;
-  __shared__ const LongType *iShape, *iStride;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// blocks and threads of a launch with one thread per element: the named launch dimensions (x = blocks, y = threads)
+// give the thread count and cap the grid, the kernels stride over whatever the grid does not cover
+static void flatLaunch(const dim3& named, LongType elements, unsigned int& blocks, unsigned int& threads) {
+  threads = named.y > 0 ? named.y : 1;
+  if (threads > SD_MAX_NUM_THREADS) threads = SD_MAX_NUM_THREADS;
+  const LongType needed = math::sd_max<LongType>(1, (elements + threads - 1) / threads);
+  const LongType cap = math::sd_max<LongType>(1, named.x);
+  blocks = static_cast<unsigned int>(math::sd_min<LongType>(needed, cap));
+}
 
-  // Shared variables for CUDA kernel
-  if (threadIdx.x == 0) {
-    xRank = shape::rank(xShapeInfo);
-    iRank = shape::rank(iShapeInfo);
-    xShape = shape::shapeOf(xShapeInfo);
-    xStride = shape::stride(xShapeInfo);
-    iShape = shape::shapeOf(iShapeInfo);
-    iStride = shape::stride(iShapeInfo);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// launch errors of an asynchronous launch; inside a CUDA graph capture nothing has run yet
+static SD_INLINE void checkLaunch(cudaStream_t* stream, const char* message) {
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode(message);
   }
-  __syncthreads();
+}
 
-  auto xLength = shape::length(xShapeInfo);
-  auto iLength = shape::length(iShapeInfo);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// the integer stored at the element with the given logical index of an index array
+template <typename Y>
+static SD_INLINE SD_DEVICE LongType indexValueAt(const Y* indices, LongType iRank, const LongType* iShape,
+                                                 const LongType* iStride, LongType linearIndex) {
+  LongType coords[SD_MAX_RANK];
+  LongType offset;
+  INDEX2COORDS(linearIndex, iRank, iShape, coords);
+  COORDS2INDEX(iRank, iStride, coords, offset);
+  return static_cast<LongType>(indices[offset]);
+}
 
-  extern __shared__ char shmem[];
-  __shared__ Y *rawIndices;
-  __shared__ Y *trueIndices;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// position of every element inside its partition: the number of earlier elements (in the logical order of the
+// indices) of the same partition. A block per partition (grid-stride over the partitions) walks the indices a block
+// wide tile at a time and ranks the elements of the tile that belong to its partition with warp votes, so equal
+// partitions keep the order of their elements. positions[e] is written for the elements of a valid partition only.
+// The block size is a multiple of the warp size, at most 1024 threads.
+template <typename Y>
+static SD_KERNEL void dynamicPartitionPositionsKernel(const void* vindices, const LongType* iShapeInfo, LongType length,
+                                                      LongType numPartitions, LongType* positions) {
+  const auto indices = reinterpret_cast<const Y*>(vindices);
+  const LongType iRank = shape::rank(iShapeInfo);
+  const LongType* iShape = shape::shapeOf(iShapeInfo);
+  const LongType* iStride = shape::stride(iShapeInfo);
 
-  if (threadIdx.x == 0) {
-    rawIndices = reinterpret_cast<Y *>(shmem);
-    trueIndices = rawIndices + blockDim.x;
-  }
-  __syncthreads();
+  __shared__ int warpCounts[32];  // the elements of the tile in each warp of the block
+  __shared__ LongType before;     // the elements of the partition ahead of the tile
+  const int lane = threadIdx.x & 31;
+  const int warp = threadIdx.x >> 5;
+  const int numWarps = (blockDim.x + 31) >> 5;
 
-  // Process partitions
-  for (LongType o = blockIdx.x; o < numOutputs; o += gridDim.x) {
-    auto z = reinterpret_cast<X *>(vz[o]);
-    auto zShapeInfo = zShapeInfos[o];
-
-    __shared__ LongType zLength, zRank;
-    __shared__ const LongType *zShape, *zStride;
-
-    if (threadIdx.x == 0) {
-      zLength = shape::length(zShapeInfo);
-      zRank = shape::rank(zShapeInfo);
-      zShape = shape::shapeOf(zShapeInfo);
-      zStride = shape::stride(zShapeInfo);
-    }
+  for (LongType partition = blockIdx.x; partition < numPartitions; partition += gridDim.x) {
+    if (threadIdx.x == 0) before = 0;
     __syncthreads();
 
-    // Ensure iLimit is a multiple of blockDim.x
-    auto iLimit = (iLength <= blockDim.x) ? blockDim.x : (iLength + (blockDim.x - (iLength % blockDim.x)));
-    int cnt = 0;
+    for (LongType tile = 0; tile < length; tile += blockDim.x) {
+      const LongType e = tile + threadIdx.x;
+      bool mine = false;
+      if (e < length) mine = indexValueAt<Y>(indices, iRank, iShape, iStride, e) == partition;
 
-    for (LongType e = threadIdx.x; e < iLimit; e += blockDim.x) {
-      if (e < iLength) {
-        LongType iOffset, iCoords[SD_MAX_RANK];
-        INDEX2COORDS(e, iRank, iShape, iCoords);
-        COORDS2INDEX(iRank, iStride, iCoords, iOffset);
-        rawIndices[threadIdx.x] = i[iOffset];
+      const unsigned int votes = __ballot_sync(0xffffffffu, mine);
+      if (lane == 0) warpCounts[warp] = __popc(votes);
+      __syncthreads();
+
+      if (mine) {
+        LongType position = before + __popc(votes & ((1u << lane) - 1u));
+        for (int w = 0; w < warp; w++) position += warpCounts[w];
+        positions[e] = position;
       }
       __syncthreads();
 
-      // Map updates using prefix-like approach
       if (threadIdx.x == 0) {
-        for (int f = 0; f < blockDim.x; f++) {
-          if (rawIndices[f] == static_cast<Y>(o))
-            trueIndices[f] = cnt++;
-          else
-            trueIndices[f] = -1;
-        }
-      }
-      __syncthreads();
-
-      // Perform actual update
-      if (e < iLength && trueIndices[threadIdx.x] >= 0) {
-        LongType xOffset, xCoords[SD_MAX_RANK];
-        INDEX2COORDS(e, xRank, xShape, xCoords);
-        COORDS2INDEX(xRank, xStride, xCoords, xOffset);
-        z[trueIndices[threadIdx.x]] = x[xOffset];
+        LongType inTile = 0;
+        for (int w = 0; w < numWarps; w++) inTile += warpCounts[w];
+        before += inTile;
       }
       __syncthreads();
     }
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// dynamic_partition: a slice of the data goes to its partition's output at the position of the slice in the partition.
+// Slices of an index outside [0, numPartitions) belong to no partition.
 template <typename X, typename Y>
-static SD_KERNEL void dynamicPartitionTadKernel(const void *vx, const LongType *xTadShapeInfo,
-                                                const LongType *xTadOffsets, LongType xLength,
-                                                const void *vindices, const LongType *iShapeInfo, LongType iLength, void **vz,
-                                                LongType **zTadShapeInfos, LongType **zTadOffsets,
-                                                LongType numOutputs) {
-  auto x = reinterpret_cast<const X *>(vx);
-  auto indices = reinterpret_cast<const Y *>(vindices);
+static SD_KERNEL void dynamicPartitionGatherKernel(const void* vx, const LongType* xShapeInfo, const void* vindices,
+                                                   const LongType* iShapeInfo, const LongType* positions, void** vz,
+                                                   LongType** zShapeInfos, LongType numPartitions,
+                                                   LongType sliceLength, LongType total) {
+  const auto x = reinterpret_cast<const X*>(vx);
+  const auto indices = reinterpret_cast<const Y*>(vindices);
+  const LongType xRank = shape::rank(xShapeInfo);
+  const LongType* xShape = shape::shapeOf(xShapeInfo);
+  const LongType* xStride = shape::stride(xShapeInfo);
+  const LongType iRank = shape::rank(iShapeInfo);
+  const LongType* iShape = shape::shapeOf(iShapeInfo);
+  const LongType* iStride = shape::stride(iShapeInfo);
 
-  // we run things in blocks, 1 partition per block of threads
-  for (int i = blockIdx.x; i < numOutputs; i += gridDim.x) {
-    auto z = reinterpret_cast<X *>(vz[i]);
+  const LongType start = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType linearIndex = start; linearIndex < total; linearIndex += step) {
+    const LongType e = linearIndex / sliceLength;
+    const LongType partition = indexValueAt<Y>(indices, iRank, iShape, iStride, e);
+    if (partition < 0 || partition >= numPartitions) continue;
 
-    // each thread has own counter for partitions
-    int outCnt = 0;
+    LongType coords[SD_MAX_RANK];
+    LongType xOffset;
+    INDEX2COORDS(linearIndex, xRank, xShape, coords);
+    COORDS2INDEX(xRank, xStride, coords, xOffset);
 
-    for (LongType e = 0; e < iLength; e++) {
-      LongType iCoords[SD_MAX_RANK];
-      LongType iOffset;
-      INDEX2COORDS(e, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords);
-      COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), iCoords, iOffset);
+    const LongType* zShapeInfo = zShapeInfos[partition];
+    const LongType zRank = shape::rank(zShapeInfo);
+    const LongType* zShape = shape::shapeOf(zShapeInfo);
+    const LongType* zStride = shape::stride(zShapeInfo);
+    LongType zOffset;
+    const LongType zLinearIndex = positions[e] * sliceLength + (linearIndex - e * sliceLength);
+    INDEX2COORDS(zLinearIndex, zRank, zShape, coords);
+    COORDS2INDEX(zRank, zStride, coords, zOffset);
 
-      if (indices[iOffset] == i) {
-        auto dx = x + xTadOffsets[e];
-        auto dz = z + zTadOffsets[i][outCnt++];
-
-        for (int f = threadIdx.x; f < xLength; f += blockDim.x) {
-          LongType fCoords[SD_MAX_RANK];
-          LongType xOffset;
-          LongType zOffset;
-          INDEX2COORDS(f, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), fCoords);
-          COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), fCoords, xOffset);
-          INDEX2COORDS(f, shape::rank(zTadShapeInfos[i]), shape::shapeOf(zTadShapeInfos[i]), fCoords);
-          COORDS2INDEX(shape::rank(zTadShapeInfos[i]), shape::stride(zTadShapeInfos[i]), fCoords, zOffset);
-
-          dz[zOffset] = dx[xOffset];
-        }
-      }
-    }
+    reinterpret_cast<X*>(vz[partition])[zOffset] = x[xOffset];
   }
 }
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// gradient of dynamic_partition: a slice of the input's gradient is the slice of its partition's gradient at the
+// position of the slice in the partition. The partitions drop the slices of an index outside [0, numPartitions), so
+// those slices get a zero gradient.
 template <typename X, typename Y>
-static void _dynamicPartitionFunctor(LaunchContext *context, NDArray *input, NDArray *indices,
-                                     std::vector<NDArray *> &outputList) {
-  std::vector<std::pair<NDArray *, int>> outputs(outputList.size());
-  int sourceDimsLen = input->rankOf() - indices->rankOf();
+static SD_KERNEL void dynamicPartitionBpKernel(void* vgi, const LongType* giShapeInfo, const void* vindices,
+                                               const LongType* iShapeInfo, const LongType* positions, void** vgo,
+                                               LongType** goShapeInfos, LongType numPartitions, LongType sliceLength,
+                                               LongType total) {
+  const auto gradInput = reinterpret_cast<X*>(vgi);
+  const auto indices = reinterpret_cast<const Y*>(vindices);
+  const LongType giRank = shape::rank(giShapeInfo);
+  const LongType* giShape = shape::shapeOf(giShapeInfo);
+  const LongType* giStride = shape::stride(giShapeInfo);
+  const LongType iRank = shape::rank(iShapeInfo);
+  const LongType* iShape = shape::shapeOf(iShapeInfo);
+  const LongType* iStride = shape::stride(iShapeInfo);
 
-  unsigned int outSize = outputList.size();
+  const LongType start = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType linearIndex = start; linearIndex < total; linearIndex += step) {
+    const LongType e = linearIndex / sliceLength;
+    const LongType partition = indexValueAt<Y>(indices, iRank, iShape, iStride, e);
+
+    LongType coords[SD_MAX_RANK];
+    LongType giOffset;
+    INDEX2COORDS(linearIndex, giRank, giShape, coords);
+    COORDS2INDEX(giRank, giStride, coords, giOffset);
+
+    if (partition < 0 || partition >= numPartitions) {
+      gradInput[giOffset] = static_cast<X>(0);
+      continue;
+    }
+
+    const LongType* goShapeInfo = goShapeInfos[partition];
+    const LongType goRank = shape::rank(goShapeInfo);
+    const LongType* goShape = shape::shapeOf(goShapeInfo);
+    const LongType* goStride = shape::stride(goShapeInfo);
+    LongType goOffset;
+    const LongType goLinearIndex = positions[e] * sliceLength + (linearIndex - e * sliceLength);
+    INDEX2COORDS(goLinearIndex, goRank, goShape, coords);
+    COORDS2INDEX(goRank, goStride, coords, goOffset);
+
+    gradInput[giOffset] = reinterpret_cast<const X*>(vgo[partition])[goOffset];
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// the position of every element of the indices in its partition (a device array of length elements), launched on the
+// context's stream. The scan kernel needs whole warps: the named thread count is rounded up to a multiple of 32.
+template <typename Y>
+static void launchPartitionPositions(LaunchContext* context, NDArray* indices, LongType numPartitions,
+                                     LongType* positions) {
+  const LongType length = indices->lengthOf();
+  const dim3 named = getLaunchDims("dynamic_partition_tad");
+  unsigned int threads = named.y > 0 ? named.y : 32;
+  if (threads > SD_MAX_NUM_THREADS) threads = SD_MAX_NUM_THREADS;
+  threads = (threads + 31) / 32 * 32;
+  const unsigned int blocks =
+      static_cast<unsigned int>(math::sd_min<LongType>(numPartitions, math::sd_max<LongType>(1, named.x)));
+
+  auto stream = context->getCudaStream();
+  dynamicPartitionPositionsKernel<Y><<<blocks, threads, 0, *stream>>>(indices->specialBuffer(),
+                                                                       indices->specialShapeInfo(), length,
+                                                                       numPartitions, positions);
+  checkLaunch(stream, "dynamicPartitionPositionsKernel failed: ");
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y>
+static void _dynamicPartitionFunctor(LaunchContext* context, NDArray* input, NDArray* indices,
+                                     std::vector<NDArray*>& outputList) {
+  const LongType numPartitions = outputList.size();
+  const LongType length = indices->lengthOf();
+  const LongType total = input->lengthOf();
+  if (numPartitions == 0 || length == 0 || total == 0) return;
+
+  // the dimensions of the input beyond the indices' own are moved with their slice
+  const LongType sliceLength = total / length;
 
   PointersManager pm(context, "dynamicPartition");
-
-  if (sourceDimsLen) {  // non-linear case
-    std::vector<LongType> sourceDims(sourceDimsLen);
-
-    for (int i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
-    // compute tad array for given dimensions
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &sourceDims);
-
-    std::vector<void *> outBuffers(outSize);
-    std::vector<const LongType *> tadShapes(outSize);
-    std::vector<const LongType *> tadOffsets(outSize);
-    std::vector<LongType> numTads(outSize);
-    // fill up dimensions array for before kernel
-    for (unsigned int i = 0; i < outSize; i++) {
-      outputs[i].first = outputList[i];
-      std::vector<LongType> outDims(outputs[i].first->rankOf() - 1);
-
-      int r = outputs[i].first->rankOf();
-
-      for (int k = 1; k < r; k++) outDims[k - 1] = k;
-
-      auto packZ = ConstantTadHelper::getInstance().tadForDimensions(outputList.at(i)->shapeInfo(), &outDims);
-
-      outBuffers[i] = outputList.at(i)->specialBuffer();
-      tadShapes[i] = packZ->platformShapeInfo();
-      tadOffsets[i] = packZ->platformOffsets();
-    }
-
-    // we copy pointers to device
-    auto dOutBuffers =
-        reinterpret_cast<void **>(pm.replicatePointer(outBuffers.data(), outBuffers.size() * sizeof(void *)));
-    auto dOutTadShapes = reinterpret_cast<LongType **>(
-        pm.replicatePointer(tadShapes.data(), tadShapes.size() * sizeof(LongType *)));
-    auto dOutTadOffsets = reinterpret_cast<LongType **>(
-        pm.replicatePointer(tadOffsets.data(), tadOffsets.size() * sizeof(LongType *)));
-    // run kernel on device
-    dim3 launchDims = getDynamicPartitionDims(256,sizeof(Y));
-
-    dynamicPartitionTadKernel<X, Y><<<launchDims.y,launchDims.x, launchDims.z, *context->getCudaStream()>>>(
-        input->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(),
-        shape::length(packX->primaryShapeInfo()), indices->specialBuffer(), indices->specialShapeInfo(),
-        indices->lengthOf(), dOutBuffers, dOutTadShapes, dOutTadOffsets, outSize);
-    DebugHelper::checkErrorCode(context->getCudaStream(),"dynamicPartitionTadKernel failed");
-
-
-  } else {  // linear case
-    dim3 launchDims = getDynamicPartitionDims(256,sizeof(Y));
-    std::vector<void *> outBuffers;
-    std::vector<const LongType *> outShapes;
-
-    for (auto v : outputList) {
-      outBuffers.emplace_back(v->specialBuffer());
-      outShapes.emplace_back(v->specialShapeInfo());
-    }
-
-    auto dOutBuffers =
-        reinterpret_cast<void **>(pm.replicatePointer(outBuffers.data(), outBuffers.size() * sizeof(void *)));
-    auto dOutShapes = reinterpret_cast<LongType **>(
-        pm.replicatePointer(outShapes.data(), outShapes.size() * sizeof(LongType *)));
-
-    dynamicPartitionScalarKernel<X, Y><<<launchDims.y,launchDims.x, launchDims.z, *context->getCudaStream()>>>(
-        input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
-        dOutBuffers, dOutShapes, outSize);
-    DebugHelper::checkErrorCode(context->getCudaStream(),"dynamicPartitionScalarKernel failed");
-
+  std::vector<void*> outBuffers(numPartitions);
+  std::vector<const LongType*> outShapes(numPartitions);
+  for (LongType i = 0; i < numPartitions; i++) {
+    outBuffers[i] = outputList[i]->lengthOf() > 0 ? outputList[i]->specialBuffer() : nullptr;
+    outShapes[i] = outputList[i]->specialShapeInfo();
   }
+  auto dOutBuffers = reinterpret_cast<void**>(pm.replicatePointer(outBuffers.data(), numPartitions * sizeof(void*)));
+  auto dOutShapes =
+      reinterpret_cast<LongType**>(pm.replicatePointer(outShapes.data(), numPartitions * sizeof(LongType*)));
+  auto dPositions = reinterpret_cast<LongType*>(pm.allocateDevMem(length * sizeof(LongType)));
 
-  pm.synchronize();
+  launchPartitionPositions<Y>(context, indices, numPartitions, dPositions);
+
+  unsigned int blocks, threads;
+  flatLaunch(getLaunchDims("dynamic_partition_tad"), total, blocks, threads);
+  auto stream = context->getCudaStream();
+  dynamicPartitionGatherKernel<X, Y><<<blocks, threads, 0, *stream>>>(
+      input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
+      dPositions, dOutBuffers, dOutShapes, numPartitions, sliceLength, total);
+  checkLaunch(stream, "dynamicPartitionGatherKernel failed: ");
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static SD_KERNEL void dynamicStitchScalarKernel(void **vx, LongType **xShapeInfos, void **vindices,
-                                                LongType **iShapeInfos, int inputSize, void *vz,
-                                                const LongType *zShapeInfo, LongType zLength) {
-  // Each block processes one input array
-  int e = blockIdx.x;
-  if (e >= inputSize) return;
+static void _dynamicPartitionFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices,
+                                       std::vector<NDArray*> const& inputGradientList,
+                                       std::vector<NDArray*>& outputList) {
+  // outputList[0] is the gradient of the input: it has the input's shape
+  NDArray* gradInput = outputList.at(0);
+  const LongType numPartitions = inputGradientList.size();
+  const LongType length = indices->lengthOf();
+  const LongType total = gradInput->lengthOf();
+  if (length == 0 || total == 0) return;
 
-  // Shared variables to cache all needed info from global memory
-  __shared__ X* z;
-  __shared__ X* x;
-  __shared__ Y* indices;
-  __shared__ const LongType* xShapeInfo;
-  __shared__ const LongType* iShapeInfo;
-  __shared__ LongType zRank, xRank, iRank;
-  __shared__ LongType iLength, xLength;
-  __shared__ const LongType* zShapePtr;
-  __shared__ const LongType* zStridePtr;
-  __shared__ const LongType* xShapePtr;
-  __shared__ const LongType* xStridePtr;
-  __shared__ const LongType* iShapePtr;
-  __shared__ const LongType* iStridePtr;
+  const LongType sliceLength = total / length;
 
-  if (threadIdx.x == 0) {
-    // Cache data pointers
-    z = reinterpret_cast<X *>(vz);
-    x = reinterpret_cast<X *>(vx[e]);
-    indices = reinterpret_cast<Y *>(vindices[e]);
-
-    // Cache shape info pointers
-    xShapeInfo = xShapeInfos[e];
-    iShapeInfo = iShapeInfos[e];
-
-    // Cache ranks
-    zRank = shape::rank(zShapeInfo);
-    xRank = shape::rank(xShapeInfo);
-    iRank = shape::rank(iShapeInfo);
-
-    // Cache lengths
-    iLength = shape::length(iShapeInfo);
-    xLength = shape::length(xShapeInfo);
-
-    // Cache shape and stride pointers
-    zShapePtr = shape::shapeOf(zShapeInfo);
-    zStridePtr = shape::stride(zShapeInfo);
-    xShapePtr = shape::shapeOf(xShapeInfo);
-    xStridePtr = shape::stride(xShapeInfo);
-    iShapePtr = shape::shapeOf(iShapeInfo);
-    iStridePtr = shape::stride(iShapeInfo);
+  PointersManager pm(context, "dynamicPartitionBp");
+  std::vector<void*> gradBuffers(numPartitions);
+  std::vector<const LongType*> gradShapes(numPartitions);
+  for (LongType i = 0; i < numPartitions; i++) {
+    gradBuffers[i] = inputGradientList[i]->lengthOf() > 0 ? inputGradientList[i]->specialBuffer() : nullptr;
+    gradShapes[i] = inputGradientList[i]->specialShapeInfo();
   }
-  __syncthreads();
+  auto dGradBuffers =
+      reinterpret_cast<void**>(pm.replicatePointer(gradBuffers.data(), numPartitions * sizeof(void*)));
+  auto dGradShapes =
+      reinterpret_cast<LongType**>(pm.replicatePointer(gradShapes.data(), numPartitions * sizeof(LongType*)));
+  auto dPositions = reinterpret_cast<LongType*>(pm.allocateDevMem(length * sizeof(LongType)));
 
-  // Handle scalar or empty arrays
-  if (iLength == 0 || xLength == 0) return;
+  // with no partition at all every slice has a zero gradient and there is nothing to rank
+  if (numPartitions > 0) launchPartitionPositions<Y>(context, indices, numPartitions, dPositions);
 
-  // Loop over indices in parallel
-  for (LongType i = threadIdx.x; i < iLength; i += blockDim.x) {
-    // Calculate index offset using proper coordinate conversion
-    LongType iOffset;
-    if (iRank == 0) {
-      iOffset = 0;  // Scalar
-    } else if (iRank == 1) {
-      iOffset = i * iStridePtr[0];
-    } else {
-      LongType iCoords[SD_MAX_RANK];
-      INDEX2COORDS(i, iRank, iShapePtr, iCoords);
-      COORDS2INDEX(iRank, iStridePtr, iCoords, iOffset);
-    }
+  unsigned int blocks, threads;
+  flatLaunch(getLaunchDims("dynamic_partition_tad"), total, blocks, threads);
+  auto stream = context->getCudaStream();
+  dynamicPartitionBpKernel<X, Y><<<blocks, threads, 0, *stream>>>(
+      gradInput->specialBuffer(), gradInput->specialShapeInfo(), indices->specialBuffer(),
+      indices->specialShapeInfo(), dPositions, dGradBuffers, dGradShapes, numPartitions, sliceLength, total);
+  checkLaunch(stream, "dynamicPartitionBpKernel failed: ");
+}
 
-    Y scatterIdx = indices[iOffset];
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// the output of dynamic_stitch starts as zeros: a row that no index names is zero (the output is not initialized)
+template <typename X>
+static SD_KERNEL void dynamicStitchZeroKernel(void* vz, const LongType* zShapeInfo, LongType total) {
+  const auto z = reinterpret_cast<X*>(vz);
+  const LongType zRank = shape::rank(zShapeInfo);
+  const LongType* zShape = shape::shapeOf(zShapeInfo);
+  const LongType* zStride = shape::stride(zShapeInfo);
 
-    // Bounds check: ensure index is valid for output array
-    if (scatterIdx >= 0 && scatterIdx < static_cast<Y>(zLength) && i < xLength) {
-      // Calculate x offset
-      LongType xOffset;
-      if (xRank == 0) {
-        xOffset = 0;  // Scalar
-      } else if (xRank == 1) {
-        xOffset = i * xStridePtr[0];
-      } else {
-        LongType xCoords[SD_MAX_RANK];
-        INDEX2COORDS(i, xRank, xShapePtr, xCoords);
-        COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
-      }
-
-      // Calculate z offset
-      LongType zOffset;
-      if (zRank == 0) {
-        zOffset = 0;  // Scalar output
-      } else if (zRank == 1) {
-        zOffset = static_cast<LongType>(scatterIdx) * zStridePtr[0];
-      } else {
-        LongType zCoords[SD_MAX_RANK];
-        INDEX2COORDS(static_cast<LongType>(scatterIdx), zRank, zShapePtr, zCoords);
-        COORDS2INDEX(zRank, zStridePtr, zCoords, zOffset);
-      }
-
-      // Assign value to z
-      z[zOffset] = x[xOffset];
-    }
+  const LongType start = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType linearIndex = start; linearIndex < total; linearIndex += step) {
+    LongType coords[SD_MAX_RANK];
+    LongType zOffset;
+    INDEX2COORDS(linearIndex, zRank, zShape, coords);
+    COORDS2INDEX(zRank, zStride, coords, zOffset);
+    z[zOffset] = static_cast<X>(0);
   }
 }
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// dynamic_stitch: a slice of an input goes to the row of the output that its index names. The inputs are stitched
+// in order, each by its own launch on the context's stream, so when an index appears in several inputs the last
+// input wins; within one input the slices of equal indices are written in no particular order. Slices of an index
+// outside [0, numRows) are dropped.
 template <typename X, typename Y>
-static SD_KERNEL void dynamicStitchTadKernel(void **vx, LongType **xTadShapeInfos, LongType **xTadOffsets,
-                                             void **vindices, LongType **iShapeInfos, int inputSize, void *vz,
-                                             const LongType *zTadShapeInfo, const LongType *zTadOffsets,
-                                             LongType *numTadsPerInput, LongType numOutputsTad) {
-  __shared__ LongType zRank, zLength, zTadLength;
-  __shared__ const LongType *zShapePtr, *zStridePtr;
+static SD_KERNEL void dynamicStitchKernel(const void* vx, const LongType* xShapeInfo, const void* vindices,
+                                          const LongType* iShapeInfo, void* vz, const LongType* zShapeInfo,
+                                          LongType numRows, LongType sliceLength, LongType total) {
+  const auto x = reinterpret_cast<const X*>(vx);
+  const auto indices = reinterpret_cast<const Y*>(vindices);
+  const auto z = reinterpret_cast<X*>(vz);
+  const LongType xRank = shape::rank(xShapeInfo);
+  const LongType* xShape = shape::shapeOf(xShapeInfo);
+  const LongType* xStride = shape::stride(xShapeInfo);
+  const LongType iRank = shape::rank(iShapeInfo);
+  const LongType* iShape = shape::shapeOf(iShapeInfo);
+  const LongType* iStride = shape::stride(iShapeInfo);
+  const LongType zRank = shape::rank(zShapeInfo);
+  const LongType* zShape = shape::shapeOf(zShapeInfo);
+  const LongType* zStride = shape::stride(zShapeInfo);
 
-  if (threadIdx.x == 0) {
-    zRank = shape::rank(zTadShapeInfo);
-    zLength = shape::length(zTadShapeInfo);
-    zTadLength = shape::length(zTadShapeInfo);
-    zShapePtr = shape::shapeOf(zTadShapeInfo);
-    zStridePtr = shape::stride(zTadShapeInfo);
+  const LongType start = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType linearIndex = start; linearIndex < total; linearIndex += step) {
+    const LongType e = linearIndex / sliceLength;
+    const LongType row = indexValueAt<Y>(indices, iRank, iShape, iStride, e);
+    if (row < 0 || row >= numRows) continue;
+
+    LongType coords[SD_MAX_RANK];
+    LongType xOffset;
+    INDEX2COORDS(linearIndex, xRank, xShape, coords);
+    COORDS2INDEX(xRank, xStride, coords, xOffset);
+
+    LongType zOffset;
+    INDEX2COORDS(row * sliceLength + (linearIndex - e * sliceLength), zRank, zShape, coords);
+    COORDS2INDEX(zRank, zStride, coords, zOffset);
+
+    z[zOffset] = x[xOffset];
   }
-  __syncthreads();
-
-  auto bz = reinterpret_cast<X *>(vz);
-
-  // Process each input array
-  for (int e = threadIdx.x; e < inputSize; e += blockDim.x) {
-    auto indices = reinterpret_cast<Y *>(vindices[e]);
-    auto iShapeInfo = iShapeInfos[e];
-    auto numTads = numTadsPerInput[e];
-
-    if (shape::isEmptyConst(iShapeInfo)) continue;
-
-    auto iLength = shape::length(iShapeInfo);
-    auto xTadShapeInfo = xTadShapeInfos[e];
-    auto xTadLength = shape::length(xTadShapeInfo);
-    auto xShapePtr = shape::shapeOf(xTadShapeInfo);
-    auto xStridePtr = shape::stride(xTadShapeInfo);
-
-    // Process each index in the input
-    for (int i = 0; i < iLength; i++) {
-      LongType iCoords[SD_MAX_RANK], iOffset;
-      INDEX2COORDS(i, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords);
-      COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), iCoords, iOffset);
-
-      auto idx = indices[iOffset];
-
-      // Input array offset for current TAD
-      auto x = reinterpret_cast<X *>(vx[e]) + xTadOffsets[e][i];
-      auto zTad = bz + zTadOffsets[idx];
-
-      // Copy data from input to output
-      for (int j = threadIdx.x; j < xTadLength; j += blockDim.x) {
-        LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
-        LongType xIdx, zIdx;
-
-        INDEX2COORDS(j, shape::rank(xTadShapeInfo), xShapePtr, xCoords);
-        COORDS2INDEX(shape::rank(xTadShapeInfo), xStridePtr, xCoords, xIdx);
-
-        INDEX2COORDS(j, zRank, zShapePtr, zCoords);
-        COORDS2INDEX(zRank, zStridePtr, zCoords, zIdx);
-
-        if (xIdx < xTadLength && zIdx < zLength) {
-          zTad[zIdx] = x[xIdx];
-        }
-      }
-    }
-  }
-  __syncthreads();
 }
 
-
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static Status _dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray *> const &inputs,
-                                        std::vector<NDArray *> const &indices, NDArray *output) {
-  LongType inputSize = inputs.size();
+static Status _dynamicStitchFunctor(LaunchContext* context, std::vector<NDArray*> const& inputs,
+                                    std::vector<NDArray*> const& indices, NDArray* output) {
+  const LongType inputSize = inputs.size();
+  const LongType numRows = output->rankOf() == 0 ? 1 : output->sizeAt(0);
+  if (output->lengthOf() == 0 || numRows == 0) return Status::OK;
 
-  PointersManager pm(context, "dynamicStitch");
-
-  if (output->isVector()) {
-    std::vector<const void *> inputBuffers(inputSize);
-    std::vector<const LongType *> inputShapes(inputSize);
-    std::vector<const void *> indicesBuffers(inputSize);
-    std::vector<const LongType *> indicesShapes(inputSize);
-
-    for (LongType e = 0; e < inputSize; e++) {
-      inputBuffers[e] = inputs.at(e)->specialBuffer();
-      indicesBuffers[e] = indices.at(e)->specialBuffer();
-
-      inputShapes[e] = inputs.at(e)->specialShapeInfo();
-      indicesShapes[e] = indices.at(e)->specialShapeInfo();
+  // the output rows are stitched from slices of the inputs: the dimensions of an input beyond its indices' own
+  // are the dimensions of a row
+  const LongType sliceLength = output->lengthOf() / numRows;
+  for (LongType e = 0; e < inputSize; e++) {
+    if (inputs[e]->lengthOf() != indices[e]->lengthOf() * sliceLength) {
+      sd_printf("dynamic_stitch: input %lld has %lld elements, but %lld indices of slices of %lld elements need %lld\n",
+                (long long)e, (long long)inputs[e]->lengthOf(), (long long)indices[e]->lengthOf(),
+                (long long)sliceLength, (long long)(indices[e]->lengthOf() * sliceLength));
+      return Status::VALIDATION;
     }
-
-    // copying pointers to buffers to device
-    auto dInputBuffers =
-        reinterpret_cast<void **>(pm.replicatePointer(inputBuffers.data(), inputSize * sizeof(void *)));
-    auto dIndicesBuffers =
-        reinterpret_cast<void **>(pm.replicatePointer(indicesBuffers.data(), inputSize * sizeof(void *)));
-    auto dInputShapes =
-        reinterpret_cast<LongType **>(pm.replicatePointer(inputShapes.data(), inputSize * sizeof(LongType *)));
-    auto dIndicesShapes = reinterpret_cast<LongType **>(
-        pm.replicatePointer(indicesShapes.data(), inputSize * sizeof(LongType *)));
-
-    // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
-    // Ensure all pointer replications are complete before kernel launch
-    if (!tl_graphExecutionActive && !tl_dspReplayActive) { cudaStreamSynchronize(*context->getCudaStream()); }
-
-    // Use grid size based on number of inputs, with reasonable thread count
-    int numBlocks = static_cast<int>(inputSize);
-    int threadsPerBlock = 256;  // Reasonable default for most GPUs
-
-    dynamicStitchScalarKernel<X, Y><<<numBlocks, threadsPerBlock, 0, *context->getCudaStream()>>>(
-        dInputBuffers, dInputShapes, dIndicesBuffers, dIndicesShapes, inputSize, output->specialBuffer(),
-        output->specialShapeInfo(), output->lengthOf());
-    DebugHelper::checkErrorCode(context->getCudaStream(),"dynamicStitchScalarKernel failed");
-
-  } else {
-    std::vector<LongType> restDims(output->rankOf() - 1);
-    for (int i = restDims.size(); i > 0; i--) restDims[restDims.size() - i] = output->rankOf() - i;
-    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &restDims);
-
-    std::vector<const void *> inputBuffers(inputSize);
-    std::vector<const LongType *> inputTadShapes(inputSize);
-    std::vector<const LongType *> inputTadOffsets(inputSize);
-
-    std::vector<const void *> indicesBuffers(inputSize);
-    std::vector<const LongType *> indicesShapes(inputSize);
-    std::vector<LongType> inputsNumTads(inputSize);
-
-    for (LongType e = 0; e < inputSize; e++) {
-      std::vector<LongType> sourceDims(inputs[e]->rankOf() - indices[e]->rankOf());
-      for (LongType i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = inputs[e]->rankOf() - i;
-
-      auto packX = ConstantTadHelper::getInstance().tadForDimensions(inputs[e]->shapeInfo(), &sourceDims);
-      indicesBuffers[e] = indices[e]->specialBuffer();
-      indicesShapes[e] = indices[e]->specialShapeInfo();
-      inputsNumTads[e] = packX->numberOfTads();
-      inputBuffers[e] = inputs[e]->specialBuffer();
-      inputTadShapes[e] = packX->platformShapeInfo();
-      inputTadOffsets[e] = packX->platformOffsets();
-    }
-
-    // copying pointers to buffers to device
-    auto dInputBuffers =
-        reinterpret_cast<void **>(pm.replicatePointer(inputBuffers.data(), inputSize * sizeof(void *)));
-    auto dInputTadShapes = reinterpret_cast<LongType **>(
-        pm.replicatePointer(inputTadShapes.data(), inputSize * sizeof(LongType *)));
-    auto dInputTadOffsets = reinterpret_cast<LongType **>(
-        pm.replicatePointer(inputTadOffsets.data(), inputSize * sizeof(LongType *)));
-
-    auto dIndicesBuffers =
-        reinterpret_cast<void **>(pm.replicatePointer(indicesBuffers.data(), inputSize * sizeof(void *)));
-    auto dIndicesShapes = reinterpret_cast<LongType **>(
-        pm.replicatePointer(indicesShapes.data(), inputSize * sizeof(LongType *)));
-
-    auto dNumTadsInputs = reinterpret_cast<LongType *>(
-        pm.replicatePointer(inputsNumTads.data(), inputSize * sizeof(LongType *)));
-
-
-    dim3 launchDims = getLaunchDims("dynamic_stitch_tad");
-    dynamicStitchTadKernel<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
-        dInputBuffers, dInputTadShapes, dInputTadOffsets, dIndicesBuffers, dIndicesShapes, inputSize,
-        output->specialBuffer(), packZ->platformShapeInfo(), packZ->platformOffsets(),dNumTadsInputs, packZ->numberOfTads());
-    DebugHelper::checkErrorCode(context->getCudaStream(),"dynamicStitchTadKernel failed");
-
   }
 
-  pm.synchronize();
+  auto stream = context->getCudaStream();
+  const dim3 named = getLaunchDims("dynamic_stitch_tad");
+
+  // the rows that no index names stay zero, the others are written by the inputs below
+  {
+    unsigned int blocks, threads;
+    flatLaunch(named, output->lengthOf(), blocks, threads);
+    dynamicStitchZeroKernel<X><<<blocks, threads, 0, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
+                                                                output->lengthOf());
+    checkLaunch(stream, "dynamicStitchZeroKernel failed: ");
+  }
+
+  for (LongType e = 0; e < inputSize; e++) {
+    const LongType total = inputs[e]->lengthOf();
+    if (total == 0) continue;
+
+    unsigned int blocks, threads;
+    flatLaunch(named, total, blocks, threads);
+    dynamicStitchKernel<X, Y><<<blocks, threads, 0, *stream>>>(
+        inputs[e]->specialBuffer(), inputs[e]->specialShapeInfo(), indices[e]->specialBuffer(),
+        indices[e]->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), numRows, sliceLength,
+        total);
+    checkLaunch(stream, "dynamicStitchKernel failed: ");
+  }
 
   return Status::OK;
 }
 
-template <typename T>
-static void _dynamicPartitionFunctorBP(NDArray *input, NDArray *indices,
-                                       std::vector<NDArray *> const &inputGradientList,
-                                       std::vector<NDArray *> &outputList) {}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// the arrays that hold data: a partition that got no slice has zero-length arrays, which have no device memory to
+// prepare or register
+static std::vector<NDArray*> withData(std::vector<NDArray*> const& arrays) {
+  std::vector<NDArray*> result;
+  for (auto array : arrays) {
+    if (array != nullptr && array->lengthOf() > 0) result.push_back(array);
+  }
+  return result;
+}
 
-void dynamicPartitionFunctor(LaunchContext *context, NDArray *input, NDArray *indices,
-                             std::vector<NDArray *> &outputList) {
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void dynamicPartitionFunctor(LaunchContext* context, NDArray* input, NDArray* indices,
+                             std::vector<NDArray*>& outputList) {
   auto xType = input->dataType();
   auto yType = indices->dataType();
 
-  NDArray::prepareSpecialUse(outputList, {indices, input});
+  const std::vector<NDArray*> writeArrays = withData(outputList);
+  const std::vector<NDArray*> readArrays = withData({indices, input});
+
+  NDArray::prepareSpecialUse(writeArrays, readArrays);
 
   BUILD_DOUBLE_SELECTOR(xType, yType, _dynamicPartitionFunctor, (context, input, indices, outputList), SD_NUMERIC_TYPES,
                         SD_INDEXING_TYPES);
 
-  NDArray::registerSpecialUse(outputList, {indices, input});
+  NDArray::registerSpecialUse(writeArrays, readArrays);
 }
 
-template <typename T>
-static Status _dynamicStitchFunctorBP(std::vector<NDArray *> const &inputs, std::vector<NDArray *> const &indices,
-                                      NDArray *gradInput, std::vector<NDArray *> &outputList) {
-  THROW_EXCEPTION("Not implemented yet");
-  return Status::OK;  // unreachable
-}
-
-Status dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray *> const &inputs,
-                            std::vector<NDArray *> const &indices, NDArray *output) {
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Status dynamicStitchFunctor(LaunchContext* context, std::vector<NDArray*> const& inputs,
+                            std::vector<NDArray*> const& indices, NDArray* output) {
   auto xType = inputs.at(0)->dataType();
   auto yType = indices.at(0)->dataType();
 
   // Build combined read list: all inputs + all indices arrays
-  std::vector<NDArray *> readArrays;
-  readArrays.insert(readArrays.end(), inputs.begin(), inputs.end());
-  readArrays.insert(readArrays.end(), indices.begin(), indices.end());
+  std::vector<NDArray*> allArrays;
+  allArrays.insert(allArrays.end(), inputs.begin(), inputs.end());
+  allArrays.insert(allArrays.end(), indices.begin(), indices.end());
 
-  std::vector<NDArray *> writeArrays = {output};
+  const std::vector<NDArray*> readArrays = withData(allArrays);
+  const std::vector<NDArray*> writeArrays = withData({output});
 
   NDArray::prepareSpecialUse(writeArrays, readArrays);
 
-  BUILD_DOUBLE_SELECTOR(xType, yType, _dynamicStitchFunctor, (context, inputs, indices, output), SD_NUMERIC_TYPES,
-                        SD_INDEXING_TYPES);
+  Status result = Status::OK;
+  BUILD_DOUBLE_SELECTOR(xType, yType, result = _dynamicStitchFunctor, (context, inputs, indices, output),
+                        SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
 
   NDArray::registerSpecialUse(writeArrays, readArrays);
 
-  return Status::OK;
+  return result;
 }
 
-Status dynamicStitchFunctorBP(LaunchContext *context, std::vector<NDArray *> const &inputs,
-                                  std::vector<NDArray *> const &indices, NDArray *gradInput,
-                                  std::vector<NDArray *> &outputList) {
-  auto xType = inputs.at(0)->dataType();
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void dynamicPartitionFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices,
+                               std::vector<NDArray*> const& inputGradientList, std::vector<NDArray*>& outputList) {
+  auto xType = outputList.at(0)->dataType();
+  auto yType = indices->dataType();
 
-  BUILD_SINGLE_SELECTOR(xType, return _dynamicStitchFunctorBP, (inputs, indices, gradInput, outputList),
-                        SD_NUMERIC_TYPES);
-}
+  std::vector<NDArray*> allArrays(inputGradientList.begin(), inputGradientList.end());
+  allArrays.push_back(indices);
 
-void dynamicPartitionFunctorBP(LaunchContext *context, NDArray *input, NDArray *indices,
-                               std::vector<NDArray *> const &inputGradientList, std::vector<NDArray *> &outputList) {
-  auto xType = input->dataType();
+  const std::vector<NDArray*> writeArrays = withData(outputList);
+  const std::vector<NDArray*> readArrays = withData(allArrays);
 
-  BUILD_SINGLE_SELECTOR(xType, _dynamicPartitionFunctorBP, (input, indices, inputGradientList, outputList),
-                        SD_NUMERIC_TYPES);
+  NDArray::prepareSpecialUse(writeArrays, readArrays);
+
+  BUILD_DOUBLE_SELECTOR(xType, yType, _dynamicPartitionFunctorBP, (context, input, indices, inputGradientList, outputList),
+                        SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
+
+  NDArray::registerSpecialUse(writeArrays, readArrays);
 }
 
 }  // namespace helpers

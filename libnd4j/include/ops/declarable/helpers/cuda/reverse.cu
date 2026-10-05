@@ -311,12 +311,10 @@ void reverseSequence(LaunchContext* context, NDArray* input, NDArray* seqLengths
                      int seqDim, const int batchDim) {
   NDArray::prepareSpecialUse({output}, {input, seqLengths});
 
-  // Copy original data into output array using device-to-device copy
-  // This must happen after prepareSpecialUse to ensure device buffers are valid
+  // The prefix reversal leaves the suffix untouched. Copy logical elements through
+  // both layouts; raw memcpy corrupts the suffix for F-order and stepped views.
   if (output->specialBuffer() != input->specialBuffer()) {
-    cudaMemcpyAsync(output->specialBuffer(), input->specialBuffer(),
-                    input->lengthOf() * input->sizeOfT(),
-                    cudaMemcpyDeviceToDevice, *context->getCudaStream());
+    output->assign(input);
   }
 
   BUILD_SINGLE_SELECTOR(input->dataType(), reverseSequence_, (context, input, seqLengths, output, seqDim, batchDim),

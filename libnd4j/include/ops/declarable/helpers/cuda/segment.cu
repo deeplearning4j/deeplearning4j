@@ -19,138 +19,223 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-#include <array/NDArrayFactory.h>
-#include <memory/cuda/CudaMemoryPool.h>
+//  Segment ids on the device: validation (with a stream-ordered readback of one small report), conversion of the ids
+//  of any integer dtype / rank / strides to one dense int64 sequence, and the per-class boundaries and counts every
+//  segment kernel needs. Every kernel strides over its elements with 64 bit indices, so the launch sizes of the
+//  segment family only cap the grid.
+//
+#include <array/NDArray.h>
 #include <execution/cuda/LaunchDims.h>
-#include <helpers/ConstantTadHelper.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
-#include <helpers/ShapeUtils.h>
-
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
+#include <ops/declarable/helpers/segment_semantics.h>
 #include <system/selective_rendering.h>
 
-#include "helpers/DebugHelper.h"
+#include <string>
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
-// -------------------------------------------------------------------------------------------------------------- //
-// Sorted segments ops implementations
+namespace {
 
-template <typename T, typename I>
-static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArray& aoutput) {
-  return true;
+SD_INLINE int segmentClampInt(LongType value) {
+  if (value < 0) return 0;
+  if (value > static_cast<LongType>(2147483647)) return 2147483647;
+  return static_cast<int>(value);
 }
 
-bool segmentIndicesValidate(LaunchContext* context, NDArray* indices, NDArray& expected, NDArray& output) {
-  auto indicesDType = indices->dataType();
-  auto outputDType = output.dataType();
-  BUILD_DOUBLE_SELECTOR(output.dataType(), indices->dataType(), return segmentIndicesValidate_,
-                        (indices, expected, output), SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
+// the launch errors are reported after every enqueue (no synchronization); inside a graph capture there is nothing to
+// query
+SD_INLINE void segmentCheckLaunch(cudaStream_t* stream, const char* what) {
+  if (!DebugHelper::inGraphCapture(stream)) DebugHelper::checkGlobalErrorCode(what);
 }
 
-// -------------------------------------------------------------------------------------------------------------- //
-// Unsorted segment ops functors implementation
-// -------------------------------------------------------------------------------------------------------------- //
-template <typename I>
-static SD_KERNEL void unsortedSegmentIndexValidateKernel(const I* indices, const LongType* indicesShape, I expected,
-                                                         I* found) {
-  __shared__ bool onlyTrue;
-  __shared__ LongType len;
-
-  if (threadIdx.x == 0) {
-    onlyTrue = true;
-    len = shape::length(indicesShape);
-  }
-  __syncthreads();
-  auto start = threadIdx.x + blockIdx.x * blockDim.x;
-  auto step = gridDim.x * blockDim.x;
-  for (LongType e = start; e < len && onlyTrue; e += step) {
-    math::atomics::sd_atomicMax(found, indices[e]);
-    if (expected < *found) onlyTrue = false;
+SD_INLINE void segmentCudaCheck(cudaError_t status, const char* what) {
+  if (status != cudaSuccess) {
+    std::string message = std::string(what) + " failed: [" + std::to_string(static_cast<int>(status)) + "] " +
+                          cudaGetErrorString(status);
+    THROW_EXCEPTION(message.c_str());
   }
 }
 
+}  // namespace
+
+// -------------------------------------------------------------------------------------------------------------- //
+// ids -> dense int64
+// -------------------------------------------------------------------------------------------------------------- //
 template <typename I>
-static bool unsortedSegmentIndicesValidate_(LaunchContext* context, NDArray* indices, LongType expected,
-                                            LongType& output) {
-  output = expected;
-  I found = output;
-  I exp = expected;
+static SD_KERNEL void segmentReadIdsKernel(const I* ids, const LongType* idsShapeInfo, LongType n, LongType* dense) {
+  const LongType rank = shape::rank(idsShapeInfo);
+  const LongType* shp = shape::shapeOf(idsShapeInfo);
+  const LongType* str = shape::stride(idsShapeInfo);
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < n;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    dense[i] = segment_sem::idToLong<I>(ids[segment_sem::logicalOffset(i, rank, shp, str)]);
+  }
+}
+
+template <typename I>
+static void segmentReadIdsLauncher(LaunchContext* context, NDArray* indices, LongType* dense) {
+  const LongType n = indices->lengthOf();
+  dim3 dims = segmentValidateIndices(segmentClampInt(n));
   auto stream = context->getCudaStream();
-  I* devFound;
-  int devId = 0; cudaGetDevice(&devId);
-  devFound = reinterpret_cast<I*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(I), devId, nullptr));
-  if (devFound == nullptr) THROW_EXCEPTION("Cannot allocate memory for segment validation");
-  cudaMemcpy(devFound, &found, sizeof(I), cudaMemcpyHostToDevice);
-
-  dim3 launchDims = segmentValidateIndices(indices->lengthOf());
-  unsortedSegmentIndexValidateKernel<I><<<launchDims.y,launchDims.x, launchDims.z, *stream>>>(
-      reinterpret_cast<I*>(indices->specialBuffer()), indices->specialShapeInfo(), exp, devFound);
-  sd::DebugHelper::checkErrorCode(stream, "unsortedSegmentIndexValidateKernel failed");
-
-  cudaMemcpy(&found, devFound, sizeof(I), cudaMemcpyDeviceToHost);
-  sd::memory::CudaMemoryPool::getInstance().free(devFound, devId, nullptr);
-  output = found;
-  return expected == output;
+  segmentReadIdsKernel<I><<<dims.x, dims.y, dims.z, *stream>>>(reinterpret_cast<const I*>(indices->specialBuffer()),
+                                                                indices->specialShapeInfo(), n, dense);
+  segmentCheckLaunch(stream, "segmentReadIdsKernel failed");
 }
 
+void segmentReadIds(LaunchContext* context, NDArray* indices, LongType* dense) {
+  if (indices->lengthOf() == 0) return;
+  BUILD_SINGLE_SELECTOR(indices->dataType(), segmentReadIdsLauncher, (context, indices, dense), SD_INTEGER_TYPES);
+}
+
+// -------------------------------------------------------------------------------------------------------------- //
+// per class boundaries and counts
+// -------------------------------------------------------------------------------------------------------------- //
+static SD_KERNEL void segmentBuildRangesKernel(const LongType* ids, LongType n, LongType numClasses, LongType* begin,
+                                               LongType* end) {
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < n;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const LongType s = ids[i];
+    if (s < 0 || s >= numClasses) continue;
+    // each boundary of a run is written by exactly one thread, no atomics (sorted ids)
+    if (i == 0 || ids[i - 1] != s) begin[s] = i;
+    if (i == n - 1 || ids[i + 1] != s) end[s] = i + 1;
+  }
+}
+
+void segmentBuildRanges(LaunchContext* context, const LongType* ids, LongType n, LongType numClasses, LongType* begin,
+                        LongType* end) {
+  if (numClasses <= 0) return;
+  auto stream = context->getCudaStream();
+  segmentCudaCheck(cudaMemsetAsync(begin, 0, static_cast<size_t>(numClasses) * sizeof(LongType), *stream),
+                   "segmentBuildRanges memset");
+  segmentCudaCheck(cudaMemsetAsync(end, 0, static_cast<size_t>(numClasses) * sizeof(LongType), *stream),
+                   "segmentBuildRanges memset");
+  if (n <= 0) return;
+  dim3 dims = getFillUpSegmentsDims(segmentClampInt(numClasses), segmentClampInt(n));
+  segmentBuildRangesKernel<<<dims.x, dims.y, dims.z, *stream>>>(ids, n, numClasses, begin, end);
+  segmentCheckLaunch(stream, "segmentBuildRangesKernel failed");
+}
+
+static SD_KERNEL void segmentCountIdsKernel(const LongType* ids, LongType n, LongType numClasses,
+                                            unsigned long long* counts) {
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < n;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const LongType s = ids[i];
+    if (s >= 0 && s < numClasses) atomicAdd(counts + s, 1ULL);
+  }
+}
+
+void segmentCountIds(LaunchContext* context, const LongType* ids, LongType n, LongType numClasses,
+                     unsigned long long* counts) {
+  if (numClasses <= 0) return;
+  auto stream = context->getCudaStream();
+  segmentCudaCheck(cudaMemsetAsync(counts, 0, static_cast<size_t>(numClasses) * sizeof(unsigned long long), *stream),
+                   "segmentCountIds memset");
+  if (n <= 0) return;
+  dim3 dims = getFillUpSegmentsDims(segmentClampInt(numClasses), segmentClampInt(n));
+  segmentCountIdsKernel<<<dims.x, dims.y, dims.z, *stream>>>(ids, n, numClasses, counts);
+  segmentCheckLaunch(stream, "segmentCountIdsKernel failed");
+}
+
+// -------------------------------------------------------------------------------------------------------------- //
+// validation
+// -------------------------------------------------------------------------------------------------------------- //
+static SD_KERNEL void segmentCheckSortedKernel(const LongType* ids, LongType n, unsigned long long* firstBad) {
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < n;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const LongType v = ids[i];
+    if (v < 0 || (i > 0 && v < ids[i - 1])) atomicMin(firstBad, static_cast<unsigned long long>(i));
+  }
+}
+
+static SD_KERNEL void segmentCheckRangeKernel(const LongType* ids, LongType n, LongType numClasses,
+                                              unsigned long long* firstBad) {
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < n;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const LongType v = ids[i];
+    if (v < 0 || v >= numClasses) atomicMin(firstBad, static_cast<unsigned long long>(i));
+  }
+}
+
+// report = {position of the first violation or -1, id before it, the offending id}
+static SD_KERNEL void segmentCheckReportKernel(const LongType* ids, const unsigned long long* firstBad,
+                                               LongType* report) {
+  if (blockIdx.x != 0 || threadIdx.x != 0) return;
+  const unsigned long long bad = *firstBad;
+  if (bad == ~0ULL) {
+    report[0] = -1;
+    report[1] = 0;
+    report[2] = 0;
+  } else {
+    report[0] = static_cast<LongType>(bad);
+    report[1] = bad > 0 ? ids[bad - 1] : ids[bad];
+    report[2] = ids[bad];
+  }
+}
+
+// Reads the ids and, outside a graph capture, returns the first violation of the check through a stream-ordered
+// copy of one small report. Inside a capture the host cannot read anything back; every segment kernel then drops the
+// ids that are out of range instead of indexing with them.
+static bool segmentIdsCheck(LaunchContext* context, NDArray* indices, bool sorted, LongType numClasses,
+                            LongType& previous, LongType& offending) {
+  const LongType n = indices->lengthOf();
+  if (n == 0) return true;
+  auto stream = context->getCudaStream();
+  if (DebugHelper::inGraphCapture(stream)) return true;
+
+  PointersManager manager(context, "segmentIdsCheck");
+  NDArray::prepareSpecialUse({}, {indices});
+  auto* dense = reinterpret_cast<LongType*>(manager.allocateDevMem(static_cast<size_t>(n) * sizeof(LongType)));
+  auto* firstBad = reinterpret_cast<unsigned long long*>(manager.allocateDevMem(sizeof(unsigned long long)));
+  auto* report = reinterpret_cast<LongType*>(manager.allocateDevMem(3 * sizeof(LongType)));
+  segmentCudaCheck(cudaMemsetAsync(firstBad, 0xFF, sizeof(unsigned long long), *stream), "segmentIdsCheck memset");
+
+  segmentReadIds(context, indices, dense);
+  dim3 dims = segmentValidateIndices(segmentClampInt(n));
+  if (sorted) {
+    segmentCheckSortedKernel<<<dims.x, dims.y, dims.z, *stream>>>(dense, n, firstBad);
+  } else {
+    segmentCheckRangeKernel<<<dims.x, dims.y, dims.z, *stream>>>(dense, n, numClasses, firstBad);
+  }
+  segmentCheckLaunch(stream, "segment ids check failed");
+  segmentCheckReportKernel<<<1, 1, 0, *stream>>>(dense, firstBad, report);
+  segmentCheckLaunch(stream, "segmentCheckReportKernel failed");
+
+  LongType host[3] = {-1, 0, 0};
+  segmentCudaCheck(cudaMemcpyAsync(host, report, sizeof(host), cudaMemcpyDeviceToHost, *stream),
+                   "segmentIdsCheck readback");
+  segmentCudaCheck(cudaStreamSynchronize(*stream), "segmentIdsCheck stream synchronization");
+  NDArray::registerSpecialUse({}, {indices});
+  if (host[0] < 0) return true;
+  previous = host[1];
+  offending = host[2];
+  return false;
+}
+
+// Sorted ids: no negative id and no id smaller than the one before it. On failure previous holds the id before the
+// offending one (the offending one itself for a negative first id) and offending that id.
+bool segmentIndicesValidate(LaunchContext* context, NDArray* indices, LongType& previous, LongType& offending) {
+  return segmentIdsCheck(context, indices, true, 0, previous, offending);
+}
+
+// Unsorted ids: every id in [0, numOfClasses). On failure output holds the first offending id, on success
+// numOfClasses.
 bool unsortedSegmentIndicesValidate(LaunchContext* context, NDArray* indices, LongType expected, LongType& output) {
-  BUILD_SINGLE_SELECTOR(indices->dataType(), return unsortedSegmentIndicesValidate_,
-                        (context, indices, expected, output), SD_INDEXING_TYPES);
-}
-
-// -------------------------------------------------------------------------------------------------------------- //
-
-// -------------------------------------------------------------------------------------------------------------- //
-// fill up segments starts and ends - splitted ordered case
-template <typename I>
-static SD_KERNEL void fillUpSegmentsKernel(const void* indices, const LongType* indexShape, LongType numClasses,
-                                           LongType* classesRangesStart, LongType* classesRangesLengths) {
-  __shared__ const I* idxBuf;
-  __shared__ LongType idxLen;
-  __shared__ LongType* result;
-  if (threadIdx.x == 0) {
-    idxBuf = reinterpret_cast<const I*>(indices);
-    idxLen = shape::length(indexShape);
+  LongType previous = 0;
+  LongType offending = 0;
+  if (segmentIdsCheck(context, indices, false, expected, previous, offending)) {
+    output = expected;
+    return true;
   }
-  __syncthreads();
-
-  auto tid = threadIdx.x + blockDim.x * blockIdx.x;
-  auto step = blockDim.x * gridDim.x;
-
-  for (auto j = tid; j < idxLen; j += step) {
-    auto pos = idxBuf[j];
-    math::atomics::sd_atomicMin<LongType>(&classesRangesStart[pos], (LongType)j);
-    math::atomics::sd_atomicAdd<LongType>(&classesRangesLengths[pos], 1);
-  }
+  output = offending;
+  return false;
 }
-
-// -------------------------------------------------------------------------------------------------------------- //
-
-template <typename I>
-static void fillUpSegments_(NDArray* indices, LongType numClasses, NDArray& classesRangesBegs,
-                            NDArray& classesRangesLens) {
-  dim3 dims = getFillUpSegmentsDims(numClasses, indices->lengthOf());
-  LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
-  LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
-  auto stream = classesRangesBegs.getContext()->getCudaStream();
-  fillUpSegmentsKernel<I><<<dims.x, dims.y, dims.z, *stream>>>(indices->specialBuffer(), indices->specialShapeInfo(),
-                                                               numClasses, begins, lengths);
-  sd::DebugHelper::checkErrorCode(stream, "fillUpSegmentsKernel failed");
-
-}
-// -------------------------------------------------------------------------------------------------------------- //
-
-void fillUpSegments(NDArray* indices, LongType numClasses, NDArray& classesRangesBegs, NDArray& classesRangesLens) {
-  BUILD_SINGLE_SELECTOR(indices->dataType(), fillUpSegments_,
-                        (indices, numClasses, classesRangesBegs, classesRangesLens), SD_INDEXING_TYPES);
-}
-// -------------------------------------------------------------------------------------------------------------- //
 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
-// -------------------------------------------------------------------------------------------------------------- //
-// -------------------------------------------------------------------------------------------------------------- //

@@ -151,14 +151,7 @@ void execRandom(sd::Pointer *extraPointers, int opNum, sd::Pointer stateHost,
     auto lc = sd::LaunchContext::defaultContext();
 
     NativeOpExecutioner::execRandom(
-        lc, opNum, stateHost,
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance()
-            .bufferForShapeInfo(z->shapeInfo())
-            ->special(),
-        extraArguments);
+        lc, opNum, stateHost, sd::LegacyTensorArg::fromArray(z), extraArguments);
 
     z->registerSpecialUse({z}, {});
   } catch (std::exception &e) {
@@ -176,20 +169,8 @@ void execRandom2(sd::Pointer *extraPointers, int opNum, sd::Pointer stateHost,
     auto lc = sd::LaunchContext::defaultContext();
 
     NativeOpExecutioner::execRandom(
-        lc, opNum, stateHost,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance()
-            .bufferForShapeInfo(x->shapeInfo())
-            ->special(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        sd::ConstantShapeHelper::getInstance()
-            .bufferForShapeInfo(z->shapeInfo())
-            ->special(),
-        extraArguments);
+        lc, opNum, stateHost, sd::LegacyTensorArg::fromArray(x),
+        sd::LegacyTensorArg::fromArray(z), extraArguments);
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {
@@ -207,19 +188,9 @@ void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointer stateHost,
 
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execRandom(
-        lc, opNum, stateHost,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->buffer(),
-        y->shapeInfo(),
-        shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->specialBuffer(),
-        y->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo(), extraArguments);
+        lc, opNum, stateHost, sd::LegacyTensorArg::fromArray(x),
+        sd::LegacyTensorArg::fromArray(y), sd::LegacyTensorArg::fromArray(z),
+        extraArguments);
 
     x->registerSpecialUse({z}, {x, y});
   } catch (std::exception &e) {

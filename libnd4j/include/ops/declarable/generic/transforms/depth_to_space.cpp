@@ -27,34 +27,33 @@
 #include <ops/declarable/helpers/d_t_s.h>
 
 #include <array>
+#include <limits>
 
 namespace sd {
 namespace ops {
     CUSTOM_OP_IMPL(depth_to_space, 1, 1, false, 0, 2) {
-        int block_size = INT_ARG(0);
-        REQUIRE_TRUE(block_size > 0,0, "DepthToSpace: block_size should be > 0");
+        const LongType block_size = INT_ARG(0);
+        REQUIRE_TRUE(block_size > 0 && block_size <= std::numeric_limits<int>::max(), 0,
+                     "DepthToSpace: block_size must be positive and fit the helper's int argument");
         bool isNHWC = INT_ARG(1) == 1;
 
         auto input = INPUT_VARIABLE(0);
 
-        REQUIRE_TRUE(input->rankOf() == 4, 0, "DepthToSpace: input should be 4D array, but got %f instead", input->rankOf());
+        REQUIRE_TRUE(input->rankOf() == 4, 0, "DepthToSpace: input should be 4D array, but got %i instead", input->rankOf());
 
-        int bS = input->sizeAt(0);
-        int iD = isNHWC ? input->sizeAt(3) : input->sizeAt(1);
-        int iH = isNHWC ? input->sizeAt(1) : input->sizeAt(2);
-        int iW = isNHWC ? input->sizeAt(2) : input->sizeAt(3);
+        LongType bS = input->sizeAt(0);
+        LongType iD = isNHWC ? input->sizeAt(3) : input->sizeAt(1);
+        LongType iH = isNHWC ? input->sizeAt(1) : input->sizeAt(2);
+        LongType iW = isNHWC ? input->sizeAt(2) : input->sizeAt(3);
 
         REQUIRE_TRUE(iD % (block_size * block_size) == 0, 0, "DepthToSpace: input number of channels should be divisible by square(block_size)");
+        REQUIRE_TRUE(iH <= std::numeric_limits<LongType>::max() / block_size &&
+                     iW <= std::numeric_limits<LongType>::max() / block_size, 0,
+                     "DepthToSpace: output spatial dimension overflows LongType");
 
         auto output = OUTPUT_VARIABLE(0);
 
-        if (shape::strideDescendingCAscendingF(input->shapeInfo()))
-            helpers::_depthToSpace(block.launchContext(), *input, output, block_size, isNHWC);
-        else {
-          NDArray *dup = input->dup();
-          helpers::_depthToSpace(block.launchContext(), *dup, output, block_size, isNHWC);
-          delete dup;
-        }
+        helpers::_depthToSpace(block.launchContext(), *input, output, static_cast<int>(block_size), isNHWC);
         STORE_RESULT(output);     
 
         return Status::OK;
@@ -62,7 +61,7 @@ namespace ops {
 
     DECLARE_TYPES(depth_to_space) {
         getOpDescriptor()
-                ->setAllowedInputTypes(sd::DataType::ANY)
+                ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS, sd::DataType::BOOL})
                 ->setSameMode(true);
       getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
 }
@@ -70,19 +69,27 @@ namespace ops {
 
     DECLARE_SHAPE_FN(depth_to_space) {
         auto in = inputShape->at(0);
-        auto block_size = INT_ARG(0);
-        REQUIRE_TRUE(block_size > 0,0, "DepthToSpace: input should be > 0");
+        const LongType block_size = INT_ARG(0);
+        REQUIRE_TRUE(block_size > 0 && block_size <= std::numeric_limits<int>::max(), 0,
+                     "DepthToSpace: block_size must be positive and fit the helper's int argument");
 
         bool isNHWC = INT_ARG(1) == 1;
 
-        int bS = shape::sizeAt(in, static_cast<sd::LongType>(0));
-        int iD = isNHWC ? shape::sizeAt(in, static_cast<sd::LongType>(3)) : shape::sizeAt(in, static_cast<sd::LongType>(1));
-        int iH = isNHWC ? shape::sizeAt(in, static_cast<sd::LongType>(1)) : shape::sizeAt(in, static_cast<sd::LongType>(2));
-        int iW = isNHWC ? shape::sizeAt(in, static_cast<sd::LongType>(2)) : shape::sizeAt(in, static_cast<sd::LongType>(3));
+        REQUIRE_TRUE(shape::rank(in) == 4, 0, "DepthToSpace: input must be rank 4");
+        LongType bS = shape::sizeAt(in, static_cast<sd::LongType>(0));
+        LongType iD = isNHWC ? shape::sizeAt(in, static_cast<sd::LongType>(3)) : shape::sizeAt(in, static_cast<sd::LongType>(1));
+        LongType iH = isNHWC ? shape::sizeAt(in, static_cast<sd::LongType>(1)) : shape::sizeAt(in, static_cast<sd::LongType>(2));
+        LongType iW = isNHWC ? shape::sizeAt(in, static_cast<sd::LongType>(2)) : shape::sizeAt(in, static_cast<sd::LongType>(3));
 
-        int oD = iD / (block_size * block_size);
-        int oH = iH * block_size;
-        int oW = iW * block_size;
+        const LongType blockArea = block_size * block_size;
+        REQUIRE_TRUE(iD % blockArea == 0, 0,
+                     "DepthToSpace: input channels must be divisible by square(block_size)");
+        REQUIRE_TRUE(iH <= std::numeric_limits<LongType>::max() / block_size &&
+                     iW <= std::numeric_limits<LongType>::max() / block_size, 0,
+                     "DepthToSpace: output spatial dimension overflows LongType");
+        const LongType oD = iD / blockArea;
+        const LongType oH = iH * block_size;
+        const LongType oW = iW * block_size;
 
         
         std::array<sd::LongType, 4> shape;

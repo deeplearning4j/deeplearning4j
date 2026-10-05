@@ -645,6 +645,23 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReverseSequenceWithFortranInput(Nd4jBackend backend) {
+        NDBase base = new NDBase();
+        INDArray x = Nd4j.createFromArray(new double[][]{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}).dup('f');
+        INDArray lengths = Nd4j.createFromArray(2, 3, 1);
+        INDArray expected = Nd4j.createFromArray(new double[][]{{2, 1, 3}, {6, 5, 4}, {7, 8, 9}});
+        assertEquals(expected, base.reverseSequence(x, lengths));
+        // Zero/one prefixes are identity rows; their unchanged suffix must still
+        // be copied by logical coordinates when input and output orders differ.
+        INDArray shortLengths = Nd4j.createFromArray(0, 1, 2);
+        INDArray shortExpected = Nd4j.createFromArray(new double[][]{{1, 2, 3}, {4, 5, 6}, {8, 7, 9}});
+        assertEquals(shortExpected, base.reverseSequence(x, shortLengths));
+        assertEquals(shortExpected, base.reverseSequence(x, shortLengths, -1, -2));
+        assertThrows(RuntimeException.class, () -> base.reverseSequence(x, Nd4j.createFromArray(-1, 1, 2)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarFloorMod(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3, 3);

@@ -42,6 +42,23 @@ Host-visible and device-local memory are Vulkan memory types, not backend
 fallbacks. Unified-memory devices may expose a placement that satisfies both
 roles. Discrete devices use explicit staging where required by the Vulkan API.
 
+### Array-aware legacy execution
+
+Array-owned legacy calls retain the original `DataBuffer`, effective shape and
+strides, and element offset through `LegacyTensorArg`. Vulkan allocation tokens
+are not offset device addresses: decomposing an NDArray into raw pointers and
+reconstructing an offset-zero array loses both view indexing and shared buffer
+coherence. Vulkan borrows the original array or creates a temporary metadata
+adapter sharing its buffer, validating the stride-reachable allocation span.
+The recorder remains responsible for device allocation and actuality updates.
+
+An effective-shape adapter adds only its explicit relative offset to the array's
+existing offset. CPU/CUDA forwarding instead uses the already-offset array
+pointers and adds only that relative offset. Existing raw-pointer APIs remain
+available for genuinely raw operands; they cannot substitute for array metadata.
+Reduction axes supplied to Vulkan are semantic host axes, not a CPU/CUDA
+full-rank traversal permutation or device-only TAD metadata.
+
 ### Constant, shape, TAD, and RNG state
 
 Constant buffers, shape-info buffers, TAD metadata, and RNG state are
@@ -91,7 +108,10 @@ setting `java.library.path`.
 Device-tier tests cover enumeration, selection, allocation, buffer
 synchronization, constant/shape/TAD ownership, and multi-device isolation.
 Replay tests additionally verify that device-resident buffers survive capture
-and repeated execution.
+and repeated execution. `DenseOpOutputTest` independently checks offset/stepped
+C/F views for legacy arithmetic, axis reductions, assignment and casts, including
+untouched owner sentinels and host writes between device executions. These are
+validation requirements, not a claim that an uninstalled source change passed.
 
 The retained real-hardware evidence currently applies to the Linux NVIDIA test
 host used by the project. Android, AMD, Intel, and other driver matrices must be

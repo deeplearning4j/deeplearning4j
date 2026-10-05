@@ -80,42 +80,45 @@ static inline void computeInterpolationWeights(const Scaler scaler, sd::LongType
 //                std::vector<BilinearInterpolationData> const& ys,
 //                NDArray *output);
 
+// The images are read and written through the strides of their arrays (from the buffer pointers of the arrays, which
+// include the offset of a view): views and arrays of any order work. The x weights hold offsets along the input's
+// width axis, the y weights plain row indices.
 template <typename T, typename Z>
-static void resizeImage_(T const* pInputBuf, sd::LongType batchSize, sd::LongType inHeight, sd::LongType inWidth,
-                         sd::LongType outHeight, sd::LongType outWidth, sd::LongType channels,
+static void resizeImage_(T const* pInputBuf, sd::LongType batchSize, sd::LongType outHeight, sd::LongType outWidth,
+                         sd::LongType channels, sd::LongType inBatchStride, sd::LongType inRowStride,
+                         sd::LongType inChannelStride, sd::LongType outBatchStride, sd::LongType outRowStride,
+                         sd::LongType outColumnStride, sd::LongType outChannelStride,
                          std::vector<BilinearInterpolationData> const& xs,
                          std::vector<BilinearInterpolationData> const& ys, Z* pOutputBuf) {
-  sd::LongType inRowSize = inWidth * channels;
-  sd::LongType inBatchNumValues = inHeight * inRowSize;
-  sd::LongType outRowSize = outWidth * channels;
-
   BilinearInterpolationData const* xsPtr = xs.data();
 
   auto computeBilinear = [](double topLeft, double topRight, double bottomLeft, double bottomRight, double xVal,
                             double yVal) {
-    double top = topLeft + (topRight - topLeft) * xVal;
-    double bottom = bottomLeft + (bottomRight - bottomLeft) * xVal;
-    return top + (bottom - top) * yVal;
+    const double top = imageResizeLerp<double>(topLeft, topRight, xVal);
+    const double bottom = imageResizeLerp<double>(bottomLeft, bottomRight, xVal);
+    return imageResizeLerp<double>(top, bottom, yVal);
   };
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto batch = start; batch < stop; ++batch) {
-      auto pInput = pInputBuf + batch * inBatchNumValues;
+      auto pInput = pInputBuf + batch * inBatchStride;
       for (sd::LongType y = 0; y < outHeight; ++y) {
-        auto pOutput = pOutputBuf + (batch * outHeight + y) * outRowSize;
-        const T* ysInputLowerPtr = pInput + ys[y].bottomIndex * inRowSize;
-        const T* ysInputUpperPtr = pInput + ys[y].topIndex * inRowSize;
+        auto pOutput = pOutputBuf + batch * outBatchStride + y * outRowStride;
+        const T* ysInputLowerPtr = pInput + ys[y].bottomIndex * inRowStride;
+        const T* ysInputUpperPtr = pInput + ys[y].topIndex * inRowStride;
         double yVal = ys[y].interpolarValue;
         for (sd::LongType x = 0; x < outWidth; ++x) {
           auto xsBottom = xsPtr[x].bottomIndex;
           auto xsTop = xsPtr[x].topIndex;
           auto xVal = xsPtr[x].interpolarValue;
           for (sd::LongType c = 0; c < channels; ++c) {
-            double topLeft(ysInputLowerPtr[xsBottom + c]);
-            double topRight(ysInputLowerPtr[xsTop + c]);
-            double bottomLeft(ysInputUpperPtr[xsBottom + c]);
-            double bottomRight(ysInputUpperPtr[xsTop + c]);
-            pOutput[x * channels + c] = computeBilinear(topLeft, topRight, bottomLeft, bottomRight, xVal, yVal);
+            const sd::LongType channelOffset = c * inChannelStride;
+            double topLeft(ysInputLowerPtr[xsBottom + channelOffset]);
+            double topRight(ysInputLowerPtr[xsTop + channelOffset]);
+            double bottomLeft(ysInputUpperPtr[xsBottom + channelOffset]);
+            double bottomRight(ysInputUpperPtr[xsTop + channelOffset]);
+            pOutput[x * outColumnStride + c * outChannelStride] =
+                computeBilinear(topLeft, topRight, bottomLeft, bottomRight, xVal, yVal);
           }
         }
       }
@@ -156,17 +159,19 @@ static sd::Status resizeBilinearFunctor_(NDArray * images, int const width, int 
     computeInterpolationWeights(LegacyScaler(), outWidth, inWidth, st.widthScale, xs.data());
   }
   int xsSize = xs.size();
-  // Scale x interpolation weights to avoid a multiplication during iteration.
+  // Scale x interpolation weights to offsets along the input's width axis, to avoid a multiplication during iteration.
+  const sd::LongType inColumnStride = images->strideAt(2);
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
-      xs[i].bottomIndex *= channels;
-      xs[i].topIndex *= channels;
+      xs[i].bottomIndex *= inColumnStride;
+      xs[i].topIndex *= inColumnStride;
     }
   };
   samediff::Threads::parallel_for(func, 0, xsSize);
 
-  resizeImage_<X, Z>(images->getDataBuffer()->primaryAsT<X>(), batchSize, inHeight, inWidth, outHeight, outWidth,
-                     channels, xs, ys, output->dataBuffer()->primaryAsT<Z>());
+  resizeImage_<X, Z>(images->bufferAsT<X>(), batchSize, outHeight, outWidth, channels, images->strideAt(0),
+                     images->strideAt(1), images->strideAt(3), output->strideAt(0), output->strideAt(1),
+                     output->strideAt(2), output->strideAt(3), xs, ys, output->bufferAsT<Z>());
   return sd::Status::OK;
 }
 
@@ -288,27 +293,24 @@ std::unique_ptr<T[]> initCoeffsTable(const double a) {
   std::unique_ptr<T[]> coeffsTableUniq(new T[(kTableSize + 1) * 2]);
   T* coeffsTable = coeffsTableUniq.get();
   auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i <= stop; ++i) {
+    for (auto i = start; i < stop; ++i) {
       float x = i * 1.0 / kTableSize;
       coeffsTable[i * 2] = kernel.calc_less1pt0(x);
       x += 1.0;
       coeffsTable[i * 2 + 1] = kernel.calc_less2pt0(x);
     }
   };
-  samediff::Threads::parallel_for(func, 0, kTableSize);
+  samediff::Threads::parallel_for(func, 0, kTableSize + 1);
   return coeffsTableUniq;
 }
 
-template <typename T>
-sd::Status resizeBicubicFunctor_(sd::LaunchContext* context, NDArray * image, int width, int height,
-                                 bool preserveAspectRatio, bool antialias, NDArray* output) {
-  return sd::Status::OK;
-}
-
+// The legacy bicubic resize of resize_images (it wrote nothing at all): the coordinates of the ASYMMETRIC mode, the
+// border pixels repeated and the ordinary (OpenCV) coefficient, as resize_bicubic does without half pixel centers.
+// (The two flags are the resize_images arguments: align corners, and antialias, which does not apply to this resize.)
 sd::Status resizeBicubicFunctor(sd::LaunchContext* context, NDArray * image, int width, int height,
-                                bool preserveAspectRatio, bool antialias, NDArray* output) {
-  BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctor_,
-                        (context, image, width, height, preserveAspectRatio, antialias, output), SD_NUMERIC_TYPES);
+                                bool alignCorners, bool antialias, NDArray* output) {
+  return resizeBicubicFunctorA(context, image, width, height, alignCorners, CoordinateTransformationMode::ASYMMETRIC,
+                               false, KeysCubicKernelFunc<double>::ORDINARY_COEF, output);
 }
 // ------------------------------------------------------------------------------------------------------------------ //
 
@@ -345,15 +347,21 @@ static void bicubicInterpolateWithCaching(NDArray * image, ImageResizerState con
   const auto batchStride = image->strideAt(0);
   const auto hStride = image->strideAt(1);
   const auto cStride = image->strideAt(3);
+  // the output is written through its own strides
+  const auto outBatchStride = output->strideAt(0);
+  const auto outRowStride = output->strideAt(1);
+  const auto outColumnStride = output->strideAt(2);
+  const auto outChannelStride = output->strideAt(3);
 
   auto func = PRAGMA_THREADS_FOR {
-    const T* inputPtr = image->getDataBuffer()->primaryAsT<T>();
-    F* pOutputY = output->dataBuffer()->primaryAsT<F>();  // output is float anyway
+    // the buffer pointers include the offset of a view
+    const T* inputPtr = image->bufferAsT<T>();
+    F* pOutputY = output->bufferAsT<F>();  // the output type: FLOAT32 or DOUBLE (the interpolation is in float)
     std::vector<float> cachedValue(numChannels == 3 ? 0 : 4 * numChannels, 0);
     for (auto b = start; b < stop; ++b) {
       auto pInput = inputPtr + b * batchStride;
       for (sd::LongType y = 0; y < outHeight; ++y) {
-        auto pOutput = &pOutputY[(b * outHeight + y) * outWidth * numChannels];
+        auto pOutput = &pOutputY[b * outBatchStride + y * outRowStride];
 
         WeightsAndIndices yWai;
         getWeightsAndIndices<Scaler>(coeffs_table, resizerState.heightScale, y, resizerState.inHeight, &yWai,
@@ -366,9 +374,9 @@ static void bicubicInterpolateWithCaching(NDArray * image, ImageResizerState con
 
         if (numChannels == 3) {
           // Manually unroll case of 3 channels.
-          F cached_value_0[4] = {0};
-          F cached_value_1[4] = {0};
-          F cached_value_2[4] = {0};
+          float cached_value_0[4] = {0};
+          float cached_value_1[4] = {0};
+          float cached_value_2[4] = {0};
           for (sd::LongType x = 0; x < resizerState.outWidth; ++x) {
             const WeightsAndIndices& xWai = xWais[x];
             // Shift values in cached_value_* to fill first '_advance' values.
@@ -427,12 +435,12 @@ static void bicubicInterpolateWithCaching(NDArray * image, ImageResizerState con
                     computeYInterpolation(3, 2 * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
                 break;
             }
-            pOutput[x * numChannels + 0] =
-                compute(cached_value_0, xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3);
-            pOutput[x * numChannels + 1] =
-                compute(cached_value_1, xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3);
-            pOutput[x * numChannels + 2] =
-                compute(cached_value_2, xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3);
+            pOutput[x * outColumnStride + 0 * outChannelStride] =
+                static_cast<F>(compute(cached_value_0, xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3));
+            pOutput[x * outColumnStride + 1 * outChannelStride] =
+                static_cast<F>(compute(cached_value_1, xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3));
+            pOutput[x * outColumnStride + 2 * outChannelStride] =
+                static_cast<F>(compute(cached_value_2, xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3));
           }
         } else {
           for (sd::LongType x = 0; x < resizerState.outWidth; ++x) {
@@ -485,8 +493,8 @@ static void bicubicInterpolateWithCaching(NDArray * image, ImageResizerState con
                 break;
             }
             for (auto c = 0; c < numChannels; ++c) {
-              pOutput[x * numChannels + c] =
-                  (F)compute(&cachedValue[4 * c], xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3);
+              pOutput[x * outColumnStride + c * outChannelStride] = static_cast<F>(
+                  compute(&cachedValue[4 * c], xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3));
             }
           }
         }
@@ -496,8 +504,26 @@ static void bicubicInterpolateWithCaching(NDArray * image, ImageResizerState con
   samediff::Threads::parallel_tad(func, 0, batchNum);
 }
 
-// simplified bicubic resize without antialiasing
+// simplified bicubic resize without antialiasing, into an output of type F
 //
+template <typename T, typename F>
+static sd::Status resizeBicubicByMode(NDArray * image, ImageResizerState const& st,
+                                      CoordinateTransformationMode coorMode, bool exclude_outside, double coefficient,
+                                      NDArray* output) {
+  switch (coorMode) {
+    case ASYMMETRIC:
+      bicubicInterpolateWithCaching<T, F, LegacyScaler>(image, st, coefficient, exclude_outside, output);
+      return sd::Status::OK;
+    case HALF_PIXEL:
+      bicubicInterpolateWithCaching<T, F, HalfPixelScaler>(image, st, coefficient, exclude_outside, output);
+      return sd::Status::OK;
+    case HALF_PIXEL_NN:
+      bicubicInterpolateWithCaching<T, F, HalfPixelScalerNN>(image, st, coefficient, exclude_outside, output);
+      return sd::Status::OK;
+  }
+  return Logger::logStatusMsg(Status::BAD_INPUT, "resize_bicubic: Wrong coordinate transformation mode");
+}
+
 template <typename T>
 sd::Status resizeBicubicFunctorA_(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                   bool const alignCorners, CoordinateTransformationMode coorMode, bool exclude_outside,
@@ -505,18 +531,13 @@ sd::Status resizeBicubicFunctorA_(sd::LaunchContext* context, NDArray * image, i
   ImageResizerState st(alignCorners, coorMode == HALF_PIXEL);  // align_corners, half_pixel_align
   auto res = st.validateAndCreateOutput(image, width, height);
   if (res == sd::Status::OK) {
-    switch (coorMode) {
-      case ASYMMETRIC:
-        bicubicInterpolateWithCaching<T, float, LegacyScaler>(image, st, coefficient, exclude_outside, output);
-        break;
-      case HALF_PIXEL:
-        bicubicInterpolateWithCaching<T, float, HalfPixelScaler>(image, st, coefficient, exclude_outside, output);
-        break;
-      case HALF_PIXEL_NN:
-        bicubicInterpolateWithCaching<T, float, HalfPixelScalerNN>(image, st, coefficient, exclude_outside, output);
-        break;
-      default:
-        break;
+    // the op's output types: FLOAT32 and DOUBLE
+    if (output->dataType() == DataType::FLOAT32) {
+      res = resizeBicubicByMode<T, float>(image, st, coorMode, exclude_outside, coefficient, output);
+    } else if (output->dataType() == DataType::DOUBLE) {
+      res = resizeBicubicByMode<T, double>(image, st, coorMode, exclude_outside, coefficient, output);
+    } else {
+      res = Logger::logStatusMsg(Status::BAD_INPUT, "resize_bicubic: The output should be of type FLOAT32 or DOUBLE");
     }
   }
 
@@ -587,11 +608,29 @@ static void resizeArea(ImageResizerState const& st, std::vector<CachedInterpolat
   samediff::Threads::parallel_tad(batchProcess, 0, st.batchSize, 1);
 }
 
+// true when the elements of the array lie as in a dense C-order array (axes of size one may have any stride): its
+// buffer pointer plus the linear logical index addresses them
+static bool isDenseCOrder(NDArray* array) {
+  sd::LongType expected = 1;
+  for (int d = array->rankOf() - 1; d >= 0; d--) {
+    const sd::LongType extent = array->sizeAt(d);
+    if (extent != 1 && array->strideAt(d) != expected) return false;
+    expected *= extent;
+  }
+  return true;
+}
+
 template <typename X>
 sd::Status resizeAreaFunctor_(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                               bool const alignCorners, NDArray* output) {
   ImageResizerState st(alignCorners, false);  // Create resize info
   auto res = st.validateAndCalculateOutputSize(image, width, height);
+  // resizeArea writes the output as a dense C-order array: other layouts go through a dense copy
+  NDArray* staged = nullptr;
+  if (Status::OK == res && output->lengthOf() > 0 && !isDenseCOrder(output)) {
+    staged = NDArrayFactory::create('c', {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3)},
+                                    DataType::FLOAT32, context);
+  }
   if (Status::OK == res) {
     std::vector<CachedInterpolation> xCached(st.outWidth);
     auto cachingProcedure = PRAGMA_THREADS_FOR {
@@ -613,7 +652,13 @@ sd::Status resizeAreaFunctor_(sd::LaunchContext* context, NDArray * image, int c
     };
     samediff::Threads::parallel_for(cachingProcedure, 0, xCached.size(), 1);
 
-    resizeArea<X>(st, xCached, image, output);
+    if (staged != nullptr) {
+      resizeArea<X>(st, xCached, image, staged);
+      output->assign(staged);
+      delete staged;
+    } else {
+      resizeArea<X>(st, xCached, image, output);
+    }
   }
   return res;
 }

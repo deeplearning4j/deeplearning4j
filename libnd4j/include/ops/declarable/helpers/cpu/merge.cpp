@@ -24,6 +24,7 @@
 //
 #include <helpers/Loops.h>
 #include <ops/declarable/helpers/transforms.h>
+#include <ops/op_types.h>
 #if NOT_EXCLUDED(OP_merge)
 namespace sd {
 namespace ops {
@@ -232,8 +233,10 @@ void mergeMaxBp(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs,
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
+  // the sum and its division by the number of arrays are in the aggregation type: a reciprocal taken in float scaled a
+  // DOUBLE average by a float's worth of error
+  using AccT = typename simdOps::AggregateType<T>::type;
   const sd::LongType numArgs = inArrs.size();
-  const T factor = static_cast<T>(1.f / numArgs);
   const sd::LongType length = output.lengthOf();
   const int rank = output.rankOf();
 
@@ -264,7 +267,7 @@ static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
       sd::LongType outOffset;
       COORDS2INDEX(rank, outputStride, coords, outOffset);
 
-      T sum = static_cast<T>(0);
+      AccT sum = static_cast<AccT>(0);
       for (sd::LongType i = 0; i < numArgs; i++) {
         sd::LongType xOffset;
         if (vbSameShapeAndStrides[i]) {
@@ -272,9 +275,9 @@ static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
         } else {
           COORDS2INDEX(vRanks[i], vStridePtrs[i], coords, xOffset);
         }
-        sum += vBuffers[i][xOffset];
+        sum += static_cast<AccT>(vBuffers[i][xOffset]);
       }
-      outBuffer[outOffset] = sum * factor;
+      outBuffer[outOffset] = static_cast<T>(sum / static_cast<AccT>(numArgs));
     }
   };
 

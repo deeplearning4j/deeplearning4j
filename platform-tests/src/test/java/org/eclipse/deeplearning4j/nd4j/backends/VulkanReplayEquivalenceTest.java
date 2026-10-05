@@ -469,7 +469,7 @@ public class VulkanReplayEquivalenceTest {
 
         long dispatchCountBefore = readReplayDispatchCount();
         IllegalStateException failure = assertThrows(IllegalStateException.class,
-                () -> Nd4j.cumsum(Nd4j.create(data, new long[]{n}), 0));
+                () -> Nd4j.exec(new DiagPart(Nd4j.create(data, new long[]{4, 4}))));
         assertNotNull(failure.getMessage());
         assertTrue(failure.getMessage().contains(
                         "Vulkan eager execution does not support this descriptor hash"),
@@ -492,15 +492,15 @@ public class VulkanReplayEquivalenceTest {
     void testAbortCleanliness() {
         requireMlir();
 
-        int n = 8;
-        float[] aData = {1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f};
-        float[] bData = {0.5f, 1.5f, 2.5f, 3.5f, 4.5f, 5.5f, 6.5f, 7.5f};
+        int n = 4;
+        float[] aData = {1f, 2f, 3f, 4f};
+        float[] bData = {0.5f, 1.5f, 2.5f, 3.5f};
 
         IllegalStateException failure = assertThrows(IllegalStateException.class, () -> {
             INDArray a = Nd4j.create(aData, new long[]{n});
             INDArray b = Nd4j.create(bData, new long[]{n});
             INDArray sum = a.add(b);
-            Nd4j.cumsum(sum, 0);
+            Nd4j.exec(new DiagPart(sum.reshape(2, 2)));
         });
         assertNotNull(failure.getMessage());
         assertTrue(failure.getMessage().contains(

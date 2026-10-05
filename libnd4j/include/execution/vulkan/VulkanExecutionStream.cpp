@@ -10,12 +10,14 @@
 
 #if defined(HAVE_VULKAN) && HAVE_VULKAN
 
+#include <graph/DspDiagnostics.h>
 #include <graph/vulkan/VulkanDeviceContext.h>
 #include <graph/vulkan/VulkanDeviceManager.h>
 #include <graph/vulkan/VulkanMemoryPool.h>
 #include <helpers/logger.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstring>
 #include <limits>
 #include <string>
@@ -54,18 +56,30 @@ void recordTransferBarriers(VkCommandBuffer commandBuffer, bool before) {
   VkMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
   if (before) {
-    barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                            VK_ACCESS_HOST_WRITE_BIT;
+    // Host writes need no access bit here (HOST_WRITE is only valid with the HOST source stage): vkQueueSubmit
+    // makes the host writes before it, an upload's staging included, visible to the commands it submits.
+    barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                          VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &barrier,
                          0, nullptr, 0, nullptr);
   } else {
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                            VK_ACCESS_HOST_READ_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                          VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1, &barrier,
+                         0, nullptr, 0, nullptr);
+
+    // A download's staging memory is read by the host once the fence signals. HOST_READ is only a valid destination
+    // access of the HOST pipeline stage (the pseudo-stage no command executes in, and which ALL_COMMANDS does not
+    // include), so the writes of the copy become available to the host domain through a dependency whose destination
+    // stage is HOST; without it nothing in this command buffer asks for the copy's writes to reach the host.
+    VkMemoryBarrier hostBarrier{};
+    hostBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+    hostBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    hostBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &hostBarrier,
                          0, nullptr, 0, nullptr);
   }
 }
@@ -476,6 +490,19 @@ bool VulkanExecutionStream::createStaging(VkDeviceSize bytes, VkBufferUsageFlags
     vkDestroyBuffer(device_, staging.buffer, nullptr);
     staging.buffer = VK_NULL_HANDLE;
     return false;
+  }
+
+  // The host reads every download through this mapping, so which memory type it is (coherent, cached, device local)
+  // matters when a read-back disagrees with the device: log each type's flags once (VkMemoryPropertyFlagBits:
+  // DEVICE_LOCAL 0x1, HOST_VISIBLE 0x2, HOST_COHERENT 0x4, HOST_CACHED 0x8).
+  static std::atomic<uint32_t> loggedStagingTypes{0};
+  const uint32_t stagingTypeBit = 1u << static_cast<uint32_t>(bestType);
+  if ((loggedStagingTypes.fetch_or(stagingTypeBit, std::memory_order_relaxed) & stagingTypeBit) == 0) {
+    DSP_DIAG(MEMORY,
+             "Vulkan::createStaging: device=%d memoryType=%d propertyFlags=0x%x coherent=%d",
+             deviceId_, bestType,
+             static_cast<unsigned>(properties.memoryTypes[bestType].propertyFlags),
+             coherent ? 1 : 0);
   }
 
   VkMemoryAllocateInfo allocInfo{};

@@ -20,7 +20,6 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.workspace;
 
-import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,7 +34,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Slf4j
 @Tag(TagNames.WORKSPACES)
 @NativeTag
 public class NativeMultiBackendWorkspaceTest extends BaseNd4jTestWithBackends {
@@ -167,14 +165,9 @@ public class NativeMultiBackendWorkspaceTest extends BaseNd4jTestWithBackends {
                             cudaCoherence == NativeMultiBackendWorkspace.COHERENCE_MODIFIED,
                     "CUDA coherence should be EXCLUSIVE or MODIFIED, got: " + cudaCoherence);
 
-            // Verify device-specific allocation tracking (may not be implemented yet)
-            try {
-                long cudaAllocated = ws.getAllocatedSizeOnDevice(
-                        NativeMultiBackendWorkspace.DEVICE_TYPE_CUDA, 0);
-                assertTrue(cudaAllocated > 0, "CUDA allocated size should be > 0");
-            } catch (UnsupportedOperationException e) {
-                log.info("getAllocatedSizeOnDevice not yet implemented: {}", e.getMessage());
-            }
+            long cudaAllocated = ws.getAllocatedSizeOnDevice(
+                    NativeMultiBackendWorkspace.DEVICE_TYPE_CUDA, 0);
+            assertTrue(cudaAllocated > 0, "CUDA allocated size should be > 0");
 
             ws.scopeOut();
         }
@@ -232,13 +225,8 @@ public class NativeMultiBackendWorkspaceTest extends BaseNd4jTestWithBackends {
             ws.scopeIn();
             ws.allocateBytes(4096);
 
-            // syncDevice/syncAllDevices may not be implemented yet
-            try {
-                ws.syncDevice(NativeMultiBackendWorkspace.DEVICE_TYPE_CUDA, 0);
-                ws.syncAllDevices();
-            } catch (UnsupportedOperationException e) {
-                log.info("syncDevice not yet implemented: {}", e.getMessage());
-            }
+            ws.syncDevice(NativeMultiBackendWorkspace.DEVICE_TYPE_CUDA, 0);
+            ws.syncAllDevices();
 
             ws.scopeOut();
         }
@@ -247,27 +235,24 @@ public class NativeMultiBackendWorkspaceTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllocateBytesOnSpecificDevice(Nd4jBackend backend) {
-        if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
-            return;
-
-        // Test explicit device-targeted allocation (may not be implemented yet)
         try (NativeMultiBackendWorkspace ws = new NativeMultiBackendWorkspace(
                 1024 * 1024, NativeMultiBackendWorkspace.DEVICE_TYPE_CPU, 0)) {
 
             ws.scopeIn();
+            Pointer cpuPtr = ws.allocateBytesOnDevice(4096,
+                    NativeMultiBackendWorkspace.DEVICE_TYPE_CPU, 0);
+            assertNotNull(cpuPtr, "Device-specific CPU allocation should succeed");
+            assertFalse(cpuPtr.isNull());
+            assertTrue(ws.getAllocatedSizeOnDevice(NativeMultiBackendWorkspace.DEVICE_TYPE_CPU, 0) > 0);
 
-            try {
+            if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA) {
                 Pointer cudaPtr = ws.allocateBytesOnDevice(4096,
                         NativeMultiBackendWorkspace.DEVICE_TYPE_CUDA, 0);
                 assertNotNull(cudaPtr, "Device-specific CUDA allocation should succeed");
-
-                Pointer cpuPtr = ws.allocateBytesOnDevice(4096,
-                        NativeMultiBackendWorkspace.DEVICE_TYPE_CPU, 0);
-                assertNotNull(cpuPtr, "Device-specific CPU allocation should succeed");
-            } catch (UnsupportedOperationException e) {
-                log.info("allocateBytesOnDevice not yet implemented: {}", e.getMessage());
+                assertFalse(cudaPtr.isNull());
             }
-
+            ws.syncDevice(NativeMultiBackendWorkspace.DEVICE_TYPE_CPU, 0);
+            ws.syncAllDevices();
             ws.scopeOut();
         }
     }
@@ -280,27 +265,22 @@ public class NativeMultiBackendWorkspaceTest extends BaseNd4jTestWithBackends {
 
             ws.scopeIn();
 
-            try {
-                long offsetBefore = ws.getCurrentOffset();
+            long offsetBefore = ws.getCurrentOffset();
 
-                ws.allocateBytes(1024);
+            ws.allocateBytes(1024);
 
-                long offsetAfter = ws.getCurrentOffset();
-                assertTrue(offsetAfter > offsetBefore,
-                        "Offset should increase after allocation: before=" + offsetBefore + " after=" + offsetAfter);
+            long offsetAfter = ws.getCurrentOffset();
+            assertTrue(offsetAfter > offsetBefore,
+                    "Offset should increase after allocation: before=" + offsetBefore + " after=" + offsetAfter);
 
-                ws.scopeOut();
+            ws.scopeOut();
 
-                // After scope out, offset should reset
-                ws.scopeIn();
-                long offsetAfterReset = ws.getCurrentOffset();
-                assertTrue(offsetAfterReset <= offsetBefore + 64,
-                        "Offset should reset after scope cycle: " + offsetAfterReset);
-                ws.scopeOut();
-            } catch (UnsupportedOperationException e) {
-                log.info("getCurrentOffset not yet implemented: {}", e.getMessage());
-                ws.scopeOut();
-            }
+            // After scope out, offset should reset
+            ws.scopeIn();
+            long offsetAfterReset = ws.getCurrentOffset();
+            assertTrue(offsetAfterReset <= offsetBefore + 64,
+                    "Offset should reset after scope cycle: " + offsetAfterReset);
+            ws.scopeOut();
         }
     }
 }

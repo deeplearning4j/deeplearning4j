@@ -22,6 +22,9 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/crop_and_resize.h>
+#include <ops/declarable/helpers/image_resize.h>
+
+#include <type_traits>
 #if NOT_EXCLUDED(OP_crop_and_resize)
 namespace sd {
 namespace ops {
@@ -42,89 +45,87 @@ template <typename T, typename Z, typename I>
 SD_LIB_EXPORT void cropAndResizeFunctor_(LaunchContext* context, NDArray * images, NDArray * boxes,
                            NDArray * indices, NDArray * cropSize, int method, double extrapolationVal,
                            NDArray* crops) {
-  const int batchSize = images->sizeAt(0);
-  const int imageHeight = images->sizeAt(1);
-  const int imageWidth = images->sizeAt(2);
+  // the sample positions and the interpolation are computed in double when the images or the boxes are DOUBLE, and in
+  // float otherwise (a float position limited a DOUBLE crop to float precision, and an integer image's weights to 0)
+  using PosT = typename std::conditional<std::is_same<T, double>::value || std::is_same<Z, double>::value, double,
+                                         float>::type;
 
-  const int numBoxes = crops->sizeAt(0);
-  const int cropHeight = crops->sizeAt(1);
-  const int cropWidth = crops->sizeAt(2);
-  const int depth = crops->sizeAt(3);
+  const LongType batchSize = images->sizeAt(0);
+  const LongType imageHeight = images->sizeAt(1);
+  const LongType imageWidth = images->sizeAt(2);
 
-  for (auto b = 0; b < numBoxes; ++b) {
-    Z y1 = static_cast<Z>(boxes->t<Z>(b, 0));
-    Z x1 = static_cast<Z>(boxes->t<Z>(b, 1));
-    Z y2 = static_cast<Z>(boxes->t<Z>(b, 2));
-    Z x2 = static_cast<Z>(boxes->t<Z>(b, 3));
+  const LongType numBoxes = crops->sizeAt(0);
+  const LongType cropHeight = crops->sizeAt(1);
+  const LongType cropWidth = crops->sizeAt(2);
+  const LongType depth = crops->sizeAt(3);
 
-    int bIn = indices->e<I>(b);
-    if (bIn >= batchSize) {
-      continue;
-    }
+  for (LongType b = 0; b < numBoxes; ++b) {
+    const PosT y1 = static_cast<PosT>(boxes->t<Z>(b, 0));
+    const PosT x1 = static_cast<PosT>(boxes->t<Z>(b, 1));
+    const PosT y2 = static_cast<PosT>(boxes->t<Z>(b, 2));
+    const PosT x2 = static_cast<PosT>(boxes->t<Z>(b, 3));
 
-    Z heightScale = (cropHeight > 1)
-                        ? Z((y2 - y1) * (imageHeight - 1) / (cropHeight - 1))
-                        : Z(0);
-    Z widthScale = (cropWidth > 1)
-                       ? Z((x2 - x1) * (imageWidth - 1) / (cropWidth - 1))
-                       : Z(0);
+    // a box that names no image of the batch is outside every image: its crop is the extrapolation value (it was left
+    // unwritten, and an index below zero read before the images)
+    const LongType bIn = indices->e<I>(b);
+    const bool inBatch = bIn >= 0 && bIn < batchSize;
+
+    const PosT heightScale = cropResizeScale<PosT>(y1, y2, imageHeight, cropHeight);
+    const PosT widthScale = cropResizeScale<PosT>(x1, x2, imageWidth, cropWidth);
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto y = start; y < stop; y++) {
-        const float inY =
-            (cropHeight > 1) ? y1 * (imageHeight - 1) + y * heightScale : 0.5 * (y1 + y2) * (imageHeight - 1);
+        const PosT inY = cropResizeCoordinate<PosT>(y1, y2, imageHeight, cropHeight, y, heightScale);
 
-        if (inY < 0 || inY > imageHeight - 1) {
-          for (auto x = 0; x < cropWidth; ++x) {
-            for (auto d = 0; d < depth; ++d) {
+        if (!inBatch || !(inY >= 0 && inY <= imageHeight - 1)) {
+          for (LongType x = 0; x < cropWidth; ++x) {
+            for (LongType d = 0; d < depth; ++d) {
               crops->p(b, y, x, d, extrapolationVal);
             }
           }
           continue;
         }
         if (method == 0 /* bilinear */) {
-          const int topYIndex = sd::math::p_floor(inY);
-          const int bottomYIndex = sd::math::p_ceil(inY);
-          const float y_lerp = inY - topYIndex;
+          const LongType topYIndex = static_cast<LongType>(sd::math::p_floor<PosT>(inY));
+          const LongType bottomYIndex = static_cast<LongType>(sd::math::p_ceil<PosT>(inY));
+          const PosT yLerp = inY - topYIndex;
 
-          for (auto x = 0; x < cropWidth; ++x) {
-            const float in_x =
-                (cropWidth > 1) ? x1 * (imageWidth - 1) + x * widthScale : 0.5 * (x1 + x2) * (imageWidth - 1);
+          for (LongType x = 0; x < cropWidth; ++x) {
+            const PosT inX = cropResizeCoordinate<PosT>(x1, x2, imageWidth, cropWidth, x, widthScale);
 
-            if (in_x < 0 || in_x > imageWidth - 1) {
-              for (auto d = 0; d < depth; ++d) {
+            if (!(inX >= 0 && inX <= imageWidth - 1)) {
+              for (LongType d = 0; d < depth; ++d) {
                 crops->p(b, y, x, d, extrapolationVal);
               }
               continue;
             }
-            int left_x_index = math::p_floor(in_x);
-            int right_x_index = math::p_ceil(in_x);
-            T x_lerp = static_cast<T>(in_x - left_x_index);
+            const LongType leftXIndex = static_cast<LongType>(sd::math::p_floor<PosT>(inX));
+            const LongType rightXIndex = static_cast<LongType>(sd::math::p_ceil<PosT>(inX));
+            const PosT xLerp = inX - leftXIndex;
 
-            for (auto d = 0; d < depth; ++d) {
-              const T topLeft(images->e<T>(bIn, topYIndex, left_x_index, d));
-              const T topRight(images->e<T>(bIn, topYIndex, right_x_index, d));
-              const T bottomLeft(images->e<T>(bIn, bottomYIndex, left_x_index, d));
-              const T bottomRight(images->e<T>(bIn, bottomYIndex, right_x_index, d));
-              const T top = topLeft + (topRight - topLeft) * x_lerp;
-              const T bottom = bottomLeft + (bottomRight - bottomLeft) * x_lerp;
-              crops->p(b, y, x, d, top + (bottom - top) * y_lerp);
+            for (LongType d = 0; d < depth; ++d) {
+              const PosT topLeft = static_cast<PosT>(images->e<T>(bIn, topYIndex, leftXIndex, d));
+              const PosT topRight = static_cast<PosT>(images->e<T>(bIn, topYIndex, rightXIndex, d));
+              const PosT bottomLeft = static_cast<PosT>(images->e<T>(bIn, bottomYIndex, leftXIndex, d));
+              const PosT bottomRight = static_cast<PosT>(images->e<T>(bIn, bottomYIndex, rightXIndex, d));
+              const PosT top = imageResizeLerp<PosT>(topLeft, topRight, xLerp);
+              const PosT bottom = imageResizeLerp<PosT>(bottomLeft, bottomRight, xLerp);
+              crops->p(b, y, x, d, imageResizeLerp<PosT>(top, bottom, yLerp));
             }
           }
         } else {  // method is "nearest neighbor"
-          for (auto x = 0; x < cropWidth; ++x) {
-            const float inX =
-                (cropWidth > 1) ? x1 * (imageWidth - 1) + x * widthScale : 0.5 * (x1 + x2) * (imageWidth - 1);
+          for (LongType x = 0; x < cropWidth; ++x) {
+            const PosT inX = cropResizeCoordinate<PosT>(x1, x2, imageWidth, cropWidth, x, widthScale);
 
-            if (inX < 0 || inX > imageWidth - 1) {
-              for (auto d = 0; d < depth; ++d) {
+            if (!(inX >= 0 && inX <= imageWidth - 1)) {
+              for (LongType d = 0; d < depth; ++d) {
                 crops->p(b, y, x, d, extrapolationVal);
               }
               continue;
             }
-            const int closestXIndex = roundf(inX);
-            const int closestYIndex = roundf(inY);
-            for (auto d = 0; d < depth; ++d) {
+            const LongType closestXIndex = static_cast<LongType>(sd::math::p_round<PosT>(inX));
+            const LongType closestYIndex = static_cast<LongType>(sd::math::p_round<PosT>(inY));
+            for (LongType d = 0; d < depth; ++d) {
               crops->p(b, y, x, d, images->e<T>(bIn, closestYIndex, closestXIndex, d));
             }
           }

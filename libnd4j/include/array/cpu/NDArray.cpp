@@ -79,8 +79,8 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
   const auto x = reinterpret_cast<const T*>(buffer());
   auto z = reinterpret_cast<T*>(target.buffer());
 
-  const int xRank = rankOf();
-  const int zRank = target.rankOf();
+  const sd::LongType xRank = rankOf();
+  const sd::LongType zRank = target.rankOf();
 
   const auto zLen = target.lengthOf();
 
@@ -88,64 +88,41 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   sd::LongType *targetShape = shape::shapeOf(target.shapeInfo());
   sd::LongType *targetStride = shape::stride(target.shapeInfo());
-  sd::LongType targetRank = target.rankOf();
-
-  sd::LongType *xShape = shape::shapeOf(shapeInfo());
   sd::LongType *xStride = shape::stride(shapeInfo());
-  sd::LongType thisRank = this->rankOf();
-  auto func = PRAGMA_THREADS_FOR {
-    sd::LongType coords[SD_MAX_RANK], temp;
-    sd::LongType vectorCoord[1] = {0};
 
-    bool notVectorScalar = targetRank == 2 && thisRank == 2;
-    bool thisNotVectorScalar = !shape::isScalar(this->shapeInfo()) && !shape::isVector(this->shapeInfo());
-    bool targetNotVectorScalar = !shape::isScalar(target.shapeInfo()) && !shape::isVector(target.shapeInfo());
+  const bool dirU = direction == 'u';
+  const bool dirL = direction == 'l';
+
+  // the triangle is the one of each matrix made of the last two dimensions of the target; a vector is one row
+  auto func = PRAGMA_THREADS_FOR {
+    sd::LongType coords[SD_MAX_RANK];
+    sd::LongType xCoords[SD_MAX_RANK];
 
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, targetRank,targetShape, coords);
-      sd::LongType row = targetNotVectorScalar ? coords[zRank - 2] : 0;
-      sd::LongType col = targetNotVectorScalar ? coords[zRank - 1] : 1;
-      sd::LongType zOffset, xOffset;
+      INDEX2COORDS(i, zRank, targetShape, coords);
+      const sd::LongType row = zRank >= 2 ? coords[zRank - 2] : 0;
+      const sd::LongType col = zRank >= 1 ? coords[zRank - 1] : 0;
 
-      if (target.rankOf() < 2) {
-        COORDS2INDEX(targetRank, targetStride, vectorCoord, zOffset);
-      } else {
-        COORDS2INDEX(targetRank, targetStride, coords, zOffset);
-      }
+      sd::LongType zOffset;
+      COORDS2INDEX(zRank, targetStride, coords, zOffset);
 
-      if (!areSameOffsets && rankOf() < 2) {
-        COORDS2INDEX(thisRank, xStride, vectorCoord, xOffset);
-      } else if (areSameOffsets) {
-        xOffset = zOffset;
-      } else {
-        COORDS2INDEX(thisRank, xStride, coords, xOffset);
-      }
+      const bool lCompare = includeEdges ? row <= (col - lower) : row < (col - lower);
+      const bool uCompare = includeEdges ? row >= (col - upper) : row > (col - upper);
 
-      bool rowExclusive = this->rankOf() == target.rankOf();
-      bool colExclusive = this->rankOf() == target.rankOf();
-      auto lCompare = includeEdges ? row <= (col - lower) : row < (col - lower);
-      auto uCompare = includeEdges ? row >= (col - upper) : row > (col - upper);
-
-      if ((direction == 'u' && lCompare) || (direction == 'l' && uCompare)) {
+      if ((dirU && lCompare) || (dirL && uCompare)) {
         z[zOffset] = value;
       } else {
-        z[zOffset] = x[xOffset];
-      }
-
-      if (this != &target) {
-        if (xRank != zRank) {
-          temp = coords[0];
-          coords[0] = coords[1];
+        sd::LongType xOffset;
+        if (areSameOffsets) {
+          xOffset = zOffset;
+        } else if (xRank < zRank) {
+          // a vector repeated in every row of a square matrix: the element of the column
+          xCoords[0] = col;
+          COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+        } else {
+          COORDS2INDEX(xRank, xStride, coords, xOffset);
         }
-
-        if (xRank != zRank)  // restore first coordinate
-          coords[0] = temp;
-      }
-
-      if (vectorCoord[0] == this->lengthOf() - 1) {
-        vectorCoord[0] = 0;
-      } else {
-        vectorCoord[0] = vectorCoord[0] + 1;
+        z[zOffset] = x[xOffset];
       }
     }
   };

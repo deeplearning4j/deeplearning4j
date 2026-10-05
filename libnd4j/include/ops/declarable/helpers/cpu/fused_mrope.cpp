@@ -39,6 +39,7 @@
 #include <ops/declarable/helpers/fused_llm_ops.h>
 #include <array/NDArray.h>
 #include <execution/Threads.h>
+#include <helpers/shape.h>
 #include <math/templatemath.h>
 #include <system/op_boilerplate.h>
 #include <system/type_boilerplate.h>
@@ -47,6 +48,27 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+
+// The loops below index their operands as dense row-major arrays of one type: an operand that is a stepped view, an
+// F-ordered or permuted array (the strides decide whether an array is dense row-major: the order flag does not, and a
+// view's offset is already in bufferAsT()), or of another type, goes through a dense copy.
+
+// `a` as a dense row-major array of the given type: `a` itself when it is one, else a copy the caller deletes.
+static NDArray* denseInType(NDArray* a, DataType dataType) {
+  NDArray* typed = a->dataType() == dataType ? a : a->cast(dataType);
+  if (shape::isDenseRowMajor(typed->shapeInfo())) return typed;
+  NDArray* dense = typed->dup('c');
+  if (typed != a) delete typed;
+  return dense;
+}
+
+// The array the loops write in place of `a`: `a` itself when it is dense row-major and of the given type, else a dense
+// temporary the caller assigns to `a` and deletes.
+static NDArray* denseOutputInType(NDArray* a, DataType dataType, LaunchContext* context) {
+  if (a->dataType() == dataType && shape::isDenseRowMajor(a->shapeInfo())) return a;
+  std::vector<LongType> dims(a->shapeOf(), a->shapeOf() + a->rankOf());
+  return new NDArray('c', dims, dataType, context);
+}
 
 /**
  * Contiguous-section M-RoPE (non-interleaved).
@@ -213,11 +235,11 @@ static void fusedMRoPE_(
 }
 
 void fusedMRoPE(
-    NDArray* input,
-    NDArray* posT,
-    NDArray* posH,
-    NDArray* posW,
-    NDArray* output,
+    NDArray* originalInput,
+    NDArray* originalPosT,
+    NDArray* originalPosH,
+    NDArray* originalPosW,
+    NDArray* originalOutput,
     int sectionT,
     int sectionH,
     int sectionW,
@@ -225,10 +247,34 @@ void fusedMRoPE(
     float freqBase,
     LaunchContext* context) {
 
+  if (originalInput->lengthOf() == 0) return;
+  const auto dataType = originalInput->dataType();
+
+  NDArray::preparePrimaryUse({originalOutput}, {originalInput, originalPosT, originalPosH, originalPosW});
+
+  // Dense row-major arrays for the loops: the input and the output in the input's type, each position tensor in its
+  // own type.
+  NDArray* input = denseInType(originalInput, dataType);
+  NDArray* posT = denseInType(originalPosT, originalPosT->dataType());
+  NDArray* posH = denseInType(originalPosH, originalPosH->dataType());
+  NDArray* posW = denseInType(originalPosW, originalPosW->dataType());
+  NDArray* output = denseOutputInType(originalOutput, dataType, context);
+
   BUILD_DOUBLE_SELECTOR(input->dataType(), posT->dataType(), fusedMRoPE_,
                         (input, posT, posH, posW, output,
                          sectionT, sectionH, sectionW, interleaved, freqBase),
                         SD_FLOAT_TYPES, SD_NUMERIC_TYPES);
+
+  if (output != originalOutput) {
+    originalOutput->assign(output);
+    delete output;
+  }
+  if (input != originalInput) delete input;
+  if (posT != originalPosT) delete posT;
+  if (posH != originalPosH) delete posH;
+  if (posW != originalPosW) delete posW;
+
+  NDArray::registerPrimaryUse({originalOutput}, {originalInput, originalPosT, originalPosH, originalPosW});
 }
 
 }  // namespace helpers

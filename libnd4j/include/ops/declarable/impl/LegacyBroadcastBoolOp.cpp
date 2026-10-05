@@ -58,10 +58,9 @@ Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
                (int)shape::length(packX->primaryShapeInfo()), (int)y->lengthOf());
 
   if (x == z)
-    NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-                                       x->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(),
-                                       y->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
-                                       z->specialShapeInfo(), dims.data(), dims.size(), pTadShape, pTadOffsets,
+    NativeOpExecutioner::execBroadcastBool(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+                                       sd::LegacyTensorArg::fromArray(y), sd::LegacyTensorArg::fromArray(z), nullptr,
+                                       dims.data(), dims.size(), pTadShape, pTadOffsets,
                                        pTadShape, pTadOffsets);
   else {
     // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare
@@ -76,10 +75,9 @@ Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
                        ? packZ->primaryOffsets()
                        : packZ->specialOffsets();  //(sd::LongType *) manager.replicatePointer(tadZ.tadOffsets,
 
-    NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-                                       x->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(),
-                                       y->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
-                                       z->specialShapeInfo(), dims.data(), dims.size(), pTadShape, pTadOffsets,
+    NativeOpExecutioner::execBroadcastBool(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+                                       sd::LegacyTensorArg::fromArray(y), sd::LegacyTensorArg::fromArray(z), nullptr,
+                                       dims.data(), dims.size(), pTadShape, pTadOffsets,
                                        zTadShape, zTadOffsets);
   }
 

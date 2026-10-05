@@ -22,9 +22,11 @@
 
 #include <graph/vulkan/VulkanReplayHandle.h>
 #include <graph/vulkan/VulkanKernelEmitterCatalog.h>
+#include <graph/vulkan/VulkanLegacyOpCatalog.h>
 #include <execution/vulkan/VulkanExecutionStream.h>
 #include <graph/RandomGenerator.h>
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
+#include <ops/declarable/helpers/random.h>
 #include <graph/vulkan/VulkanPipelineCache.h>
 #include <graph/vulkan/VulkanMemoryPool.h>
 #include <graph/NativeDynamicShapePlan.h>
@@ -38,12 +40,14 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/headers/llm.h>
 #include <system/type_boilerplate.h>
+#include <system/op_enums.h>
 
 #include <algorithm>
 #include <climits>
 #include <cmath>
 #include <exception>
 #include <iomanip>
+#include <iterator>
 #include <limits>
 #include <set>
 #include <sstream>
@@ -165,6 +169,7 @@ struct VulkanPolicy {
   static constexpr bool contractMovement = false;
   static constexpr bool batchedMatrixList = false;
   static constexpr bool indexedAccumulation = false;
+  static constexpr bool indexedSliceUpdate = false;
   static constexpr bool indexedTadMovement = false;
   static constexpr bool ternary = false;
 };
@@ -199,6 +204,9 @@ struct BatchedMatrixListPolicy : VulkanPolicy {
 };
 struct IndexedAccumulationPolicy : VulkanPolicy {
   static constexpr bool indexedAccumulation = true;
+};
+struct IndexedSliceUpdatePolicy : VulkanPolicy {
+  static constexpr bool indexedSliceUpdate = true;
 };
 struct IndexedTadMovementPolicy : VulkanPolicy {
   static constexpr bool indexedTadMovement = true;
@@ -408,21 +416,6 @@ static bool supportedScalarLimit(sd::DataType dataType, bool maximum,
                           (maximum, value, supported), SD_INTEGER_TYPES);
   }
   return supported;
-}
-
-template <typename I>
-static void selectMlirIndexType(std::string& type) {
-  static_assert(std::is_integral_v<I>, "Vulkan gather indices must be integral");
-  type = "i" + std::to_string(sizeof(I) * CHAR_BIT);
-}
-
-static bool selectMlirIndexType(sd::DataType dataType, std::string& type) {
-  type.clear();
-  if (!DataTypeUtils::isZ(dataType) || DataTypeUtils::isB(dataType)) {
-    return false;
-  }
-  BUILD_SINGLE_SELECTOR(dataType, selectMlirIndexType, (type), SD_INTEGER_TYPES);
-  return type == "i32";
 }
 
 template <typename I>
@@ -674,6 +667,64 @@ static bool broadcastShapeMatches(NDArray* lhs,
   return true;
 }
 
+static bool isLegacyBroadcast(const NativeSlot& slot) {
+  const auto family = vulkanLegacyFamilyFromTypeCode(slot.legacy.legacyOpType);
+  return family.has_value() &&
+         (*family == VulkanLegacyOpFamily::BROADCAST ||
+          *family == VulkanLegacyOpFamily::BROADCAST_BOOL ||
+          *family == VulkanLegacyOpFamily::BROADCAST_INT);
+}
+
+static bool isInverseLegacyBroadcast(const NativeSlot& slot) {
+  return isLegacyBroadcast(slot) && slot.args.numBArgs == 1 && slot.args.bArgs[0];
+}
+
+// The small operand uses the canonical TAD axes, not trailing NumPy alignment.
+static bool legacyBroadcastDimensions(const NativeSlot& slot, NDArray* x,
+                                      NDArray* y, NDArray* z,
+                                      std::vector<sd::LongType>& mapping) {
+  // Swap metadata roles only. The invocation and equation stay op(X, Y).
+  if (isInverseLegacyBroadcast(slot)) std::swap(x, y);
+  if (!x->isSameShape(z)) return false;
+  const int rank = x->rankOf();
+  std::vector<sd::LongType> axes;
+  for (int i = 0; i < slot.args.numIArgs; ++i) {
+    sd::LongType axis = slot.args.iArgs[i];
+    if (axis < 0) axis += rank;
+    if (axis < 0 || axis >= rank) return false;
+    axes.push_back(axis);
+  }
+  if (axes.empty()) {
+    for (int d = 0; d < rank; ++d) axes.push_back(d);
+  }
+  std::sort(axes.begin(), axes.end());
+  if (std::adjacent_find(axes.begin(), axes.end()) != axes.end()) return false;
+  mapping.assign(y->rankOf(), -1);
+  if (axes.size() == 1 && y->rankOf() == 2 &&
+      (y->sizeAt(0) == 1 || y->sizeAt(1) == 1)) {
+    const int dimension = y->sizeAt(0) == 1 ? 1 : 0;
+    if (y->sizeAt(dimension) != x->sizeAt(axes[0])) return false;
+    mapping[dimension] = axes[0];
+  } else if (y->rankOf() == rank) {
+    for (int d = 0; d < rank; ++d) {
+      if (std::binary_search(axes.begin(), axes.end(), d)) {
+        if (y->sizeAt(d) != x->sizeAt(d)) return false;
+        mapping[d] = d;
+      } else if (y->sizeAt(d) != 1) {
+        return false;
+      }
+    }
+  } else if (axes.size() == static_cast<size_t>(y->rankOf())) {
+    for (int d = 0; d < y->rankOf(); ++d) {
+      if (y->sizeAt(d) != x->sizeAt(axes[d])) return false;
+      mapping[d] = axes[d];
+    }
+  } else {
+    return false;
+  }
+  return true;
+}
+
 static bool hasNoBoolDtypeOrStringArgs(const NativeSlot& slot) {
   return slot.args.numBArgs == 0 && slot.args.numDArgs == 0 &&
          slot.args.numSArgs == 0;
@@ -732,6 +783,12 @@ static bool argumentContractMatchesSlot(
 static bool unaryArgumentsMatch(const VulkanKernelEmitterInfo& emitter,
                                 const NativeSlot& slot, int numIn,
                                 NDArray** outputs, int numOut) {
+  if (emitter.recipe == VulkanKernelRecipe::MATCH_CONDITION_UNARY &&
+      slot.args.numTArgs == 3) {
+    const double mode = slot.args.tArgs[2];
+    if (!std::isfinite(mode) || mode != std::floor(mode) || mode < 0 || mode > 15)
+      return false;
+  }
   if (emitter.argumentContract.alternativeCount != 0) {
     return argumentContractMatchesSlot(
                emitter, slot, numIn, numOut, outputs) &&
@@ -957,6 +1014,66 @@ static bool reductionOutputMatches(NDArray* input, NDArray* output,
   return true;
 }
 
+// Reduce3's axes describe a TAD, not a unary-reduction output shape. Equal
+// lengths pair TAD i with TAD i; unequal lengths broadcast the smaller operand
+// as one entire TAD. All-pairs uses independent X/Y TAD ordinals.
+struct Reduce3Geometry {
+  std::vector<int64_t> xAxes;
+  std::vector<int64_t> yAxes;
+  sd::LongType tadLength = 1;
+  sd::LongType xTads = 1;
+  sd::LongType yTads = 1;
+  bool allPairs = false;
+};
+
+static bool reduce3GeometryForSlot(const NativeSlot& slot, NDArray* x, NDArray* y,
+                                   NDArray* z, Reduce3Geometry& geometry) {
+  if (x == nullptr || y == nullptr || z == nullptr || x->lengthOf() <= 0 ||
+      y->lengthOf() <= 0 || slot.args.numBArgs > 2 || slot.args.numTArgs > 1 ||
+      slot.args.numDArgs != 0 || slot.args.numSArgs != 0 ||
+      (slot.args.numTArgs == 1 &&
+       (slot.legacy.legacyOpNum != static_cast<int>(sd::reduce3::EqualsWithEps) ||
+        !std::isfinite(slot.args.tArgs[0]) || slot.args.tArgs[0] < 0))) return false;
+  geometry = {};
+  geometry.allPairs = slot.args.numBArgs > 1 && slot.args.bArgs[1];
+  auto operandAxes = [&](NDArray* operand, bool whole, std::vector<int64_t>& axes) {
+    const int rank = operand->rankOf();
+    if (whole || slot.args.numIArgs == 0 ||
+        (slot.args.numIArgs == 1 && slot.args.iArgs[0] == std::numeric_limits<int>::max())) {
+      for (int d = 0; d < rank; ++d) axes.push_back(d);
+      return true;
+    }
+    for (int i = 0; i < slot.args.numIArgs; ++i) {
+      int64_t axis = -1;
+      if (!normalizeAxis(slot.args.iArgs[i], rank, axis)) return false;
+      axes.push_back(axis);
+    }
+    std::sort(axes.begin(), axes.end());
+    return std::adjacent_find(axes.begin(), axes.end()) == axes.end();
+  };
+  if (!operandAxes(x, !geometry.allPairs && x->lengthOf() < y->lengthOf(), geometry.xAxes) ||
+      !operandAxes(y, !geometry.allPairs && y->lengthOf() < x->lengthOf(), geometry.yAxes))
+    return false;
+  auto tadLength = [](NDArray* operand, const std::vector<int64_t>& axes) {
+    sd::LongType length = 1;
+    for (int64_t axis : axes) length *= operand->sizeAt(axis);
+    return length;
+  };
+  geometry.tadLength = tadLength(x, geometry.xAxes);
+  if (geometry.tadLength != tadLength(y, geometry.yAxes)) return false;
+  geometry.xTads = x->lengthOf() / geometry.tadLength;
+  geometry.yTads = y->lengthOf() / geometry.tadLength;
+  if (!geometry.allPairs && geometry.xTads != geometry.yTads &&
+      geometry.xTads != 1 && geometry.yTads != 1) return false;
+  if (geometry.allPairs && geometry.xTads >
+      std::numeric_limits<sd::LongType>::max() / geometry.yTads) return false;
+  const sd::LongType outputLength = geometry.allPairs
+      ? geometry.xTads * geometry.yTads : std::max(geometry.xTads, geometry.yTads);
+  // Native outputs can be vectors, keepDims/legacy singleton shapes, or views.
+  // Their logical C-order ordinals, not storage order, identify the result pairs.
+  return z->lengthOf() == outputLength;
+}
+
 /// Decode transpose/permute metadata exactly as the existing Triton path does.
 /// Static permute requires one iArg per axis; argument-free transpose reverses axes.
 template <typename Policy>
@@ -979,6 +1096,246 @@ static bool permutationForSlot(const NativeSlot& slot, int rank,
   for (int64_t axis : permutation) {
     if (axis < 0 || axis >= rank || seen[static_cast<size_t>(axis)]) return false;
     seen[static_cast<size_t>(axis)] = true;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Ordered slice updates (scatter_*, scatter_nd_*, get_rows_bp) and the operands
+//  their kernels do not bind
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// An array with no elements has no storage to bind.
+static bool arrayHasNoElements(NDArray* array) {
+  return array == nullptr || array->isEmpty() || array->lengthOf() == 0;
+}
+
+static bool dimensionsEqual(NDArray* lhs, NDArray* rhs) {
+  if (lhs == nullptr || rhs == nullptr || lhs->rankOf() != rhs->rankOf()) {
+    return false;
+  }
+  for (int d = 0; d < lhs->rankOf(); ++d) {
+    if (lhs->sizeAt(d) != rhs->sizeAt(d)) return false;
+  }
+  return true;
+}
+
+/// The operands of an ordered slice update by role. scatter_*/scatter_nd_* take (reference, indices, updates) and
+/// start the output from the reference; get_rows_bp takes (updates, indices) and starts the output from zeros.
+struct IndexedSliceUpdateOperands {
+  NDArray* reference = nullptr;
+  NDArray* indices = nullptr;
+  NDArray* updates = nullptr;
+  int referenceInput = -1;
+  int indicesInput = -1;
+  int updatesInput = -1;
+  /// scatter_nd_*: an index row is indexDepth coordinates naming the output's leading dimensions; otherwise each
+  /// index names one slice along the output's first dimension.
+  bool rows = false;
+  bool zeroInitial = false;
+};
+
+static bool indexedSliceUpdateOperands(const VulkanKernelEmitterInfo& emitter,
+                                       NDArray** inputs, int numIn,
+                                       IndexedSliceUpdateOperands& roles) {
+  roles = IndexedSliceUpdateOperands{};
+  roles.zeroInitial = hasVulkanEmitterTrait(
+      emitter, VULKAN_EMITTER_TRAIT_ZERO_INITIAL_OUTPUT);
+  roles.rows = hasVulkanOpTrait(emitter, sd::ops::OP_TRAIT_SCATTER_ND) ||
+               hasVulkanOpTrait(emitter, sd::ops::OP_TRAIT_SCATTER_ND_UPDATE);
+  if (inputs == nullptr) return false;
+  if (roles.zeroInitial) {
+    if (numIn != 2) return false;
+    roles.updatesInput = 0;
+    roles.indicesInput = 1;
+  } else {
+    if (numIn != 3) return false;
+    roles.referenceInput = 0;
+    roles.indicesInput = 1;
+    roles.updatesInput = 2;
+    roles.reference = inputs[roles.referenceInput];
+  }
+  roles.indices = inputs[roles.indicesInput];
+  roles.updates = inputs[roles.updatesInput];
+  return roles.indices != nullptr && roles.updates != nullptr &&
+         (roles.zeroInitial || roles.reference != nullptr);
+}
+
+/// Coordinates one index row names: 1 for one index per slice (and when there are no rows), the last dimension of
+/// the indices for scatter_nd_*.
+static sd::LongType indexedSliceUpdateDepth(
+    const IndexedSliceUpdateOperands& roles) {
+  if (!roles.rows || arrayHasNoElements(roles.indices) ||
+      roles.indices->rankOf() < 1) {
+    return 1;
+  }
+  return roles.indices->sizeAt(roles.indices->rankOf() - 1);
+}
+
+/// Element positions of one output slice: the output length over the product of its leading `depth` dimensions
+/// (0 when the dimensions are not usable).
+static sd::LongType indexedSliceUpdatePositions(NDArray* output,
+                                                sd::LongType depth) {
+  if (output == nullptr || depth < 1 || depth > output->rankOf()) return 0;
+  sd::LongType slices = 1;
+  for (sd::LongType d = 0; d < depth; ++d) {
+    const sd::LongType size = output->sizeAt(static_cast<int>(d));
+    if (size <= 0 || slices > std::numeric_limits<sd::LongType>::max() / size) {
+      return 0;
+    }
+    slices *= size;
+  }
+  return output->lengthOf() / slices;
+}
+
+/// The shape contracts of the generic ops (generic/transforms/scatter_*.cpp, scatter_nd_*.cpp, and get_rows_bp), which
+/// the Vulkan artifact does not run. With no index rows nothing is scattered and the updates are not read.
+static bool indexedSliceUpdateShapesMatch(
+    const IndexedSliceUpdateOperands& roles, NDArray* output) {
+  const int outputRank = output->rankOf();
+  if (outputRank < 1) return false;
+  if (!roles.zeroInitial && !dimensionsEqual(roles.reference, output)) {
+    return false;
+  }
+  if (arrayHasNoElements(roles.indices)) return true;
+  NDArray* indices = roles.indices;
+  NDArray* updates = roles.updates;
+  if (indices->rankOf() < 1 || arrayHasNoElements(updates)) return false;
+  const int indicesRank = indices->rankOf();
+  const int updatesRank = updates->rankOf();
+
+  if (roles.zeroInitial) {
+    // get_rows_bp: updates [N, D], indices [N], output [numRows, D].
+    return outputRank == 2 && updatesRank == 2 && indicesRank == 1 &&
+           indices->lengthOf() == updates->sizeAt(0) &&
+           output->sizeAt(1) == updates->sizeAt(1);
+  }
+
+  std::vector<sd::LongType> expected;
+  if (roles.rows) {
+    // updates = indices.shape[:-1] + output.shape[indexDepth:]
+    const sd::LongType depth = indexedSliceUpdateDepth(roles);
+    if (depth < 1 || depth > outputRank) return false;
+    for (int d = 0; d < indicesRank - 1; ++d) {
+      expected.push_back(indices->sizeAt(d));
+    }
+    for (int d = static_cast<int>(depth); d < outputRank; ++d) {
+      expected.push_back(output->sizeAt(d));
+    }
+  } else if (outputRank == 1) {
+    // A vector output: indices and updates have one shape.
+    return dimensionsEqual(indices, updates);
+  } else if (outputRank == updatesRank && indices->isVector()) {
+    // updates = [indices.length] + output.shape[1:]
+    expected.push_back(indices->lengthOf());
+    for (int d = 1; d < outputRank; ++d) expected.push_back(output->sizeAt(d));
+  } else {
+    // updates = indices.shape + output.shape[1:]
+    for (int d = 0; d < indicesRank; ++d) expected.push_back(indices->sizeAt(d));
+    for (int d = 1; d < outputRank; ++d) expected.push_back(output->sizeAt(d));
+  }
+  if (static_cast<int>(expected.size()) != updatesRank) return false;
+  for (int d = 0; d < updatesRank; ++d) {
+    if (updates->sizeAt(d) != expected[static_cast<size_t>(d)]) return false;
+  }
+  return true;
+}
+
+/// True for an input the kernel neither binds nor loads. Such an input is absent from the emitted function
+/// signature and from the recorded descriptor operands: an input the descriptor ignores (randomuniform's shape, which
+/// the frozen output MemRef already fixes); the indices and updates of an ordered slice update with no index rows
+/// (the output is then just the reference, or zeros); every operand of scatter_nd with no rows (its output is zeros).
+static bool inputIsUnbound(const VulkanKernelEmitterInfo& emitter,
+                           NDArray** inputs, int numIn, int index) {
+  if (index < 0 || index >= numIn) return false;
+  if (vulkanInputIsIgnored(emitter, static_cast<unsigned>(index))) return true;
+  if (usesIndexedSliceUpdateSchedule(emitter)) {
+    IndexedSliceUpdateOperands roles;
+    return indexedSliceUpdateOperands(emitter, inputs, numIn, roles) &&
+           arrayHasNoElements(roles.indices) &&
+           (index == roles.indicesInput || index == roles.updatesInput);
+  }
+  if (usesIndexedAccumulationSchedule(emitter)) {
+    return numIn == 3 && inputs != nullptr && inputs[0] != nullptr &&
+           arrayHasNoElements(inputs[0]);
+  }
+  return false;
+}
+
+/// The integer-argument form of gather unrolls one copy per index into the kernel: more than this are rejected.
+constexpr size_t kMaxGatherIntegerArguments = 2048;
+
+/// The layout contract of gather (generic/transforms/gather.cpp and its shape function), which the Vulkan artifact
+/// does not run: the axis (IArg 0, negative values counted from the end), the indices either as the second input
+/// (any rank) or as the integer arguments after the axis (one index removes the axis from the output, several make
+/// it their count), and the output shape that follows.
+struct GatherLayout {
+  int64_t axis = 0;
+  bool indicesArray = true;
+  bool squeezed = false;
+  std::vector<sd::LongType> argumentIndices;
+  std::vector<sd::LongType> outputShape;
+};
+
+static bool gatherLayoutForSlot(const VulkanKernelEmitterInfo& emitter,
+                                const NativeSlot& slot, NDArray** inputs,
+                                int numIn, GatherLayout& layout) {
+  layout = GatherLayout{};
+  if (inputs == nullptr || numIn < 1 || inputs[0] == nullptr ||
+      inputs[0]->rankOf() < 1) {
+    return false;
+  }
+  NDArray* table = inputs[0];
+  const int tableRank = table->rankOf();
+  if (usesModeIndexedLookupSchedule(emitter)) {
+    // embedding_lookup of one table is gather along axis 0; IArg 0 is the partition mode (0 or 1), which a single
+    // table does not read.
+    if (numIn != 2 || slot.args.numIArgs != 1 || slot.args.numBArgs != 0 ||
+        (slot.args.iArgs[0] != 0 && slot.args.iArgs[0] != 1)) {
+      return false;
+    }
+    layout.axis = 0;
+  } else if (usesAxisIndexedLookupSchedule(emitter)) {
+    // The optional BArg is checkIndices. It is accepted and not honored: the device cannot raise the error, and
+    // an index outside the axis gathers zeros, as it does on CPU and CUDA with validation off (ADR 0128).
+    if (numIn < 1 || numIn > 2 || slot.args.numBArgs > 1) return false;
+    const sd::LongType rawAxis =
+        slot.args.numIArgs > 0 ? slot.args.iArgs[0] : 0;
+    if (!normalizeAxis(rawAxis, tableRank, layout.axis)) return false;
+    if (numIn == 2) {
+      if (slot.args.numIArgs > 1) return false;
+    } else {
+      // Indices as integer arguments: the axis, then at least one index.
+      if (slot.args.numIArgs < 2 ||
+          static_cast<size_t>(slot.args.numIArgs - 1) >
+              kMaxGatherIntegerArguments) {
+        return false;
+      }
+      layout.indicesArray = false;
+      layout.squeezed = slot.args.numIArgs == 2;
+      for (int i = 1; i < slot.args.numIArgs; ++i) {
+        layout.argumentIndices.push_back(slot.args.iArgs[i]);
+      }
+    }
+  } else {
+    return false;
+  }
+
+  for (int d = 0; d < tableRank; ++d) {
+    if (d != layout.axis) {
+      layout.outputShape.push_back(table->sizeAt(d));
+      continue;
+    }
+    if (layout.indicesArray) {
+      NDArray* indices = inputs[1];
+      if (indices == nullptr) return false;
+      for (int i = 0; i < indices->rankOf(); ++i) {
+        layout.outputShape.push_back(indices->sizeAt(i));
+      }
+    } else if (!layout.squeezed) {
+      layout.outputShape.push_back(
+          static_cast<sd::LongType>(layout.argumentIndices.size()));
+    }
   }
   return true;
 }
@@ -1025,6 +1382,10 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
                                  accumulatorType, isUnsigned);
   };
   for (int i = 0; i < numIn; ++i) {
+    if (contractEmitter != nullptr &&
+        inputIsUnbound(*contractEmitter, inputs, numIn, i)) {
+      continue;
+    }
     if (isStructuralInput(i)) {
       if (!hasBoundStorage(inputs[i])) return false;
     } else if (!hasSupportedStorage(inputs[i])) {
@@ -1098,6 +1459,42 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
                samePayloadType(inputs[0]) && integerStructural(inputs[1]) &&
                denseRawPayload(inputs[0]) && denseRawPayload(outputs[0]) &&
                outputs[0]->lengthOf() <= inputs[0]->lengthOf();
+      }
+
+      if (usesTrailingOrderReshapeCopySchedule(*emitter)) {
+        if (numIn < 1 || numIn > 2 || numOut != 1 ||
+            !samePayloadType(inputs[0]) ||
+            inputs[0]->lengthOf() != outputs[0]->lengthOf()) {
+          return false;
+        }
+        if (numIn == 2) {
+          // The shape tensor is structural: the resolved output freezes its
+          // dimensions, while the optional IArg determines logical traversal.
+          return integerStructural(inputs[1]) &&
+                 inputs[1]->lengthOf() == outputs[0]->rankOf() &&
+                 (slot.args.numIArgs == 0 ||
+                  (slot.args.numIArgs == 1 &&
+                   (slot.args.iArgs[0] == -99 || slot.args.iArgs[0] == -102)));
+        }
+        if (slot.args.numIArgs != outputs[0]->rankOf() + 1) return false;
+        const auto marker = slot.args.iArgs[slot.args.numIArgs - 1];
+        if (marker != -99 && marker != -102) return false;
+        bool inferred = false;
+        for (int d = 0; d < outputs[0]->rankOf(); ++d) {
+          const auto requested = slot.args.iArgs[d];
+          if (requested == -1) {
+            if (inferred) return false;
+            inferred = true;
+          } else if (requested == 0) {
+            // Match reshape_no_copy shape inference: zero copies the input
+            // dimension at this axis (or remains empty beyond its rank).
+            const auto resolved = d < inputs[0]->rankOf() ? inputs[0]->sizeAt(d) : 0;
+            if (outputs[0]->sizeAt(d) != resolved) return false;
+          } else if (requested < 0 || outputs[0]->sizeAt(d) != requested) {
+            return false;
+          }
+        }
+        return true;
       }
 
       if (usesReshapeCopySchedule(*emitter)) {
@@ -1195,8 +1592,7 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
             return false;
           }
         }
-        return expectedRank == 0 ||
-               inputs[0]->ordering() == outputs[0]->ordering();
+        return true;
       }
       if (emitter->argumentSchema == VulkanArgumentSchema::SINGLE_IARG) {
         if (slot.args.numIArgs != 1 ||
@@ -1214,7 +1610,7 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
               d == axis ? 1 : inputs[0]->sizeAt(inputDimension++);
           if (outputs[0]->sizeAt(d) != expected) return false;
         }
-        return inputs[0]->ordering() == outputs[0]->ordering();
+        return true;
       }
       return false;
     }
@@ -1369,11 +1765,19 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
     NDArray* updates = inputs[1];
     NDArray* shape = inputs[2];
     NDArray* output = outputs[0];
+    // With no index rows the op clears its output and returns before it reads anything else: the kernel only
+    // zero-fills the output and binds none of the three inputs.
+    if (indices != nullptr && output != nullptr &&
+        arrayHasNoElements(indices)) {
+      return true;
+    }
+    // The updates may have another type than the output (cast to it before they are added); neither is BOOL.
     if (indices == nullptr || updates == nullptr || shape == nullptr ||
         output == nullptr || indices->rankOf() < 1 || shape->rankOf() != 1 ||
         !DataTypeUtils::isZ(indices->dataType()) ||
         DataTypeUtils::isB(indices->dataType()) ||
-        updates->dataType() != output->dataType() ||
+        DataTypeUtils::isB(updates->dataType()) ||
+        DataTypeUtils::isB(output->dataType()) ||
         shape->lengthOf() != output->rankOf()) {
       return false;
     }
@@ -1393,6 +1797,92 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
           output->sizeAt(indexDepth + d)) {
         return false;
       }
+    }
+    return true;
+  }
+
+  // ── Ordered slice updates: scatter_*, scatter_nd_{add,sub,update}, get_rows_bp ─
+  // The generic ops' bodies do not run on Vulkan, so every contract they check
+  // (argument counts, the layouts of updates and indices, aliasing) is checked here.
+  if constexpr (Policy::indexedSliceUpdate) {
+    const auto* emitter = emitterForSlot(slot);
+    IndexedSliceUpdateOperands roles;
+    if (emitter == nullptr || !usesIndexedSliceUpdateSchedule(*emitter) ||
+        !indexedSliceUpdateOperands(*emitter, inputs, numIn, roles) ||
+        numOut != 1 || outputs[0] == nullptr || slot.args.numTArgs != 0 ||
+        slot.args.numDArgs != 0 || slot.args.numSArgs != 0) {
+      return false;
+    }
+    NDArray* output = outputs[0];
+    if (roles.zeroInitial) {
+      // get_rows_bp: I arg 0 is numRows, the first dimension of the output.
+      if (slot.args.numIArgs != 1 || slot.args.numBArgs != 0 ||
+          slot.args.iArgs[0] <= 0 || output->rankOf() != 2 ||
+          output->sizeAt(0) != slot.args.iArgs[0]) {
+        return false;
+      }
+    } else {
+      // BArg 0 (lock) changes nothing here: the schedule always applies updates in index order. BArg 1
+      // (checkIndices) asks for an error on an index outside the output, which a device kernel cannot raise.
+      if (slot.args.numIArgs != 0 || slot.args.numBArgs > 2 ||
+          (slot.args.numBArgs > 1 && slot.args.bArgs[1])) {
+        return false;
+      }
+    }
+
+    // The updates are cast to the output's type, so the output and the reference share it; get_rows_bp's gradient
+    // is floating and shares it with its output.
+    if (output->dataType() != (roles.zeroInitial ? roles.updates->dataType()
+                                                 : roles.reference->dataType()) &&
+        !(arrayHasNoElements(roles.indices) && roles.zeroInitial)) {
+      return false;
+    }
+    if (roles.zeroInitial && !DataTypeUtils::isR(output->dataType())) {
+      return false;
+    }
+    if (!arrayHasNoElements(roles.indices)) {
+      // Updates and indices are read: each has storage the device supports (the prelude above checked it), and the
+      // indices are integers.
+      if (!DataTypeUtils::isZ(roles.indices->dataType()) ||
+          DataTypeUtils::isB(roles.indices->dataType()) ||
+          DataTypeUtils::isB(roles.updates->dataType()) ||
+          DataTypeUtils::isB(output->dataType())) {
+        return false;
+      }
+    }
+    if (!indexedSliceUpdateShapesMatch(roles, output)) return false;
+
+    // One invocation per element position of a slice: positions, rows and elements are 32-bit index values in
+    // the shader.
+    constexpr sd::LongType kLargestIndex =
+        std::numeric_limits<int32_t>::max();
+    if (output->lengthOf() > kLargestIndex ||
+        (!arrayHasNoElements(roles.indices) &&
+         (roles.updates->lengthOf() > kLargestIndex ||
+          roles.indices->lengthOf() > kLargestIndex))) {
+      return false;
+    }
+    if (indexedSliceUpdatePositions(output, indexedSliceUpdateDepth(roles)) <=
+        0) {
+      return false;
+    }
+
+    // The output's own storage is written while the schedule reads the reference, indices and updates: one buffer
+    // may serve only as both reference and output, through the identical view (execution in place).
+    auto sharesBuffer = [](NDArray* lhs, NDArray* rhs) {
+      return lhs != nullptr && rhs != nullptr &&
+             lhs->dataBuffer() != nullptr &&
+             lhs->dataBuffer() == rhs->dataBuffer();
+    };
+    if (roles.reference != nullptr &&
+        sharesBuffer(roles.reference, output) &&
+        !sameExactView(roles.reference, output)) {
+      return false;
+    }
+    if (!arrayHasNoElements(roles.indices) &&
+        (sharesBuffer(roles.indices, output) ||
+         sharesBuffer(roles.updates, output))) {
+      return false;
     }
     return true;
   }
@@ -2308,8 +2798,12 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
 
   if constexpr (Policy::binary) {
     const auto* emitter = emitterForSlot(slot);
-    if (emitter == nullptr || numOut != 1 || slot.args.numIArgs != 0 ||
-        !hasNoBoolDtypeOrStringArgs(slot)) {
+    const bool broadcastLegacy = isLegacyBroadcast(slot);
+    if (emitter == nullptr || numOut != 1 ||
+        (!broadcastLegacy && slot.args.numIArgs != 0) ||
+        (broadcastLegacy ? (slot.args.numBArgs > 1 || slot.args.numDArgs != 0 ||
+                            slot.args.numSArgs != 0)
+                         : !hasNoBoolDtypeOrStringArgs(slot))) {
       return false;
     }
     if (emitter->family == VulkanKernelFamily::LOGICAL &&
@@ -2348,7 +2842,20 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
         emitter->recipe != VulkanKernelRecipe::UNSUPPORTED &&
         (emitter->recipe == VulkanKernelRecipe::EPSILON_COMPARE ||
          emitter->recipe == VulkanKernelRecipe::MATCH_CONDITION);
-    if ((!scalarLegacy && slot.args.numTArgs != 0) ||
+    const bool pairwiseCondition =
+        legacyFamily.has_value() &&
+        *legacyFamily == VulkanLegacyOpFamily::PAIRWISE_BOOL &&
+        emitter->recipe == VulkanKernelRecipe::MATCH_CONDITION;
+    if (pairwiseCondition) {
+      if (!argumentContractMatchesSlot(*emitter, slot, numIn, numOut, outputs))
+        return false;
+      if (slot.args.numTArgs == 2) {
+        const double mode = slot.args.tArgs[1];
+        if (!std::isfinite(mode) || mode != std::floor(mode) || mode < 0 || mode > 15)
+          return false;
+      }
+    }
+    if ((!scalarLegacy && !pairwiseCondition && slot.args.numTArgs != 0) ||
         (scalarLegacy &&
          (!scalarBooleanComparison &&
           (slot.args.numTArgs != 1 ||
@@ -2376,6 +2883,17 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
       return inputs[0]->isSameShape(outputs[0]);
     }
     if (numIn != 2) return false;
+    if (broadcastLegacy) {
+      if (*legacyFamily == VulkanLegacyOpFamily::BROADCAST_BOOL &&
+          !DataTypeUtils::isB(outputs[0]->dataType())) return false;
+      if (*legacyFamily == VulkanLegacyOpFamily::BROADCAST_INT &&
+          (!DataTypeUtils::isZ(inputs[0]->dataType()) || DataTypeUtils::isB(inputs[0]->dataType()) ||
+           inputs[0]->dataType() != inputs[1]->dataType() ||
+           inputs[0]->dataType() != outputs[0]->dataType())) return false;
+      std::vector<sd::LongType> mapping;
+      return argumentContractMatchesSlot(*emitter, slot, numIn, numOut, outputs) &&
+             legacyBroadcastDimensions(slot, inputs[0], inputs[1], outputs[0], mapping);
+    }
     if ((emitter->layoutSupport & VULKAN_LAYOUT_BROADCAST) == 0) {
       return sameShapeAndType(inputs[0], outputs[0]) &&
              inputs[0]->isSameShape(inputs[1]);
@@ -2425,19 +2943,28 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
     return sameShapeAndType(inputs[0], outputs[0]);
   }
 
-  // ── Row-wise softmax over the exact native axis ──────────────────────────
+  // ── softmax / log_softmax along any axis of an array of any rank ──────────
+  // The optional IArg is the axis, counted from the end when negative (the last axis by default), as the generic op
+  // reads it. The output has the input's shape and type; it may be the input itself (each element is read before it is
+  // written and each row is its invocation's alone) but must not partly overlap it through another view.
   if constexpr (Policy::softmax) {
     if (numIn != 1 || numOut != 1 || slot.args.numIArgs > 1 ||
-        slot.args.numTArgs != 0 || !hasNoBoolDtypeOrStringArgs(slot)) {
+        slot.args.numTArgs != 0 || !hasNoBoolDtypeOrStringArgs(slot) ||
+        inputs[0]->rankOf() < 1 || !DataTypeUtils::isR(inputs[0]->dataType())) {
       return false;
     }
-    int64_t axis = 1;
+    int64_t axis = inputs[0]->rankOf() - 1;
     if (slot.args.numIArgs == 1 &&
-        !normalizeAxis(slot.args.iArgs[0], 2, axis)) {
+        !normalizeAxis(slot.args.iArgs[0], inputs[0]->rankOf(), axis)) {
       return false;
     }
-    return axis == 1 && inputs[0]->rankOf() == 2 &&
-           sameShapeAndType(inputs[0], outputs[0]);
+    if (!sameShapeAndType(inputs[0], outputs[0])) return false;
+    if (inputs[0]->dataBuffer() != nullptr &&
+        inputs[0]->dataBuffer() == outputs[0]->dataBuffer() &&
+        !sameExactView(inputs[0], outputs[0])) {
+      return false;
+    }
+    return inputs[0]->lengthOf() <= std::numeric_limits<int32_t>::max();
   }
 
   // ── Last-dimension rank-2 layer norm with required gain ──────────────────
@@ -2474,43 +3001,47 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
     return true;
   }
 
-  // ── Static axis-0 gather ─────────────────────────────────────────────────
+  // ── Gather along any axis, indices of any rank ───────────────────────────
+  // The indices are the second input or, with one input, the integer arguments after the axis. An index outside the
+  // axis gathers zeros (ADR 0128). 64-bit indices and values need the corresponding device feature, which the
+  // prelude above has already checked through selectMlirScalarTypes.
   if constexpr (Policy::gather) {
     const auto* emitter = emitterForSlot(slot);
+    GatherLayout layout;
     if (emitter == nullptr || !usesIndexedLookupSchedule(*emitter) ||
-        numIn != 2 || numOut != 1 || slot.args.numTArgs != 0 ||
-        slot.args.numDArgs != 0 || slot.args.numSArgs != 0) {
+        numOut != 1 || slot.args.numTArgs != 0 ||
+        slot.args.numDArgs != 0 || slot.args.numSArgs != 0 ||
+        !gatherLayoutForSlot(*emitter, slot, inputs, numIn, layout)) {
       return false;
     }
-    const bool modeLookup = usesModeIndexedLookupSchedule(*emitter);
-    if (modeLookup) {
-      if (slot.args.numIArgs != 1 || slot.args.numBArgs != 0 ||
-          (slot.args.iArgs[0] != 0 && slot.args.iArgs[0] != 1)) {
+    NDArray* table = inputs[0];
+    NDArray* output = outputs[0];
+    if (output->dataType() != table->dataType() ||
+        DataTypeUtils::isB(table->dataType()) ||
+        output->rankOf() != static_cast<int>(layout.outputShape.size())) {
+      return false;
+    }
+    for (int d = 0; d < output->rankOf(); ++d) {
+      if (output->sizeAt(d) != layout.outputShape[static_cast<size_t>(d)]) {
         return false;
       }
-    } else if (usesAxisIndexedLookupSchedule(*emitter)) {
-      if (slot.args.numIArgs > 1 || slot.args.numBArgs > 1) return false;
-    } else {
+    }
+    if (layout.indicesArray &&
+        (!DataTypeUtils::isZ(inputs[1]->dataType()) ||
+         DataTypeUtils::isB(inputs[1]->dataType()))) {
       return false;
     }
-    int64_t axis = 0;
-    if (!modeLookup && slot.args.numIArgs == 1 &&
-        !normalizeAxis(slot.args.iArgs[0], inputs[0]->rankOf(), axis)) {
-      return false;
+    // Every output element is written by its own invocation while the table and indices are read: the output
+    // shares storage with neither. All index arithmetic is 32-bit in the shader.
+    constexpr sd::LongType kLargestIndex = std::numeric_limits<int32_t>::max();
+    for (int i = 0; i < numIn; ++i) {
+      if (inputs[i]->dataBuffer() != nullptr &&
+          inputs[i]->dataBuffer() == output->dataBuffer()) {
+        return false;
+      }
     }
-    if (axis != 0 || inputs[0]->rankOf() < 1 ||
-        (inputs[1]->dataType() != DataType::INT32 &&
-         inputs[1]->dataType() != DataType::UINT32) ||
-        inputs[1]->rankOf() != 1 ||
-        outputs[0]->dataType() != inputs[0]->dataType() ||
-        outputs[0]->rankOf() != inputs[0]->rankOf() ||
-        outputs[0]->sizeAt(0) != inputs[1]->sizeAt(0)) {
-      return false;
-    }
-    for (int d = 1; d < inputs[0]->rankOf(); ++d) {
-      if (outputs[0]->sizeAt(d) != inputs[0]->sizeAt(d)) return false;
-    }
-    return true;
+    return table->lengthOf() <= kLargestIndex &&
+           output->lengthOf() <= kLargestIndex;
   }
 
   // ── Static-axis concat ───────────────────────────────────────────────────
@@ -2608,7 +3139,77 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
     }
 
     if (emitter->recipe == VulkanKernelRecipe::UNIFORM_RANDOM) {
-      return numIn == 0 && DataTypeUtils::isR(outputs[0]->dataType());
+      // The legacy UniformDistribution has no operand: the range is its two TArgs.
+      if (!(numIn == 1 && vulkanInputIsIgnored(*emitter, 0))) {
+        return numIn == 0 && DataTypeUtils::isR(outputs[0]->dataType());
+      }
+      // randomuniform: operand 0 is the shape tensor, which the frozen output MemRef already fixes (its length is
+      // the output's rank); the range is the two TArgs (the min/max array form is not recordable), IArg 0 is the
+      // dtype (FLOAT32 when absent, and the output must have it) and IArg 1 the seed, applied to the generator by
+      // the recorder. DArgs only restate the output's dtype.
+      const sd::DataType expectedType =
+          slot.args.numIArgs >= 1
+              ? DataTypeUtils::fromInt(static_cast<int>(slot.args.iArgs[0]))
+              : sd::DataType::FLOAT32;
+      return slot.args.numTArgs == 2 && slot.args.numIArgs <= 2 &&
+             slot.args.numBArgs == 0 && slot.args.numSArgs == 0 &&
+             outputDataTypeArgumentsMatch(slot, outputs, numOut) &&
+             DataTypeUtils::isZ(inputs[0]->dataType()) &&
+             !DataTypeUtils::isB(inputs[0]->dataType()) &&
+             inputs[0]->lengthOf() == outputs[0]->rankOf() &&
+             DataTypeUtils::isR(expectedType) &&
+             outputs[0]->dataType() == expectedType;
+    }
+
+    // The other legacy random ops take the operands vulkanLegacyRandomOperands
+    // names, in this order: x when the op reads it and one is given, then y
+    // when it reads it and y is not z (an absent y). Their extra arguments
+    // arrive as T arguments. Without this branch they fell to the *_AS tail
+    // below, which reads inputs[0] whatever numIn is and then rejects the
+    // recipe.
+    if (emitter->recipe == VulkanKernelRecipe::RANDOM_GENERIC) {
+      const auto operands =
+          vulkanLegacyRandomOperands(slot.legacy.legacyOpNum);
+      if (!operands.has_value()) return false;
+      const int possibleInputs =
+          (operands->readsX ? 1 : 0) + (operands->readsY ? 1 : 0);
+      // The native op reads the first extraArguments of its extra arguments and ignores any further ones (the
+      // Java Choice op passes one it never reads).
+      if (numIn < operands->requiredInputs || numIn > possibleInputs ||
+          slot.args.numTArgs < operands->extraArguments ||
+          !DataTypeUtils::isR(outputs[0]->dataType())) {
+        return false;
+      }
+      // The native entry points read x and y as the output's data type (and reject any other).
+      for (int i = 0; i < numIn; ++i) {
+        if (inputs[i]->dataType() != outputs[0]->dataType()) return false;
+      }
+      // Choice (op 5) reads x[f] for every element f of the probabilities y.
+      if (slot.legacy.legacyOpNum == 5 &&
+          inputs[0]->lengthOf() < inputs[1]->lengthOf()) {
+        return false;
+      }
+      // The ops read x and y element by element, as long as z (BinomialDistribution reads y[t] for trial t instead,
+      // and Choice's x and y are covered above): the kernel indexes each array through its own shape, so a shorter
+      // one would be silently wrapped where the native op reads past its end. The trial count is an int that bounds
+      // a loop in every invocation.
+      const int opNumber = slot.legacy.legacyOpNum;
+      if ((opNumber == 8 || opNumber == 9) &&
+          !(slot.args.tArgs[0] >= 0.0 && slot.args.tArgs[0] <= 2147483647.0)) {
+        return false;
+      }
+      for (int i = 0; i < numIn; ++i) {
+        if (opNumber == 8) {
+          if (inputs[i]->lengthOf() <
+              static_cast<sd::LongType>(slot.args.tArgs[0])) {
+            return false;
+          }
+        } else if (opNumber != 5 &&
+                   inputs[i]->lengthOf() != outputs[0]->lengthOf()) {
+          return false;
+        }
+      }
+      return true;
     }
 
     if (emitter->recipe == VulkanKernelRecipe::EYE) {
@@ -3064,6 +3665,50 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
     };
 
     switch (emitter->recipe) {
+      case VulkanKernelRecipe::CROSS:
+        return numIn == 2 && slot.args.numIArgs == 0 && slot.args.numBArgs == 0 &&
+               samePayload(inputs[0]) && samePayload(inputs[1]) &&
+               sameShape(inputs[0], inputs[1]) && sameShape(inputs[0], outputs[0]) &&
+               inputs[0]->rankOf() >= 1 && inputs[0]->sizeAt(-1) == 3 &&
+               inputs[0]->dataBuffer() != outputs[0]->dataBuffer() &&
+               inputs[1]->dataBuffer() != outputs[0]->dataBuffer();
+      case VulkanKernelRecipe::CUMSUM: {
+        if (numIn != 1 || !samePayload(inputs[0]) || !sameShape(inputs[0], outputs[0]) ||
+            slot.args.numBArgs != 0 || slot.args.numIArgs < 2 ||
+            (slot.args.iArgs[0] != 0 && slot.args.iArgs[0] != 1) ||
+            (slot.args.iArgs[1] != 0 && slot.args.iArgs[1] != 1)) return false;
+        std::set<int64_t> axes;
+        for (int i = 2; i < slot.args.numIArgs; ++i) {
+          int64_t axis = -1;
+          if (!normalizeAxis(slot.args.iArgs[i], inputs[0]->rankOf(), axis) ||
+              !axes.insert(axis).second) return false;
+        }
+        // Identical mapping is safe in place: each invocation owns one complete TAD.
+        if (inputs[0]->dataBuffer() == outputs[0]->dataBuffer()) {
+          if (inputs[0]->offset() != outputs[0]->offset()) return false;
+          for (int d = 0; d < inputs[0]->rankOf(); ++d)
+            if (inputs[0]->stridesOf()[d] != outputs[0]->stridesOf()[d]) return false;
+        }
+        return true;
+      }
+      case VulkanKernelRecipe::BROADCAST_DYNAMIC_SHAPE: {
+        if (numIn != 2 || slot.args.numIArgs != 0 || slot.args.numBArgs != 0 ||
+            !samePayload(inputs[0]) || !samePayload(inputs[1]) ||
+            inputs[0]->rankOf() != 1 || inputs[1]->rankOf() != 1 || outputs[0]->rankOf() != 1 ||
+            outputs[0]->lengthOf() > SD_MAX_RANK ||
+            outputs[0]->lengthOf() != std::max(inputs[0]->lengthOf(), inputs[1]->lengthOf()) ||
+            !DataTypeUtils::isZ(outputs[0]->dataType())) return false;
+        // Shape vectors are bounded structural metadata. Validate their broadcast
+        // contract here; the shader reads the actual values, never a host-computed result.
+        const auto xShape = inputs[0]->asVectorT<sd::LongType>();
+        const auto yShape = inputs[1]->asVectorT<sd::LongType>();
+        for (size_t i = 0; i < static_cast<size_t>(outputs[0]->lengthOf()); ++i) {
+          const auto x = i < xShape.size() ? xShape[xShape.size() - 1 - i] : 1;
+          const auto y = i < yShape.size() ? yShape[yShape.size() - 1 - i] : 1;
+          if (x < 0 || y < 0 || (x != y && x != 1 && y != 1)) return false;
+        }
+        return true;
+      }
       case VulkanKernelRecipe::GATHER_ND: {
         if (numIn != 2 || slot.args.numIArgs != 0 ||
             slot.args.numBArgs > 1 ||
@@ -3166,8 +3811,11 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
         }
         return true;
       }
-      case VulkanKernelRecipe::REVERSE: {
-        if (numIn != 1 || !samePayload(inputs[0]) ||
+      case VulkanKernelRecipe::REVERSE:
+      case VulkanKernelRecipe::REVERSE_BP: {
+        const int payload = emitter->recipe == VulkanKernelRecipe::REVERSE_BP ? 1 : 0;
+        if (numIn != payload + 1 || !samePayload(inputs[payload]) ||
+            !sameShape(inputs[payload], outputs[0]) ||
             slot.args.numBArgs != 0 || !sameShape(inputs[0], outputs[0])) {
           return false;
         }
@@ -3178,6 +3826,11 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
             return false;
           }
           axes.insert(axis);
+        }
+        if (inputs[payload]->dataBuffer() == outputs[0]->dataBuffer()) {
+          if (inputs[payload]->offset() != outputs[0]->offset()) return false;
+          for (int d = 0; d < outputs[0]->rankOf(); ++d)
+            if (inputs[payload]->stridesOf()[d] != outputs[0]->stridesOf()[d]) return false;
         }
         return true;
       }
@@ -3329,13 +3982,12 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
   if constexpr (Policy::reduction) {
     const auto* emitter = emitterForSlot(slot);
     if (emitter == nullptr || numOut != 1 || inputs[0] == nullptr ||
-        inputs[0]->rankOf() < 1) {
+        (emitter->recipe != VulkanKernelRecipe::REDUCE3 && inputs[0]->rankOf() < 1)) {
       return false;
     }
     const bool reduce3 = emitter->recipe == VulkanKernelRecipe::REDUCE3;
     if ((reduce3 ? numIn != 2 : numIn != 1) ||
-        (reduce3 && (inputs[1] == nullptr ||
-                     !inputs[0]->isSameShape(inputs[1])))) {
+        (reduce3 && inputs[1] == nullptr)) {
       return false;
     }
     const bool indexReduction = hasVulkanEmitterTrait(
@@ -3345,14 +3997,10 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
     const bool pNormReduction = hasVulkanEmitterTrait(
         *emitter, VULKAN_EMITTER_TRAIT_P_NORM);
     if (reduce3) {
-      if (!DataTypeUtils::isR(inputs[0]->dataType()) ||
-          !DataTypeUtils::isR(inputs[1]->dataType()) ||
-          !DataTypeUtils::isR(outputs[0]->dataType()) ||
-          slot.args.numTArgs > 1 || slot.args.numBArgs > 1 ||
-          (slot.args.numTArgs == 1 &&
-           !std::isfinite(slot.args.tArgs[0]))) {
-        return false;
-      }
+      Reduce3Geometry geometry;
+      return DataTypeUtils::isR(outputs[0]->dataType()) &&
+             inputs[0]->dataType() == inputs[1]->dataType() &&
+             reduce3GeometryForSlot(slot, inputs[0], inputs[1], outputs[0], geometry);
     } else if (countReduction) {
       if (outputs[0]->dataType() != DataType::INT64 ||
           !DataTypeUtils::isR(inputs[0]->dataType()) ||
@@ -3369,10 +4017,7 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
         return false;
       }
     }
-    if (reduce3) {
-      // Reduce3 always materializes a floating result, including integer input.
-      if (!DataTypeUtils::isR(outputs[0]->dataType())) return false;
-    } else if (indexReduction) {
+    if (indexReduction) {
       const auto outputType = outputs[0]->dataType();
       if ((outputType != DataType::INT32 &&
            outputType != DataType::UINT32) ||
@@ -3517,6 +4162,90 @@ static bool validateOperandTypeContract(
   return true;
 }
 
+// Exact admission for tensor adjoints. Shapes and strides are metadata; all
+// arithmetic (including axis-tensor scans) remains in the device shader.
+static bool validateTensorGradient(const NativeSlot& slot,
+                                   const VulkanKernelEmitterInfo& emitter,
+                                   NDArray** inputs, int numIn,
+                                   NDArray** outputs, int numOut,
+                                   const VulkanDeviceCaps& caps) {
+  if (!hasValidArgumentStorage(slot) ||
+      !vulkanArgumentContractMatches(emitter, numIn, numOut, slot.args.numTArgs,
+          slot.args.numIArgs, slot.args.numBArgs, slot.args.numDArgs, slot.args.numSArgs)) return false;
+  for (int i = 0; i < numIn + numOut; ++i) {
+    NDArray* array = i < numIn ? inputs[i] : outputs[i - numIn];
+    std::string storage, accumulator;
+    bool unsignedType = false;
+    if (array == nullptr || array->lengthOf() <= 0 || array->dataBuffer() == nullptr ||
+        !selectMlirScalarTypes(array->dataType(), caps, storage, accumulator, unsignedType)) return false;
+  }
+  auto same = [](NDArray* a, NDArray* b) {
+    return a->isSameShape(b) && a->dataType() == b->dataType();
+  };
+  const bool scan = emitter.recipe == VulkanKernelRecipe::CUMSUM_BP;
+  for (int o = 0; o < numOut; ++o) {
+    for (int i = 0; i < numIn; ++i) {
+      if (outputs[o]->dataBuffer() != inputs[i]->dataBuffer()) continue;
+      // The original input supplies metadata only; overwriting it cannot
+      // affect the adjoint. Any simultaneous payload alias is checked below.
+      if (scan && o == 0 && i == 0) continue;
+      // Only the gradient payload may be scanned in place, and only with an
+      // identical coordinate mapping. Each invocation owns a complete TAD.
+      if (!scan || o != 0 || i != numIn - 1 || !same(inputs[i], outputs[o]) ||
+          inputs[i]->offset() != outputs[o]->offset()) return false;
+      for (int d = 0; d < outputs[o]->rankOf(); ++d)
+        if (inputs[i]->stridesOf()[d] != outputs[o]->stridesOf()[d]) return false;
+    }
+    for (int p = 0; p < o; ++p)
+      if (outputs[o]->dataBuffer() == outputs[p]->dataBuffer()) return false;
+  }
+  if (scan) {
+    if (!DataTypeUtils::isR(inputs[0]->dataType()) ||
+        !same(inputs[0], outputs[0]) || !same(inputs[0], inputs[numIn - 1]) ||
+        (slot.args.iArgs[0] != 0 && slot.args.iArgs[0] != 1) ||
+        (slot.args.iArgs[1] != 0 && slot.args.iArgs[1] != 1)) return false;
+    std::vector<sd::LongType> axes;
+    if (numIn == 3) {
+      if ((!DataTypeUtils::isR(inputs[1]->dataType()) &&
+           inputs[1]->dataType() != DataType::INT32 && inputs[1]->dataType() != DataType::INT64) ||
+          inputs[1]->lengthOf() > SD_MAX_RANK || !same(inputs[1], outputs[1])) return false;
+      axes = inputs[1]->asVectorT<sd::LongType>();
+    } else {
+      for (int i = 2; i < slot.args.numIArgs; ++i) axes.push_back(slot.args.iArgs[i]);
+    }
+    std::set<int64_t> normalized;
+    for (sd::LongType value : axes) {
+      int64_t axis = -1;
+      if (!normalizeAxis(value, inputs[0]->rankOf(), axis) ||
+          !normalized.insert(axis).second) return false;
+    }
+    return true;
+  }
+  if (numIn != 3 || numOut != 2 || !same(inputs[0], outputs[0]) ||
+      !same(inputs[1], outputs[1])) return false;
+  for (int i = 0; i < numIn; ++i)
+    if (!DataTypeUtils::isR(inputs[i]->dataType())) return false;
+  if (emitter.recipe == VulkanKernelRecipe::BIAS_ADD_BP) {
+    const int rank = inputs[0]->rankOf();
+    const bool nchw = slot.args.numBArgs == 1 && slot.args.bArgs[0];
+    if (rank < (nchw ? 2 : 1) || inputs[1]->rankOf() != 1 ||
+        !inputs[0]->isSameShape(inputs[2])) return false;
+    return inputs[1]->sizeAt(0) == inputs[0]->sizeAt(nchw ? 1 : rank - 1);
+  }
+  if (emitter.recipe != VulkanKernelRecipe::MAXIMUM_BP &&
+      emitter.recipe != VulkanKernelRecipe::MINIMUM_BP) return false;
+  const int rank = std::max(inputs[0]->rankOf(), inputs[1]->rankOf());
+  if (inputs[2]->rankOf() != rank) return false;
+  for (int d = 0; d < rank; ++d) {
+    const int xd = d - (rank - inputs[0]->rankOf());
+    const int yd = d - (rank - inputs[1]->rankOf());
+    const sd::LongType x = xd < 0 ? 1 : inputs[0]->sizeAt(xd);
+    const sd::LongType y = yd < 0 ? 1 : inputs[1]->sizeAt(yd);
+    if ((x != y && x != 1 && y != 1) || inputs[2]->sizeAt(d) != std::max(x, y)) return false;
+  }
+  return true;
+}
+
 static bool validateCatalogOp(const NativeSlot& slot,
                               NDArray** inputs, int numIn,
                               NDArray** outputs, int numOut,
@@ -3534,6 +4263,9 @@ static bool validateCatalogOp(const NativeSlot& slot,
   }
   for (int i = 0; i < numIn; ++i) {
     if (inputs[i] == nullptr) return false;
+    // An input the kernel neither binds nor loads (an ignored descriptor input, or the indices and updates of a
+    // scatter with no index rows) takes no part in the device contract.
+    if (inputIsUnbound(*emitter, inputs, numIn, i)) continue;
     if (vulkanInputIsStructuralIndex(*emitter,
                                      static_cast<unsigned>(i))) {
       // dtypeSupport describes values consumed by the generated kernel.
@@ -3565,11 +4297,17 @@ static bool validateCatalogOp(const NativeSlot& slot,
     return false;
   }
   // Catalogue rank bounds describe the primary input contract. Zero-input
-  // constant generators use their output rank instead.
+  // constant generators use their output rank instead. A primary input the kernel does not bind because it has no
+  // elements (the indices of scatter_nd with no rows, which Nd4j.empty() makes rank 0) has no rank to bound; the
+  // ignored shape tensor of randomuniform is still bounded.
+  const bool primaryInputUnbound =
+      !zeroInputConstant && inputIsUnbound(*emitter, inputs, numIn, 0) &&
+      !vulkanInputIsIgnored(*emitter, 0);
   const int rank = zeroInputConstant ? outputs[0]->rankOf()
                                      : inputs[0]->rankOf();
-  if (rank < emitter->minimumRank ||
-      (emitter->maximumRank >= 0 && rank > emitter->maximumRank)) {
+  if (!primaryInputUnbound &&
+      (rank < emitter->minimumRank ||
+       (emitter->maximumRank >= 0 && rank > emitter->maximumRank))) {
     return false;
   }
   if (emitter->family == VulkanKernelFamily::ELEMENTWISE_UNARY &&
@@ -3584,17 +4322,23 @@ static bool validateCatalogOp(const NativeSlot& slot,
   }
 
   switch (emitter->loweringContract) {
+    case VulkanLoweringContract::TENSOR_GRADIENT:
+      return validateTensorGradient(slot, *emitter, inputs, numIn, outputs, numOut, caps);
     case VulkanLoweringContract::SOFTMAX:
       return validateVulkanOp<SoftmaxPolicy>(
           slot, inputs, numIn, outputs, numOut, caps);
     case VulkanLoweringContract::LAYER_NORM:
       return validateVulkanOp<LayerNormPolicy>(
           slot, inputs, numIn, outputs, numOut, caps);
+    case VulkanLoweringContract::INDEXED_SLICE_UPDATE:
+      return validateVulkanOp<IndexedSliceUpdatePolicy>(
+          slot, inputs, numIn, outputs, numOut, caps);
     case VulkanLoweringContract::FUSED_LLM:
     case VulkanLoweringContract::DEFAULT:
     case VulkanLoweringContract::LINEAR_COPY:
     case VulkanLoweringContract::INDEXED_TAD_MOVEMENT:
     case VulkanLoweringContract::TRIANGULAR_SOLVE:
+    case VulkanLoweringContract::INDEXED_TENSOR:
       break;
   }
 
@@ -3735,6 +4479,69 @@ static bool catalogDispatchGeometry(const NativeSlot& slot,
       return false;
     }
     return checked(static_cast<sd::LongType>(batchCount) * columns, geometry.x);
+  }
+
+  if (emitter->loweringContract == VulkanLoweringContract::TENSOR_GRADIENT) {
+    sd::LongType count = outputs[0]->lengthOf();
+    for (int i = 1; i < numOut; ++i) count = std::max(count, outputs[i]->lengthOf());
+    return checked(count, geometry.x);
+  }
+
+  if (emitter->recipe == VulkanKernelRecipe::CUMSUM) {
+    std::set<int64_t> axes;
+    for (int i = 2; i < slot.args.numIArgs; ++i) {
+      int64_t axis = -1;
+      if (!normalizeAxis(slot.args.iArgs[i], outputs[0]->rankOf(), axis)) return false;
+      axes.insert(axis);
+    }
+    sd::LongType rows = 1;
+    if (!axes.empty()) {
+      for (int d = 0; d < outputs[0]->rankOf(); ++d)
+        if (axes.count(d) == 0) rows *= outputs[0]->sizeAt(d);
+    }
+    return checked(rows, geometry.x);
+  }
+
+  // Ordered slice updates: one invocation per element position of an output slice, each writing its positions of
+  // every slice and then walking the index rows in order.
+  if (usesIndexedSliceUpdateSchedule(*emitter)) {
+    IndexedSliceUpdateOperands roles;
+    return indexedSliceUpdateOperands(*emitter, inputs, numIn, roles) &&
+           checked(indexedSliceUpdatePositions(
+                       outputs[0], indexedSliceUpdateDepth(roles)),
+                   geometry.x);
+  }
+
+  // scatter_nd without index rows only zero-fills its output: one invocation per output element (the serial walk of
+  // DISPATCH_SINGLE is for the rows).
+  if (usesIndexedAccumulationSchedule(*emitter) && numIn == 3 &&
+      inputs != nullptr && arrayHasNoElements(inputs[0])) {
+    return checked(outputs[0]->lengthOf(), geometry.x);
+  }
+
+  // softmax and log_softmax: one invocation per row of the reduced shape, the product of every dimension except
+  // the normalized axis (the last one by default).
+  if (hasVulkanEmitterTrait(
+          *emitter, VULKAN_EMITTER_TRAIT_DISPATCH_AXIS_ROWS)) {
+    const int rank = outputs[0]->rankOf();
+    int64_t axis = rank - 1;
+    if (rank < 1 ||
+        (slot.args.numIArgs == 1 &&
+         !normalizeAxis(slot.args.iArgs[0], rank, axis))) {
+      return false;
+    }
+    const sd::LongType extent = outputs[0]->sizeAt(static_cast<int>(axis));
+    return extent > 0 &&
+           checked(outputs[0]->lengthOf() / extent, geometry.x);
+  }
+
+  // gather with its indices as integer arguments (axis, then the indices): one invocation per output position
+  // outside the gathered dimension, each copying every gathered slice.
+  if (usesAxisIndexedLookupSchedule(*emitter) && numIn == 1) {
+    const sd::LongType gathered =
+        slot.args.numIArgs == 2 ? 1 : slot.args.numIArgs - 1;
+    return gathered > 0 &&
+           checked(outputs[0]->lengthOf() / gathered, geometry.x);
   }
 
   if (hasVulkanEmitterTrait(
@@ -4269,6 +5076,24 @@ static std::string emitContractMovementMlir(
   if (emitter->loweringContract == VulkanLoweringContract::LINEAR_COPY) {
     inputFortran = inputs[primaryCopyInput]->ordering() == 'f';
     outputFortran = outputs[0]->ordering() == 'f';
+    // Reshape's logical traversal is requested by the operation (C by
+    // default), independently of the source's physical order. MemRef strides
+    // still map that logical traversal onto an F-order or stepped source.
+    if (usesTrailingOrderReshapeCopySchedule(*emitter)) {
+      const bool fortran = slot.args.numIArgs > 0 &&
+          slot.args.iArgs[numIn == 2 ? 0 : slot.args.numIArgs - 1] == -102;
+      inputFortran = fortran;
+      outputFortran = fortran;
+    } else if (usesReshapeCopySchedule(*emitter)) {
+      inputFortran = outputFortran;
+    } else if (emitter->argumentSchema == VulkanArgumentSchema::AXES_IARGS ||
+               emitter->argumentSchema == VulkanArgumentSchema::SINGLE_IARG) {
+      // Squeeze/expand_dims insert or remove only singleton coordinates.
+      // Traverse both operands in logical C order; each MemRef independently
+      // supplies its physical strides, including F-order and stepped views.
+      inputFortran = false;
+      outputFortran = false;
+    }
   } else if (usesLinearConcatSchedule(*emitter)) {
     inputFortran = static_cast<char>(slot.args.iArgs[0]) == 'f';
   }
@@ -4352,6 +5177,159 @@ static std::string emitContractMovementMlir(
 }
 
 /**
+ * Emit the linalg shell of the ordered slice-update schedule (scatter_*,
+ * scatter_nd_{add,sub,update}, get_rows_bp): the reference (absent when the output
+ * starts from zeros), the indices and the updates, then the output. With no index
+ * rows the indices and updates are not part of the signature at all. The shell
+ * only carries the operand ABI and the nd4j.* contract the lowering reads:
+ * IndexedSliceUpdateToSpirv replaces it with exactly one gpu.launch.
+ */
+static std::string emitIndexedSliceUpdateMlir(
+    const NativeSlot& slot, NDArray** inputs, int numIn, NDArray** outputs,
+    int numOut, const VulkanDeviceCaps& caps) {
+  const auto* emitter = emitterForSlot(slot);
+  IndexedSliceUpdateOperands roles;
+  if (emitter == nullptr || !usesIndexedSliceUpdateSchedule(*emitter) ||
+      !indexedSliceUpdateOperands(*emitter, inputs, numIn, roles) ||
+      numOut != 1 || outputs == nullptr || outputs[0] == nullptr) {
+    return "";
+  }
+  NDArray* output = outputs[0];
+  const bool emptyRows = arrayHasNoElements(roles.indices);
+  const bool inPlace =
+      roles.reference != nullptr && sameExactView(roles.reference, output);
+
+  std::string outputType;
+  std::string outputAccumulator;
+  bool outputUnsigned = false;
+  if (!selectMlirScalarTypes(output->dataType(), caps, outputType,
+                             outputAccumulator, outputUnsigned)) {
+    return "";
+  }
+  const bool floating =
+      outputAccumulator == "f32" || outputAccumulator == "f64";
+
+  // The operands the kernel binds, in signature order.
+  struct Operand {
+    const char* name;
+    NDArray* array;
+    std::string element;
+    bool isUnsigned;
+    bool inertMap;
+  };
+  std::vector<Operand> operands;
+  auto addOperand = [&](const char* name, NDArray* array, bool inertMap) {
+    Operand operand{name, array, "", false, inertMap};
+    std::string accumulator;
+    if (!selectMlirScalarTypes(array->dataType(), caps, operand.element,
+                               accumulator, operand.isUnsigned) ||
+        mlirMemrefBody(array, operand.element).empty()) {
+      return false;
+    }
+    operands.push_back(std::move(operand));
+    return true;
+  };
+  if (roles.reference != nullptr && !addOperand("ref", roles.reference, false)) {
+    return "";
+  }
+  bool updatesUnsigned = false;
+  bool indicesUnsigned = false;
+  if (!emptyRows) {
+    // The signature follows the descriptor's own input order, which is the order recordOp binds the operands in:
+    // (reference, indices, updates) for the scatter ops, (updates, indices) for get_rows_bp.
+    const bool updatesFirst = roles.updatesInput < roles.indicesInput;
+    if (updatesFirst
+            ? (!addOperand("updates", roles.updates, true) ||
+               !addOperand("indices", roles.indices, true))
+            : (!addOperand("indices", roles.indices, true) ||
+               !addOperand("updates", roles.updates, true))) {
+      return "";
+    }
+    for (const auto& operand : operands) {
+      if (std::string(operand.name) == "indices") {
+        indicesUnsigned = operand.isUnsigned;
+      } else if (std::string(operand.name) == "updates") {
+        updatesUnsigned = operand.isUnsigned;
+      }
+    }
+  }
+  const std::string outputMemref = mlirMemrefBody(output, outputType);
+  if (outputMemref.empty()) return "";
+
+  const int loopRank = output->rankOf();
+  std::ostringstream dimensions;
+  std::ostringstream iterators;
+  for (int d = 0; d < loopRank; ++d) {
+    if (d != 0) {
+      dimensions << ", ";
+      iterators << ", ";
+    }
+    dimensions << "d" << d;
+    iterators << "\"parallel\"";
+  }
+  auto indexingMap = [&](int rank, bool inert) {
+    std::ostringstream map;
+    map << "affine_map<(" << dimensions.str() << ") -> (";
+    for (int d = 0; d < rank; ++d) {
+      if (d != 0) map << ", ";
+      map << (inert ? std::string("0") : "d" + std::to_string(d));
+    }
+    map << ")>";
+    return map.str();
+  };
+
+  std::ostringstream ss;
+  ss << "module {\n  func.func @main(";
+  for (const auto& operand : operands) {
+    ss << "%" << operand.name << ": memref<"
+       << mlirMemrefBody(operand.array, operand.element) << ">, ";
+  }
+  ss << "%out: memref<" << outputMemref << ">) {\n"
+     << "    linalg.generic {" << emitterIdentityAttributes(slot)
+     << ", nd4j.indexed_slice_update = true"
+     << ", nd4j.index_depth = " << indexedSliceUpdateDepth(roles) << " : i64"
+     << ", nd4j.empty_rows = " << (emptyRows ? "true" : "false")
+     << ", nd4j.in_place = " << (inPlace ? "true" : "false")
+     << ", nd4j.zero_initial = " << (roles.zeroInitial ? "true" : "false")
+     << ", nd4j.output_unsigned = " << (outputUnsigned ? "true" : "false")
+     << ", nd4j.update_unsigned = " << (updatesUnsigned ? "true" : "false")
+     << ", nd4j.index_unsigned = " << (indicesUnsigned ? "true" : "false");
+  if (floating) ss << ", nd4j.accumulator_type = " << outputAccumulator;
+  ss << ",\n                    indexing_maps = [";
+  for (const auto& operand : operands) {
+    ss << indexingMap(operand.array->rankOf(), operand.inertMap) << ", ";
+  }
+  ss << indexingMap(loopRank, false) << "],\n"
+     << "                    iterator_types = [" << iterators.str() << "]}\n";
+  if (!operands.empty()) {
+    ss << "      ins(";
+    for (size_t i = 0; i < operands.size(); ++i) {
+      if (i != 0) ss << ", ";
+      ss << "%" << operands[i].name;
+    }
+    ss << " : ";
+    for (size_t i = 0; i < operands.size(); ++i) {
+      if (i != 0) ss << ", ";
+      ss << "memref<" << mlirMemrefBody(operands[i].array, operands[i].element)
+         << ">";
+    }
+    ss << ")\n";
+  }
+  ss << "      outs(%out : memref<" << outputMemref << ">) {\n"
+     << "      ^bb0(";
+  for (size_t i = 0; i < operands.size(); ++i) {
+    ss << "%" << operands[i].name << "Value: " << operands[i].element << ", ";
+  }
+  ss << "%outValue: " << outputType << "):\n"
+     << "        linalg.yield %outValue : " << outputType << "\n"
+     << "    }\n"
+     << "    return\n"
+     << "  }\n"
+     << "}\n";
+  return ss.str();
+}
+
+/**
  * Emit the ABI-preserving linalg shell for trait-routed non-elementwise
  * schedules. Every operand remains a real MemRef binding; the selected lowering
  * replaces this shell with exactly one gpu.launch.
@@ -4373,6 +5351,48 @@ static std::string emitStructuredScheduleMlir(
   if (!batchedMatrixList && !indexedAccumulation &&
       !indexedTadMovement) {
     return "";
+  }
+
+  // scatter_nd with no index rows: its output is zeros. The shell carries only the output (none of the three
+  // inputs is bound) and IndexedAccumulationToSpirv zero-fills it.
+  if (indexedAccumulation && numIn == 3 && numOut == 1 &&
+      arrayHasNoElements(inputs[0])) {
+    std::string storage;
+    std::string accumulator;
+    bool isUnsigned = false;
+    if (!selectMlirScalarTypes(outputs[0]->dataType(), caps, storage,
+                               accumulator, isUnsigned)) {
+      return "";
+    }
+    const std::string memref = mlirMemrefBody(outputs[0], storage);
+    if (memref.empty()) return "";
+    std::ostringstream dimensions;
+    std::ostringstream iterators;
+    for (int d = 0; d < outputs[0]->rankOf(); ++d) {
+      if (d != 0) {
+        dimensions << ", ";
+        iterators << ", ";
+      }
+      dimensions << "d" << d;
+      iterators << "\"parallel\"";
+    }
+    std::ostringstream empty;
+    empty << "module {\n  func.func @main(%output0: memref<" << memref
+          << ">) {\n    linalg.generic {nd4j.op_hash = "
+          << static_cast<long long>(slot.ident.opHash)
+          << " : i64, nd4j.indexed_accumulation = true"
+          << ", nd4j.empty_rows = true";
+    if (accumulator == "f32" || accumulator == "f64") {
+      empty << ", nd4j.accumulator_type = " << accumulator;
+    }
+    empty << ",\n                    indexing_maps = [affine_map<("
+          << dimensions.str() << ") -> (" << dimensions.str() << ")>],\n"
+          << "                    iterator_types = [" << iterators.str()
+          << "]}\n      outs(%output0 : memref<" << memref << ">) {\n"
+          << "      ^bb0(%outputValue0: " << storage << "):\n"
+          << "        linalg.yield %outputValue0 : " << storage << "\n"
+          << "    }\n    return\n  }\n}\n";
+    return empty.str();
   }
 
   auto isStructuralInput = [&](int index) {
@@ -4415,6 +5435,22 @@ static std::string emitStructuredScheduleMlir(
                 outputMemrefs[static_cast<size_t>(i)])) {
       return "";
     }
+  }
+  // scatter_nd casts its updates to the output's type before adding them (ADR 0128), so its accumulator follows
+  // the output alone: an f64 update into an f32 output must not widen the arithmetic.
+  bool updatesUnsigned = false;
+  bool outputUnsigned = false;
+  if (indexedAccumulation) {
+    std::string storage;
+    std::string accumulator;
+    if (!selectMlirScalarTypes(inputs[1]->dataType(), caps, storage,
+                               accumulator, updatesUnsigned) ||
+        !selectMlirScalarTypes(outputs[0]->dataType(), caps, storage,
+                               accumulator, outputUnsigned)) {
+      return "";
+    }
+    hasFloatingAccumulator = accumulator == "f32" || accumulator == "f64";
+    requiresF64Accumulator = accumulator == "f64";
   }
 
   const bool appendAdditionalDestinations =
@@ -4518,7 +5554,9 @@ static std::string emitStructuredScheduleMlir(
        << ", nd4j.index_depth = "
        << inputs[0]->sizeAt(inputs[0]->rankOf() - 1) << " : i64"
        << ", nd4j.prefix_rank = " << (inputs[0]->rankOf() - 1)
-       << " : i64";
+       << " : i64"
+       << ", nd4j.update_unsigned = " << (updatesUnsigned ? "true" : "false")
+       << ", nd4j.output_unsigned = " << (outputUnsigned ? "true" : "false");
   } else {
     ss << ", nd4j.indexed_tad_movement = true";
     switch (emitter->recipe) {
@@ -4618,6 +5656,10 @@ static std::string emitVulkanOp(const NativeSlot& slot,
     return emitContractMovementMlir(
         slot, inputs, numIn, outputs, numOut, caps);
   }
+  if constexpr (Policy::indexedSliceUpdate) {
+    return emitIndexedSliceUpdateMlir(
+        slot, inputs, numIn, outputs, numOut, caps);
+  }
   if constexpr (Policy::batchedMatrixList ||
                 Policy::indexedAccumulation ||
                 Policy::indexedTadMovement) {
@@ -4630,9 +5672,11 @@ static std::string emitVulkanOp(const NativeSlot& slot,
   bool isUnsigned = false;
   const auto* scalarEmitter =
       emitterForSlot(slot);
+  // A structural or ignored primary input is no payload: the output's type is the kernel's scalar type.
   const bool structuralPrimaryInput =
       scalarEmitter != nullptr &&
-      vulkanInputIsStructuralIndex(*scalarEmitter, 0);
+      (vulkanInputIsStructuralIndex(*scalarEmitter, 0) ||
+       inputIsUnbound(*scalarEmitter, inputs, numIn, 0));
   NDArray* scalarTypeDonor =
       numIn > 0 && inputs != nullptr && !structuralPrimaryInput
           ? inputs[0]
@@ -5101,6 +6145,16 @@ static std::string emitVulkanOp(const NativeSlot& slot,
       // convert their i1/i32 result to the byte-addressed BOOL output ABI.
       cAcc = aAcc;
     }
+    // The CPU and CUDA backends evaluate the incomplete gamma functions in double whatever the storage type
+    // (sd::math igamma_detail). In float, Q = 1 - P cancels for a small shape a (Q(1e-7, 1e-3) came out 1.6% off):
+    // compute in f64 where the device has it. igamma and igammac are plain broadcastable binary descriptors, so
+    // this is where their kernel's compute type is chosen.
+    if (emitter != nullptr &&
+        (emitter->recipe == VulkanKernelRecipe::IGAMMA ||
+         emitter->recipe == VulkanKernelRecipe::IGAMMAC) &&
+        caps.fp64) {
+      cAcc = "f64";
+    }
     const std::string aType = mlirMemrefBody(inputs[0], aTs);
     const std::string bType = mlirMemrefBody(inputs[1], bTs);
     const std::string cType = mlirMemrefBody(outputs[0], cTs);
@@ -5164,14 +6218,29 @@ static std::string emitVulkanOp(const NativeSlot& slot,
       return text.str();
     };
     const std::string dims = dimList();
+    std::vector<sd::LongType> legacyMapping;
+    if (isLegacyBroadcast(slot)) {
+      if (!legacyBroadcastDimensions(slot, inputs[0], inputs[1], outputs[0], legacyMapping)) return "";
+      semanticAttributes << ", nd4j.broadcast_operand = "
+                         << (isInverseLegacyBroadcast(slot) ? 0 : 1)
+                         << " : i64, nd4j.broadcast_dimensions = array<i64";
+      for (size_t d = 0; d < legacyMapping.size(); ++d) {
+        semanticAttributes << (d == 0 ? ": " : ", ") << legacyMapping[d];
+      }
+      semanticAttributes << ">";
+    }
     auto broadcastMap = [&](NDArray* input) {
       std::ostringstream results;
       const int offset = rank - input->rankOf();
       for (int d = 0; d < input->rankOf(); ++d) {
         if (d != 0) results << ", ";
-        results << (input->sizeAt(d) == 1
+        const sd::LongType outputDimension =
+            isLegacyBroadcast(slot) &&
+                    input == inputs[isInverseLegacyBroadcast(slot) ? 0 : 1]
+                ? legacyMapping[d] : offset + d;
+        results << (input->sizeAt(d) == 1 || outputDimension < 0
                         ? "0"
-                        : "d" + std::to_string(offset + d));
+                        : "d" + std::to_string(outputDimension));
       }
       return "affine_map<(" + dims + ") -> (" + results.str() + ")>";
     };
@@ -5234,6 +6303,11 @@ static std::string emitVulkanOp(const NativeSlot& slot,
       } else {
         return "";
       }
+    }
+    // The rational Gamma and the series of sd::math::sd_lgamma run in double on the host whatever the storage type:
+    // compute in f64 where the device has it (and in the storage type's accumulator otherwise).
+    if (emitter->recipe == VulkanKernelRecipe::LGAMMA && caps.fp64) {
+      unaryAccTs = "f64";
     }
     const std::string xType = mlirMemrefBody(inputs[0], ts);
     const std::string yType = mlirMemrefBody(outputs[0], yTs);
@@ -5309,7 +6383,17 @@ static std::string emitVulkanOp(const NativeSlot& slot,
 
     double scalar0 = 0.0;
     double scalar1 = 0.0;
+    const bool conditionPresent =
+        emitter->recipe == VulkanKernelRecipe::MATCH_CONDITION_UNARY &&
+        slot.args.numTArgs == 3;
+    const int conditionMode = conditionPresent ? static_cast<int>(slot.args.tArgs[2]) : 0;
     switch (emitter->recipe) {
+      case VulkanKernelRecipe::MATCH_CONDITION_UNARY:
+        if (conditionPresent) {
+          scalar0 = slot.args.tArgs[0];
+          scalar1 = slot.args.tArgs[1];
+        }
+        break;
       case VulkanKernelRecipe::LEAKY_RELU:
         scalar0 = slot.args.numTArgs == 1 ? slot.args.tArgs[0] : 0.01;
         break;
@@ -5359,10 +6443,14 @@ static std::string emitVulkanOp(const NativeSlot& slot,
        << ", nd4j.unary = true, nd4j.scalar0 = "
        << std::scientific << std::setprecision(std::numeric_limits<double>::max_digits10)
        << scalar0 << " : f64, nd4j.scalar1 = " << scalar1
-       << " : f64, nd4j.input0_unsigned = "
+       << " : f64, nd4j.condition_mode = " << conditionMode
+       << " : i64, nd4j.condition_present = " << (conditionPresent ? "true" : "false")
+       << ", nd4j.input0_unsigned = "
        << (isUnsigned ? "true" : "false")
        << ", nd4j.output_unsigned = "
-       << (outputUnsigned ? "true" : "false") << ",\n"
+       << (outputUnsigned ? "true" : "false")
+       << ", nd4j.output_bool = "
+       << (DataTypeUtils::isB(outputs[0]->dataType()) ? "true" : "false") << ",\n"
        << "                    indexing_maps = [" << affineId << ", " << affineId << "],\n"
        << "                    iterator_types = [" << iterTypes << "]}\n"
        << "      ins(%X : memref<" << xType << ">)\n"
@@ -5376,10 +6464,29 @@ static std::string emitVulkanOp(const NativeSlot& slot,
     return ss.str();
   }
 
-  // ── softmax ───────────────────────────────────────────────────────────────
+  // ── softmax / log_softmax (any rank, any axis) ────────────────────────────
+  // The shell carries the axis (nd4j.axis, normalized); SoftmaxToSpirv gives each row of the reduced shape its own
+  // invocation. Every loop dimension is parallel in the shell: the lowering, not the iterator types, owns the
+  // reduction along the axis.
   if constexpr (Policy::softmax) {
-    sd::LongType rows = inputs[0]->sizeAt(0);
-    sd::LongType dim  = inputs[0]->sizeAt(1);
+    int64_t axis = inputs[0]->rankOf() - 1;
+    if (slot.args.numIArgs == 1 &&
+        !normalizeAxis(slot.args.iArgs[0], inputs[0]->rankOf(), axis)) {
+      return "";
+    }
+    const int rank = inputs[0]->rankOf();
+    std::ostringstream dimensions;
+    std::ostringstream iterators;
+    for (int d = 0; d < rank; ++d) {
+      if (d != 0) {
+        dimensions << ", ";
+        iterators << ", ";
+      }
+      dimensions << "d" << d;
+      iterators << "\"parallel\"";
+    }
+    const std::string identityMap =
+        "affine_map<(" + dimensions.str() + ") -> (" + dimensions.str() + ")>";
     const std::string xType = mlirMemrefBody(inputs[0], ts);
     const std::string yType = mlirMemrefBody(outputs[0], ts);
 
@@ -5387,10 +6494,11 @@ static std::string emitVulkanOp(const NativeSlot& slot,
        << "  func.func @main(%X: memref<" << xType << ">, "
        <<                  "%Y: memref<" << yType << ">) {\n"
        << "    linalg.generic {" << "nd4j.op_hash = " << static_cast<long long>(slot.ident.opHash)
-       << " : i64, nd4j.accumulator_type = " << accTs << ",\n"
-       << "                    indexing_maps = [affine_map<(d0, d1) -> (d0, d1)>,\n"
-       << "                                     affine_map<(d0, d1) -> (d0, d1)>],\n"
-       << "                    iterator_types = [\"parallel\", \"reduction\"]}\n"
+       << " : i64, nd4j.accumulator_type = " << accTs
+       << ", nd4j.axis = " << axis << " : i64,\n"
+       << "                    indexing_maps = [" << identityMap << ",\n"
+       << "                                     " << identityMap << "],\n"
+       << "                    iterator_types = [" << iterators.str() << "]}\n"
        << "      ins(%X : memref<" << xType << ">)\n"
        << "      outs(%Y : memref<" << yType << ">) {\n"
        << "      ^bb0(%xv: " << ts << ", %yv: " << ts << "):\n"
@@ -5502,13 +6610,37 @@ static std::string emitVulkanOp(const NativeSlot& slot,
     return ss.str();
   }
 
-  // ── gather / embedding_lookup (axis-0 rank-N table, vector indices) ─────
+  // ── gather / embedding_lookup (any axis, indices of any rank) ───────────
+  // The carrier shell only fixes the ABI and the nd4j.* contract GatherToSpirv reads (the axis, the indices'
+  // signedness, or with the integer-argument form the frozen indices); the table and indices take inert zero
+  // maps so that the shapes of a gather (output = pre + indices + post) need no affine relation.
   if constexpr (Policy::gather) {
-    std::string its;
-    if (!selectMlirIndexType(inputs[1]->dataType(), its)) return "";
+    const auto* emitter = emitterForSlot(slot);
+    GatherLayout layout;
+    if (emitter == nullptr ||
+        !gatherLayoutForSlot(*emitter, slot, inputs, numIn, layout)) {
+      return "";
+    }
     const std::string& fty = ts;
+    std::string outputTs;
+    std::string outputAccTs;
+    bool outputUnsigned = false;
+    if (!selectMlirScalarTypes(outputs[0]->dataType(), caps, outputTs,
+                               outputAccTs, outputUnsigned) ||
+        outputTs != fty || outputUnsigned != isUnsigned) {
+      return "";
+    }
+    std::string its;
+    std::string indexAccumulator;
+    bool indexUnsigned = false;
+    if (layout.indicesArray &&
+        !selectMlirScalarTypes(inputs[1]->dataType(), caps, its,
+                               indexAccumulator, indexUnsigned)) {
+      return "";
+    }
     const std::string tableType = mlirMemrefBody(inputs[0], fty);
-    const std::string indicesType = mlirMemrefBody(inputs[1], its);
+    const std::string indicesType =
+        layout.indicesArray ? mlirMemrefBody(inputs[1], its) : std::string();
     const std::string outputType = mlirMemrefBody(outputs[0], fty);
 
     std::ostringstream dimensions;
@@ -5522,34 +6654,55 @@ static std::string emitVulkanOp(const NativeSlot& slot,
       iterators << "\"parallel\"";
     }
     const std::string dims = dimensions.str();
-    std::ostringstream tableDimensions;
-    for (int d = 0; d < inputs[0]->rankOf(); ++d) {
-      if (d != 0) tableDimensions << ", ";
-      tableDimensions << (d == 0 ? "0" : "d" + std::to_string(d));
-    }
-    const std::string tableMap =
-        "affine_map<(" + dims + ") -> (" + tableDimensions.str() + ")>";
-    const std::string indicesMap =
-        "affine_map<(" + dims + ") -> (d0)>";
+    auto zeroMap = [&](int rank) {
+      std::ostringstream map;
+      map << "affine_map<(" << dims << ") -> (";
+      for (int d = 0; d < rank; ++d) {
+        if (d != 0) map << ", ";
+        map << "0";
+      }
+      map << ")>";
+      return map.str();
+    };
     const std::string outputMap =
         "affine_map<(" + dims + ") -> (" + dims + ")>";
 
     ss << "module {\n"
        << "  func.func @main("
-       <<   "%table: memref<" << tableType << ">, "
-       <<   "%indices: memref<" << indicesType << ">, "
-       <<   "%out: memref<" << outputType << ">) {\n"
-       << "    linalg.generic {" << "nd4j.op_hash = " << static_cast<long long>(slot.ident.opHash) << " : i64, nd4j.axis = 0 : i64,\n"
-       << "                    nd4j.index_unsigned = "
-       << (inputs[1]->dataType() == DataType::UINT32 ? "true" : "false")
-       << ",\n                    indexing_maps = [" << tableMap
-       << ", " << indicesMap << ", " << outputMap << "],\n"
+       <<   "%table: memref<" << tableType << ">, ";
+    if (layout.indicesArray) {
+      ss << "%indices: memref<" << indicesType << ">, ";
+    }
+    ss << "%out: memref<" << outputType << ">) {\n"
+       << "    linalg.generic {" << "nd4j.op_hash = " << static_cast<long long>(slot.ident.opHash) << " : i64, nd4j.axis = "
+       << layout.axis << " : i64,\n";
+    if (layout.indicesArray) {
+      ss << "                    nd4j.index_unsigned = "
+         << (indexUnsigned ? "true" : "false") << ",\n";
+    } else {
+      ss << "                    nd4j.gather_squeezed = "
+         << (layout.squeezed ? "true" : "false")
+         << ", nd4j.gather_indices = array<i64: ";
+      for (size_t i = 0; i < layout.argumentIndices.size(); ++i) {
+        if (i != 0) ss << ", ";
+        ss << layout.argumentIndices[i];
+      }
+      ss << ">,\n";
+    }
+    ss << "                    indexing_maps = [" << zeroMap(inputs[0]->rankOf());
+    if (layout.indicesArray) ss << ", " << zeroMap(inputs[1]->rankOf());
+    ss << ", " << outputMap << "],\n"
        << "                    iterator_types = [" << iterators.str()
        << "]}\n"
-       << "      ins(%table, %indices : memref<" << tableType << ">, "
-       <<                              "memref<" << indicesType << ">)\n"
+       << "      ins(%table";
+    if (layout.indicesArray) ss << ", %indices";
+    ss << " : memref<" << tableType << ">";
+    if (layout.indicesArray) ss << ", memref<" << indicesType << ">";
+    ss << ")\n"
        << "      outs(%out : memref<" << outputType << ">) {\n"
-       << "      ^bb0(%tv: " << fty << ", %iv: " << its << ", %ov: " << fty << "):\n"
+       << "      ^bb0(%tv: " << fty << ", ";
+    if (layout.indicesArray) ss << "%iv: " << its << ", ";
+    ss << "%ov: " << fty << "):\n"
        << "        linalg.yield %ov : " << fty << "\n"
        << "    }\n"
        << "    return\n"
@@ -5837,15 +6990,19 @@ static std::string emitVulkanOp(const NativeSlot& slot,
             *emitter, VULKAN_EMITTER_TRAIT_RANDOM_STATE)) {
       const bool uniformRandom =
           emitter->recipe == VulkanKernelRecipe::UNIFORM_RANDOM;
-      if ((uniformRandom && (numIn != 0 || slot.args.numTArgs != 2)) ||
-          (!uniformRandom && numIn > 8)) {
+      // randomuniform's shape input is ignored (the frozen output MemRef fixes the shape): the kernel's signature
+      // carries the generator state and the output only, as for the legacy UniformDistribution.
+      const int kernelInputs =
+          numIn == 1 && vulkanInputIsIgnored(*emitter, 0) ? 0 : numIn;
+      if ((uniformRandom && (kernelInputs != 0 || slot.args.numTArgs != 2)) ||
+          (!uniformRandom && kernelInputs > 8)) {
         return "";
       }
       const std::string stateMap =
           "affine_map<(" + dims + ") -> (0)>";
       std::vector<std::string> inputTypes;
-      inputTypes.reserve(static_cast<size_t>(numIn));
-      for (int i = 0; i < numIn; ++i) {
+      inputTypes.reserve(static_cast<size_t>(kernelInputs));
+      for (int i = 0; i < kernelInputs; ++i) {
         std::string inputTs;
         std::string inputAccTs;
         bool inputUnsigned = false;
@@ -5855,10 +7012,12 @@ static std::string emitVulkanOp(const NativeSlot& slot,
         }
         inputTypes.push_back(inputTs);
       }
+      // emitterIdentityAttributes already names the legacy op number: a second
+      // nd4j.legacy_op_num made the module a duplicate-key parse error.
       std::ostringstream attributes;
       attributes << ", nd4j.accumulator_type = " << outputAccTs
-                 << ", nd4j.legacy_op_num = " << slot.legacy.legacyOpNum
-                 << " : i64, nd4j.random_input_count = " << numIn << " : i64";
+                 << ", nd4j.random_input_count = " << kernelInputs
+                 << " : i64";
       for (int i = 0; i < slot.args.numTArgs; ++i) {
         attributes << ", nd4j.random_arg" << i << " = "
                    << mlirFloatLiteral(slot.args.tArgs[i]) << " : "
@@ -5874,7 +7033,7 @@ static std::string emitVulkanOp(const NativeSlot& slot,
       }
       ss << "module {\n  func.func @main(%rng: memref<"
          << kVulkanRandomStateWordCount << "xi32>";
-      for (int i = 0; i < numIn; ++i) {
+      for (int i = 0; i < kernelInputs; ++i) {
         ss << ", %in" << i << ": memref<"
            << mlirMemrefBody(inputs[i], inputTypes[static_cast<size_t>(i)])
            << ">";
@@ -5884,7 +7043,7 @@ static std::string emitVulkanOp(const NativeSlot& slot,
          << "    linalg.generic {" << emitterIdentityAttributes(slot)
          << attributes.str() << ",\n"
          << "                    indexing_maps = [" << stateMap;
-      for (int i = 0; i < numIn; ++i) {
+      for (int i = 0; i < kernelInputs; ++i) {
         const bool identityInput =
             inputs[i]->rankOf() == outputs[0]->rankOf() &&
             inputs[i]->isSameShape(outputs[0]);
@@ -5900,18 +7059,24 @@ static std::string emitVulkanOp(const NativeSlot& slot,
       ss << ", " << identity
          << "],\n                    iterator_types = ["
          << iterators.str() << "]}\n"
-         << "      ins(%rng : memref<" << kVulkanRandomStateWordCount
-         << "xi32>)";
-      for (int i = 0; i < numIn; ++i) {
-        ss << ", %in" << i << " : memref<"
+         << "      ins(%rng";
+      // linalg.generic takes every operand before the colon and every type after it: ins(%a, %b : A, B)
+      for (int i = 0; i < kernelInputs; ++i) {
+        ss << ", %in" << i;
+      }
+      ss << " : memref<" << kVulkanRandomStateWordCount << "xi32>";
+      for (int i = 0; i < kernelInputs; ++i) {
+        ss << ", memref<"
            << mlirMemrefBody(inputs[i], inputTypes[static_cast<size_t>(i)])
            << ">";
       }
+      ss << ")";
       ss << "\n      outs(%out : memref<"
          << mlirMemrefBody(outputs[0], outputTs) << ">) {\n"
          << "      ^bb0(%rngWord: i32";
-      for (int i = 0; i < numIn; ++i) {
-        ss << ", %in" << i << ": " << inputTypes[static_cast<size_t>(i)];
+      // The block arguments live in the function's SSA namespace: they cannot reuse the names %in<i> of its arguments.
+      for (int i = 0; i < kernelInputs; ++i) {
+        ss << ", %inValue" << i << ": " << inputTypes[static_cast<size_t>(i)];
       }
       ss << ", %ov: " << outputTs << "):\n"
          << "        linalg.yield %ov : " << outputTs
@@ -6232,6 +7397,32 @@ static std::string emitVulkanOp(const NativeSlot& slot,
     maps.reserve(static_cast<size_t>(numIn + 1));
     std::ostringstream semanticAttributes;
     switch (emitter->recipe) {
+      case VulkanKernelRecipe::CROSS:
+        for (int i = 0; i < numIn; ++i)
+          maps.push_back(affineMap(identityResults(inputs[i]->rankOf())));
+        semanticAttributes << ", nd4j.accumulator_type = " << outputAccumulator;
+        break;
+      case VulkanKernelRecipe::CUMSUM: {
+        maps.push_back(affineMap(identityResults(inputs[0]->rankOf())));
+        std::set<sd::LongType> normalizedAxes;
+        for (int i = 2; i < slot.args.numIArgs; ++i) {
+          int64_t axis = -1;
+          if (!normalizeAxis(slot.args.iArgs[i], inputs[0]->rankOf(), axis)) return "";
+          normalizedAxes.insert(axis);
+        }
+        if (normalizedAxes.empty())
+          for (int d = 0; d < inputs[0]->rankOf(); ++d) normalizedAxes.insert(d);
+        const std::vector<sd::LongType> axes(normalizedAxes.begin(), normalizedAxes.end());
+        semanticAttributes << ", nd4j.scan_axes = " << integerArray(axes)
+                           << ", nd4j.scan_exclusive = " << (slot.args.iArgs[0] == 1 ? "true" : "false")
+                           << ", nd4j.scan_reverse = " << (slot.args.iArgs[1] == 1 ? "true" : "false")
+                           << ", nd4j.accumulator_type = " << outputAccumulator;
+        break;
+      }
+      case VulkanKernelRecipe::BROADCAST_DYNAMIC_SHAPE:
+        for (int i = 0; i < numIn; ++i)
+          maps.push_back(affineMap({"0"}));
+        break;
       case VulkanKernelRecipe::GATHER_ND: {
         const int inputRank = inputs[0]->rankOf();
         const int indicesRank = inputs[1]->rankOf();
@@ -6281,8 +7472,10 @@ static std::string emitVulkanOp(const NativeSlot& slot,
                            << integerArray(repetitions);
         break;
       }
-      case VulkanKernelRecipe::REVERSE: {
-        maps.push_back(affineMap(identityResults(inputs[0]->rankOf())));
+      case VulkanKernelRecipe::REVERSE:
+      case VulkanKernelRecipe::REVERSE_BP: {
+        for (int i = 0; i < numIn; ++i)
+          maps.push_back(affineMap(identityResults(inputs[i]->rankOf())));
         std::set<sd::LongType> normalizedAxes;
         for (int i = 0; i < slot.args.numIArgs; ++i) {
           int64_t axis = -1;
@@ -6293,8 +7486,11 @@ static std::string emitVulkanOp(const NativeSlot& slot,
         }
         std::vector<sd::LongType> axes(
             normalizedAxes.begin(), normalizedAxes.end());
+        const int payload = emitter->recipe == VulkanKernelRecipe::REVERSE_BP ? 1 : 0;
         semanticAttributes << ", nd4j.reverse_axes = "
-                           << integerArray(axes);
+                           << integerArray(axes)
+                           << ", nd4j.reverse_inplace = "
+                           << (inputs[payload]->dataBuffer() == outputs[0]->dataBuffer() ? "true" : "false");
         break;
       }
       case VulkanKernelRecipe::ROLL: {
@@ -6526,7 +7722,6 @@ static std::string emitVulkanOp(const NativeSlot& slot,
     if (!typeContractSelected) {
       return "";
     }
-
     std::vector<std::string> maps;
     std::vector<std::string> iterators;
     switch (emitter->recipe) {
@@ -7198,18 +8393,9 @@ static std::string emitVulkanOp(const NativeSlot& slot,
     const bool pNormReduction = hasVulkanEmitterTrait(
         *emitter, VULKAN_EMITTER_TRAIT_P_NORM);
     if (emitter->recipe == VulkanKernelRecipe::REDUCE3) {
-      if (numIn != 2 || inputs[1] == nullptr ||
-          !inputs[0]->isSameShape(inputs[1])) {
-        return "";
-      }
-      std::vector<int64_t> reduce3Axes;
-      bool reduce3KeepDims = false;
-      bool reduce3BiasCorrected = false;
-      if (!reductionForSlot(slot, inputs[0], *emitter, outputs, numOut,
-                            reduce3Axes, reduce3KeepDims,
-                            reduce3BiasCorrected)) {
-        return "";
-      }
+      Reduce3Geometry geometry;
+      if (numIn != 2 || !reduce3GeometryForSlot(
+              slot, inputs[0], inputs[1], outputs[0], geometry)) return "";
       std::string x0Ts;
       std::string x0AccTs;
       bool x0Unsigned = false;
@@ -7228,56 +8414,83 @@ static std::string emitVulkanOp(const NativeSlot& slot,
                                  reduce3OutputUnsigned)) {
         return "";
       }
-      std::string reduce3AccTs = accTs;
-      if (reduce3AccTs != "f64" && reduce3AccTs != "f32" &&
-          reduce3AccTs != "f16") {
-        reduce3AccTs = (x0AccTs == "f64" || x1AccTs == "f64" ||
-                        reduce3OutputAccTs == "f64")
-                           ? "f64"
-                           : "f32";
-      }
+      const std::string reduce3AccTs =
+          (x0AccTs == "f64" || x1AccTs == "f64" || reduce3OutputAccTs == "f64")
+              ? "f64" : "f32";
       auto buildReduce3Shape = [&](NDArray* array,
                                    const std::string& storageType) {
         return mlirMemrefBody(array, storageType);
       };
-      std::set<int64_t> reduce3Reduced(reduce3Axes.begin(),
-                                       reduce3Axes.end());
+      // Loop domain = logical output coordinates followed by X's TAD coordinates.
+      // All maps are static affine decompositions; each input keeps its own MemRef
+      // strides/offset and neither a reshape copy nor contiguous TAD assumption is needed.
+      const int outRank = outputs[0]->rankOf();
+      const int loopRank = outRank + static_cast<int>(geometry.xAxes.size());
       std::ostringstream reduce3Dims;
       std::ostringstream reduce3Iterators;
-      for (int d = 0; d < rank; ++d) {
-        if (d != 0) {
-          reduce3Dims << ", ";
-          reduce3Iterators << ", ";
-        }
+      for (int d = 0; d < loopRank; ++d) {
+        if (d != 0) { reduce3Dims << ", "; reduce3Iterators << ", "; }
         reduce3Dims << "d" << d;
-        reduce3Iterators << (reduce3Reduced.count(d)
-                                 ? "\"reduction\""
-                                 : "\"parallel\"");
+        reduce3Iterators << (d < outRank ? "\"parallel\"" : "\"reduction\"");
       }
       const std::string reduce3DimList = reduce3Dims.str();
-      const std::string reduce3InputMap =
-          "affine_map<(" + reduce3DimList + ") -> (" + reduce3DimList + ")>";
+      auto linearExpression = [&](NDArray* array, const std::vector<int64_t>& axes, int start) {
+        std::string expression = "0";
+        for (size_t i = 0; i < axes.size(); ++i)
+          expression = "(" + expression + " * " + std::to_string(array->sizeAt(axes[i])) +
+                       " + d" + std::to_string(start + i) + ")";
+        return expression;
+      };
+      std::vector<int64_t> outputAxes;
+      for (int d = 0; d < outRank; ++d) outputAxes.push_back(d);
+      const std::string outputFlat = linearExpression(outputs[0], outputAxes, 0);
+      const std::string reducedFlat = linearExpression(inputs[0], geometry.xAxes, outRank);
+      auto inputMap = [&](NDArray* input, const std::vector<int64_t>& tadAxes,
+                          sd::LongType tadCount, bool first) {
+        std::vector<int64_t> outerAxes;
+        for (int d = 0; d < input->rankOf(); ++d)
+          if (!std::binary_search(tadAxes.begin(), tadAxes.end(), d)) outerAxes.push_back(d);
+        std::string tadFlat = tadCount == 1 ? "0" : outputFlat;
+        if (geometry.allPairs && tadCount != 1)
+          tadFlat = "(" + outputFlat + (first ? " floordiv " : " mod ") +
+                    std::to_string(geometry.yTads) + ")";
+        std::ostringstream map;
+        map << "affine_map<(" << reduce3DimList << ") -> (";
+        for (int d = 0; d < input->rankOf(); ++d) {
+          if (d != 0) map << ", ";
+          const bool reduced = std::binary_search(tadAxes.begin(), tadAxes.end(), d);
+          const auto& axes = reduced ? tadAxes : outerAxes;
+          if (first && reduced) {
+            map << "d" << outRank + std::distance(tadAxes.begin(),
+                                                 std::lower_bound(tadAxes.begin(), tadAxes.end(), d));
+          } else if (input->sizeAt(d) == 1) {
+            map << "0";
+          } else {
+            sd::LongType stride = 1;
+            for (int64_t axis : axes) if (axis > d) stride *= input->sizeAt(axis);
+            map << "((" << (reduced ? reducedFlat : tadFlat) << " floordiv " << stride
+                << ") mod " << input->sizeAt(d) << ")";
+          }
+        }
+        map << ")>";
+        return map.str();
+      };
+      const std::string reduce3InputMap = inputMap(inputs[0], geometry.xAxes, geometry.xTads, true);
+      const std::string reduce3SecondInputMap = inputMap(inputs[1], geometry.yAxes, geometry.yTads, false);
       std::ostringstream reduce3OutputMap;
       reduce3OutputMap << "affine_map<(" << reduce3DimList << ") -> (";
-      bool reduce3First = true;
-      for (int d = 0; d < rank; ++d) {
-        if (reduce3Reduced.count(d) == 0 || reduce3KeepDims) {
-          if (!reduce3First) reduce3OutputMap << ", ";
-          reduce3OutputMap << (reduce3Reduced.count(d) == 0
-                                   ? "d" + std::to_string(d)
-                                   : "0");
-          reduce3First = false;
-        }
+      for (int d = 0; d < outRank; ++d) {
+        if (d != 0) reduce3OutputMap << ", ";
+        reduce3OutputMap << "d" << d;
       }
       reduce3OutputMap << ")>";
-      std::ostringstream reduce3AxesText;
-      reduce3AxesText << "array<i64";
-      if (!reduce3Axes.empty()) reduce3AxesText << ": ";
-      for (size_t i = 0; i < reduce3Axes.size(); ++i) {
-        if (i != 0) reduce3AxesText << ", ";
-        reduce3AxesText << reduce3Axes[i];
-      }
-      reduce3AxesText << ">";
+      auto axesText = [](const std::vector<int64_t>& axes) {
+        std::ostringstream text;
+        text << "array<i64";
+        for (size_t i = 0; i < axes.size(); ++i) text << (i == 0 ? ": " : ", ") << axes[i];
+        text << ">";
+        return text.str();
+      };
       ss << "module {\n"
          << "  func.func @main(%X0: memref<"
          << buildReduce3Shape(inputs[0], x0Ts) << ">, %X1: memref<"
@@ -7293,25 +8506,26 @@ static std::string emitVulkanOp(const NativeSlot& slot,
          << (x1Unsigned ? "true" : "false") << ",\n"
          << "                    nd4j.output_unsigned = "
          << (reduce3OutputUnsigned ? "true" : "false") << ",\n"
-         << "                    nd4j.reduce_axes = " << reduce3AxesText.str()
-         << ",\n"
-         << "                    nd4j.keep_dims = "
-         << (reduce3KeepDims ? "true" : "false") << ",\n"
-         << "                    nd4j.bias_corrected = "
-         << (reduce3BiasCorrected ? "true" : "false") << ",\n"
+         << "                    nd4j.reduce_axes = " << axesText(geometry.xAxes) << ",\n"
+         << "                    nd4j.reduce3_y_axes = " << axesText(geometry.yAxes) << ",\n"
+         << "                    nd4j.reduce3_all_pairs = " << (geometry.allPairs ? "true" : "false") << ",\n"
+         << "                    nd4j.reduce3_x_tads = " << geometry.xTads << " : i64,\n"
+         << "                    nd4j.reduce3_y_tads = " << geometry.yTads << " : i64,\n"
+         << "                    nd4j.keep_dims = false,\n"
          << (slot.legacy.legacyOpNum == 4
                  ? (std::string("                    nd4j.scalar0 = ") +
-                    std::to_string(slot.args.numTArgs > 0
-                                       ? slot.args.tArgs[0]
-                                       : 1e-5) +
+                    ([&]() { std::ostringstream value;
+                      value << std::scientific << std::setprecision(std::numeric_limits<double>::max_digits10)
+                            << (slot.args.numTArgs > 0 ? slot.args.tArgs[0] : 1e-5);
+                      return value.str(); })() +
                     " : f64,\n")
                  : std::string())
          << "                    indexing_maps = [" << reduce3InputMap << ", "
-         << reduce3InputMap << ", " << reduce3OutputMap.str() << "],\n"
+         << reduce3SecondInputMap << ", " << reduce3OutputMap.str() << "],\n"
          << "                    iterator_types = [" << reduce3Iterators.str()
          << "]}\n"
-         << "      ins(%X0 : memref<" << buildReduce3Shape(inputs[0], x0Ts)
-         << ">, %X1 : memref<" << buildReduce3Shape(inputs[1], x1Ts)
+         << "      ins(%X0, %X1 : memref<" << buildReduce3Shape(inputs[0], x0Ts)
+         << ">, memref<" << buildReduce3Shape(inputs[1], x1Ts)
          << ">)\n"
          << "      outs(%Y : memref<"
          << buildReduce3Shape(outputs[0], reduce3OutputTs) << ">) {\n"
@@ -7433,6 +8647,98 @@ static std::string emitVulkanOp(const NativeSlot& slot,
   return "";  // Not handled — caller treats empty string as failure.
 }
 
+// The carrier is inert: secondary destinations are linalg inputs so different
+// ranks cannot impose an invalid affine relationship. The device lowering owns
+// every write; ABI binding order remains original inputs followed by outputs.
+static std::string emitTensorGradientMlir(const NativeSlot& slot,
+    NDArray** inputs, int numIn, NDArray** outputs, int numOut,
+    const VulkanDeviceCaps& caps) {
+  std::vector<std::string> types, memrefs, names;
+  bool wide = false;
+  for (int i = 0; i < numIn + numOut; ++i) {
+    NDArray* array = i < numIn ? inputs[i] : outputs[i - numIn];
+    std::string storage, accumulator;
+    bool unsignedType = false;
+    if (!selectMlirScalarTypes(array->dataType(), caps, storage, accumulator, unsignedType)) return "";
+    wide |= accumulator == "f64";
+    types.push_back(storage);
+    memrefs.push_back(mlirMemrefBody(array, storage));
+    names.push_back(i < numIn ? "%in" + std::to_string(i) : "%out" + std::to_string(i - numIn));
+  }
+  std::ostringstream dims, iterators;
+  for (int d = 0; d < outputs[0]->rankOf(); ++d) {
+    if (d != 0) { dims << ", "; iterators << ", "; }
+    dims << "d" << d;
+    iterators << "\"parallel\"";
+  }
+  auto map = [&](int rank, bool identity) {
+    std::ostringstream text;
+    text << "affine_map<(" << dims.str() << ") -> (";
+    for (int d = 0; d < rank; ++d) {
+      if (d) text << ", ";
+      if (identity) text << "d" << d; else text << "0";
+    }
+    text << ")>";
+    return text.str();
+  };
+  std::vector<int> sources;
+  for (int i = 0; i < numIn; ++i) sources.push_back(i);
+  for (int i = 1; i < numOut; ++i) sources.push_back(numIn + i);
+  std::ostringstream ss;
+  ss << "module {\n  func.func @main(";
+  for (int i = 0; i < numIn + numOut; ++i) {
+    if (i) ss << ", ";
+    ss << names[i] << ": memref<" << memrefs[i] << ">";
+  }
+  ss << ") {\n    linalg.generic {nd4j.op_hash = " << static_cast<long long>(slot.ident.opHash)
+     << " : i64, nd4j.accumulator_type = " << (wide ? "f64" : "f32")
+     << ", nd4j.gradient_inputs = " << numIn << " : i64";
+  const auto* emitter = emitterForSlot(slot);
+  if (emitter->recipe == VulkanKernelRecipe::BIAS_ADD_BP) {
+    ss << ", nd4j.channel_axis = "
+       << (slot.args.numBArgs == 1 && slot.args.bArgs[0] ? 1 : inputs[0]->rankOf() - 1) << " : i64";
+  } else if (emitter->recipe == VulkanKernelRecipe::CUMSUM_BP) {
+    ss << ", nd4j.scan_axes = array<i64";
+    if (numIn == 2 && slot.args.numIArgs > 2) {
+      ss << ": ";
+      for (int i = 2; i < slot.args.numIArgs; ++i) {
+        int64_t axis = -1;
+        if (!normalizeAxis(slot.args.iArgs[i], inputs[0]->rankOf(), axis)) return "";
+        if (i != 2) ss << ", ";
+        ss << axis;
+      }
+    }
+    ss << ">, nd4j.scan_exclusive = " << (slot.args.iArgs[0] == 1 ? "true" : "false")
+       << ", nd4j.scan_reverse = " << (slot.args.iArgs[1] == 1 ? "false" : "true");
+  }
+  ss << ", indexing_maps = [";
+  for (size_t i = 0; i < sources.size(); ++i) {
+    if (i) ss << ", ";
+    const int index = sources[i];
+    NDArray* array = index < numIn ? inputs[index] : outputs[index - numIn];
+    ss << map(array->rankOf(), false);
+  }
+  ss << ", " << map(outputs[0]->rankOf(), true)
+     << "], iterator_types = [" << iterators.str() << "]}\n      ins(";
+  for (size_t i = 0; i < sources.size(); ++i) {
+    if (i) ss << ", ";
+    ss << names[sources[i]];
+  }
+  ss << " : ";
+  for (size_t i = 0; i < sources.size(); ++i) {
+    if (i) ss << ", ";
+    ss << "memref<" << memrefs[sources[i]] << ">";
+  }
+  ss << ") outs(" << names[numIn] << " : memref<" << memrefs[numIn] << ">) {\n      ^bb0(";
+  for (size_t i = 0; i < sources.size(); ++i) {
+    if (i) ss << ", ";
+    ss << "%v" << i << ": " << types[sources[i]];
+  }
+  ss << ", %result: " << types[numIn] << "):\n        linalg.yield %result : "
+     << types[numIn] << "\n    }\n    return\n  }\n}\n";
+  return ss.str();
+}
+
 static std::string emitCatalogOp(const NativeSlot& slot,
                                  NDArray** inputs, int numIn,
                                  NDArray** outputs, int numOut,
@@ -7446,16 +8752,23 @@ static std::string emitCatalogOp(const NativeSlot& slot,
   }
 
   switch (emitter->loweringContract) {
+    case VulkanLoweringContract::TENSOR_GRADIENT:
+      return emitTensorGradientMlir(slot, inputs, numIn, outputs, numOut, caps);
     case VulkanLoweringContract::SOFTMAX:
       return emitVulkanOp<SoftmaxPolicy>(
           slot, inputs, numIn, outputs, numOut, caps);
     case VulkanLoweringContract::LAYER_NORM:
       return emitVulkanOp<LayerNormPolicy>(
           slot, inputs, numIn, outputs, numOut, caps);
+    case VulkanLoweringContract::INDEXED_SLICE_UPDATE:
+      return emitVulkanOp<IndexedSliceUpdatePolicy>(
+          slot, inputs, numIn, outputs, numOut, caps);
     case VulkanLoweringContract::FUSED_LLM:
     case VulkanLoweringContract::DEFAULT:
     case VulkanLoweringContract::LINEAR_COPY:
     case VulkanLoweringContract::INDEXED_TAD_MOVEMENT:
+    case VulkanLoweringContract::TRIANGULAR_SOLVE:
+    case VulkanLoweringContract::INDEXED_TENSOR:
       break;
   }
 
@@ -7696,7 +9009,12 @@ bool VulkanSegmentRecorder::recordDispatch(
   for (size_t i = 0; i < operands.size(); ++i) {
     bufInfos[i].buffer = operands[i]->buffer;
     bufInfos[i].offset = 0;
-    bufInfos[i].range = operands[i]->bytes;
+    // The kernels address byte-typed arrays (BOOL, INT8, UINT8) as 32-bit words, and VulkanMemoryPool pads every
+    // VkBuffer to a multiple of four bytes, so the descriptor spans whole words. With the array's exact byte length
+    // the last partial word lies outside the descriptor's range, and a device that bounds-checks storage buffers
+    // (robustBufferAccess, llvmpipe) reads 0 from it and drops the writes and atomics to it: the last one to three
+    // elements of a BOOL result, such as the last two of the 42 comparisons of a 6 x 7 array, would be lost.
+    bufInfos[i].range = (operands[i]->bytes + 3u) & ~static_cast<VkDeviceSize>(3u);
 
     writes[i] = {};
     writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -7783,6 +9101,10 @@ bool VulkanSegmentRecorder::recordOp(const NativeSlot& slot,
     RandomStateBinding& stateBinding = randomStateBindings_.back();
     stateBinding.hostState = randomState;
     stateBinding.steps = outputs[0]->lengthOf();
+    if (emitter->seedIntegerArgument >= 0 &&
+        emitter->seedIntegerArgument < slot.args.numIArgs) {
+      stateBinding.seed = slot.args.iArgs[emitter->seedIntegerArgument];
+    }
 
     VulkanMemoryPool& pool = VulkanMemoryPool::getInstance();
     const VkDeviceSize stateBytes = sizeof(VulkanRandomStateWords);
@@ -7822,6 +9144,8 @@ bool VulkanSegmentRecorder::recordOp(const NativeSlot& slot,
   }
 
   for (int i = 0; i < numIn; ++i) {
+    // An unbound input is not part of the emitted signature: it has no descriptor.
+    if (inputIsUnbound(*emitter, inputs, numIn, i)) continue;
     OperandBinding* binding = findBinding(inputs[i]);
     if (binding == nullptr) {
       bindings_.emplace_back();
@@ -8013,6 +9337,8 @@ bool VulkanSegmentRecorder::prepareReplayInputs(VulkanExecutionStream* stream) {
     }
 
     auto staged = stagedStates.emplace(binding.hostState, *binding.hostState);
+    // A seeded op fixes the generator's states before it draws, as the native op does on every execution.
+    sd::ops::helpers::applySeedArgument(staged.first->second, binding.seed);
     VulkanRandomStateWords words = randomStateWords(staged.first->second);
     if (!pool.copyHostToDeviceAsync(binding.operand.specialToken, &words,
                                     sizeof(words), stream)) {
@@ -8041,6 +9367,7 @@ void VulkanSegmentRecorder::markReplayOutputs() {
   // successful-launch lifecycle and makes duplicate post-replay fixups harmless.
   for (auto& binding : randomStateBindings_) {
     if (binding.replayPending && binding.hostState != nullptr) {
+      sd::ops::helpers::applySeedArgument(*binding.hostState, binding.seed);
       binding.hostState->rewindH(static_cast<uint64_t>(binding.steps));
       binding.replayPending = false;
     }

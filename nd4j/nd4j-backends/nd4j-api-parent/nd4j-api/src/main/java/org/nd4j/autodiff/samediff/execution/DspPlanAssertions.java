@@ -322,6 +322,9 @@ public final class DspPlanAssertions {
     public static final int REPLAY_MODE_NONE = 0;
     public static final int REPLAY_MODE_MONOLITHIC = 1;
     public static final int REPLAY_MODE_COMPOSITE = 2;
+    public static final int REPLAY_MODE_SLOT_BY_SLOT = 3;
+    public static final int REPLAY_MODE_FROZEN_CONSTANT = 4;
+    public static final int REPLAY_MODE_DIRECT_COMPILED = 5;
 
     /**
      * Assert that a segment has the expected number of gap units in its
@@ -398,7 +401,7 @@ public final class DspPlanAssertions {
 
     /**
      * Assert the replay mode for a segment.
-     * @param expectedMode one of REPLAY_MODE_NONE, REPLAY_MODE_MONOLITHIC, REPLAY_MODE_COMPOSITE
+     * @param expectedMode one of the REPLAY_MODE_* dispatch codes
      */
     public static void assertSegmentReplayMode(SameDiff sd, int segmentIndex, int expectedMode) {
         assertSegmentReplayMode(sd, segmentIndex, expectedMode, null);
@@ -491,7 +494,7 @@ public final class DspPlanAssertions {
 
     /**
      * Get the replay mode for a segment (non-asserting query).
-     * @return one of REPLAY_MODE_NONE, REPLAY_MODE_MONOLITHIC, REPLAY_MODE_COMPOSITE
+     * @return one of the REPLAY_MODE_* dispatch codes, independent of lifecycle phase
      */
     public static int getSegmentReplayMode(SameDiff sd, int segmentIndex) {
         return getNativeOps().getPlanSegmentReplayMode(getPlanHandle(sd), segmentIndex);
@@ -509,6 +512,9 @@ public final class DspPlanAssertions {
             case REPLAY_MODE_NONE: return "NONE";
             case REPLAY_MODE_MONOLITHIC: return "MONOLITHIC";
             case REPLAY_MODE_COMPOSITE: return "COMPOSITE";
+            case REPLAY_MODE_SLOT_BY_SLOT: return "SLOT_BY_SLOT";
+            case REPLAY_MODE_FROZEN_CONSTANT: return "FROZEN_CONSTANT";
+            case REPLAY_MODE_DIRECT_COMPILED: return "DIRECT_COMPILED";
             default: return "UNKNOWN(" + mode + ")";
         }
     }
@@ -1428,7 +1434,8 @@ public final class DspPlanAssertions {
 
     /**
      * Assert no segment is executing in SLOT_BY_SLOT fallback mode.
-     * Checks that every segment has a replay mode &gt; 0 (i.e., not slot-by-slot).
+     * Requires a ready captured/direct artifact or frozen constant reuse.
+     * NONE, SLOT_BY_SLOT and unknown dispatch codes are rejected.
      */
     public static void assertNoSlotBySlotFallback(SameDiff sd) {
         assertNoSlotBySlotFallback(sd, null);
@@ -1442,7 +1449,9 @@ public final class DspPlanAssertions {
         var ops = getNativeOps();
         for (int i = 0; i < segCount; i++) {
             int replayMode = ops.getPlanSegmentReplayMode(handle, i);
-            if (replayMode == 0) {
+            if (replayMode != REPLAY_MODE_MONOLITHIC && replayMode != REPLAY_MODE_COMPOSITE
+                    && replayMode != REPLAY_MODE_FROZEN_CONSTANT
+                    && replayMode != REPLAY_MODE_DIRECT_COMPILED) {
                 fallbackSegs.add(i);
             }
         }

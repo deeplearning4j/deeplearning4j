@@ -21,20 +21,29 @@
 namespace sd {
 
 class LaunchContext;
+class NDArray;
+struct LegacyTensorArg;
 
 namespace graph {
 
 /**
  * Non-owning tensor ABI used by NativeOpExecutioner entry points.
  *
- * hostData/deviceData and both shape pointers remain owned by the caller.
- * Wrapping them for descriptor execution never transfers allocation ownership.
+ * Metadata operands preserve the borrowed original NDArray and its DataBuffer.
+ * Raw fields remain available for explicitly raw, allocation-base APIs only;
+ * they cannot represent NDArray view offsets or shared coherence state.
  */
 struct SD_LIB_EXPORT VulkanLegacyTensor {
   void* hostData = nullptr;
   void* deviceData = nullptr;
   const sd::LongType* hostShapeInfo = nullptr;
   const sd::LongType* deviceShapeInfo = nullptr;
+  const sd::NDArray* array = nullptr;
+  sd::LongType relativeElementOffset = 0;
+
+#ifndef __JAVACPP_HACK__
+  static VulkanLegacyTensor fromArg(const sd::LegacyTensorArg& tensor);
+#endif
 };
 
 /**
@@ -98,6 +107,11 @@ SD_LIB_EXPORT Status executeVulkanDescriptor(
     sd::LaunchContext* launchContext,
     const VulkanDescriptorInvocation& invocation,
     std::string* errorMessage = nullptr);
+
+/** Decode the fixed typed ABI of a known legacy operation; reject unknown payloads. */
+SD_LIB_EXPORT void appendVulkanLegacyExtraParameters(
+    VulkanLegacyInvocation& invocation, const void* extraParams,
+    const sd::LongType* inputShapeInfo);
 
 /** Execute or throw a diagnostic containing the exact typed legacy identity. */
 SD_LIB_EXPORT void requireVulkanLegacyExecution(

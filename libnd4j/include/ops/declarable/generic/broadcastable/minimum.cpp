@@ -71,7 +71,8 @@ DECLARE_TYPES(minimum) {
 }
 
 DECLARE_TYPES(minimum_bp) {
-  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS})
+      ->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 CUSTOM_OP_IMPL(minimum_bp, 3, 2, false, 0, 0) {

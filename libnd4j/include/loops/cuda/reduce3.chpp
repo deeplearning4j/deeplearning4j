@@ -193,9 +193,10 @@ SD_DEVICE void Reduce3<X, Z>::execScalarCuda(
 
     extraZ[0] = (Z) 0.0f;
     extraZ[1] = (Z) 0.0f;
-    extraZ[2] = extraParams != nullptr
-                    ? (reinterpret_cast<Z*>(extraParams))[2]
-                    : (Z) 0.0f;
+    extraZ[2] = (Z)0;
+    if constexpr (std::is_same_v<OpType, simdOps::EqualsWithEps<X, Z>>) {
+      if (extraParams != nullptr) extraZ[2] = reinterpret_cast<Z*>(extraParams)[2];
+    }
   }
   __syncthreads();
 
@@ -313,7 +314,8 @@ SD_DEVICE void Reduce3<X, Z>::transformAll(
   auto z  = reinterpret_cast<Z*>(vz);
 
   __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
-  __shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
+  // Slots 0/1 hold reducible scratch; slot 2 holds immutable EqualsWithEps epsilon.
+  __shared__ Z extraZ[OpType::extraParamsLen > 3 ? OpType::extraParamsLen : 3];
 
   __shared__ int xTadLength;
   __shared__ int yTadLength;
@@ -357,31 +359,26 @@ SD_DEVICE void Reduce3<X, Z>::transformAll(
     // load partial x
     auto xLocal  = dx + xOffsets[r];
 
-    // Fill tile for x once if thread < xTadLength
     __shared__ X sXCache[SD_CUDA_BLOCK_SIZE];
-    if (threadIdx.x < xTadLength && threadIdx.x < maxBlock) {
-      sd::LongType xCoords[SD_MAX_RANK];
-      sd::LongType xOff;
-      INDEX2COORDS(threadIdx.x, xTadRank, xTadShapePtr, xCoords);
-      COORDS2INDEX(xTadRank, xTadStridePtr, xCoords, xOff);
-      sXCache[threadIdx.x] = xLocal[xOff];
-    }
-    __syncthreads();
 
     for (int g = 0; g < yTads; g++) {
       auto yLocal = dy + yOffsets[g];
-      int ri       = (r * yTads) + g;
+      sd::LongType ri = static_cast<sd::LongType>(r) * yTads + g;
 
       sPartials[threadIdx.x] = startingVal;
-      if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) {
-        extraZ[threadIdx.x] = startingVal;
+      if (threadIdx.x == 0) {
+        for (int e = 0; e < (OpType::extraParamsLen > 3 ? OpType::extraParamsLen : 3); ++e)
+          extraZ[e] = (Z)0;
+        if constexpr (std::is_same_v<OpType, simdOps::EqualsWithEps<X, Z>>) {
+          if (extraParams != nullptr) extraZ[2] = reinterpret_cast<Z*>(extraParams)[2];
+        }
       }
       __syncthreads();
 
       // Possibly multiple tiles per x
       for (int t = 0; t < limit; t++) {
-        // re-fetch x tile if needed
-        if (t >= 1 && (threadIdx.x + t * maxBlock < xTadLength)) {
+        // Reload every tile for every Y TAD: the previous pair left the last X tile here.
+        if (threadIdx.x + t * maxBlock < xTadLength) {
           sd::LongType xCoords[SD_MAX_RANK];
           sd::LongType xOff;
           INDEX2COORDS(threadIdx.x + t * maxBlock,
@@ -416,7 +413,10 @@ SD_DEVICE void Reduce3<X, Z>::transformAll(
 
       // store final
       if (threadIdx.x == 0) {
-        z[ri] = OpType::postProcess(sPartials[0], xTadLength, extraZ);
+        sd::LongType zCoords[SD_MAX_RANK], zOffset;
+        INDEX2COORDS(ri, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+        z[zOffset] = OpType::postProcess(sPartials[0], xTadLength, extraZ);
       }
       __syncthreads();
     }
@@ -450,7 +450,8 @@ SD_DEVICE void Reduce3<X, Z>::transform(
   auto z = reinterpret_cast<Z*>(vz);
 
   // For partial sums
-  __shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
+  // Slots 0/1 hold reducible scratch; slot 2 holds immutable EqualsWithEps epsilon.
+  __shared__ Z extraZ[OpType::extraParamsLen > 3 ? OpType::extraParamsLen : 3];
   __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
 
   __shared__ sd::LongType tadLen;
@@ -465,7 +466,7 @@ SD_DEVICE void Reduce3<X, Z>::transform(
   __shared__ const sd::LongType* yTadShape;
   __shared__ const sd::LongType* yTadStride;
 
-  __shared__ sd::LongType zRank;  // Might not be used, but let's keep consistent
+  __shared__ sd::LongType zRank;
   __shared__ const sd::LongType* zShapePtr;
   __shared__ const sd::LongType* zStridePtr;
 
@@ -491,13 +492,17 @@ SD_DEVICE void Reduce3<X, Z>::transform(
 
   Z startingVal = OpType::startingValue(x);
 
-  // either a direct ews approach or fallback
-  for (int i = blockIdx.x; i < zLen; i += gridDim.x) {
+  for (sd::LongType i = blockIdx.x; i < zLen; i += gridDim.x) {
     sd::LongType xBaseOffset = tadOffsets[i];
     sd::LongType yBaseOffset = (yTadNum == 1 ? 0 : yTadOffsets[i]);
 
-    if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) {
-      extraZ[threadIdx.x] = startingVal;
+    sPartials[threadIdx.x] = startingVal;
+    if (threadIdx.x == 0) {
+      for (int e = 0; e < (OpType::extraParamsLen > 3 ? OpType::extraParamsLen : 3); ++e)
+        extraZ[e] = (Z)0;
+      if constexpr (std::is_same_v<OpType, simdOps::EqualsWithEps<X, Z>>) {
+        if (extraParams != nullptr) extraZ[2] = reinterpret_cast<Z*>(extraParams)[2];
+      }
     }
     __syncthreads();
 
@@ -541,7 +546,10 @@ SD_DEVICE void Reduce3<X, Z>::transform(
 
     // write final
     if (threadIdx.x == 0) {
-      z[i] = OpType::postProcess(sPartials[0], tadLen, extraZ);
+      sd::LongType zCoords[SD_MAX_RANK], zOffset;
+      INDEX2COORDS(i, zRank, zShapePtr, zCoords);
+      COORDS2INDEX(zRank, zStridePtr, zCoords, zOffset);
+      z[zOffset] = OpType::postProcess(sPartials[0], tadLen, extraZ);
     }
     __syncthreads();
   }

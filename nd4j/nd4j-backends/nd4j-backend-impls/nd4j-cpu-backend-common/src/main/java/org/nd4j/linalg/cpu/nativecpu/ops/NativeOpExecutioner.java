@@ -183,7 +183,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         profilingConfigurableHookOut(op,opContext,start);
         // Periodic TAD cache cleanup to prevent memory leaks
         getNativeOps().checkAndCleanupCaches();
-        return op.z();
+        return getZ(op, opContext);
     }
 
 
@@ -656,7 +656,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 );
                 break;
             case SCALAR_BOOL:
-                getNativeOps().execScalarTad(null, op.opNum(),
+                getNativeOps().execScalarBoolTad(null, op.opNum(),
                         xb,
                         zb,
                         yb,
@@ -684,14 +684,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     public INDArray exec(ScalarOp op, OpContext oc) {
-        long st = profilingConfigurableHookIn(op);
+        long st = profilingConfigurableHookIn(op, oc);
 
         // Handle empty input arrays: native code crashes on nullptr buffers
         INDArray scalarX = getX(op, oc);
         if (scalarX != null && scalarX.isEmpty()) {
             if (getZ(op, oc) == null) {
-                setZ(Nd4j.create(scalarX.dataType(), scalarX.shape()), op, oc);
+                setZ(Nd4j.create(op.getOpType() == Op.Type.SCALAR_BOOL ? DataType.BOOL : scalarX.dataType(), scalarX.shape()), op, oc);
             }
+            op.validateDataTypes(oc, experimentalMode.get());
             profilingConfigurableHookOut(op, oc, st);
             return getZ(op, oc);
         }
@@ -710,8 +711,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
 
+        op.validateDataTypes(oc, experimentalMode.get());
+
         if (op.dimensions() != null) {
-            invokeScalarAlongDimension(op);
+            invokeScalarAlongDimension(op, oc);
             return getZ(op, oc);
         }
 
@@ -992,7 +995,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray z = getZ(op, oc);
         getNativeOps().clearLastError();
         long st = profilingConfigurableHookIn(op,oc);
-        op.validateDataTypes(experimentalMode.get());
+        op.validateDataTypes(oc, experimentalMode.get());
         val xb = OpaqueNDArray.fromINDArray(x);
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);
@@ -1247,14 +1250,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray createFromDescriptor(DataBuffer shapeInformation) {
         NDArray ndArray = new NDArray();
-        ndArray.setShapeInfoDataBuffer(shapeInformation);
+        // Allocate outputs from the descriptor's shape, not its input-view strides or flags.
+        ndArray.setShapeInfoDataBuffer(Shape.allocationShapeInfo(shapeInformation));
         long[] shapeInfo = ndArray.shapeInfoJava();
         DataType dt = Shape.dataType(shapeInfo);
-        // Compute length directly from shape info, not from array.length()
-        // because isEmpty() returns true when data buffer is null
-        long length = Shape.isEmpty(shapeInfo) ? 0 : Shape.length(shapeInfo);
-        DataBuffer buff = Nd4j.createBuffer(dt, length, false);
-        ndArray.setData(buff);
+        // Empty descriptors carry their shape and dtype in shape info and have no data buffer.
+        if (!Shape.isEmpty(shapeInfo)) {
+            ndArray.setData(Nd4j.createBuffer(dt, Shape.length(shapeInfo), false));
+        }
         return ndArray;
     }
 

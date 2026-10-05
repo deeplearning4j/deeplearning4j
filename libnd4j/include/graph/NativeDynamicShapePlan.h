@@ -2816,11 +2816,18 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     return static_cast<int>(dirtySlotGenerations_[slotIdx]);
   }
 
-  /** Get the execution phase code for a segment (via GraphSegmentExec). */
-  int getSegmentReplayMode(int segIdx) const {
-    if (segIdx < 0 || segIdx >= static_cast<int>(segments_.size())) return 0;
-    return segments_[segIdx].exec.getExecutionPhaseCode();
-  }
+  // JNI replay-mode codes describe dispatch readiness, not lifecycle phases.
+  enum SegmentReplayMode {
+    REPLAY_MODE_NONE = 0,
+    REPLAY_MODE_MONOLITHIC = 1,
+    REPLAY_MODE_COMPOSITE = 2,
+    REPLAY_MODE_SLOT_BY_SLOT = 3,
+    REPLAY_MODE_FROZEN_CONSTANT = 4,
+    REPLAY_MODE_DIRECT_COMPILED = 5
+  };
+
+  /** Classify the segment's ready dispatch artifact or frozen-output reuse. */
+  int getSegmentReplayMode(int segIdx) const;
 
   /** Get the arg table generation counter for a segment. */
   long long getSegmentArgGeneration(int segIdx) const {

@@ -49,13 +49,12 @@ Status LegacyStatsOp::validateAndExecute(Context &block) {
   ExtraArguments extras(*block.getTArguments());
   PointersManager manager(block.launchContext(), "LegacyStatsOp");
 
-  if (block.getIArguments()->size() == 1 ||
+  if (block.getIArguments()->empty() || block.getIArguments()->size() == 1 ||
       (block.getIArguments()->size() == 2 && INT_ARG(1) == DataTypeUtils::max<int>())) {
     // scalar
-    NativeOpExecutioner::execSummaryStatsScalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(),
-                                                x->specialBuffer(), x->specialShapeInfo(),
-                                                extras.argumentsAsT(z->dataType()), z->buffer(), z->shapeInfo(),
-                                                z->specialBuffer(), z->specialShapeInfo(), biasCorrected);
+    NativeOpExecutioner::execSummaryStatsScalar(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+                                                extras.argumentsAsT(z->dataType()), sd::LegacyTensorArg::fromArray(z),
+                                                biasCorrected);
   } else {
     // dimensions for TAD
     // skip iArgs[0] because it's biasCorrected, not a dim
@@ -75,9 +74,8 @@ Status LegacyStatsOp::validateAndExecute(Context &block) {
                            ? packX->primaryOffsets()
                            : packX->specialOffsets();
 
-    NativeOpExecutioner::execSummaryStats(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-                                          x->specialShapeInfo(), extras.argumentsAsT(z->dataType()), z->buffer(),
-                                          z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(),
+    NativeOpExecutioner::execSummaryStats(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+                                          extras.argumentsAsT(z->dataType()), sd::LegacyTensorArg::fromArray(z), dims.data(),
                                           (int)dims.size(), pTadShape, pTadOffsets, biasCorrected);
   }
 

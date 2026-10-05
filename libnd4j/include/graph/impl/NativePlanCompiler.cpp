@@ -799,6 +799,11 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
           tensorControlledReduction;
     }
 
+    if (slot.flags.outputShapeDependsOnInputValues && slot.ident.op != nullptr &&
+        !slot.ident.op->getOpDescriptor()->hasShapeValueInputs(slot.wiring.numInputs, slot.args.numIArgs)) {
+      slot.flags.outputShapeDependsOnInputValues = false;
+    }
+
     // A genuinely dynamic output extent is necessarily value-dependent and needs
     // fresh shape inference/output allocation on each execution. Store that fact
     // in the canonical per-slot flag in addition to isDynamicShape; the latter also

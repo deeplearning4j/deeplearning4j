@@ -594,10 +594,12 @@ void prescanArrayRecursive(sd::Pointer* extras, int* dZ, int* dX,
   const uint64_t sequence = stream->enqueueCommands(
       [scanPipeline, scanPipelineLayout, addPipeline, addPipelineLayout,
        scans, uniformAdds](VkCommandBuffer commandBuffer) {
+        // Host accesses take no access bits in these barriers (HOST_WRITE and HOST_READ are only valid with the HOST
+        // stage): vkQueueSubmit makes earlier host writes visible to the scan, and a host read of its results goes
+        // through a download, whose barriers make the copy visible to the host.
         recordMemoryBarrier(
             commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-            VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT |
-                VK_ACCESS_HOST_WRITE_BIT,
+            VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 
@@ -642,8 +644,7 @@ void prescanArrayRecursive(sd::Pointer* extras, int* dZ, int* dX,
             commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
             VK_ACCESS_SHADER_WRITE_BIT,
             VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT |
-                VK_ACCESS_HOST_READ_BIT);
+            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT);
         return true;
       },
       std::move(cleanup));

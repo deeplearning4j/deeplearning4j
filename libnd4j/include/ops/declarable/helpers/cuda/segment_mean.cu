@@ -19,9 +19,11 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-// Thin TU: segment_mean is the shared segment_ops implementation instantiated
-// with the mean reduction policy and the segment-length-scaled backprop policy.
+// Thin TU: segment_mean / unsorted_segment_mean are the shared segment_ops implementation instantiated with the mean
+// policy (floating output of any numeric input, the sum divided once by the count) and the segment-length-scaled
+// backprop policy.
 //
 #include <ops/declarable/helpers/cuda/segment_ops.cuh>
 
-SEGMENT_OP_INSTANTIATE(Mean, MeanReduce, MeanGrad)
+SEGMENT_OP_FLOAT_OUT(Mean, SegMean)
+SEGMENT_OP_BACKPROP_FLOAT(Mean, SegMean, GradMean)

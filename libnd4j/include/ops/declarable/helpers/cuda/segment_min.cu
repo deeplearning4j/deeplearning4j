@@ -19,10 +19,11 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-// Thin TU: segment_min is the shared segment_ops implementation instantiated
-// with the min reduction policy (tree-reduce forward + atomicMin TAD) and the
-// compare-match backprop policy (gradient flows to the argmin element).
+// Thin TU: segment_min / unsorted_segment_min are the shared segment_ops implementation instantiated with the min
+// policy (NaN propagating, sorted empty segments 0, unsorted empty segments the highest value of the type) and the
+// compare-match backprop policy (the whole gradient flows to every element equal to the minimum).
 //
 #include <ops/declarable/helpers/cuda/segment_ops.cuh>
 
-SEGMENT_OP_INSTANTIATE(Min, MinReduce, CompareGrad)
+SEGMENT_OP_SAME_TYPE(Min, SegMin)
+SEGMENT_OP_BACKPROP_NUMERIC(Min, SegMin, GradCompare)

@@ -76,7 +76,8 @@ SD_KERNEL static void addBiasCuda(const void* vx, const LongType* xShapeInfo, co
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < len; i += blockDim.x * gridDim.x) {
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < len;
+       i += static_cast<LongType>(blockDim.x) * gridDim.x) {
     INDEX2COORDS(i, rank, xShape, coords);
 
     LongType xOffsets;
@@ -85,7 +86,7 @@ SD_KERNEL static void addBiasCuda(const void* vx, const LongType* xShapeInfo, co
     COORDS2INDEX(rank, zStride, coords, zOffsets);
     LongType yOffsets = coords[channelPosition] * yStride[posOfNonUnityDim];
 
-    if (xzAreSame)
+    if (xzAreSame && xzSameOffsets)
       z[zOffsets] += static_cast<X>(y[yOffsets]);
     else
       z[zOffsets] = static_cast<X>(x[xOffsets]) + static_cast<X>(y[yOffsets]);
@@ -105,22 +106,22 @@ static void addBiasCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 template <typename X, typename Y>
-SD_KERNEL static void addBias2DCuda(const void* vx, const void* vy, void* vz, uint32_t blocks, uint32_t length) {
+SD_KERNEL static void addBias2DCuda(const void* vx, const void* vy, void* vz, LongType blocks, LongType length) {
   auto y = reinterpret_cast<const Y*>(vy);
 
-  for (uint32_t b = blockIdx.x; b < blocks; b += gridDim.x) {
+  for (LongType b = blockIdx.x; b < blocks; b += gridDim.x) {
     auto x = reinterpret_cast<const X*>(vx) + length * b;
     auto z = reinterpret_cast<X*>(vz) + length * b;
 
-    for (uint32_t e = threadIdx.x; e < length; e += blockDim.x) {
+    for (LongType e = threadIdx.x; e < length; e += blockDim.x) {
       z[e] = x[e] + y[e];
     }
   }
 }
 
 template <typename X, typename Y>
-static void addBias2DCudaLauncher(const cudaStream_t* stream, const void* vx, const void* vy, void* vz, uint32_t blocks,
-                                  uint32_t length) {
+static void addBias2DCudaLauncher(const cudaStream_t* stream, const void* vx, const void* vy, void* vz, LongType blocks,
+                                  LongType length) {
   dim3 dims = getAddBiasDims(2, 2);
 
   addBias2DCuda<X, Y><<<dims.x, dims.y, dims.z, *stream>>>(vx, vy, vz, blocks, length);
@@ -134,7 +135,9 @@ void addBias(graph::Context& block, NDArray& input, NDArray& bias, NDArray& outp
   NDArray::prepareSpecialUse({&output}, {&input, &bias});
 
   if (input.rankOf() == 2 && bias.rankOf() == 1 && input.ordering() == 'c' && output.ordering() == 'c' &&
-  input.sizeAt(1) == bias.sizeAt(0)) {
+      shape::strideDescendingCAscendingF(input.shapeInfo()) &&
+      shape::strideDescendingCAscendingF(output.shapeInfo()) && bias.stridesOf()[0] == 1 &&
+      input.sizeAt(1) == bias.sizeAt(0)) {
     BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias2DCudaLauncher,
                           (block.launchContext()->getCudaStream(), input.specialBuffer(), bias.specialBuffer(),
                               output.specialBuffer(), input.sizeAt(0), bias.sizeAt(0)),

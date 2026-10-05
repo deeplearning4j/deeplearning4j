@@ -1234,13 +1234,20 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 #define LIST(...) __VA_ARGS__
 
+// A case whose type combination selective rendering left out has no instantiation to call: it throws, as
+// _SELECTOR_TRIPLE_3 does, instead of falling through to the break and leaving the call's outputs unwritten.
 #define _SELECTOR_DOUBLE_2(NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B) \
     case sd::DataType::ENUM: { \
+        bool sdPairDispatched = false; \
         SD_IF_PAIR_COMPILED( \
             SD_CAT(SD_TYPE_TO_NUM_, TYPE_A), \
             SD_CAT(SD_ENUM_TO_NUM_, ENUM), \
+            sdPairDispatched = true; \
             NAME<TYPE_A, TYPE_B> SIGNATURE; \
         ) \
+        if (!sdPairDispatched) { \
+            THROW_EXCEPTION(#NAME ": unavailable type pair (" #TYPE_A ", " #TYPE_B ")"); \
+        } \
         break; \
     };
 
@@ -1271,10 +1278,12 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 #define _SELECTOR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B) \
     case sd::DataType::ENUM: { \
+        bool sdPairwiseDispatched = false; \
         if (ZTYPE == YTYPE) { \
             SD_IF_PAIR_COMPILED( \
                 SD_CAT(SD_TYPE_TO_NUM_, TYPE_A), \
                 SD_CAT(SD_ENUM_TO_NUM_, ENUM), \
+                sdPairwiseDispatched = true; \
                 NAME<TYPE_A, TYPE_B, TYPE_B> SIGNATURE; \
             ) \
         } else if (XTYPE == ZTYPE) { \
@@ -1282,6 +1291,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
                 SD_CAT(SD_TYPE_TO_NUM_, TYPE_A), \
                 SD_CAT(SD_ENUM_TO_NUM_, ENUM), \
                 SD_CAT(SD_TYPE_TO_NUM_, TYPE_A), \
+                sdPairwiseDispatched = true; \
                 NAME<TYPE_A, TYPE_B, TYPE_A> SIGNATURE; \
             ) \
         } else { \
@@ -1290,6 +1300,9 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
             printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__); \
             fflush(stdout); \
             THROW_EXCEPTION(errorMsg.c_str()); \
+        } \
+        if (!sdPairwiseDispatched) { \
+            THROW_EXCEPTION(#NAME ": unavailable type combination (" #TYPE_A ", " #TYPE_B ")"); \
         } \
         break; \
     };
@@ -1373,10 +1386,15 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 #define _SELECTOR_SINGLE(A, B, C, D) \
     case sd::DataType::C: { \
+        bool sdSingleDispatched = false; \
         EVAL(SD_IF_SINGLE_ALIAS_COMPILED( \
             C, \
+            sdSingleDispatched = true; \
             A<D> B; \
         )) \
+        if (!sdSingleDispatched) { \
+            THROW_EXCEPTION(#A ": unavailable type " #D); \
+        } \
         break; \
     };
 
@@ -1385,12 +1403,17 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 #define _SELECTOR_SINGLE_THRICE(A, B, C, D) \
     case sd::DataType::C: { \
+        bool sdSingleThriceDispatched = false; \
         EVAL(SD_IF_TRIPLE_ALIAS_COMPILED( \
             C, \
             C, \
             C, \
+            sdSingleThriceDispatched = true; \
             A<D, D, D> B; \
         )) \
+        if (!sdSingleThriceDispatched) { \
+            THROW_EXCEPTION(#A ": unavailable type triple (" #D ", " #D ", " #D ")"); \
+        } \
         break; \
     };
 
@@ -1399,11 +1422,16 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 #define _SELECTOR_SINGLE_TWICE(A, B, C, D) \
     case sd::DataType::C: { \
+        bool sdSingleTwiceDispatched = false; \
         EVAL(SD_IF_PAIR_ALIAS_COMPILED( \
             C, \
             C, \
+            sdSingleTwiceDispatched = true; \
             A<D, D> B; \
         )) \
+        if (!sdSingleTwiceDispatched) { \
+            THROW_EXCEPTION(#A ": unavailable type pair (" #D ", " #D ")"); \
+        } \
         break; \
     };
 
@@ -1421,10 +1449,15 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 #define _SELECTOR_PARTIAL_SINGLE(A, B, C, D) \
     case sd::DataType::C: { \
+        bool sdPartialSingleDispatched = false; \
         EVAL(SD_IF_SINGLE_ALIAS_COMPILED( \
             C, \
+            sdPartialSingleDispatched = true; \
             A D, UNPAREN2(B); \
         )) \
+        if (!sdPartialSingleDispatched) { \
+            THROW_EXCEPTION(#A ": unavailable type " #D); \
+        } \
         break; \
     };
 

@@ -1118,16 +1118,20 @@ public class NdArrayBroadcastMathTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBroadcastInvalid() {
-        assertThrows(IllegalStateException.class,() -> {
-            INDArray arr1 = Nd4j.ones(3,4,1);
+    public void testBroadcastInvalid(Nd4jBackend backend) {
+        INDArray arr1 = Nd4j.ones(3, 4, 1);
+        INDArray before = arr1.dup();
+        INDArray arrInvalid = Nd4j.create(3, 12);
+        assertThrows(IllegalStateException.class,
+                () -> Nd4j.getExecutioner().exec(new BroadcastMulOp(arr1, arrInvalid, arr1, 0, 2)));
+        assertEquals(before, arr1, "Rejected broadcast must not modify the input");
 
-            //Invalid op: y must match x/z dimensions 0 and 2
-            INDArray arrInvalid = Nd4j.create(3,12);
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(arr1, arrInvalid, arr1, 0, 2));
-            fail("Excepted exception on invalid input");
-        });
-
+        // Equal element counts do not imply matching sizes on each selected axis.
+        INDArray x = Nd4j.ones(3, 4, 2);
+        INDArray wrongShape = Nd4j.create(2, 3);
+        assertThrows(IllegalStateException.class,
+                () -> new BroadcastMulOp(x, wrongShape, x, 0, 2));
+        assertEquals(Nd4j.ones(3, 4, 2), x);
     }
 
     protected static boolean arrayNotEquals(float[] arrayX, float[] arrayY, float delta) {

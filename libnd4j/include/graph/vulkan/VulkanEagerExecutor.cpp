@@ -207,7 +207,8 @@ Status VulkanEagerExecutor::execute(LongType descriptorHash, Context& context,
     return Status::OK;
   }
 
-  if (findVulkanKernelEmitter(descriptorHash) == nullptr) {
+  const auto* emitter = findVulkanKernelEmitter(descriptorHash);
+  if (emitter == nullptr) {
     setError(errorMessage,
              "Vulkan eager execution does not support this descriptor hash");
     return Status::VALIDATION;
@@ -225,8 +226,15 @@ Status VulkanEagerExecutor::execute(LongType descriptorHash, Context& context,
       op->getOpDescriptor()->getNumberOfStructuralIArgs();
 
   copyContextArguments(context, slot);
+  // A random op draws from, and advances, the generator of its context: whoever executes the op seeded it from
+  // the thread's generator (DefaultOpExecutioner, InferenceSession, the DSP slot scope) and takes the advanced
+  // state back. The recorder applies the op's seed argument to it, as the native op does.
+  RandomGenerator* randomState =
+      hasVulkanEmitterTrait(*emitter, VULKAN_EMITTER_TRAIT_RANDOM_STATE)
+          ? &context.randomGenerator()
+          : nullptr;
   return recordAndExecuteSlot(slot, context, stream, *deviceContext,
-                              nullptr, errorMessage);
+                              randomState, errorMessage);
 }
 
 Status VulkanEagerExecutor::execute(VulkanLegacyOpFamily family, int opNum,

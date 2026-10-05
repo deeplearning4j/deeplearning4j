@@ -117,6 +117,25 @@ every bit of the index and of both states reaches every output bit.
   backends' `NativeRandom.setSeed`. CPU and CUDA sign-extended the constant to 64 bits
   and Vulkan did not, which the old hash could not see.
 
+### Draw layouts
+
+A legacy random op's element is a function of the draws at fixed indices, so every
+backend that implements it computes the same draws: CPU and CUDA from
+`random_ops.h` and `special_random_ops.h`, Vulkan from the `RANDOM_GENERIC`
+lowering. For an output of n elements, element e:
+
+- The elementwise ops (uniform, dropout, Bernoulli, merge, choice, exponential) draw
+  index e.
+- The Gaussian and log-normal draw the pair (e, e + m) for e < m = ceil(n / 2) and
+  take its cosine sample; element e + m takes the same pair's sine sample.
+- Binomial trial t (0-based) draws index e * trials + t.
+- The truncated normal's attempt k draws the pair 2 (k n + e), 2 (k n + e) + 1 and
+  takes its cosine sample; the first attempt within two standard deviations is the
+  element's. Elements depend on no other element's draws.
+
+`LegacyRandomOpsReferenceTest` reproduces these layouts in Java from
+`PhiloxReference` and holds every backend to them.
+
 ## Consequences
 
 - `Nd4j.getRandom().setSeed(s)` reproduces a SameDiff graph's random outputs on both

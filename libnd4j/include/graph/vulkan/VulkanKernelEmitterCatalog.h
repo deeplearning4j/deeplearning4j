@@ -216,6 +216,8 @@ enum class VulkanKernelRecipe : uint16_t {
   TAN,
   ERF,
   ERFC,
+  // log |Gamma(x)| over the whole real line, as sd::math::sd_lgamma defines it.
+  LGAMMA,
   EXPM1,
   ACOSH,
   ASINH,
@@ -290,6 +292,14 @@ enum class VulkanKernelRecipe : uint16_t {
   // Canonical legacy identity whose family/op-number selects the shared
   // elementwise/reduction lowering at record time.
   LEGACY_GENERIC,
+  CROSS,
+  REVERSE_BP,
+  CUMSUM,
+  BROADCAST_DYNAMIC_SHAPE,
+  MAXIMUM_BP,
+  MINIMUM_BP,
+  BIAS_ADD_BP,
+  CUMSUM_BP,
   // The canonical identity is registered, but no device equation has been
   // supplied yet. Lowerers reject this value instead of silently materializing
   // an identity or using a host implementation.
@@ -334,7 +344,20 @@ enum class VulkanLoweringContract : uint8_t {
   // The recipe selects gather versus disjoint-pair exchange semantics.
   INDEXED_TAD_MOVEMENT,
   // Forward/back substitution over a square matrix and one or more RHS columns.
-  TRIANGULAR_SOLVE
+  TRIANGULAR_SOLVE,
+  // Ordered slice updates of an output (scatter_add/sub/mul/div/upd/max/min, scatter_nd_add/sub/update, get_rows_bp).
+  // Every invocation owns one element position p of every output slice: it first writes its positions of the
+  // output (a copy of the reference input, or zeros), then walks the index rows in order and applies the recipe's
+  // combine to the slice each row names. Updates that share a slice therefore apply one after another in index
+  // order, no two invocations touch the same element, and no atomics are needed. The recipe selects the combine:
+  // ADD, SUBTRACT, MULTIPLY, DIVIDE, MAXIMUM, MINIMUM, or ASSIGN (the last update wins).
+  INDEXED_SLICE_UPDATE,
+  // Coordinate-driven tensor equations (cross, scans, shape-vector broadcast).
+  // These are not scalar elementwise equations or dimension-collapsing reductions.
+  INDEXED_TENSOR,
+  // Backward tensor equations with independently shaped destinations. Each
+  // invocation owns its reduction destination or complete scan TAD.
+  TENSOR_GRADIENT
 };
 
 /** Frozen descriptor-argument encodings shared across emitter recipes. */
@@ -350,7 +373,10 @@ enum class VulkanArgumentSchema : uint8_t {
   AXES_IARGS,
   SINGLE_IARG,
   WINDOW_GEOMETRY_IARGS,
-  PERMUTATION_AXES
+  PERMUTATION_AXES,
+  // Shape dimensions followed by -'c'/-'f', or an optional order marker
+  // with a structural shape-tensor operand.
+  TRAILING_SHAPE_ORDER
 };
 
 /**
@@ -413,6 +439,10 @@ struct VulkanOperandTypeContract {
   bool requireUniformSpecialInputs = false;
   uint16_t structuralIndexInputMask = 0;
   uint16_t integerIndexInputMask = 0;
+  // Inputs the descriptor ABI carries but the kernel never reads, whose values nothing derives from: the shape
+  // tensor of randomuniform (the frozen output MemRef already fixes it). They are neither type-checked nor bound,
+  // and are absent from the emitted function signature.
+  uint16_t ignoredInputMask = 0;
 };
 
 enum VulkanKernelDTypeSupport : uint32_t {
@@ -494,7 +524,15 @@ enum VulkanKernelEmitterTraits : uint32_t {
   VULKAN_EMITTER_TRAIT_INDEX_LAST = 1u << 26,
   // Raise |x| to the caller-supplied p before a norm reduction and apply 1/p
   // to the completed accumulator.
-  VULKAN_EMITTER_TRAIT_P_NORM = 1u << 27
+  VULKAN_EMITTER_TRAIT_P_NORM = 1u << 27,
+  // Dispatch one invocation for every row of the output along the op's axis
+  // argument: the product of every dimension except the normalized axis (the
+  // last axis when the argument is absent).
+  VULKAN_EMITTER_TRAIT_DISPATCH_AXIS_ROWS = 1u << 28,
+  // The output has no reference input to start from: the kernel writes every
+  // output element from zero (get_rows_bp, whose operands are the updates and
+  // the indices).
+  VULKAN_EMITTER_TRAIT_ZERO_INITIAL_OUTPUT = 1u << 29
 };
 
 /**
@@ -557,6 +595,10 @@ struct SD_LIB_EXPORT VulkanKernelEmitterInfo {
   // bounds describe the output rank.
   int16_t minimumRank;
   int16_t maximumRank;  // -1 means framework maximum rank
+  // Index of the frozen IArg that seeds the RANDOM_STATE generator, or -1: the native op applies a non-zero seed
+  // with helpers::applySeedArgument before it draws (randomuniform: IArg 1). The recorder applies the same rule
+  // each time it stages the state, so a seeded op draws the same values on every execution and replay.
+  int16_t seedIntegerArgument = -1;
 };
 
 /** Classify a registered emitter from the op's own descriptor traits. */
@@ -686,6 +728,14 @@ inline bool vulkanInputIsStructuralIndex(
           (uint16_t{1} << inputIndex)) != 0;
 }
 
+/** True for an input the descriptor carries but the kernel neither binds nor loads. */
+inline bool vulkanInputIsIgnored(const VulkanKernelEmitterInfo& emitter,
+                                 unsigned inputIndex) {
+  return inputIndex < 16 &&
+         (emitter.operandTypeContract.ignoredInputMask &
+          (uint16_t{1} << inputIndex)) != 0;
+}
+
 /**
  * Trait/schema-derived schedules used by validation, textual MLIR, and SPIR-V
  * lowering. These deliberately encode no descriptor hash or operation name.
@@ -723,6 +773,17 @@ inline bool usesIndexedAccumulationSchedule(
              emitter, VULKAN_EMITTER_TRAIT_DISPATCH_SINGLE) &&
          hasVulkanStructuralIndexOperands(emitter) &&
          emitter.argumentSchema == VulkanArgumentSchema::NONE;
+}
+
+/**
+ * Ordered per-position slice updates (see VulkanLoweringContract::INDEXED_SLICE_UPDATE). The family comes from the
+ * contract: get_rows_bp's own traits (fully-writing backward) name no data-movement family.
+ */
+inline bool usesIndexedSliceUpdateSchedule(
+    const VulkanKernelEmitterInfo& emitter) {
+  return emitter.family == VulkanKernelFamily::DATA_MOVEMENT &&
+         emitter.loweringContract ==
+             VulkanLoweringContract::INDEXED_SLICE_UPDATE;
 }
 
 inline bool usesIndexedTadMovementSchedule(
@@ -870,9 +931,17 @@ inline bool usesBatchwiseNormalizationSchedule(
 
 inline bool usesBroadcastBinarySchedule(
     const VulkanKernelEmitterInfo& emitter) {
-  const bool intrinsicBroadcastSemantics =
-      hasVulkanOpTrait(emitter, sd::ops::OP_TRAIT_ACTIVATION) ||
-      vulkanArgumentContractAcceptsBooleanArguments(emitter);
+  bool intrinsicBroadcastSemantics =
+      hasVulkanOpTrait(emitter, sd::ops::OP_TRAIT_ACTIVATION);
+  for (uint8_t i = 0; i < emitter.argumentContract.alternativeCount; ++i) {
+    const auto& signature = emitter.argumentContract.alternatives[i];
+    // Axis-bearing legacy broadcasts use BArgs for operand inversion, not
+    // intrinsic broadcast geometry. They belong to the explicit-axis binary schedule.
+    if (signature.iArgs.maximum == 0 && signature.bArgs.maximum != 0) {
+      intrinsicBroadcastSemantics = true;
+      break;
+    }
+  }
   return emitter.family == VulkanKernelFamily::ELEMENTWISE_BINARY &&
          hasVulkanOpTrait(
              emitter, sd::ops::OP_TRAIT_BINARY_ELEMENTWISE |
@@ -936,6 +1005,16 @@ inline bool usesReshapeCopySchedule(
                           sd::ops::OP_TRAIT_DATA_DEPENDENT) &&
          emitter.loweringContract == VulkanLoweringContract::LINEAR_COPY &&
          emitter.argumentSchema == VulkanArgumentSchema::NONE;
+}
+
+inline bool usesTrailingOrderReshapeCopySchedule(
+    const VulkanKernelEmitterInfo& emitter) {
+  return emitter.family == VulkanKernelFamily::DATA_MOVEMENT &&
+         hasVulkanOpTrait(
+             emitter, sd::ops::OP_TRAIT_VIEW_PRODUCING |
+                          sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) &&
+         emitter.loweringContract == VulkanLoweringContract::LINEAR_COPY &&
+         emitter.argumentSchema == VulkanArgumentSchema::TRAILING_SHAPE_ORDER;
 }
 
 inline bool usesStructuralShapeCopySchedule(

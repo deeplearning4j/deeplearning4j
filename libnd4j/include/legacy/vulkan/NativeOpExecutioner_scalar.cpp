@@ -202,6 +202,46 @@ void NativeOpExecutioner::execScalarInt(
       dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
 
+namespace {
+void executeScalar(sd::LaunchContext* lc, graph::VulkanLegacyOpFamily family,
+    int opNum, const sd::LegacyTensorArg& x, const sd::LegacyTensorArg& z,
+    const sd::LegacyTensorArg& scalars, void* extraParams,
+    const sd::LongType* dimension, sd::LongType dimensionLength,
+    const sd::LongType* tadShapeInfo, const sd::LongType* tadOffsets,
+    const sd::LongType* tadShapeInfoZ, const sd::LongType* tadOffsetsZ) {
+  requireNoOpaqueExtraParameters(extraParams);
+  validateDerivedTadPair(tadShapeInfo, tadOffsets, "input");
+  validateDerivedTadPair(tadShapeInfoZ, tadOffsetsZ, "output");
+  graph::VulkanLegacyInvocation invocation(family, opNum);
+  invocation.inputs.emplace_back(graph::VulkanLegacyTensor::fromArg(x));
+  invocation.inputs.emplace_back(graph::VulkanLegacyTensor::fromArg(scalars));
+  invocation.outputs.emplace_back(graph::VulkanLegacyTensor::fromArg(z));
+  appendDimensions(invocation, dimension, dimensionLength);
+  graph::requireVulkanLegacyExecution(lc, invocation);
+}
+}  // namespace
+
+#define SD_VULKAN_SCALAR(NAME, FAMILY) \
+void NativeOpExecutioner::NAME(sd::LaunchContext* lc, int opNum, \
+    const sd::LegacyTensorArg& x, const sd::LegacyTensorArg& z, \
+    const sd::LegacyTensorArg& scalar, void* extraParams, bool allowParallelism) { \
+  (void)allowParallelism; \
+  executeScalar(lc, graph::VulkanLegacyOpFamily::FAMILY, opNum, x, z, scalar, extraParams, \
+                nullptr, 0, nullptr, nullptr, nullptr, nullptr); \
+} \
+void NativeOpExecutioner::NAME(sd::LaunchContext* lc, int opNum, \
+    const sd::LegacyTensorArg& x, void* extraParams, const sd::LegacyTensorArg& z, \
+    const sd::LegacyTensorArg& scalars, sd::LongType* dimension, sd::LongType dimensionLength, \
+    const sd::LongType* tadShapeInfo, const sd::LongType* tadOffsets, \
+    const sd::LongType* tadShapeInfoZ, const sd::LongType* tadOffsetsZ) { \
+  executeScalar(lc, graph::VulkanLegacyOpFamily::FAMILY, opNum, x, z, scalars, extraParams, \
+                dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ); \
+}
+SD_VULKAN_SCALAR(execScalar, SCALAR)
+SD_VULKAN_SCALAR(execScalarBool, SCALAR_BOOL)
+SD_VULKAN_SCALAR(execScalarInt, SCALAR_INT)
+#undef SD_VULKAN_SCALAR
+
 }  // namespace sd
 
 #endif  // SD_VULKAN && HAVE_VULKAN

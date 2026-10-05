@@ -19,9 +19,10 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-// Thin TU: segment_sum is the shared segment_ops implementation instantiated
-// with the sum reduction policy and the broadcast-unchanged backprop policy.
+// Thin TU: segment_sum / unsorted_segment_sum are the shared segment_ops implementation instantiated with the sum
+// policy (modular integer sums, HALF/BFLOAT16 summed in FLOAT) and the broadcast-unchanged backprop policy.
 //
 #include <ops/declarable/helpers/cuda/segment_ops.cuh>
 
-SEGMENT_OP_INSTANTIATE(Sum, SumReduce, SumGrad)
+SEGMENT_OP_SAME_TYPE(Sum, SegSum)
+SEGMENT_OP_BACKPROP_NUMERIC(Sum, SegSum, GradSum)

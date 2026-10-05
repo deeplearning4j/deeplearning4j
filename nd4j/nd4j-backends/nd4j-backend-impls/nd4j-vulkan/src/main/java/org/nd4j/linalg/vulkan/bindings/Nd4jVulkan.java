@@ -2814,6 +2814,10 @@ public native @Cast("unsigned int") int getOpTraits(@Cast("char*") BytePointer o
 public native @Cast("sd::LongType") long getOpTraitMask(@Cast("char*") String opName);
 public native @Cast("sd::LongType") long getOpTraitMask(@Cast("char*") BytePointer opName);
 
+/** Resolve tensor-value shape dependence using the operation's invocation metadata. */
+public native @Cast("bool") boolean opShapeDependsOnInputValues(@Cast("char*") String opName, int numInputs, int numIArgs);
+public native @Cast("bool") boolean opShapeDependsOnInputValues(@Cast("char*") BytePointer opName, int numInputs, int numIArgs);
+
 public native org.nd4j.nativeblas.OpaqueRandomGenerator createRandomGenerator(@Cast("sd::LongType") long rootSeed, @Cast("sd::LongType") long nodeSeed);
 
 public native org.nd4j.nativeblas.OpaqueContext createGraphContext(int nodeId);
@@ -4364,6 +4368,14 @@ public native void destroyNativeMultiBackendWorkspace(@ByVal @Cast("OpaqueMultiB
  * Allocate bytes from multi-backend workspace on primary device.
  */
 public native Pointer nativeMbwAllocateBytes(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle, @Cast("sd::LongType") long numBytes);
+public native Pointer nativeMbwAllocateBytesOnDevice(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle,
+    @Cast("sd::LongType") long numBytes, int deviceType, int deviceIndex);
+public native void nativeMbwSyncDevice(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle,
+    int deviceType, int deviceIndex);
+public native void nativeMbwSyncAllDevices(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
+public native @Cast("sd::LongType") long nativeMbwGetAllocatedSizeOnDevice(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle,
+    int deviceType, int deviceIndex);
+public native @Cast("sd::LongType") long nativeMbwGetCurrentOffset(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
 
 /**
  * Multi-backend workspace scope management.
@@ -5787,7 +5799,8 @@ public native int getPlanSlotGeneration(@Cast("sd::Pointer") Pointer planHandle,
 // =============================================================================
 
 /**
- * Replay mode: 0=NONE, 1=MONOLITHIC, 2=COMPOSITE.
+ * Dispatch mode (not execution phase): 0=NONE, 1=MONOLITHIC, 2=COMPOSITE,
+ * 3=SLOT_BY_SLOT, 4=FROZEN_CONSTANT, 5=DIRECT_COMPILED.
  */
 public native int getPlanSegmentReplayMode(@Cast("sd::Pointer") Pointer planHandle, int segIdx);
 
@@ -12021,13 +12034,20 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 // #define LIST(...) __VA_ARGS__
 
+// A case whose type combination selective rendering left out has no instantiation to call: it throws, as
+// _SELECTOR_TRIPLE_3 does, instead of falling through to the break and leaving the call's outputs unwritten.
 // #define _SELECTOR_DOUBLE_2(NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B)
 //     case sd::DataType::ENUM: {
+//         bool sdPairDispatched = false;
 //         SD_IF_PAIR_COMPILED(
 //             SD_CAT(SD_TYPE_TO_NUM_, TYPE_A),
 //             SD_CAT(SD_ENUM_TO_NUM_, ENUM),
+//             sdPairDispatched = true;
 //             NAME<TYPE_A, TYPE_B> SIGNATURE;
 //         )
+//         if (!sdPairDispatched) {
+//             THROW_EXCEPTION(#NAME ": unavailable type pair (" #TYPE_A ", " #TYPE_B ")");
+//         }
 //         break;
 //     };
 
@@ -12058,10 +12078,12 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 // #define _SELECTOR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B)
 //     case sd::DataType::ENUM: {
+//         bool sdPairwiseDispatched = false;
 //         if (ZTYPE == YTYPE) {
 //             SD_IF_PAIR_COMPILED(
 //                 SD_CAT(SD_TYPE_TO_NUM_, TYPE_A),
 //                 SD_CAT(SD_ENUM_TO_NUM_, ENUM),
+//                 sdPairwiseDispatched = true;
 //                 NAME<TYPE_A, TYPE_B, TYPE_B> SIGNATURE;
 //             )
 //         } else if (XTYPE == ZTYPE) {
@@ -12069,6 +12091,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 //                 SD_CAT(SD_TYPE_TO_NUM_, TYPE_A),
 //                 SD_CAT(SD_ENUM_TO_NUM_, ENUM),
 //                 SD_CAT(SD_TYPE_TO_NUM_, TYPE_A),
+//                 sdPairwiseDispatched = true;
 //                 NAME<TYPE_A, TYPE_B, TYPE_A> SIGNATURE;
 //             )
 //         } else {
@@ -12077,6 +12100,9 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 //             printf("[ERROR] %s at %s:%d\n", errorMsg.c_str(), __FILE__, __LINE__);
 //             fflush(stdout);
 //             THROW_EXCEPTION(errorMsg.c_str());
+//         }
+//         if (!sdPairwiseDispatched) {
+//             THROW_EXCEPTION(#NAME ": unavailable type combination (" #TYPE_A ", " #TYPE_B ")");
 //         }
 //         break;
 //     };
@@ -12160,10 +12186,15 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 // #define _SELECTOR_SINGLE(A, B, C, D)
 //     case sd::DataType::C: {
+//         bool sdSingleDispatched = false;
 //         EVAL(SD_IF_SINGLE_ALIAS_COMPILED(
 //             C,
+//             sdSingleDispatched = true;
 //             A<D> B;
 //         ))
+//         if (!sdSingleDispatched) {
+//             THROW_EXCEPTION(#A ": unavailable type " #D);
+//         }
 //         break;
 //     };
 
@@ -12172,12 +12203,17 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 // #define _SELECTOR_SINGLE_THRICE(A, B, C, D)
 //     case sd::DataType::C: {
+//         bool sdSingleThriceDispatched = false;
 //         EVAL(SD_IF_TRIPLE_ALIAS_COMPILED(
 //             C,
 //             C,
 //             C,
+//             sdSingleThriceDispatched = true;
 //             A<D, D, D> B;
 //         ))
+//         if (!sdSingleThriceDispatched) {
+//             THROW_EXCEPTION(#A ": unavailable type triple (" #D ", " #D ", " #D ")");
+//         }
 //         break;
 //     };
 
@@ -12186,11 +12222,16 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 // #define _SELECTOR_SINGLE_TWICE(A, B, C, D)
 //     case sd::DataType::C: {
+//         bool sdSingleTwiceDispatched = false;
 //         EVAL(SD_IF_PAIR_ALIAS_COMPILED(
 //             C,
 //             C,
+//             sdSingleTwiceDispatched = true;
 //             A<D, D> B;
 //         ))
+//         if (!sdSingleTwiceDispatched) {
+//             THROW_EXCEPTION(#A ": unavailable type pair (" #D ", " #D ")");
+//         }
 //         break;
 //     };
 
@@ -12208,10 +12249,15 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 // #define _SELECTOR_PARTIAL_SINGLE(A, B, C, D)
 //     case sd::DataType::C: {
+//         bool sdPartialSingleDispatched = false;
 //         EVAL(SD_IF_SINGLE_ALIAS_COMPILED(
 //             C,
+//             sdPartialSingleDispatched = true;
 //             A D, UNPAREN2(B);
 //         ))
+//         if (!sdPartialSingleDispatched) {
+//             THROW_EXCEPTION(#A ": unavailable type " #D);
+//         }
 //         break;
 //     };
 
@@ -15983,6 +16029,8 @@ public static final int
   // Values (not just dimensions) read by calculateOutputShape. An explicit empty
   // set denotes metadata-only inference; absent optional inputs need no sync.
   public native @Cast("bool") boolean usesInputValuesForShape(int index);
+  public native @Cast("bool") boolean usesInputValuesForShape(int index, int numIArgs);
+  public native @Cast("bool") boolean hasShapeValueInputs(int numInputs, int numIArgs);
 
 
 }
@@ -16708,6 +16756,26 @@ public static final long
   public native void initializeDescriptor();
 
   public native @Cast("sd::Status") int validateDataTypes(@ByRef Context block);
+
+  /**
+   * Whether an execution with these arguments draws from the context's random generator. Whoever runs such an
+   * execution seeds that generator from the caller's random state and takes the advanced state back, and a plan
+   * never captures it (a replay would repeat the captured draws). By default a stateful op (OP_TRAIT_STATEFUL) that
+   * writes none of its inputs draws (ops that write inputs are stateful through the tensors they update); an op whose
+   * draws depend on its arguments overrides this (dot_product_attention_v2 draws its dropout mask while training).
+   */
+  public native @Cast("bool") boolean drawsRandomStateFor(@StdVector DoublePointer tArgs, @Cast("sd::LongType*") @StdVector LongPointer iArgs,
+                                     @Cast("bool*") @StdVector BooleanPointer bArgs);
+  public native @Cast("bool") boolean drawsRandomStateFor(@StdVector DoubleBuffer tArgs, @Cast("sd::LongType*") @StdVector LongBuffer iArgs,
+                                     @Cast("bool*") @StdVector boolean[] bArgs);
+  public native @Cast("bool") boolean drawsRandomStateFor(@StdVector double[] tArgs, @Cast("sd::LongType*") @StdVector long[] iArgs,
+                                     @Cast("bool*") @StdVector BooleanPointer bArgs);
+  public native @Cast("bool") boolean drawsRandomStateFor(@StdVector DoublePointer tArgs, @Cast("sd::LongType*") @StdVector LongPointer iArgs,
+                                     @Cast("bool*") @StdVector boolean[] bArgs);
+  public native @Cast("bool") boolean drawsRandomStateFor(@StdVector DoubleBuffer tArgs, @Cast("sd::LongType*") @StdVector LongBuffer iArgs,
+                                     @Cast("bool*") @StdVector BooleanPointer bArgs);
+  public native @Cast("bool") boolean drawsRandomStateFor(@StdVector double[] tArgs, @Cast("sd::LongType*") @StdVector long[] iArgs,
+                                     @Cast("bool*") @StdVector boolean[] bArgs);
 
   /**
    *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input
@@ -19645,8 +19713,8 @@ public static final long
  * 1: 'off' value
  *
  * Int args:
- * 0: depth
- * 1: axis
+ * 0: axis
+ * 1: depth (takes precedence over optional scalar input 1)
  */
 // #if NOT_EXCLUDED(OP_onehot)
 // #endif
@@ -20010,6 +20078,15 @@ public static final long
  * returns a num of NDArrays as output
  */
 // #if NOT_EXCLUDED(OP_dynamic_partition)
+
+/**
+ * dynamic_partition_bp - the gradient of dynamic_partition: the first two params are the partitioned data and the
+ * index array, followed by the gradient of each partition (the shape of the partition's output); the output is the
+ * gradient of the data.
+ */
+// Expanded from DECLARE_CUSTOM_OP to override emptyHandling() = EMPTY_EXECUTE: a partition that got no slice has a
+// zero-length gradient, and NDArray::isEmpty() is true for it, so the default EMPTY_SKIP never ran the op and left the
+// data's gradient unwritten although the other partitions' slices still have gradients to move back.
 // #endif
 
 /**
@@ -20024,6 +20101,9 @@ public static final long
  * the operation is inversion od dynamic_partition
  */
 // #if NOT_EXCLUDED(OP_dynamic_stitch)
+// Expanded from DECLARE_CUSTOM_OP to override emptyHandling() = EMPTY_EXECUTE: a partition that got no slice has
+// zero-length index and data arrays, and NDArray::isEmpty() is true for them, so the default EMPTY_SKIP never ran the
+// op and the other partitions were not stitched either.
 // #endif
 
 /**
@@ -20609,6 +20689,9 @@ public static final long
  *    0 - 4D tensor with same shape as images (input 0)
  */
 // #if NOT_EXCLUDED(OP_draw_bounding_boxes)
+// Hand-expanded DECLARE_OP(draw_bounding_boxes, 3, 1, true) so the op can override emptyHandling() (defined in
+// draw_bounding_boxes.cpp) -> EMPTY_EXECUTE: an empty color table draws the default colors and images without boxes
+// are copied, so the op runs on empty inputs.
 // #endif
 
 /**
@@ -21556,6 +21639,8 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
 // its zero-init allocation — i.e. an all-zero attention output / unwritten KV cache. Since
 // the op produces a NON-EMPTY result from non-empty Q/K/V regardless of the empty masks,
 // EMPTY_EXECUTE is the correct policy (mirrors onnx_multi_head_attention below).
+// drawsRandomStateFor: the op draws from its context's random generator only for its dropout mask, with a dropout
+// rate above 0 while training (see DeclarableOp::drawsRandomStateFor).
 // #endif
 
 
@@ -22938,13 +23023,8 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
 // #endif
 
 /**
- * This operation casts elements of input array to specified data type
- *
- * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
- *
- *
- * Int args:
- * 0: target DataType
+ * Cast numeric or BOOL storage to the target DataType supplied in IArgs or DArgs.
+ * Empty inputs retain their shape and still validate the target/output contract.
  */
 // #if NOT_EXCLUDED(OP_cast)
 // #endif

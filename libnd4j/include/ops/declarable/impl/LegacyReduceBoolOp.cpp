@@ -71,8 +71,8 @@ Status LegacyReduceBoolOp::validateAndExecute(Context& block) {
     if ((axis.empty()) || (axis.size() == 1 && axis[0] == DataTypeUtils::max<int>()) || allAxes) {
       // scalar
       NativeOpExecutioner::execReduceBoolScalar(
-          block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-          extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+          block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+          extras.argumentsAsT(x->dataType()), sd::LegacyTensorArg::fromArray(z));
     } else {
       // TAD
       std::vector<LongType> dims = {axis};
@@ -92,10 +92,14 @@ Status LegacyReduceBoolOp::validateAndExecute(Context& block) {
         zShapeInfoD = reinterpret_cast<LongType const*>(zPack->special());
       }
 
-      std::vector<LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
-      NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-                                          x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
-                                          zShapeInfoD, dims2->data(), dims2->size());
+      // Vulkan consumes semantic axes; CPU/CUDA consume the legacy full-rank permutation.
+#if defined(SD_VULKAN)
+      auto* dims2 = new std::vector<LongType>(dims);
+#else
+      auto* dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
+#endif
+      NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x), nullptr,
+                                          sd::LegacyTensorArg::withShape(z, zShapeInfoH, zShapeInfoD), dims2->data(), dims2->size());
       delete dims2;
 
     }
@@ -116,8 +120,8 @@ Status LegacyReduceBoolOp::validateAndExecute(Context& block) {
     if ((block.getIArguments()->size() == 1 && INT_ARG(0) == DataTypeUtils::max<int>()) || allAxes) {
       // scalar
       NativeOpExecutioner::execReduceBoolScalar(
-          block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-          extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+          block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+          extras.argumentsAsT(x->dataType()), sd::LegacyTensorArg::fromArray(z));
     } else {
       // TAD
       if (indices->lengthOf() > 1) std::sort(dims.begin(), dims.end());
@@ -134,10 +138,14 @@ Status LegacyReduceBoolOp::validateAndExecute(Context& block) {
         zShapeInfoD = reinterpret_cast<LongType const*>(zPack->special());
       }
 
-      std::vector<LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
-      NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-                                          x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
-                                          zShapeInfoD, dims2->data(), dims2->size());
+      // Vulkan consumes semantic axes; CPU/CUDA consume the legacy full-rank permutation.
+#if defined(SD_VULKAN)
+      auto* dims2 = new std::vector<LongType>(dims);
+#else
+      auto* dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
+#endif
+      NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x), nullptr,
+                                          sd::LegacyTensorArg::withShape(z, zShapeInfoH, zShapeInfoD), dims2->data(), dims2->size());
 
       delete dims2;
 

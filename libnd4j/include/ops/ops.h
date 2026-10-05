@@ -2441,10 +2441,14 @@ DECLARE_ACCUMULATION_SIMD_SAFE_OP(Mean,
 // INDEX REDUCE OPERATIONS
 // =============================================================================
 
-DECLARE_INDEX_REDUCE_OP(IndexMax, -sd::DataTypeUtils::infOrMax<X>(),
-                        opOutput.value > old.value, f1.value > f2.value)
+// Test the value domain without std::is_unsigned: custom floating types need not have constexpr constructors.
+DECLARE_INDEX_REDUCE_OP(IndexMax,
+                        (static_cast<X>(-1) > static_cast<X>(0) ? static_cast<X>(0) : -sd::DataTypeUtils::infOrMax<X>()),
+                        opOutput.value > old.value || (opOutput.value == old.value && opOutput.index < old.index),
+                        f2.value > f1.value || (f2.value == f1.value && f2.index < f1.index))
 DECLARE_INDEX_REDUCE_OP(IndexMin, sd::DataTypeUtils::infOrMax<X>(),
-                        opOutput.value < old.value, f1.value < f2.value)
+                        opOutput.value < old.value || (opOutput.value == old.value && opOutput.index < old.index),
+                        f2.value < f1.value || (f2.value == f1.value && f2.index < f1.index))
 
 
 DECLARE_BINARY_COPY_OP(LogPoissonLoss,

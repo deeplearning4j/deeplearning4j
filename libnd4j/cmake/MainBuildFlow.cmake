@@ -857,6 +857,25 @@ function(configure_vulkan_linking main_target_name)
 endfunction()
 
 function(configure_cpu_linking main_target_name)
+    # The ordinary CPU target needs the same linker selection as the large-binary
+    # target. In particular, AArch64 CALL26 branches to libgcc's outlined atomics
+    # need range-extension thunks when the template-heavy text exceeds 128 MiB.
+    # Keep this link-only: changing atomic code generation would invalidate every
+    # cached object and would not repair the missing linker-policy integration.
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_CROSSCOMPILING AND
+       CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        sd_get_linker_config(_cpu_linker _cpu_linker_flag _cpu_linker_extra_flags)
+        if(_cpu_linker_flag)
+            include(CheckCXXCompilerFlag)
+            check_cxx_compiler_flag("${_cpu_linker_flag}" "SD_CPU_LINKER_${_cpu_linker}_SUPPORTED")
+            if(NOT SD_CPU_LINKER_${_cpu_linker}_SUPPORTED)
+                message(FATAL_ERROR "CPU linker ${_cpu_linker} is not supported by ${CMAKE_CXX_COMPILER}")
+            endif()
+            target_link_options(${main_target_name} PRIVATE "${_cpu_linker_flag}")
+            message(STATUS "CPU linker: ${_cpu_linker} (${_cpu_linker_flag})")
+        endif()
+    endif()
+
     # Core libraries
     # CMAKE_DL_LIBS provides -ldl on Linux (needed for dlopen/dlsym in DynamicKernelLoader).
     # JVM_LIBRARY is intentionally conditional: Android/mobile native builds set

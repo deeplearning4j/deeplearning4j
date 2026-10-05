@@ -823,6 +823,9 @@ public class DynamicShapePlanCompiler {
                         || tensorControlledView
                         || tensorControlledReduction;
             }
+            if (shapeDependsOnValues && opTraits != 0) {
+                shapeDependsOnValues = OpTraits.shapeDependsOnInputValues(opName, numInputs, iArgs.length);
+            }
             // A runtime-sized result necessarily requires fresh shape inference,
             // even when the descriptor's narrower VALUE_DEPENDENT_SHAPE bit is absent.
             shapeDependsOnValues |= dynamicOutputSize;

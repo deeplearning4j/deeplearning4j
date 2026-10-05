@@ -148,6 +148,11 @@ constexpr VulkanOperandTypeContract loadedIndexOperandTypes(
       0, 0, 0, false, 0, integerIndexInputMask};
 }
 
+constexpr VulkanOperandTypeContract ignoredInputs(uint16_t ignoredInputMask) {
+  return VulkanOperandTypeContract{
+      0, 0, 0, false, 0, 0, ignoredInputMask};
+}
+
 template <typename Op>
 void registerEmitter(
     std::vector<VulkanKernelEmitterInfo>& result,
@@ -160,7 +165,8 @@ void registerEmitter(
     VulkanArgumentSchema argumentSchema = VulkanArgumentSchema::NONE,
     VulkanLoweringContract loweringContract = VulkanLoweringContract::DEFAULT,
     VulkanArgumentContract argumentContract = {},
-    VulkanOperandTypeContract operandTypeContract = {}) {
+    VulkanOperandTypeContract operandTypeContract = {},
+    int16_t seedIntegerArgument = -1) {
   static Op op;
   op.initializeDescriptor();
   auto* descriptor = op.getOpDescriptor();
@@ -172,7 +178,8 @@ void registerEmitter(
       static_cast<int16_t>(descriptor->getNumberOfOutputs()),
       static_cast<int16_t>(descriptor->getNumberOfTArgs()),
       static_cast<int16_t>(descriptor->getNumberOfIArgs()),
-      argumentContract, operandTypeContract, minimumRank, maximumRank};
+      argumentContract, operandTypeContract, minimumRank, maximumRank,
+      seedIntegerArgument};
   info.family = vulkanKernelFamily(info);
   result.push_back(info);
 }
@@ -214,6 +221,17 @@ void registerLegacyEmitter(
         "typed Vulkan emitter does not name a canonical legacy operation");
   }
 
+  if (family == VulkanLegacyOpFamily::BROADCAST ||
+      family == VulkanLegacyOpFamily::BROADCAST_BOOL ||
+      family == VulkanLegacyOpFamily::BROADCAST_INT) {
+    argumentContract = singleArguments(rangedArguments(
+        2, 2, 1, 1, 0, 0, 0, -1, 0, 1));
+  } else if (family == VulkanLegacyOpFamily::REDUCE3) {
+    // TArgs are mathematical parameters, BArgs are keepDims/allPairs, IArgs axes.
+    argumentContract = singleArguments(rangedArguments(
+        2, 2, 1, 1, 0, opNum == static_cast<int>(sd::reduce3::EqualsWithEps) ? 1 : 0,
+        0, -1, 0, 2), VULKAN_ARGUMENT_VALUES_FINITE_TARGS);
+  }
   LegacyOp op(opNum);
   auto* descriptor = op.getOpDescriptor();
   VulkanKernelEmitterInfo info{
@@ -686,6 +704,16 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
         result, VulkanKernelRecipe::ATAN2,
          kFloat, kGeneralLayout);
 #endif
+#if NOT_EXCLUDED(OP_igamma)
+    registerEmitter<sd::ops::igamma>(
+        result, VulkanKernelRecipe::IGAMMA,
+         kFloat, kGeneralLayout);
+#endif
+#if NOT_EXCLUDED(OP_igammac)
+    registerEmitter<sd::ops::igammac>(
+        result, VulkanKernelRecipe::IGAMMAC,
+         kFloat, kGeneralLayout);
+#endif
 #if NOT_EXCLUDED(OP_swish_mul)
     registerEmitter<sd::ops::swish_mul>(
         result, VulkanKernelRecipe::SWISH_MUL,
@@ -893,6 +921,13 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
          kNumeric32, kStridedLayout,
         0, -1,  VULKAN_EMITTER_TRAIT_FLOAT_RESULT);
 #endif
+    // lgamma is log |Gamma(x)|: Cody's rational Gamma below 12, Stirling's series from 12, and the reflection formula
+    // below 0 (VulkanKernelRecipe::LGAMMA evaluates sd::math::sd_lgamma step by step).
+#if NOT_EXCLUDED(OP_lgamma)
+    registerEmitter<sd::ops::lgamma>(
+        result, VulkanKernelRecipe::LGAMMA,
+         kFloat, kStridedLayout);
+#endif
 #if NOT_EXCLUDED(OP_rint)
     registerEmitter<sd::ops::rint>(
         result, VulkanKernelRecipe::RINT,
@@ -944,7 +979,7 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
 #if NOT_EXCLUDED(OP_equals)
     registerEmitter<sd::ops::equals>(
         result, VulkanKernelRecipe::EQUAL,
-        kNumeric32WithBool, kGeneralLayout);
+        kNumeric32WithBool | VULKAN_DTYPE_INDEX, kGeneralLayout);
 #endif
 #if NOT_EXCLUDED(OP_not_equals)
     registerEmitter<sd::ops::not_equals>(
@@ -997,23 +1032,27 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
         kNumeric32WithBool, kGeneralLayout);
 #endif
 #if NOT_EXCLUDED(OP_cast)
+    // cast covers bool and the 64-bit integers (VULKAN_DTYPE_INDEX; recordable where the device has shaderInt64):
+    // INDArray.equals casts its BOOL matches to LONG.
     registerEmitter<sd::ops::cast>(
         result, VulkanKernelRecipe::CAST,
-        kNumeric32, kStridedLayout);
+        kNumeric32 | VULKAN_DTYPE_BOOL | VULKAN_DTYPE_INDEX, kStridedLayout);
 #endif
 
+    // softmax and log_softmax normalize along any axis (the optional IArg, the last axis by default) of an array of
+    // any rank: one invocation per row of the reduced shape (VULKAN_EMITTER_TRAIT_DISPATCH_AXIS_ROWS).
 #if NOT_EXCLUDED(OP_softmax)
     registerEmitter<sd::ops::softmax>(
         result, VulkanKernelRecipe::SOFTMAX,
-         kFloat, kStridedLayout, 2, 2,
-         VULKAN_EMITTER_TRAIT_DISPATCH_FIRST_DIM,
+         kFloat, kStridedLayout, 1, -1,
+         VULKAN_EMITTER_TRAIT_DISPATCH_AXIS_ROWS,
          VulkanArgumentSchema::NONE, VulkanLoweringContract::SOFTMAX);
 #endif
 #if NOT_EXCLUDED(OP_log_softmax)
     registerEmitter<sd::ops::log_softmax>(
         result, VulkanKernelRecipe::LOG_SOFTMAX,
-         kFloat, kStridedLayout, 2, 2,
-         VULKAN_EMITTER_TRAIT_DISPATCH_FIRST_DIM,
+         kFloat, kStridedLayout, 1, -1,
+         VULKAN_EMITTER_TRAIT_DISPATCH_AXIS_ROWS,
          VulkanArgumentSchema::NONE, VulkanLoweringContract::SOFTMAX);
 #endif
 #if NOT_EXCLUDED(OP_layer_norm)
@@ -1080,10 +1119,59 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
         singleArguments(rangedArguments(
             2, -1, 1, -1, 0, 0, 3, -1, 0, 0)));
 #endif
+#if NOT_EXCLUDED(OP_cross)
+    registerEmitter<sd::ops::cross>(
+        result, VulkanKernelRecipe::CROSS, kNumericWithIndex, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_TENSOR, movementArguments(2, 0, 0));
+#endif
+#if NOT_EXCLUDED(OP_maximum)
+    registerEmitter<sd::ops::maximum_bp>(
+        result, VulkanKernelRecipe::MAXIMUM_BP, kFloat, kStridedLayout, 0, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::TENSOR_GRADIENT,
+        singleArguments(exactArguments(3, 2, 0, 0, 0)));
+#endif
+#if NOT_EXCLUDED(OP_minimum)
+    registerEmitter<sd::ops::minimum_bp>(
+        result, VulkanKernelRecipe::MINIMUM_BP, kFloat, kStridedLayout, 0, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::TENSOR_GRADIENT,
+        singleArguments(exactArguments(3, 2, 0, 0, 0)));
+#endif
+#if NOT_EXCLUDED(OP_biasadd)
+    registerEmitter<sd::ops::biasadd_bp>(
+        result, VulkanKernelRecipe::BIAS_ADD_BP, kFloat, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::TENSOR_GRADIENT,
+        singleArguments(rangedArguments(3, 3, 2, 2, 0, 0, 0, 0, 0, 1)));
+#endif
+#if NOT_EXCLUDED(OP_cumsum)
+    registerEmitter<sd::ops::cumsum_bp>(
+        result, VulkanKernelRecipe::CUMSUM_BP, kFloat | VULKAN_DTYPE_SIGNED_INT32 | VULKAN_DTYPE_INDEX,
+        kStridedLayout, 0, -1, VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::TENSOR_GRADIENT,
+        eitherArguments(rangedArguments(2, 2, 1, 1, 0, 0, 2, -1, 0, 0),
+                        rangedArguments(3, 3, 2, 2, 0, 0, 2, -1, 0, 0)));
+    registerEmitter<sd::ops::cumsum>(
+        result, VulkanKernelRecipe::CUMSUM, kFloat, kStridedLayout, 0, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_TENSOR, movementArguments(1, 2, -1));
+#endif
+#if NOT_EXCLUDED(OP_broadcast_dynamic_shape)
+    registerEmitter<sd::ops::broadcast_dynamic_shape>(
+        result, VulkanKernelRecipe::BROADCAST_DYNAMIC_SHAPE,
+        VULKAN_DTYPE_SIGNED_INT32 | VULKAN_DTYPE_UNSIGNED_INT32 | VULKAN_DTYPE_INDEX, kStridedLayout, 1, 1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_TENSOR, movementArguments(2, 0, 0));
+#endif
+    // gather reads slice indices[i] along any axis (IArg 0, default 0) for indices of any rank, given as the second
+    // input or as the integer arguments after the axis. An index outside the axis gathers zeros. Index and value
+    // storage is 32-bit, or 64-bit where the device has shaderInt64 / shaderFloat64 (the INDEX dtype bit).
 #if NOT_EXCLUDED(OP_gather)
     registerEmitter<sd::ops::gather>(
         result, VulkanKernelRecipe::GATHER,
-        kNumeric32, kStridedLayout, 1, -1,
+        kNumericWithIndex, kStridedLayout, 1, -1,
         VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::AXES_IARGS);
 #endif
 #if NOT_EXCLUDED(OP_embedding_lookup)
@@ -1125,6 +1213,15 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
         kNumeric32WithStructuralIndex, kGeneralLayout, 0, -1,
         VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
         VulkanLoweringContract::LINEAR_COPY, {},
+        structuralIndexInputs(uint16_t{1} << 1));
+#endif
+#if NOT_EXCLUDED(OP_reshape_no_copy)
+    registerEmitter<sd::ops::reshape_no_copy>(
+        result, VulkanKernelRecipe::COPY,
+        kNumeric32WithStructuralIndex, kGeneralLayout, 0, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::TRAILING_SHAPE_ORDER,
+        VulkanLoweringContract::LINEAR_COPY,
+        singleArguments(rangedArguments(1, 2, 1, 1, 0, 0, 0, -1, 0, 0)),
         structuralIndexInputs(uint16_t{1} << 1));
 #endif
 #if NOT_EXCLUDED(OP_linear_copy)
@@ -1180,6 +1277,90 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
         VulkanArgumentSchema::NONE, VulkanLoweringContract::DEFAULT, {},
         structuralIndexInputs(uint16_t{1} << 2));
 #endif
+    // Ordered slice updates (ADR 0128). The recipe is the combine applied to the slice an index names; the
+    // INDEXED_SLICE_UPDATE contract is the schedule (one invocation per element position of an output slice,
+    // copying its positions of the input and then walking the index rows in order).
+#if NOT_EXCLUDED(OP_scatter_add)
+    registerEmitter<sd::ops::scatter_add>(
+        result, VulkanKernelRecipe::ADD,
+        kNumericWithIndex, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_SLICE_UPDATE);
+#endif
+#if NOT_EXCLUDED(OP_scatter_sub)
+    registerEmitter<sd::ops::scatter_sub>(
+        result, VulkanKernelRecipe::SUBTRACT,
+        kNumericWithIndex, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_SLICE_UPDATE);
+#endif
+#if NOT_EXCLUDED(OP_scatter_mul)
+    registerEmitter<sd::ops::scatter_mul>(
+        result, VulkanKernelRecipe::MULTIPLY,
+        kNumericWithIndex, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_SLICE_UPDATE);
+#endif
+#if NOT_EXCLUDED(OP_scatter_div)
+    registerEmitter<sd::ops::scatter_div>(
+        result, VulkanKernelRecipe::DIVIDE,
+        kNumericWithIndex, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_SLICE_UPDATE);
+#endif
+#if NOT_EXCLUDED(OP_scatter_upd)
+    registerEmitter<sd::ops::scatter_upd>(
+        result, VulkanKernelRecipe::ASSIGN,
+        kNumericWithIndex, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_SLICE_UPDATE);
+#endif
+#if NOT_EXCLUDED(OP_scatter_max)
+    registerEmitter<sd::ops::scatter_max>(
+        result, VulkanKernelRecipe::MAXIMUM,
+        kNumericWithIndex, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_SLICE_UPDATE);
+#endif
+#if NOT_EXCLUDED(OP_scatter_min)
+    registerEmitter<sd::ops::scatter_min>(
+        result, VulkanKernelRecipe::MINIMUM,
+        kNumericWithIndex, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_SLICE_UPDATE);
+#endif
+#if NOT_EXCLUDED(OP_scatter_nd_add)
+    registerEmitter<sd::ops::scatter_nd_add>(
+        result, VulkanKernelRecipe::ADD,
+        kNumericWithIndex, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_SLICE_UPDATE);
+#endif
+#if NOT_EXCLUDED(OP_scatter_nd_sub)
+    registerEmitter<sd::ops::scatter_nd_sub>(
+        result, VulkanKernelRecipe::SUBTRACT,
+        kNumericWithIndex, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_SLICE_UPDATE);
+#endif
+#if NOT_EXCLUDED(OP_scatter_nd_update)
+    registerEmitter<sd::ops::scatter_nd_update>(
+        result, VulkanKernelRecipe::ASSIGN,
+        kNumericWithIndex, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_SLICE_UPDATE);
+#endif
+    // get_rows_bp adds the rows of its gradient into a zeroed [numRows, D] table, rows sharing an index in index
+    // order: the ordered slice schedule with a zero initial output and the updates and indices as its operands.
+    // Its own traits (fully-writing backward) name no data-movement family; the contract does.
+#if NOT_EXCLUDED(OP_get_rows_bp)
+    registerEmitter<sd::ops::get_rows_bp>(
+        result, VulkanKernelRecipe::ADD,
+        kNumericWithIndex, kStridedLayout, 2, 2,
+        VULKAN_EMITTER_TRAIT_ZERO_INITIAL_OUTPUT,
+        VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::INDEXED_SLICE_UPDATE);
+#endif
 #if NOT_EXCLUDED(OP_tile)
     registerEmitter<sd::ops::tile>(
         result, VulkanKernelRecipe::TILE,
@@ -1200,6 +1381,12 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
         kNumeric32, kStridedLayout, 1, -1,
         VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
         VulkanLoweringContract::DEFAULT, movementArguments(1, 0, -1));
+#endif
+#if NOT_EXCLUDED(OP_reverse_bp)
+    registerEmitter<sd::ops::reverse_bp>(
+        result, VulkanKernelRecipe::REVERSE_BP, kFloat, kStridedLayout, 1, -1,
+        VULKAN_EMITTER_TRAIT_NONE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::DEFAULT, movementArguments(2, 0, -1));
 #endif
 #if NOT_EXCLUDED(OP_roll)
     registerEmitter<sd::ops::roll>(
@@ -1402,6 +1589,22 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
         VulkanLoweringContract::DEFAULT,
         singleArguments(exactArguments(0, 1, 0, 2, 0)));
 #endif
+    // randomuniform draws its output from the context's generator like the legacy UniformDistribution: the range
+    // is the two TArgs (the min/max array form is rejected), IArg 0 is the dtype and IArg 1 the seed. The shape
+    // input is ignored: the frozen output MemRef fixes the shape. The first alternative below is the descriptor
+    // as the kernel sees it (no shape operand), the second as the framework supplies it.
+#if NOT_EXCLUDED(OP_randomuniform)
+    registerEmitter<sd::ops::randomuniform>(
+        result, VulkanKernelRecipe::UNIFORM_RANDOM,
+        kFloat, kStridedLayout, 0, 1,
+        VULKAN_EMITTER_TRAIT_RANDOM_STATE, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::DEFAULT,
+        eitherArguments(
+            rangedArguments(0, 0, 1, 1, 2, 2, 0, 2, 0, 0, 0, 1),
+            rangedArguments(1, 1, 1, 1, 2, 2, 0, 2, 0, 0, 0, 1),
+            VULKAN_ARGUMENT_VALUES_FINITE_TARGS),
+        ignoredInputs(uint16_t{1} << 0), /*seedIntegerArgument=*/1);
+#endif
 
 #if NOT_EXCLUDED(OP_reduce_sum)
     registerEmitter<sd::ops::reduce_sum>(
@@ -1552,6 +1755,23 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
 const LegacyEmitterCatalogData& buildLegacyCatalog() {
   static const LegacyEmitterCatalogData catalog = [] {
     LegacyEmitterCatalogData result;
+
+    registerLegacyEmitter<sd::ops::LegacyTransformBoolOp>(
+        result, VulkanLegacyOpFamily::TRANSFORM_BOOL,
+        static_cast<int>(sd::transform::MatchConditionBool),
+        VulkanKernelRecipe::MATCH_CONDITION_UNARY, kNumeric32WithBool, kGeneralLayout,
+        0, -1, VULKAN_EMITTER_TRAIT_BOOLEAN_RESULT, VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::DEFAULT,
+        eitherArguments(exactArguments(1, 1, 0, 0, 0),
+                        exactArguments(1, 1, 3, 0, 0)));
+    registerLegacyEmitter<sd::ops::LegacyPairwiseTransformBoolOp>(
+        result, VulkanLegacyOpFamily::PAIRWISE_BOOL,
+        static_cast<int>(sd::pairwise::MatchCondition),
+        VulkanKernelRecipe::MATCH_CONDITION, kNumeric32WithBool, kGeneralLayout,
+        0, -1, VULKAN_EMITTER_TRAIT_BOOLEAN_RESULT, VulkanArgumentSchema::OPTIONAL_SCALAR_PAIR,
+        VulkanLoweringContract::DEFAULT,
+        eitherArguments(exactArguments(2, 1, 0, 0, 0),
+                        exactArguments(2, 1, 2, 0, 0)));
 
     registerLegacyEmitter<sd::ops::LegacyTransformSameOp>(
         result, VulkanLegacyOpFamily::TRANSFORM_SAME,
@@ -1837,10 +2057,12 @@ const LegacyEmitterCatalogData& buildLegacyCatalog() {
     constexpr uint32_t reductionParameters =
         VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS |
         VULKAN_EMITTER_TRAIT_TAD_REDUCTION_PERMUTATION;
+    // Sum also takes the 64-bit integers (INDArray.equals sums its LONG matches); an invocation accumulates one
+    // output serially, so it needs only Int64 arithmetic.
     registerLegacyEmitter<sd::ops::LegacyReduceSameOp>(
         result, VulkanLegacyOpFamily::REDUCE_SAME,
         static_cast<int>(sd::reduce::Sum),
-        VulkanKernelRecipe::REDUCE_SUM, kNumeric32, kStridedLayout,
+        VulkanKernelRecipe::REDUCE_SUM, kNumeric32 | VULKAN_DTYPE_INDEX, kStridedLayout,
         1, -1, reductionParameters,
         VulkanArgumentSchema::REDUCTION_KEEPDIMS);
     registerLegacyEmitter<sd::ops::LegacyReduceSameOp>(
@@ -1949,6 +2171,14 @@ const LegacyEmitterCatalogData& buildLegacyCatalog() {
         reductionParameters | VULKAN_EMITTER_TRAIT_FLOAT_RESULT |
             VULKAN_EMITTER_TRAIT_SQUARE_INPUT,
         VulkanArgumentSchema::REDUCTION_KEEPDIMS);
+
+    // Scalar assignment also writes structural/index arrays (for example a
+    // cumsum axis). Its integer lowering preserves the payload dtype; do not
+    // broaden arithmetic scalar operations along with this copy contract.
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::CopyPws),
+        VulkanKernelRecipe::ASSIGN, kNumericWithIndex, kGeneralLayout);
 
     // Every canonical legacy identity gets a typed descriptor, even when no
     // specialized recipe has been added yet.  The identity remains explicit in
@@ -2079,6 +2309,12 @@ VulkanKernelFamily vulkanKernelFamily(
   auto hasAny = [&](uint32_t mask) { return (traits & mask) != 0; };
   if (emitter.loweringContract == VulkanLoweringContract::TRIANGULAR_SOLVE) {
     return VulkanKernelFamily::TRIANGULAR_SOLVE;
+  }
+  // The ordered slice-update schedule is data movement whatever the op's own traits say (get_rows_bp is a
+  // fully-writing backward op, which names no family).
+  if (emitter.loweringContract == VulkanLoweringContract::INDEXED_TENSOR ||
+      emitter.loweringContract == VulkanLoweringContract::INDEXED_SLICE_UPDATE) {
+    return VulkanKernelFamily::DATA_MOVEMENT;
   }
   if (hasAny(sd::ops::OP_TRAIT_MATMUL)) {
     return VulkanKernelFamily::MATMUL;

@@ -56,6 +56,59 @@ constexpr int WARP_SIZE = 32;
 //  and were unused after the GELU/activation paths were converted to simdOps::AggregateType.)
 
 //////////////////////////////////////////////////////////////////////////////
+// Operands of the kernels below. They index their operands as dense rows of one type, so an operand that is a stepped
+// view, an F-ordered or permuted array, or of another type goes through a dense copy (the strides decide whether
+// an array is dense row-major: the order flag does not, and a view's offset is already in specialBuffer()).
+//////////////////////////////////////////////////////////////////////////////
+
+// `a` as a dense row-major array of the given type: `a` itself when it is one, else a copy the caller retires with
+// retireTemporary.
+static NDArray* denseInType(NDArray* a, DataType dataType) {
+  if (a == nullptr) return nullptr;
+  NDArray* typed = a->dataType() == dataType ? a : a->cast(dataType);
+  if (shape::isDenseRowMajor(typed->shapeInfo())) return typed;
+  NDArray* dense = typed->dup('c');
+  if (typed != a) MmulHelper::deleteTemporary(typed);
+  return dense;
+}
+
+// The array a kernel writes in place of `a`: `a` itself when it is dense row-major and of the given type, else a dense
+// temporary the caller assigns to `a` and retires with retireTemporary.
+static NDArray* denseOutputInType(NDArray* a, DataType dataType, LaunchContext* context) {
+  if (a == nullptr || (a->dataType() == dataType && shape::isDenseRowMajor(a->shapeInfo()))) return a;
+  std::vector<LongType> dims(a->shapeOf(), a->shapeOf() + a->rankOf());
+  return new NDArray('c', dims, dataType, context);
+}
+
+// `a` in the given type whatever its layout (a matmul operand: the matmuls deal with layouts themselves): `a` itself,
+// or a cast the caller retires with retireTemporary.
+static NDArray* asType(NDArray* a, DataType dataType) {
+  return a == nullptr || a->dataType() == dataType ? a : a->cast(dataType);
+}
+
+// Retires a temporary of a call (an array that is not the caller's own) behind the stream that still reads it: the
+// kernels and matmuls that consume it are asynchronous, and the pool must not recycle its storage before the last of
+// them.
+static void retireTemporary(NDArray* temporary, NDArray* original) {
+  if (temporary != original) MmulHelper::deleteTemporary(temporary);
+}
+
+// The threads of a block that works on one row of rowLen elements: a power of two of at most 512, at least a warp
+// (the block reductions need whole warps).
+static int rowBlockThreads(LongType rowLen) {
+  int threads = WARP_SIZE;
+  while (threads < 512 && threads < rowLen) threads *= 2;
+  return threads;
+}
+
+// The blocks that cover `items` work items of `perBlock` each with a grid-stride loop, in the range of a launch.
+static unsigned int blocksFor(LongType items, int perBlock) {
+  const LongType needed = (items + perBlock - 1) / perBlock;
+  const LongType limit = 2147483647;
+  return static_cast<unsigned int>(needed < limit ? (needed > 0 ? needed : 1) : limit);
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // Fused GELU Kernel - x * sigmoid(1.702 * x)
 //////////////////////////////////////////////////////////////////////////////
 
@@ -67,7 +120,7 @@ static SD_KERNEL __launch_bounds__(256, 2) void fusedGELUKernel(
 
   using AccT = typename simdOps::AggregateType<T>::type;
 
-  const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const LongType idx = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
   if (idx >= totalElements) return;
 
   AccT x = static_cast<AccT>(input[idx]);
@@ -88,7 +141,7 @@ static SD_KERNEL __launch_bounds__(256, 2) void fusedGELUBackwardKernel(
 
   using AccT = typename simdOps::AggregateType<T>::type;
 
-  const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const LongType idx = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
   if (idx >= totalElements) return;
 
   AccT x = static_cast<AccT>(input[idx]);
@@ -216,7 +269,7 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedRoPEKernel(
 
   // Each thread handles one element pair for rotation
   const LongType halfRotate = rotateDims / 2;
-  const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const LongType idx = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
   const LongType totalPairs = batch * seqLen * numHeads * halfRotate;
   if (idx >= totalPairs) return;
 
@@ -276,7 +329,7 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedRoPEBackwardKernel(
     const LongType rotateDims) {
 
   const LongType halfRotate = rotateDims / 2;
-  const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const LongType idx = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
   const LongType totalPairs = batch * seqLen * numHeads * halfRotate;
   if (idx >= totalPairs) return;
 
@@ -335,9 +388,12 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedRoPECachedKernel(
     const LongType cosStride0,
     const LongType cosStride1,
     const LongType cosStride2,
+    const LongType sinStride0,
+    const LongType sinStride1,
+    const LongType sinStride2,
     const int ropeType) {
 
-  const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const LongType idx = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
   const LongType halfDim = headDim / 2;
   const LongType totalPairs = batch * seqLen * numHeads * halfDim;
   if (idx >= totalPairs) return;
@@ -351,10 +407,10 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedRoPECachedKernel(
   const LongType s = rem % seqLen;
   const LongType b = rem / seqLen;
 
-  // Index into cos/sin using their actual strides (handles 2D, 3D, or 4D with broadcast)
-  const LongType csIdx = b * cosStride0 + s * cosStride1 + pairIdx * cosStride2;
-  AccT cosVal = static_cast<AccT>(cosValues[csIdx]);
-  AccT sinVal = static_cast<AccT>(sinValues[csIdx]);
+  // Index into cos and sin, each through its own strides (handles 2D, 3D, or 4D with broadcast, and a sin table that
+  // is laid out differently from the cos table)
+  AccT cosVal = static_cast<AccT>(cosValues[b * cosStride0 + s * cosStride1 + pairIdx * cosStride2]);
+  AccT sinVal = static_cast<AccT>(sinValues[b * sinStride0 + s * sinStride1 + pairIdx * sinStride2]);
 
   LongType idx1, idx2;
   if (ropeType == 0) {  // Standard (LLaMA)
@@ -391,14 +447,16 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedBiasDropoutResidualKernel(
     const LongType seed,
     const bool training) {
 
-  const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+  using AccT = typename simdOps::AggregateType<T>::type;
+
+  const LongType idx = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
   if (idx >= totalElements) return;
 
-  float val = static_cast<float>(input[idx]);
+  AccT val = static_cast<AccT>(input[idx]);
 
   // Add bias (broadcast along last dimension)
   if (bias != nullptr) {
-    val += static_cast<float>(bias[idx % biasLen]);
+    val += static_cast<AccT>(bias[idx % biasLen]);
   }
 
   // Apply dropout if training
@@ -407,15 +465,15 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedBiasDropoutResidualKernel(
     curand_init(seed, idx, 0, &state);
     float rand = curand_uniform(&state);
     if (rand < dropoutProb) {
-      val = 0.0f;
+      val = static_cast<AccT>(0);
     } else {
-      val /= (1.0f - dropoutProb);
+      val /= static_cast<AccT>(1.0f - dropoutProb);
     }
   }
 
   // Add residual
   if (residual != nullptr) {
-    val += static_cast<float>(residual[idx]);
+    val += static_cast<AccT>(residual[idx]);
   }
 
   output[idx] = static_cast<T>(val);
@@ -768,63 +826,60 @@ template void launchFusedBiasDropoutResidual<float16>(const float16*, const floa
 // Public API implementations
 //////////////////////////////////////////////////////////////////////////////
 
-void fusedGELU(NDArray* input, NDArray* output, LaunchContext* context) {
+template <typename T>
+static void fusedGELU_(NDArray* input, NDArray* output, LaunchContext* context) {
   NDArray::prepareSpecialUse({output}, {input});
   auto stream = context->getCudaStream();
-  auto dtype = input->dataType();
-  auto totalElements = input->lengthOf();
-
-  if (dtype == DataType::FLOAT32) {
-    launchFusedGELU<float>(
-        reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<float*>(output->specialBuffer()),
-        totalElements, *stream);
-  } else if (dtype == DataType::DOUBLE) {
-    launchFusedGELU<double>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<double*>(output->specialBuffer()),
-        totalElements, *stream);
-  } else if (dtype == DataType::HALF) {
-    launchFusedGELU<float16>(
-        reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<float16*>(output->specialBuffer()),
-        totalElements, *stream);
-  } else {
-    THROW_EXCEPTION("fusedGELU: Unsupported data type");
-  }
-
+  launchFusedGELU<T>(
+      reinterpret_cast<const T*>(input->specialBuffer()),
+      reinterpret_cast<T*>(output->specialBuffer()),
+      input->lengthOf(), *stream);
   NDArray::registerSpecialUse({output}, {input});
 }
 
-void fusedGELUBackward(NDArray* input, NDArray* gradOut, NDArray* gradIn, LaunchContext* context) {
+void fusedGELU(NDArray* originalInput, NDArray* originalOutput, LaunchContext* context) {
+  if (originalInput->lengthOf() == 0) return;
+  // The kernel pairs the elements of the input and the output by their offsets from the start of their buffers: both go
+  // through dense row-major arrays of the input's type where they are not already (a stepped view, an F-ordered or
+  // permuted array, an output of another type). In place on a dense array, the input and the output are one array.
+  const auto dataType = originalInput->dataType();
+  NDArray* input = denseInType(originalInput, dataType);
+  NDArray* output = denseOutputInType(originalOutput, dataType, context);
+
+  BUILD_SINGLE_SELECTOR(dataType, fusedGELU_, (input, output, context), SD_FLOAT_TYPES);
+
+  if (output != originalOutput) originalOutput->assign(output);
+  retireTemporary(input, originalInput);
+  retireTemporary(output, originalOutput);
+}
+
+template <typename T>
+static void fusedGELUBackward_(NDArray* input, NDArray* gradOut, NDArray* gradIn, LaunchContext* context) {
   NDArray::prepareSpecialUse({gradIn}, {input, gradOut});
   auto stream = context->getCudaStream();
-  auto dtype = input->dataType();
-  auto totalElements = input->lengthOf();
-
-  if (dtype == DataType::FLOAT32) {
-    launchFusedGELUBackward<float>(
-        reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<const float*>(gradOut->specialBuffer()),
-        reinterpret_cast<float*>(gradIn->specialBuffer()),
-        totalElements, *stream);
-  } else if (dtype == DataType::DOUBLE) {
-    launchFusedGELUBackward<double>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<const double*>(gradOut->specialBuffer()),
-        reinterpret_cast<double*>(gradIn->specialBuffer()),
-        totalElements, *stream);
-  } else if (dtype == DataType::HALF) {
-    launchFusedGELUBackward<float16>(
-        reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<const float16*>(gradOut->specialBuffer()),
-        reinterpret_cast<float16*>(gradIn->specialBuffer()),
-        totalElements, *stream);
-  } else {
-    THROW_EXCEPTION("fusedGELUBackward: Unsupported data type");
-  }
-
+  launchFusedGELUBackward<T>(
+      reinterpret_cast<const T*>(input->specialBuffer()),
+      reinterpret_cast<const T*>(gradOut->specialBuffer()),
+      reinterpret_cast<T*>(gradIn->specialBuffer()),
+      input->lengthOf(), *stream);
   NDArray::registerSpecialUse({gradIn}, {input, gradOut});
+}
+
+void fusedGELUBackward(NDArray* originalInput, NDArray* originalGradOut, NDArray* originalGradIn,
+                       LaunchContext* context) {
+  if (originalInput->lengthOf() == 0) return;
+  // As the forward pass: dense row-major arrays of the input's type for the kernel.
+  const auto dataType = originalInput->dataType();
+  NDArray* input = denseInType(originalInput, dataType);
+  NDArray* gradOut = denseInType(originalGradOut, dataType);
+  NDArray* gradIn = denseOutputInType(originalGradIn, dataType, context);
+
+  BUILD_SINGLE_SELECTOR(dataType, fusedGELUBackward_, (input, gradOut, gradIn, context), SD_FLOAT_TYPES);
+
+  if (gradIn != originalGradIn) originalGradIn->assign(gradIn);
+  retireTemporary(input, originalInput);
+  retireTemporary(gradOut, originalGradOut);
+  retireTemporary(gradIn, originalGradIn);
 }
 
 template <typename T>
@@ -853,7 +908,8 @@ void fusedLayerNorm(NDArray* originalInput, NDArray* originalGain, NDArray* orig
     NDArray* typed = a->dataType() == dataType ? a : a->cast(dataType);
     if (shape::isDenseRowMajor(typed->shapeInfo())) return typed;
     NDArray* dense = typed->dup('c');
-    if (typed != a) delete typed;
+    // the copy above is still reading the cast
+    if (typed != a) MmulHelper::deleteTemporary(typed);
     return dense;
   };
   NDArray* input = readable(originalInput);
@@ -895,9 +951,16 @@ void fusedRoPE_(NDArray* input, NDArray* output, NDArray* positionArr,
       freqBase, freqScale, ropeType, stream, rotaryDims);
 }
 
-void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
+void fusedRoPE(NDArray* originalInput, NDArray* originalOutput, NDArray* positionArr,
                float freqBase, float freqScale, int ropeType, LaunchContext* context,
                int rotaryDims) {
+  // The kernel indexes the input and the output as dense row-major [batch, seq, heads, head_dim] arrays of the input's
+  // type: any other layout (a stepped view, an F-ordered or permuted array) or an output of another type goes through
+  // a dense copy.
+  const auto dataType = originalInput->dataType();
+  NDArray* input = denseInType(originalInput, dataType);
+  NDArray* output = denseOutputInType(originalOutput, dataType, context);
+
   const int rank = input->rankOf();
   auto batch = input->sizeAt(0);
   auto seqLen = input->sizeAt(1);
@@ -912,10 +975,31 @@ void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
        freqBase, freqScale, ropeType, *stream, rotaryDims), SD_FLOAT_TYPES, SD_COMMON_TYPES);
 
   NDArray::registerSpecialUse({output}, {input, positionArr});
+
+  if (output != originalOutput) originalOutput->assign(output);
+  retireTemporary(input, originalInput);
+  retireTemporary(output, originalOutput);
 }
 
-void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
-                     NDArray* output, int ropeType, LaunchContext* context) {
+// The launch of the cached RoPE kernel for an input of type T and cos/sin tables of type CS.
+template <typename T, typename CS>
+static void fusedRoPECachedLaunch_(NDArray* input, NDArray* cosValues, NDArray* sinValues, NDArray* output,
+                                   LongType batch, LongType seqLen, LongType numHeads, LongType headDim,
+                                   LongType cosStride0, LongType cosStride1, LongType cosStride2,
+                                   LongType sinStride0, LongType sinStride1, LongType sinStride2, int ropeType,
+                                   int numBlocks, int threadsPerBlock, cudaStream_t stream) {
+  fusedRoPECachedKernel<T, CS><<<numBlocks, threadsPerBlock, 0, stream>>>(
+      reinterpret_cast<const T*>(input->specialBuffer()),
+      reinterpret_cast<const CS*>(cosValues->specialBuffer()),
+      reinterpret_cast<const CS*>(sinValues->specialBuffer()),
+      reinterpret_cast<T*>(output->specialBuffer()),
+      batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, sinStride0, sinStride1, sinStride2,
+      ropeType);
+}
+
+// The cached RoPE of dense row-major input and output arrays of one type (fusedRoPECached stages the caller's).
+static void fusedRoPECachedDense(NDArray* input, NDArray* cosValues, NDArray* sinValues,
+                                 NDArray* output, int ropeType, LaunchContext* context) {
   const int rank = input->rankOf();
   auto batch = input->sizeAt(0);
   auto seqLen = input->sizeAt(1);
@@ -923,27 +1007,32 @@ void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
   auto headDim = (rank >= 4) ? input->sizeAt(3) : input->sizeAt(2);
 
   // cos/sin can be 2D [S, halfDim], 3D [B, S, halfDim], or 4D [B, S, 1, halfDim]
-  // Compute strides for the batch, seq, and halfDim dimensions
-  auto cosRank = cosValues->rankOf();
-  LongType cosStride0 = 0;  // batch stride
-  LongType cosStride1 = 0;  // seq stride
-  LongType cosStride2 = 1;  // halfDim stride (innermost)
-  if (cosRank == 2) {
-    // [S, halfDim] - no batch dim, broadcast across batch
-    cosStride0 = 0;
-    cosStride1 = cosValues->strideAt(0);
-    cosStride2 = cosValues->strideAt(1);
-  } else if (cosRank == 3) {
-    // [B, S, halfDim]
-    cosStride0 = cosValues->strideAt(0);
-    cosStride1 = cosValues->strideAt(1);
-    cosStride2 = cosValues->strideAt(2);
-  } else if (cosRank == 4) {
-    // [B, S, 1, halfDim] - skip the broadcast head dim
-    cosStride0 = cosValues->strideAt(0);
-    cosStride1 = cosValues->strideAt(1);
-    cosStride2 = cosValues->strideAt(3);
-  }
+  // Compute strides for the batch, seq, and halfDim dimensions, of each table (the tables have one shape, and their
+  // layouts may differ)
+  auto tableStrides = [](NDArray* table, LongType& batchStride, LongType& seqStride, LongType& halfDimStride) {
+    const int tableRank = table->rankOf();
+    batchStride = 0;     // batch stride
+    seqStride = 0;       // seq stride
+    halfDimStride = 1;   // halfDim stride (innermost)
+    if (tableRank == 2) {
+      // [S, halfDim] - no batch dim, broadcast across batch
+      seqStride = table->strideAt(0);
+      halfDimStride = table->strideAt(1);
+    } else if (tableRank == 3) {
+      // [B, S, halfDim]
+      batchStride = table->strideAt(0);
+      seqStride = table->strideAt(1);
+      halfDimStride = table->strideAt(2);
+    } else if (tableRank == 4) {
+      // [B, S, 1, halfDim] - skip the broadcast head dim
+      batchStride = table->strideAt(0);
+      seqStride = table->strideAt(1);
+      halfDimStride = table->strideAt(3);
+    }
+  };
+  LongType cosStride0, cosStride1, cosStride2, sinStride0, sinStride1, sinStride2;
+  tableStrides(cosValues, cosStride0, cosStride1, cosStride2);
+  tableStrides(sinValues, sinStride0, sinStride1, sinStride2);
 
   auto stream = context->getCudaStream();
   auto dtype = input->dataType();
@@ -969,70 +1058,42 @@ void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
   int threadsPerBlock = launchDims.y;
   int numBlocks = (totalPairs + threadsPerBlock - 1) / threadsPerBlock;
 
-  auto csDtype = cosValues->dataType();
-
-  // Dispatch: <T=input type, CS=cos/sin type>
-  // The kernel reads cos/sin as CS and casts to float in-register (lines 360-361).
-  if (dtype == DataType::FLOAT32 && csDtype == DataType::FLOAT32) {
-    fusedRoPECachedKernel<float, float><<<numBlocks, threadsPerBlock, 0, *stream>>>(
-        reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<const float*>(cosValues->specialBuffer()),
-        reinterpret_cast<const float*>(sinValues->specialBuffer()),
-        reinterpret_cast<float*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
-  } else if (dtype == DataType::FLOAT32 && csDtype == DataType::HALF) {
-    fusedRoPECachedKernel<float, float16><<<numBlocks, threadsPerBlock, 0, *stream>>>(
-        reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<const float16*>(cosValues->specialBuffer()),
-        reinterpret_cast<const float16*>(sinValues->specialBuffer()),
-        reinterpret_cast<float*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
-  } else if (dtype == DataType::HALF && csDtype == DataType::HALF) {
-    fusedRoPECachedKernel<float16, float16><<<numBlocks, threadsPerBlock, 0, *stream>>>(
-        reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<const float16*>(cosValues->specialBuffer()),
-        reinterpret_cast<const float16*>(sinValues->specialBuffer()),
-        reinterpret_cast<float16*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
-  } else if (dtype == DataType::HALF && csDtype == DataType::FLOAT32) {
-    fusedRoPECachedKernel<float16, float><<<numBlocks, threadsPerBlock, 0, *stream>>>(
-        reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<const float*>(cosValues->specialBuffer()),
-        reinterpret_cast<const float*>(sinValues->specialBuffer()),
-        reinterpret_cast<float16*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
-  } else if (dtype == DataType::DOUBLE && csDtype == DataType::DOUBLE) {
-    fusedRoPECachedKernel<double, double><<<numBlocks, threadsPerBlock, 0, *stream>>>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<const double*>(cosValues->specialBuffer()),
-        reinterpret_cast<const double*>(sinValues->specialBuffer()),
-        reinterpret_cast<double*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
-  } else if (dtype == DataType::DOUBLE && csDtype == DataType::FLOAT32) {
-    fusedRoPECachedKernel<double, float><<<numBlocks, threadsPerBlock, 0, *stream>>>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<const float*>(cosValues->specialBuffer()),
-        reinterpret_cast<const float*>(sinValues->specialBuffer()),
-        reinterpret_cast<double*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
-  } else if (dtype == DataType::DOUBLE && csDtype == DataType::HALF) {
-    fusedRoPECachedKernel<double, float16><<<numBlocks, threadsPerBlock, 0, *stream>>>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<const float16*>(cosValues->specialBuffer()),
-        reinterpret_cast<const float16*>(sinValues->specialBuffer()),
-        reinterpret_cast<double*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
-  } else {
-    THROW_EXCEPTION("fusedRoPECached: Unsupported data type combination");
-  }
+  // Dispatch: <T = input type, CS = cos/sin type>, any pair of the float types (the BFLOAT16 pairs threw as an
+  // unsupported combination, though the op takes it and the CPU helper rotates it). The kernel reads cos/sin as CS and
+  // casts to its aggregate type in-register.
+  BUILD_DOUBLE_SELECTOR(dtype, cosValues->dataType(), fusedRoPECachedLaunch_,
+                        (input, cosValues, sinValues, output, batch, seqLen, numHeads, headDim, cosStride0,
+                         cosStride1, cosStride2, sinStride0, sinStride1, sinStride2, ropeType, numBlocks,
+                         threadsPerBlock, *stream),
+                        SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
   DebugHelper::checkGlobalErrorCode("fusedRoPECachedKernel failed");
   NDArray::registerSpecialUse({output}, {input, cosValues, sinValues});
 }
 
-void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
-                       float freqBase, float freqScale, int ropeType, LaunchContext* context,
-                       int rotaryDims) {
+void fusedRoPECached(NDArray* originalInput, NDArray* cosValues, NDArray* originalSinValues,
+                     NDArray* originalOutput, int ropeType, LaunchContext* context) {
+  // The kernel indexes the input and the output as dense row-major arrays of the input's type (the cos and sin tables
+  // are read through their own strides): another layout or an output of another type goes through a dense copy. It
+  // reads both tables as one type, the cos table's: a sin table of another type is read in a copy of that type (the
+  // kernel took its bytes for the cos table's type before).
+  const auto dataType = originalInput->dataType();
+  NDArray* input = denseInType(originalInput, dataType);
+  NDArray* sinValues = asType(originalSinValues, cosValues->dataType());
+  NDArray* output = denseOutputInType(originalOutput, dataType, context);
+
+  fusedRoPECachedDense(input, cosValues, sinValues, output, ropeType, context);
+
+  if (output != originalOutput) originalOutput->assign(output);
+  retireTemporary(input, originalInput);
+  retireTemporary(sinValues, originalSinValues);
+  retireTemporary(output, originalOutput);
+}
+
+template <typename T>
+static void fusedRoPEBackward_(NDArray* gradOut, NDArray* gradIn, int positionOffset,
+                               float freqBase, float freqScale, int ropeType, LaunchContext* context,
+                               int rotaryDims) {
   const int rank = gradOut->rankOf();
   auto batch = gradOut->sizeAt(0);
   auto seqLen = gradOut->sizeAt(1);
@@ -1041,115 +1102,122 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
 
   NDArray::prepareSpecialUse({gradIn}, {gradOut});
   auto stream = context->getCudaStream();
-  auto dtype = gradOut->dataType();
 
-  if (dtype == DataType::FLOAT32) {
-    launchFusedRoPEBackward<float>(
-        reinterpret_cast<const float*>(gradOut->specialBuffer()),
-        reinterpret_cast<float*>(gradIn->specialBuffer()),
-        batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
-  } else if (dtype == DataType::DOUBLE) {
-    launchFusedRoPEBackward<double>(
-        reinterpret_cast<const double*>(gradOut->specialBuffer()),
-        reinterpret_cast<double*>(gradIn->specialBuffer()),
-        batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
-  } else if (dtype == DataType::HALF) {
-    launchFusedRoPEBackward<float16>(
-        reinterpret_cast<const float16*>(gradOut->specialBuffer()),
-        reinterpret_cast<float16*>(gradIn->specialBuffer()),
-        batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
-  } else {
-    THROW_EXCEPTION("fusedRoPEBackward: Unsupported data type");
-  }
+  launchFusedRoPEBackward<T>(
+      reinterpret_cast<const T*>(gradOut->specialBuffer()),
+      reinterpret_cast<T*>(gradIn->specialBuffer()),
+      batch, seqLen, numHeads, headDim,
+      positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
 
   NDArray::registerSpecialUse({gradIn}, {gradOut});
 }
 
-void fusedBiasDropoutResidual(NDArray* input, NDArray* bias, NDArray* residual,
-                              NDArray* output, float dropoutProb, LongType seed,
-                              bool training, LaunchContext* context) {
+void fusedRoPEBackward(NDArray* originalGradOut, NDArray* originalGradIn, int positionOffset,
+                       float freqBase, float freqScale, int ropeType, LaunchContext* context,
+                       int rotaryDims) {
+  // The kernel indexes the gradient and its result as dense row-major arrays of the gradient's type: another layout
+  // or a result of another type goes through a dense copy.
+  const auto dataType = originalGradOut->dataType();
+  NDArray* gradOut = denseInType(originalGradOut, dataType);
+  NDArray* gradIn = denseOutputInType(originalGradIn, dataType, context);
+
+  BUILD_SINGLE_SELECTOR(dataType, fusedRoPEBackward_,
+                        (gradOut, gradIn, positionOffset, freqBase, freqScale, ropeType, context, rotaryDims),
+                        SD_FLOAT_TYPES);
+
+  if (gradIn != originalGradIn) originalGradIn->assign(gradIn);
+  retireTemporary(gradOut, originalGradOut);
+  retireTemporary(gradIn, originalGradIn);
+}
+
+template <typename T>
+static void fusedBiasDropoutResidual_(NDArray* input, NDArray* bias, NDArray* residual,
+                                      NDArray* output, float dropoutProb, LongType seed,
+                                      bool training, LaunchContext* context) {
   auto totalElements = input->lengthOf();
   auto biasLen = bias != nullptr ? bias->lengthOf() : 1;
 
   NDArray::prepareSpecialUse({output}, {input, bias, residual});
   auto stream = context->getCudaStream();
-  auto dtype = input->dataType();
 
-  if (dtype == DataType::FLOAT32) {
-    launchFusedBiasDropoutResidual<float>(
-        reinterpret_cast<const float*>(input->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const float*>(bias->specialBuffer()) : nullptr,
-        residual != nullptr ? reinterpret_cast<const float*>(residual->specialBuffer()) : nullptr,
-        reinterpret_cast<float*>(output->specialBuffer()),
-        totalElements, biasLen, dropoutProb, seed, training, *stream);
-  } else if (dtype == DataType::DOUBLE) {
-    launchFusedBiasDropoutResidual<double>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const double*>(bias->specialBuffer()) : nullptr,
-        residual != nullptr ? reinterpret_cast<const double*>(residual->specialBuffer()) : nullptr,
-        reinterpret_cast<double*>(output->specialBuffer()),
-        totalElements, biasLen, dropoutProb, seed, training, *stream);
-  } else if (dtype == DataType::HALF) {
-    launchFusedBiasDropoutResidual<float16>(
-        reinterpret_cast<const float16*>(input->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
-        residual != nullptr ? reinterpret_cast<const float16*>(residual->specialBuffer()) : nullptr,
-        reinterpret_cast<float16*>(output->specialBuffer()),
-        totalElements, biasLen, dropoutProb, seed, training, *stream);
-  } else {
-    THROW_EXCEPTION("fusedBiasDropoutResidual: Unsupported data type");
-  }
+  launchFusedBiasDropoutResidual<T>(
+      reinterpret_cast<const T*>(input->specialBuffer()),
+      bias != nullptr ? reinterpret_cast<const T*>(bias->specialBuffer()) : nullptr,
+      residual != nullptr ? reinterpret_cast<const T*>(residual->specialBuffer()) : nullptr,
+      reinterpret_cast<T*>(output->specialBuffer()),
+      totalElements, biasLen, dropoutProb, seed, training, *stream);
 
   NDArray::registerSpecialUse({output}, {input, bias, residual});
+}
+
+void fusedBiasDropoutResidual(NDArray* originalInput, NDArray* originalBias, NDArray* originalResidual,
+                              NDArray* originalOutput, float dropoutProb, LongType seed,
+                              bool training, LaunchContext* context) {
+  // The kernel indexes the input, the residual and the output as dense row-major arrays and the bias as a dense vector,
+  // all of the input's type: another layout or type goes through a dense copy. An element's random draw depends on
+  // its position in the dense order, so the result does not depend on the layout.
+  const auto dataType = originalInput->dataType();
+  NDArray* input = denseInType(originalInput, dataType);
+  NDArray* bias = denseInType(originalBias, dataType);
+  NDArray* residual = denseInType(originalResidual, dataType);
+  NDArray* output = denseOutputInType(originalOutput, dataType, context);
+
+  BUILD_SINGLE_SELECTOR(dataType, fusedBiasDropoutResidual_,
+                        (input, bias, residual, output, dropoutProb, seed, training, context), SD_FLOAT_TYPES);
+
+  if (output != originalOutput) originalOutput->assign(output);
+  retireTemporary(input, originalInput);
+  retireTemporary(bias, originalBias);
+  retireTemporary(residual, originalResidual);
+  retireTemporary(output, originalOutput);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // Fused RMS Norm + SwiGLU
 //////////////////////////////////////////////////////////////////////////////
 
+// The rows of input [numRows, rowLen] scaled by their root mean square and by gamma:
+//   output = input * (1 / sqrt(mean(input^2) + epsilon)) * gamma
+// and, when invRmsOut is given, each row's 1 / rms for the backward pass. One block per row (a grid-stride loop over
+// the rows); blockDim.x is a multiple of the warp size.
 template <typename T>
 static SD_KERNEL __launch_bounds__(512, 1) void rmsNormGammaKernel(
     T* __restrict__ output,
     const T* __restrict__ input,
     const T* __restrict__ gamma,
+    typename simdOps::AggregateType<T>::type* __restrict__ invRmsOut,
     const LongType numRows,
     const LongType rowLen,
     const float epsilon) {
 
   using AccT = typename simdOps::AggregateType<T>::type;
 
-  const LongType row = blockIdx.x;
-  if (row >= numRows) return;
-
   extern __shared__ char shmem[];
   AccT* sdata = reinterpret_cast<AccT*>(shmem);
 
-  const T* inputRow = input + row * rowLen;
-  T* outputRow = output + row * rowLen;
+  for (LongType row = blockIdx.x; row < numRows; row += gridDim.x) {
+    const T* inputRow = input + row * rowLen;
+    T* outputRow = output + row * rowLen;
 
-  // Compute sum of squares for RMS norm
-  AccT sumSq = static_cast<AccT>(0);
-  for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-    AccT val = static_cast<AccT>(inputRow[i]);
-    sumSq += val * val;
-  }
+    // Sum of squares of the row for RMS norm, on every thread (the reduction ends with a barrier: sdata is free for
+    // the block's next row)
+    AccT sumSq = static_cast<AccT>(0);
+    for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+      const AccT val = static_cast<AccT>(inputRow[i]);
+      sumSq += val * val;
+    }
+    const AccT total = sd::device::blockAllReduceSum<AccT>(sumSq, sdata);
 
-  // Block-level sum of squares (result on thread 0 -> sdata[0])
-  AccT blockSumSq = sd::device::blockReduceSum(sumSq, sdata);
-  if (threadIdx.x == 0) sdata[0] = blockSumSq;
-  __syncthreads();
+    // Compute RMS norm scale and apply gamma
+    const AccT rms = static_cast<AccT>(1) / sd::math::sd_sqrt<AccT, AccT>(
+        total / static_cast<AccT>(rowLen) + static_cast<AccT>(epsilon));
+    if (invRmsOut != nullptr && threadIdx.x == 0) invRmsOut[row] = rms;
 
-  // Compute RMS norm scale and apply gamma
-  AccT rms = static_cast<AccT>(1) / sd::math::sd_sqrt<AccT, AccT>(
-      sdata[0] / static_cast<AccT>(rowLen) + static_cast<AccT>(epsilon));
-
-  for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-    AccT val = static_cast<AccT>(inputRow[i]);
-    AccT g = static_cast<AccT>(gamma[i]);
-    outputRow[i] = static_cast<T>(val * rms * g);
+    for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+      const AccT val = static_cast<AccT>(inputRow[i]);
+      const AccT g = static_cast<AccT>(gamma[i]);
+      outputRow[i] = static_cast<T>(val * rms * g);
+    }
   }
 }
 
@@ -1160,113 +1228,316 @@ static SD_KERNEL __launch_bounds__(256, 2) void siluMultiplyKernel(
     const T* __restrict__ up,
     const LongType totalElements) {
 
-  const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx >= totalElements) return;
-
   using AccT = typename simdOps::AggregateType<T>::type;
-  AccT g = static_cast<AccT>(gate[idx]);
-  AccT u = static_cast<AccT>(up[idx]);
 
-  // SiLU(x) = x * sigmoid(x) = x / (1 + exp(-x))
-  AccT siluG = g / (static_cast<AccT>(1) + sd::math::sd_exp<AccT, AccT>(-g));
+  for (LongType idx = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; idx < totalElements;
+       idx += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const AccT g = static_cast<AccT>(gate[idx]);
+    const AccT u = static_cast<AccT>(up[idx]);
 
-  output[idx] = static_cast<T>(siluG * u);
+    // SiLU(x) = x * sigmoid(x) = x / (1 + exp(-x))
+    const AccT siluG = g / (static_cast<AccT>(1) + sd::math::sd_exp<AccT, AccT>(-g));
+
+    output[idx] = static_cast<T>(siluG * u);
+  }
 }
 
-void fusedRmsNormSwiGLU(NDArray* input, NDArray* gamma, NDArray* wGate, NDArray* wUp,
-                        NDArray* output, float epsilon, LaunchContext* context) {
-  // Fused RMS Norm + SwiGLU for LLaMA-style MLP
-  // Computes: silu(rms_norm(x) @ W_gate) * (rms_norm(x) @ W_up)
+// The gradients of the gate and up projections of y = silu(gate) * up, which replace gate and up (each element
+// depends on its own values only), from the gradient of y:
+//   s = sigmoid(gate)   dUp = dy * gate * s   dGate = dy * up * s * (1 + gate * (1 - s))
+template <typename A>
+static SD_KERNEL __launch_bounds__(256, 2) void swigluBackwardKernel(
+    A* __restrict__ gateToGradient,
+    A* __restrict__ upToGradient,
+    const A* __restrict__ gradOut,
+    const LongType totalElements) {
 
-  const auto batchSize = input->sizeAt(0);
-  const auto seqLen = input->sizeAt(1);
-  const auto hiddenDim = input->sizeAt(2);
-  const auto intermediateDim = wGate->sizeAt(1);
+  for (LongType idx = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; idx < totalElements;
+       idx += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const A g = gateToGradient[idx];
+    const A u = upToGradient[idx];
+    const A dy = gradOut[idx];
+    const A s = static_cast<A>(1) / (static_cast<A>(1) + sd::math::sd_exp<A, A>(-g));
+    upToGradient[idx] = dy * g * s;
+    gateToGradient[idx] = dy * u * s * (static_cast<A>(1) + g * (static_cast<A>(1) - s));
+  }
+}
 
-  const LongType numRows = batchSize * seqLen;
+// The gradient of the rows of the input of the RMS norm, from the gradient of their normalized rows: with
+// dz = dNormalized * gamma, dx = invRms * (dz - x * invRms^2 * mean(dz * x)). One block per row (a grid-stride loop
+// over the rows); blockDim.x is a multiple of the warp size.
+template <typename A>
+static SD_KERNEL __launch_bounds__(512, 1) void rmsNormBackwardRowsKernel(
+    A* __restrict__ gradInput,
+    const A* __restrict__ input,
+    const A* __restrict__ gamma,
+    const A* __restrict__ gradNormalized,
+    const A* __restrict__ invRms,
+    const LongType numRows,
+    const LongType rowLen) {
+
+  extern __shared__ char shmem[];
+  A* scratch = reinterpret_cast<A*>(shmem);
+
+  for (LongType row = blockIdx.x; row < numRows; row += gridDim.x) {
+    const A* x = input + row * rowLen;
+    const A* dn = gradNormalized + row * rowLen;
+    A* dx = gradInput + row * rowLen;
+    const A inv = invRms[row];
+
+    A partial = static_cast<A>(0);
+    for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) partial += dn[i] * gamma[i] * x[i];
+    // on every thread; the reduction ends with a barrier: scratch is free for the block's next row
+    const A total = sd::device::blockAllReduceSum<A>(partial, scratch);
+
+    const A coefficient = inv * inv * total / static_cast<A>(rowLen);
+    for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) dx[i] = inv * (dn[i] * gamma[i] - x[i] * coefficient);
+  }
+}
+
+// One thread per column: the gradient of gamma sums dNormalized * x * invRms over the rows, in row order (no atomics:
+// the order, and so the result, is fixed).
+template <typename A>
+static SD_KERNEL void rmsNormGammaGradientKernel(
+    A* __restrict__ gradGamma,
+    const A* __restrict__ input,
+    const A* __restrict__ gradNormalized,
+    const A* __restrict__ invRms,
+    const LongType numRows,
+    const LongType rowLen) {
+
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < rowLen;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    A sum = static_cast<A>(0);
+    for (LongType row = 0; row < numRows; row++) {
+      sum += gradNormalized[row * rowLen + i] * input[row * rowLen + i] * invRms[row];
+    }
+    gradGamma[i] = sum;
+  }
+}
+
+// Fused RMS Norm + SwiGLU for LLaMA-style MLP
+// Computes: silu(rms_norm(x) @ W_gate) * (rms_norm(x) @ W_up)
+//
+// input [batch, seq_len, hidden_dim], gamma [hidden_dim] and output [batch, seq_len, intermediate_dim] are dense
+// row-major arrays of the input's type here; wGate and wUp [hidden_dim, intermediate_dim] go to the matmuls in whatever
+// layout and type they have. The normalized rows, the gate and the up projection are stored in the input's type, and
+// every sum and the SiLU in its aggregate type.
+template <typename T>
+static void fusedRmsNormSwiGLU_(NDArray* input, NDArray* gamma, NDArray* wGate, NDArray* wUp, NDArray* output,
+                                float epsilon, LaunchContext* context) {
+  using AccT = typename simdOps::AggregateType<T>::type;
+
+  const LongType hiddenDim = input->sizeAt(2);
+  const LongType intermediateDim = wGate->sizeAt(1);
+  const LongType numRows = input->sizeAt(0) * input->sizeAt(1);
+  const LongType totalElements = numRows * intermediateDim;
+  const DataType dataType = input->dataType();
+
+  auto stream = context->getCudaStream();
+
+  // Allocate temporary for normalized input [numRows, hiddenDim]
+  std::vector<LongType> normShape = {numRows, hiddenDim};
+  NDArray* normalized = new NDArray('c', normShape, dataType, context);
+
+  // Step 1: RMS norm + gamma scaling
+  const int rowThreads = rowBlockThreads(hiddenDim);
+  const size_t sharedMem = rowThreads * sizeof(AccT);
+  NDArray::prepareSpecialUse({normalized}, {input, gamma});
+  rmsNormGammaKernel<T><<<blocksFor(numRows, 1), rowThreads, sharedMem, *stream>>>(
+      reinterpret_cast<T*>(normalized->specialBuffer()),
+      reinterpret_cast<const T*>(input->specialBuffer()),
+      reinterpret_cast<const T*>(gamma->specialBuffer()),
+      nullptr, numRows, hiddenDim, epsilon);
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode("rmsNormGammaKernel failed");
+  }
+  NDArray::registerSpecialUse({normalized}, {input, gamma});
+
+  // Steps 2 and 3: gate = normalized @ W_gate and up = normalized @ W_up, [numRows, intermediateDim] each
+  std::vector<LongType> projectedShape = {numRows, intermediateDim};
+  NDArray* gate = new NDArray('c', projectedShape, dataType, context);
+  NDArray* up = new NDArray('c', projectedShape, dataType, context);
+  MmulHelper::mmul(normalized, wGate, gate, 1.0, 0.0);
+  MmulHelper::mmul(normalized, wUp, up, 1.0, 0.0);
+
+  // Step 4: Fused SiLU(gate) * up -> output
+  NDArray::prepareSpecialUse({output}, {gate, up});
+  siluMultiplyKernel<T><<<blocksFor(totalElements, 256), 256, 0, *stream>>>(
+      reinterpret_cast<T*>(output->specialBuffer()),
+      reinterpret_cast<const T*>(gate->specialBuffer()),
+      reinterpret_cast<const T*>(up->specialBuffer()),
+      totalElements);
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode("siluMultiplyKernel failed");
+  }
+  NDArray::registerSpecialUse({output}, {gate, up});
+
+  // the temporaries are still read by the kernels and matmuls above
+  MmulHelper::deleteTemporary(normalized);
+  MmulHelper::deleteTemporary(gate);
+  MmulHelper::deleteTemporary(up);
+}
+
+void fusedRmsNormSwiGLU(NDArray* originalInput, NDArray* originalGamma, NDArray* originalWGate,
+                        NDArray* originalWUp, NDArray* originalOutput, float epsilon, LaunchContext* context) {
+  if (originalInput->lengthOf() == 0 || originalOutput->lengthOf() == 0) return;
+  const auto dataType = originalInput->dataType();
+
+  // The kernels read and write dense row-major arrays in the input's type (the op takes any float type for the gamma
+  // and the output): another layout or type goes through a copy. The weights go to the matmuls as they are, whatever
+  // their layout and type: MmulHelper::mmul handles both (it upcasts HALF weights of FLOAT activations through its
+  // persistent cast cache, which a per-call copy here would bypass).
+  NDArray* input = denseInType(originalInput, dataType);
+  NDArray* gamma = denseInType(originalGamma, dataType);
+  NDArray* output = denseOutputInType(originalOutput, dataType, context);
+
+  BUILD_SINGLE_SELECTOR(dataType, fusedRmsNormSwiGLU_,
+                        (input, gamma, originalWGate, originalWUp, output, epsilon, context), SD_FLOAT_TYPES);
+
+  if (output != originalOutput) originalOutput->assign(output);
+  retireTemporary(input, originalInput);
+  retireTemporary(gamma, originalGamma);
+  retireTemporary(output, originalOutput);
+}
+
+// Backward of the fused RMS norm + SwiGLU. The forward pass is recomputed from the input (normalized rows, gate and
+// up projections) and the gradients follow in closed form: with y = silu(gate) * up, gate = n @ wGate, up = n @ wUp,
+// n = x * invRms * gamma and dy the gradient of y,
+//   dUp = dy * silu(gate)   dGate = dy * up * silu'(gate)
+//   dWGate = n^T @ dGate    dWUp = n^T @ dUp    dn = dGate @ wGate^T + dUp @ wUp^T
+//   dGamma = sum over rows of dn * x * invRms    dx = invRms * (dn * gamma - x * invRms^2 * mean(dn * gamma * x))
+// Everything is computed in the aggregate type of the input's (float for HALF and BFLOAT16, the type itself
+// otherwise): the operands are dense copies in that type where they are not already, and each gradient is rounded to
+// its own type once, as it is assigned back.
+template <typename T>
+static void fusedRmsNormSwiGLUBackward_(NDArray* originalInput, NDArray* originalGamma, NDArray* originalWGate,
+                                        NDArray* originalWUp, NDArray* originalGradOut, NDArray* originalGradInput,
+                                        NDArray* originalGradGamma, NDArray* originalGradWGate,
+                                        NDArray* originalGradWUp, float epsilon, LaunchContext* context) {
+  using AccT = typename simdOps::AggregateType<T>::type;
+  const DataType accType = DataTypeUtils::fromT<AccT>();
+
+  const LongType hiddenDim = originalInput->sizeAt(2);
+  const LongType intermediateDim = originalWGate->sizeAt(1);
+  const LongType numRows = originalInput->sizeAt(0) * originalInput->sizeAt(1);
   const LongType totalElements = numRows * intermediateDim;
 
   auto stream = context->getCudaStream();
-  auto dtype = input->dataType();
 
-  // Allocate temporary for normalized input
-  std::vector<LongType> normShape = {batchSize, seqLen, hiddenDim};
-  NDArray normalized('c', normShape, input->dataType(), context);
+  NDArray* input = denseInType(originalInput, accType);
+  NDArray* gamma = denseInType(originalGamma, accType);
+  NDArray* gradOut = denseInType(originalGradOut, accType);
+  NDArray* wGate = asType(originalWGate, accType);
+  NDArray* wUp = asType(originalWUp, accType);
+  NDArray* gradInput = denseOutputInType(originalGradInput, accType, context);
+  NDArray* gradGamma = denseOutputInType(originalGradGamma, accType, context);
+  NDArray* gradWGate = denseOutputInType(originalGradWGate, accType, context);
+  NDArray* gradWUp = denseOutputInType(originalGradWUp, accType, context);
 
-  // Step 1: RMS norm + gamma scaling
-  // sharedMem must match the size of simdOps::AggregateType<T>::type (double when T=double, float otherwise)
-  dim3 block(512);
-  dim3 grid(static_cast<unsigned int>(numRows));
-  size_t sharedMem = block.x * (dtype == DataType::DOUBLE ? sizeof(double) : sizeof(float));
+  std::vector<LongType> rowsShape = {numRows, hiddenDim};
+  std::vector<LongType> projectedShape = {numRows, intermediateDim};
+  std::vector<LongType> invRmsShape = {numRows};
+  NDArray* normalized = new NDArray('c', rowsShape, accType, context);
+  NDArray* invRms = new NDArray('c', invRmsShape, accType, context);
+  NDArray* gate = new NDArray('c', projectedShape, accType, context);
+  NDArray* up = new NDArray('c', projectedShape, accType, context);
+  NDArray* gradNormalized = new NDArray('c', rowsShape, accType, context);
 
-  if (dtype == DataType::FLOAT32) {
-    rmsNormGammaKernel<float><<<grid, block, sharedMem, *stream>>>(
-        reinterpret_cast<float*>(normalized.specialBuffer()),
-        reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<const float*>(gamma->specialBuffer()),
-        numRows, hiddenDim, epsilon);
-  } else if (dtype == DataType::DOUBLE) {
-    rmsNormGammaKernel<double><<<grid, block, sharedMem, *stream>>>(
-        reinterpret_cast<double*>(normalized.specialBuffer()),
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<const double*>(gamma->specialBuffer()),
-        numRows, hiddenDim, epsilon);
-  } else if (dtype == DataType::HALF) {
-    rmsNormGammaKernel<float16><<<grid, block, sharedMem, *stream>>>(
-        reinterpret_cast<float16*>(normalized.specialBuffer()),
-        reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<const float16*>(gamma->specialBuffer()),
-        numRows, hiddenDim, epsilon);
-  } else {
-    THROW_EXCEPTION("fusedRmsNormSwiGLU: Unsupported data type");
+  // the normalized rows and each row's 1 / rms
+  const int rowThreads = rowBlockThreads(hiddenDim);
+  const size_t sharedMem = rowThreads * sizeof(AccT);
+  NDArray::prepareSpecialUse({normalized, invRms}, {input, gamma});
+  rmsNormGammaKernel<AccT><<<blocksFor(numRows, 1), rowThreads, sharedMem, *stream>>>(
+      reinterpret_cast<AccT*>(normalized->specialBuffer()),
+      reinterpret_cast<const AccT*>(input->specialBuffer()),
+      reinterpret_cast<const AccT*>(gamma->specialBuffer()),
+      reinterpret_cast<AccT*>(invRms->specialBuffer()),
+      numRows, hiddenDim, epsilon);
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode("rmsNormGammaKernel failed");
   }
-  DebugHelper::checkGlobalErrorCode("rmsNormGammaKernel failed");
+  NDArray::registerSpecialUse({normalized, invRms}, {input, gamma});
 
-  // Step 2: Matmul normalized @ W_gate -> gate
-  std::vector<LongType> gateShape = {batchSize, seqLen, intermediateDim};
-  NDArray gate('c', gateShape, input->dataType(), context);
-  MmulHelper::mmul(&normalized, wGate, &gate);
+  // gate = normalized @ W_gate, up = normalized @ W_up
+  MmulHelper::mmul(normalized, wGate, gate, 1.0, 0.0);
+  MmulHelper::mmul(normalized, wUp, up, 1.0, 0.0);
 
-  // Step 3: Matmul normalized @ W_up -> up
-  std::vector<LongType> upShape = {batchSize, seqLen, intermediateDim};
-  NDArray up('c', upShape, input->dataType(), context);
-  MmulHelper::mmul(&normalized, wUp, &up);
-
-  // Step 4: Fused SiLU(gate) * up -> output
-  dim3 siluBlock(256);
-  dim3 siluGrid((static_cast<unsigned long long>(totalElements) + siluBlock.x - 1) / siluBlock.x);
-
-  if (dtype == DataType::FLOAT32) {
-    siluMultiplyKernel<float><<<siluGrid, siluBlock, 0, *stream>>>(
-        reinterpret_cast<float*>(output->specialBuffer()),
-        reinterpret_cast<const float*>(gate.specialBuffer()),
-        reinterpret_cast<const float*>(up.specialBuffer()),
-        totalElements);
-  } else if (dtype == DataType::DOUBLE) {
-    siluMultiplyKernel<double><<<siluGrid, siluBlock, 0, *stream>>>(
-        reinterpret_cast<double*>(output->specialBuffer()),
-        reinterpret_cast<const double*>(gate.specialBuffer()),
-        reinterpret_cast<const double*>(up.specialBuffer()),
-        totalElements);
-  } else if (dtype == DataType::HALF) {
-    siluMultiplyKernel<float16><<<siluGrid, siluBlock, 0, *stream>>>(
-        reinterpret_cast<float16*>(output->specialBuffer()),
-        reinterpret_cast<const float16*>(gate.specialBuffer()),
-        reinterpret_cast<const float16*>(up.specialBuffer()),
-        totalElements);
-  } else {
-    THROW_EXCEPTION("fusedRmsNormSwiGLU: Unsupported data type");
+  // gate and up become dGate and dUp
+  NDArray::prepareSpecialUse({gate, up}, {gate, up, gradOut});
+  swigluBackwardKernel<AccT><<<blocksFor(totalElements, 256), 256, 0, *stream>>>(
+      reinterpret_cast<AccT*>(gate->specialBuffer()),
+      reinterpret_cast<AccT*>(up->specialBuffer()),
+      reinterpret_cast<const AccT*>(gradOut->specialBuffer()),
+      totalElements);
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode("swigluBackwardKernel failed");
   }
-  DebugHelper::checkGlobalErrorCode("siluMultiplyKernel failed");
+  NDArray::registerSpecialUse({gate, up}, {gradOut});
 
-  NDArray::registerSpecialUse({output}, {&normalized, &gate, &up});
+  // dWGate = normalized^T @ dGate, dWUp = normalized^T @ dUp
+  MmulHelper::matmul(normalized, gate, gradWGate, true, false, 1.0, 0.0);
+  MmulHelper::matmul(normalized, up, gradWUp, true, false, 1.0, 0.0);
+
+  // dn = dGate @ W_gate^T + dUp @ W_up^T
+  MmulHelper::matmul(gate, wGate, gradNormalized, false, true, 1.0, 0.0);
+  MmulHelper::matmul(up, wUp, gradNormalized, false, true, 1.0, 1.0);
+
+  // dx and dGamma
+  NDArray::prepareSpecialUse({gradInput, gradGamma}, {input, gamma, gradNormalized, invRms});
+  rmsNormBackwardRowsKernel<AccT><<<blocksFor(numRows, 1), rowThreads, sharedMem, *stream>>>(
+      reinterpret_cast<AccT*>(gradInput->specialBuffer()),
+      reinterpret_cast<const AccT*>(input->specialBuffer()),
+      reinterpret_cast<const AccT*>(gamma->specialBuffer()),
+      reinterpret_cast<const AccT*>(gradNormalized->specialBuffer()),
+      reinterpret_cast<const AccT*>(invRms->specialBuffer()),
+      numRows, hiddenDim);
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode("rmsNormBackwardRowsKernel failed");
+  }
+  rmsNormGammaGradientKernel<AccT><<<blocksFor(hiddenDim, 256), 256, 0, *stream>>>(
+      reinterpret_cast<AccT*>(gradGamma->specialBuffer()),
+      reinterpret_cast<const AccT*>(input->specialBuffer()),
+      reinterpret_cast<const AccT*>(gradNormalized->specialBuffer()),
+      reinterpret_cast<const AccT*>(invRms->specialBuffer()),
+      numRows, hiddenDim);
+  if (!DebugHelper::inGraphCapture(stream)) {
+    DebugHelper::checkGlobalErrorCode("rmsNormGammaGradientKernel failed");
+  }
+  NDArray::registerSpecialUse({gradInput, gradGamma}, {input, gamma, gradNormalized, invRms});
+
+  // the gradients that were computed in a dense copy, in the input's aggregate type, go to their own arrays
+  if (gradInput != originalGradInput) originalGradInput->assign(gradInput);
+  if (gradGamma != originalGradGamma) originalGradGamma->assign(gradGamma);
+  if (gradWGate != originalGradWGate) originalGradWGate->assign(gradWGate);
+  if (gradWUp != originalGradWUp) originalGradWUp->assign(gradWUp);
+
+  // everything above is still being read by kernels and matmuls on the stream
+  MmulHelper::deleteTemporary(normalized);
+  MmulHelper::deleteTemporary(invRms);
+  MmulHelper::deleteTemporary(gate);
+  MmulHelper::deleteTemporary(up);
+  MmulHelper::deleteTemporary(gradNormalized);
+  retireTemporary(input, originalInput);
+  retireTemporary(gamma, originalGamma);
+  retireTemporary(gradOut, originalGradOut);
+  retireTemporary(wGate, originalWGate);
+  retireTemporary(wUp, originalWUp);
+  retireTemporary(gradInput, originalGradInput);
+  retireTemporary(gradGamma, originalGradGamma);
+  retireTemporary(gradWGate, originalGradWGate);
+  retireTemporary(gradWUp, originalGradWUp);
 }
 
 void fusedRmsNormSwiGLUBackward(NDArray* input, NDArray* gamma, NDArray* wGate, NDArray* wUp,
                                  NDArray* gradOut, NDArray* gradInput, NDArray* gradGamma,
                                  NDArray* gradWGate, NDArray* gradWUp, float epsilon,
                                  LaunchContext* context) {
-  THROW_EXCEPTION("fusedRmsNormSwiGLUBackward: Full kernel not yet implemented");
+  if (input->lengthOf() == 0 || gradOut->lengthOf() == 0) return;
+  BUILD_SINGLE_SELECTOR(input->dataType(), fusedRmsNormSwiGLUBackward_,
+                        (input, gamma, wGate, wUp, gradOut, gradInput, gradGamma, gradWGate, gradWUp, epsilon,
+                         context),
+                        SD_FLOAT_TYPES);
 }
 
 template <typename T>
@@ -1299,7 +1570,8 @@ void fusedLayerNormBackward(NDArray* originalInput, NDArray* originalGain, NDArr
     NDArray* typed = a->dataType() == dataType ? a : a->cast(dataType);
     if (shape::isDenseRowMajor(typed->shapeInfo())) return typed;
     NDArray* dense = typed->dup('c');
-    if (typed != a) delete typed;
+    // the copy above is still reading the cast
+    if (typed != a) MmulHelper::deleteTemporary(typed);
     return dense;
   };
   auto writable = [&](NDArray* a) -> NDArray* {
@@ -1349,12 +1621,24 @@ static SD_KERNEL __launch_bounds__(256, 2) void biasAddKernel(
     const LongType totalRows,
     const LongType outDim) {
 
-  const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+  using AccT = typename simdOps::AggregateType<T>::type;
+
+  const LongType idx = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
   if (idx >= totalRows * outDim) return;
 
   const LongType col = idx % outDim;
-  output[idx] = static_cast<T>(
-      static_cast<float>(output[idx]) + static_cast<float>(bias[col]));
+  output[idx] = static_cast<T>(static_cast<AccT>(output[idx]) + static_cast<AccT>(bias[col]));
+}
+
+// Adds the bias [outDim] to every row of the dense output [totalRows, outDim], both of type T.
+template <typename T>
+static void biasAdd_(NDArray* output, NDArray* bias, LongType totalRows, LongType outDim, LaunchContext* context) {
+  auto stream = context->getCudaStream();
+  biasAddKernel<T><<<blocksFor(totalRows * outDim, 256), 256, 0, *stream>>>(
+      reinterpret_cast<T*>(output->specialBuffer()),
+      reinterpret_cast<const T*>(bias->specialBuffer()),
+      totalRows, outDim);
+  DebugHelper::checkGlobalErrorCode("biasAddKernel failed");
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1362,8 +1646,17 @@ static SD_KERNEL __launch_bounds__(256, 2) void biasAddKernel(
 // output = reshape(attentionOutput, [B*S, hidden_dim]) @ Wo  [+ bias]
 //////////////////////////////////////////////////////////////////////////////
 
-void fusedAttentionProjection(NDArray* attentionOutput, NDArray* Wo, NDArray* bias,
-                               NDArray* output, LaunchContext* context) {
+void fusedAttentionProjection(NDArray* originalAttentionOutput, NDArray* Wo, NDArray* originalBias,
+                               NDArray* originalOutput, LaunchContext* context) {
+  // The reshapes below are views of dense arrays. The reshape of a layout that is not dense returns a copy instead: of
+  // the attention output, whose delete is not retired behind the matmul that reads it, and of the output, in which the
+  // product would be lost. The bias kernel indexes the output and the bias as dense arrays of the output's type. So
+  // an attention output or an output of any other layout (a stepped view, an F-ordered or permuted array), and a bias of
+  // another layout or type, go through dense copies; arrays that are dense already (the usual case) are used as they are.
+  NDArray* attentionOutput = denseInType(originalAttentionOutput, originalAttentionOutput->dataType());
+  NDArray* output = denseOutputInType(originalOutput, originalOutput->dataType(), context);
+  NDArray* bias = denseInType(originalBias, originalOutput->dataType());
+
   const int rank        = attentionOutput->rankOf();
   const LongType batch  = attentionOutput->sizeAt(0);
   const LongType seqLen = attentionOutput->sizeAt(1);
@@ -1382,8 +1675,7 @@ void fusedAttentionProjection(NDArray* attentionOutput, NDArray* Wo, NDArray* bi
   // copyToNewBuff=false: create a view sharing the same DataBuffer.
   // This avoids allocating new device memory + launching a copy kernel,
   // which is unsafe during CUDA graph capture (baked-in addresses from temporary
-  // allocations become stale on replay). reshape() verifies contiguity internally
-  // and only copies when strides are incompatible.
+  // allocations become stale on replay). The attention output is dense here, so this is a view.
   std::vector<LongType> flatShape = {batch * seqLen, hiddenDim};
   NDArray* attnFlat = attentionOutput->reshape('c', flatShape, false);
 
@@ -1399,36 +1691,16 @@ void fusedAttentionProjection(NDArray* attentionOutput, NDArray* Wo, NDArray* bi
 
   // Step 4: fused bias add if bias is provided
   if (bias != nullptr) {
-    auto stream = context->getCudaStream();
-    auto dtype  = output->dataType();
-    const LongType totalRows = batch * seqLen;
-
-    dim3 block(256);
-    dim3 grid(static_cast<unsigned int>(
-        (totalRows * outDim + block.x - 1) / block.x));
-
-    if (dtype == DataType::FLOAT32) {
-      biasAddKernel<float><<<grid, block, 0, *stream>>>(
-          reinterpret_cast<float*>(output->specialBuffer()),
-          reinterpret_cast<const float*>(bias->specialBuffer()),
-          totalRows, outDim);
-    } else if (dtype == DataType::DOUBLE) {
-      biasAddKernel<double><<<grid, block, 0, *stream>>>(
-          reinterpret_cast<double*>(output->specialBuffer()),
-          reinterpret_cast<const double*>(bias->specialBuffer()),
-          totalRows, outDim);
-    } else if (dtype == DataType::HALF) {
-      biasAddKernel<float16><<<grid, block, 0, *stream>>>(
-          reinterpret_cast<float16*>(output->specialBuffer()),
-          reinterpret_cast<const float16*>(bias->specialBuffer()),
-          totalRows, outDim);
-    } else {
-      THROW_EXCEPTION("fusedAttentionProjection: Unsupported data type for bias add");
-    }
-    DebugHelper::checkGlobalErrorCode("biasAddKernel failed");
+    BUILD_SINGLE_SELECTOR(output->dataType(), biasAdd_, (output, bias, batch * seqLen, outDim, context),
+                          SD_FLOAT_TYPES);
   }
 
   NDArray::registerSpecialUse({output}, {attentionOutput, Wo, bias});
+
+  if (output != originalOutput) originalOutput->assign(output);
+  retireTemporary(attentionOutput, originalAttentionOutput);
+  retireTemporary(bias, originalBias);
+  retireTemporary(output, originalOutput);
 }
 
 }  // namespace helpers

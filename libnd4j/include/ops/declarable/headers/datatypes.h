@@ -89,16 +89,23 @@ DECLARE_CUSTOM_OP(to_uint64, 1, 1, true, 0, 0);
 #endif
 
 /**
- * This operation casts elements of input array to specified data type
- *
- * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
- *
- *
- * Int args:
- * 0: target DataType
+ * Cast numeric or BOOL storage to the target DataType supplied in IArgs or DArgs.
+ * Empty inputs retain their shape and still validate the target/output contract.
  */
 #if NOT_EXCLUDED(OP_cast)
-DECLARE_CUSTOM_OP(cast, 1, 1, false, 0, 1);
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT cast : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+
+ public:
+  cast();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override;
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(cast)
 #endif
 
 /**

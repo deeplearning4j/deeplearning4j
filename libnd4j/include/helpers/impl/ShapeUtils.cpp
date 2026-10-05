@@ -773,18 +773,8 @@ bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bo
     return true;
   }
 
-  // sometimes we have 1 and 2d vectors
-  // Only use this shortcut when both have the same rank; otherwise [N] broadcast with [N,1]
-  // would incorrectly return [N,1] instead of the correct [N,N]
-  if (shape::isVector(min) && shape::isVector(max) && shape::length(min) == shape::length(max)
-      && shape::rank(min) == shape::rank(max)) {
-    if (shape::rank(min) > shape::rank(max)) {
-      resultShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(min);
-      return true;
-    }
-    resultShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(max);
-    return true;
-  }
+  // No shortcut for vectors of one length: equal shapes returned above, so the vectors of one rank and one length
+  // that get here are a row [1, N] and a column [N, 1], which broadcast to [N, N], not to either operand's shape.
 
   // check whether broadcast operation is possible for input arrays
   if (!areShapesBroadcastable(max, min)) {

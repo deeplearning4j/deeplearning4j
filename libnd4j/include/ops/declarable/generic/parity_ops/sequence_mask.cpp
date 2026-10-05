@@ -25,26 +25,22 @@
 #if NOT_EXCLUDED(OP_sequence_mask)
 namespace sd {
 namespace ops {
+// mask[..., j] = j < lengths[...]. The width of the mask is decided in one place, the shape function: the second
+// input (the maximum length) or, without one, the first integer argument, but never less than the longest length. The
+// helpers take the width from the output, so the execution cannot disagree with the shape (it used the position of the
+// longest length, or an integer argument that the shape function reads as the data type).
 CUSTOM_OP_IMPL(sequence_mask, 1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
-  auto output = OUTPUT_NULLIFIED(0);
-  const int inRank = input->rankOf();
+  auto output = OUTPUT_VARIABLE(0);
 
-  // REQUIRE_TRUE(inRank >= 1, 0, "sequence_mask: input array must have rank >= 1, but %i given!", inRank);
-  LongType maxInd = input->argMax();
-  float max = input->e<float>(maxInd);
-  if (block.getIArguments()->size() > 0) {
-    maxInd = INT_ARG(0);
-    if (maxInd < max) maxInd = static_cast<LongType>(max);
-  } else if (block.width() > 1) {
-    auto maxlen = INPUT_VARIABLE(1);
-    // REQUIRE_TRUE(maxlen->lengthOf() == 1, "sequence_mask: 2nd input (max length) should be a scalar array.");
-    float tmaxlen = maxlen->e<float>(0);
-    if (tmaxlen > max) maxInd = static_cast<LongType>(tmaxlen);
-  } else
-    maxInd = static_cast<LongType>(max);
+  const LongType width = output->sizeAt(output->rankOf() - 1);
+  REQUIRE_TRUE(output->lengthOf() == input->lengthOf() * width, 0,
+               "sequence_mask: the output should have the shape of the input and one more dimension, but its length is "
+               "%lld for %lld lengths of width %lld.",
+               static_cast<long long>(output->lengthOf()), static_cast<long long>(input->lengthOf()),
+               static_cast<long long>(width));
 
-  helpers::sequenceMask(block.launchContext(), input, output, maxInd);
+  helpers::sequenceMask(block.launchContext(), input, output, static_cast<int>(width));
 
   return Status::OK;
 }
@@ -55,8 +51,13 @@ DECLARE_SHAPE_FN(sequence_mask) {
   int outRank = shape::rank(in) + 1;
   auto input = INPUT_VARIABLE(0);
   auto dtype = BOOL;
-  auto argMaxInd = input->argMax();
-  LongType max = input->e<LongType>(argMaxInd);
+  // the longest length (no length, no negative one, counts)
+  LongType max = 0;
+  if (input->lengthOf() > 0) {
+    auto argMaxInd = input->argMax();
+    max = input->e<LongType>(argMaxInd);
+    if (max < 0) max = 0;
+  }
   LongType maxInd = max;
 
   if (block.numD() > 0) dtype = D_ARG(0);
@@ -76,7 +77,7 @@ DECLARE_SHAPE_FN(sequence_mask) {
     if (block.numI() > 1) dtype = (DataType)INT_ARG(1);  // to work with legacy code
   }
 
-  int lastDimension = maxInd;
+  const LongType lastDimension = maxInd;
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
   outShapeInfo[0] = outRank;
   for (LongType i = 0; i < outRank - 1; ++i) outShapeInfo[i + 1] = shape::sizeAt(in, i);

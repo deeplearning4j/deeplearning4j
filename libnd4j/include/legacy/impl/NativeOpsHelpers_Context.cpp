@@ -109,10 +109,10 @@ bool requiresFullShapeValueSync(sd::ops::DeclarableOp* op) {
   return descriptor != nullptr && (descriptor->getTraits() & kFullShapeValueTraits) != 0;
 }
 
-bool shouldSyncInputForShape(sd::ops::DeclarableOp* op, sd::NDArray* array, int inputIndex) {
+bool shouldSyncInputForShape(sd::ops::DeclarableOp* op, sd::NDArray* array, int inputIndex, int numIArgs) {
   if (array == nullptr || array->isEmpty()) return false;
   const auto* descriptor = op == nullptr ? nullptr : op->getOpDescriptor();
-  if (descriptor != nullptr && !descriptor->usesInputValuesForShape(inputIndex)) return false;
+  if (descriptor != nullptr && !descriptor->usesInputValuesForShape(inputIndex, numIArgs)) return false;
   if (requiresFullShapeValueSync(op)) return true;
 
   // Shape functions typically inspect only small scalar/index/shape tensors.
@@ -370,7 +370,7 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
 #endif
         THROW_EXCEPTION(errorMessage.c_str());
       }
-      if (shouldSyncInputForShape(op, context->array(e), static_cast<int>(e))) {
+      if (shouldSyncInputForShape(op, context->array(e), static_cast<int>(e), context->numI())) {
         context->array(e)->forceSyncToHost();
       }
       inShapes.push_back(context->array(e)->shapeInfo());
@@ -411,7 +411,7 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
       safeSetErrorContext(1, errorMessage.c_str());
       return nullptr;
     }
-    if (shouldSyncInputForShape(op, context->array(e), static_cast<int>(e))) {
+    if (shouldSyncInputForShape(op, context->array(e), static_cast<int>(e), context->numI())) {
       context->array(e)->forceSyncToHost();
     }
     inShapes.push_back(context->array(e)->shapeInfo());
@@ -570,19 +570,23 @@ std::vector<ExecTrace*> * listOpTraces() {
 sd::LongType getOpTraitMask(const char* opName) {
   if (opName == nullptr) return 0;
   std::string name(opName);
-  // Answer with the merged VIEW of descriptor traits and the legacy
-  // OpTraitTable, computed here rather than by mutating descriptors via
-  // initOpTraits(): OR-ing table bits into live descriptors changes C++
-  // plan compilation (slot trait stamping, computeShapeKey gating), while
-  // this query-side merge keeps the documented contract for Java/JNI
-  // consumers without any side effects. Legacy (non-declarable) transform
-  // and scalar families are not in the registry at all and are served
-  // straight from the table.
-  const auto tableTraits = static_cast<uint64_t>(sd::ops::getOpTraitsByName(name));
+  // Registered op descriptors are the trait authority for both native and
+  // Java compilation. Merging legacy bits here resurrects superseded traits
+  // (for example fill_as's old VALUE_DEPENDENT_SHAPE classification).
+  // Only non-declarable legacy families without descriptors use the table.
   auto* op = sd::ops::OpRegistrator::getInstance().getOperation(name);
   const auto* descriptor = op != nullptr ? op->getOpDescriptor() : nullptr;
-  const uint64_t traits = descriptor != nullptr ? descriptor->getTraits64() | tableTraits : tableTraits;
+  const uint64_t traits = descriptor != nullptr ? descriptor->getTraits64()
+      : static_cast<uint64_t>(sd::ops::getOpTraitsByName(name));
   return static_cast<sd::LongType>(traits);
+}
+
+bool opShapeDependsOnInputValues(const char* opName, int numInputs, int numIArgs) {
+  if (opName == nullptr) return true;
+  auto* op = sd::ops::OpRegistrator::getInstance().getOperation(opName);
+  const auto* descriptor = op != nullptr ? op->getOpDescriptor() : nullptr;
+  // Unknown operations retain conservative treatment; callers resolve intrinsic traits separately.
+  return descriptor == nullptr || descriptor->hasShapeValueInputs(numInputs, numIArgs);
 }
 
 unsigned int getOpTraits(const char* opName) {

@@ -308,6 +308,14 @@ std::unique_ptr<VulkanMemoryPool::Block> VulkanMemoryPool::makeBlock(
   sd_printf("VulkanMemoryPool::makeBlock: new block device=%d memType=%u size=%lluMB host=%s\n",
             deviceId, memTypeIdx, (unsigned long long)(blockSize >> 20),
             hostVisible ? "yes" : "no");
+  // The memory type's property flags (VkMemoryPropertyFlagBits: DEVICE_LOCAL 0x1, HOST_VISIBLE 0x2, HOST_COHERENT 0x4,
+  // HOST_CACHED 0x8) and whether the block was created exportable decide how the device's compute and copy engines and
+  // the host see this memory; VulkanExecutionStream::createStaging logs the same for its staging memory.
+  DSP_DIAG(MEMORY,
+           "VulkanMemoryPool: block device=%d memType=%u propertyFlags=0x%x exportable=%d",
+           deviceId, memTypeIdx,
+           static_cast<unsigned>(memProps.memoryTypes[memTypeIdx].propertyFlags),
+           externalShareable ? 1 : 0);
   return blk;
 }
 
@@ -708,7 +716,9 @@ void* VulkanMemoryPool::allocateHostVisible(int deviceId, VkDeviceSize bytes) {
 
   VkBufferCreateInfo bufferInfo = {};
   bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  bufferInfo.size = bytes;
+  // Padded to four bytes as allocate() pads: a storage descriptor of a byte-typed array spans whole 32-bit words
+  // (VulkanSegmentRecorder), which must lie inside the VkBuffer. The logical size stays exact.
+  bufferInfo.size = (bytes + 3u) & ~VkDeviceSize(3u);
   bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                      VK_BUFFER_USAGE_TRANSFER_DST_BIT;

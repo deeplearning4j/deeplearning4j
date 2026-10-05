@@ -57,9 +57,8 @@ Status LegacyReduce3Op::validateAndExecute(Context &block) {
   if (x->isSameShape(y) && allDimsReduction) {
     // reduce3 to scalar
     NativeOpExecutioner::execReduce3Scalar(
-        block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-        extras.argumentsAsT(z->dataType()), y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
-        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+        block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+        extras.argumentsAsT(z->dataType()), sd::LegacyTensorArg::fromArray(y), sd::LegacyTensorArg::fromArray(z));
   } else {
     std::vector<LongType> dims(*block.getAxis());
     for (size_t e = 0; e < dims.size(); e++)
@@ -84,10 +83,9 @@ Status LegacyReduce3Op::validateAndExecute(Context &block) {
                            ? packY->primaryOffsets()
                            : packY->specialOffsets();
 
-    NativeOpExecutioner::execReduce3(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-                                     x->specialShapeInfo(), extras.argumentsAsT(z->dataType()), y->buffer(),
-                                     y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(), z->buffer(),
-                                     z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(),
+    NativeOpExecutioner::execReduce3(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+                                     extras.argumentsAsT(z->dataType()), sd::LegacyTensorArg::fromArray(y),
+                                     sd::LegacyTensorArg::fromArray(z), dims.data(),
                                      dims.size(), xTadShape, xTadOffsets, yTadShape, yTadOffsets);
   }
 

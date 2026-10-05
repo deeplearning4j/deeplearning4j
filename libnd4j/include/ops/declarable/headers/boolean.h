@@ -96,7 +96,19 @@ DECLARE_CUSTOM_OP(Where, 1, 1, false, 0, 0);
 #endif
 
 #if NOT_EXCLUDED(OP_where_np)
-DECLARE_CUSTOM_OP(where_np, 1, 1, false, 0, 0);
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT where_np : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+
+ public:
+  where_np();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override;
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(where_np)
 #endif
 
 /**

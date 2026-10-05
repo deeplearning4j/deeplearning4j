@@ -245,29 +245,43 @@ public class WorkspaceSessionMemMgrTest extends BaseNd4jTestWithBackends {
         INDArray fTemplate = Nd4j.createUninitialized(DataType.FLOAT, fShape, 'f');
         INDArray emptyTemplate = Nd4j.emptyWithShape(emptyShape, DataType.FLOAT);
 
-        mgr.scopeIn();
-        try {
-            INDArray fromLongDescriptor = mgr.allocate(false, fTemplate.shapeDescriptor());
-            assertArrayEquals(fShape, fromLongDescriptor.shape(), "Long descriptor shape");
-            assertArrayEquals(fTemplate.stride(), fromLongDescriptor.stride(), "Long descriptor strides");
-            assertEquals('f', fromLongDescriptor.ordering(), "Long descriptor ordering");
+        // The descriptor belongs to the caller, not the workspace being tested.
+        long[] unflaggedInfo = emptyTemplate.shapeInfoDataBuffer().asLong().clone();
+        unflaggedInfo[unflaggedInfo.length - 3] = fTemplate.shapeDescriptor().getExtras();
+        try (var descriptor = Nd4j.createBuffer(unflaggedInfo)) {
+            mgr.scopeIn();
+            try {
+                INDArray fromLongDescriptor = mgr.allocate(false, fTemplate.shapeDescriptor());
+                assertArrayEquals(fShape, fromLongDescriptor.shape(), "Long descriptor shape");
+                assertArrayEquals(fTemplate.stride(), fromLongDescriptor.stride(), "Long descriptor strides");
+                assertEquals('f', fromLongDescriptor.ordering(), "Long descriptor ordering");
 
-            INDArray fromShapeInfo = mgr.allocateFromDescriptor(false, fTemplate.shapeInfoDataBuffer(), true);
-            assertArrayEquals(fShape, fromShapeInfo.shape(), "Shape-info descriptor shape");
-            assertArrayEquals(fTemplate.stride(), fromShapeInfo.stride(), "Shape-info descriptor strides");
-            assertEquals('f', fromShapeInfo.ordering(), "Shape-info descriptor ordering");
-            assertEquals(0.0, fromShapeInfo.sumNumber().doubleValue(), 0.0,
-                    "requiresZeroed must still apply while preserving layout");
+                INDArray fromShapeInfo = mgr.allocateFromDescriptor(false, fTemplate.shapeInfoDataBuffer(), true);
+                assertArrayEquals(fShape, fromShapeInfo.shape(), "Shape-info descriptor shape");
+                assertArrayEquals(fTemplate.stride(), fromShapeInfo.stride(), "Shape-info descriptor strides");
+                assertEquals('f', fromShapeInfo.ordering(), "Shape-info descriptor ordering");
+                assertEquals(0.0, fromShapeInfo.sumNumber().doubleValue(), 0.0,
+                        "requiresZeroed must still apply while preserving layout");
 
-            INDArray emptyFromLongDescriptor = mgr.allocate(false, emptyTemplate.shapeDescriptor());
-            assertTrue(emptyFromLongDescriptor.isEmpty(), "Long descriptor must preserve ARRAY_EMPTY");
-            assertArrayEquals(emptyShape, emptyFromLongDescriptor.shape(), "Empty long descriptor shape");
+                INDArray emptyFromLongDescriptor = mgr.allocate(false, emptyTemplate.shapeDescriptor());
+                assertTrue(emptyFromLongDescriptor.isEmpty(), "Long descriptor must preserve ARRAY_EMPTY");
+                assertArrayEquals(emptyShape, emptyFromLongDescriptor.shape(), "Empty long descriptor shape");
 
-            INDArray emptyFromShapeInfo = mgr.allocateFromDescriptor(false, emptyTemplate.shapeInfoDataBuffer(), true);
-            assertTrue(emptyFromShapeInfo.isEmpty(), "Shape-info descriptor must preserve ARRAY_EMPTY");
-            assertArrayEquals(emptyShape, emptyFromShapeInfo.shape(), "Empty shape-info descriptor shape");
+                INDArray emptyFromShapeInfo = mgr.allocateFromDescriptor(false, emptyTemplate.shapeInfoDataBuffer(), true);
+                assertTrue(emptyFromShapeInfo.isEmpty(), "Shape-info descriptor must preserve ARRAY_EMPTY");
+                assertArrayEquals(emptyShape, emptyFromShapeInfo.shape(), "Empty shape-info descriptor shape");
+
+                // A shape function may supply zero dimensions without the ARRAY_EMPTY flag.
+                INDArray normalizedEmpty = mgr.allocateFromDescriptor(false, descriptor, true);
+                assertTrue(normalizedEmpty.isEmpty(), "Zero dimensions must imply ARRAY_EMPTY");
+                assertArrayEquals(emptyShape, normalizedEmpty.shape());
+                assertEquals(DataType.FLOAT, normalizedEmpty.dataType());
+                assertNull(normalizedEmpty.data(), "An empty allocation must not create a data buffer");
+                assertArrayEquals(unflaggedInfo, descriptor.asLong(), "Do not mutate the caller's descriptor");
+            } finally {
+                mgr.scopeOut();
+            }
         } finally {
-            mgr.scopeOut();
             mgr.close();
             fTemplate.close();
             emptyTemplate.close();

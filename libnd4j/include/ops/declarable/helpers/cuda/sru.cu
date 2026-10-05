@@ -22,9 +22,13 @@
 //  @author Yurii Shyrma, created on 05.12.2017
 //
 #include <array/NDArrayFactory.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/sru.h>
+#include <ops/op_types.h>
+
+#include <vector>
 
 #include "execution/cuda/LaunchDims.h"
 
@@ -153,6 +157,24 @@ void sruTimeLoop(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, ND
 }
 
 //////////////////////////////////////////////////////////////////////////
+// x * mask, the mask [bS x 2*K] broadcast over time, in an array of its own: the ops must leave their input as it is
+// (the mask was multiplied into x itself, so the caller's array changed and a second call applied the mask again).
+// nullptr without a mask. The mask is small: the ops use a dense copy of it, which is what the broadcast reads.
+static NDArray* maskedInput(NDArray* x, NDArray* mask) {
+  if (mask == nullptr) return nullptr;
+
+  std::vector<LongType> shape = {x->sizeAt(0), x->sizeAt(1), x->sizeAt(2)};
+  NDArray* masked = new NDArray('c', shape, x->dataType(), x->getContext());
+  std::vector<LongType> dims = {1, 2};
+  x->applyBroadcast(broadcast::Multiply, &dims, mask, masked);
+  return masked;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// sruBICuda and sruBIBPCuda run a thread for each (batch, feature) column of x [time, bS, 2*K], the features from K on
+// running backwards in time. Every array is addressed through its own strides, so any layout (F order, a view) is read
+// and written as it is: U = x * w comes out in whatever order the matrix product gives it. The columns are walked with
+// a grid stride, so any launch covers them all.
 template <typename T>
 SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, const void* vwi,
                                  const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo,
@@ -161,7 +183,7 @@ SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, cons
                                  void* vct, const LongType* ctShapeInfo) {
   // Inputs:
   // x     [time, bS, 2*K]
-  // wi    [time, bS, 6*K], wi = mmul(x, weights);
+  // wi    [time, bS, 6*K], wi = mmul(x, weights): the pre-activations of feature k are wi[., ., 3*k + 0, 1, 2]
   // b     [4*K]
   // c0    [bS, 2*K]
   // mask  [bS, 2*K], optional
@@ -170,7 +192,8 @@ SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, cons
   // ht  [time, bS, 2*K]
   // ct  [time, bS, 2*K]
 
-  // Reinterpret inputs and outputs
+  using AccT = typename simdOps::AggregateType<T>::type;
+
   const T* x = reinterpret_cast<const T*>(vx);
   const T* wi = reinterpret_cast<const T*>(vwi);
   const T* b = reinterpret_cast<const T*>(vb);
@@ -179,139 +202,64 @@ SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, cons
   T* ht = reinterpret_cast<T*>(vht);
   T* ct = reinterpret_cast<T*>(vct);
 
-  const int rank = 3; // Assuming 3D tensors
+  const LongType* xShape = shape::shapeOf(xShapeInfo);
+  const LongType* xStride = shape::stride(xShapeInfo);
+  const LongType* wiStride = shape::stride(wiShapeInfo);
+  const LongType biasStride = shape::stride(bShapeInfo)[0];
+  const LongType* c0Stride = shape::stride(c0ShapeInfo);
+  const LongType* maskStride = vmask != nullptr ? shape::stride(maskShapeInfo) : nullptr;
+  const LongType* htStride = shape::stride(htShapeInfo);
+  const LongType* ctStride = shape::stride(ctShapeInfo);
 
-  // Shared memory for caching shape information and other variables
-  extern __shared__ unsigned char shmem[];
-  // Pointers to shared memory segments
-  LongType* sharedMem = reinterpret_cast<LongType*>(shmem);
+  const LongType time = xShape[0];
+  const LongType bS = xShape[1];
+  const LongType d2 = xShape[2];  // 2*K
+  const LongType K = d2 / 2;
+  const LongType ncols = bS * d2;
 
-  // Shared variables
-  __shared__ LongType shared_time;
-  __shared__ LongType shared_bS;
-  __shared__ LongType shared_K;
-  __shared__ LongType shared_len;
-  __shared__ LongType shared_totalThreads;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType col = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; col < ncols; col += step) {
+    const LongType batch = col / d2;
+    const LongType k = col % d2;
+    const bool flip = k >= K;  // the second half of the features runs backwards in time
 
-  // Cached shape and stride pointers
-  __shared__ const LongType* shared_xShape;
-  __shared__ const LongType* shared_wiShape;
-  __shared__ const LongType* shared_bShape;
-  __shared__ const LongType* shared_c0Shape;
-  __shared__ const LongType* shared_maskShape;
-  __shared__ const LongType* shared_htShape;
-  __shared__ const LongType* shared_ctShape;
+    const AccT maskVal =
+        vmask != nullptr ? static_cast<AccT>(mask[batch * maskStride[0] + k * maskStride[1]]) : static_cast<AccT>(1);
+    AccT cur = static_cast<AccT>(c0[batch * c0Stride[0] + k * c0Stride[1]]);
+    const AccT bF = static_cast<AccT>(b[k * biasStride]);
+    const AccT bR = static_cast<AccT>(b[(k + d2) * biasStride]);
 
-  if (threadIdx.x == 0) {
-    // Cache shape pointers
-    shared_xShape = shape::shapeOf(xShapeInfo);
-    shared_wiShape = shape::shapeOf(wiShapeInfo);
-    shared_bShape = shape::shapeOf(bShapeInfo);
-    shared_c0Shape = shape::shapeOf(c0ShapeInfo);
-    shared_maskShape = shape::shapeOf(maskShapeInfo);
-    shared_htShape = shape::shapeOf(htShapeInfo);
-    shared_ctShape = shape::shapeOf(ctShapeInfo);
+    // the first time step of the column, and the step from one time step to the next
+    const LongType first = flip ? time - 1 : 0;
+    const LongType dir = flip ? -1 : 1;
+    LongType xOffset = first * xStride[0] + batch * xStride[1] + k * xStride[2];
+    LongType wiOffset = first * wiStride[0] + batch * wiStride[1] + 3 * k * wiStride[2];
+    LongType htOffset = first * htStride[0] + batch * htStride[1] + k * htStride[2];
+    LongType ctOffset = first * ctStride[0] + batch * ctStride[1] + k * ctStride[2];
+    const LongType xStep = dir * xStride[0];
+    const LongType wiStep = dir * wiStride[0];
+    const LongType htStep = dir * htStride[0];
+    const LongType ctStep = dir * ctStride[0];
 
-    // Cache time, bS, and K
-    shared_time = shared_xShape[0];  // time
-    shared_bS = shared_xShape[1];    // batch size (bS)
-    shared_K = shared_xShape[2] / 2; // Assuming xShapeInfo[2] = 2*K
+    for (LongType t = 0; t < time; ++t) {
+      const AccT u0 = static_cast<AccT>(wi[wiOffset]);
+      const AccT u1 = static_cast<AccT>(wi[wiOffset + wiStride[2]]);
+      const AccT u2 = static_cast<AccT>(wi[wiOffset + 2 * wiStride[2]]);
+      const AccT xVal = static_cast<AccT>(x[xOffset]);
 
-    // Calculate len = 2*K * bS
-    shared_len = 2 * shared_K * shared_bS;
+      // evaluate sigmoids
+      const AccT ft = static_cast<AccT>(1) / (static_cast<AccT>(1) + math::sd_exp<AccT, AccT>(-(u1 + bF)));
+      const AccT rt = static_cast<AccT>(1) / (static_cast<AccT>(1) + math::sd_exp<AccT, AccT>(-(u2 + bR)));
 
-    // Calculate total number of threads across all blocks
-    shared_totalThreads = gridDim.x * blockDim.x;
-  }
+      cur = (cur - u0) * ft + u0;
+      ct[ctOffset] = static_cast<T>(cur);
+      const AccT val = math::sd_tanh<AccT, AccT>(cur);
+      ht[htOffset] = static_cast<T>((val * maskVal - xVal) * rt + xVal);
 
-  // Ensure all threads have access to the cached values
-  __syncthreads();
-
-  // Calculate the global thread ID
-  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-  // Allocate space in shared memory for coordinates
-  LongType* coords = sharedMem + threadIdx.x * rank;  // the last two dimensions {bS, 2*K}, and a third index read below
-
-  if (tid >= shared_len) return;
-
-  // Convert linear index to multi-dimensional coordinates {bS, 2*K}
-  INDEX2COORDS(tid, rank - 1, shared_xShape, coords); // coords[0] = bS, coords[1] = 2*K
-
-  // Calculate necessary offsets
-  LongType maskOffset = 0, c0Offset = 0, bFOffset = 0, bROffset = 0;
-
-  if (vmask != nullptr) {
-    COORDS2INDEX(rank - 1, shape::stride(maskShapeInfo), coords, maskOffset);
-  }
-  COORDS2INDEX(rank - 1, shape::stride(c0ShapeInfo), coords, c0Offset);
-  COORDS2INDEX(rank - 1, shape::stride(bShapeInfo), coords + 1, bFOffset);
-  bROffset = bFOffset + 2 * shared_K * shared_bShape[2]; // 2*K*b_stride
-
-  // Fetch values
-  const T maskVal = (vmask != nullptr) ? mask[maskOffset] : static_cast<T>(1);
-  const T bF = b[bFOffset];
-  const T bR = b[bROffset];
-  T c0Val = c0[c0Offset];
-
-  // Determine flip condition
-  const bool flip = coords[1] >= shared_K;
-
-  // Initialize coordinates for time iteration
-  if (flip)
-    coords[0] = shared_time - 1;
-  else
-    coords[0] = 0;
-
-  // Calculate offsets for x, ht, ct
-  LongType xOffset = 0, htOffset = 0, ctOffset = 0;
-  COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
-  COORDS2INDEX(rank, shape::stride(htShapeInfo), coords, htOffset);
-  COORDS2INDEX(rank, shape::stride(ctShapeInfo), coords, ctOffset);
-
-  // Adjust coords for wi and gradWi
-  coords[1] *= 3; // 6*K corresponds to 3 * 2*K
-
-  // Calculate wi offsets
-  LongType wiOffset0 = 0, wiOffset1 = 0, wiOffset2 = 0;
-  COORDS2INDEX(rank, shape::stride(wiShapeInfo), coords, wiOffset0);
-  wiOffset1 = wiOffset0 + shared_wiShape[rank]; // Add stride for wi1
-  wiOffset2 = wiOffset1 + shared_wiShape[rank]; // Add stride for wi2
-
-  // Iterate over the time steps
-  for (LongType t = 0; t < shared_time; ++t) {
-    // Evaluate sigmoids
-    T ft = static_cast<T>(1) / (static_cast<T>(1) + math::sd_exp<T, T>(- (wi[wiOffset1] + bF)));
-    T rt = static_cast<T>(1) / (static_cast<T>(1) + math::sd_exp<T, T>(- (wi[wiOffset2] + bR)));
-
-    // Update c0Val and ct
-    c0Val = (c0Val - wi[wiOffset0]) * ft + wi[wiOffset0];
-    ct[ctOffset] = c0Val;
-
-    // Compute tanh activation
-    T val = math::sd_tanh<T, T>(c0Val);
-
-    // Fetch x value
-    T xVal = x[xOffset];
-
-    // Compute ht
-    ht[htOffset] = (val * maskVal - xVal) * rt + xVal;
-
-    // Update offsets based on flip condition
-    if (flip) {
-      xOffset -= shape::stride(xShapeInfo)[0];        // time step stride
-      htOffset -= shape::stride(htShapeInfo)[0];
-      ctOffset -= shape::stride(ctShapeInfo)[0];
-      wiOffset0 -= shape::stride(wiShapeInfo)[0];
-      wiOffset1 -= shape::stride(wiShapeInfo)[0];
-      wiOffset2 -= shape::stride(wiShapeInfo)[0];
-    } else {
-      xOffset += shape::stride(xShapeInfo)[0];        // time step stride
-      htOffset += shape::stride(htShapeInfo)[0];
-      ctOffset += shape::stride(ctShapeInfo)[0];
-      wiOffset0 += shape::stride(wiShapeInfo)[0];
-      wiOffset1 += shape::stride(wiShapeInfo)[0];
-      wiOffset2 += shape::stride(wiShapeInfo)[0];
+      xOffset += xStep;
+      wiOffset += wiStep;
+      htOffset += htStep;
+      ctOffset += ctStep;
     }
   }
 }
@@ -328,36 +276,43 @@ static void sruBICudaLauncher(const int blocksPerGrid, const int threadsPerBlock
   sruBICuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vwi, wiShapeInfo, vb, bShapeInfo,
                                                                        vc0, c0ShapeInfo, vmask, maskShapeInfo, vht,
                                                                        htShapeInfo, vct, ctShapeInfo);
-  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "sruBICuda failed");
-
+  if (!DebugHelper::inGraphCapture(const_cast<cudaStream_t*>(stream))) DebugHelper::checkGlobalErrorCode("sruBICuda failed");
 }
 
 //////////////////////////////////////////////////////////////////////////
 void sruBI(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* c0,
            NDArray* mask, NDArray* ht, NDArray* ct) {
-  //  x = x * mask
-  std::vector<LongType> dims = {1,2};
-  if (mask) x->applyBroadcast(broadcast::Multiply, &dims, mask, x);  // apply mask
+  //  xm = x * mask
+  NDArray* denseMask = mask != nullptr ? mask->dup('c') : nullptr;
+  mask = denseMask;
+  NDArray* xMasked = maskedInput(x, mask);
+  NDArray* xm = xMasked != nullptr ? xMasked : x;
 
-  // U = x * w
-  auto wi = mmul(*x, *w);  //  U [time x bS x 6*K]
+  // U = xm * w
+  std::vector<LongType> wiShape = {x->sizeAt(0), x->sizeAt(1), 3 * x->sizeAt(2)};
+  NDArray* wi = new NDArray('c', wiShape, x->dataType(), context);
+  MmulHelper::matmul(xm, w, wi, false, false, 1.0, 0.0);  // U [time x bS x 6*K]
 
   PointersManager manager(context, "sru_bi");
 
+  // a thread for each (batch, feature) of the last two dimensions of x: bS * 2K
   dim3 sruBiDims2 = sruBiDims(x->sizeAt(1) * x->sizeAt(2),x->rankOf());
-  NDArray::prepareSpecialUse({ht, ct}, {x, wi, b, c0, mask});
+  NDArray::prepareSpecialUse({ht, ct}, {xm, wi, b, c0, mask});
   BUILD_SINGLE_SELECTOR(
       x->dataType(), sruBICudaLauncher,
-      (sruBiDims2.y,sruBiDims2.x, sruBiDims2.z, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(),
+      (sruBiDims2.y,sruBiDims2.x, 0, context->getCudaStream(), xm->specialBuffer(), xm->specialShapeInfo(),
           wi->specialBuffer(), wi->specialShapeInfo(), b->specialBuffer(), b->specialShapeInfo(), c0->specialBuffer(),
           c0->specialShapeInfo(), mask ? mask->specialBuffer() : nullptr, mask ? mask->specialShapeInfo() : nullptr,
           ht->specialBuffer(), ht->specialShapeInfo(), ct->specialBuffer(), ct->specialShapeInfo()),
       SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({ht, ct}, {x, wi, b, c0, mask});
+  NDArray::registerSpecialUse({ht, ct}, {xm, wi, b, c0, mask});
 
+  // the temporary arrays are released once the kernel is done with them
   manager.synchronize();
 
   delete wi;
+  delete xMasked;
+  delete denseMask;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -381,12 +336,13 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, co
   // gradCt [bS, 2*K]
 
   // Outputs:
-  // gradI   [time, bS, 2*K]
-  // gradWi  [time, 2*K, 6*K]
-  // gradB   [bS, 4*K]
+  // gradI   [time, bS, 2*K], the highway part of the gradient of the input
+  // gradWi  [time, bS, 6*K]
+  // gradB   [bS, 4*K], the first 2*K of each row are the forget gates' biases' gradients, the rest the reset gates'
   // gradC0  [bS, 2*K]
 
-  // Reinterpret inputs and outputs
+  using AccT = typename simdOps::AggregateType<T>::type;
+
   const T* x = reinterpret_cast<const T*>(vx);
   const T* wi = reinterpret_cast<const T*>(vwi);
   const T* b = reinterpret_cast<const T*>(vb);
@@ -401,190 +357,109 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, co
   T* gradB = reinterpret_cast<T*>(vgradB);
   T* gradC0 = reinterpret_cast<T*>(vgradC0);
 
-  const int rank = 3; // Assuming 3D tensors
+  const LongType* xShape = shape::shapeOf(xShapeInfo);
+  const LongType* xStride = shape::stride(xShapeInfo);
+  const LongType* wiStride = shape::stride(wiShapeInfo);
+  const LongType biasStride = shape::stride(bShapeInfo)[0];
+  const LongType* c0Stride = shape::stride(c0ShapeInfo);
+  const LongType* maskStride = vmask != nullptr ? shape::stride(maskShapeInfo) : nullptr;
+  const LongType* ctStride = shape::stride(ctShapeInfo);
+  const LongType* gradHtStride = shape::stride(gradHtShapeInfo);
+  const LongType* gradCtStride = shape::stride(gradCtShapeInfo);
+  const LongType* gradIStride = shape::stride(gradIShapeInfo);
+  const LongType* gradWiStride = shape::stride(gradWiShapeInfo);
+  const LongType* gradBStride = shape::stride(gradBShapeInfo);
+  const LongType* gradC0Stride = shape::stride(gradC0ShapeInfo);
 
-  // Shared memory for caching shape information
-  extern __shared__ unsigned char shmem[];
-  LongType* sharedMem = reinterpret_cast<LongType*>(shmem);
+  const LongType time = xShape[0];
+  const LongType bS = xShape[1];
+  const LongType d2 = xShape[2];  // 2*K
+  const LongType K = d2 / 2;
+  const LongType ncols = bS * d2;
 
-  __shared__ LongType shared_time;
-  __shared__ LongType shared_K;
-  __shared__ LongType shared_len;
-  __shared__ LongType shared_totalThreads;
+  const LongType step = static_cast<LongType>(gridDim.x) * blockDim.x;
+  for (LongType col = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; col < ncols; col += step) {
+    const LongType batch = col / d2;
+    const LongType k = col % d2;
+    const bool flip = k >= K;  // the second half of the features runs backwards in time
 
-  // Cached shape pointers
-  __shared__ const LongType* shared_xShape;
-  __shared__ const LongType* shared_wiShape;
-  __shared__ const LongType* shared_bShape;
-  __shared__ const LongType* shared_c0Shape;
-  __shared__ const LongType* shared_maskShape;
-  __shared__ const LongType* shared_ctShape;
-  __shared__ const LongType* shared_gradHtShape;
-  __shared__ const LongType* shared_gradCtShape;
-  __shared__ const LongType* shared_gradIShape;
-  __shared__ const LongType* shared_gradWiShape;
-  __shared__ const LongType* shared_gradBShape;
-  __shared__ const LongType* shared_gradC0Shape;
+    AccT gbF = static_cast<AccT>(0);
+    AccT gbR = static_cast<AccT>(0);
+    const AccT maskVal =
+        vmask != nullptr ? static_cast<AccT>(mask[batch * maskStride[0] + k * maskStride[1]]) : static_cast<AccT>(1);
+    AccT cur = static_cast<AccT>(gradCt[batch * gradCtStride[0] + k * gradCtStride[1]]);
+    const AccT bF = static_cast<AccT>(b[k * biasStride]);
+    const AccT bR = static_cast<AccT>(b[(k + d2) * biasStride]);
 
-  if (threadIdx.x == 0) {
-    // Cache ranks, shapes, and strides
-    shared_xShape = shape::shapeOf(xShapeInfo);
-    shared_wiShape = shape::shapeOf(wiShapeInfo);
-    shared_bShape = shape::shapeOf(bShapeInfo);
-    shared_c0Shape = shape::shapeOf(c0ShapeInfo);
-    shared_maskShape = shape::shapeOf(maskShapeInfo);
-    shared_ctShape = shape::shapeOf(ctShapeInfo);
-    shared_gradHtShape = shape::shapeOf(gradHtShapeInfo);
-    shared_gradCtShape = shape::shapeOf(gradCtShapeInfo);
-    shared_gradIShape = shape::shapeOf(gradIShapeInfo);
-    shared_gradWiShape = shape::shapeOf(gradWiShapeInfo);
-    shared_gradBShape = shape::shapeOf(gradBShapeInfo);
-    shared_gradC0Shape = shape::shapeOf(gradC0ShapeInfo);
+    // the sweep goes back through the time steps of the forward pass: from the last one it handled, in the direction
+    // opposite to the one it went
+    const LongType first = flip ? 0 : time - 1;
+    const LongType dir = flip ? 1 : -1;
+    LongType xOffset = first * xStride[0] + batch * xStride[1] + k * xStride[2];
+    LongType wiOffset = first * wiStride[0] + batch * wiStride[1] + 3 * k * wiStride[2];
+    LongType ctOffset = first * ctStride[0] + batch * ctStride[1] + k * ctStride[2];
+    LongType gradHtOffset = first * gradHtStride[0] + batch * gradHtStride[1] + k * gradHtStride[2];
+    LongType gradIOffset = first * gradIStride[0] + batch * gradIStride[1] + k * gradIStride[2];
+    LongType gradWiOffset = first * gradWiStride[0] + batch * gradWiStride[1] + 3 * k * gradWiStride[2];
+    const LongType xStep = dir * xStride[0];
+    const LongType wiStep = dir * wiStride[0];
+    const LongType ctStep = dir * ctStride[0];
+    const LongType gradHtStep = dir * gradHtStride[0];
+    const LongType gradIStep = dir * gradIStride[0];
+    const LongType gradWiStep = dir * gradWiStride[0];
 
-    // Cache time and K
-    shared_time = shared_xShape[0];
-    shared_K = shared_xShape[2] / 2; // Assuming xShapeInfo[2] = 2*K
+    for (LongType t = 0; t < time; ++t) {
+      const AccT u0 = static_cast<AccT>(wi[wiOffset]);
+      const AccT u1 = static_cast<AccT>(wi[wiOffset + wiStride[2]]);
+      const AccT u2 = static_cast<AccT>(wi[wiOffset + 2 * wiStride[2]]);
+      const AccT xVal = static_cast<AccT>(x[xOffset]);
+      const AccT gradHtVal = static_cast<AccT>(gradHt[gradHtOffset]);
 
-    // Calculate len = 2*K * bS
-    LongType bS = shared_xShape[1];
-    shared_len = 2 * shared_K * bS;
+      // evaluate sigmoids
+      const AccT ft = static_cast<AccT>(1) / (static_cast<AccT>(1) + math::sd_exp<AccT, AccT>(-(u1 + bF)));
+      const AccT rt = static_cast<AccT>(1) / (static_cast<AccT>(1) + math::sd_exp<AccT, AccT>(-(u2 + bR)));
 
-    // Total threads across all blocks
-    shared_totalThreads = gridDim.x * blockDim.x;
-  }
+      const AccT val = math::sd_tanh<AccT, AccT>(static_cast<AccT>(ct[ctOffset]));
+      // the state before this time step: the one the sweep reaches next, c0 after the last
+      const AccT prevVal = (t < time - 1) ? static_cast<AccT>(ct[ctOffset + ctStep])
+                                          : static_cast<AccT>(c0[batch * c0Stride[0] + k * c0Stride[1]]);
 
-  // Ensure all threads have access to the cached values
-  __syncthreads();
+      // grad wrt input: the highway connection (the gradient through U is added to it by the host)
+      gradI[gradIOffset] = static_cast<T>(gradHtVal - gradHtVal * rt);
 
-  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
+      // grad wrt rt, wiR and bR
+      const AccT grt = gradHtVal * (val * maskVal - xVal) * (rt - rt * rt);
+      gradWi[gradWiOffset + 2 * gradWiStride[2]] = static_cast<T>(grt);
+      gbR += grt;
 
-  // Allocate space in shared memory for coordinates
-  LongType* coords = sharedMem + threadIdx.x * rank;
+      // grad wrt state
+      const AccT gradStateVal = gradHtVal * maskVal * (rt - rt * val * val) + cur;
 
-  if (tid >= shared_len) return;
+      // grad wrt wi0
+      gradWi[gradWiOffset] = static_cast<T>(gradStateVal - gradStateVal * ft);
 
-  // Convert linear index to coordinates {bS, 2*K}
-  INDEX2COORDS(tid, rank - 1, shared_xShape, coords + 1); // Skipping the time dimension
+      // grad wrt ft, wi1, and bF
+      const AccT gft = gradStateVal * (prevVal - u0) * (ft - ft * ft);
+      gradWi[gradWiOffset + gradWiStride[2]] = static_cast<T>(gft);
+      gbF += gft;
 
-  // Calculate necessary offsets
-  LongType maskOffset = 0, c0Offset = 0, gradCtOffset = 0, gradC0Offset = 0;
-  LongType bFOffset = 0, bROffset = 0, gradBFOffset = 0, gradBROffset = 0;
+      // grad wrt c_previous
+      cur = gradStateVal * ft;
 
-  if (vmask != nullptr) {
-    COORDS2INDEX(rank - 1, shape::stride(maskShapeInfo), coords + 1, maskOffset);
-  }
-  COORDS2INDEX(rank - 1, shape::stride(c0ShapeInfo), coords + 1, c0Offset);
-  COORDS2INDEX(rank - 1, shape::stride(gradCtShapeInfo), coords + 1, gradCtOffset);
-  COORDS2INDEX(rank - 1, shape::stride(gradC0ShapeInfo), coords + 1, gradC0Offset);
-  COORDS2INDEX(rank - 1, shape::stride(bShapeInfo), coords + 2, bFOffset);
-  bROffset = bFOffset + 2 * shared_K * shared_bShape[2]; // 2*K*b_stride
-  gradBFOffset = coords[1] * shared_gradBShape[3] / 2 + coords[2] * shared_gradBShape[4];
-  gradBROffset = gradBFOffset + shared_gradBShape[3];
-
-  const bool flip = coords[2] >= shared_K;
-
-  if (flip)
-    coords[0] = 0;
-  else
-    coords[0] = shared_time - 1;
-
-  // Calculate offsets for x, ct, gradI, gradHt
-  LongType xOffset = 0, ctOffset = 0, gradIOffset = 0, gradHtOffset = 0;
-  COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
-  COORDS2INDEX(rank, shape::stride(ctShapeInfo), coords, ctOffset);
-  COORDS2INDEX(rank, shape::stride(gradIShapeInfo), coords, gradIOffset);
-  COORDS2INDEX(rank, shape::stride(gradHtShapeInfo), coords, gradHtOffset);
-
-  // Adjust coords for wi and gradWi
-  coords[2] *= 3;
-  LongType gradWiOffset0 = 0, gradWiOffset1 = 0, gradWiOffset2 = 0;
-  LongType wiOffset0 = 0, wiOffset1 = 0, wiOffset2 = 0;
-
-  COORDS2INDEX(rank, shape::stride(gradWiShapeInfo), coords, gradWiOffset0);
-  gradWiOffset1 = gradWiOffset0 + shared_gradWiShape[rank + 3]; // add last stride
-  gradWiOffset2 = gradWiOffset1 + shared_gradWiShape[rank + 3]; // add last stride
-
-  COORDS2INDEX(rank, shape::stride(wiShapeInfo), coords, wiOffset0);
-  wiOffset1 = wiOffset0 + shared_wiShape[rank + 3]; // add last stride
-  wiOffset2 = wiOffset1 + shared_wiShape[rank + 3]; // add last stride
-
-  // Fetch values
-  const T xVal = x[xOffset];
-  const T maskVal = (vmask != nullptr) ? mask[maskOffset] : static_cast<T>(1);
-  const T c0Val = c0[c0Offset];
-  const T bF = b[bFOffset];
-  const T bR = b[bROffset];
-  T gradCtVal = gradCt[gradCtOffset];
-  T gbF = static_cast<T>(0);
-  T gbR = static_cast<T>(0);
-
-  // Iterate over the time steps
-  for (LongType t = 0; t < shared_time; ++t) {
-    // Evaluate sigmoids
-    T ft = static_cast<T>(1) / (static_cast<T>(1) + math::sd_exp<T, T>(- (wi[wiOffset1] + bF)));
-    T rt = static_cast<T>(1) / (static_cast<T>(1) + math::sd_exp<T, T>(- (wi[wiOffset2] + bR)));
-
-    T val = math::sd_tanh<T, T>(ct[ctOffset]);
-
-    T prevVal;
-    if (t < shared_time - 1)
-      prevVal = ct[ctOffset += (flip ? shared_ctShape[rank + 1] : -shared_ctShape[rank + 1])];
-    else
-      prevVal = c0Val;
-
-    // Gradient with respect to input
-    gradI[gradIOffset] = gradHt[gradHtOffset] - gradHt[gradHtOffset] * rt;
-
-    // Gradient with respect to rt, wiR, and bR
-    T grt = gradHt[gradHtOffset] * (val * maskVal - x[xOffset]) * (rt - rt * rt);
-    gradWi[gradWiOffset2] = grt;
-    gbR += grt;
-
-    // Gradient with respect to state
-    T gradC0Val = gradHt[gradHtOffset] * maskVal * (rt - rt * val * val) + gradCtVal;
-
-    // Gradient with respect to wi0
-    gradWi[gradWiOffset0] = gradC0Val - gradC0Val * ft;
-
-    // Gradient with respect to ft, wi1, and bF
-    T gft = gradC0Val * (prevVal - wi[wiOffset0]) * (ft - ft * ft);
-    gradWi[gradWiOffset1] = gft;
-    gbF += gft;
-
-    // Gradient with respect to c_previous
-    gradCtVal = gradC0Val * ft;
-
-    // Update offsets based on flip
-    if (flip) {
-      xOffset += shared_xShape[rank + 1]; // first stride, corresponds to time step
-      gradHtOffset += shared_gradHtShape[rank + 1];
-      gradIOffset += shared_gradIShape[rank + 1];
-      wiOffset0 += shared_wiShape[rank + 1];
-      wiOffset1 += shared_wiShape[rank + 1];
-      wiOffset2 += shared_wiShape[rank + 1];
-      gradWiOffset0 += shared_gradWiShape[rank + 1];
-      gradWiOffset1 += shared_gradWiShape[rank + 1];
-      gradWiOffset2 += shared_gradWiShape[rank + 1];
+      xOffset += xStep;
+      wiOffset += wiStep;
+      ctOffset += ctStep;
+      gradHtOffset += gradHtStep;
+      gradIOffset += gradIStep;
+      gradWiOffset += gradWiStep;
     }
-    else {
-      xOffset -= shared_xShape[rank + 1]; // first stride, corresponds to time step
-      gradHtOffset -= shared_gradHtShape[rank + 1];
-      gradIOffset -= shared_gradIShape[rank + 1];
-      wiOffset0 -= shared_wiShape[rank + 1];
-      wiOffset1 -= shared_wiShape[rank + 1];
-      wiOffset2 -= shared_wiShape[rank + 1];
-      gradWiOffset0 -= shared_gradWiShape[rank + 1];
-      gradWiOffset1 -= shared_gradWiShape[rank + 1];
-      gradWiOffset2 -= shared_gradWiShape[rank + 1];
-    }
-  }
 
-  // Write accumulated gradients to output
-  gradB[gradBFOffset] = gbF;
-  gradB[gradBROffset] = gbR;
-  gradC0[gradC0Offset] = gradCtVal;
+    // write the accumulated gradients
+    gradB[batch * gradBStride[0] + k * gradBStride[1]] = static_cast<T>(gbF);
+    gradB[batch * gradBStride[0] + (k + d2) * gradBStride[1]] = static_cast<T>(gbR);
+    gradC0[batch * gradC0Stride[0] + k * gradC0Stride[1]] = static_cast<T>(cur);
+  }
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -598,8 +473,7 @@ static void sruBIBPCudaLauncher(
       vx, xShapeInfo, vwi, wiShapeInfo, vb, bShapeInfo, vc0, c0ShapeInfo, vmask, maskShapeInfo, vct, ctShapeInfo,
       vgradHt, gradHtShapeInfo, vgradCt, gradCtShapeInfo, vgradI, gradIShapeInfo, vgradWi, gradWiShapeInfo, vgradB,
       gradBShapeInfo, vgradC0, gradC0ShapeInfo);
-  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "sruBIBPCuda failed");
-
+  if (!DebugHelper::inGraphCapture(const_cast<cudaStream_t*>(stream))) DebugHelper::checkGlobalErrorCode("sruBIBPCuda failed");
 }
 BUILD_SINGLE_TEMPLATE( void sruBIBPCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -617,30 +491,36 @@ BUILD_SINGLE_TEMPLATE( void sruBIBPCudaLauncher,
 void sruBIBP(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* c0,
              NDArray* ct, NDArray* gradCt, NDArray* gradHt, NDArray* mask, NDArray* gradI,
              NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
-  //  x = x * mask
-  std::vector<LongType> dims = {1, 2};
-  if (mask) x->applyBroadcast(broadcast::Multiply, &dims, mask, x);  // apply mask
+  const LongType time = x->sizeAt(0);
+  const LongType bS = x->sizeAt(1);
+  const LongType K = x->sizeAt(2) / 2;
 
-  // U = x * w
-  auto wi = mmul(*x, *w);  //  U [time x bS x 6*K]
+  //  xm = x * mask
+  NDArray* denseMask = mask != nullptr ? mask->dup('c') : nullptr;
+  mask = denseMask;
+  NDArray* xMasked = maskedInput(x, mask);
+  NDArray* xm = xMasked != nullptr ? xMasked : x;
 
-  const int time = x->sizeAt(0);
-  const int bS = x->sizeAt(1);
-  const int K = x->sizeAt(2) / 2;
+  // U = xm * w
+  std::vector<LongType> wiShape = {time, bS, 6 * K};
+  NDArray* wi = new NDArray('c', wiShape, x->dataType(), context);
+  MmulHelper::matmul(xm, w, wi, false, false, 1.0, 0.0);  // U [time x bS x 6*K]
 
-  std::vector<sd::LongType> gradBiasShape = {bS, 4 * K};
-  std::vector<sd::LongType> gradWiShape = {time, bS, 6 * K};
-  NDArray gradBias(x->ordering(), gradBiasShape, x->dataType(), context);
-  NDArray gradWi(x->ordering(), gradWiShape, x->dataType(), context);
+  // the gradients of the gates' biases of each batch row (the first 2*K are the forget gates', the rest the reset
+  // gates') and of U
+  std::vector<LongType> gradBiasShape = {bS, 4 * K};
+  std::vector<LongType> gradWiShape = {time, bS, 6 * K};
+  NDArray gradBias('c', gradBiasShape, x->dataType(), context);
+  NDArray gradWi('c', gradWiShape, x->dataType(), context);
 
   PointersManager manager(context, "sru_bi_bp");
 
-  // a thread per (b, k) of the last two dimensions of x: bS * 2K
+  // a thread for each (batch, feature) of the last two dimensions of x: bS * 2K
   dim3 sruBiBpDims = sruBiDims(x->sizeAt(1) * x->sizeAt(2), x->rankOf());
-  NDArray::prepareSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, wi, b, c0, ct, gradCt, gradHt, mask});
+  NDArray::prepareSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {xm, wi, b, c0, ct, gradCt, gradHt, mask});
   BUILD_SINGLE_SELECTOR(
       x->dataType(), sruBIBPCudaLauncher,
-      (sruBiBpDims.y, sruBiBpDims.x,sruBiBpDims.z, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(),
+      (sruBiBpDims.y, sruBiBpDims.x, 0, context->getCudaStream(), xm->specialBuffer(), xm->specialShapeInfo(),
           wi->specialBuffer(), wi->specialShapeInfo(), b->specialBuffer(), b->specialShapeInfo(), c0->specialBuffer(),
           c0->specialShapeInfo(), mask ? mask->specialBuffer() : nullptr, mask ? mask->specialShapeInfo() : nullptr,
           ct->specialBuffer(), ct->specialShapeInfo(), gradHt->specialBuffer(), gradHt->specialShapeInfo(),
@@ -648,20 +528,37 @@ void sruBIBP(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray
           gradWi.specialBuffer(), gradWi.specialShapeInfo(), gradBias.specialBuffer(), gradBias.specialShapeInfo(),
           gradC0->specialBuffer(), gradC0->specialShapeInfo()),
       SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, wi, b, c0, ct, gradCt, gradHt, mask});
+  NDArray::registerSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {xm, wi, b, c0, ct, gradCt, gradHt, mask});
 
+  // the input also reaches the cells through U = xm * w: gradI += gradWi * w^T, and the mask scales what flows back to x
+  NDArray* wT = w->transpose();  // [2*K x 6*K] -> [6*K x 2*K]
+  std::vector<LongType> viaUShape = {time, bS, 2 * K};
+  NDArray* viaU = new NDArray('c', viaUShape, x->dataType(), context);
+  MmulHelper::matmul(&gradWi, wT, viaU, false, false, 1.0, 0.0);  // [time x bS x 6*K] * [6*K x 2*K]
+  gradI->applyPairwiseTransform(pairwise::Add, viaU, gradI);
+  if (mask != nullptr) {
+    std::vector<LongType> dims = {1, 2};
+    gradI->applyBroadcast(broadcast::Multiply, &dims, mask, gradI);
+  }
+
+  // gradB
+  std::vector<LongType> sumDims = {0};
+  gradBias.reduceAlongDimension(reduce::Sum, gradB, &sumDims);  // [bS x 4*K] -> [4*K]
+
+  // gradW, a view of xm as [time x 2*K x bS] leaves xm as it is
+  std::vector<LongType> permutation = {0, 2, 1};
+  NDArray* xT = xm->permute(permutation, false, false);  // [time, bS, 2*K] -> [time, 2*K,  bS]
+  MmulHelper::mmul(xT, &gradWi, gradW, 1., 0.);  // [time, 2*K, bS] x [time, bS , 6*K] = [time, 2*K, 6*K]
+
+  // the temporary arrays are released once everything that reads them is done
   manager.synchronize();
 
-
-  std::vector<LongType> dims2 = {0};
-  // gradB
-  gradBias.reduceAlongDimension(reduce::Sum, gradB, &dims2);  // [4*K]
-
-  // gradW
-  x->permutei({0, 2, 1}, false, false);                       // [time, bS, 2*K] -> [time, 2*K,  bS]
-  MmulHelper::mmul(x, &gradWi, gradW, 1., 0.);  // [time, 2*K, bS] x [time, bS , 6*K] = [time, 2*K, 6*K]
-
+  delete xT;
+  delete viaU;
+  delete wT;
   delete wi;
+  delete xMasked;
+  delete denseMask;
 }
 
 }  // namespace helpers

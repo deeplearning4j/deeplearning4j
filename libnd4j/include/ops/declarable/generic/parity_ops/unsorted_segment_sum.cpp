@@ -27,40 +27,32 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(unsorted_segment_sum, 2, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
-  auto reshapedInput = input;
-
   auto idxSegments = INPUT_VARIABLE(1);
-  auto reshapedSegments = idxSegments;
-  if (!idxSegments->isVector() || idxSegments->rankOf() > 1) {
-    std::vector<sd::LongType> shape = {idxSegments->lengthOf()};
-    reshapedSegments = idxSegments->reshape('c', shape, false);
-  }
-
-  auto segmentedOutput = OUTPUT_NULLIFIED(0);
+  auto segmentedOutput = OUTPUT_VARIABLE(0);
   LongType numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<LongType>(0) : INT_ARG(0);
-  REQUIRE_TRUE(reshapedSegments->isVector(), 0,
-               "unsorted_segment_sum: segment indexes array should be a vector, but it rank is %i.",
+  REQUIRE_TRUE(input->rankOf() >= 1, 0, "unsorted_segment_sum: the input should have rank >= 1, but it is a scalar.");
+  REQUIRE_TRUE(idxSegments->rankOf() >= 1 && idxSegments->lengthOf() >= 1, 0,
+               "unsorted_segment_sum: segment indexes array should be a non-empty array, but it has rank %i.",
                idxSegments->rankOf());
-  if(reshapedSegments->lengthOf() > 1)
-  REQUIRE_TRUE(reshapedSegments->lengthOf() == input->sizeAt(0), 0,
+  REQUIRE_TRUE(numOfClasses >= 0, 0, "unsorted_segment_sum: the number of segments should not be negative, but it is %lld.",
+               static_cast<long long>(numOfClasses));
+  REQUIRE_TRUE(idxSegments->lengthOf() == 1 || idxSegments->lengthOf() == input->sizeAt(0), 0,
                "unsorted_segment_sum: segment indexes array length should be equal to the input first dimension, but "
                "%ld != %ld.",
-               reshapedSegments->lengthOf(), input->sizeAt(0));
+               idxSegments->lengthOf(), input->sizeAt(0));
+  REQUIRE_TRUE(segmentedOutput->dataType() == input->dataType(), 0,
+               "unsorted_segment_sum: the output type (%s) should be the input type (%s).",
+               DataTypeUtils::asString(segmentedOutput->dataType()).c_str(),
+               DataTypeUtils::asString(input->dataType()).c_str());
 
   LongType wrong;
-
-  REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), reshapedSegments, numOfClasses, wrong),
-               0, "unsorted_segment_sum: segment indices should be in range [0, %ld), but %ld != %ld", numOfClasses,
-               wrong, numOfClasses);
-  helpers::unsortedSegmentSumFunctor(block.launchContext(), reshapedInput, reshapedSegments, numOfClasses,
-
-                                     segmentedOutput);
-
-
-
-
+  REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), idxSegments, numOfClasses, wrong), 0,
+               "unsorted_segment_sum: segment indices should be in range [0, %lld), but the id %lld is not.",
+               static_cast<long long>(numOfClasses), static_cast<long long>(wrong));
+  helpers::unsortedSegmentSumFunctor(block.launchContext(), input, idxSegments, numOfClasses, segmentedOutput);
   return Status::OK;
 }
+
 DECLARE_TYPES(unsorted_segment_sum) {
   getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
@@ -75,6 +67,7 @@ DECLARE_SHAPE_FN(unsorted_segment_sum) {
   int outRank = shape::rank(in);
   LongType* outputShape = nullptr;
   LongType numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<LongType>(0) : INT_ARG(0);
+  if (numOfClasses < 0) numOfClasses = 0;
 
   if (shape::rank(in) >= 2) {
     ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
@@ -94,8 +87,33 @@ DECLARE_SHAPE_FN(unsorted_segment_sum) {
   return SHAPELIST(CONSTANT(outputShape));
 }
 CUSTOM_OP_IMPL(unsorted_segment_sum_bp, 3, 2, false, 0, 1) {
-  return helpers::unsortedSegmentSumFunctorBP(block.launchContext(), INPUT_VARIABLE(0), INPUT_VARIABLE(1),
-                                              INPUT_VARIABLE(2), INT_ARG(0), OUTPUT_NULLIFIED(0));
+  auto input = INPUT_VARIABLE(0);
+  auto indices = INPUT_VARIABLE(1);
+  auto gradOut = INPUT_VARIABLE(2);
+  auto output = OUTPUT_VARIABLE(0);
+  auto outIndices = OUTPUT_VARIABLE(1);
+  const LongType numOfClasses = INT_ARG(0);
+  REQUIRE_TRUE(input->rankOf() >= 1, 0, "unsorted_segment_sum_bp: the input should have rank >= 1, but it is a scalar.");
+  REQUIRE_TRUE(indices->lengthOf() == input->sizeAt(0), 0,
+               "unsorted_segment_sum_bp: segment indexes array length should be equal to the input first dimension, but "
+               "%lld != %lld.",
+               static_cast<long long>(indices->lengthOf()), static_cast<long long>(input->sizeAt(0)));
+  REQUIRE_TRUE(gradOut->rankOf() == input->rankOf(), 0,
+               "unsorted_segment_sum_bp: the gradient should have the rank of the input, but %i != %i.",
+               gradOut->rankOf(), input->rankOf());
+  for (LongType d = 1; d < input->rankOf(); ++d) {
+    REQUIRE_TRUE(gradOut->sizeAt(d) == input->sizeAt(d), 0,
+                 "unsorted_segment_sum_bp: the gradient and the input should have equal dimensions after the first, but "
+                 "dimension %lld is %lld != %lld.",
+                 static_cast<long long>(d), static_cast<long long>(gradOut->sizeAt(d)),
+                 static_cast<long long>(input->sizeAt(d)));
+  }
+  REQUIRE_TRUE(output->dataType() == gradOut->dataType(), 0,
+               "unsorted_segment_sum_bp: the output type (%s) should be the gradient type (%s).",
+               DataTypeUtils::asString(output->dataType()).c_str(),
+               DataTypeUtils::asString(gradOut->dataType()).c_str());
+  outIndices->assign(indices);
+  return helpers::unsortedSegmentSumFunctorBP(block.launchContext(), input, indices, gradOut, numOfClasses, output);
 }
 
 DECLARE_SHAPE_FN(unsorted_segment_sum_bp) {

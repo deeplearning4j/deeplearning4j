@@ -53,7 +53,7 @@ public class MatchConditionTransform extends BaseTransformBoolOp {
 
     public MatchConditionTransform(@NonNull INDArray x, @NonNull INDArray y, @NonNull INDArray z, @NonNull Condition condition) {
         this(x, z, Nd4j.EPS_THRESHOLD, condition);
-        this.y = y;
+        setY(y);
     }
 
     public MatchConditionTransform(@NonNull INDArray x, @NonNull INDArray z, @NonNull Condition condition) {
@@ -76,6 +76,16 @@ public class MatchConditionTransform extends BaseTransformBoolOp {
 
     public MatchConditionTransform(INDArray x, double eps, @NonNull Condition condition) {
         this(x, null, eps, condition);
+    }
+
+    @Override
+    public void setY(INDArray y) {
+        super.setY(y);
+        // The native unary ABI is [compare, eps, mode]; the pairwise ABI is [eps, mode].
+        // Constant buffers are shared: invalidate this reference, never close the cached buffer.
+        this.extraArgs = y == null ? new Object[] {compare, eps, mode.index}
+                : new Object[] {eps, mode.index};
+        this.extraArgz = null;
     }
 
     @Override

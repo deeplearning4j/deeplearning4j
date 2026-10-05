@@ -27,6 +27,7 @@
 #include <helpers/ShapeUtils.h>
 
 #include <ops/declarable/helpers/transforms.h>
+#include <ops/op_types.h>
 
 #include <numeric>
 
@@ -369,8 +370,11 @@ static SD_KERNEL void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const
 
   LongType outputCoords[SD_MAX_RANK];
 
+  // the sum and its division by the number of arrays are in the aggregation type
+  using AccT = typename simdOps::AggregateType<T>::type;
+
   for (LongType e = tid; e < length; e += step) {
-    T sum = static_cast<T>(0);
+    AccT sum = static_cast<AccT>(0);
 
     // Sum values from all input arrays
     // NOTE: Do NOT use __shared__ memory for input shapes inside this loop!
@@ -392,8 +396,7 @@ static SD_KERNEL void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const
       INDEX2COORDS(e, rankInput, shapeInput, xCoords);
       COORDS2INDEX(rankInput, strideInput, xCoords, xOffset);
 
-      const auto val = x[xOffset];
-      sum += val;
+      sum += static_cast<AccT>(x[xOffset]);
     }
 
     // Compute output coordinates and offset
@@ -402,7 +405,7 @@ static SD_KERNEL void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const
     COORDS2INDEX(rankOutput, strideOutput, outputCoords, outputOffset);
 
     // Store the averaged value in the output
-    output[outputOffset] = sum / static_cast<T>(numArrays);
+    output[outputOffset] = static_cast<T>(sum / static_cast<AccT>(numArrays));
   }
 }
 

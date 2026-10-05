@@ -73,7 +73,7 @@ public abstract class BaseReduce3Op extends BaseReduceFloatOp {
     }
 
     public BaseReduce3Op(INDArray x, INDArray y, INDArray z, boolean keepDims, long... dimensions){
-        this(x,y,z,keepDims, false);
+        this(x,y,z,keepDims, false, dimensions);
     }
 
     public BaseReduce3Op(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, long... dimensions){

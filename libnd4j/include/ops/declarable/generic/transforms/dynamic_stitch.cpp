@@ -47,6 +47,18 @@ CUSTOM_OP_IMPL(dynamic_stitch, 2, 1, false, 0, 0) {
     auto data = INPUT_VARIABLE(numOfData + e);
     auto index = INPUT_VARIABLE(e);
 
+    // the data has the shape of its indices followed by the dimensions of a row of the output
+    REQUIRE_TRUE(data->rankOf() >= index->rankOf(), 0,
+                 "dynamic_stitch: data tensor rank should be non-lesser than indices\' tensor, but %i < %i given for "
+                 "input %i",
+                 data->rankOf(), index->rankOf(), e);
+    for (int dim = 0; dim < index->rankOf(); dim++) {
+      REQUIRE_TRUE(data->sizeAt(dim) == index->sizeAt(dim), 0,
+                   "dynamic_stitch: dimensions should be equals for data and indices tensors, but at axis[%i] %i != %i "
+                   "given for input %i",
+                   dim, (int)data->sizeAt(dim), (int)index->sizeAt(dim), e);
+    }
+
     inputs[e] = data;
     indices[e] = index;
   }
@@ -70,6 +82,8 @@ DECLARE_SHAPE_FN(dynamic_stitch) {
     auto input = INPUT_VARIABLE(i);
     REQUIRE_TRUE(input->isZ(), 0, "dynamic_stitch: Indices should be integer, but %d type given.",
                  (int)input->dataType());
+    // a partition that got no slice has no indices to find a maximum of
+    if (input->lengthOf() == 0) continue;
     auto maxV = input->reduceNumber(reduce::Max);
     if (maxV->e<sd::LongType>(0) > maxValue) maxValue = maxV->e<sd::LongType>(0);
     delete maxV;
@@ -77,9 +91,10 @@ DECLARE_SHAPE_FN(dynamic_stitch) {
   // calculate output rank - difference between indices shape and data shape
   int outRank = shape::rank(restShape) - shape::rank(firstShape) + 1;  // at least 1D tensor
   std::vector<sd::LongType> outShape(outRank);
-  // fill up output shape template: the first to max index, and rests - to vals from the first data input
+  // fill up output shape template: the first to max index, and rests - to vals from the first data input beyond the
+  // dimensions of its indices
   outShape[0] = maxValue + 1;
-  for (sd::LongType i = 1; i < outRank; ++i) outShape[i] = shape::sizeAt(restShape, i);
+  for (sd::LongType i = 1; i < outRank; ++i) outShape[i] = shape::sizeAt(restShape, shape::rank(firstShape) + i - 1);
 
   auto ret = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(ArrayOptions::dataType(restShape),
                                                                              shape::order(firstShape),

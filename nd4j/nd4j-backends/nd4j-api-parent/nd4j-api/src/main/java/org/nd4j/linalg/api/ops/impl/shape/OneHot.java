@@ -226,6 +226,7 @@ public class OneHot extends DynamicCustomOp {
 
     @Override
     public boolean outputShapeDependsOnInputData() {
-        return true;
+        // Axis and depth IArgs fully determine the extent; only tensor depth is value-dependent.
+        return numIArguments() < 2;
     }
 }

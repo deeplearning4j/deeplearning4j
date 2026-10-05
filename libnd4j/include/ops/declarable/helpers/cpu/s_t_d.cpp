@@ -29,68 +29,78 @@ template <typename T>
 static void _spaceTodepth_(NDArray&input, NDArray *output, int block_size, bool isNHWC) {
   auto input_ptr = reinterpret_cast<T const *>(input.buffer());
   auto output_ptr = reinterpret_cast<T *>(output->buffer());
+  const auto input_stride = shape::stride(input.shapeInfo());
+  const auto output_stride = shape::stride(output->shapeInfo());
 
-  const int batch_size = input.sizeAt(0);
-  const int input_depth = isNHWC ? input.sizeAt(3) : input.sizeAt(1);
-  const int input_height = isNHWC ? input.sizeAt(1) : input.sizeAt(2);
-  const int input_width = isNHWC ? input.sizeAt(2) : input.sizeAt(3);
+  const LongType batch_size = input.sizeAt(0);
+  const LongType input_depth = isNHWC ? input.sizeAt(3) : input.sizeAt(1);
+  const LongType input_height = isNHWC ? input.sizeAt(1) : input.sizeAt(2);
+  const LongType input_width = isNHWC ? input.sizeAt(2) : input.sizeAt(3);
 
-  const int output_depth = isNHWC ? output->sizeAt(3) : output->sizeAt(1);
-  const int output_height = isNHWC ? output->sizeAt(1) : output->sizeAt(2);
-  const int output_width = isNHWC ? output->sizeAt(2) : output->sizeAt(3);
+  const LongType output_depth = isNHWC ? output->sizeAt(3) : output->sizeAt(1);
+  const LongType output_height = isNHWC ? output->sizeAt(1) : output->sizeAt(2);
+  const LongType output_width = isNHWC ? output->sizeAt(2) : output->sizeAt(3);
 
-  const int input_depth_by_output_height = input_depth * output_height;
+  const LongType input_depth_by_output_height = input_depth * output_height;
 
-  const int output_area = output_width * output_height;
-  const int output_depth_by_output_area = output_depth * output_area;
+  const LongType output_area = output_width * output_height;
+  const LongType output_depth_by_output_area = output_depth * output_area;
 
   if (isNHWC) {
-    const int total_count = batch_size * input_height * input_width * input_depth;
+    const LongType total_count = batch_size * input_height * input_width * input_depth;
 
     auto func = PRAGMA_THREADS_FOR {
-      for (auto inp_idx = start; inp_idx < stop; inp_idx++) {
+      for (auto inp_idx = start; inp_idx < stop; inp_idx += increment) {
         // inp_idx = d + input_depth * (w + input_width * (h + input_height * b))
-        const int d = inp_idx % input_depth;
-        const int inp_idx2 = inp_idx / input_depth;
-        const int w = inp_idx2 % input_width;
-        const int inp_idx3 = inp_idx2 / input_width;
-        const int h = inp_idx3 % input_height;
-        const int b = inp_idx3 / input_height;
+        const LongType d = inp_idx % input_depth;
+        const LongType inp_idx2 = inp_idx / input_depth;
+        const LongType w = inp_idx2 % input_width;
+        const LongType inp_idx3 = inp_idx2 / input_width;
+        const LongType h = inp_idx3 % input_height;
+        const LongType b = inp_idx3 / input_height;
 
-        const int out_h = h / block_size;
-        const int offset_h = h % block_size;
-        const int out_w = w / block_size;
-        const int offset_w = w % block_size;
-        const int offset_d = (offset_h * block_size + offset_w) * input_depth;
-        const int out_d = d + offset_d;
+        const LongType out_h = h / block_size;
+        const LongType offset_h = h % block_size;
+        const LongType out_w = w / block_size;
+        const LongType offset_w = w % block_size;
+        const LongType offset_d = (offset_h * block_size + offset_w) * input_depth;
+        const LongType out_d = d + offset_d;
 
-        const int out_idx = out_d + output_depth * (out_w + output_width * (out_h + output_height * b));
-        *(output_ptr + out_idx) = *(input_ptr + inp_idx);
+        const auto input_offset = b * input_stride[0] + h * input_stride[1] + w * input_stride[2] + d * input_stride[3];
+        const auto output_offset = b * output_stride[0] + out_h * output_stride[1] +
+                                   out_w * output_stride[2] + out_d * output_stride[3];
+        output_ptr[output_offset] = input_ptr[input_offset];
       }
     };
 
     samediff::Threads::parallel_for(func, 0, total_count);
   } else {
-    const int total_count = batch_size * output_depth_by_output_area;
+    const LongType total_count = batch_size * output_depth_by_output_area;
 
     auto func = PRAGMA_THREADS_FOR {
-      for (auto inp_idx = start; inp_idx < stop; inp_idx++) {
-        const int n_iC_oY_bY_oX = inp_idx / block_size;
-        const int bX = inp_idx - n_iC_oY_bY_oX * block_size;
+      for (auto inp_idx = start; inp_idx < stop; inp_idx += increment) {
+        const LongType n_iC_oY_bY_oX = inp_idx / block_size;
+        const LongType bX = inp_idx - n_iC_oY_bY_oX * block_size;
 
-        const int n_iC_oY_bY = n_iC_oY_bY_oX / output_width;
-        const int oX = n_iC_oY_bY_oX - n_iC_oY_bY * output_width;
+        const LongType n_iC_oY_bY = n_iC_oY_bY_oX / output_width;
+        const LongType oX = n_iC_oY_bY_oX - n_iC_oY_bY * output_width;
 
-        const int n_iC_oY = n_iC_oY_bY / block_size;
-        const int bY = n_iC_oY_bY - n_iC_oY * block_size;
+        const LongType n_iC_oY = n_iC_oY_bY / block_size;
+        const LongType bY = n_iC_oY_bY - n_iC_oY * block_size;
 
-        const int n = n_iC_oY / input_depth_by_output_height;
-        const int iC_oY = n_iC_oY - n * input_depth_by_output_height;
+        const LongType n = n_iC_oY / input_depth_by_output_height;
+        const LongType iC_oY = n_iC_oY - n * input_depth_by_output_height;
 
-        const int output_idx =
-            oX + (((n * block_size + bY) * block_size + bX) * input_depth_by_output_height + iC_oY) * output_width;
-
-        *(output_ptr + output_idx) = *(input_ptr + inp_idx);
+        const LongType iC = iC_oY / output_height;
+        const LongType oY = iC_oY % output_height;
+        const LongType oC = (bY * block_size + bX) * input_depth + iC;
+        const LongType iY = oY * block_size + bY;
+        const LongType iX = oX * block_size + bX;
+        const auto input_offset = n * input_stride[0] + iC * input_stride[1] +
+                                  iY * input_stride[2] + iX * input_stride[3];
+        const auto output_offset = n * output_stride[0] + oC * output_stride[1] +
+                                   oY * output_stride[2] + oX * output_stride[3];
+        output_ptr[output_offset] = input_ptr[input_offset];
       }
     };
 
@@ -99,7 +109,9 @@ static void _spaceTodepth_(NDArray&input, NDArray *output, int block_size, bool 
 }
 
 void _spaceTodepth(sd::LaunchContext *context, NDArray&input, NDArray *output, int block_size, bool isNHWC) {
+  NDArray::preparePrimaryUse({output}, {&input});
   BUILD_SINGLE_SELECTOR(input.dataType(), _spaceTodepth_, (input, output, block_size, isNHWC), SD_COMMON_TYPES);
+  NDArray::registerPrimaryUse({output}, {&input});
 }
 
 BUILD_SINGLE_TEMPLATE( void _spaceTodepth_,

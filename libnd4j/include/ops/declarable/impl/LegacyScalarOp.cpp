@@ -153,10 +153,9 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
 
     NDArray::prepareSpecialUse({z}, {x, y});
 
-    NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-                                    x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
-                                    z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(),
-                                    y->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
+    NativeOpExecutioner::execScalar(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+                                    sd::LegacyTensorArg::fromArray(z), sd::LegacyTensorArg::fromArray(y),
+                                    extras.argumentsAsT(z->dataType()));
 
     NDArray::registerSpecialUse({z}, {x, y});
   } else if (block.getTArguments()->size() > 0) {
@@ -190,9 +189,8 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
              scalar->dataBuffer() ? scalar->dataBuffer()->deviceId() : -1);
 
     NativeOpExecutioner::execScalar(
-        block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), scalar->buffer(), scalar->shapeInfo(),
-        scalar->specialBuffer(), scalar->specialShapeInfo(),
+        block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x), sd::LegacyTensorArg::fromArray(z),
+        sd::LegacyTensorArg::fromArray(scalar),
         extras.length() > 1 ? extras.argumentsAsT(z->dataType(), 1) : nullptr);
 
     NDArray::registerSpecialUse({z}, {x, scalar});
@@ -206,9 +204,8 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
     NDArray::prepareSpecialUse({z}, {x, scalar});
 
     NativeOpExecutioner::execScalar(
-        block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), scalar->buffer(), scalar->shapeInfo(),
-        scalar->specialBuffer(), scalar->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
+        block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x), sd::LegacyTensorArg::fromArray(z),
+        sd::LegacyTensorArg::fromArray(scalar), extras.argumentsAsT(z->dataType()));
 
     NDArray::registerSpecialUse({z}, {x, scalar});
   }

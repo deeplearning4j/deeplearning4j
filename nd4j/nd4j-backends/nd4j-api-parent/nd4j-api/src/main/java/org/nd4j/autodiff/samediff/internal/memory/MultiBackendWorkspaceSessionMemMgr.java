@@ -257,6 +257,9 @@ public class MultiBackendWorkspaceSessionMemMgr implements SessionMemMgr {
 
     @Override
     public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer, boolean requiresZeroed) {
+        // The workspace buffer below holds exactly the array's length elements: the array it is wrapped in must be a
+        // new dense one whatever strides and view flags the descriptor carries (Shape.allocationShapeInfo)
+        dataBuffer = Shape.allocationShapeInfo(dataBuffer);
         long[] asJava = dataBuffer.asLong();
         DataType dataType = Shape.dataType(asJava);
         long[] shape = Shape.shape(asJava);

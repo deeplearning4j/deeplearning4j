@@ -28,15 +28,41 @@
 
 namespace sd {
 namespace ops {
+// Shape inference precedes execution/output allocation and must reject malformed descriptors before reading axes.
+static void validateCropAndResize(const LongType* imageShape, const LongType* boxesShape,
+                                  const LongType* indicesShape, NDArray* cropSize, LongType method,
+                                  int numI, int numT) {
+  REQUIRE_TRUE(shape::rank(imageShape) == 4, 0,
+               "crop_and_resize: the images must be rank 4, [batch, height, width, channels].");
+  REQUIRE_TRUE(shape::rank(boxesShape) == 2 && shape::sizeAt(boxesShape, 1) == 4, 0,
+               "crop_and_resize: the boxes must be [number of boxes, 4].");
+  REQUIRE_TRUE(DataTypeUtils::isR(ArrayOptions::dataType(imageShape)) ||
+               DataTypeUtils::isZ(ArrayOptions::dataType(imageShape)), 0,
+               "crop_and_resize: images must have a numeric data type.");
+  REQUIRE_TRUE(DataTypeUtils::isR(ArrayOptions::dataType(boxesShape)), 0,
+               "crop_and_resize: boxes must have a floating-point data type.");
+  REQUIRE_TRUE(DataTypeUtils::isZ(ArrayOptions::dataType(indicesShape)) &&
+               DataTypeUtils::isZ(cropSize->dataType()), 0,
+               "crop_and_resize: box indices and crop size must have integer data types.");
+  REQUIRE_TRUE(shape::length(indicesShape) >= shape::sizeAt(boxesShape, 0), 0,
+               "crop_and_resize: every box needs an index.");
+  REQUIRE_TRUE(shape::sizeAt(imageShape, 1) > 0 && shape::sizeAt(imageShape, 2) > 0, 0,
+               "crop_and_resize: image height and width must be positive.");
+  REQUIRE_TRUE(numI <= 1 && (method == 0 || method == 1), 0,
+               "crop_and_resize: expected one optional method, 0 (bilinear) or 1 (nearest).");
+  REQUIRE_TRUE(numT <= 1, 0, "crop_and_resize: expected one optional extrapolation value.");
+  REQUIRE_TRUE(cropSize->lengthOf() == 2, 0, "crop_and_resize: crop size must contain height and width.");
+  REQUIRE_TRUE(cropSize->e<LongType>(0) > 0 && cropSize->e<LongType>(1) > 0, 0,
+               "crop_and_resize: crop height and width must be positive.");
+}
+
 CUSTOM_OP_IMPL(crop_and_resize, 4, 1, false, 0, 0) {
   auto image = INPUT_VARIABLE(0);
   auto boxes = INPUT_VARIABLE(1);
   auto boxIndexes = INPUT_VARIABLE(2);
 
   auto output = OUTPUT_VARIABLE(0);
-  int width;
-  int height;
-  int method = 0;  // bilinear
+  const LongType method = block.numI() > 0 ? INT_ARG(0) : 0;  // bilinear
 #ifdef HAS_DOUBLE
   double extrapolationVal = 0.;
 #elif defined(HAS_FLOAT32)
@@ -48,13 +74,8 @@ CUSTOM_OP_IMPL(crop_and_resize, 4, 1, false, 0, 0) {
   auto newImageSize = INPUT_VARIABLE(3);
   REQUIRE_TRUE(output->dataType() == image->dataType(), 0,
                "crop_and_resize: Source images and output should have the same data type.");
-  REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.",
-               newImageSize->lengthOf());
-  // REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params
-  // are expensive."); width = int(newImageSize->getScalar(0)); height = int(newImageSize->getScalar(1));
-  if (block.numI() == 1) {
-    method = INT_ARG(0);
-  }
+  validateCropAndResize(image->shapeInfo(), boxes->shapeInfo(), boxIndexes->shapeInfo(), newImageSize, method,
+                      block.numI(), block.numT());
 
   if (block.numT() == 1) {
 #ifdef HAS_DOUBLE
@@ -66,7 +87,7 @@ CUSTOM_OP_IMPL(crop_and_resize, 4, 1, false, 0, 0) {
 #endif
   }
 
-  helpers::cropAndResizeFunctor(block.launchContext(), image, boxes, boxIndexes, newImageSize, method, extrapolationVal,
+  helpers::cropAndResizeFunctor(block.launchContext(), image, boxes, boxIndexes, newImageSize, static_cast<int>(method), extrapolationVal,
                                 output);
   return sd::Status::OK;
 }
@@ -77,20 +98,14 @@ DECLARE_SHAPE_FN(crop_and_resize) {
 
   sd::LongType outputShape[4];
 
-  int width;
-  int height;
   auto newImageSize = INPUT_VARIABLE(3);
-  REQUIRE_TRUE(shape::length(inputShape->at(3)) == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.",
-               shape::length(inputShape->at(3)));
-  // REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params
-  // are expensive.");
-  width = newImageSize->e<int>(0);
-  height = newImageSize->e<int>(1);
+  const LongType method = block.numI() > 0 ? INT_ARG(0) : 0;
+  validateCropAndResize(in, boxShape, inputShape->at(2), newImageSize, method, block.numI(), block.numT());
 
-  outputShape[0] = boxShape[1];
-  outputShape[1] = width;
-  outputShape[2] = height;
-  outputShape[3] = in[4];
+  outputShape[0] = shape::sizeAt(boxShape, 0);
+  outputShape[1] = newImageSize->e<LongType>(0);
+  outputShape[2] = newImageSize->e<LongType>(1);
+  outputShape[3] = shape::sizeAt(in, 3);
   return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), shape::order(in), 4, outputShape));
 }
 
@@ -98,10 +113,10 @@ DECLARE_TYPES(crop_and_resize) {
   getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
-      ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_INTS})
       ->setAllowedInputTypes(3, {ALL_INTS})
-      ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});  // as TF
+      ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});  // storage preserves the image dtype
 }
 }  // namespace ops
 }  // namespace sd

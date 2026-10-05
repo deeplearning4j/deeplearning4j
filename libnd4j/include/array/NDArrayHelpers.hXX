@@ -67,9 +67,9 @@ NDArray* scalarArrayOpHelper(NDArray* arr, T scalar, sd::scalar::Ops op, bool in
   if (inPlace && !arr->isView()) {
     NDArray::prepareSpecialUse({arr}, {arr, tmp});
     NativeOpExecutioner::execScalar(arr->getContext(), op,
-                                    arr->buffer(), arr->shapeInfo(), arr->specialBuffer(), arr->specialShapeInfo(),
-                                    arr->buffer(), arr->shapeInfo(), arr->specialBuffer(), arr->specialShapeInfo(),
-                                    tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+                                    LegacyTensorArg::fromArray(arr),
+                                    LegacyTensorArg::fromArray(arr),
+                                    LegacyTensorArg::fromArray(tmp), nullptr);
     NDArray::registerSpecialUse({arr}, {arr, tmp});
     delete tmp;
     return arr;
@@ -77,9 +77,9 @@ NDArray* scalarArrayOpHelper(NDArray* arr, T scalar, sd::scalar::Ops op, bool in
     NDArray *result = new NDArray(arr->shapeInfo(), false, arr->getContext(), true);
     NDArray::prepareSpecialUse({result}, {arr, tmp});
     NativeOpExecutioner::execScalar(arr->getContext(), op,
-                                    arr->buffer(), arr->shapeInfo(), arr->specialBuffer(), arr->specialShapeInfo(),
-                                    result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(),
-                                    tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+                                    LegacyTensorArg::fromArray(arr),
+                                    LegacyTensorArg::fromArray(result),
+                                    LegacyTensorArg::fromArray(tmp), nullptr);
     NDArray::registerSpecialUse({result}, {arr, tmp});
     delete tmp;
     return result;
@@ -122,9 +122,9 @@ NDArray* arrayArrayOpHelper(NDArray* arr1, NDArray* arr2, sd::pairwise::Ops op, 
     NDArray::prepareSpecialUse({result}, {arr1, arr2});
     NativeOpExecutioner::execPairwiseTransform(
         arr1->getContext(), op,
-        arr1->buffer(), arr1->shapeInfo(), arr1->specialBuffer(), arr1->specialShapeInfo(),
-        arr2->buffer(), arr2->shapeInfo(), arr2->specialBuffer(), arr2->specialShapeInfo(),
-        result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
+        LegacyTensorArg::fromArray(arr1),
+        LegacyTensorArg::fromArray(arr2),
+        LegacyTensorArg::fromArray(result), nullptr);
     NDArray::registerSpecialUse({result}, {arr1, arr2});
 
     return result;
@@ -377,9 +377,9 @@ void NDArray::operator+=(const T scalar) {
 
   NDArray::prepareSpecialUse({this}, {this, tmp});
   NativeOpExecutioner::execScalar(getContext(), sd::scalar::Add,
-                                  buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+                                  LegacyTensorArg::fromArray(this),
+                                  LegacyTensorArg::fromArray(this),
+                                  LegacyTensorArg::fromArray(tmp), nullptr);
   NDArray::registerSpecialUse({this}, {this, tmp});
   delete tmp;
 
@@ -396,9 +396,9 @@ void NDArray::operator-=(const T scalar) {
 
   NDArray::prepareSpecialUse({this}, {this, tmp});
   NativeOpExecutioner::execScalar(getContext(), sd::scalar::Subtract,
-                                  buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+                                  LegacyTensorArg::fromArray(this),
+                                  LegacyTensorArg::fromArray(this),
+                                  LegacyTensorArg::fromArray(tmp), nullptr);
   NDArray::registerSpecialUse({this}, {this, tmp});
   delete tmp;
 
@@ -415,9 +415,9 @@ void NDArray::operator*=(const T scalar) {
 
   NDArray::prepareSpecialUse({this}, {this, tmp});
   NativeOpExecutioner::execScalar(getContext(), sd::scalar::Multiply,
-                                  buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+                                  LegacyTensorArg::fromArray(this),
+                                  LegacyTensorArg::fromArray(this),
+                                  LegacyTensorArg::fromArray(tmp), nullptr);
   NDArray::registerSpecialUse({this}, {this, tmp});
   delete tmp;
 
@@ -434,9 +434,9 @@ void NDArray::operator/=(const T scalar) {
 
   NDArray::prepareSpecialUse({this}, {this, tmp});
   NativeOpExecutioner::execScalar(getContext(), sd::scalar::Divide,
-                                  buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  tmp->buffer(), tmp->shapeInfo(), tmp->specialBuffer(), tmp->specialShapeInfo(), nullptr);
+                                  LegacyTensorArg::fromArray(this),
+                                  LegacyTensorArg::fromArray(this),
+                                  LegacyTensorArg::fromArray(tmp), nullptr);
   NDArray::registerSpecialUse({this}, {this, tmp});
   delete tmp;
 
@@ -496,9 +496,9 @@ void compoundAssignArray(NDArray& arr1, NDArray& arr2, sd::pairwise::Ops op, sd:
     NDArray::prepareSpecialUse({&arr1}, {&arr1, &arr2});
     NativeOpExecutioner::execPairwiseTransform(
         arr1.getContext(), op,
-        arr1.buffer(), arr1.shapeInfo(), arr1.specialBuffer(), arr1.specialShapeInfo(),
-        arr2.buffer(), arr2.shapeInfo(), arr2.specialBuffer(), arr2.specialShapeInfo(),
-        arr1.buffer(), arr1.shapeInfo(), arr1.specialBuffer(), arr1.specialShapeInfo(), nullptr);
+        LegacyTensorArg::fromArray(&arr1),
+        LegacyTensorArg::fromArray(&arr2),
+        LegacyTensorArg::fromArray(&arr1), nullptr);
     NDArray::registerSpecialUse({&arr1}, {&arr1, &arr2});
   } else {
     sd::LongType *bShape = nullptr;
@@ -601,9 +601,8 @@ NDArray NDArray::operator-() & {
 
   NDArray::prepareSpecialUse({&result}, {this});
   NativeOpExecutioner::execTransformSame(getContext(), sd::transform::Neg,
-                                         buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         result.buffer(), result.shapeInfo(), result.specialBuffer(),
-                                         result.specialShapeInfo(), nullptr, nullptr, nullptr);
+                                         LegacyTensorArg::fromArray(this),
+                                         LegacyTensorArg::fromArray(&result), nullptr, nullptr, nullptr);
   NDArray::registerSpecialUse({&result}, {this});
 
   return result;
@@ -612,8 +611,8 @@ NDArray NDArray::operator-() & {
 NDArray NDArray::operator-() && {
   NDArray::prepareSpecialUse({this}, {this});
   NativeOpExecutioner::execTransformSame(getContext(), sd::transform::Neg,
-                                         buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
+                                         LegacyTensorArg::fromArray(this),
+                                         LegacyTensorArg::fromArray(this),
                                          nullptr, nullptr, nullptr);
   NDArray::registerSpecialUse({this}, {this});
 
@@ -650,9 +649,9 @@ NDArray* operator-(T1 &&arr1, T2 &&arr2) {
 
     NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
     NativeOpExecutioner::execPairwiseTransform(
-        arr1.getContext(), sd::pairwise::Subtract, arr1.buffer(), arr1.shapeInfo(), arr1.specialBuffer(),
-        arr1.specialShapeInfo(), arr2.buffer(), arr2.shapeInfo(), arr2.specialBuffer(), arr2.specialShapeInfo(),
-        result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
+        arr1.getContext(), sd::pairwise::Subtract, LegacyTensorArg::fromArray(&arr1),
+        LegacyTensorArg::fromArray(&arr2),
+        LegacyTensorArg::fromArray(result), nullptr);
     NDArray::registerSpecialUse({result}, {&arr1, &arr2});
 
     return result;
@@ -708,9 +707,9 @@ NDArray* operator*(T1 &&arr1, T2 &&arr2) {
     }
     NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
     NativeOpExecutioner::execPairwiseTransform(
-        arr1.getContext(), sd::pairwise::Multiply, arr1.buffer(), arr1.shapeInfo(), arr1.specialBuffer(),
-        arr1.specialShapeInfo(), arr2.buffer(), arr2.shapeInfo(), arr2.specialBuffer(), arr2.specialShapeInfo(),
-        result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
+        arr1.getContext(), sd::pairwise::Multiply, LegacyTensorArg::fromArray(&arr1),
+        LegacyTensorArg::fromArray(&arr2),
+        LegacyTensorArg::fromArray(result), nullptr);
     NDArray::registerSpecialUse({result}, {&arr1, &arr2});
 
     return result;
@@ -763,9 +762,9 @@ NDArray* operator+(T1 &&arr1, T2 &&arr2) {
 
     NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
     NativeOpExecutioner::execPairwiseTransform(
-        arr1.getContext(), sd::pairwise::Add, arr1.buffer(), arr1.shapeInfo(), arr1.specialBuffer(),
-        arr1.specialShapeInfo(), arr2.buffer(), arr2.shapeInfo(), arr2.specialBuffer(), arr2.specialShapeInfo(),
-        result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
+        arr1.getContext(), sd::pairwise::Add, LegacyTensorArg::fromArray(&arr1),
+        LegacyTensorArg::fromArray(&arr2),
+        LegacyTensorArg::fromArray(result), nullptr);
     NDArray::registerSpecialUse({result}, {&arr1, &arr2});
 
     return result;
@@ -811,9 +810,9 @@ NDArray* operator/(T1 &&arr1, T2 &&arr2) {
 
     NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
     NativeOpExecutioner::execPairwiseTransform(
-        arr1.getContext(), sd::pairwise::Divide, arr1.buffer(), arr1.shapeInfo(), arr1.specialBuffer(),
-        arr1.specialShapeInfo(), arr2.buffer(), arr2.shapeInfo(), arr2.specialBuffer(), arr2.specialShapeInfo(),
-        result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
+        arr1.getContext(), sd::pairwise::Divide, LegacyTensorArg::fromArray(&arr1),
+        LegacyTensorArg::fromArray(&arr2),
+        LegacyTensorArg::fromArray(result), nullptr);
     NDArray::registerSpecialUse({result}, {&arr1, &arr2});
 
     return result;

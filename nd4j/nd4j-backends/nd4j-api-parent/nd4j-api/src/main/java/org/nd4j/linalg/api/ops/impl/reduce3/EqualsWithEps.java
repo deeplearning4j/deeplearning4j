@@ -31,65 +31,77 @@ import java.util.List;
 public class EqualsWithEps extends BaseReduce3Op {
     private double eps;
 
+    private void configureEpsilon(double epsilon) {
+        this.eps = epsilon;
+        this.extraArgs = new Object[]{0.0, 0.0, epsilon};
+    }
+
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
+        configureEpsilon(Nd4j.EPS_THRESHOLD);
     }
 
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
+        configureEpsilon(Nd4j.EPS_THRESHOLD);
     }
 
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions) {
         super(sameDiff, i_v, dimensions);
+        configureEpsilon(Nd4j.EPS_THRESHOLD);
     }
 
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
+        configureEpsilon(Nd4j.EPS_THRESHOLD);
     }
 
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, long[] dimensions, double eps) {
         super(sameDiff, i_v, dimensions);
-        this.eps = eps;
+        configureEpsilon(eps);
     }
 
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, double eps, long... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
-        this.eps = eps;
+        configureEpsilon(eps);
     }
 
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, double eps) {
         super(sameDiff, i_v, dimensions);
-        this.eps = eps;
+        configureEpsilon(eps);
     }
 
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions, double eps) {
         super(sameDiff, i_v, i_v2, dimensions);
-        this.eps = eps;
+        configureEpsilon(eps);
     }
 
     public EqualsWithEps(double eps) {
-        this.eps = eps;
+        configureEpsilon(eps);
     }
 
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, double eps) {
         super(sameDiff, i_v, i_v2, dimensions);
-        this.eps = eps;
+        configureEpsilon(eps);
     }
 
-    public EqualsWithEps() {}
+    public EqualsWithEps() {
+        configureEpsilon(Nd4j.EPS_THRESHOLD);
+    }
 
     public EqualsWithEps(INDArray x, INDArray y, long... dimensions) {
         super(x, y, dimensions);
-        this.eps = Nd4j.EPS_THRESHOLD;
+        configureEpsilon(Nd4j.EPS_THRESHOLD);
     }
 
     public EqualsWithEps(INDArray x, INDArray y, boolean allDistances, long... dimensions) {
         super(x, y, allDistances, dimensions);
+        configureEpsilon(Nd4j.EPS_THRESHOLD);
     }
 
     public EqualsWithEps(INDArray x, INDArray y, INDArray z, double eps, long... dimensions) {
         super(x, y, z, false, dimensions);
-        this.extraArgs = new Object[] {0.0, 0.0, eps};
+        configureEpsilon(eps);
     }
 
     public EqualsWithEps(INDArray x, INDArray y, double eps, long... dimensions) {
@@ -98,22 +110,22 @@ public class EqualsWithEps extends BaseReduce3Op {
 
     public EqualsWithEps(INDArray x, INDArray y, boolean allDistances, double eps, long... dimensions) {
         super(x, y, allDistances, dimensions);
-        this.eps = eps;
+        configureEpsilon(eps);
     }
 
     public EqualsWithEps(INDArray x, INDArray y, INDArray z, double eps) {
         super(x, y, z);
-        this.eps = eps;
+        configureEpsilon(eps);
     }
 
     public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, double eps, long... dimensions) {
         super(x, y, z, keepDims, dimensions);
-        this.eps = eps;
+        configureEpsilon(eps);
     }
 
     public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, double eps, long... dimensions) {
         super(x, y, z, keepDims, allDistances, dimensions);
-        this.eps = eps;
+        configureEpsilon(eps);
     }
 
     public EqualsWithEps(INDArray x, INDArray y, INDArray z) {
@@ -122,14 +134,17 @@ public class EqualsWithEps extends BaseReduce3Op {
 
     public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, long... dimensions) {
         super(x, y, z, keepDims, dimensions);
+        configureEpsilon(Nd4j.EPS_THRESHOLD);
     }
 
     public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, long... dimensions) {
         super(x, y, z, keepDims, allDistances, dimensions);
+        configureEpsilon(Nd4j.EPS_THRESHOLD);
     }
 
     public EqualsWithEps(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
+        configureEpsilon(Nd4j.EPS_THRESHOLD);
     }
 
     @Override

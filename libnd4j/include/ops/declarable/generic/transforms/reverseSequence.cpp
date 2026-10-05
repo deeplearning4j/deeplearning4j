@@ -34,11 +34,17 @@ CUSTOM_OP_IMPL(reverse_sequence, 2, 1, false, 0, 2) {
   auto seqLengths = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
 
-  int seqDim = INT_ARG(0);
-  int batchDim = block.numI() > 1 ? INT_ARG(1) : 0;
+  LongType seqDim = INT_ARG(0);
+  LongType batchDim = block.numI() > 1 ? INT_ARG(1) : 0;
 
   REQUIRE_TRUE(input->rankOf() > 1, 0,
                "REVERSE_SEQUENSE operation: input array must have rank > 1, but got %i instead !", input->rankOf());
+  REQUIRE_TRUE(seqDim >= -input->rankOf() && seqDim < input->rankOf(), 0,
+               "REVERSE_SEQUENCE operation: seqDim %lld is outside the input rank %i !", seqDim, input->rankOf());
+  REQUIRE_TRUE(batchDim >= -input->rankOf() && batchDim < input->rankOf(), 0,
+               "REVERSE_SEQUENCE operation: batchDim %lld is outside the input rank %i !", batchDim, input->rankOf());
+  if (seqDim < 0) seqDim += input->rankOf();
+  if (batchDim < 0) batchDim += input->rankOf();
   REQUIRE_TRUE(seqLengths->rankOf() == 1, 0,
                "REVERSE_SEQUENSE operation: input array seqLengths must be 1D vector, that is it must have rank == 1, "
                "but got %i instead !",
@@ -49,24 +55,21 @@ CUSTOM_OP_IMPL(reverse_sequence, 2, 1, false, 0, 2) {
                seqLengths->lengthOf(), input->sizeAt(batchDim));
   REQUIRE_TRUE(seqDim != batchDim, 0,
                "REVERSE_SEQUENSE operation: input integer parameters seqDim and batchDim must be different, but they "
-               "both are equal to %i !",
+               "both are equal to %lld !",
                batchDim);
-  REQUIRE_TRUE(batchDim < input->rankOf(), 0,
-               "REVERSE_SEQUENSE operation: input integer parameter batchDim must be smaller than input array rank, "
-               "but got %i and %i correspondingly !",
-               batchDim, input->rankOf());
-  REQUIRE_TRUE(seqDim < input->rankOf(), 0,
-               "REVERSE_SEQUENSE operation: input integer parameter seqDim must be smaller than input array rank, but "
-               "got %i  and %i correspondingly !",
-               seqDim, input->rankOf());
-
   auto maxElem = seqLengths->reduceNumber(reduce::Max);
-  REQUIRE_TRUE(maxElem->e<sd::LongType>(0) <= input->sizeAt(seqDim), 0,
+  auto minElem = seqLengths->reduceNumber(reduce::Min);
+  const LongType maximum = maxElem->e<LongType>(0);
+  const LongType minimum = minElem->e<LongType>(0);
+  delete maxElem;
+  delete minElem;
+  REQUIRE_TRUE(minimum >= 0, 0, "REVERSE_SEQUENCE operation: sequence lengths must be nonnegative !");
+  REQUIRE_TRUE(maximum <= input->sizeAt(seqDim), 0,
                "REVERSE_SEQUENSE operation: max element in seqLengths array must be not greater than value of seqDim "
                "dimension of input array !");
 
-  helpers::reverseSequence(block.launchContext(), input, seqLengths, output, seqDim, batchDim);
-  delete maxElem;
+  helpers::reverseSequence(block.launchContext(), input, seqLengths, output, static_cast<int>(seqDim),
+                           static_cast<int>(batchDim));
   return sd::Status::OK;
 }
 
@@ -81,19 +84,19 @@ DECLARE_SHAPE_FN(reverse_sequence) {
   auto inShapeInfo = inputShape->at(0);
   auto seqLenShapeInfo = inputShape->at(1);
 
-  int seqDim = INT_ARG(0);
-  int batchDim = block.numI() > 1 ? INT_ARG(1) : 0;
+  LongType seqDim = INT_ARG(0);
+  LongType batchDim = block.numI() > 1 ? INT_ARG(1) : 0;
 
-  REQUIRE_TRUE(batchDim < inShapeInfo[0], 0,
-               "REVERSE_SEQUENSE operation: input integer parameter batchDim must be smaller than input array rank, "
-               "but got %i and %i correspondingly !",
-               batchDim, inShapeInfo[0]);
-  REQUIRE_TRUE(seqDim < inShapeInfo[0], 0,
-               "REVERSE_SEQUENSE operation: input integer parameter seqDim must be smaller than input array rank, but "
-               "got %i  and %i correspondingly !",
-               seqDim, inShapeInfo[0]);
   REQUIRE_TRUE(inShapeInfo[0] > 1, 0,
                "REVERSE_SEQUENSE operation: input array must have rank > 1, but got %i instead !", inShapeInfo[0]);
+  REQUIRE_TRUE(seqDim >= -inShapeInfo[0] && seqDim < inShapeInfo[0], 0,
+               "REVERSE_SEQUENCE operation: seqDim %lld is outside the input rank %i !", seqDim, inShapeInfo[0]);
+  REQUIRE_TRUE(batchDim >= -inShapeInfo[0] && batchDim < inShapeInfo[0], 0,
+               "REVERSE_SEQUENCE operation: batchDim %lld is outside the input rank %i !", batchDim, inShapeInfo[0]);
+  if (seqDim < 0) seqDim += inShapeInfo[0];
+  if (batchDim < 0) batchDim += inShapeInfo[0];
+  REQUIRE_TRUE(seqDim != batchDim, 0,
+               "REVERSE_SEQUENCE operation: seqDim and batchDim must be different !");
   REQUIRE_TRUE(seqLenShapeInfo[0] == 1, 0,
                "REVERSE_SEQUENSE operation: input array seqLengths must be 1D vector, that is it must have rank == 1, "
                "but got %i instead !",

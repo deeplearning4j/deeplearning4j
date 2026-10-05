@@ -262,6 +262,31 @@ void* nativeMbwAllocateBytes(OpaqueMultiBackendWorkspace handle,
   return sd::memory::mbwAllocateBytes(handle, numBytes);
 }
 
+void* nativeMbwAllocateBytesOnDevice(OpaqueMultiBackendWorkspace handle,
+                                     sd::LongType numBytes, int deviceType,
+                                     int deviceIndex) {
+  return sd::memory::mbwAllocateBytesOnDevice(handle, numBytes, deviceType,
+                                               deviceIndex);
+}
+
+void nativeMbwSyncDevice(OpaqueMultiBackendWorkspace handle, int deviceType,
+                         int deviceIndex) {
+  sd::memory::mbwSyncDevice(handle, deviceType, deviceIndex);
+}
+
+void nativeMbwSyncAllDevices(OpaqueMultiBackendWorkspace handle) {
+  sd::memory::mbwSyncAllDevices(handle);
+}
+
+sd::LongType nativeMbwGetAllocatedSizeOnDevice(OpaqueMultiBackendWorkspace handle,
+                                                int deviceType, int deviceIndex) {
+  return sd::memory::mbwGetAllocatedSizeOnDevice(handle, deviceType, deviceIndex);
+}
+
+sd::LongType nativeMbwGetCurrentOffset(OpaqueMultiBackendWorkspace handle) {
+  return sd::memory::mbwGetCurrentOffset(handle);
+}
+
 void nativeMbwScopeIn(OpaqueMultiBackendWorkspace handle) {
   sd::memory::mbwScopeIn(handle);
 }

@@ -49,5 +49,31 @@ public interface ScalarOp extends Op {
 
     boolean validateDataTypes(boolean experimentalMode);
 
+    /** Validate the operands actually supplied to execution, without rebinding the op's arrays. */
+    default boolean validateDataTypes(OpContext context, boolean experimentalMode) {
+        INDArray x = context == null ? x() : context.getInputArray(0);
+        INDArray y = context == null ? y() : context.getInputArray(1);
+        INDArray z = context == null ? z() : context.getOutputArray(0);
+        if (x == null || z == null) {
+            throw new IllegalArgumentException("Scalar execution requires X and Z arrays for " + opName());
+        }
+        if (x.length() != z.length()) {
+            throw new IllegalArgumentException("Scalar X and Z lengths must match for " + opName());
+        }
+        if (getOpType() == Type.SCALAR_BOOL) {
+            if (!z.isB()) {
+                throw new IllegalArgumentException("Scalar boolean output must have BOOL type for " + opName());
+            }
+        } else {
+            if ((x.isR() || (y != null && y.isR())) && !z.isR()) {
+                throw new IllegalArgumentException("Scalar output must be floating point when an input is floating point for " + opName());
+            }
+            if (!experimentalMode && y != null && x.dataType() != y.dataType() && !y.isB()) {
+                throw new IllegalArgumentException("Scalar X and Y must have the same data type for " + opName());
+            }
+        }
+        return true;
+    }
+
     Type getOpType();
 }

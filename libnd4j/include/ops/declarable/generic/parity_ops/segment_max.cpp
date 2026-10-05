@@ -30,22 +30,25 @@ CUSTOM_OP_IMPL(segment_max, 2, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto idxSegments = INPUT_VARIABLE(1);
   auto segmentedOutput = OUTPUT_VARIABLE(0);
+  REQUIRE_TRUE(input->rankOf() >= 1, 0, "segment_max: the input should have rank >= 1, but it is a scalar.");
   REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_max: segment indexes array should be a vector, but it rank is %i.",
                idxSegments->rankOf());
   REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0,
                "segment_max: segment indexes array length should be equal to the input first dimension, but %i != %i.",
                idxSegments->lengthOf(), input->sizeAt(0));
+  REQUIRE_TRUE(segmentedOutput->dataType() == input->dataType(), 0,
+               "segment_max: the output type (%s) should be the input type (%s).",
+               DataTypeUtils::asString(segmentedOutput->dataType()).c_str(),
+               DataTypeUtils::asString(input->dataType()).c_str());
 
-  auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
-  auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
+  LongType previous = 0;
+  LongType offending = 0;
+  REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, previous, offending), 0,
+               "segment_max: segment indices should be non-negative and arranged in ascending order, but the id %lld "
+               "follows the id %lld.",
+               static_cast<long long>(offending), static_cast<long long>(previous));
 
-  REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, *expected, *wrong), 0,
-               "segment_max: segment indices should be arranged, but %2.1f > %2.1f", expected->e<float>(0),
-               wrong->e<float>(0));
-
-  segmentedOutput->nullify();
   helpers::segmentMaxFunctor(block.launchContext(), input, idxSegments, segmentedOutput);
-
   return Status::OK;
 }
 
@@ -53,18 +56,20 @@ DECLARE_SHAPE_FN(segment_max) {
   auto idxVector = INPUT_VARIABLE(1);
 
   auto in = inputShape->at(0);
-  int outRank = shape::rank(in);
+  const LongType inRank = shape::rank(in);
+  const LongType outRank = inRank < 1 ? 1 : inRank;
   LongType* outputShape = nullptr;
-  idxVector->syncToHost();
-  int val = (*idxVector).e<LongType>(shape::length(inputShape->at(1)) - 1);
-
-  int numOfClasses = val + 1;
+  // the classes are 0 .. last id (the ids are sorted); no ids, no classes
+  LongType numOfClasses = 0;
+  const LongType idsLength = shape::length(inputShape->at(1));
+  if (idsLength > 0) numOfClasses = idxVector->e<LongType>(idsLength - 1) + 1;
+  if (numOfClasses < 0) numOfClasses = 0;
 
   ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
 
   outputShape[0] = outRank;
   outputShape[1] = numOfClasses;
-  for (LongType i = 1; i < outRank; ++i) outputShape[i + 1] = shape::sizeAt(in, i);
+  for (LongType i = 1; i < inRank; ++i) outputShape[i + 1] = shape::sizeAt(in, i);
 
   ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
@@ -83,8 +88,29 @@ CUSTOM_OP_IMPL(segment_max_bp, 3, 2, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto indices = INPUT_VARIABLE(1);
   auto gradOut = INPUT_VARIABLE(2);
-  auto output = OUTPUT_NULLIFIED(0);
-  auto outIndices = OUTPUT_NULLIFIED(1);
+  auto output = OUTPUT_VARIABLE(0);
+  auto outIndices = OUTPUT_VARIABLE(1);
+  REQUIRE_TRUE(input->rankOf() >= 1, 0, "segment_max_bp: the input should have rank >= 1, but it is a scalar.");
+  REQUIRE_TRUE(indices->lengthOf() == input->sizeAt(0), 0,
+               "segment_max_bp: segment indexes array length should be equal to the input first dimension, but %i != %i.",
+               indices->lengthOf(), input->sizeAt(0));
+  REQUIRE_TRUE(gradOut->rankOf() == input->rankOf(), 0,
+               "segment_max_bp: the gradient should have the rank of the input, but %i != %i.", gradOut->rankOf(),
+               input->rankOf());
+  for (LongType d = 1; d < input->rankOf(); ++d) {
+    REQUIRE_TRUE(gradOut->sizeAt(d) == input->sizeAt(d), 0,
+                 "segment_max_bp: the gradient and the input should have equal dimensions after the first, but "
+                 "dimension %lld is %lld != %lld.",
+                 static_cast<long long>(d), static_cast<long long>(gradOut->sizeAt(d)),
+                 static_cast<long long>(input->sizeAt(d)));
+  }
+  REQUIRE_TRUE(output->dataType() == gradOut->dataType(), 0,
+               "segment_max_bp: the output type (%s) should be the gradient type (%s).",
+               DataTypeUtils::asString(output->dataType()).c_str(),
+               DataTypeUtils::asString(gradOut->dataType()).c_str());
+  REQUIRE_TRUE(input->dataType() == output->dataType(), 0,
+               "segment_max_bp: the input type (%s) should be the gradient type (%s).",
+               DataTypeUtils::asString(input->dataType()).c_str(), DataTypeUtils::asString(output->dataType()).c_str());
   outIndices->assign(indices);
   return helpers::segmentMaxFunctorBP(block.launchContext(), input, indices, gradOut, output);
 }

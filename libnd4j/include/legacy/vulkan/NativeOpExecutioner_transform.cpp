@@ -33,13 +33,8 @@ void execUnaryVulkan(sd::LaunchContext* launchContext, graph::VulkanLegacyOpFami
                      const void* dX, const sd::LongType* dXShapeInfo, void* hZ,
                      const sd::LongType* hZShapeInfo, void* dZ,
                      const sd::LongType* dZShapeInfo, void* extraParams) {
-  if (extraParams != nullptr) {
-    THROW_EXCEPTION(
-        "Vulkan legacy descriptor execution cannot infer floating argument count from "
-        "non-null extraParams");
-  }
-
   graph::VulkanLegacyInvocation invocation(family, opNum);
+  graph::appendVulkanLegacyExtraParameters(invocation, extraParams, hXShapeInfo);
   invocation.inputs.emplace_back(inputTensor(hX, dX, hXShapeInfo, dXShapeInfo));
   invocation.outputs.emplace_back(outputTensor(hZ, dZ, hZShapeInfo, dZShapeInfo));
   graph::requireVulkanLegacyExecution(launchContext, invocation);
@@ -99,6 +94,43 @@ void NativeOpExecutioner::execTransformBool(
     void* extraParams) {
   execUnaryVulkan(lc, graph::VulkanLegacyOpFamily::TRANSFORM_BOOL, opNum, hX, hXShapeInfo,
                   dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+}
+
+namespace {
+void execUnaryVulkan(sd::LaunchContext* lc, graph::VulkanLegacyOpFamily family,
+                     int opNum, const sd::LegacyTensorArg& x,
+                     const sd::LegacyTensorArg& z, void* extraParams) {
+  graph::VulkanLegacyInvocation invocation(family, opNum);
+  graph::appendVulkanLegacyExtraParameters(invocation, extraParams, x.hostShapeInfo);
+  invocation.inputs.emplace_back(graph::VulkanLegacyTensor::fromArg(x));
+  invocation.outputs.emplace_back(graph::VulkanLegacyTensor::fromArg(z));
+  graph::requireVulkanLegacyExecution(lc, invocation);
+}
+}  // namespace
+
+#define SD_VULKAN_UNARY(NAME, FAMILY) \
+void NativeOpExecutioner::NAME(sd::LaunchContext* lc, int opNum, \
+    const sd::LegacyTensorArg& x, const sd::LegacyTensorArg& z, void* extraParams) { \
+  execUnaryVulkan(lc, graph::VulkanLegacyOpFamily::FAMILY, opNum, x, z, extraParams); \
+}
+SD_VULKAN_UNARY(execTransformFloat, TRANSFORM_FLOAT)
+SD_VULKAN_UNARY(execTransformStrict, TRANSFORM_STRICT)
+SD_VULKAN_UNARY(execTransformBool, TRANSFORM_BOOL)
+#undef SD_VULKAN_UNARY
+
+void NativeOpExecutioner::execTransformAny(sd::LaunchContext* lc, int opNum,
+    const sd::LegacyTensorArg& x, const sd::LegacyTensorArg& z,
+    void* extraParams, bool allowParallelism) {
+  (void)allowParallelism;
+  execUnaryVulkan(lc, graph::VulkanLegacyOpFamily::TRANSFORM_ANY, opNum, x, z, extraParams);
+}
+
+void NativeOpExecutioner::execTransformSame(sd::LaunchContext* lc, int opNum,
+    const sd::LegacyTensorArg& x, const sd::LegacyTensorArg& z,
+    void* extraParams, const sd::LongType* tadShapeInfo, const sd::LongType* tadOffsets) {
+  if (tadShapeInfo != nullptr || tadOffsets != nullptr)
+    THROW_EXCEPTION("Vulkan legacy transform-same descriptor execution does not yet support explicit TAD metadata");
+  execUnaryVulkan(lc, graph::VulkanLegacyOpFamily::TRANSFORM_SAME, opNum, x, z, extraParams);
 }
 
 }  // namespace sd

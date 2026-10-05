@@ -37,6 +37,8 @@
 #include <types/uint8.h>
 #include <execution/Threads.h>
 
+#include <type_traits>
+
 #define LOG_NUM_BANKS 4
 #define NUM_BANKS 256
 namespace sd {
@@ -48,6 +50,19 @@ typedef union {
 
 class SD_LIB_HIDDEN TypeCast {
  public:
+  // An element of S as T. Built-in types convert directly, which keeps every double and every 64-bit integer exact;
+  // the framework's own 8- and 16-bit float types (classes: float16, bfloat16, float8, ...) convert through float,
+  // which each of them converts to and from. (std::is_arithmetic cannot tell them apart: float16 and bfloat16
+  // specialize it.)
+  template <typename S, typename T>
+  static SD_INLINE SD_HOST_DEVICE T convertElement(S value) {
+    if constexpr (!std::is_class<S>::value && !std::is_class<T>::value) {
+      return static_cast<T>(value);
+    } else {
+      return static_cast<T>(static_cast<float>(value));
+    }
+  }
+
   template <typename S, typename T>
   static SD_INLINE SD_HOST void convertGeneric(Pointer *extras, void *dx, LongType N, void *dz) {
     auto x = reinterpret_cast<S *>(dx);
@@ -55,7 +70,7 @@ class SD_LIB_HIDDEN TypeCast {
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        z[i] = static_cast<T>(static_cast<float>(x[i]));
+        z[i] = convertElement<S, T>(x[i]);
       }
     };
     samediff::Threads::parallel_for(func, 0, N);
@@ -80,7 +95,10 @@ class SD_LIB_HIDDEN TypeCast {
   template <typename T>
   static SD_HOST void convertFromQuantized(Pointer *extras, void *dx, LongType N, void *dz);
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(SD_CUDA)
+  // Converts device buffers on the stream in extras[1]; instantiated for SD_COMMON_TYPES pairs in
+  // loops/cuda/type_conversions.cu. Declared for every CUDA translation unit: convertTypes (a host-compiled .cpp)
+  // dispatches to it.
   template <typename S, typename T>
   static SD_HOST void convertGenericCuda(Pointer *extras, void *dx, LongType N, void *dz);
 #endif

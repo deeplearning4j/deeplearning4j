@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,8 +36,9 @@ public class Polygamma extends DynamicCustomOp {
     public Polygamma() {}
 
     public Polygamma(@NonNull INDArray n, @NonNull INDArray x) {
-        Preconditions.checkArgument(n.shape() != x.shape(),
-                "Polygamma: n and x must have the same shapes");
+        Preconditions.checkArgument(Arrays.equals(n.shape(), x.shape()),
+                "Polygamma: n and x must have the same shapes, got %s and %s", Arrays.toString(n.shape()),
+                Arrays.toString(x.shape()));
         addInputArgument(n,x);
     }
 

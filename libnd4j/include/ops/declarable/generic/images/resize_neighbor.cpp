@@ -75,7 +75,8 @@ CUSTOM_OP_IMPL(resize_nearest_neighbor, 1, 1, false, 0, -2) {
                "resize_nearest_neighbor: Wrong input or output size to resize (width = %d, height = %d)", width,
                height);
 
-  std::vector<sd::LongType> imageShape = {image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)};
+  // a 3D image [height, width, channels] is a batch of one
+  std::vector<sd::LongType> imageShape = {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)};
   auto source = inRank == 4
                     ? image
                     : image->reshape(image->ordering(), imageShape);
@@ -127,9 +128,10 @@ DECLARE_SHAPE_FN(resize_nearest_neighbor) {
     height = newImageSize->e<int>(0);
     width = newImageSize->e<int>(1);
   } else {
-    REQUIRE_TRUE(block.numI() <= 3, 0, "resize_nearest_neighbor: Neither resize width nor height are provided.");
-    width = INT_ARG(0);
-    height = INT_ARG(1);
+    REQUIRE_TRUE(block.numI() >= 2, 0, "resize_nearest_neighbor: Neither resize width nor height are provided.");
+    // the order of the op body and of the size input: height, width
+    height = INT_ARG(0);
+    width = INT_ARG(1);
   }
 
   ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(inRank), sd::LongType);

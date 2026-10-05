@@ -65,9 +65,8 @@ Status LegacyPairwiseTransformBoolOp::validateAndExecute(Context &block) {
   PointersManager manager(block.launchContext(), "LegacyPairwiseTransformBoolOp");
 
   NativeOpExecutioner::execPairwiseBoolTransform(
-      block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), y->buffer(),
-      y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
-      z->specialShapeInfo(), extras.argumentsAsT(x->dataType()));
+      block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x), sd::LegacyTensorArg::fromArray(y),
+      sd::LegacyTensorArg::fromArray(z), extras.argumentsAsT(x->dataType()));
 
   manager.synchronize();
   STORE_RESULT(*z);

@@ -25,6 +25,7 @@ import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -63,12 +64,25 @@ public class Repeat extends DynamicCustomOp {
         this.jaxis = axis;
     }
 
+    /**
+     * The native op reads its repeat counts and its axis from its integer arguments (the counts first, the axis last)
+     * and takes the array to repeat as its only input, so the counts must be known here: a constant or a variable with
+     * a value.
+     */
     public Repeat(SameDiff sd, SDVariable input, SDVariable repeats, int axis) {
-        this(sd,new SDVariable[]{input,repeats},axis);
+        this(sd,new SDVariable[]{input},axis);
+        INDArray counts = repeats.getArr();
+        Preconditions.checkState(counts != null,
+                "Repeat: the repeat counts must be a constant or a variable with a value, they become the op's integer arguments, got %s",
+                repeats);
+        addIArgument(counts.toLongVector());
+        addIArgument(axis);
     }
 
     public Repeat(INDArray input, INDArray repeats, int axis) {
-        this(new INDArray[]{input,repeats},null,axis);
+        this(new INDArray[]{input},null,axis);
+        addIArgument(repeats.toLongVector());
+        addIArgument(axis);
     }
 
 

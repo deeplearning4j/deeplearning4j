@@ -22,21 +22,26 @@
 //
 #include <ops/specials_cuda.h>
 
-    //////////////////////////////////////////////////////////////////////////
-    template <typename X, typename Y>
-    SD_KERNEL SD_INLINE void bitonicSortStepKernelKey(
-        void* vx,
-        const sd::LongType* xShapeInfo,
-        void* vy,
-        const sd::LongType* yShapeInfo,
-        int j,
-        int k,
-        int length,
-        bool descending) {
+// One compare-exchange step (j, k) of the bitonic sorting network over the length logical elements of a
+// power-of-two array: element i is compared with element i ^ j and the pair is ordered by the direction of the
+// k-sized block that holds i. The pairs of one step are disjoint (the lower index of each decides), so the grid
+// walks the indices with a grid-stride loop: any launch covers every element however long the array is.
+// Every element is addressed through the array's own shape and strides.
 
-  auto x           = static_cast<X*>(vx);
-  auto y           = static_cast<Y*>(vy);
-  const unsigned int i = threadIdx.x + blockDim.x * blockIdx.x;
+//////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y>
+SD_KERNEL SD_INLINE void bitonicSortStepKernelKey(
+    void* vx,
+    const sd::LongType* xShapeInfo,
+    void* vy,
+    const sd::LongType* yShapeInfo,
+    int j,
+    int k,
+    int length,
+    bool descending) {
+
+  auto x = static_cast<X*>(vx);
+  auto y = static_cast<Y*>(vy);
 
   __shared__ sd::LongType xRank;
   __shared__ const sd::LongType* xShapePtr;
@@ -46,8 +51,6 @@
   __shared__ const sd::LongType* yShapePtr;
   __shared__ const sd::LongType* yStridePtr;
 
-  __shared__ sd::LongType xLength;
-
   if (threadIdx.x == 0) {
     xRank      = shape::rank(xShapeInfo);
     xShapePtr  = shape::shapeOf(xShapeInfo);
@@ -56,57 +59,32 @@
     yRank      = shape::rank(yShapeInfo);
     yShapePtr  = shape::shapeOf(yShapeInfo);
     yStridePtr = shape::stride(yShapeInfo);
-
-    xLength    = shape::length(xShapeInfo);
   }
   __syncthreads();
 
-  if (i >= static_cast<unsigned int>(length)) return;
+  const sd::LongType step = static_cast<sd::LongType>(gridDim.x) * blockDim.x;
+  for (sd::LongType i = static_cast<sd::LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < length; i += step) {
+    const sd::LongType ixj = i ^ j;
+    if (ixj <= i || ixj >= length) continue;
 
-  const unsigned int ixj = i ^ j;
-  if (ixj <= i) return;
+    sd::LongType iCoords[SD_MAX_RANK];
+    sd::LongType ixjCoords[SD_MAX_RANK];
+    sd::LongType iOffset;
+    sd::LongType ixjOffset;
 
-  sd::LongType iCoords[SD_MAX_RANK];
-  sd::LongType ixjCoords[SD_MAX_RANK];
-  sd::LongType iOffset;
-  sd::LongType ixjOffset;
+    INDEX2COORDS(i, xRank, xShapePtr, iCoords);
+    COORDS2INDEX(xRank, xStridePtr, iCoords, iOffset);
 
-  INDEX2COORDS(i, xRank, xShapePtr, iCoords);
-  COORDS2INDEX(xRank, xStridePtr, iCoords, iOffset);
+    INDEX2COORDS(ixj, xRank, xShapePtr, ixjCoords);
+    COORDS2INDEX(xRank, xStridePtr, ixjCoords, ixjOffset);
 
-  INDEX2COORDS(ixj, xRank, xShapePtr, ixjCoords);
-  COORDS2INDEX(xRank, xStridePtr, ixjCoords, ixjOffset);
+    const bool ascending = ((i & k) == 0);
+    X xi = x[iOffset];
+    X xixj = x[ixjOffset];
 
-  const bool ascending = ((i & k) == 0);
-  X xi = x[iOffset];
-  X xixj = x[ixjOffset];
-
-  if (ascending) {
-    // Sort ascending
-    if (!descending == (xi > xixj)) {
-      x[iOffset]      = xixj;
-      x[ixjOffset]    = xi;
-
-      sd::LongType iCoordsY[SD_MAX_RANK];
-      sd::LongType ixjCoordsY[SD_MAX_RANK];
-      sd::LongType iOffsetY;
-      sd::LongType ixjOffsetY;
-
-      INDEX2COORDS(i, yRank, yShapePtr, iCoordsY);
-      COORDS2INDEX(yRank, yStridePtr, iCoordsY, iOffsetY);
-
-      INDEX2COORDS(ixj, yRank, yShapePtr, ixjCoordsY);
-      COORDS2INDEX(yRank, yStridePtr, ixjCoordsY, ixjOffsetY);
-
-      Y yi   = y[iOffsetY];
-      Y yixj = y[ixjOffsetY];
-      y[iOffsetY]   = yixj;
-      y[ixjOffsetY] = yi;
-    }
-  }
-  else {
-    // Sort descending
-    if (!descending == (xi < xixj)) {
+    // ascending blocks put the smaller key first (the larger when descending), descending blocks the reverse
+    const bool exchange = ascending ? (!descending == (xi > xixj)) : (!descending == (xi < xixj));
+    if (exchange) {
       x[iOffset]      = xixj;
       x[ixjOffset]    = xi;
 
@@ -139,53 +117,41 @@ SD_KERNEL SD_INLINE void bitonicSortStepKernel(
     int length,
     bool descending) {
 
-  auto x           = static_cast<T*>(vx);
-  const unsigned int i = threadIdx.x + blockDim.x * blockIdx.x;
+  auto x = static_cast<T*>(vx);
 
   __shared__ sd::LongType xRank;
   __shared__ const sd::LongType* xShapePtr;
   __shared__ const sd::LongType* xStridePtr;
-  __shared__ sd::LongType xLength;
 
   if (threadIdx.x == 0) {
     xRank      = shape::rank(xShapeInfo);
     xShapePtr  = shape::shapeOf(xShapeInfo);
     xStridePtr = shape::stride(xShapeInfo);
-
-    xLength    = shape::length(xShapeInfo);
   }
   __syncthreads();
 
-  if (i >= static_cast<unsigned int>(length)) return;
+  const sd::LongType step = static_cast<sd::LongType>(gridDim.x) * blockDim.x;
+  for (sd::LongType i = static_cast<sd::LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < length; i += step) {
+    const sd::LongType ixj = i ^ j;
+    if (ixj <= i || ixj >= length) continue;
 
-  const unsigned int ixj = i ^ j;
-  if (ixj <= i) return;
+    sd::LongType iCoords[SD_MAX_RANK];
+    sd::LongType ixjCoords[SD_MAX_RANK];
+    sd::LongType iOffset;
+    sd::LongType ixjOffset;
 
-  sd::LongType iCoords[SD_MAX_RANK];
-  sd::LongType ixjCoords[SD_MAX_RANK];
-  sd::LongType iOffset;
-  sd::LongType ixjOffset;
+    INDEX2COORDS(i, xRank, xShapePtr, iCoords);
+    COORDS2INDEX(xRank, xStridePtr, iCoords, iOffset);
 
-  INDEX2COORDS(i, xRank, xShapePtr, iCoords);
-  COORDS2INDEX(xRank, xStridePtr, iCoords, iOffset);
+    INDEX2COORDS(ixj, xRank, xShapePtr, ixjCoords);
+    COORDS2INDEX(xRank, xStridePtr, ixjCoords, ixjOffset);
 
-  INDEX2COORDS(ixj, xRank, xShapePtr, ixjCoords);
-  COORDS2INDEX(xRank, xStridePtr, ixjCoords, ixjOffset);
+    const bool ascending = ((i & k) == 0);
+    T xi   = x[iOffset];
+    T xixj = x[ixjOffset];
 
-  const bool ascending = ((i & k) == 0);
-  T xi   = x[iOffset];
-  T xixj = x[ixjOffset];
-
-  if (ascending) {
-    // Sort ascending
-    if (!descending == (xi > xixj)) {
-      x[iOffset]    = xixj;
-      x[ixjOffset]  = xi;
-    }
-  }
-  else {
-    // Sort descending
-    if (!descending == (xi < xixj)) {
+    const bool exchange = ascending ? (!descending == (xi > xixj)) : (!descending == (xi < xixj));
+    if (exchange) {
       x[iOffset]    = xixj;
       x[ixjOffset]  = xi;
     }
@@ -193,6 +159,9 @@ SD_KERNEL SD_INLINE void bitonicSortStepKernel(
 }
 
 //////////////////////////////////////////////////////////////////////////
+// The launchers enqueue one step on the caller's stream. The step kernels use no dynamic shared memory, so none is
+// requested (launchDims.z is the size getSortFullDims reserves for them), and the launch is checked without a
+// stream synchronization: a sort runs hundreds of steps and the caller waits for the result once.
 template <typename T>
 SD_HOST void bitonicSortStepGeneric(
     dim3 &launchDims,
@@ -205,7 +174,7 @@ SD_HOST void bitonicSortStepGeneric(
     bool descending) {
 
   bitonicSortStepKernel<T>
-      <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+      <<<launchDims.x, launchDims.y, 0, *stream>>>(
           vx,
           xShapeInfo,
           j,
@@ -213,7 +182,7 @@ SD_HOST void bitonicSortStepGeneric(
           length,
           descending);
 
-  sd::DebugHelper::checkErrorCode(stream, "bitonicSortStepGeneric failed");
+  if (!sd::DebugHelper::inGraphCapture(stream)) sd::DebugHelper::checkGlobalErrorCode("bitonicSortStepGeneric failed");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -231,7 +200,7 @@ SD_HOST void bitonicSortStepGenericKey(
     bool descending) {
 
   bitonicSortStepKernelKey<X, Y>
-      <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+      <<<launchDims.x, launchDims.y, 0, *stream>>>(
           vx,
           xShapeInfo,
           vy,
@@ -241,7 +210,7 @@ SD_HOST void bitonicSortStepGenericKey(
           length,
           descending);
 
-  sd::DebugHelper::checkErrorCode(stream, "bitonicSortStepGenericKey failed");
+  if (!sd::DebugHelper::inGraphCapture(stream)) sd::DebugHelper::checkGlobalErrorCode("bitonicSortStepGenericKey failed");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -257,9 +226,8 @@ SD_KERNEL SD_INLINE void bitonicSortStepKernelValue(
     int length,
     bool descending) {
 
-  auto x           = static_cast<X*>(vx);
-  auto y           = static_cast<Y*>(vy);
-  const unsigned int i = threadIdx.x + blockDim.x * blockIdx.x;
+  auto x = static_cast<X*>(vx);
+  auto y = static_cast<Y*>(vy);
 
   __shared__ sd::LongType xRank;
   __shared__ const sd::LongType* xShapePtr;
@@ -269,8 +237,6 @@ SD_KERNEL SD_INLINE void bitonicSortStepKernelValue(
   __shared__ const sd::LongType* yShapePtr;
   __shared__ const sd::LongType* yStridePtr;
 
-  __shared__ sd::LongType xLength;
-
   if (threadIdx.x == 0) {
     xRank      = shape::rank(xShapeInfo);
     xShapePtr  = shape::shapeOf(xShapeInfo);
@@ -279,57 +245,33 @@ SD_KERNEL SD_INLINE void bitonicSortStepKernelValue(
     yRank      = shape::rank(yShapeInfo);
     yShapePtr  = shape::shapeOf(yShapeInfo);
     yStridePtr = shape::stride(yShapeInfo);
-
-    xLength    = shape::length(xShapeInfo);
   }
   __syncthreads();
 
-  if (i >= static_cast<unsigned int>(length)) return;
+  const sd::LongType step = static_cast<sd::LongType>(gridDim.x) * blockDim.x;
+  for (sd::LongType i = static_cast<sd::LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < length; i += step) {
+    const sd::LongType ixj = i ^ j;
+    if (ixj <= i || ixj >= length) continue;
 
-  const unsigned int ixj = i ^ j;
-  if (ixj <= i) return;
+    sd::LongType iCoordsY[SD_MAX_RANK];
+    sd::LongType ixjCoordsY[SD_MAX_RANK];
+    sd::LongType iOffsetY;
+    sd::LongType ixjOffsetY;
 
-  sd::LongType iCoordsY[SD_MAX_RANK];
-  sd::LongType ixjCoordsY[SD_MAX_RANK];
-  sd::LongType iOffsetY;
-  sd::LongType ixjOffsetY;
+    INDEX2COORDS(i, yRank, yShapePtr, iCoordsY);
+    COORDS2INDEX(yRank, yStridePtr, iCoordsY, iOffsetY);
 
-  INDEX2COORDS(i, yRank, yShapePtr, iCoordsY);
-  COORDS2INDEX(yRank, yStridePtr, iCoordsY, iOffsetY);
+    INDEX2COORDS(ixj, yRank, yShapePtr, ixjCoordsY);
+    COORDS2INDEX(yRank, yStridePtr, ixjCoordsY, ixjOffsetY);
 
-  INDEX2COORDS(ixj, yRank, yShapePtr, ixjCoordsY);
-  COORDS2INDEX(yRank, yStridePtr, ixjCoordsY, ixjOffsetY);
+    const bool ascending = ((i & k) == 0);
+    Y yi = y[iOffsetY];
+    Y yixj = y[ixjOffsetY];
 
-  const bool ascending = ((i & k) == 0);
-  Y yi = y[iOffsetY];
-  Y yixj = y[ixjOffsetY];
-
-  if (ascending) {
-    // Sort ascending by Y values
-    if (!descending == (yi > yixj)) {
-      y[iOffsetY]      = yixj;
-      y[ixjOffsetY]    = yi;
-
-      sd::LongType iCoordsX[SD_MAX_RANK];
-      sd::LongType ixjCoordsX[SD_MAX_RANK];
-      sd::LongType iOffsetX;
-      sd::LongType ixjOffsetX;
-
-      INDEX2COORDS(i, xRank, xShapePtr, iCoordsX);
-      COORDS2INDEX(xRank, xStridePtr, iCoordsX, iOffsetX);
-
-      INDEX2COORDS(ixj, xRank, xShapePtr, ixjCoordsX);
-      COORDS2INDEX(xRank, xStridePtr, ixjCoordsX, ixjOffsetX);
-
-      X xi   = x[iOffsetX];
-      X xixj = x[ixjOffsetX];
-      x[iOffsetX]   = xixj;
-      x[ixjOffsetX] = xi;
-    }
-  }
-  else {
-    // Sort descending by Y values
-    if (!descending == (yi < yixj)) {
+    // the values decide: ascending blocks put the smaller value first (the larger when descending), descending
+    // blocks the reverse
+    const bool exchange = ascending ? (!descending == (yi > yixj)) : (!descending == (yi < yixj));
+    if (exchange) {
       y[iOffsetY]      = yixj;
       y[ixjOffsetY]    = yi;
 
@@ -367,7 +309,7 @@ SD_HOST void bitonicSortStepGenericValue(
     bool descending) {
 
   bitonicSortStepKernelValue<X, Y>
-      <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+      <<<launchDims.x, launchDims.y, 0, *stream>>>(
           vx,
           xShapeInfo,
           vy,
@@ -377,7 +319,7 @@ SD_HOST void bitonicSortStepGenericValue(
           length,
           descending);
 
-  sd::DebugHelper::checkErrorCode(stream, "bitonicSortStepGenericValue failed");
+  if (!sd::DebugHelper::inGraphCapture(stream)) sd::DebugHelper::checkGlobalErrorCode("bitonicSortStepGenericValue failed");
 }
 
 #ifdef SD_SPLIT_TYPE_INDEX

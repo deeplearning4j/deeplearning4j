@@ -626,8 +626,8 @@ DECLARE_CUSTOM_OP(range, -2, 1, false, -2, -2);
  * 1: 'off' value
  *
  * Int args:
- * 0: depth
- * 1: axis
+ * 0: axis
+ * 1: depth (takes precedence over optional scalar input 1)
  */
 #if NOT_EXCLUDED(OP_onehot)
 DECLARE_CUSTOM_OP(onehot, 1, 1, false, -2, -2);
@@ -1023,7 +1023,27 @@ DECLARE_CUSTOM_OP(embedding_lookup, 2, 1, false, 0, 1);
  */
 #if NOT_EXCLUDED(OP_dynamic_partition)
 DECLARE_CUSTOM_OP(dynamic_partition, 2, 1, false, 0, 1);
-DECLARE_CUSTOM_OP(dynamic_partition_bp, 3, 2, false, 0, 1);
+
+/**
+ * dynamic_partition_bp - the gradient of dynamic_partition: the first two params are the partitioned data and the
+ * index array, followed by the gradient of each partition (the shape of the partition's output); the output is the
+ * gradient of the data.
+ */
+// Expanded from DECLARE_CUSTOM_OP to override emptyHandling() = EMPTY_EXECUTE: a partition that got no slice has a
+// zero-length gradient, and NDArray::isEmpty() is true for it, so the default EMPTY_SKIP never ran the op and left the
+// data's gradient unwritten although the other partitions' slices still have gradients to move back.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT dynamic_partition_bp : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+ public:
+  dynamic_partition_bp();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(dynamic_partition_bp)
 #endif
 
 /**
@@ -1038,7 +1058,21 @@ DECLARE_CUSTOM_OP(dynamic_partition_bp, 3, 2, false, 0, 1);
  * the operation is inversion od dynamic_partition
  */
 #if NOT_EXCLUDED(OP_dynamic_stitch)
-DECLARE_CUSTOM_OP(dynamic_stitch, 2, 1, false, 0, 0);
+// Expanded from DECLARE_CUSTOM_OP to override emptyHandling() = EMPTY_EXECUTE: a partition that got no slice has
+// zero-length index and data arrays, and NDArray::isEmpty() is true for them, so the default EMPTY_SKIP never ran the
+// op and the other partitions were not stitched either.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT dynamic_stitch : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+ public:
+  dynamic_stitch();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(dynamic_stitch)
 #endif
 
 /**

@@ -26,6 +26,7 @@
 #include <graph/profiling/NodeProfile.h>
 #include <graph/profiling/OpTimingTracker.h>
 #include <graph/DspLifecycleContext.h>
+#include <helpers/DenseOutputShape.h>
 #include <helpers/KernelSelectionEnvironment.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/StringUtils.h>
@@ -494,8 +495,10 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
           if (sd::env_isDebugAndVerbose())
             shape::printShapeInfoLinear("OP PREPARE OUTPUTS: Going to create variable with shape", out);
 
-          // we're creating non-initialized array here
-          auto outArr = new NDArray(out, true, ctx.launchContext(), false);
+          // we're creating non-initialized array here. The descriptor may carry the strides and view flags of an
+          // input (or of the view an op can make of it), and a new array holds exactly its length elements: it is
+          // allocated dense, in the descriptor's shape, type and order.
+          auto outArr = new NDArray(denseOutputShapeInfo(out), true, ctx.launchContext(), false);
 
           ctx.pushNDArrayToVariableSpace(pair, outArr);
 
@@ -544,8 +547,8 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
         auto fout = ctx.fastpath_out();
         size_t idx = cnt++;
         if (fout.size() <= idx) {
-          // array doesnt exist
-          auto outArr = new NDArray(out, true, ctx.launchContext());
+          // array doesnt exist: a new dense array in the descriptor's shape, type and order (see above)
+          auto outArr = new NDArray(denseOutputShapeInfo(out), true, ctx.launchContext());
           ctx.setOutputArray(idx, outArr, true);
         } else {
           auto array = fout[idx];

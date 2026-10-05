@@ -3105,6 +3105,93 @@ public class Shape {
         return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype, extras);
     }
 
+    /**
+     * The extras bits that make a shape information buffer describe storage that already exists rather than a new
+     * array: the view flag, the "needs a copy" flag, the padded-buffer flag and the copy-offset flag of every input.
+     * A shape function sets them on an output that is a view of an input (permute, transpose, reshape_no_copy,
+     * kv_scatter, ...), or inherits them when it returns an input's shape information for an output of its own.
+     */
+    private static final long ALIAS_EXTRAS_MASK = aliasExtrasMask();
+
+    private static long aliasExtrasMask() {
+        long mask = ArrayOptionsHelper.IS_VIEW | ArrayOptionsHelper.ARRAY_NEEDS_COPY
+                | ArrayOptionsHelper.HAS_PADDED_BUFFER;
+        for (long copyOffset : ArrayOptionsHelper.ARRAY_COPY_OFFSET_INDEXES)
+            mask |= copyOffset;
+        return mask;
+    }
+
+    /**
+     * True when the strides pack an array's elements into exactly its length consecutive buffer offsets in the given
+     * order: every dimension longer than 1 has the stride of a packed array of that order ('c' is row-major, anything
+     * else column-major). Dimensions of length 1 are ignored: their index is always 0, so their stride never
+     * contributes to an address (a [1, K] row is stored with strides [1, 1]).
+     *
+     * @param shape  the array's shape
+     * @param stride the array's strides, one per dimension
+     * @param order  the array's order
+     * @return true if shape and strides describe a packed array
+     */
+    public static boolean isPackedInOrder(@NonNull long[] shape, @NonNull long[] stride, char order) {
+        long expected = 1;
+        if (order == 'c') {
+            for (int d = shape.length - 1; d >= 0; d--) {
+                if (shape[d] != 1 && stride[d] != expected)
+                    return false;
+                expected *= shape[d];
+            }
+        } else {
+            for (int d = 0; d < shape.length; d++) {
+                if (shape[d] != 1 && stride[d] != expected)
+                    return false;
+                expected *= shape[d];
+            }
+        }
+        return true;
+    }
+
+    /**
+     * The shape information of the array the framework allocates for an op output that a shape function describes
+     * with {@code descriptor}: a new array in the descriptor's shape, data type and order, with dense strides and
+     * without the view, copy and copy-offset flags. The empty flag stays.
+     * <p>
+     * A shape function may return an input's shape information for an output of its own (the native
+     * {@code CONSTANT(inShape)}, {@code bufferForShapeInfo(inShape)} and the legacy transform ops do), and a
+     * view-producing op describes its view output with the input's strides. Strides are only valid for a new array
+     * of exactly {@code length} elements when they are packed: a stepped view such as a [4, 70] slice with strides
+     * [140, 2] addresses offset 558 of a 280-element buffer, so an output allocated from the descriptor as it is
+     * writes past its buffer, and a view flag marks an array that owns its buffer as one that does not.
+     * <p>
+     * Every place that turns a descriptor into an allocation uses this, so a new output is always dense. An output
+     * that is a view of an input is not allocated from a descriptor and keeps the descriptor as it is. Nothing is
+     * allocated for an empty descriptor. A zero-length dimension is normalized to carry the empty flag. A
+     * descriptor that already describes such an array is returned as it is too.
+     *
+     * @param descriptor the shape information an op's shape function returned for one output
+     * @return the shape information of the array to allocate for that output
+     */
+    public static DataBuffer allocationShapeInfo(@NonNull DataBuffer descriptor) {
+        long[] info = descriptor.asLong();
+        if (isEmpty(info))
+            return descriptor;
+        if (length(info) == 0) {
+            // Factories use the empty flag to decide whether a data buffer is required.
+            // Shape functions can describe zero dimensions without setting that flag.
+            return Nd4j.getShapeInfoProvider().createShapeInformation(shape(info), stride(info), 0,
+                    order(info), ArrayOptionsHelper.setOptionBit(options(info), ArrayType.EMPTY)).getFirst();
+        }
+
+        long extras = options(info);
+        char order = order(info);
+        long[] shape = shape(info);
+        if ((extras & ALIAS_EXTRAS_MASK) == 0 && isPackedInOrder(shape, stride(info), order))
+            return descriptor;
+
+        long[] strides = shape.length == 0 ? new long[0] : Nd4j.getStrides(shape, order == 'f' ? 'f' : 'c');
+        return Nd4j.getShapeInfoProvider()
+                .createShapeInformation(shape, strides, 1, order, extras & ~ALIAS_EXTRAS_MASK).getFirst();
+    }
+
     public static DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions,
                                                      int underlyingRank) {
         int flagLength = flags.length;

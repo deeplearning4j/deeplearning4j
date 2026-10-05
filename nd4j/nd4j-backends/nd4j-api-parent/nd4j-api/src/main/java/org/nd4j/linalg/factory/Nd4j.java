@@ -2551,7 +2551,7 @@ public class Nd4j {
         INDArray xOut = Nd4j.createUninitialized(x.dataType(), y.length(), x.length());
         INDArray yOut = Nd4j.createUninitialized(x.dataType(), y.length(), x.length());
 
-        MeshGrid op = new MeshGrid(new INDArray[]{x, y}, false);
+        MeshGrid op = new MeshGrid(new INDArray[]{x, y}, true);
         op.addOutputArgument(xOut, yOut);
         Nd4j.getExecutioner().execAndReturn(op);
 

@@ -147,7 +147,9 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(@NonNull Op op, OpContext opContext) {
-        if (op instanceof TransformOp) {
+        if (op instanceof BroadcastOp) {
+            executeBroadcast((BroadcastOp) op, opContext);
+        } else if (op instanceof TransformOp) {
             executeTransform((TransformOp) op, opContext);
         } else if (op instanceof ReduceOp) {
             executeReduction((ReduceOp) op, opContext);
@@ -167,7 +169,7 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
             // The descriptor hash is the single source of truth. Do not maintain a
             // second Java operation allow-list: native catalog validation selects
             // the emitter and reports a missing lowering with the canonical hash.
-            executeCustom(customOp, null);
+            executeCustom(customOp, Nd4j.getRandom());
         }
         return getZ(op, opContext);
     }
@@ -195,6 +197,50 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(ScalarOp op) {
         return exec((Op) op);
+    }
+
+    private void executeBroadcast(BroadcastOp op, OpContext opContext) {
+        op.validateDataTypes(opContext, nativeOps.isExperimentalEnabled());
+        INDArray x = getX(op, opContext);
+        INDArray y = getY(op, opContext);
+        INDArray z = getZ(op, opContext);
+        int deviceId = affinityManager.getDeviceForArray(x);
+        requireSameDevice(y, deviceId, "second input");
+        requireSameDevice(z, deviceId, "output");
+        int previousDevice = affinityManager.getDeviceForCurrentThread();
+        try {
+            if (previousDevice != deviceId) {
+                affinityManager.setDeviceForCurrentThread(deviceId);
+            }
+            DataType extraType = op.getOpType() == Op.Type.BROADCAST_BOOL
+                    ? x.dataType() : z.dataType();
+            DataBuffer extraBuffer = op.extraArgs() == null || op.extraArgs().length == 0
+                    ? null : op.extraArgsDataBuff(extraType);
+            Pointer extraArguments = extraBuffer == null ? null : extraBuffer.addressPointer();
+            VulkanRuntime runtime = VulkanRuntime.forNativeOps(nativeOps);
+            nativeOps.clearLastError();
+            try (OpaqueNDArray xOpaque = OpaqueNDArray.fromINDArrayUncached(runtime, x);
+                 OpaqueNDArray yOpaque = OpaqueNDArray.fromINDArrayUncached(runtime, y);
+                 OpaqueNDArray zOpaque = OpaqueNDArray.fromINDArrayUncached(runtime, z);
+                 OpaqueNDArray dimensionsOpaque =
+                         OpaqueNDArray.fromINDArrayUncached(runtime, op.dimensions())) {
+                // The typed native bridge preserves explicit broadcast axes. Vulkan derives
+                // operand indexing from shapes/strides and does not require a CUDA TAD cache.
+                if (op.getOpType() == Op.Type.BROADCAST_BOOL) {
+                    nativeOps.execBroadcastBool(null, op.opNum(), xOpaque, yOpaque,
+                            zOpaque, extraArguments, dimensionsOpaque);
+                } else {
+                    nativeOps.execBroadcast(null, op.opNum(), xOpaque, yOpaque,
+                            zOpaque, extraArguments, dimensionsOpaque);
+                }
+                checkNativeError();
+            }
+            markDeviceWritten(Collections.singletonList(z));
+        } finally {
+            if (previousDevice != deviceId) {
+                affinityManager.setDeviceForCurrentThread(previousDevice);
+            }
+        }
     }
 
     private void executeScalar(ScalarOp op, OpContext opContext) {
@@ -242,7 +288,7 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
             }
 
             requireSameDevice(z, deviceId, "output");
-            op.validateDataTypes(nativeOps.isExperimentalEnabled());
+            op.validateDataTypes(opContext, nativeOps.isExperimentalEnabled());
             DataType extraType = op.getOpType() == Op.Type.SCALAR_BOOL
                     ? x.dataType() : z.dataType();
             Object[] extraArgs = op.extraArgs();
@@ -332,8 +378,18 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
                 affinityManager.setDeviceForCurrentThread(deviceId);
             }
 
-            long[] resultShape =
-                    Shape.reductionShape(x, dimensions, true, op.isKeepDims());
+            INDArray y = getY(op, opContext);
+            long[] resultShape;
+            if (op.getOpType() == Op.Type.REDUCE3 && op.isComplexAccumulation()) {
+                if (y == null) {
+                    throw new IllegalArgumentException("All-pairs reduction requires two input arrays");
+                }
+                long xTads = dimensions.length == 0 ? 1 : x.tensorsAlongDimension(dimensions);
+                long yTads = dimensions.length == 0 ? 1 : y.tensorsAlongDimension(dimensions);
+                resultShape = new long[]{xTads, yTads};
+            } else {
+                resultShape = Shape.reductionShape(x, dimensions, true, op.isKeepDims());
+            }
             INDArray z = getZ(op, opContext);
             if (z == null || z == x) {
                 z = Nd4j.createUninitialized(op.resultType(), resultShape);
@@ -357,7 +413,7 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
                          OpaqueNDArray.fromINDArrayUncached(runtime, x);
                  OpaqueNDArray yOpaque =
                          OpaqueNDArray.fromINDArrayUncached(
-                                 runtime, getY(op, opContext));
+                                 runtime, y);
                  OpaqueNDArray zOpaque =
                          OpaqueNDArray.fromINDArrayUncached(runtime, z);
                  OpaqueNDArray dimensionsOpaque =
@@ -374,14 +430,14 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
                                 dimensionsOpaque, ((Variance) op).isBiasCorrected());
                     }
                 } else if (yOpaque != null && op.getOpType() == Op.Type.REDUCE3) {
-                    if (z.isScalar()) {
-                        nativeOps.execReduce3Scalar(
-                                null, op.opNum(), xOpaque, extraArguments,
-                                yOpaque, zOpaque);
-                    } else if (op.isComplexAccumulation()) {
+                    if (op.isComplexAccumulation()) {
                         nativeOps.execReduce3All(
                                 null, op.opNum(), xOpaque, yOpaque, zOpaque,
                                 dimensionsOpaque, extraArguments);
+                    } else if (z.isScalar()) {
+                        nativeOps.execReduce3Scalar(
+                                null, op.opNum(), xOpaque, extraArguments,
+                                yOpaque, zOpaque);
                     } else {
                         nativeOps.execReduce3Tad(
                                 null, op.opNum(), xOpaque, extraArguments,
@@ -657,7 +713,9 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
-        return executeCustom(op, null);
+        // as DefaultOpExecutioner.initOpContext on CPU and CUDA: the op draws at the thread generator's states and
+        // the generator takes the advanced states back
+        return executeCustom(op, Nd4j.getRandom());
     }
 
     private INDArray[] executeCustom(CustomOp op, Random random) {
@@ -1197,12 +1255,16 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray createFromDescriptor(DataBuffer shapeInformation) {
+        // Allocate outputs from the descriptor's shape, not its input-view strides or flags.
+        shapeInformation = Shape.allocationShapeInfo(shapeInformation);
         long[] shapeInfo = shapeInformation.asLong();
         VulkanNDArray array = new VulkanNDArray();
         array.setShapeInfoDataBuffer(shapeInformation);
         DataType dataType = Shape.dataType(shapeInfo);
-        long length = Shape.isEmpty(shapeInfo) ? 0L : Shape.length(shapeInfo);
-        array.setData(dataBufferFactory.create(dataType, length, false));
+        // Empty descriptors carry their shape and dtype in shape info and have no data buffer.
+        if (!Shape.isEmpty(shapeInfo)) {
+            array.setData(dataBufferFactory.create(dataType, Shape.length(shapeInfo), false));
+        }
         return array;
     }
 

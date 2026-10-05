@@ -108,6 +108,42 @@ This change eliminates the two-enum synchronization problem entirely: there is n
 (`SegmentLifecycleState`) and two derived views of it (string name, integer code) for external
 consumers.
 
+### Replay-mode introspection is distinct from execution phase
+
+`getPlanSegmentReplayMode()` must classify the dispatch artifact, not return
+`getExecutionPhaseCode()`. Its stable integer contract is 0=NONE, 1=MONOLITHIC,
+2=COMPOSITE, 3=SLOT_BY_SLOT, extended with 4=FROZEN_CONSTANT and
+5=DIRECT_COMPILED. Captured modes require sealed, ready handles; direct mode
+requires a sealed artifact with matching owner and shape key. Functional slot
+re-execution is not hardware graph replay. Frozen constants retain their own
+mode after their capture handle is released and execution phase resets.
+
+Diagnostics and assertions use this same classification. Strict no-fallback
+assertions reject NONE, SLOT_BY_SLOT and unknown modes while accepting ready
+compiled dispatch and frozen-output reuse. Vulkan generation regressions check
+both numerical results and exact mode codes. Execution-phase introspection
+retains its existing lifecycle encoding unchanged.
+
+Registered operation descriptors are also the sole trait authority for native
+and Java plan compilation. JNI trait queries use the legacy table only for
+operations without descriptors; they do not OR stale classifications into
+registered operations. In particular, `fill_as` and its aliases derive their
+shape from donor metadata, not donor values, and must not advertise
+VALUE_DEPENDENT_SHAPE. Existing trait tests and strict FLOAT-donor capture/replay
+coverage guard this contract.
+
+Invocation-specific shape dependence also comes from the operation descriptor.
+Shape-value input metadata may declare a leading IArg count that completely
+replaces tensor controls. For `onehot`, input 1 supplies tensor depth only when
+fewer than two IArgs are present; IArgs are ordered axis, depth, and depth takes
+precedence even when a depth tensor is supplied. Indices and on/off tensor values
+do not determine output shape. Java compilation, native compilation, serialized
+plan admission and shape-value synchronization use this same metadata. The
+intrinsic VALUE_DEPENDENT_SHAPE trait remains available for tensor-depth calls;
+DYNAMIC_OUTPUT_SIZE still requires value-dependent inference. Six invocation
+metadata cases and the strict FLOAT-indices capture/replay regression cover the
+argument-depth contract without relaxing bounded-control prepass checks.
+
 ### 2. Flatten `SlotState` from 6 to 4 Values
 
 `NativeSlot::SlotState` is reduced to four values:

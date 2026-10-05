@@ -148,10 +148,9 @@ Status LegacyScalarBoolOp::validateAndExecute(Context &block) {
 
     NDArray::prepareSpecialUse({z}, {x, y});
 
-    NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-                                        x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
-                                        z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(),
-                                        y->specialShapeInfo(), extras.argumentsAsT(x->dataType()));
+    NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+                                        sd::LegacyTensorArg::fromArray(z), sd::LegacyTensorArg::fromArray(y),
+                                        extras.argumentsAsT(x->dataType()));
 
     NDArray::registerSpecialUse({z}, {x, y});
   } else if (block.getTArguments()->size() > 0) {
@@ -176,10 +175,8 @@ Status LegacyScalarBoolOp::validateAndExecute(Context &block) {
 
     NDArray::prepareSpecialUse({z}, {x, scalar});
 
-    NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-                                        x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
-                                        z->specialShapeInfo(), scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(),
-                                        scalar->specialShapeInfo(),
+    NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x),
+                                        sd::LegacyTensorArg::fromArray(z), sd::LegacyTensorArg::fromArray(scalar),
                                         extras.length() > 1 ? extras.argumentsAsT(x->dataType(), 1) : nullptr);
 
     NDArray::registerSpecialUse({z}, {x, scalar});
@@ -192,9 +189,8 @@ Status LegacyScalarBoolOp::validateAndExecute(Context &block) {
     NDArray::prepareSpecialUse({z}, {x, scalar});
 
     NativeOpExecutioner::execScalarBool(
-        block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), scalar->buffer(), scalar->shapeInfo(),
-        scalar->specialBuffer(), scalar->specialShapeInfo(), extras.argumentsAsT(x->dataType()));
+        block.launchContext(), opNum, sd::LegacyTensorArg::fromArray(x), sd::LegacyTensorArg::fromArray(z),
+        sd::LegacyTensorArg::fromArray(scalar), extras.argumentsAsT(x->dataType()));
 
     NDArray::registerSpecialUse({z}, {x, scalar});
   }

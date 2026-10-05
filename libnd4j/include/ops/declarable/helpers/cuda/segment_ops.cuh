@@ -17,592 +17,366 @@
  ******************************************************************************/
 
 //
-//  Shared, policy-templated implementation of the segment reduction ops
-//  (segment_max / segment_min / segment_sum / segment_prod / segment_mean).
+//  Shared implementation of the CUDA segment ops (segment_{sum,mean,max,min,prod},
+//  unsorted_segment_{sum,mean,max,min,prod,sqrt_n} and their backprops). The arithmetic is the one of
+//  segment_semantics.h (the CPU helpers run the same policies); this file adds the kernels:
 //
-//  Historically each op carried its own near-duplicate copy of five kernels +
-//  four host functors that had drifted apart (two forward strategies, four BP
-//  formulas, divergent signatures). This header unifies them:
-//    * forward LINEAR  -> deterministic shared-memory tree reduction (all ops)
-//    * forward TAD      -> global atomics (all ops, already uniform)
-//    * backprop         -> one scaffold + a per-op GradOp policy
-//  Behaviour is selected by two tiny policy structs per op (ReduceOp + GradOp);
-//  each segment_<op>.cu is reduced to a thin TU that instantiates them.
+//    sorted ids    gather. The ids are one run per segment (validated), so every output element is reduced by one
+//                  thread in row order (deterministic, bit-identical to the CPU for rows x columns inputs), and a
+//                  vector input is reduced by one block per segment with a fixed shared-memory tree (deterministic
+//                  for a given launch).
+//    unsorted ids  scatter into a [classes, columns] accumulator of the policy's accumulator type with atomics that
+//                  do not go through templatemath.h (native atomicAdd where it exists, a compare-and-swap loop on
+//                  the bit pattern otherwise, for HALF/BFLOAT16 in FLOAT), then one kernel finishes every segment
+//                  (mean: one division; empty segments get their value).
+//    backprop      one kernel over the elements of the input.
+//
+//  Every kernel strides over its work with 64 bit indices, so the launch dimensions of LaunchDims.cu
+//  (segmentDims, segmentTad, segmentBpDims, segmentBpTad, getFillUpSegmentsDims) only cap the grid. All arrays are read
+//  through their own shapes and strides (SegMat), so any rank, order, offset or stepped view is correct; the ids of any
+//  integer dtype / rank are first read into one dense int64 sequence (segmentReadIds). A segment id outside the range of
+//  classes is dropped by every kernel (the ops reject such ids up front; during a graph capture nothing can be read
+//  back, and nothing indexes with them).
 //
 #ifndef LIBND4J_SEGMENT_OPS_CUH
 #define LIBND4J_SEGMENT_OPS_CUH
 
-#include <array/NDArrayFactory.h>
+#include <array/NDArray.h>
 #include <execution/cuda/LaunchDims.h>
-#include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
-#include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
+#include <ops/declarable/helpers/segment_semantics.h>
 #include <system/selective_rendering.h>
+
+#include <string.h>
+
+#include <string>
+#include <type_traits>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 namespace segment_ops {
 
-// ============================================================================ //
-// ReduceOp policies (forward). Each provides:
-//   neutral<T>()          - identity element for the reduction
-//   combine(acc, v)       - fold v into the running accumulator (device)
-//   atomic(addr, v)       - atomic fold into global memory (device, TAD path)
-//   finalize(acc, len)    - post-reduction transform for the linear write
-//   tadValue(v, len)      - per-element transform before the TAD atomic
-// ============================================================================ //
+using segment_sem::SegMat;
 
-struct MaxReduce {
-  template <typename T> static SD_HOST_DEVICE SD_INLINE T neutral() { return -DataTypeUtils::max<T>(); }
-  template <typename T> static SD_DEVICE SD_INLINE void combine(T& acc, T v) { if (v > acc) acc = v; }
-  template <typename T> static SD_DEVICE SD_INLINE void atomic(T* addr, T v) { math::atomics::sd_atomicMax<T>(addr, v); }
-  template <typename T> static SD_DEVICE SD_INLINE T finalize(T acc, LongType) { return acc; }
-  template <typename T> static SD_DEVICE SD_INLINE T tadValue(T v, LongType) { return v; }
-};
+// the sorted linear kernel reduces in a static shared array of this many partials: its launches use at most this
+// many threads, a power of two (LaunchDims.cu: segmentDims)
+static constexpr int kSegmentTreeThreads = 256;
 
-struct MinReduce {
-  template <typename T> static SD_HOST_DEVICE SD_INLINE T neutral() { return DataTypeUtils::infOrMax<T>(); }
-  template <typename T> static SD_DEVICE SD_INLINE void combine(T& acc, T v) { if (v < acc) acc = v; }
-  template <typename T> static SD_DEVICE SD_INLINE void atomic(T* addr, T v) { math::atomics::sd_atomicMin<T>(addr, v); }
-  template <typename T> static SD_DEVICE SD_INLINE T finalize(T acc, LongType) { return acc; }
-  template <typename T> static SD_DEVICE SD_INLINE T tadValue(T v, LongType) { return v; }
-};
+static SD_INLINE int clampInt(LongType value) {
+  if (value < 0) return 0;
+  if (value > static_cast<LongType>(2147483647)) return 2147483647;
+  return static_cast<int>(value);
+}
 
-struct SumReduce {
-  template <typename T> static SD_HOST_DEVICE SD_INLINE T neutral() { return static_cast<T>(0); }
-  template <typename T> static SD_DEVICE SD_INLINE void combine(T& acc, T v) { acc += v; }
-  template <typename T> static SD_DEVICE SD_INLINE void atomic(T* addr, T v) { math::atomics::sd_atomicAdd<T>(addr, v); }
-  template <typename T> static SD_DEVICE SD_INLINE T finalize(T acc, LongType) { return acc; }
-  template <typename T> static SD_DEVICE SD_INLINE T tadValue(T v, LongType) { return v; }
-};
+static SD_INLINE void checkLaunch(cudaStream_t* stream, const char* what) {
+  if (!DebugHelper::inGraphCapture(stream)) DebugHelper::checkGlobalErrorCode(what);
+}
 
-struct ProdReduce {
-  template <typename T> static SD_HOST_DEVICE SD_INLINE T neutral() { return static_cast<T>(1); }
-  template <typename T> static SD_DEVICE SD_INLINE void combine(T& acc, T v) { acc *= v; }
-  template <typename T> static SD_DEVICE SD_INLINE void atomic(T* addr, T v) { math::atomics::sd_atomicMul<T>(addr, v); }
-  template <typename T> static SD_DEVICE SD_INLINE T finalize(T acc, LongType) { return acc; }
-  template <typename T> static SD_DEVICE SD_INLINE T tadValue(T v, LongType) { return v; }
-};
-
-struct MeanReduce {
-  template <typename T> static SD_HOST_DEVICE SD_INLINE T neutral() { return static_cast<T>(0); }
-  template <typename T> static SD_DEVICE SD_INLINE void combine(T& acc, T v) { acc += v; }
-  template <typename T> static SD_DEVICE SD_INLINE void atomic(T* addr, T v) { math::atomics::sd_atomicAdd<T>(addr, v); }
-  template <typename T> static SD_DEVICE SD_INLINE T finalize(T acc, LongType len) {
-    return len > 0 ? acc / static_cast<T>(len) : acc;
-  }
-  template <typename T> static SD_DEVICE SD_INLINE T tadValue(T v, LongType len) {
-    return len > 0 ? v / static_cast<T>(len) : v;
-  }
-};
+static SD_INLINE SegMat segMat(NDArray* array) {
+  return segment_sem::makeSegMat(array->shapeInfo(), array->specialShapeInfo());
+}
 
 // ============================================================================ //
-// GradOp policies (backprop). Each provides:
-//   static constexpr bool needsForward  - re-run forward into tempRes?
-//   static constexpr bool needsLengths  - materialize segment lengths?
-//   grad(gradOut, x, fwd, len, out)     - returns true + fills out when the
-//                                         element receives gradient (device)
+// Atomics (device). Native where CUDA has them, a compare-and-swap loop on the bit pattern otherwise; the operand is
+// always the accumulator type, which is at least 32 bits wide, so no sub-word atomics are involved.
 // ============================================================================ //
+template <typename To, typename From>
+static SD_DEVICE SD_INLINE To bitCast(const From& from) {
+  static_assert(sizeof(To) == sizeof(From), "bitCast needs equally sized types");
+  To to;
+  memcpy(&to, &from, sizeof(To));
+  return to;
+}
 
-// max/min: gradient flows only to the element(s) that produced the extremum.
-struct CompareGrad {
-  static constexpr bool needsForward = true;
-  static constexpr bool needsLengths = false;
-  template <typename T>
-  static SD_DEVICE SD_INLINE bool grad(T gradOut, T x, T fwd, LongType, T& out) {
-    if (math::sd_abs<T, T>(fwd - x) <= T(1.e-6)) { out = gradOut; return true; }
-    return false;
-  }
-};
+template <typename Op, typename A, typename U>
+static SD_DEVICE SD_INLINE void atomicCasCombine(A* address, A value) {
+  U* word = reinterpret_cast<U*>(address);
+  U old = *word;
+  U assumed;
+  do {
+    assumed = old;
+    A updated = bitCast<A>(assumed);
+    Op::template combine<A>(updated, value);
+    const U wanted = bitCast<U>(updated);
+    if (wanted == assumed) break;  // the value is already in (a max of a smaller value, a product by one)
+    old = atomicCAS(word, assumed, wanted);
+  } while (assumed != old);
+}
 
-// prod: d/dx_i (prod) = prod / x_i, so grad = gradOut * fwdProduct / x_i.
-struct ProdGrad {
-  static constexpr bool needsForward = true;
-  static constexpr bool needsLengths = false;
-  template <typename T>
-  static SD_DEVICE SD_INLINE bool grad(T gradOut, T x, T fwd, LongType, T& out) {
-    out = gradOut * fwd / x;
-    return true;
+template <typename Op, typename A>
+static SD_DEVICE SD_INLINE void atomicCombine(A* address, A value) {
+  if constexpr (Op::kIsAdd) {
+    if constexpr (std::is_same<A, float>::value) {
+      atomicAdd(address, value);
+    } else if constexpr (std::is_same<A, double>::value) {
+      atomicAdd(address, value);
+    } else if constexpr (sizeof(A) == 4) {
+      atomicAdd(reinterpret_cast<unsigned int*>(address), static_cast<unsigned int>(value));
+    } else {
+      atomicAdd(reinterpret_cast<unsigned long long*>(address), static_cast<unsigned long long>(value));
+    }
+  } else if constexpr (sizeof(A) == 4) {
+    atomicCasCombine<Op, A, unsigned int>(address, value);
+  } else {
+    atomicCasCombine<Op, A, unsigned long long>(address, value);
   }
-};
-
-// sum: gradient is broadcast unchanged to every segment member.
-struct SumGrad {
-  static constexpr bool needsForward = false;
-  static constexpr bool needsLengths = false;
-  template <typename T>
-  static SD_DEVICE SD_INLINE bool grad(T gradOut, T, T, LongType, T& out) {
-    out = gradOut;
-    return true;
-  }
-};
-
-// mean: gradient is broadcast and scaled by 1/segmentLength.
-struct MeanGrad {
-  static constexpr bool needsForward = false;
-  static constexpr bool needsLengths = true;
-  template <typename T>
-  static SD_DEVICE SD_INLINE bool grad(T gradOut, T, T, LongType len, T& out) {
-    out = len > 0 ? gradOut / static_cast<T>(len) : gradOut;
-    return true;
-  }
-};
+}
 
 // ============================================================================ //
 // Forward kernels
 // ============================================================================ //
 
-// Linear (vector input) forward: one block per segment, shared-memory tree reduce.
-template <typename Op, typename T, typename I>
-static SD_KERNEL void segmentLinearKernel(void* input, LongType const* inputShape, LongType* starts, LongType* lengths,
-                                          LongType numOfClasses, void* output, LongType const* outputShape) {
-  extern __shared__ char shmem[];
-  T* sdata = reinterpret_cast<T*>(shmem);
-
-  auto segment = blockIdx.x;
-  if (segment >= numOfClasses) return;
-
-  const T* x = reinterpret_cast<const T*>(input);
-  T* z = reinterpret_cast<T*>(output);
-
-  auto start = starts[segment];
-  auto len = lengths[segment];
-  if (len == 0) return;
-  auto finish = start + len;
-
-  const LongType* inputStridePtr = shape::stride(inputShape);
-  const LongType* outputStridePtr = shape::stride(outputShape);
-
-  T threadAcc = Op::template neutral<T>();
-  for (auto e = start + threadIdx.x; e < finish; e += blockDim.x) {
-    LongType eCoords[] = {e};
-    LongType xIndex;
-    COORDS2INDEX(1, inputStridePtr, eCoords, xIndex);
-    Op::template combine<T>(threadAcc, x[xIndex]);
-  }
-
-  sdata[threadIdx.x] = threadAcc;
-  __syncthreads();
-
-  for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
-    if (threadIdx.x < s && (threadIdx.x + s) < blockDim.x) {
-      Op::template combine<T>(sdata[threadIdx.x], sdata[threadIdx.x + s]);
-    }
+// Sorted ids, vector (one value per row): one block per segment (grid-stride over the segments), a fixed
+// shared-memory tree. blockDim.x is a power of two <= kSegmentTreeThreads.
+template <typename Op, typename X, typename Z>
+static SD_KERNEL void sortedLinearKernel(const X* x, LongType xStride, const LongType* begin, const LongType* end,
+                                         LongType numClasses, Z* z, LongType zStride) {
+  using A = typename Op::template AccOf<X, Z>::type;
+  __shared__ A partial[kSegmentTreeThreads];
+  for (LongType s = blockIdx.x; s < numClasses; s += gridDim.x) {
+    const LongType first = begin[s];
+    const LongType last = end[s];
+    A acc = Op::template identity<A>();
+    for (LongType r = first + threadIdx.x; r < last; r += blockDim.x)
+      Op::template combine<A>(acc, static_cast<A>(x[r * xStride]));
+    partial[threadIdx.x] = acc;
     __syncthreads();
-  }
-
-  if (threadIdx.x == 0) {
-    LongType segmentCoords[] = {segment};
-    LongType zIndex;
-    COORDS2INDEX(1, outputStridePtr, segmentCoords, zIndex);
-    z[zIndex] = Op::template finalize<T>(sdata[0], len);
+    for (unsigned int offset = blockDim.x >> 1; offset > 0; offset >>= 1) {
+      if (threadIdx.x < offset) Op::template combine<A>(partial[threadIdx.x], partial[threadIdx.x + offset]);
+      __syncthreads();
+    }
+    if (threadIdx.x == 0) {
+      const LongType rows = last - first;
+      z[s * zStride] =
+          rows > 0 ? static_cast<Z>(Op::template finalize<A>(partial[0], rows)) : Op::template emptySorted<Z>();
+    }
+    __syncthreads();  // the partials are reused by the next segment of this block
   }
 }
 
-// Unsorted linear forward: one block per segment, scans all elements gated by index.
-template <typename Op, typename T, typename I>
-static SD_KERNEL void unsortedSegmentLinearKernel(void* input, LongType const* inputShape, void* indices,
-                                                  LongType const* indicesShape, LongType* starts, LongType* lengths,
-                                                  LongType numOfClasses, void* output, LongType const* outputShape) {
-  extern __shared__ char shmem[];
-  T* sdata = reinterpret_cast<T*>(shmem);
-
-  auto segment = blockIdx.x;
-  if (segment >= numOfClasses) return;
-  if (lengths[segment] == 0) return;
-
-  const T* x = reinterpret_cast<const T*>(input);
-  T* z = reinterpret_cast<T*>(output);
-  const I* y = reinterpret_cast<const I*>(indices);
-
-  LongType xLen = shape::length(inputShape);
-  const LongType* inputStridePtr = shape::stride(inputShape);
-  const LongType* indicesStridePtr = shape::stride(indicesShape);
-  const LongType* outputStridePtr = shape::stride(outputShape);
-
-  T threadAcc = Op::template neutral<T>();
-  for (auto e = threadIdx.x; e < xLen; e += blockDim.x) {
-    LongType eCoords[] = {e};
-    LongType xIndex, yIndex;
-    COORDS2INDEX(1, inputStridePtr, eCoords, xIndex);
-    COORDS2INDEX(1, indicesStridePtr, eCoords, yIndex);
-    if (y[yIndex] == static_cast<I>(segment)) {
-      Op::template combine<T>(threadAcc, x[xIndex]);
-    }
-  }
-
-  sdata[threadIdx.x] = threadAcc;
-  __syncthreads();
-
-  for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
-    if (threadIdx.x < s && (threadIdx.x + s) < blockDim.x) {
-      Op::template combine<T>(sdata[threadIdx.x], sdata[threadIdx.x + s]);
-    }
-    __syncthreads();
-  }
-
-  if (threadIdx.x == 0) {
-    LongType segmentCoords[] = {segment};
-    LongType zIndex;
-    COORDS2INDEX(1, outputStridePtr, segmentCoords, zIndex);
-    z[zIndex] = Op::template finalize<T>(sdata[0], lengths[segment]);
+// Sorted ids, rows x columns: one thread per output element reduces the rows of its segment in order.
+template <typename Op, typename X, typename Z>
+static SD_KERNEL void sortedMatrixKernel(const X* x, SegMat xm, const LongType* begin, const LongType* end,
+                                         LongType numClasses, LongType K, Z* z, SegMat zm) {
+  using A = typename Op::template AccOf<X, Z>::type;
+  const LongType total = numClasses * K;
+  for (LongType g = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; g < total;
+       g += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const LongType s = g / K;
+    const LongType e = g - s * K;
+    const LongType first = begin[s];
+    const LongType rows = end[s] - first;
+    const LongType xc = xm.colOffset(e);
+    A acc = Op::template identity<A>();
+    for (LongType r = first; r < first + rows; ++r) Op::template combine<A>(acc, static_cast<A>(x[r * xm.rowStride + xc]));
+    z[s * zm.rowStride + zm.colOffset(e)] =
+        rows > 0 ? static_cast<Z>(Op::template finalize<A>(acc, rows)) : Op::template emptySorted<Z>();
   }
 }
 
-// TAD (multi-dim) forward: global atomics into the pre-initialized output.
-template <typename Op, typename T, typename I>
-static SD_KERNEL void segmentTadKernel(void* inputBuf, LongType const* inputShape, LongType const* inputTads,
-                                       LongType const* inputTadOffsets, I* indices, LongType* starts, LongType* lengths,
-                                       LongType numOfClasses, void* outputBuf, LongType const* outputShape,
-                                       LongType const* outputTads, LongType const* outputTadOffsets,
-                                       LongType indicesLength, LongType numInputTads) {
-  __shared__ LongType len, start, finish;
-  __shared__ I segment;
-  __shared__ sd::LongType inputTadRank, outputTadRank;
-  __shared__ const sd::LongType* inputTadShapePtr;
-  __shared__ const sd::LongType* outputTadShapePtr;
-  __shared__ const sd::LongType* inputTadStridePtr;
-  __shared__ const sd::LongType* outputTadStridePtr;
+template <typename Op, typename A>
+static SD_KERNEL void fillIdentityKernel(A* data, LongType length) {
+  const A value = Op::template identity<A>();
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; i < length;
+       i += static_cast<LongType>(gridDim.x) * blockDim.x)
+    data[i] = value;
+}
 
-  if (threadIdx.x == 0 && blockIdx.x < indicesLength) {
-    segment = indices[blockIdx.x];
-    len = shape::length(inputTads);
-    inputTadRank = shape::rank(inputTads);
-    outputTadRank = shape::rank(outputTads);
-    inputTadShapePtr = shape::shapeOf(inputTads);
-    outputTadShapePtr = shape::shapeOf(outputTads);
-    inputTadStridePtr = shape::stride(inputTads);
-    outputTadStridePtr = shape::stride(outputTads);
-    start = starts[segment];
-    finish = start + lengths[segment];
+// Unsorted ids: every element of the first n rows is combined into its segment's accumulator.
+template <typename Op, typename X, typename A>
+static SD_KERNEL void unsortedScatterKernel(const X* x, SegMat xm, const LongType* ids, LongType n,
+                                            LongType numClasses, LongType K, A* acc) {
+  const LongType total = n * K;
+  for (LongType g = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; g < total;
+       g += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const LongType r = g / K;
+    const LongType e = g - r * K;
+    const LongType s = ids[r];
+    if (s < 0 || s >= numClasses) continue;
+    atomicCombine<Op, A>(acc + s * K + e, static_cast<A>(x[r * xm.rowStride + xm.colOffset(e)]));
   }
-  __syncthreads();
+}
 
-  auto idx = blockIdx.x;
-  if (idx < numInputTads) {
-    auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[idx];
-    auto z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
-    if (blockIdx.x == start || lengths[segment]) {
-      for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-        LongType xCoords[SD_MAX_RANK];
-        LongType zCoords[SD_MAX_RANK];
-        LongType xIndex;
-        LongType zIndex;
-        INDEX2COORDS(e, inputTadRank, inputTadShapePtr, xCoords);
-        COORDS2INDEX(inputTadRank, inputTadStridePtr, xCoords, xIndex);
-        INDEX2COORDS(e, outputTadRank, outputTadShapePtr, zCoords);
-        COORDS2INDEX(outputTadRank, outputTadStridePtr, zCoords, zIndex);
-        Op::template atomic<T>(&z[zIndex], Op::template tadValue<T>(x[xIndex], lengths[segment]));
+// Unsorted ids: one thread per output element finishes its segment (an empty one gets the op's value for it).
+template <typename Op, typename A, typename Z>
+static SD_KERNEL void unsortedFinalizeKernel(const A* acc, const unsigned long long* counts, LongType numClasses,
+                                             LongType K, Z* z, SegMat zm) {
+  const LongType total = numClasses * K;
+  for (LongType g = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; g < total;
+       g += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const LongType s = g / K;
+    const LongType e = g - s * K;
+    Z out;
+    if constexpr (Op::kNeedsCount) {
+      const LongType count = static_cast<LongType>(counts[s]);
+      out = count > 0 ? static_cast<Z>(Op::template finalize<A>(acc[g], count)) : Op::template emptyUnsorted<Z>();
+    } else {
+      out = static_cast<Z>(Op::template finalize<A>(acc[g], 0));
+    }
+    z[s * zm.rowStride + zm.colOffset(e)] = out;
+  }
+}
+
+// ============================================================================ //
+// Backprop kernel: element g (row g / K, column g % K) of the gradient w.r.t. the input
+// ============================================================================ //
+template <typename Grad, typename T>
+static SD_KERNEL void backpropKernel(const T* x, SegMat xm, const T* gradOut, SegMat gm, const T* fwd,
+                                     const unsigned long long* counts, const LongType* zeros, const LongType* ids,
+                                     LongType n, LongType numClasses, LongType K, T* z, SegMat zm) {
+  const LongType total = n * K;
+  for (LongType g = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x; g < total;
+       g += static_cast<LongType>(gridDim.x) * blockDim.x) {
+    const LongType r = g / K;
+    const LongType e = g - r * K;
+    const LongType s = ids[r];
+    T out = static_cast<T>(0);
+    if (s >= 0 && s < numClasses) {
+      const T go = gradOut[s * gm.rowStride + gm.colOffset(e)];
+      T xv = static_cast<T>(0);
+      T fv = static_cast<T>(0);
+      LongType count = 0;
+      LongType zeroCount = 0;
+      if constexpr (Grad::kNeedsForward) {
+        xv = x[r * xm.rowStride + xm.colOffset(e)];
+        fv = fwd[s * K + e];
+      }
+      if constexpr (Grad::kNeedsCount) count = static_cast<LongType>(counts[s]);
+      if constexpr (Grad::kNeedsZeros) zeroCount = zeros[s * K + e];
+      out = Grad::template apply<T>(go, xv, fv, count, zeroCount);
+    }
+    z[r * zm.rowStride + zm.colOffset(e)] = out;
+  }
+}
+
+// ============================================================================ //
+// Host
+// ============================================================================ //
+
+// sorted ids: output [C, ...] from input [n, ...]
+template <typename Op, typename X, typename Z>
+static void sortedForward_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
+  const LongType C = output->sizeAt(0);
+  const SegMat xm = segMat(input);
+  const SegMat zm = segMat(output);
+  const LongType K = zm.inner;
+  if (C == 0 || K == 0) return;
+  auto stream = context->getCudaStream();
+  const LongType n = indices->lengthOf();
+
+  PointersManager manager(context, "segmentSortedForward");
+  auto* ids = reinterpret_cast<LongType*>(manager.allocateDevMem(static_cast<size_t>(n) * sizeof(LongType)));
+  auto* begin = reinterpret_cast<LongType*>(manager.allocateDevMem(static_cast<size_t>(C) * sizeof(LongType)));
+  auto* end = reinterpret_cast<LongType*>(manager.allocateDevMem(static_cast<size_t>(C) * sizeof(LongType)));
+  segmentReadIds(context, indices, ids);
+  segmentBuildRanges(context, ids, n, C, begin, end);
+
+  const X* x = reinterpret_cast<const X*>(input->specialBuffer());
+  Z* z = reinterpret_cast<Z*>(output->specialBuffer());
+  if (K == 1) {
+    dim3 dims = segmentDims(clampInt(C), clampInt(n));
+    sortedLinearKernel<Op, X, Z><<<dims.x, dims.y, dims.z, *stream>>>(x, xm.rowStride, begin, end, C, z, zm.rowStride);
+    checkLaunch(stream, "sortedLinearKernel failed");
+  } else {
+    dim3 dims = segmentTad(clampInt(C * K));
+    sortedMatrixKernel<Op, X, Z><<<dims.x, dims.y, dims.z, *stream>>>(x, xm, begin, end, C, K, z, zm);
+    checkLaunch(stream, "sortedMatrixKernel failed");
+  }
+}
+
+// unsorted ids: accumulates the first n rows of x into [C, K] and writes the finished segments to z
+template <typename Op, typename X, typename Z>
+static void unsortedForwardInto(LaunchContext* context, PointersManager& manager, const X* x, const SegMat& xm,
+                                const LongType* ids, LongType n, LongType C, LongType K, Z* z, const SegMat& zm) {
+  using A = typename Op::template AccOf<X, Z>::type;
+  if (C == 0 || K == 0) return;
+  auto stream = context->getCudaStream();
+  auto* acc = reinterpret_cast<A*>(manager.allocateDevMem(static_cast<size_t>(C * K) * sizeof(A)));
+  unsigned long long* counts = nullptr;
+  if constexpr (Op::kNeedsCount) {
+    counts = reinterpret_cast<unsigned long long*>(manager.allocateDevMem(static_cast<size_t>(C) * sizeof(unsigned long long)));
+    segmentCountIds(context, ids, n, C, counts);
+  }
+  dim3 flat = segmentTad(clampInt(C * K));
+  fillIdentityKernel<Op, A><<<flat.x, flat.y, flat.z, *stream>>>(acc, C * K);
+  checkLaunch(stream, "fillIdentityKernel failed");
+  if (n > 0) {
+    dim3 dims = segmentBpTad(clampInt(n), clampInt(n * K));
+    unsortedScatterKernel<Op, X, A><<<dims.x, dims.y, dims.z, *stream>>>(x, xm, ids, n, C, K, acc);
+    checkLaunch(stream, "unsortedScatterKernel failed");
+  }
+  unsortedFinalizeKernel<Op, A, Z><<<flat.x, flat.y, flat.z, *stream>>>(acc, counts, C, K, z, zm);
+  checkLaunch(stream, "unsortedFinalizeKernel failed");
+}
+
+template <typename Op, typename X, typename Z>
+static void unsortedForward_(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses,
+                             NDArray* output) {
+  const SegMat xm = segMat(input);
+  const SegMat zm = segMat(output);
+  const LongType K = zm.inner;
+  // the classes are the rows of the output (the op's shape function made them numOfClasses)
+  const LongType C = output->sizeAt(0);
+  if (C == 0 || K == 0) return;
+  // an id list longer than the rows of x has no row to read (the op validates the lengths)
+  LongType n = indices->lengthOf();
+  if (n > input->sizeAt(0)) n = input->sizeAt(0);
+
+  PointersManager manager(context, "segmentUnsortedForward");
+  auto* ids = reinterpret_cast<LongType*>(manager.allocateDevMem(static_cast<size_t>(indices->lengthOf()) * sizeof(LongType)));
+  segmentReadIds(context, indices, ids);
+  unsortedForwardInto<Op, X, Z>(context, manager, reinterpret_cast<const X*>(input->specialBuffer()), xm, ids, n, C, K,
+                                reinterpret_cast<Z*>(output->specialBuffer()), zm);
+}
+
+// backprop: output (gradient w.r.t. the rows of the input) from gradOut ([C, ...], the gradient of the segments)
+template <typename Op, typename Grad, typename T>
+static Status backprop_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+  const LongType C = gradOut->sizeAt(0);
+  const SegMat xm = segMat(input);
+  const SegMat gm = segMat(gradOut);
+  const SegMat zm = segMat(output);
+  const LongType K = zm.inner;
+  const LongType n = indices->lengthOf();
+  if (n == 0 || K == 0) return Status::OK;
+  auto stream = context->getCudaStream();
+
+  PointersManager manager(context, "segmentBackprop");
+  auto* ids = reinterpret_cast<LongType*>(manager.allocateDevMem(static_cast<size_t>(n) * sizeof(LongType)));
+  segmentReadIds(context, indices, ids);
+  unsigned long long* counts = nullptr;
+  if constexpr (Grad::kNeedsCount) {
+    if (C > 0) {
+      counts = reinterpret_cast<unsigned long long*>(manager.allocateDevMem(static_cast<size_t>(C) * sizeof(unsigned long long)));
+      segmentCountIds(context, ids, n, C, counts);
+    }
+  }
+  const T* x = nullptr;
+  T* fwd = nullptr;
+  LongType* zeros = nullptr;
+  if constexpr (Grad::kNeedsForward) {
+    // the forward result of every segment, recomputed from the input (dense [C, K])
+    x = reinterpret_cast<const T*>(input->specialBuffer());
+    if (C > 0) {
+      fwd = reinterpret_cast<T*>(manager.allocateDevMem(static_cast<size_t>(C * K) * sizeof(T)));
+      unsortedForwardInto<Op, T, T>(context, manager, x, xm, ids, n, C, K, fwd, segment_sem::denseSegMat(K));
+      if constexpr (Grad::kNeedsZeros) {
+        // the zeros of every segment's column (dense [C, K]): a product's gradient cannot divide by a zero element
+        zeros = reinterpret_cast<LongType*>(manager.allocateDevMem(static_cast<size_t>(C * K) * sizeof(LongType)));
+        unsortedForwardInto<segment_sem::SegZeroCount, T, LongType>(context, manager, x, xm, ids, n, C, K, zeros,
+                                                                    segment_sem::denseSegMat(K));
       }
     }
   }
-}
-
-// ============================================================================ //
-// Backprop kernels (one scaffold, GradOp-parameterized)
-// ============================================================================ //
-
-template <typename Grad, typename T, typename I>
-static SD_KERNEL void segmentBPLinearKernel(void* inputBuf, LongType const* inputShape, void* forwardOutput,
-                                            LongType const* forwardShape, void* eps, LongType const* epsShape,
-                                            void* indicesBuf, LongType const* indicesShape, LongType* lengths,
-                                            void* outputBuf, LongType const* outputShape, LongType indicesLen) {
-  auto x = reinterpret_cast<T*>(inputBuf);
-  auto y = reinterpret_cast<I*>(indicesBuf);
-  auto z = reinterpret_cast<T*>(outputBuf);
-  auto gradIn = reinterpret_cast<T*>(forwardOutput);
-  auto gradOut = reinterpret_cast<T*>(eps);
-
-  const LongType xRank = shape::rank(inputShape), yRank = shape::rank(indicesShape), zRank = shape::rank(outputShape);
-  const LongType* xStridePtr = shape::stride(inputShape);
-  const LongType* yStridePtr = shape::stride(indicesShape);
-  const LongType* zStridePtr = shape::stride(outputShape);
-  const LongType* xShapePtr = shape::shapeOf(inputShape);
-  const LongType* yShapePtr = shape::shapeOf(indicesShape);
-  const LongType* zShapePtr = shape::shapeOf(outputShape);
-  const LongType gradInRank = Grad::needsForward ? shape::rank(forwardShape) : 0;
-  const LongType* gradInStridePtr = Grad::needsForward ? shape::stride(forwardShape) : nullptr;
-  const LongType* gradInShapePtr = Grad::needsForward ? shape::shapeOf(forwardShape) : nullptr;
-  const LongType gradOutRank = shape::rank(epsShape);
-  const LongType* gradOutStridePtr = shape::stride(epsShape);
-  const LongType* gradOutShapePtr = shape::shapeOf(epsShape);
-
-  auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  auto step = gridDim.x * blockDim.x;
-  for (auto e = tid; e < indicesLen; e += step) {
-    LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK], yCoords[SD_MAX_RANK];
-    LongType zOffset, xOffset, yOffset;
-    INDEX2COORDS(e, zRank, zShapePtr, zCoords);
-    COORDS2INDEX(zRank, zStridePtr, zCoords, zOffset);
-    INDEX2COORDS(e, xRank, xShapePtr, xCoords);
-    COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
-    INDEX2COORDS(e, yRank, yShapePtr, yCoords);
-    COORDS2INDEX(yRank, yStridePtr, yCoords, yOffset);
-
-    auto classIndex = y[yOffset];
-    LongType gradOffsetO;
-    LongType gradOCoords[SD_MAX_RANK];
-    INDEX2COORDS(classIndex, gradOutRank, gradOutShapePtr, gradOCoords);
-    COORDS2INDEX(gradOutRank, gradOutStridePtr, gradOCoords, gradOffsetO);
-
-    T fwd = T(0);
-    if (Grad::needsForward) {
-      LongType gradICoords[SD_MAX_RANK];
-      LongType gradOffsetI;
-      INDEX2COORDS(classIndex, gradInRank, gradInShapePtr, gradICoords);
-      COORDS2INDEX(gradInRank, gradInStridePtr, gradICoords, gradOffsetI);
-      fwd = gradIn[gradOffsetI];
-    }
-    LongType len = Grad::needsLengths ? lengths[classIndex] : 0;
-
-    T out;
-    if (Grad::template grad<T>(gradOut[gradOffsetO], x[xOffset], fwd, len, out)) z[zOffset] = out;
-  }
-}
-
-template <typename Grad, typename T, typename I>
-static SD_KERNEL void segmentBPTadKernel(void* inputBuf, LongType const* inputShape, void* forwardOutput,
-                                         LongType const* forwardShape, void* eps, LongType const* epsShape,
-                                         void* indicesBuf, LongType const* indicesShape, LongType* lengths,
-                                         void* outputBuf, LongType const* outputShape, LongType const* inputTad,
-                                         LongType const* inputOffsets, LongType const* gradInTad,
-                                         LongType const* gradInOffsets, LongType const* gradOutTad,
-                                         LongType const* gradOutOffsets, LongType const* outTad,
-                                         LongType const* outOffsets, LongType indicesLen) {
-  auto x = reinterpret_cast<T*>(inputBuf);
-  auto indices = reinterpret_cast<I*>(indicesBuf);
-  auto z = reinterpret_cast<T*>(outputBuf);
-  auto gradIn = reinterpret_cast<T*>(forwardOutput);
-  auto gradOut = reinterpret_cast<T*>(eps);
-
-  const LongType currentLen = shape::length(inputTad);
-  const LongType inputTadRank = shape::rank(inputTad);
-  const LongType* inputTadShapePtr = shape::shapeOf(inputTad);
-  const LongType* inputTadStridePtr = shape::stride(inputTad);
-  const LongType gradOutTadRank = shape::rank(gradOutTad);
-  const LongType* gradOutTadShapePtr = shape::shapeOf(gradOutTad);
-  const LongType* gradOutTadStridePtr = shape::stride(gradOutTad);
-  const LongType outTadRank = shape::rank(outTad);
-  const LongType* outTadShapePtr = shape::shapeOf(outTad);
-  const LongType* outTadStridePtr = shape::stride(outTad);
-  const LongType gradInTadRank = Grad::needsForward ? shape::rank(gradInTad) : 0;
-  const LongType* gradInTadShapePtr = Grad::needsForward ? shape::shapeOf(gradInTad) : nullptr;
-  const LongType* gradInTadStridePtr = Grad::needsForward ? shape::stride(gradInTad) : nullptr;
-
-  for (auto i = blockIdx.x; i < indicesLen; i += gridDim.x) {
-    I segment = indices[i];
-    auto current2 = x + inputOffsets[i];
-    auto currentOut2 = z + outOffsets[i];
-    auto currentGradOut2 = gradOut + gradOutOffsets[segment];
-    auto gradIn2 = Grad::needsForward ? gradIn + gradInOffsets[segment] : nullptr;
-    LongType len = Grad::needsLengths ? lengths[segment] : 0;
-
-    for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
-      LongType xCoords[SD_MAX_RANK], gradOutCoords[SD_MAX_RANK], outCoords[SD_MAX_RANK];
-      LongType xIndex, gradOutIndex, outIndex;
-      INDEX2COORDS(e, inputTadRank, inputTadShapePtr, xCoords);
-      COORDS2INDEX(inputTadRank, inputTadStridePtr, xCoords, xIndex);
-      INDEX2COORDS(e, gradOutTadRank, gradOutTadShapePtr, gradOutCoords);
-      COORDS2INDEX(gradOutTadRank, gradOutTadStridePtr, gradOutCoords, gradOutIndex);
-      INDEX2COORDS(e, outTadRank, outTadShapePtr, outCoords);
-      COORDS2INDEX(outTadRank, outTadStridePtr, outCoords, outIndex);
-
-      T fwd = T(0);
-      if (Grad::needsForward) {
-        LongType gradInCoords[SD_MAX_RANK];
-        LongType gradInIndex;
-        INDEX2COORDS(e, gradInTadRank, gradInTadShapePtr, gradInCoords);
-        COORDS2INDEX(gradInTadRank, gradInTadStridePtr, gradInCoords, gradInIndex);
-        fwd = gradIn2[gradInIndex];
-      }
-
-      T out;
-      if (Grad::template grad<T>(currentGradOut2[gradOutIndex], current2[xIndex], fwd, len, out))
-        currentOut2[outIndex] = out;
-    }
-  }
-}
-
-// ============================================================================ //
-// Host: segment length materialization (shared by every functor)
-// ============================================================================ //
-
-struct SegmentRanges {
-  NDArray* begs;
-  NDArray* lens;
-  LongType* begins;
-  LongType* lengths;
-};
-
-template <typename I>
-static SegmentRanges buildSegmentRanges(LaunchContext* context, NDArray* indices, LongType numOfClasses) {
-  auto begs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
-  auto lens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
-  LongType len = indices->lengthOf();
-  int zero = 0;
-  begs->assign(len);
-  lens->assign(zero);
-  fillUpSegments(indices, numOfClasses, *begs, *lens);
-  return {begs, lens, reinterpret_cast<LongType*>(begs->specialBuffer()),
-          reinterpret_cast<LongType*>(lens->specialBuffer())};
-}
-
-static SD_INLINE unsigned int roundUpPow2(unsigned int threads) {
-  threads--;
-  threads |= threads >> 1;
-  threads |= threads >> 2;
-  threads |= threads >> 4;
-  threads |= threads >> 8;
-  threads |= threads >> 16;
-  threads++;
-  return threads < 1 ? 1 : threads;
-}
-
-// ============================================================================ //
-// Host: forward
-// ============================================================================ //
-
-template <typename Op, typename T, typename I>
-static void segmentForward_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
-  T neutralVal = Op::template neutral<T>();
-  output->assign(neutralVal);
-  auto stream = context->getCudaStream();
-  indices->syncToHost();
-  LongType numOfClasses = indices->e<LongType>(indices->lengthOf() - 1) + 1;
-  auto ranges = buildSegmentRanges<I>(context, indices, numOfClasses);
-  NDArray* rBegs = ranges.begs;
-  NDArray* rLens = ranges.lens;
-
-  NDArray::prepareSpecialUse({output}, {input, indices, rBegs, rLens});
-  if (input->isVector() || input->isScalar()) {
-    dim3 launchDims = segmentDims(numOfClasses, input->lengthOf());
-    unsigned int threads = roundUpPow2(launchDims.x);
-    LongType shmemSize = threads * sizeof(T);
-    if (shmemSize < static_cast<LongType>(launchDims.z)) shmemSize = launchDims.z;
-    segmentLinearKernel<Op, T, I><<<launchDims.y, threads, shmemSize, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), ranges.begins, ranges.lengths, numOfClasses,
-        output->specialBuffer(), output->specialShapeInfo());
-    sd::DebugHelper::checkErrorCode(stream, "segmentLinearKernel failed");
-  } else {
-    LongType zero = 0;
-    std::vector<LongType>* dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1, &zero);
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
-    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    dim3 launchDims = segmentTad(packX->numberOfTads());
-    segmentTadKernel<Op, T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), packX->specialShapeInfo(), packX->specialOffsets(),
-        reinterpret_cast<I*>(indices->specialBuffer()), ranges.begins, ranges.lengths, numOfClasses,
-        output->specialBuffer(), output->specialShapeInfo(), packZ->specialShapeInfo(), packZ->specialOffsets(),
-        indices->lengthOf(), packX->numberOfTads());
-    sd::DebugHelper::checkErrorCode(stream, "segmentTadKernel failed");
-    delete dimensions;
-  }
-  NDArray::registerSpecialUse({output}, {input, indices, rBegs, rLens});
-  delete ranges.begs;
-  delete ranges.lens;
-}
-
-template <typename Op, typename T, typename I>
-static void unsortedSegmentForward_(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses,
-                                    NDArray* output) {
-  T neutralVal = Op::template neutral<T>();
-  output->assign(neutralVal);
-  auto stream = context->getCudaStream();
-  auto ranges = buildSegmentRanges<I>(context, indices, numOfClasses);
-  NDArray* rBegs = ranges.begs;
-  NDArray* rLens = ranges.lens;
-
-  NDArray::prepareSpecialUse({output}, {input, indices, rBegs, rLens});
-  if (input->isVector() || input->isScalar()) {
-    dim3 dims = getFillUpSegmentsDims(numOfClasses, indices->lengthOf());
-    unsigned int threads = roundUpPow2(dims.y);
-    LongType shmemSize = threads * sizeof(T);
-    if (shmemSize < static_cast<LongType>(dims.z)) shmemSize = dims.z;
-    unsortedSegmentLinearKernel<Op, T, I><<<dims.x, threads, shmemSize, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
-        ranges.begins, ranges.lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
-    sd::DebugHelper::checkErrorCode(stream, "unsortedSegmentLinearKernel failed");
-  } else {
-    LongType zero = 0;
-    std::vector<LongType>* dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1, &zero);
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
-    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    dim3 launchDims = segmentTad(packX->numberOfTads());
-    segmentTadKernel<Op, T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), packX->specialShapeInfo(), packX->specialOffsets(),
-        reinterpret_cast<I*>(indices->specialBuffer()), ranges.begins, ranges.lengths, numOfClasses,
-        output->specialBuffer(), output->specialShapeInfo(), packZ->specialShapeInfo(), packZ->specialOffsets(),
-        indices->lengthOf(), packX->numberOfTads());
-    sd::DebugHelper::checkErrorCode(stream, "segmentTadKernel(unsorted) failed");
-    delete dimensions;
-  }
-  NDArray::registerSpecialUse({output}, {input, indices, rBegs, rLens});
-  delete ranges.begs;
-  delete ranges.lens;
-}
-
-// ============================================================================ //
-// Host: backprop
-// ============================================================================ //
-
-template <typename Op, typename Grad, typename T, typename I>
-static Status segmentBackprop_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
-                               LongType numOfClasses, NDArray* output) {
-  auto stream = context->getCudaStream();
-
-  NDArray* tempRes = nullptr;
-  if (Grad::needsForward) {
-    tempRes = gradOut->ulike();
-    unsortedSegmentForward_<Op, T, I>(context, input, indices, numOfClasses, tempRes);
-  }
-  SegmentRanges ranges{nullptr, nullptr, nullptr, nullptr};
-  if (Grad::needsLengths) ranges = buildSegmentRanges<I>(context, indices, numOfClasses);
-
-  auto fwdBuf = Grad::needsForward ? tempRes->specialBuffer() : nullptr;
-  auto fwdShape = Grad::needsForward ? tempRes->specialShapeInfo() : nullptr;
-
-  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
-  if (input->isVector() || input->isScalar()) {
-    dim3 dims = segmentBpDims(1 + gradOut->lengthOf(), input->lengthOf());
-    segmentBPLinearKernel<Grad, T, I><<<dims.y, dims.x, dims.z, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), fwdBuf, fwdShape, gradOut->specialBuffer(),
-        gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), ranges.lengths,
-        output->specialBuffer(), output->specialShapeInfo(), indices->lengthOf());
-    sd::DebugHelper::checkErrorCode(stream, "segmentBPLinearKernel failed");
-  } else {
-    LongType zero = 0;
-    std::vector<LongType>* dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1, &zero);
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
-    if (Grad::needsForward) NDArray::preparePrimaryUse({tempRes}, {tempRes});
-    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto packGradOut = ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    LongType const* gradInTad = nullptr;
-    LongType const* gradInOffsets = nullptr;
-    if (Grad::needsForward) {
-      auto packGradIn = ConstantTadHelper::getInstance().tadForDimensions(tempRes->shapeInfo(), dimensions);
-      gradInTad = packGradIn->specialShapeInfo();
-      gradInOffsets = packGradIn->specialOffsets();
-    }
-    dim3 dims = segmentBpTad(gradOut->lengthOf(), input->lengthOf());
-    segmentBPTadKernel<Grad, T, I><<<dims.x, dims.y, dims.z, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), fwdBuf, fwdShape, gradOut->specialBuffer(),
-        gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), ranges.lengths,
-        output->specialBuffer(), output->specialShapeInfo(), packX->specialShapeInfo(), packX->specialOffsets(),
-        gradInTad, gradInOffsets, packGradOut->specialShapeInfo(), packGradOut->specialOffsets(),
-        packZ->specialShapeInfo(), packZ->specialOffsets(), indices->lengthOf());
-    sd::DebugHelper::checkErrorCode(stream, "segmentBPTadKernel failed");
-    delete dimensions;
-  }
-  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
-  if (tempRes) delete tempRes;
-  if (ranges.begs) {
-    delete ranges.begs;
-    delete ranges.lens;
-  }
+  dim3 dims = segmentBpDims(clampInt(C * K), clampInt(n * K));
+  backpropKernel<Grad, T><<<dims.x, dims.y, dims.z, *stream>>>(
+      x, xm, reinterpret_cast<const T*>(gradOut->specialBuffer()), gm, fwd, counts, zeros, ids, n, C, K,
+      reinterpret_cast<T*>(output->specialBuffer()), zm);
+  checkLaunch(stream, "backpropKernel failed");
   return Status::OK;
 }
 
@@ -612,65 +386,136 @@ static Status segmentBackprop_(LaunchContext* context, NDArray* input, NDArray* 
 }  // namespace sd
 
 // ============================================================================ //
-// Instantiation macros — a segment_<op>.cu becomes a thin TU using these.
-//   SEGMENT_OP_SORTED   : segment<Op>Functor            (sorted forward)
-//   SEGMENT_OP_UNSORTED : unsortedSegment<Op>Functor    (unsorted forward)
-//   SEGMENT_OP_BP       : segment<Op>FunctorBP + unsortedSegment<Op>FunctorBP
-// FWD_TYPES is SD_NUMERIC_TYPES (forward) / SD_FLOAT_TYPES (bp) per the originals.
+// Instantiation macros: a segment_<op>.cu is a thin TU using them.
+//   SEGMENT_OP_SAME_TYPE(NAME, OP)        segment<NAME>Functor + unsortedSegment<NAME>Functor, output type == input
+//                                         type (sum, prod, max, min)
+//   SEGMENT_OP_FLOAT_OUT(NAME, OP)        segment<NAME>Functor + unsortedSegment<NAME>Functor, floating output of any
+//                                         numeric input (mean)
+//   SEGMENT_OP_BACKPROP_NUMERIC / _FLOAT  segment<NAME>FunctorBP + unsortedSegment<NAME>FunctorBP
+// (the type lists are spelled out in each macro: a list passed as a macro argument is expanded before the selector
+// sees it)
 // ============================================================================ //
 
-#define SEGMENT_OP_INSTANTIATE(NAME, REDUCE, GRAD)                                                                 \
-  namespace sd {                                                                                                   \
-  namespace ops {                                                                                                  \
-  namespace helpers {                                                                                             \
-  namespace segment_ops {                                                                                          \
-  template <typename T, typename I>                                                                                \
-  static void segFwd_##NAME(LaunchContext* c, NDArray* in, NDArray* idx, NDArray* out) {                          \
-    segmentForward_<REDUCE, T, I>(c, in, idx, out);                                                               \
-  }                                                                                                                \
-  template <typename T, typename I>                                                                                \
-  static void segUFwd_##NAME(LaunchContext* c, NDArray* in, NDArray* idx, LongType n, NDArray* out) {             \
-    unsortedSegmentForward_<REDUCE, T, I>(c, in, idx, n, out);                                                    \
-  }                                                                                                                \
-  template <typename T, typename I>                                                                                \
-  static Status segBp_##NAME(LaunchContext* c, NDArray* in, NDArray* idx, NDArray* g, LongType n, NDArray* out) { \
-    return segmentBackprop_<REDUCE, GRAD, T, I>(c, in, idx, g, n, out);                                           \
-  }                                                                                                                \
-  }  /* namespace segment_ops */                                                                                   \
-  void segment##NAME##Functor(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {        \
-    NDArray::prepareSpecialUse({output}, {input, indices});                                                       \
-    BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segment_ops::segFwd_##NAME,                     \
-                          (context, input, indices, output), SD_NUMERIC_TYPES, SD_INDEXING_TYPES);                \
-    NDArray::registerSpecialUse({output}, {input, indices});                                                      \
-  }                                                                                                                \
-  void unsortedSegment##NAME##Functor(LaunchContext* context, NDArray* input, NDArray* indices,                   \
-                                      LongType numOfClasses, NDArray* output) {                                   \
-    NDArray::prepareSpecialUse({output}, {input, indices});                                                       \
-    output->nullify();                                                                                            \
-    BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segment_ops::segUFwd_##NAME,                    \
-                          (context, input, indices, numOfClasses, output), SD_NUMERIC_TYPES, SD_INDEXING_TYPES);  \
-    NDArray::registerSpecialUse({output}, {input, indices});                                                      \
-  }                                                                                                                \
-  Status segment##NAME##FunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,     \
-                                  NDArray* output) {                                                              \
-    NDArray::prepareSpecialUse({output}, {input, indices, gradOut});                                              \
-    BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segment_ops::segBp_##NAME,                     \
-                          (context, input, indices, gradOut, gradOut->sizeAt(0), output), SD_FLOAT_TYPES,         \
-                          SD_INDEXING_TYPES);                                                                     \
-    NDArray::registerSpecialUse({output}, {input, indices, gradOut});                                            \
-    return Status::OK;                                                                                            \
-  }                                                                                                                \
-  Status unsortedSegment##NAME##FunctorBP(LaunchContext* context, NDArray* input, NDArray* indices,               \
-                                          NDArray* gradOut, LongType numOfClasses, NDArray* output) {             \
-    NDArray::prepareSpecialUse({output}, {input, indices, gradOut});                                              \
-    BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segment_ops::segBp_##NAME,                     \
-                          (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES,               \
-                          SD_INDEXING_TYPES);                                                                     \
-    NDArray::registerSpecialUse({output}, {input, indices, gradOut});                                            \
-    return Status::OK;                                                                                            \
-  }                                                                                                                \
-  }                                                                                                                \
-  }                                                                                                                \
+#define SEGMENT_OP_SAME_TYPE(NAME, OP)                                                                                \
+  namespace sd {                                                                                                      \
+  namespace ops {                                                                                                     \
+  namespace helpers {                                                                                                 \
+  namespace segment_ops {                                                                                             \
+  template <typename T>                                                                                               \
+  static void sorted##NAME##_(LaunchContext* c, NDArray* in, NDArray* idx, NDArray* out) {                            \
+    sortedForward_<segment_sem::OP, T, T>(c, in, idx, out);                                                           \
+  }                                                                                                                   \
+  template <typename T>                                                                                               \
+  static void unsorted##NAME##_(LaunchContext* c, NDArray* in, NDArray* idx, LongType n, NDArray* out) {              \
+    unsortedForward_<segment_sem::OP, T, T>(c, in, idx, n, out);                                                      \
+  }                                                                                                                   \
+  }                                                                                                                   \
+  void segment##NAME##Functor(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {          \
+    NDArray::prepareSpecialUse({output}, {input, indices});                                                          \
+    BUILD_SINGLE_SELECTOR(input->dataType(), segment_ops::sorted##NAME##_, (context, input, indices, output),        \
+                          SD_NUMERIC_TYPES);                                                                          \
+    NDArray::registerSpecialUse({output}, {input, indices});                                                         \
+  }                                                                                                                   \
+  void unsortedSegment##NAME##Functor(LaunchContext* context, NDArray* input, NDArray* indices,                      \
+                                      LongType numOfClasses, NDArray* output) {                                      \
+    NDArray::prepareSpecialUse({output}, {input, indices});                                                          \
+    BUILD_SINGLE_SELECTOR(input->dataType(), segment_ops::unsorted##NAME##_,                                         \
+                          (context, input, indices, numOfClasses, output), SD_NUMERIC_TYPES);                         \
+    NDArray::registerSpecialUse({output}, {input, indices});                                                         \
+  }                                                                                                                   \
+  }                                                                                                                   \
+  }                                                                                                                   \
+  }
+
+#define SEGMENT_OP_FLOAT_OUT(NAME, OP)                                                                                \
+  namespace sd {                                                                                                      \
+  namespace ops {                                                                                                     \
+  namespace helpers {                                                                                                 \
+  namespace segment_ops {                                                                                             \
+  template <typename X, typename Z>                                                                                   \
+  static void sorted##NAME##_(LaunchContext* c, NDArray* in, NDArray* idx, NDArray* out) {                            \
+    sortedForward_<segment_sem::OP, X, Z>(c, in, idx, out);                                                           \
+  }                                                                                                                   \
+  template <typename X, typename Z>                                                                                   \
+  static void unsorted##NAME##_(LaunchContext* c, NDArray* in, NDArray* idx, LongType n, NDArray* out) {              \
+    unsortedForward_<segment_sem::OP, X, Z>(c, in, idx, n, out);                                                      \
+  }                                                                                                                   \
+  }                                                                                                                   \
+  void segment##NAME##Functor(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {          \
+    NDArray::prepareSpecialUse({output}, {input, indices});                                                          \
+    BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), segment_ops::sorted##NAME##_,                       \
+                          (context, input, indices, output), SD_NUMERIC_TYPES, SD_FLOAT_TYPES);                       \
+    NDArray::registerSpecialUse({output}, {input, indices});                                                         \
+  }                                                                                                                   \
+  void unsortedSegment##NAME##Functor(LaunchContext* context, NDArray* input, NDArray* indices,                      \
+                                      LongType numOfClasses, NDArray* output) {                                      \
+    NDArray::prepareSpecialUse({output}, {input, indices});                                                          \
+    BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), segment_ops::unsorted##NAME##_,                     \
+                          (context, input, indices, numOfClasses, output), SD_NUMERIC_TYPES, SD_FLOAT_TYPES);         \
+    NDArray::registerSpecialUse({output}, {input, indices});                                                         \
+  }                                                                                                                   \
+  }                                                                                                                   \
+  }                                                                                                                   \
+  }
+
+#define SEGMENT_OP_BACKPROP_NUMERIC(NAME, OP, GRAD)                                                                   \
+  namespace sd {                                                                                                      \
+  namespace ops {                                                                                                     \
+  namespace helpers {                                                                                                 \
+  namespace segment_ops {                                                                                             \
+  template <typename T>                                                                                               \
+  static Status bp##NAME##_(LaunchContext* c, NDArray* in, NDArray* idx, NDArray* go, NDArray* out) {                 \
+    return backprop_<segment_sem::OP, segment_sem::GRAD, T>(c, in, idx, go, out);                                     \
+  }                                                                                                                   \
+  }                                                                                                                   \
+  Status segment##NAME##FunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,        \
+                                  NDArray* output) {                                                                  \
+    NDArray::prepareSpecialUse({output}, {input, indices, gradOut});                                                 \
+    BUILD_SINGLE_SELECTOR(output->dataType(), segment_ops::bp##NAME##_, (context, input, indices, gradOut, output),  \
+                          SD_NUMERIC_TYPES);                                                                          \
+    NDArray::registerSpecialUse({output}, {input, indices, gradOut});                                                \
+    return Status::OK;                                                                                                \
+  }                                                                                                                   \
+  Status unsortedSegment##NAME##FunctorBP(LaunchContext* context, NDArray* input, NDArray* indices,                  \
+                                          NDArray* gradOut, LongType numOfClasses, NDArray* output) {                \
+    NDArray::prepareSpecialUse({output}, {input, indices, gradOut});                                                 \
+    BUILD_SINGLE_SELECTOR(output->dataType(), segment_ops::bp##NAME##_, (context, input, indices, gradOut, output),  \
+                          SD_NUMERIC_TYPES);                                                                          \
+    NDArray::registerSpecialUse({output}, {input, indices, gradOut});                                                \
+    return Status::OK;                                                                                                \
+  }                                                                                                                   \
+  }                                                                                                                   \
+  }                                                                                                                   \
+  }
+
+#define SEGMENT_OP_BACKPROP_FLOAT(NAME, OP, GRAD)                                                                     \
+  namespace sd {                                                                                                      \
+  namespace ops {                                                                                                     \
+  namespace helpers {                                                                                                 \
+  namespace segment_ops {                                                                                             \
+  template <typename T>                                                                                               \
+  static Status bp##NAME##_(LaunchContext* c, NDArray* in, NDArray* idx, NDArray* go, NDArray* out) {                 \
+    return backprop_<segment_sem::OP, segment_sem::GRAD, T>(c, in, idx, go, out);                                     \
+  }                                                                                                                   \
+  }                                                                                                                   \
+  Status segment##NAME##FunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,        \
+                                  NDArray* output) {                                                                  \
+    NDArray::prepareSpecialUse({output}, {input, indices, gradOut});                                                 \
+    BUILD_SINGLE_SELECTOR(output->dataType(), segment_ops::bp##NAME##_, (context, input, indices, gradOut, output),  \
+                          SD_FLOAT_TYPES);                                                                            \
+    NDArray::registerSpecialUse({output}, {input, indices, gradOut});                                                \
+    return Status::OK;                                                                                                \
+  }                                                                                                                   \
+  Status unsortedSegment##NAME##FunctorBP(LaunchContext* context, NDArray* input, NDArray* indices,                  \
+                                          NDArray* gradOut, LongType numOfClasses, NDArray* output) {                \
+    NDArray::prepareSpecialUse({output}, {input, indices, gradOut});                                                 \
+    BUILD_SINGLE_SELECTOR(output->dataType(), segment_ops::bp##NAME##_, (context, input, indices, gradOut, output),  \
+                          SD_FLOAT_TYPES);                                                                            \
+    NDArray::registerSpecialUse({output}, {input, indices, gradOut});                                                \
+    return Status::OK;                                                                                                \
+  }                                                                                                                   \
+  }                                                                                                                   \
+  }                                                                                                                   \
   }
 
 #endif  // LIBND4J_SEGMENT_OPS_CUH

@@ -49,7 +49,8 @@ DECLARE_TYPES(igammac) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
-      ->setAllowedOutputTypes(0, {ALL_FLOATS});
+      ->setAllowedOutputTypes(0, {ALL_FLOATS})
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

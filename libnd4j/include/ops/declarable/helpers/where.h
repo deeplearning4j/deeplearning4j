@@ -55,6 +55,14 @@ SD_LIB_HIDDEN void _whereNpScalarBroadcast(LaunchContext *context, NDArray &cond
 SD_LIB_HIDDEN void _whereNpGather(LaunchContext *context, NDArray &condition, NDArray &x,
                                    NDArray &y, NDArray &output);
 
+// where_np row mask preserves its existing polarity: true selects x, false selects y.
+SD_LIB_HIDDEN void _whereNpRows(LaunchContext *context, NDArray &condition, NDArray &x,
+                                 NDArray &y, NDArray &output);
+
+// Single-input where_np: INT64 coordinate vectors in C-logical nonzero order.
+SD_LIB_HIDDEN void _whereNpCoordinates(LaunchContext *context, NDArray &condition,
+                                        const std::vector<NDArray *> &outputs);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

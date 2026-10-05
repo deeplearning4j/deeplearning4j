@@ -179,6 +179,16 @@ class SD_LIB_EXPORT StructuredComputeToSpirv
       mlir::PatternRewriter& rewriter) const override;
 };
 
+// Multi-destination broadcast gradients and prefix-scan adjoints. Axis tensors
+// remain device operands; replay observes their current values.
+class SD_LIB_EXPORT TensorGradientToSpirv
+    : public mlir::OpRewritePattern<mlir::linalg::GenericOp> {
+ public:
+  using OpRewritePattern<mlir::linalg::GenericOp>::OpRewritePattern;
+  mlir::LogicalResult matchAndRewrite(
+      mlir::linalg::GenericOp op, mlir::PatternRewriter& rewriter) const override;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  Wave 1: ElementwiseBinaryToSpirv
 // ─────────────────────────────────────────────────────────────────────────────
@@ -327,6 +337,24 @@ class SD_LIB_EXPORT BatchedMatrixListToSpirv
 
 /** Race-free serial scatter/add schedule, including duplicate indices. */
 class SD_LIB_EXPORT IndexedAccumulationToSpirv
+    : public mlir::OpRewritePattern<mlir::linalg::GenericOp> {
+ public:
+  using OpRewritePattern<mlir::linalg::GenericOp>::OpRewritePattern;
+
+  mlir::LogicalResult matchAndRewrite(
+      mlir::linalg::GenericOp op,
+      mlir::PatternRewriter& rewriter) const override;
+};
+
+/**
+ * Ordered slice updates (VulkanLoweringContract::INDEXED_SLICE_UPDATE): scatter_add/sub/mul/div/upd/max/min,
+ * scatter_nd_add/sub/update and get_rows_bp. One invocation per element position of an output slice: it writes its
+ * positions of every slice (a copy of the reference, or zeros), then walks the index rows in order and applies
+ * the recipe's combine to the slice each row names, skipping rows with a coordinate outside the output. Updates
+ * that share a slice apply in index order, no two invocations touch one element, and no atomics are involved.
+ * Cost: O(slices + index rows) per invocation, positions invocations in parallel.
+ */
+class SD_LIB_EXPORT IndexedSliceUpdateToSpirv
     : public mlir::OpRewritePattern<mlir::linalg::GenericOp> {
  public:
   using OpRewritePattern<mlir::linalg::GenericOp>::OpRewritePattern;
@@ -595,6 +623,12 @@ SD_LIB_EXPORT void populateVulkanLoweringPatterns(mlir::RewritePatternSet& patte
 ///   pm.addPass(sd::graph::createVulkanOpLoweringPass());
 ///
 SD_LIB_EXPORT std::unique_ptr<mlir::Pass> createVulkanOpLoweringPass();
+
+/// Create the pass that rewrites the math ops MathToSPIRV cannot lower for a Vulkan (Shader) target into arithmetic
+/// SPIR-V defines (VulkanF64Math.cpp): exp, log, pow, sin, cos, tanh, cosh and atan on f64 (GLSL.std.450 defines them
+/// for 16/32-bit floats only), erf and erfc on f16/f32/f64 and trunc on f16/f32/f64 (MathToSPIRV has no Shader
+/// lowering for them). Runs after createVulkanOpLoweringPass and before MathToSPIRV.
+SD_LIB_EXPORT std::unique_ptr<mlir::Pass> createVulkanF64MathExpansionPass();
 
 }  // namespace graph
 }  // namespace sd

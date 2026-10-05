@@ -402,11 +402,10 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
 
   // input shapes validation
   const int rank = x->rankOf();
+  REQUIRE_TRUE(rank == 3, 0, "SRU_BI operation: wrong rank of input array, expected is 3, but got %i instead !", rank);
   const LongType bS = x->sizeAt(1);
+  REQUIRE_TRUE(x->sizeAt(2) % 2 == 0, 0, "SRU_BI: the feature dimension must be even");
   const LongType inSize = x->sizeAt(2) / 2;
-
-  REQUIRE_TRUE(x->rankOf() == rank, 0,
-               "SRU_BI operation: wrong rank of input array, expected is %i, but got %i instead !", rank, x->rankOf());
   REQUIRE_TRUE(w->rankOf() == rank - 1, 0,
                "SRU_BI operation: wrong rank of weights array, expected is %i, but got %i instead !", rank - 1,
                w->rankOf());
@@ -438,6 +437,12 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
                "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(mask).c_str());
 
+  // the helpers read every array as the type of the input
+  REQUIRE_TRUE(w->dataType() == x->dataType() && b->dataType() == x->dataType() && c0->dataType() == x->dataType() &&
+                   (mask == nullptr || mask->dataType() == x->dataType()),
+               0, "SRU_BI operation: the weights, biases, initial state and mask must have the data type of the input, %s !",
+               DataTypeUtils::asString(x->dataType()).c_str());
+
   helpers::sruBI(block.launchContext(), x, w, b, c0, mask, ht, ct);
 
   return Status::OK;
@@ -445,7 +450,7 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
 
 DECLARE_TYPES(sru_bi) {
   getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
-  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS})->setSameMode(true);
 }
 
 DECLARE_SHAPE_FN(sru_bi) {
@@ -456,9 +461,11 @@ DECLARE_SHAPE_FN(sru_bi) {
   auto maskShapeInfo =
       block.width() > 4 ? inputShape->at(4) : nullptr;  // optional,  2d tensor of dropout mask [bS x inSize]
 
-  const int rank = xShapeInfo[0];  // = 3
+  const int rank = xShapeInfo[0];
+  REQUIRE_TRUE(rank == 3, 0, "SRU_BI operation: wrong rank of input array, expected is 3, but got %i instead !", rank);
   const LongType time = xShapeInfo[1];
   const LongType bS = xShapeInfo[2];
+  REQUIRE_TRUE(xShapeInfo[3] % 2 == 0, 0, "SRU_BI: the feature dimension must be even");
   const LongType inSize = xShapeInfo[3] / 2;
 
   // input shapes validation
@@ -502,7 +509,7 @@ DECLARE_SHAPE_FN(sru_bi) {
 DECLARE_TYPES(sru_bi_bp) {
   getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
   getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | (OP_TRAIT_BACKWARD));
-  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS})->setSameMode(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -520,8 +527,11 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
 
   // input shapes validation
   const int rank = x->rankOf();
+  REQUIRE_TRUE(rank == 3, 0, "SRU_BI_BP operation: wrong rank of input array, expected is 3, but got %i instead !",
+               rank);
   const LongType time = x->sizeAt(0);
   const LongType bS = x->sizeAt(1);
+  REQUIRE_TRUE(x->sizeAt(2) % 2 == 0, 0, "SRU_BI: the feature dimension must be even");
   const LongType inSize = x->sizeAt(2) / 2;
 
   REQUIRE_TRUE(w->rankOf() == rank - 1, 0,
@@ -568,9 +578,18 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
                "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(mask).c_str());
 
+  // the helpers read every array as the type of the input
+  REQUIRE_TRUE(w->dataType() == x->dataType() && b->dataType() == x->dataType() && c0->dataType() == x->dataType() &&
+                   ct->dataType() == x->dataType() && inGradC0->dataType() == x->dataType() &&
+                   inGradHt->dataType() == x->dataType() && (mask == nullptr || mask->dataType() == x->dataType()),
+               0,
+               "SRU_BI_BP operation: the weights, biases, initial state, state, gradients and mask must have the data "
+               "type of the input, %s !",
+               DataTypeUtils::asString(x->dataType()).c_str());
+
   auto gradI = OUTPUT_VARIABLE(0);   // [time x bS x 2*inSize]
-  auto gradW = OUTPUT_VARIABLE(1);   // [time x 2*inSize x 6*inSize]
-  auto gradB = OUTPUT_VARIABLE(2);   // [1 x 4*inSize]
+  auto gradW = OUTPUT_VARIABLE(1);   // [time x 2*inSize x 6*inSize], the gradient of the weights at each time step
+  auto gradB = OUTPUT_VARIABLE(2);   // [4*inSize]
   auto gradC0 = OUTPUT_VARIABLE(3);  // [bS x 2*inSize]
 
   helpers::sruBIBP(block.launchContext(), x, w, b, c0, ct, inGradC0, inGradHt, mask, gradI, gradW, gradB, gradC0);
@@ -591,8 +610,11 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
   // input shapes validation
   const int rank = xShapeInfo[0];
+  REQUIRE_TRUE(rank == 3, 0, "SRU_BI_BP operation: wrong rank of input array, expected is 3, but got %i instead !",
+               rank);
   const LongType time = xShapeInfo[1];
   const LongType bS = xShapeInfo[2];
+  REQUIRE_TRUE(xShapeInfo[3] % 2 == 0, 0, "SRU_BI: the feature dimension must be even");
   const LongType inSize = xShapeInfo[3] / 2;
 
   REQUIRE_TRUE(wShapeInfo[0] == rank - 1, 0,

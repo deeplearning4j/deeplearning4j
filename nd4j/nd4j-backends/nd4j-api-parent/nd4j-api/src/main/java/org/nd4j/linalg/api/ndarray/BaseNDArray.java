@@ -1640,10 +1640,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (i < 0)
             i += rank();
 
-        // rank == 1 shortcut must include the array's offset() to handle views correctly
+        // Scalar and rank-1 views both address the parent buffer from the array's offset.
         if (isScalar()) {
             autoProcessScalarCall();
-            data.put(i, value);
+            data.put(offset() + i, value);
             return this;
         } else if (rank() == 1) {
             data.put(offset() + i * stride(0), value);
@@ -1701,7 +1701,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         } else {
             autoProcessScalarCall();
             long offset = Shape.getOffset(jvmShapeInfo.javaShapeInformation, indexes);
-            data.put(offset, value);
+            data.put(offset + offset(), value);
         }
 
         logPutIfNeccessary();
@@ -1761,7 +1761,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         } else {
             autoProcessScalarCall();
             long offset = Shape.getOffset(jvmShapeInfo.javaShapeInformation, indexes);
-            data.put(offset, value);
+            data.put(offset + offset(), value);
         }
 
         logPutIfNeccessary();
@@ -1810,7 +1810,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (size_2 != 1)
             offset += dim2 * jvmShapeInfo.javaShapeInformation[1 + 2 + 3];
 
-        data.put(offset, value);
+        data.put(offset + offset(), value);
 
         logPutIfNeccessary();
 
@@ -1829,7 +1829,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new IllegalStateException(
                     "Cannot use putScalar(int,int,int,int,double) on a rank " + rank() + " INDArray");
         long offset = Shape.getOffsetUnsafe(jvmShapeInfo.javaShapeInformation, dim0, dim1, dim2, dim3);
-        data.put(offset, value);
+        data.put(offset + offset(), value);
         logPutIfNeccessary();
         return this;
     }

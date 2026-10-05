@@ -91,6 +91,22 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
+    @MethodSource("configs")
+    public void reduce3FinalizersPreserveNativeSemantics(Nd4jBackend backend) {
+        for (DataType type : new DataType[]{DataType.FLOAT, DataType.DOUBLE}) {
+            INDArray x = Nd4j.createFromArray(1.0, 2.0, 3.0, 4.0).castTo(type).reshape(2, 2);
+            INDArray y = Nd4j.createFromArray(1.0, 9.0, 8.0, 7.0).castTo(type).reshape(2, 2);
+            INDArray distance = Nd4j.getExecutioner().exec(new HammingDistance(x, y, 1));
+            assertEquals(0.5, distance.getDouble(0), 0);
+            assertEquals(1.0, distance.getDouble(1), 0);
+            INDArray zero = Nd4j.zeros(type, 2);
+            assertTrue(Double.isNaN(Nd4j.getExecutioner().exec(new CosineSimilarity(zero, zero)).getDouble(0)));
+            assertTrue(Double.isNaN(Nd4j.getExecutioner().exec(new CosineDistance(zero, zero)).getDouble(0)));
+            assertTrue(Double.isNaN(Nd4j.getExecutioner().exec(new JaccardDistance(zero, zero)).getDouble(0)));
+        }
+    }
+
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStdev(Nd4jBackend backend) {
         List<String> errors = new ArrayList<>();

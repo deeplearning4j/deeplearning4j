@@ -54,6 +54,12 @@ public final class OpTraits {
                 name -> NativeOpsHolder.getInstance().getDeviceNativeOps().getOpTraitMask(name));
     }
 
+    /** Resolve which optional shape-value inputs are used by this concrete invocation. */
+    public static boolean shapeDependsOnInputValues(String opName, int numInputs, int numIArgs) {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps()
+                .opShapeDependsOnInputValues(opName, numInputs, numIArgs);
+    }
+
     /** Whether the op declares every trait in {@code traits}. */
     public static boolean has(String opName, long traits) {
         return (of(opName) & traits) == traits;

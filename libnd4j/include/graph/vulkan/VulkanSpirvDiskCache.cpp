@@ -51,7 +51,19 @@ namespace graph {
 
 namespace {
 
-constexpr const char* VULKAN_SPIRV_DISK_CACHE_ABI = "vulkan-spirv-disk-cache-v2";
+// The key does not cover the MLIR-to-SPIR-V lowering itself (no build stamp: see computeKey), so a change to
+// VulkanOpLowerings or the pass pipeline that can alter the SPIR-V of an unchanged MLIR module must bump this
+// literal. v3: igamma prefactor and Q(a, 0), scatter_nd range guard (and its zero-fill without index rows),
+// linspace division, f64 math expansion (exp/log/pow/sin/cos/tanh/cosh/atan and erf/erfc), the legacy random
+// lowerings (operands, Box-Muller, Poisson and Gamma as the native samplers of random_samplers.h), lgamma (the native
+// Cody/Stirling/reflection evaluation), the ordered slice updates (scatter_*, scatter_nd_{add,sub,update},
+// get_rows_bp), gather on any axis with zeros outside it, and softmax/log_softmax on any rank and axis with the
+// native non-finite policy. v4: IEEE float quotients (emitRoundedDivide) in divide, truncate/floor divide, floor mod,
+// safe divide, xdivy and reverse divide; xlogy/xlog1py are 0 where x is 0; cast to bool is "nonzero" (nd4j.output_bool)
+// and cast/sum lower 64-bit integers; 64-bit integer max/min reductions start from the 64-bit limits.
+// v5: logical i1 results zero-extend to BOOL storage and numeric values. Unchanged high-level MLIR must not
+// reuse shaders produced by the previous signed widening in comparison and MatchCondition lowerings.
+constexpr const char* VULKAN_SPIRV_DISK_CACHE_ABI = "vulkan-spirv-disk-cache-v5";
 constexpr uint32_t SPIRV_MAGIC = 0x07230203u;
 // Vulkan version encoding is VK_MAKE_API_VERSION(0, major, minor, 0). Keep
 // these local so this portable cache helper has no Vulkan-header dependency.
